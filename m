@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133AbaBLUHr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:07:47 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44087 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776AbaBLUHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:07:45 -0500
-Message-ID: <52FBD48E.5070103@wwwdotorg.org>
-Date: Wed, 12 Feb 2014 13:07:42 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: Olof Johansson <olof@lixom.net>, Alexandre Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [PATCH v2 0/6] ARM: firmware: improvements to Trusted Foundations
- support
-References: <1391747706-1847-1-git-send-email-acourbot@nvidia.com> <20140212013846.GB7584@quad.lixom.net>
-In-Reply-To: <20140212013846.GB7584@quad.lixom.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754150AbaBLUJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 15:09:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752869AbaBLUJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 15:09:31 -0500
+Date: Wed, 12 Feb 2014 15:09:12 -0500
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, mtosatti@redhat.com,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 0/4] hugetlb: add hugepagesnid= command-line option
+Message-ID: <20140212150912.14ef65be@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1402111951490.31912@chino.kir.corp.google.com>
+References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
+ <alpine.DEB.2.02.1402101851190.3447@chino.kir.corp.google.com>
+ <20140211103624.7edf1423@redhat.com>
+ <alpine.DEB.2.02.1402111951490.31912@chino.kir.corp.google.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 06:38 PM, Olof Johansson wrote:
-> On Fri, Feb 07, 2014 at 01:35:00PM +0900, Alexandre Courbot wrote:
->> These (mostly minor) patches fix a few typos, improve points that
->> were agreed upon when the Trusted Foundation series was initially
->> submitted, and more importantly add support for a prepare_idle()
->> firmware operation that informs the firmware a CPU is doing idle.
->> Tegra's cpuidle driver is then also updated accordingly.
->>
->> These patches should be the last step before device trees for NVIDIA
->> SHIELD and Tegra Note 7 can be submitted.
->>
->> Changes since v1:
->> - Do not remove TF support from tegra_defconfig (will automatically be taken
->>   care of during next configuration update)
->> - Add a new prepare_idle() operation to firmware_ops that informs the firmware
->>   a CPU is going idle (vs. asking the firmware to do it itself as do_idle()
->>   does)
->> - Fix idle states names in TF implementation of prepare_idle to sound less
->>   Tegra-specific
-> 
-> 1-5:
-> 
-> Acked-by: Olof Johansson <olof@lixom.net>
-> 
-> Stephen asked if he should merge through Russell's tree or ours; since
-> tegra is the only user I don't have a problem merging this (via tegra
-> pull requests) but I'm giving Russell veto power. :)
+On Tue, 11 Feb 2014 19:59:40 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-Russell, I intend to apply this series to the Tegra tree on Fri US time,
-unless I hear otherwise from you. Thanks.
+> On Tue, 11 Feb 2014, Luiz Capitulino wrote:
+> 
+> > > > HugeTLB command-line option hugepages= allows the user to specify how many
+> > > > huge pages should be allocated at boot. On NUMA systems, this argument
+> > > > automatically distributes huge pages allocation among nodes, which can
+> > > > be undesirable.
+> > > > 
+> > > 
+> > > And when hugepages can no longer be allocated on a node because it is too 
+> > > small, the remaining hugepages are distributed over nodes with memory 
+> > > available, correct?
+> > 
+> > No. hugepagesnid= tries to obey what was specified by the uses as much as
+> > possible.
+> 
+> I'm referring to what I quoted above, the hugepages= parameter. 
+
+Oh, OK.
+
+> I'm 
+> saying that using existing functionality you can reserve an excess of 
+> hugepages and then free unneeded hugepages at runtime to get the desired 
+> amount allocated only on a specific node.
+
+I got that part. I only think this is not a good solution as I explained
+bellow.
+
+> > > Strange, it would seem better to just reserve as many hugepages as you 
+> > > want so that you get the desired number on each node and then free the 
+> > > ones you don't need at runtime.
+> > 
+> > You mean, for example, if I have a 2 node system and want 2 1G huge pages
+> > from node 1, then I have to allocate 4 1G huge pages and then free 2 pages
+> > on node 0 after boot? That seems very cumbersome to me. Besides, what if
+> > node0 needs this memory during boot?
+> > 
+> 
+> All of this functionality, including the current hugepages= reservation at 
+> boot, needs to show that it can't be done as late as when you could run an 
+> initscript to do the reservation at runtime and fragmentation is at its 
+> lowest level when userspace first becomes available.
+
+It's not that it can't. The point is that for 1G huge pages it's more
+reliable to allocate them as early as possible during the kernel boot
+process. I'm all for having/improving 1G allocation support at run-time,
+and volunteer to help with that effort, but that's something that can
+(and IMO should) be done on top of this series.
+
+> I don't see any justification given in the patchset that suggests you 
+> can't simply do this in an initscript if it is possible to allocate 1GB 
+> pages at runtime.  If it's too late because of oom, then your userspace is 
+> going to oom anyway if you reserve the hugepages at boot; if it's too late 
+> because of fragmentation, let's work on that issue (and justification why 
+> things like movablecore= don't work for you).
+> 
+
