@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaBLVu0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:50:26 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:44995 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346AbaBLVuW (ORCPT
+	id S1754260AbaBLVul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:50:41 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:60738 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917AbaBLVug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:50:22 -0500
-Date: Wed, 12 Feb 2014 13:50:18 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-Cc: "roland@kernel.org" <roland@kernel.org>,
-        "Hefty, Sean" <sean.hefty@intel.com>,
-        "hal.rosenstock@gmail.com" <hal.rosenstock@gmail.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: qib_lookup_qpn() appears to leak pointer out of rcu_read_unlock()
-Message-ID: <20140212215017.GF4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140212003511.GA27242@linux.vnet.ibm.com>
- <32E1700B9017364D9B60AED9960492BC211F3D24@FMSMSX107.amr.corp.intel.com>
- <20140212145543.GY4250@linux.vnet.ibm.com>
- <32E1700B9017364D9B60AED9960492BC211F3D75@FMSMSX107.amr.corp.intel.com>
+	Wed, 12 Feb 2014 16:50:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <32E1700B9017364D9B60AED9960492BC211F3D75@FMSMSX107.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021221-3532-0000-0000-0000058DEF29
+In-Reply-To: <20140212133228.e4ff66c6add0c6b121232aad@linux-foundation.org>
+References: <1392219611-13260-1-git-send-email-avagin@openvz.org>
+	<20140212133228.e4ff66c6add0c6b121232aad@linux-foundation.org>
+Date: Wed, 12 Feb 2014 13:50:35 -0800
+X-Google-Sender-Auth: 7X3rqSpHDbw2CBt8WmCDI_KKbfQ
+Message-ID: <CAGXu5jLwH82BSTMTB_iP=2_0yUBEeLuNOcCaotyw_iADvizb-A@mail.gmail.com>
+Subject: Re: [PATCH] kernel: reduce required permission for prctl_set_mm
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
+        criu@openvz.org, Oleg Nesterov <oleg@redhat.com>,
+        Robin Holt <holt@sgi.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Chen Gang <gang.chen@asianux.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Aditya Kali <adityakali@google.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 02:57:14PM +0000, Marciniszyn, Mike wrote:
-> BTW, I am considering eliminating the atomic_inc() in favor of widening the scope of the rcu lock expanse.
+On Wed, Feb 12, 2014 at 1:32 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 12 Feb 2014 19:40:11 +0400 Andrey Vagin <avagin@openvz.org> wrote:
+>
+>> Currently prctl_set_mm requires the global CAP_SYS_RESOURCE,
+>> this patch reduce requiremence to CAP_SYS_RESOURCE in the current
+>> namespace.
+>>
+>> When we restore a task we need to set up text, data and data heap sizes
+>> from userspace to the values a task had at checkpoint time.
+>>
+>> Currently we can not restore these parameters, if a task lives in
+>> a non-root user name space, because it has no capabilities in the
+>> parent namespace.
+>>
+>> prctl_set_mm() changes parameters of the current task and doesn't affect
+>> other tasks.
+>>
+>> This patch affects the RLIMIT_DATA limit, because a consumtiuon is
+>> calculated relatively to mm->end_data, mm->start_data, mm->start_brk.
+>
+> I can't for the life of me work out what you were trying to say here.
+> Please fix and resend this paragraph?
+>
+>> rlim = rlimit(RLIMIT_DATA);
+>> if (rlim < RLIM_INFINITY && (brk - mm->start_brk) +
+>>               (mm->end_data - mm->start_data) > rlim)
+>>       goto out;
+>>
+>> This limit affects calls to brk() and sbrk(), but it doesn't affect
+>> mmap. So I think requirement of CAP_SYS_RESOURCE in the current
+>> namespace is enough for this limit.
+>>
+>> ...
+>>
+>> Cc: security@kernel.org
+>
+> That list is for reporting kernel security bugs.
+>
+>>
+>> --- a/kernel/sys.c
+>> +++ b/kernel/sys.c
+>> @@ -1701,7 +1701,7 @@ static int prctl_set_mm(int opt, unsigned long addr,
+>>       if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
+>>               return -EINVAL;
+>>
+>> -     if (!capable(CAP_SYS_RESOURCE))
+>> +     if (!ns_capable(current_user_ns(), CAP_SYS_RESOURCE))
+>>               return -EPERM;
+>>
+>>       if (opt == PR_SET_MM_EXE_FILE)
+>
+> This looks harmless.
 
-As long as the newly included code doesn't block, that should work fine.
-(If it does block, another option is SRCU.)
+I want to be convinced of this, but weakening this cap check seems
+like an easy way for a process to hide itself trivially from the real
+root user. It can change it's exe file link, and dodge RLIMIT_DATA by
+changing the brk addresses. The whole reason this cap check was there
+was to stop that kind of thing. Limiting it to a namespace isn't great
+since USER_NS means unprivileged processes can enter a new NS as the
+NS root user.
 
-							Thanx, Paul
+-Kees
 
-> Mike
-> 
-> > -----Original Message-----
-> > From: Paul E. McKenney [mailto:paulmck@linux.vnet.ibm.com]
-> > Sent: Wednesday, February 12, 2014 9:56 AM
-> > To: Marciniszyn, Mike
-> > Cc: roland@kernel.org; Hefty, Sean; hal.rosenstock@gmail.com; linux-
-> > rdma@vger.kernel.org; linux-kernel@vger.kernel.org
-> > Subject: Re: qib_lookup_qpn() appears to leak pointer out of rcu_read_unlock()
-> > 
-> > On Wed, Feb 12, 2014 at 01:59:30PM +0000, Marciniszyn, Mike wrote:
-> > > > So what am I missing here?
-> > > >
-> > >
-> > > The atomic increment of a reference count:
-> > 
-> > Got it, thank you, apologies for the noise!
-> > 
-> > 							Thanx, Paul
-> > 
-> > > struct qib_qp *qib_lookup_qpn(struct qib_ibport *ibp, u32 qpn) {
-> > >         struct qib_qp *qp = NULL;
-> > >
-> > >         rcu_read_lock();
-> > >         if (unlikely(qpn <= 1)) {
-> > >                 if (qpn == 0)
-> > >                         qp = rcu_dereference(ibp->qp0);
-> > >                 else
-> > >                         qp = rcu_dereference(ibp->qp1);
-> > >                 if (qp)
-> > >                         atomic_inc(&qp->refcount); <--------------------------
-> > >         } else {
-> > >                 struct qib_ibdev *dev = &ppd_from_ibp(ibp)->dd->verbs_dev;
-> > >                 unsigned n = qpn_hash(dev, qpn);
-> > >
-> > >                 for (qp = rcu_dereference(dev->qp_table[n]); qp;
-> > >                         qp = rcu_dereference(qp->next))
-> > >                         if (qp->ibqp.qp_num == qpn) {
-> > >                                 atomic_inc(&qp->refcount); <---------------------
-> > >                                 break;
-> > >                         }
-> > >         }
-> > >         rcu_read_unlock();
-> > >         return qp;
-> > > }
-> > >
-> > > Mike
-> > >
-> 
-
+-- 
+Kees Cook
+Chrome OS Security
