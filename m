@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075AbaBLIXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:23:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50255 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752139AbaBLIOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752129AbaBLIOG (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 12 Feb 2014 03:14:06 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50143 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751767AbaBLIN6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 03:13:58 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
-        "Niklas Schnelle" <niklas@komani.de>,
-        "Giorgos" <ganastasiouGR@gmail.com>, "" <dashing.meng@gmail.com>,
-        "Takashi Iwai" <tiwai@suse.de>, "" <art1@vhex.net>
+CC: akpm@linux-foundation.org, "Ben Myers" <bpm@sgi.com>,
+        "Christoph Hellwig" <hch@lst.de>, "Dave Chinner" <dchinner@redhat.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.241158989@decadent.org.uk>
+Message-ID: <lsq.1392192612.13742722@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 37/79] xhci: Limit the spurious wakeup fix only to HP
- machines
+Subject: [PATCH 3.2 18/79] xfs: Account log unmount transaction correctly
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,49 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
+commit 3948659e30808fbaa7673bbe89de2ae9769e20a7 upstream.
 
-We've got regression reports that my previous fix for spurious wakeups
-after S5 on HP Haswell machines leads to the automatic reboot at
-shutdown on some machines.  It turned out that the fix for one side
-triggers another BIOS bug in other side.  So, it's exclusive.
+There have been a few reports of this warning appearing recently:
 
-Since the original S5 wakeups have been confirmed only on HP machines,
-it'd be safer to apply it only to limited machines.  As a wild guess,
-limiting to machines with HP PCI SSID should suffice.
+XFS (dm-4): xlog_space_left: head behind tail
+ tail_cycle = 129, tail_bytes = 20163072
+ GH   cycle = 129, GH   bytes = 20162880
 
-This patch should be backported to kernels as old as 3.12, that
-contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
-spurious wakeups after S5 on Haswell".
+The common cause appears to be lots of freeze and unfreeze cycles,
+and the output from the warnings indicates that we are leaking
+around 8 bytes of log space per freeze/unfreeze cycle.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: <dashing.meng@gmail.com>
-Reported-by: Niklas Schnelle <niklas@komani.de>
-Reported-by: Giorgos <ganastasiouGR@gmail.com>
-Reported-by: <art1@vhex.net>
+When we freeze the filesystem, we write an unmount record and that
+uses xlog_write directly - a special type of transaction,
+effectively. What it doesn't do, however, is correctly account for
+the log space it uses. The unmount record writes an 8 byte structure
+with a special magic number into the log, and the space this
+consumes is not accounted for in the log ticket tracking the
+operation. Hence we leak 8 bytes every unmount record that is
+written.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-pci.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/xfs/xfs_log.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -121,7 +121,12 @@ static void xhci_pci_quirks(struct devic
- 		 * any other sleep) on Haswell machines with LPT and LPT-LP
- 		 * with the new Intel BIOS
- 		 */
--		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-+		/* Limit the quirk to only known vendors, as this triggers
-+		 * yet another BIOS bug on some other machines
-+		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
-+		 */
-+		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
-+			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+--- a/fs/xfs/xfs_log.c
++++ b/fs/xfs/xfs_log.c
+@@ -653,8 +653,9 @@ xfs_log_unmount_write(xfs_mount_t *mp)
+ 				.lv_iovecp = &reg,
+ 			};
+ 
+-			/* remove inited flag */
++			/* remove inited flag, and account for space used */
+ 			tic->t_flags = 0;
++			tic->t_curr_res -= sizeof(magic);
+ 			error = xlog_write(log, &vec, tic, &lsn,
+ 					   NULL, XLOG_UNMOUNT_TRANS);
+ 			/*
 
