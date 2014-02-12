@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbaBLI37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:29:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50180 "EHLO
+	id S1753425AbaBLIaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:30:05 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50170 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752051AbaBLIOA (ORCPT
+	by vger.kernel.org with ESMTP id S1752045AbaBLIOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:14:00 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "Robin H. Johnson" <robbat2@gentoo.org>
+CC: akpm@linux-foundation.org, "Emese Revfy" <re.emese@gmail.com>,
+        "PaX Team" <pageexec@freemail.hu>, "Theodore Ts'o" <tytso@mit.edu>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.670590843@decadent.org.uk>
+Message-ID: <lsq.1392192612.96540100@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 44/79] libata: disable a disk via libata.force params
+Subject: [PATCH 3.2 56/79] ext4: add explicit casts when masking cluster sizes
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,57 +31,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Robin H. Johnson" <robbat2@gentoo.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit b8bd6dc36186fe99afa7b73e9e2d9a98ad5c4865 upstream.
+commit f5a44db5d2d677dfbf12deee461f85e9ec633961 upstream.
 
-A user on StackExchange had a failing SSD that's soldered directly
-onto the motherboard of his system. The BIOS does not give any option
-to disable it at all, so he can't just hide it from the OS via the
-BIOS.
+The missing casts can cause the high 64-bits of the physical blocks to
+be lost.  Set up new macros which allows us to make sure the right
+thing happen, even if at some point we end up supporting larger
+logical block numbers.
 
-The old IDE layer had hdX=noprobe override for situations like this,
-but that was never ported to the libata layer.
+Thanks to the Emese Revfy and the PaX security team for reporting this
+issue.
 
-This patch implements a disable flag for libata.force.
-
-Example use:
-
- libata.force=2.0:disable
-
-[v2 of the patch, removed the nodisable flag per Tejun Heo]
-
-Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
-Link: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
-Link: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
-[bwh: Backported to 3.2: adjust context]
+Reported-by: PaX Team <pageexec@freemail.hu>
+Reported-by: Emese Revfy <re.emese@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop inapplicable change to ext4_ext_rm_leaf()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/kernel-parameters.txt | 2 ++
- drivers/ata/libata-core.c           | 1 +
- 2 files changed, 3 insertions(+)
-
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1305,6 +1305,8 @@ bytes respectively. Such letter suffixes
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -278,6 +278,16 @@ struct ext4_io_submit {
+ /* Translate # of blks to # of clusters */
+ #define EXT4_NUM_B2C(sbi, blks)	(((blks) + (sbi)->s_cluster_ratio - 1) >> \
+ 				 (sbi)->s_cluster_bits)
++/* Mask out the low bits to get the starting block of the cluster */
++#define EXT4_PBLK_CMASK(s, pblk) ((pblk) &				\
++				  ~((ext4_fsblk_t) (s)->s_cluster_ratio - 1))
++#define EXT4_LBLK_CMASK(s, lblk) ((lblk) &				\
++				  ~((ext4_lblk_t) (s)->s_cluster_ratio - 1))
++/* Get the cluster offset */
++#define EXT4_PBLK_COFF(s, pblk) ((pblk) &				\
++				 ((ext4_fsblk_t) (s)->s_cluster_ratio - 1))
++#define EXT4_LBLK_COFF(s, lblk) ((lblk) &				\
++				 ((ext4_lblk_t) (s)->s_cluster_ratio - 1))
  
- 			* dump_id: dump IDENTIFY data.
+ /*
+  * Structure of a blocks group descriptor
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -1659,8 +1659,7 @@ static unsigned int ext4_ext_check_overl
+ 	depth = ext_depth(inode);
+ 	if (!path[depth].p_ext)
+ 		goto out;
+-	b2 = le32_to_cpu(path[depth].p_ext->ee_block);
+-	b2 &= ~(sbi->s_cluster_ratio - 1);
++	b2 = EXT4_LBLK_CMASK(sbi, le32_to_cpu(path[depth].p_ext->ee_block));
  
-+			* disable: Disable this device.
-+
- 			If there are multiple matching configurations changing
- 			the same attribute, the last one is used.
+ 	/*
+ 	 * get the next allocated block if the extent in the path
+@@ -1670,7 +1669,7 @@ static unsigned int ext4_ext_check_overl
+ 		b2 = ext4_ext_next_allocated_block(path);
+ 		if (b2 == EXT_MAX_BLOCKS)
+ 			goto out;
+-		b2 &= ~(sbi->s_cluster_ratio - 1);
++		b2 = EXT4_LBLK_CMASK(sbi, b2);
+ 	}
  
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6331,6 +6331,7 @@ static int __init ata_parse_force_one(ch
- 		{ "nohrst",	.lflags		= ATA_LFLAG_NO_HRST },
- 		{ "nosrst",	.lflags		= ATA_LFLAG_NO_SRST },
- 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
-+		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
- 	};
- 	char *start = *cur, *p = *cur;
- 	char *id, *val, *endp;
+ 	/* check for wrap through zero on extent logical start block*/
+@@ -2305,7 +2304,7 @@ static int ext4_remove_blocks(handle_t *
+ 		 * truncate operation has removed all of the blocks in
+ 		 * the cluster.
+ 		 */
+-		if (pblk & (sbi->s_cluster_ratio - 1) &&
++		if (EXT4_PBLK_COFF(sbi, pblk) &&
+ 		    (ee_len == num))
+ 			*partial_cluster = EXT4_B2C(sbi, pblk);
+ 		else
+@@ -3508,7 +3507,7 @@ int ext4_find_delalloc_cluster(struct in
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+ 	ext4_lblk_t lblk_start, lblk_end;
+-	lblk_start = lblk & (~(sbi->s_cluster_ratio - 1));
++	lblk_start = EXT4_LBLK_CMASK(sbi, lblk);
+ 	lblk_end = lblk_start + sbi->s_cluster_ratio - 1;
+ 
+ 	return ext4_find_delalloc_range(inode, lblk_start, lblk_end,
+@@ -3568,9 +3567,9 @@ get_reserved_cluster_alloc(struct inode
+ 	trace_ext4_get_reserved_cluster_alloc(inode, lblk_start, num_blks);
+ 
+ 	/* Check towards left side */
+-	c_offset = lblk_start & (sbi->s_cluster_ratio - 1);
++	c_offset = EXT4_LBLK_COFF(sbi, lblk_start);
+ 	if (c_offset) {
+-		lblk_from = lblk_start & (~(sbi->s_cluster_ratio - 1));
++		lblk_from = EXT4_LBLK_CMASK(sbi, lblk_start);
+ 		lblk_to = lblk_from + c_offset - 1;
+ 
+ 		if (ext4_find_delalloc_range(inode, lblk_from, lblk_to, 0))
+@@ -3578,7 +3577,7 @@ get_reserved_cluster_alloc(struct inode
+ 	}
+ 
+ 	/* Now check towards right. */
+-	c_offset = (lblk_start + num_blks) & (sbi->s_cluster_ratio - 1);
++	c_offset = EXT4_LBLK_COFF(sbi, lblk_start + num_blks);
+ 	if (allocated_clusters && c_offset) {
+ 		lblk_from = lblk_start + num_blks;
+ 		lblk_to = lblk_from + (sbi->s_cluster_ratio - c_offset) - 1;
+@@ -3771,7 +3770,7 @@ static int get_implied_cluster_alloc(str
+ 				     struct ext4_ext_path *path)
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+-	ext4_lblk_t c_offset = map->m_lblk & (sbi->s_cluster_ratio-1);
++	ext4_lblk_t c_offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
+ 	ext4_lblk_t ex_cluster_start, ex_cluster_end;
+ 	ext4_lblk_t rr_cluster_start, rr_cluster_end;
+ 	ext4_lblk_t ee_block = le32_to_cpu(ex->ee_block);
+@@ -3790,8 +3789,7 @@ static int get_implied_cluster_alloc(str
+ 	    (rr_cluster_start == ex_cluster_start)) {
+ 		if (rr_cluster_start == ex_cluster_end)
+ 			ee_start += ee_len - 1;
+-		map->m_pblk = (ee_start & ~(sbi->s_cluster_ratio - 1)) +
+-			c_offset;
++		map->m_pblk = EXT4_PBLK_CMASK(sbi, ee_start) + c_offset;
+ 		map->m_len = min(map->m_len,
+ 				 (unsigned) sbi->s_cluster_ratio - c_offset);
+ 		/*
+@@ -4069,7 +4067,7 @@ int ext4_ext_map_blocks(handle_t *handle
+ 	 */
+ 	map->m_flags &= ~EXT4_MAP_FROM_CLUSTER;
+ 	newex.ee_block = cpu_to_le32(map->m_lblk);
+-	cluster_offset = map->m_lblk & (sbi->s_cluster_ratio-1);
++	cluster_offset = EXT4_LBLK_CMASK(sbi, map->m_lblk);
+ 
+ 	/*
+ 	 * If we are doing bigalloc, check to see if the extent returned
+@@ -4137,7 +4135,7 @@ int ext4_ext_map_blocks(handle_t *handle
+ 	 * needed so that future calls to get_implied_cluster_alloc()
+ 	 * work correctly.
+ 	 */
+-	offset = map->m_lblk & (sbi->s_cluster_ratio - 1);
++	offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
+ 	ar.len = EXT4_NUM_B2C(sbi, offset+allocated);
+ 	ar.goal -= offset;
+ 	ar.logical -= offset;
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4067,7 +4067,7 @@ ext4_mb_initialize_context(struct ext4_a
+ 
+ 	/* set up allocation goals */
+ 	memset(ac, 0, sizeof(struct ext4_allocation_context));
+-	ac->ac_b_ex.fe_logical = ar->logical & ~(sbi->s_cluster_ratio - 1);
++	ac->ac_b_ex.fe_logical = EXT4_LBLK_CMASK(sbi, ar->logical);
+ 	ac->ac_status = AC_STATUS_CONTINUE;
+ 	ac->ac_sb = sb;
+ 	ac->ac_inode = ar->inode;
+@@ -4605,7 +4605,7 @@ void ext4_free_blocks(handle_t *handle,
+ 	 * blocks at the beginning or the end unless we are explicitly
+ 	 * requested to avoid doing so.
+ 	 */
+-	overflow = block & (sbi->s_cluster_ratio - 1);
++	overflow = EXT4_PBLK_COFF(sbi, block);
+ 	if (overflow) {
+ 		if (flags & EXT4_FREE_BLOCKS_NOFREE_FIRST_CLUSTER) {
+ 			overflow = sbi->s_cluster_ratio - overflow;
+@@ -4619,7 +4619,7 @@ void ext4_free_blocks(handle_t *handle,
+ 			count += overflow;
+ 		}
+ 	}
+-	overflow = count & (sbi->s_cluster_ratio - 1);
++	overflow = EXT4_LBLK_COFF(sbi, count);
+ 	if (overflow) {
+ 		if (flags & EXT4_FREE_BLOCKS_NOFREE_LAST_CLUSTER) {
+ 			if (count > overflow)
 
