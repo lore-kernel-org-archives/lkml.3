@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaBLNmc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 08:42:32 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:37873 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402AbaBLNm1 (ORCPT
+	id S1752575AbaBLNmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 08:42:46 -0500
+Received: from smtp-fw-9102.amazon.com ([207.171.184.29]:14063 "EHLO
+	smtp-fw-9102.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaBLNmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 08:42:27 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: linux@roeck-us.net, wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 11/11] watchdog: xilinx: Remove no_timeout variable
-Date: Wed, 12 Feb 2014 14:41:25 +0100
-Message-Id: <e0612677b5e59221ff4d91da27f261f2b7bbea66.1392212059.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <bdd7c2c78dd491d02d1c1ae8a59b92b7a1a17ec6.1392212059.git.michal.simek@xilinx.com>
-References: <bdd7c2c78dd491d02d1c1ae8a59b92b7a1a17ec6.1392212059.git.michal.simek@xilinx.com>
-In-Reply-To: <cover.1392212059.git.michal.simek@xilinx.com>
-References: <cover.1392212059.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-12542-1392212540-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 12 Feb 2014 08:42:42 -0500
+X-IronPort-AV: E=Sophos;i="4.95,832,1384300800"; 
+   d="scan'208";a="78966562"
+Message-ID: <52FB7A46.7020801@amazon.de>
+Date: Wed, 12 Feb 2014 14:42:30 +0100
+From: "Egger, Christoph" <chegger@amazon.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Matthew Rushton <mrushton7@yahoo.com>,
+        =?UTF-8?B?Um9nZXIgUGF1IE1vbm5l?= =?UTF-8?B?IOKAjuKAjg==?= 
+	<roger.pau@citrix.com>
+CC: =?UTF-8?B?SWFuIENhbXBiZWxsIOKAjg==?= <Ian.Campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mrushton@amazon.com" <mrushton@amazon.com>,
+        =?UTF-8?B?RGF2aWQgVnJhYmVsIA==?= =?UTF-8?B?4oCO4oCO4oCO?= 
+	<david.vrabel@citrix.com>,
+        "msw@amazon.com" <msw@amazon.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        =?UTF-8?B?Qm9yaXMgT3N0cm92c2t5IOKAjg==?= 
+	<boris.ostrovsky@oracle.com>,
+        "aliguori@amazon.com" <aliguori@amazon.com>
+Subject: Re: [Xen-devel] [PATCH v2 2/4] xen-blkback: fix memory leaks
+References: <1391742906.53011.YahooMailNeo@web122601.mail.ne1.yahoo.com>
+In-Reply-To: <1391742906.53011.YahooMailNeo@web122601.mail.ne1.yahoo.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On 07.02.14 04:15, Matthew Rushton wrote:
+> On 04/02/14 10:26, Roger Pau Monne wrote:
+>> I've at least identified two possible memory leaks in blkback, both
+>> related to the shutdown path of a VBD:
+>> 
+>> - blkback doesn't wait for any pending purge work to finish before
+>>   cleaning the list of free_pages. The purge work will call
+>>   put_free_pages and thus we might end up with pages being added to
+>>   the free_pages list after we have emptied it. Fix this by making
+>>   sure there's no pending purge work before exiting
+>>   xen_blkif_schedule, and moving the free_page cleanup code to
+>>   xen_blkif_free.
+>> - blkback doesn't wait for pending requests to end before cleaning
+>>   persistent grants and the list of free_pages. Again this can add
+>>   pages to the free_pages list or persistent grants to the
+>>   persistent_gnts red-black tree. Fixed by moving the persistent
+>>   grants and free_pages cleanup code to xen_blkif_free.
+>> 
+>> Also, add some checks in xen_blkif_free to make sure we are cleaning
+>> everything.
+> 
+> Tested-by: Matt Rushton <mrushton@amazon.com>
+> Reviewed-by: Matt Rushton <mrushton@amazon.com>
 
---=_mimegpg-monstr-desktop-12542-1392212540-0001
+Tested-by: Christoph Egger <chegger@amazon.de>
+Reviewed-by: Christoph Egger <chegger@amazon.de>
 
-Remove no_timeout variable and check variables
-directly.
+Christoph
 
-Suggested-by: Rob Herring <robherring2@gmail.com>
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
----
-
-Changes in v3: None
-Changes in v2:
-- New patch in this series
-
- drivers/watchdog/of_xilinx_wdt.c | 13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
-index 9dd16cf..c7fb85e 100644
---- a/drivers/watchdog/of_xilinx_wdt.c
-+++ b/drivers/watchdog/of_xilinx_wdt.c
-@@ -147,10 +147,9 @@ static u32 xwdt_selftest(struct xwdt_device *xdev)
- static int xwdt_probe(struct platform_device *pdev)
- {
- 	int rc;
--	u32 pfreq, enable_once = 0;
-+	u32 pfreq = 0, enable_once = 0;
- 	struct resource *res;
- 	struct xwdt_device *xdev;
--	bool no_timeout = false;
- 	struct watchdog_device *xilinx_wdt_wdd;
-
- 	xdev = devm_kzalloc(&pdev->dev, sizeof(*xdev), GFP_KERNEL);
-@@ -168,19 +167,15 @@ static int xwdt_probe(struct platform_device *pdev)
- 		return PTR_ERR(xdev->base);
-
- 	rc = of_property_read_u32(pdev->dev.of_node, "clock-frequency", &pfreq);
--	if (rc) {
-+	if (rc)
- 		dev_warn(&pdev->dev,
- 			 "The watchdog clock frequency cannot be obtained\n");
--		no_timeout = true;
--	}
-
- 	rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-interval",
- 				  &xdev->wdt_interval);
--	if (rc) {
-+	if (rc)
- 		dev_warn(&pdev->dev,
- 			 "Parameter \"xlnx,wdt-interval\" not found\n");
--		no_timeout = true;
--	}
-
- 	rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-enable-once",
- 				  &enable_once);
-@@ -194,7 +189,7 @@ static int xwdt_probe(struct platform_device *pdev)
- 	 * Twice of the 2^wdt_interval / freq  because the first wdt overflow is
- 	 * ignored (interrupt), reset is only generated at second wdt overflow
- 	 */
--	if (!no_timeout)
-+	if (pfreq && xdev->wdt_interval)
- 		xilinx_wdt_wdd->timeout = 2 * ((1 << xdev->wdt_interval) /
- 					  pfreq);
-
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-12542-1392212540-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlL7ejwACgkQykllyylKDCE0mQCeI62dB0/wgkm4TLxCYhBsMyD5
-BzYAn1xlvfxcoHLZVYWcNUcNdm8uMJqp
-=g5vY
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-12542-1392212540-0001--
