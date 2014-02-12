@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaBLLnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:43:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35115 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaBLLnJ (ORCPT
+	id S1752132AbaBLLnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:43:21 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:40371 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751105AbaBLLnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:43:09 -0500
-Date: Wed, 12 Feb 2014 12:43:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/core] sched: Push put_prev_task() into
- pick_next_task( )
-Message-ID: <20140212114303.GC9987@twins.programming.kicks-ass.net>
-References: <1328936700.2476.17.camel@laptop>
- <tip-606dba2e289446600a0b68422ed2019af5355c12@git.kernel.org>
- <124891392188453@web4h.yandex.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <124891392188453@web4h.yandex.ru>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 12 Feb 2014 06:43:18 -0500
+Message-ID: <1392205398.848.10.camel@hornet>
+Subject: Re: [PATCH 07/12] mfd: syscon: Consider platform data a regmap
+ config name
+From: Pawel Moll <pawel.moll@arm.com>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 Feb 2014 11:43:18 +0000
+In-Reply-To: <1392204460.1197803@f433.i.mail.ru>
+References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
+	 <20140212082657.GK15081@lee--X1> <1392203209.3380.57.camel@hornet>
+	 <1392204460.1197803@f433.i.mail.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 11:00:53AM +0400, Kirill Tkhai wrote:
-> > @@ -4748,7 +4743,7 @@ static void migrate_tasks(unsigned int dead_cpu)
-> >                  if (rq->nr_running == 1)
-> >                          break;
-> >
-> > - next = pick_next_task(rq);
-> > + next = pick_next_task(rq, NULL);
-> 
-> pick_next_task() firstly checks for prev->sched_class, doesn't it ???
-> 
-> The same for pick_next_task_rt().
+On Wed, 2014-02-12 at 11:27 +0000, Alexander Shiyan wrote:
+> Yeah, I gave up the idea to use the syscon_ids[] to separate devices for
+> non-DT case.
+> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/mfd/syscon.c?id=5104d2656d4874c51868dc7182016e9501ec99ca
+> Instead, I use a hard definition for pdev->id, so that the names of
+> syscon-devices are different and can be obtained from the driver
+> it uses with syscon_regmap_lookup_by_pdevname().
 
-Right you are... and pick_next_task_dl(). Smatch caught the _{rt,dl}
-ones, it failed to spot this one though.
+It is a sort-of-solution (I personally dislike magic numbers, but this
+is a separate discussion) for a completely-non-DT case, where you can
+guarantee limited number of syscon devices.
 
+In my case I have a DT system, where some of the MFD devices *may*
+register syscon cells... No way to enforce ordering.
+
+> I understand this topic correct?
+
+The main idea here is to attach a meaningful label to the syscon
+regmaps. My example:
+
+/ # ls -d1 /sys/kernel/debug/regmap/syscon.*
+/sys/kernel/debug/regmap/syscon.0.auto
+/sys/kernel/debug/regmap/syscon.4.auto
+/sys/kernel/debug/regmap/syscon.5.auto
+
+vs
+
+/ # ls -d /sys/kernel/debug/regmap/syscon.*
+/sys/kernel/debug/regmap/syscon.0.auto-sys_id
+/sys/kernel/debug/regmap/syscon.4.auto-sys_misc
+/sys/kernel/debug/regmap/syscon.5.auto-sys_procid
+
+Of course one could also define syscon_regmap_lookup_by_label() (I don't
+really need it right now so didn't go that way)
+
+Pawel
 
