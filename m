@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaBLD7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 22:59:46 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50001 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186AbaBLD7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751643AbaBLD7o (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 22:59:44 -0500
-X-IronPort-AV: E=Sophos;i="4.95,829,1384272000"; 
-   d="scan'208";a="9510970"
-Message-ID: <52FAF1A0.8040605@cn.fujitsu.com>
-Date: Wed, 12 Feb 2014 11:59:28 +0800
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:36864 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaBLD7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 22:59:42 -0500
+Date: Tue, 11 Feb 2014 19:59:40 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Luiz Capitulino <lcapitulino@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, mtosatti@redhat.com,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 0/4] hugetlb: add hugepagesnid= command-line option
+In-Reply-To: <20140211103624.7edf1423@redhat.com>
+Message-ID: <alpine.DEB.2.02.1402111951490.31912@chino.kir.corp.google.com>
+References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com> <alpine.DEB.2.02.1402101851190.3447@chino.kir.corp.google.com> <20140211103624.7edf1423@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Robin Holt <holt@sgi.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 7/9] sys: Replace hardcoding of -20 and 19 with MIN_NICE
- and MAX_NICE.
-References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com> <0261f094b836f1acbcdf52e7166487c0c77323c8.1392103744.git.yangds.fnst@cn.fujitsu.com> <CAGXu5j+wSEnWAwgUBM47C8TXiEzmJt-J6sGHNEewwXqb5FgGEA@mail.gmail.com>
-In-Reply-To: <CAGXu5j+wSEnWAwgUBM47C8TXiEzmJt-J6sGHNEewwXqb5FgGEA@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/12 11:57:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/12 11:57:42,
-	Serialize complete at 2014/02/12 11:57:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+On Tue, 11 Feb 2014, Luiz Capitulino wrote:
 
-  On 02/12/2014 02:27 AM, Kees Cook wrote:
-> On Mon, Feb 10, 2014 at 11:34 PM, Dongsheng Yang
-> <yangds.fnst@cn.fujitsu.com> wrote:
->> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
->> cc: Andrew Morton <akpm@linux-foundation.org>
->> cc: Oleg Nesterov <oleg@redhat.com>
->> cc: Robin Holt <holt@sgi.com>
->> cc: Al Viro <viro@zeniv.linux.org.uk>
->> cc: Kees Cook <keescook@chromium.org>
->> cc: "Eric W. Biederman" <ebiederm@xmission.com>
->> cc: Stephen Rothwell <sfr@canb.auug.org.au>
->> cc: Peter Zijlstra <peterz@infradead.org>
->> cc: Ingo Molnar <mingo@kernel.org>
->> ---
->>   kernel/sys.c | 8 ++++----
->>   1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/kernel/sys.c b/kernel/sys.c
->> index c0a58be..adaeab6 100644
->> --- a/kernel/sys.c
->> +++ b/kernel/sys.c
->> @@ -174,10 +174,10 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
->>
->>          /* normalize: avoid signed division (rounding problems) */
->>          error = -ESRCH;
->> -       if (niceval < -20)
->> -               niceval = -20;
->> -       if (niceval > 19)
->> -               niceval = 19;
->> +       if (niceval < MIN_NICE)
->> +               niceval = MIN_NICE;
->> +       if (niceval > MAX_NICE)
->> +               niceval = MAX_NICE;
-> Good catch! I'm all for using names instead of numeric values,
-> however, I wonder if it'd be more readable to use "clamp" instead?
->
-> niceval = clamp(niceval, MIN_NICE, MAX_NICE);
+> > > HugeTLB command-line option hugepages= allows the user to specify how many
+> > > huge pages should be allocated at boot. On NUMA systems, this argument
+> > > automatically distributes huge pages allocation among nodes, which can
+> > > be undesirable.
+> > > 
+> > 
+> > And when hugepages can no longer be allocated on a node because it is too 
+> > small, the remaining hugepages are distributed over nodes with memory 
+> > available, correct?
+> 
+> No. hugepagesnid= tries to obey what was specified by the uses as much as
+> possible.
 
-Good suggestion! This patch here is just to replace the numeric values with
-a name defined in prio.h. So I will send another patch to make it more 
-readable
-with clamp after the patch set here applied. Is this plan ok to you?
+I'm referring to what I quoted above, the hugepages= parameter.  I'm 
+saying that using existing functionality you can reserve an excess of 
+hugepages and then free unneeded hugepages at runtime to get the desired 
+amount allocated only on a specific node.
 
-Thanx.
->
-> -Kees
->
->>          rcu_read_lock();
->>          read_lock(&tasklist_lock);
->> --
->> 1.8.2.1
->>
->
->
+> > Strange, it would seem better to just reserve as many hugepages as you 
+> > want so that you get the desired number on each node and then free the 
+> > ones you don't need at runtime.
+> 
+> You mean, for example, if I have a 2 node system and want 2 1G huge pages
+> from node 1, then I have to allocate 4 1G huge pages and then free 2 pages
+> on node 0 after boot? That seems very cumbersome to me. Besides, what if
+> node0 needs this memory during boot?
+> 
 
+All of this functionality, including the current hugepages= reservation at 
+boot, needs to show that it can't be done as late as when you could run an 
+initscript to do the reservation at runtime and fragmentation is at its 
+lowest level when userspace first becomes available.
+
+I don't see any justification given in the patchset that suggests you 
+can't simply do this in an initscript if it is possible to allocate 1GB 
+pages at runtime.  If it's too late because of oom, then your userspace is 
+going to oom anyway if you reserve the hugepages at boot; if it's too late 
+because of fragmentation, let's work on that issue (and justification why 
+things like movablecore= don't work for you).
