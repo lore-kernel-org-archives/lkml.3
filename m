@@ -1,11 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503AbaBLKXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:23:54 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42342 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796AbaBLKT7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752032AbaBLKYY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:24:24 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:36002 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752787AbaBLKT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 05:19:59 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>, <bcousson@baylibre.com>, <lee.jones@linaro.org>
@@ -13,9 +12,9 @@ CC: <balbi@ti.com>, <nm@ti.com>, <khilman@linaro.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v7 06/12] ARM: dts: omap4: Update omap-usb-host node
-Date: Wed, 12 Feb 2014 12:18:47 +0200
-Message-ID: <1392200333-28397-7-git-send-email-rogerq@ti.com>
+Subject: [PATCH v7 07/12] ARM: dts: omap5: Update omap-usb-host node
+Date: Wed, 12 Feb 2014 12:18:48 +0200
+Message-ID: <1392200333-28397-8-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392200333-28397-1-git-send-email-rogerq@ti.com>
 References: <1392200333-28397-1-git-send-email-rogerq@ti.com>
@@ -30,18 +29,18 @@ and external reference clocks. Provide these clocks.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap4.dtsi | 6 ++++++
+ arch/arm/boot/dts/omap5.dtsi | 6 ++++++
  1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index d3f8a6e..39a05ce 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -697,6 +697,12 @@
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index a72813a..d4dae48 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -775,6 +775,12 @@
  			#address-cells = <1>;
  			#size-cells = <1>;
  			ranges;
-+			clocks = <&init_60m_fclk>,
++			clocks = <&l3init_60m_fclk>,
 +				 <&xclk60mhsp1_ck>,
 +				 <&xclk60mhsp2_ck>;
 +			clock-names = "refclk_60m_int",
