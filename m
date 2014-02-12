@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaBLXEq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 18:04:46 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37872 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696AbaBLXEo (ORCPT
+	id S1754619AbaBLXFC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 18:05:02 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:36541 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202AbaBLXFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 18:04:44 -0500
-Date: Wed, 12 Feb 2014 15:03:31 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Filipe Brandenburger <filbranden@google.com>,
-        Li Zefan <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Markus Blank-Burian <burian@muenster.de>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 1/2] memcg: reparent charges of children before processing
- parent
-Message-ID: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 12 Feb 2014 18:05:01 -0500
+Date: Thu, 13 Feb 2014 00:04:57 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
+ workqueue
+Message-ID: <20140212230454.GA14383@localhost.localdomain>
+References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
+ <52F8A51F.4090909@cn.fujitsu.com>
+ <20140210184729.GL4250@linux.vnet.ibm.com>
+ <20140212182336.GD5496@localhost.localdomain>
+ <20140212190241.GD4250@linux.vnet.ibm.com>
+ <20140212192354.GC26809@htj.dyndns.org>
+ <20140212195922.GE4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212195922.GE4250@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Filipe Brandenburger <filbranden@google.com>
+On Wed, Feb 12, 2014 at 11:59:22AM -0800, Paul E. McKenney wrote:
+> On Wed, Feb 12, 2014 at 02:23:54PM -0500, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Wed, Feb 12, 2014 at 11:02:41AM -0800, Paul E. McKenney wrote:
+> > > +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
+> > > +	to force the WQ_SYSFS workqueues to run on the specified set
+> > > +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
+> > > +	"ls sys/devices/virtual/workqueue".
+> > 
+> > One thing to be careful about is that once published, it becomes part
+> > of userland visible interface.  Maybe adding some words warning
+> > against sprinkling WQ_SYSFS willy-nilly is a good idea?
+> 
+> Good point!  How about the following?
+> 
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> Documentation/kernel-per-CPU-kthreads.txt: Workqueue affinity
+> 
+> This commit documents the ability to apply CPU affinity to WQ_SYSFS
+> workqueues, thus offloading them from the desired worker CPUs.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> 
+> diff --git a/Documentation/kernel-per-CPU-kthreads.txt b/Documentation/kernel-per-CPU-kthreads.txt
+> index 827104fb9364..214da3a47a68 100644
+> --- a/Documentation/kernel-per-CPU-kthreads.txt
+> +++ b/Documentation/kernel-per-CPU-kthreads.txt
+> @@ -162,7 +162,16 @@ Purpose: Execute workqueue requests
+>  To reduce its OS jitter, do any of the following:
+>  1.	Run your workload at a real-time priority, which will allow
+>  	preempting the kworker daemons.
+> -2.	Do any of the following needed to avoid jitter that your
+> +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
+> +	to force the WQ_SYSFS workqueues to run on the specified set
+> +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
+> +	"ls sys/devices/virtual/workqueue".  That said, the workqueues
+> +	maintainer would like to caution people against indiscriminately
+> +	sprinkling WQ_SYSFS across all the workqueues.  The reason for
+> +	caution is that it is easy to add WQ_SYSFS, but because sysfs
+> +	is part of the formal user/kernel API, it can be nearly impossible
+> +	to remove it, even if its addition was a mistake.
+> +3.	Do any of the following needed to avoid jitter that your
 
-Sometimes the cleanup after memcg hierarchy testing gets stuck in
-mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-There may turn out to be several causes, but a major cause is this: the
-workitem to offline parent can get run before workitem to offline child;
-parent's mem_cgroup_reparent_charges() circles around waiting for the
-child's pages to be reparented to its lrus, but it's holding cgroup_mutex
-which prevents the child from reaching its mem_cgroup_reparent_charges().
+I just suggest we append a small explanation about what WQ_SYSFS is about.
+Like:
 
-Further testing showed that an ordered workqueue for cgroup_destroy_wq
-is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
-stage on the way can mess up the order before reaching the workqueue.
-
-Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
-all its children (and grandchildren, in the correct order) to have their
-charges reparented first.
-
-Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
-Signed-off-by: Filipe Brandenburger <filbranden@google.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org # v3.10+ (but will need extra care)
----
-Or, you may prefer my alternative cgroup.c approach in 2/2:
-there's no need for both.  Please note that neither of these patches
-attempts to handle the unlikely case of racy charges made to child
-after its offline, but parent's offline coming before child's free:
-mem_cgroup_css_free()'s backstop call to mem_cgroup_reparent_charges()
-cannot help in that case, with or without these patches.  Fixing that
-would have to be a separate effort - Michal's?
-
- mm/memcontrol.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
---- 3.14-rc2/mm/memcontrol.c	2014-02-02 18:49:07.897302115 -0800
-+++ linux/mm/memcontrol.c	2014-02-11 17:48:07.604582963 -0800
-@@ -6595,6 +6595,7 @@ static void mem_cgroup_css_offline(struc
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 	struct mem_cgroup_event *event, *tmp;
-+	struct cgroup_subsys_state *iter;
- 
- 	/*
- 	 * Unregister events and notify userspace.
-@@ -6611,7 +6612,14 @@ static void mem_cgroup_css_offline(struc
- 	kmem_cgroup_css_offline(memcg);
- 
- 	mem_cgroup_invalidate_reclaim_iterators(memcg);
--	mem_cgroup_reparent_charges(memcg);
-+
-+	/*
-+	 * This requires that offlining is serialized.  Right now that is
-+	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-+	 */
-+	css_for_each_descendant_post(iter, css)
-+		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
-+
- 	mem_cgroup_destroy_all_caches(memcg);
- 	vmpressure_cleanup(&memcg->vmpressure);
- }
++2.
++       The workqueues that want to be visible on the sysfs hierarchy
++	set the WQ_SYSFS flag.
++  	For those who have this flag set, you can use the
++	/sys/devices/virtual/workqueue/*/cpumask sysfs files
++	to force the workqueues to run on the specified set
++	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
++	"ls sys/devices/virtual/workqueue".  That said, the workqueues
++	maintainer would like to caution people against indiscriminately
++	sprinkling WQ_SYSFS across all the workqueues.  The reason for
++	caution is that it is easy to add WQ_SYSFS, but because sysfs
++	is part of the formal user/kernel API, it can be nearly impossible
++	to remove it, even if its addition was a mistake.
++3.	Do any of the following needed to avoid jitter that your
