@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaBLU7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:59:19 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:40024 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585AbaBLU7P (ORCPT
+	id S1754134AbaBLVBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:01:49 -0500
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:18871 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752762AbaBLVBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:59:15 -0500
-Date: Wed, 12 Feb 2014 13:59:11 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-pci@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, valentine.barshak@cogentembedded.com,
-        horms@verge.net.au, ben.dooks@codethink.co.uk
-Subject: Re: [PATCH 00/04] PCI: rcar: Driver model and physical address space
- update
-Message-ID: <20140212205911.GB5554@google.com>
-References: <20140205065243.29445.76593.sendpatchset@w520>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140205065243.29445.76593.sendpatchset@w520>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Feb 2014 16:01:48 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkMRAKbg+1JXQAka/2dsb2JhbABaKIJkgkN7E7xoAgKBGBd0gmYcIxiBAjeICQHJEo55HYQiBIlGjmMBkiGDOi8
+Date: Wed, 12 Feb 2014 21:03:06 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: akpm <akpm@linux-foundation.org>, rdunlap <rdunlap@infradead.org>
+Subject: [RFC 1/2] Arch: Kconfig: Disable obsolete syscalls
+Message-Id: <20140212210306.0c143411c25ffaaadc405701@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 03:52:43PM +0900, Magnus Damm wrote:
-> PCI: rcar: Driver model and physical address space update
-> 
-> [PATCH 01/04] PCI: rcar: Register each instance independently
-> [PATCH 02/04] PCI: rcar: Break out window size handling
-> [PATCH 03/04] PCI: rcar: Add DMABOUNCE support
-> [PATCH 04/04] PCI: rcar: Enable BOUNCE in case of HIGHMEM
-> 
-> These patches update the pci-rcar-gen2.c driver in various ways
-> including cleanups for driver model interface (1/4), readability
-> update (2/4) and also bounce buffer support (3/4, 4/4). Basically
-> the first two are just cleanups and the rest are fixes.
-> 
-> As it is today without these patches the system memory start address
-> is hard coded at 0x4000000 and the window is fixed at 1GiB. So we
-> have board specific code hidden in the driver which is good to avoid.
-> 
-> With these hard coded board specific constants there are some error cases
-> that are not handled, in particular the issue that only maximum 1GiB of
-> physical address space can be used for bus mastering with a single window.
-> The common case of using ARM CONFIG_VMSPLIT_3G results in no visible issues
-> as long as CONFIG_BOUNCE is used, but other CONFIG_VMSPLIT settings will
-> break due to the hard coded 1GiB window not being enough. It has been
-> verified that reducing the window size to 256MB makes the driver behave
-> the same with VMSPLIT_3G as 1GiB window size and other VMSPLIT settings.
-> 
-> To handle the maximum 1GiB physical address space limitation two types
-> of bounce buffers are added. The ARM specific DMABOUNCE code is in 3/4
-> hooked up to a chunk of local memory that is also handed of as coherent
-> memory to the pci devices hanging off the PCI bridge. The driver makes
-> sure to set the window so the local memory is always included. When the
-> PCI devices are operating and in case memory is used outside the window
-> then the DMABOUNCE buffers kicks in. This makes the driver support all
-> kinds of VMSPLIT settings and window sizes. The BOUNCE code in 4/4 is
-> selected to make sure bounce buffers are used for HIGHMEM.
-> 
-> With these patches this driver can be used with or without CMA and
-> with or without DMA zone. Basically the system wide memory setup is
-> left to the user. If a DMA zone is used then the PCI window will
-> be setup to cover that. Same thing with CMA.
-> 
-> Tested with USB storage using LPAE and various VMSPLIT settings together
-> with renesas git tag renesas-devel-v3.14-rc1-20140204 from kernel.org
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
-> 
->  Written against renesas.git tag renesas-devel-v3.14-rc1-20140204
-> 
->  drivers/pci/host/Kconfig         |    3 
->  drivers/pci/host/pci-rcar-gen2.c |  367 +++++++++++++++++++++++++++++++-------
->  2 files changed, 306 insertions(+), 64 deletions(-)
+This patch adds a generic configuration flag to disable obsolete
+system calls (ie no longer supported by current c libraries).
 
-Simon, if you want to ack these, I'll be happy to merge them for v3.15.
-I'm not really qualified to review them myself.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ arch/Kconfig | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Bjorn
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 80bbb8c..e9bd58f 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -522,4 +522,13 @@ config OLD_SIGACTION
+ config COMPAT_OLD_SIGACTION
+ 	bool
+ 
++config DISABLE_OBSOLETE_SYSCALLS
++	bool "Disable obsolete system calls"
++	help
++	  Optimize your kernel by disabling system calls no longer
++	  supported by current c libraries. Only officially obsolete
++	  system calls feature here however be warned that meanwhile
++	  this improves security, this option can break compliance
++	  with other systems.
++
+ source "kernel/gcov/Kconfig"
+-- 
+1.8.1.4
+
