@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056AbaBLFBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 00:01:06 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:59827 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaBLFBD (ORCPT
+	id S1751373AbaBLFBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 00:01:46 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:48844 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaBLFBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 00:01:03 -0500
+	Wed, 12 Feb 2014 00:01:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <1392029254-15400-1-git-send-email-geert@linux-m68k.org>
-References: <1392029254-15400-1-git-send-email-geert@linux-m68k.org>
-Date: Wed, 12 Feb 2014 14:01:01 +0900
-Message-ID: <CANqRtoQZBTYXwDcfzxqs9X-o2Yftvr=TM4dLgeMagr-LGdm1uw@mail.gmail.com>
-Subject: Re: [PATCH 0/7] ARM: shmobile: r8a7790/Lager QSPI SoC/board integration
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1392135847-30791-9-git-send-email-joshc@codeaurora.org>
+References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+	<1392135847-30791-9-git-send-email-joshc@codeaurora.org>
+Date: Wed, 12 Feb 2014 10:31:17 +0530
+Message-ID: <CAKohponRmoV=hLcMfhULDUkaOuChdnAVFt4BpgSaz=0Qxr=yJA@mail.gmail.com>
+Subject: Re: [PATCH 8/8] cpufreq: ppc: make use of of_find_matching_node_and_match
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert, Simon,
-
-On Mon, Feb 10, 2014 at 7:47 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
->         Hi Simon, Magnus,
+On 11 February 2014 21:54, Josh Cartwright <joshc@codeaurora.org> wrote:
+> Instead of the of_find_matching_node()/of_match_node() pair, which requires two
+> iterations through the match table, make use of of_find_matching_node_and_match(),
+> which only iterates through the table once.
 >
-> The following patch series completes r8a7790 SoC and Lager board
-> integration for the Renesas Quad Serial Peripheral Interface. It brings
-> r8a7790/Lager to the same support level as r8a7791/Koelsch, allowing access
-> to the Spansion s25fl512s SPI FLASH for both legacy and multi-platform
-> kernels.
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> ---
+>  drivers/cpufreq/ppc-corenet-cpufreq.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 >
->     [1/7] pinctrl: sh-pfc: r8a7790: Add QSPI pin groups
->     [2/7] ARM: shmobile: lager legacy: Add QSPI pinmux
->     [3/7] ARM: shmobile: r8a7790 dtsi: Add QSPI node
->     [4/7] ARM: shmobile: lager dts: Add QSPI nodes
->     [5/7] ARM: shmobile: lager defconfig: Enable RSPI and MTD_M25P80
-
-Thanks a lot for this! All patches included in this series look great to me.
-
-I noticed that 1/7 turned into a v2, so feel free to omit or include
-the below ack.
-
-Acked-by: Magnus Damm <damm@opensource.se>
-
->     [6/7] ARM: shmobile: lager legacy: Enable Quad SPI transfers for the SPI
->           FLASH
->     [7/7] ARM: shmobile: lager dts: Enable Quad SPI transfers for the SPI
->          FLASH
+> diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
+> index 051000f..041ef3a 100644
+> --- a/drivers/cpufreq/ppc-corenet-cpufreq.c
+> +++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
+> @@ -278,7 +278,7 @@ static int __init ppc_corenet_cpufreq_init(void)
+>         const struct soc_data *data;
+>         unsigned int cpu;
 >
-> Please do _not_ apply patches [6/7] and [7/7] yet, as these have a runtime
-> dependency on Quad SPI support in the RSPI/QSPI driver, which is queued up
-> in the linux-spi tree for v3.15.
+> -       np = of_find_matching_node(NULL, node_matches);
+> +       np = of_find_matching_node_and_match(NULL, node_matches, &match);
+>         if (!np)
+>                 return -ENODEV;
+>
+> @@ -288,7 +288,6 @@ static int __init ppc_corenet_cpufreq_init(void)
+>                 cpumask_copy(per_cpu(cpu_mask, cpu), cpu_core_mask(cpu));
+>         }
+>
+> -       match = of_match_node(node_matches, np);
+>         data = match->data;
+>         if (data) {
+>                 if (data->flag)
 
-That makes sense, thanks for pointing that out. You still have my Ack
-though, so please include that when you resend.
-
-Simon, can you please pick up 2-5?
-
-Cheers,
-
-/ magnus
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
