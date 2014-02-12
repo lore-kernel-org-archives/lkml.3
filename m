@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaBLKry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:47:54 -0500
-Received: from ozlabs.org ([203.10.76.45]:55597 "EHLO ozlabs.org"
+	id S1752218AbaBLKsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:48:31 -0500
+Received: from mga11.intel.com ([192.55.52.93]:7147 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932AbaBLKrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:47:51 -0500
-Date: Wed, 12 Feb 2014 21:47:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: linux-next: build failure after merge of the final tree (cgroup
- tree related)
-Message-Id: <20140212214743.22fd2d8e1889ae69986e58aa@canb.auug.org.au>
-In-Reply-To: <20140212063933.GB7984@mtj.dyndns.org>
-References: <20140212162500.242e91e4cc3541b992fa3a0c@canb.auug.org.au>
-	<20140212063933.GB7984@mtj.dyndns.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Feb_2014_21_47_43_+1100_RwAAQvuBnZ4/qlbp"
+	id S1752001AbaBLKs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:48:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,832,1384329600"; 
+   d="scan'208";a="480181625"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>, Aaron Lu <aaron.lu@intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] drm/i915/opregion: work around buggy firmware that provides 8+ output devices
+In-Reply-To: <20140212103156.GC5298@nuc-i3427.alporthouse.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <52FAE504.8020001@intel.com> <20140212103156.GC5298@nuc-i3427.alporthouse.com>
+User-Agent: Notmuch/0.17+61~gab0de040c7c1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 12 Feb 2014 12:52:13 +0200
+Message-ID: <87vbwky55u.fsf@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Feb_2014_21_47_43_+1100_RwAAQvuBnZ4/qlbp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi, Tejun,
-
-On Wed, 12 Feb 2014 01:39:33 -0500 Tejun Heo <tj@kernel.org> wrote:
+On Wed, 12 Feb 2014, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Wed, Feb 12, 2014 at 11:05:40AM +0800, Aaron Lu wrote:
+>> The ACPI table on ASUS UX302LA has more than 8 output devices under the
+>> graphics controller device node. The problem is, the real active output
+>> device, the LCD panel, is listed the last. The result is, the LCD's
+>> device id doesn't get recorded in the active device list CADL array and
+>> when the _DCS control method for the LCD device is executed, it returns
+>> 0x1d, meaning it is not active. This affects the hotkey delivery ASL
+>> code that will not deliver a notification if the output device is not
+>> active on backlight hotkey press.
+>> 
+>> I don't see a clean way to solve this problem since the operation region
+>> spec doesn't allow more than 8 output devices so we have no way of
+>> storing all these output devices. The fact that output devices that have
+>> _BCM control method usually means they have a higher possibility of being
+>> used than those who don't made me choose a simple way to work around
+>> the buggy firmware by replacing the last entry in CADL array with the one
+>> that has _BCM control method. There is no specific reason why the last
+>> entry is picked instead of others.
 >
-> On Wed, Feb 12, 2014 at 04:25:00PM +1100, Stephen Rothwell wrote:
-> > Presumably caused by commit 2bd59d48ebfb ("cgroup: convert to kernfs")
-> > (see the comment in commit 1ff6bbfd13ca ("arm, pm, vmpressure: add
-> > missing slab.h includes")).  I wonder how mane more builds are broken by
-> > this :-(
->=20
-> Dang, I was feeling pretty safe as kbuild bot was reporting build
-> successes.  We better fix them at any rate.  David / Sam, can you
-> please pick this one up?
+> Another possibility is that the connector list is in rough priority
+> order so might be useful for sorting the CADL array.
+>
+> Since the CADL should only be a list of currently active devices, we
+> could just bite the bullet and repopulate it correctly after every
+> setcrtc.
 
-It really needs to go into the tree with the cgroup commit so it doesn't
-break there.
+Agreed. Per spec,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+DIDL: Writes - Graphics driver writes to this field once during its
+initialization after determining platform supported connectors.
 
---Signature=_Wed__12_Feb_2014_21_47_43_+1100_RwAAQvuBnZ4/qlbp
-Content-Type: application/pgp-signature
+CPDL: Writes - Graphics driver writes to this field on every monitor
+detection process.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+CADL: Writes - Graphics driver writes to this field on every mode set
+process and during boot.
 
-iQIcBAEBCAAGBQJS+1FVAAoJEMDTa8Ir7ZwVI+8P/0ileBxxuZkdwk1WGBWfpP57
-VSGoZA/XII1zyaONIaUle0xEgny7QUqgvGE3hlqWfq/aTHjQB2ADOHyEPO1QmJGK
-gEKP3znBXkAwDXamFjlO0+TeEvNcWl8QiUAwLL0u/lTDLTrNqc7xPrS3pUpZ4j2/
-YGzH+7zBt24nMfOCxAXqXJN7XccD1xP0Ex/x+lhqImVl4A/lZxOrQrWey0hly73P
-4KRguPWFwwwJwZPsXR3PaIzVrPiLZ6VliLQcsC6YDnYs6N5hbyg4ykOlU0p6H7nc
-w8Ay2JAJ/wzubMyBOU2B6OIF4dATOBvwSEz9UKYXkk223fiqah+XH2YmRz8hSNcW
-5S0HY8BsPhGzS1LXDi8qTV625JqSiHJ6TpuPAwdkMPDhi7bowvkWvLGHNoENqF4C
-lmHls94zURPV5HJmS3KOAah1zzQEVW1YDTqIj8pwoQwIRGzTrH+7PJup9h1/dgG/
-zXQjFZxZN0P42rZyHNGrPolRPAepA4FzOQdFuY6bxRLdgcx9F5zevGWDml5YL4ZI
-RCi+LrkEETYjKX953jTzMggLvjTyYQ4LjgLNnDklHNpEHHKl9KPm4L6C9RatWDTN
-uPC0Ogi2EXyANQASoBQr0qVrNPeRuAP9HWDa3ZZwfCF6rMctk4mBoiU3zmi5700P
-nzfXwR/aSDTlYnJ+4vKA
-=iglP
------END PGP SIGNATURE-----
+And for all of the above: Writes - System BIOS POST or ASL code should
+not write to these fields.
 
---Signature=_Wed__12_Feb_2014_21_47_43_+1100_RwAAQvuBnZ4/qlbp--
+
+BR,
+Jani.
+
+
+-- 
+Jani Nikula, Intel Open Source Technology Center
