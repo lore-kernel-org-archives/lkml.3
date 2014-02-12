@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaBLINz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:13:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50047 "EHLO
+	id S1753142AbaBLIfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:35:31 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50116 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751701AbaBLINr (ORCPT
+	by vger.kernel.org with ESMTP id S1751668AbaBLINy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:13:47 -0500
+	Wed, 12 Feb 2014 03:13:54 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Bang Nguyen" <bang.nguyen@oracle.com>,
-        "Venkat Venkatsubra" <venkat.x.venkatsubra@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Josh Hunt" <joshhunt00@gmail.com>, "Honggang Li" <honli@redhat.com>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
+        "JongHo Kim" <furmuwon@gmail.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.520904147@decadent.org.uk>
+Message-ID: <lsq.1392192612.78029344@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 02/79] rds: prevent BUG_ON triggered on congestion
- update to  loopback
+Subject: [PATCH 3.2 47/79] ALSA: Add SNDRV_PCM_STATE_PAUSED case in
+ wait_for_avail function
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,91 +32,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+From: JongHo Kim <furmuwon@gmail.com>
 
-[ Upstream commit 18fc25c94eadc52a42c025125af24657a93638c0 ]
+commit ed697e1aaf7237b1a62af39f64463b05c262808d upstream.
 
-After congestion update on a local connection, when rds_ib_xmit returns
-less bytes than that are there in the message, rds_send_xmit calls
-back rds_ib_xmit with an offset that causes BUG_ON(off & RDS_FRAG_SIZE)
-to trigger.
+When the process is sleeping at the SNDRV_PCM_STATE_PAUSED
+state from the wait_for_avail function, the sleep process will be woken by
+timeout(10 seconds). Even if the sleep process wake up by timeout, by this
+patch, the process will continue with sleep and wait for the other state.
 
-For a 4Kb PAGE_SIZE rds_ib_xmit returns min(8240,4096)=4096 when actually
-the message contains 8240 bytes. rds_send_xmit thinks there is more to send
-and calls rds_ib_xmit again with a data offset "off" of 4096-48(rds header)
-=4048 bytes thus hitting the BUG_ON(off & RDS_FRAG_SIZE) [RDS_FRAG_SIZE=4k].
-
-The commit 6094628bfd94323fc1cea05ec2c6affd98c18f7f
-"rds: prevent BUG_ON triggering on congestion map updates" introduced
-this regression. That change was addressing the triggering of a different
-BUG_ON in rds_send_xmit() on PowerPC architecture with 64Kbytes PAGE_SIZE:
- 	BUG_ON(ret != 0 &&
-    		 conn->c_xmit_sg == rm->data.op_nents);
-This was the sequence it was going through:
-(rds_ib_xmit)
-/* Do not send cong updates to IB loopback */
-if (conn->c_loopback
-   && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-  	rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-    	return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
-}
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 0 + 8240 - 48 (rds header accounted only the first time)
-   		 = 8192
-  c_xmit_data_off < 65536 (sg->length), so calls rds_ib_xmit again
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 8192 + 8240 = 16432, calls rds_ib_xmit again
-  and so on (c_xmit_data_off 24672,32912,41152,49392,57632)
-rds_ib_xmit returns 8240
-On this iteration this sequence causes the BUG_ON in rds_send_xmit:
-    while (ret) {
-    	tmp = min_t(int, ret, sg->length - conn->c_xmit_data_off);
-    	[tmp = 65536 - 57632 = 7904]
-    	conn->c_xmit_data_off += tmp;
-    	[c_xmit_data_off = 57632 + 7904 = 65536]
-    	ret -= tmp;
-    	[ret = 8240 - 7904 = 336]
-    	if (conn->c_xmit_data_off == sg->length) {
-    		conn->c_xmit_data_off = 0;
-    		sg++;
-    		conn->c_xmit_sg++;
-    		BUG_ON(ret != 0 &&
-    			conn->c_xmit_sg == rm->data.op_nents);
-    		[c_xmit_sg = 1, rm->data.op_nents = 1]
-
-What the current fix does:
-Since the congestion update over loopback is not actually transmitted
-as a message, all that rds_ib_xmit needs to do is let the caller think
-the full message has been transmitted and not return partial bytes.
-It will return 8240 (RDS_CONG_MAP_BYTES+48) when PAGE_SIZE is 4Kb.
-And 64Kb+48 when page size is 64Kb.
-
-Reported-by: Josh Hunt <joshhunt00@gmail.com>
-Tested-by: Honggang Li <honli@redhat.com>
-Acked-by: Bang Nguyen <bang.nguyen@oracle.com>
-Signed-off-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: JongHo Kim <furmuwon@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/rds/ib_send.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ sound/core/pcm_lib.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
-index e590949..37be6e2 100644
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -552,9 +552,8 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
- 	    && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
- 		rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
- 		scat = &rm->data.op_sg[sg];
--		ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
--		ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
--		return ret;
-+		ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
-+		return sizeof(struct rds_header) + ret;
- 	}
- 
- 	/* FIXME we may overallocate here */
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -1846,6 +1846,8 @@ static int wait_for_avail(struct snd_pcm
+ 		case SNDRV_PCM_STATE_DISCONNECTED:
+ 			err = -EBADFD;
+ 			goto _endloop;
++		case SNDRV_PCM_STATE_PAUSED:
++			continue;
+ 		}
+ 		if (!tout) {
+ 			snd_printd("%s write error (DMA or IRQ trouble?)\n",
 
