@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaBLNdG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 08:33:06 -0500
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:49024 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751065AbaBLNdF (ORCPT
+	id S1751840AbaBLNfL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 08:35:11 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:51075 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaBLNfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 08:33:05 -0500
-X-Greylist: delayed 1555 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 08:33:03 EST
-Message-ID: <52FB71A3.5010505@stericsson.com>
-Date: Wed, 12 Feb 2014 14:05:39 +0100
-From: Fabrice GASNIER <fabrice.gasnier@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Fabrice GASNIER <fabrice.gasnier@st.com>, <linux@arm.linux.org.uk>,
-        <u.kleine-koenig@pengutronix.de>, <jonathan.austin@arm.com>,
-        <catalin.marinas@arm.com>, <will.deacon@arm.com>, <nico@linaro.org>,
-        <sboyd@codeaurora.org>, <marc.zyngier@arm.com>,
-        <ben.dooks@codethink.co.uk>, <vgupta@synopsys.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Cc: <maxime.coquelin@st.com>
-Subject: Re: [PATCH v2] ARM: Add imprecise abort enable/disable macro
-References: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com>
-In-Reply-To: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.81]
+	Wed, 12 Feb 2014 08:35:08 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Guenter Roeck <linux@roeck-us.net>, devicetree@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-doc@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v3 0/11] Xilinx watchdog changes
+Date: Wed, 12 Feb 2014 14:34:31 +0100
+Message-Id: <cover.1392212059.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-11813-1392212082-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
+
+--=_mimegpg-monstr-desktop-11813-1392212082-0001
+
 Hi,
 
-Any comments on this patch ?
+This series contains changes for Xilinx watchdog.
+The whole code series have been reviewed by Guenter
+and device-tree binding was acked by Arnd.
 
-Russell, can I add this patch to your patch tracker system ?
+I have also pushed this v3 to git repo
+for easier pulling here:
+git://git.monstr.eu/linux-2.6-microblaze.git watchdog
 
 Thanks,
-Fabrice
+Michal
 
-On 02/10/2014 05:45 PM, Fabrice GASNIER wrote:
-> This patch adds imprecise abort enable/disable macros.
-> It also enables imprecise aborts when starting kernel.
->
-> Changes in v2:
-> Only ARMv6 and later have CPSR.A bit. On earlier CPUs,
-> and ARMv7M this should be a no-op.
->
-> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
-> ---
->   arch/arm/include/asm/irqflags.h |   10 ++++++++++
->   arch/arm/kernel/smp.c           |    1 +
->   arch/arm/kernel/traps.c         |    4 ++++
->   3 files changed, 15 insertions(+)
->
-> diff --git a/arch/arm/include/asm/irqflags.h b/arch/arm/include/asm/irqflags.h
-> index 3b763d6..8301f87 100644
-> --- a/arch/arm/include/asm/irqflags.h
-> +++ b/arch/arm/include/asm/irqflags.h
-> @@ -51,6 +51,14 @@ static inline void arch_local_irq_disable(void)
->   
->   #define local_fiq_enable()  __asm__("cpsie f	@ __stf" : : : "memory", "cc")
->   #define local_fiq_disable() __asm__("cpsid f	@ __clf" : : : "memory", "cc")
-> +
-> +#ifndef CONFIG_CPU_V7M
-> +#define local_abt_enable()  __asm__("cpsie a	@ __sta" : : : "memory", "cc")
-> +#define local_abt_disable() __asm__("cpsid a	@ __cla" : : : "memory", "cc")
-> +#else
-> +#define local_abt_enable()	do { } while (0)
-> +#define local_abt_disable()	do { } while (0)
-> +#endif
->   #else
->   
->   /*
-> @@ -130,6 +138,8 @@ static inline void arch_local_irq_disable(void)
->   	: "memory", "cc");					\
->   	})
->   
-> +#define local_abt_enable()	do { } while (0)
-> +#define local_abt_disable()	do { } while (0)
->   #endif
->   
->   /*
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index dc894ab..c2093cb 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -377,6 +377,7 @@ asmlinkage void secondary_start_kernel(void)
->   
->   	local_irq_enable();
->   	local_fiq_enable();
-> +	local_abt_enable();
->   
->   	/*
->   	 * OK, it's off to the idle thread for us
-> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-> index 4636d56..ef15709 100644
-> --- a/arch/arm/kernel/traps.c
-> +++ b/arch/arm/kernel/traps.c
-> @@ -900,6 +900,10 @@ void __init early_trap_init(void *vectors_base)
->   
->   	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
->   	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
-> +
-> +	/* Enable imprecise aborts */
-> +	local_abt_enable();
-> +
->   #else /* ifndef CONFIG_CPU_V7M */
->   	/*
->   	 * on V7-M there is no need to copy the vector table to a dedicated
+Changes in v3:
+- Remove one if checking and use variable directly
 
+Changes in v2:
+- Fix enable_once logic
+- Change patch subject
+- New patch in this series
+
+Michal Simek (11):
+  watchdog: xilinx: Convert driver to the watchdog framework
+  watchdog: xilinx: Move control_status_reg to functions
+  watchdog: xilinx: Simplify probe and remove functions
+  watchdog: xilinx: Move no_timeout to probe function
+  watchdog: xilinx: Allocate private structure per device
+  watchdog: xilinx: Fix all printk messages
+  watchdog: xilinx: Use of_property_read_u32
+  watchdog: xilinx: Use correct comment indentation
+  watchdog: xilinx: Add missing binding
+  watchdog: xilinx: Enable this driver for Zynq
+  watchdog: xilinx: Remove no_timeout variable
+
+ .../devicetree/bindings/watchdog/of-xilinx-wdt.txt |  23 ++
+ drivers/watchdog/Kconfig                           |  21 +-
+ drivers/watchdog/of_xilinx_wdt.c                   | 389 ++++++---------------
+ 3 files changed, 148 insertions(+), 285 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/watchdog/of-xilinx-wdt.txt
+
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-11813-1392212082-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlL7eHIACgkQykllyylKDCGYTwCfUU55kYNt9V5oEXsFda27HqgV
+lqAAoIYkTIAh/gOIUZlnIAjxLSQymP5O
+=M1ne
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-11813-1392212082-0001--
