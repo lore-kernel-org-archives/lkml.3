@@ -1,102 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaBLL0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:26:42 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35547 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751056AbaBLL0l (ORCPT
+	id S1752395AbaBLL06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:26:58 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:45983 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178AbaBLL05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:26:41 -0500
-Date: Wed, 12 Feb 2014 11:26:40 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: broonie@kernel.org, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, dmitry.torokhov@gmail.com,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        cw00.choi@samsung.com, myungjoo.ham@samsung.com
-Subject: Re: [alsa-devel] [PATCH] ASoC: dapm: Add locking to
-	snd_soc_dapm_xxxx_pin functions
-Message-ID: <20140212112640.GE16684@opensource.wolfsonmicro.com>
-References: <20140210110536.GB6856@opensource.wolfsonmicro.com> <s5h7g936ru1.wl%tiwai@suse.de>
+	Wed, 12 Feb 2014 06:26:57 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-mtd@lists.infradead.org>,
+        Josh Wu <josh.wu@atmel.com>
+CC: <computersforpeace@gmail.com>, <dedekind1@gmail.com>,
+        <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] MTD: atmel_nand: POI fall back is not an issue: change log level
+Date: Wed, 12 Feb 2014 12:26:54 +0100
+Message-ID: <1392204414-20700-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h7g936ru1.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 02:05:26PM +0100, Takashi Iwai wrote:
-> At Mon, 10 Feb 2014 11:05:36 +0000,
-> Charles Keepax wrote:
-> > 
-<snip>
-> > 
-> Actually, this fixes also the double-lock in snd_soc_dapm_sync() call
-> in the line below the above.  snd_soc_dapm_sync() itself takes
-> mutex_lock_nested().
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/mtd/nand/atmel_nand.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yeah spotted that as I was going through will do this in a
-seperate patch if this one doesn't go in.
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index c36e9b84487c..8d210f8a072d 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -430,7 +430,7 @@ err_dma:
+ 	dma_unmap_single(dma_dev->dev, phys_addr, len, dir);
+ err_buf:
+ 	if (err != 0)
+-		dev_warn(host->dev, "Fall back to CPU I/O\n");
++		dev_dbg(host->dev, "Fall back to CPU I/O\n");
+ 	return err;
+ }
+ 
+-- 
+1.8.2.2
 
-<snip>
-> >  static int arizona_haptics_probe(struct platform_device *pdev)
-> > diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-> > index dc8ff13..a44b560 100644
-> > --- a/sound/soc/soc-dapm.c
-> > +++ b/sound/soc/soc-dapm.c
-> > @@ -2325,6 +2325,8 @@ static int snd_soc_dapm_set_pin(struct snd_soc_dapm_context *dapm,
-> >  {
-> >  	struct snd_soc_dapm_widget *w = dapm_find_widget(dapm, pin, true);
-> >  
-> > +	mutex_lock_nested(&dapm->card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
-> > +
-> >  	if (!w) {
-> >  		dev_err(dapm->dev, "ASoC: DAPM unknown pin %s\n", pin);
-> >  		return -EINVAL;
-> 
-> Missing unlock here.
-
-Good spot thanks, I will update for this.
-
-> 
-> 
-> > @@ -2337,6 +2339,8 @@ static int snd_soc_dapm_set_pin(struct snd_soc_dapm_context *dapm,
-> >  	if (status == 0)
-> >  		w->force = 0;
-> >  
-> > +	mutex_unlock(&dapm->card->dapm_mutex);
-> > +
-> >  	return 0;
-> >  }
-> >  
-> > @@ -3210,15 +3214,11 @@ int snd_soc_dapm_put_pin_switch(struct snd_kcontrol *kcontrol,
-> >  	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
-> >  	const char *pin = (const char *)kcontrol->private_value;
-> >  
-> > -	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
-> > -
-> >  	if (ucontrol->value.integer.value[0])
-> >  		snd_soc_dapm_enable_pin(&card->dapm, pin);
-> >  	else
-> >  		snd_soc_dapm_disable_pin(&card->dapm, pin);
-> >  
-> > -	mutex_unlock(&card->dapm_mutex);
-> > -
-> >  	snd_soc_dapm_sync(&card->dapm);
-> >  	return 0;
-> >  }
-> 
-> I guess you forgot patching snd_soc_dapm_force_enable_pin()?
-> It's now left unprotected after this patch.
-
-Also a good point, thanks I will update.
-
-> 
-> 
-> Takashi
-
-
-Thanks,
-Charles
