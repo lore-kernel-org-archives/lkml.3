@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792AbaBLIgw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:36:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50078 "EHLO
+	id S1753812AbaBLIgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:36:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50081 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751815AbaBLINu (ORCPT
+	by vger.kernel.org with ESMTP id S1751833AbaBLINu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:13:50 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dmitry Kravkov" <dmitry@broadcom.com>,
+CC: akpm@linux-foundation.org,
+        "Stephen Hemminger" <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>,
-        "Michal Schmidt" <mschmidt@redhat.com>,
-        "Eric Dumazet" <edumazet@google.com>
+        "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>,
+        "Daniel Borkmann" <dborkman@redhat.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.510678529@decadent.org.uk>
+Message-ID: <lsq.1392192612.24119970@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 15/79] bnx2x: fix DMA unmapping of TSO split BDs
+Subject: [PATCH 3.2 13/79] net: llc: fix use after free in llc_ui_recvmsg
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,75 +34,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 95e92fd40c967c363ad66b2fd1ce4dcd68132e54 ]
+[ Upstream commit 4d231b76eef6c4a6bd9c96769e191517765942cb ]
 
-bnx2x triggers warnings with CONFIG_DMA_API_DEBUG=y:
+While commit 30a584d944fb fixes datagram interface in LLC, a use
+after free bug has been introduced for SOCK_STREAM sockets that do
+not make use of MSG_PEEK.
 
-  WARNING: CPU: 0 PID: 2253 at lib/dma-debug.c:887 check_unmap+0xf8/0x920()
-  bnx2x 0000:28:00.0: DMA-API: device driver frees DMA memory with
-  different size [device address=0x00000000da2b389e] [map size=1490 bytes]
-  [unmap size=66 bytes]
+The flow is as follow ...
 
-The reason is that bnx2x splits a TSO BD into two BDs (headers + data)
-using one DMA mapping for both, but it uses only the length of the first
-BD when unmapping.
+  if (!(flags & MSG_PEEK)) {
+    ...
+    sk_eat_skb(sk, skb, false);
+    ...
+  }
+  ...
+  if (used + offset < skb->len)
+    continue;
 
-This patch fixes the bug by unmapping the whole length of the two BDs.
+... where sk_eat_skb() calls __kfree_skb(). Therefore, cache
+original length and work on skb_len to check partial reads.
 
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+Fixes: 30a584d944fb ("[LLX]: SOCK_DGRAM interface fixes")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ net/llc/af_llc.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index bbb6692..e367ab1 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -108,6 +108,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
- 	struct sk_buff *skb = tx_buf->skb;
- 	u16 bd_idx = TX_BD(tx_buf->first_bd), new_cons;
- 	int nbd;
-+	u16 split_bd_len = 0;
+diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
+index 99a60d5..f432d7b 100644
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -715,7 +715,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	struct llc_sock *llc = llc_sk(sk);
+ 	size_t copied = 0;
+ 	u32 peek_seq = 0;
+-	u32 *seq;
++	u32 *seq, skb_len;
+ 	unsigned long used;
+ 	int target;	/* Read at least this many bytes */
+ 	long timeo;
+@@ -813,6 +813,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		}
+ 		continue;
+ 	found_ok_skb:
++		skb_len = skb->len;
+ 		/* Ok so how much can we use? */
+ 		used = skb->len - offset;
+ 		if (len < used)
+@@ -843,7 +844,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		}
  
- 	/* prefetch skb end pointer to speedup dev_kfree_skb() */
- 	prefetch(&skb->end);
-@@ -115,11 +116,8 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
- 	DP(BNX2X_MSG_FP, "fp[%d]: pkt_idx %d  buff @(%p)->skb %p\n",
- 	   txdata->txq_index, idx, tx_buf, skb);
- 
--	/* unmap first bd */
- 	DP(BNX2X_MSG_OFF, "free bd_idx %d\n", bd_idx);
- 	tx_start_bd = &txdata->tx_desc_ring[bd_idx].start_bd;
--	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
--			 BD_UNMAP_LEN(tx_start_bd), DMA_TO_DEVICE);
- 
- 
- 	nbd = le16_to_cpu(tx_start_bd->nbd) - 1;
-@@ -138,12 +136,19 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
- 	--nbd;
- 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
- 
--	/* ...and the TSO split header bd since they have no mapping */
-+	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
- 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
-+		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
-+		split_bd_len = BD_UNMAP_LEN(tx_data_bd);
- 		--nbd;
- 		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
- 	}
- 
-+	/* unmap first bd */
-+	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
-+			 BD_UNMAP_LEN(tx_start_bd) + split_bd_len,
-+			 DMA_TO_DEVICE);
-+
- 	/* now free frags */
- 	while (nbd > 0) {
+ 		/* Partial read */
+-		if (used + offset < skb->len)
++		if (used + offset < skb_len)
+ 			continue;
+ 	} while (len > 0);
  
 
