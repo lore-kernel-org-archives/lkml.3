@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaBLU5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:57:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21904 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754398AbaBLU5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:57:37 -0500
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mark Salter <msalter@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: [PATCH v4 5/6] arm64: initialize pgprot info earlier in boot
-Date: Wed, 12 Feb 2014 15:56:14 -0500
-Message-Id: <1392238575-10000-6-git-send-email-msalter@redhat.com>
-In-Reply-To: <1392238575-10000-1-git-send-email-msalter@redhat.com>
-References: <1392238575-10000-1-git-send-email-msalter@redhat.com>
+	id S1754515AbaBLU57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 15:57:59 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:50756 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754401AbaBLU5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 15:57:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392237658-6614-1-git-send-email-stefani@seibold.net>
+References: <1392237658-6614-1-git-send-email-stefani@seibold.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Feb 2014 12:57:23 -0800
+Message-ID: <CALCETrUo_Um3LiEMfeYwPTOZf=ZGuRtzLrr8_pvd+STVMwoYJA@mail.gmail.com>
+Subject: Re: [PATCH v15 10/10] do conditional fixmap of VVAR and HPET page
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Presently, paging_init() calls init_mem_pgprot() to initialize pgprot
-values used by macros such as PAGE_KERNEL, PAGE_KERNEL_EXEC, etc. The
-new fixmap and early_ioremap support also needs to use these macros
-before paging_init() is called. This patch moves the init_mem_pgprot()
-call out of paging_init() and into setup_arch() so that pgprot_default
-gets initialized in time for fixmap and early_ioremap.
+On Wed, Feb 12, 2014 at 12:40 PM,  <stefani@seibold.net> wrote:
+> From: Stefani Seibold <Stefani Seibold stefani@seibold.net>
+>
+> This patch adds conditional fixmap of the VVAR and HPET pages for a 32
+> bit kernel
+>
+> Signed-off-by: Stefani Seibold <Stefani Seibold stefani@seibold.net>
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
----
- arch/arm64/include/asm/mmu.h | 1 +
- arch/arm64/kernel/setup.c    | 2 ++
- arch/arm64/mm/mmu.c          | 3 +--
- 3 files changed, 4 insertions(+), 2 deletions(-)
+Looks good to me.
 
-diff --git a/arch/arm64/include/asm/mmu.h b/arch/arm64/include/asm/mmu.h
-index 2494fc0..f600d40 100644
---- a/arch/arm64/include/asm/mmu.h
-+++ b/arch/arm64/include/asm/mmu.h
-@@ -27,5 +27,6 @@ typedef struct {
- extern void paging_init(void);
- extern void setup_mm_for_reboot(void);
- extern void __iomem *early_io_map(phys_addr_t phys, unsigned long virt);
-+extern void init_mem_pgprot(void);
- 
- #endif
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index c8e9eff..1c66cfb 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -327,6 +327,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	*cmdline_p = boot_command_line;
- 
-+	init_mem_pgprot();
-+
- 	parse_early_param();
- 
- 	arm64_memblock_init();
-diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
-index f8dc7e8..ba259a0 100644
---- a/arch/arm64/mm/mmu.c
-+++ b/arch/arm64/mm/mmu.c
-@@ -125,7 +125,7 @@ early_param("cachepolicy", early_cachepolicy);
- /*
-  * Adjust the PMD section entries according to the CPU in use.
-  */
--static void __init init_mem_pgprot(void)
-+void __init init_mem_pgprot(void)
- {
- 	pteval_t default_pgprot;
- 	int i;
-@@ -357,7 +357,6 @@ void __init paging_init(void)
- {
- 	void *zero_page;
- 
--	init_mem_pgprot();
- 	map_mem();
- 
- 	/*
--- 
-1.8.5.3
+(Your git configuration is broken, though -- your signed-off-by line
+and from line are broken.)
 
+--Andy
