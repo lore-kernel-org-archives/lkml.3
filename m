@@ -1,189 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaBLGal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 01:30:41 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:41543 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaBLGaj (ORCPT
+	id S1751661AbaBLGb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 01:31:58 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:4632 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750870AbaBLGb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 01:30:39 -0500
-Message-ID: <52FB14A5.9030307@huawei.com>
-Date: Wed, 12 Feb 2014 14:28:53 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 12 Feb 2014 01:31:56 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnEHAHkU+1J5LJLw/2dsb2JhbABagwy6ZYVQgQ4XdIIlAQEFJxMcMwgDGAklDwUlAyEBEogEySYXFo5qgySBFASYKYpPh1KDQSg
+Date: Wed, 12 Feb 2014 17:31:50 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140212063150.GD13997@dastard>
+References: <20140211210841.GM13647@dastard>
+ <52FA9ADA.9040803@sandeen.net>
+ <20140212004403.GA17129@redhat.com>
+ <20140212010941.GM18016@ZenIV.linux.org.uk>
+ <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+ <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+ <20140212054043.GB13997@dastard>
+ <20140212055027.GA28502@redhat.com>
+ <20140212061038.GC13997@dastard>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2] cgroup: protect modifications to cgroup->idr with cgroup_mutex
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212061038.GC13997@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setup cgroupfs like this:
-  # mount -t cgroup -o cpuacct xxx /cgroup
-  # mkdir /cgroup/sub1
-  # mkdir /cgroup/sub2
+On Wed, Feb 12, 2014 at 05:10:38PM +1100, Dave Chinner wrote:
+> On Wed, Feb 12, 2014 at 12:50:27AM -0500, Dave Jones wrote:
+> > On Wed, Feb 12, 2014 at 04:40:43PM +1100, Dave Chinner wrote:
+> > 
+> >  > None of the XFS code disables interrupts in that path, not does is
+> >  > call outside XFS except to dispatch IO. The stack is pretty deep at
+> >  > this point and I know that the standard (non stacked) IO stack can
+> >  > consume >3kb of stack space when it gets down to having to do memory
+> >  > reclaim during GFP_NOIO allocation at the lowest level of SCSI
+> >  > drivers. Stack overruns typically show up with symptoms like we are
+> >  > seeing.
+> >  > ..
+> >  > 
+> >  > Dave, before chasing ghosts, can you (like Eric originally asked)
+> >  > turn on stack overrun detection?
+> > 
+> > CONFIG_DEBUG_STACKOVERFLOW ? Already turned on.
+> 
+> That only checks stack usage when an interrupt is taken. If no
+> interrupts are taken when stack usage is within 128 bytes of
+> overflow, then it doesn't catch it.
+> 
+> I tend to use CONFIG_DEBUG_STACK_USAGE=y as it records the maximum
+> stack usage of a process via canary overwrites and it records it in
+> do_exit(). I also use the stack tracer to record the largest stack
+> usage seen so I know exactly what code paths are approaching stack
+> overruns...
 
-Then run these two commands:
-  # for ((; ;)) { mkdir /cgroup/sub1/tmp && rmdir /cgroup/sub1/tmp; } &
-  # for ((; ;)) { mkdir /cgroup/sub2/tmp && rmdir /cgroup/sub2/tmp; } &
+FYI, just creating lots of files with open(O_CREAT):
 
-After seconds you may see this warning:
+[  348.718357] fs_mark (4828) used greatest stack depth: 2968 bytes left
+[  348.769846] fs_mark (4814) used greatest stack depth: 2312 bytes left
+[  349.777717] fs_mark (4826) used greatest stack depth: 2280 bytes left
+[  418.139415] fs_mark (4928) used greatest stack depth: 1936 bytes left
+[  460.492282] fs_mark (4993) used greatest stack depth: 1336 bytes left
+[  544.825418] fs_mark (5104) used greatest stack depth: 1112 bytes left
+[  689.503970] fs_mark (5265) used greatest stack depth: 1000 bytes left
 
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 25243 at lib/idr.c:527 sub_remove+0x87/0x1b0()
-idr_remove called for id=6 which is not allocated.
-...
-Call Trace:
- [<ffffffff8156063c>] dump_stack+0x7a/0x96
- [<ffffffff810591ac>] warn_slowpath_common+0x8c/0xc0
- [<ffffffff81059296>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff81300aa7>] sub_remove+0x87/0x1b0
- [<ffffffff810f3f02>] ? css_killed_work_fn+0x32/0x1b0
- [<ffffffff81300bf5>] idr_remove+0x25/0xd0
- [<ffffffff810f2bab>] cgroup_destroy_css_killed+0x5b/0xc0
- [<ffffffff810f4000>] css_killed_work_fn+0x130/0x1b0
- [<ffffffff8107cdbc>] process_one_work+0x26c/0x550
- [<ffffffff8107eefe>] worker_thread+0x12e/0x3b0
- [<ffffffff81085f96>] kthread+0xe6/0xf0
- [<ffffffff81570bac>] ret_from_fork+0x7c/0xb0
----[ end trace 2d1577ec10cf80d0 ]---
+We've got absolutely no spare stack space anymore in the IO path.
+And the IO path can't get much simpler than filesystem -> virtio
+block device.
 
-It's because allocating/removing cgroup ID is not properly synchronized.
+Cheers,
 
-The bug was introduced when we converted cgroup_ida to cgroup_idr.
-While synchronization is already done inside ida_simple_{get,remove}(),
-users are responsible for concurrent calls to idr_{alloc,remove}().
-
-v2:
-- Don't call deactivate_super() inside cgroup_mutex, as cgroup_kill_sb()
-will be called if sb refcnt reaches 0. I don't think this can happen,
-as cgroup_create() is called through vfs, so vfs should guarantee the
-superblock won't disappear. Still better not depend on it even my guess
-is probably correct.
-
-Fixes: 4e96ee8e981b ("cgroup: convert cgroup_ida to cgroup_idr")
-Reported-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
-
-Also rebased on "cgroup: fix error return from cgroup_create()".
-
----
- include/linux/cgroup.h |  2 ++
- kernel/cgroup.c        | 47 ++++++++++++++++++++++++++---------------------
- 2 files changed, 28 insertions(+), 21 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 5c09759..9450f02 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -166,6 +166,8 @@ struct cgroup {
- 	 *
- 	 * The ID of the root cgroup is always 0, and a new cgroup
- 	 * will be assigned with a smallest available ID.
-+	 *
-+	 * Allocating/Removing ID must be protected by cgroup_mutex.
- 	 */
- 	int id;
- 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 7be8fe4..37f217c 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -886,7 +886,9 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- 		 * per-subsystem and moved to css->id so that lookups are
- 		 * successful until the target css is released.
- 		 */
-+		mutex_lock(&cgroup_mutex);
- 		idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
-+		mutex_unlock(&cgroup_mutex);
- 		cgrp->id = -1;
- 
- 		call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
-@@ -4174,15 +4176,12 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	}
- 	rcu_assign_pointer(cgrp->name, name);
- 
--	/*
--	 * Temporarily set the pointer to NULL, so idr_find() won't return
--	 * a half-baked cgroup.
--	 */
--	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
--	if (cgrp->id < 0) {
--		err = -ENOMEM;
--		goto err_free_name;
--	}
-+	/* Grab a reference on the superblock so the hierarchy doesn't
-+	 * get deleted on unmount if there are child cgroups.  This
-+	 * can be done outside cgroup_mutex, since the sb can't
-+	 * disappear while someone has an open control file on the
-+	 * fs */
-+	atomic_inc(&sb->s_active);
- 
- 	/*
- 	 * Only live parents can have children.  Note that the liveliness
-@@ -4193,15 +4192,18 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	 */
- 	if (!cgroup_lock_live_group(parent)) {
- 		err = -ENODEV;
--		goto err_free_id;
-+		goto err_free_name;
- 	}
- 
--	/* Grab a reference on the superblock so the hierarchy doesn't
--	 * get deleted on unmount if there are child cgroups.  This
--	 * can be done outside cgroup_mutex, since the sb can't
--	 * disappear while someone has an open control file on the
--	 * fs */
--	atomic_inc(&sb->s_active);
-+	/*
-+	 * Temporarily set the pointer to NULL, so idr_find() won't return
-+	 * a half-baked cgroup.
-+	 */
-+	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
-+	if (cgrp->id < 0) {
-+		err = -ENOMEM;
-+		goto err_unlock;
-+	}
- 
- 	init_cgroup_housekeeping(cgrp);
- 
-@@ -4225,7 +4227,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	 */
- 	err = cgroup_create_file(dentry, S_IFDIR | mode, sb);
- 	if (err < 0)
--		goto err_unlock;
-+		goto err_free_id;
- 	lockdep_assert_held(&dentry->d_inode->i_mutex);
- 
- 	cgrp->serial_nr = cgroup_serial_nr_next++;
-@@ -4261,13 +4263,16 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 
- 	return 0;
- 
--err_unlock:
--	mutex_unlock(&cgroup_mutex);
--	/* Release the reference count that we took on the superblock */
--	deactivate_super(sb);
- err_free_id:
- 	idr_remove(&root->cgroup_idr, cgrp->id);
-+err_unlock:
-+	mutex_unlock(&cgroup_mutex);
- err_free_name:
-+	/*
-+	 * Release the reference count that we took on the superblock.
-+	 * Should be called outside cgroup_mutex.
-+	 */
-+	deactivate_super(sb);
- 	kfree(rcu_dereference_raw(cgrp->name));
- err_free_cgrp:
- 	kfree(cgrp);
+Dave.
 -- 
-1.8.0.2
-
+Dave Chinner
+david@fromorbit.com
