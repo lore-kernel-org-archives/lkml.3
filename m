@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402AbaBLDPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 22:15:52 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:29973 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaBLDPu convert rfc822-to-8bit (ORCPT
+	id S1752746AbaBLDQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 22:16:35 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:40903 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaBLDQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 22:15:50 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <52FA99CA.8070505@kernel.dk>
-References: <20140210184412.GA18198@phenom.dumpdata.com> <20140210195402.GA3924@kernel.dk> <771950784.20140211165215@eikelenboom.it> <20140211155650.GA23026@phenom.dumpdata.com> <1542261541.20140211170750@eikelenboom.it> <52FA6072.40908@citrix.com> <52FA6352.1010403@citrix.com> <52FA68AE.6070608@citrix.com> <52FA6A44.6050003@citrix.com> <1009282985.20140211212157@eikelenboom.it> <52FA99CA.8070505@kernel.dk>
+	Tue, 11 Feb 2014 22:16:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-jens-3.14 : NFO: trying to register non-static key. the code is fine but needs lockdep annotation.
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Tue, 11 Feb 2014 22:14:15 -0500
-To: Jens Axboe <axboe@kernel.dk>, Sander Eikelenboom <linux@eikelenboom.it>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        mrushton@amazon.com, msw@amazon.com, boris.ostrovsky@oracle.com
-Message-ID: <92e1a6a9-1993-4203-b38c-9c8da96a3ce7@email.android.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20140211202211.GA2306@kroah.com>
+References: <1391828381-4303-1-git-send-email-sj38.park@gmail.com>
+ <1391828381-4303-2-git-send-email-sj38.park@gmail.com> <20140211202211.GA2306@kroah.com>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Wed, 12 Feb 2014 12:16:01 +0900
+Message-ID: <CAEjAshogowtLswHsciRVDyGiG5i+E=z-bycexUynBwYreCraqw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] staging: android: remove unused constant, BINDER_SET_IDLE_PRIORITY
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Brian Swetland <swetland@google.com>,
+        arve@android.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On February 11, 2014 4:44:42 PM EST, Jens Axboe <axboe@kernel.dk> wrote:
->On 2014-02-11 13:21, Sander Eikelenboom wrote:
->>
->> Tuesday, February 11, 2014, 7:21:56 PM, you wrote:
->>
->>> On 11/02/14 18:15, Roger Pau Monné wrote:
->>>> On 11/02/14 18:52, David Vrabel wrote:
->>>>>
->>>> That would mean that unmap_purged_grants would no longer be static
->and
->>>> I should also add a prototype for it in blkback/common.h, which is
->kind
->>>> of ugly IMHO.
->>
->>> But less ugly than initializing work with a NULL function, IMO.
->>
->>>> commit 980e72e45454b64ccb7f23b6794a769384e51038
->>>> Author: Roger Pau Monne <roger.pau@citrix.com>
->>>> Date:   Tue Feb 11 19:04:06 2014 +0100
->>>>
->>>>      xen-blkback: init persistent_purge_work work_struct
->>>>
->>>>      Initialize persistent_purge_work work_struct on
->xen_blkif_alloc (and
->>>>      remove the previous initialization done in
->purge_persistent_gnt). This
->>>>      prevents flush_work from complaining even if
->purge_persistent_gnt has
->>>>      not been used.
->>>>
->>>>      Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
->>
->>> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
->>
->> And a Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+On Wed, Feb 12, 2014 at 5:22 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sat, Feb 08, 2014 at 11:59:41AM +0900, SeongJae Park wrote:
+>> Remove constant BINDER_SET_IDLE_PRIORITY because it is not used from
+>> anywhere.
 >
->Konrad, I was going to ship my current tree today, but looks like we 
->need this too.
+>>
+>> Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+>> ---
+>>  drivers/staging/android/binder.h | 7 +++----
+>>  1 file changed, 3 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+>> index c4c1ed6..6d08e61 100644
+>> --- a/drivers/staging/android/binder.h
+>> +++ b/drivers/staging/android/binder.h
+>> @@ -87,10 +87,9 @@ struct binder_version {
+>>  #define BINDER_WRITE_READ            _IOWR('b', 1, struct binder_write_read)
+>>  #define BINDER_SET_IDLE_TIMEOUT              _IOW('b', 3, __s64)
+>>  #define BINDER_SET_MAX_THREADS               _IOW('b', 5, __u32)
+>> -#define BINDER_SET_IDLE_PRIORITY     _IOW('b', 6, __s32)
+>> -#define BINDER_SET_CONTEXT_MGR               _IOW('b', 7, __s32)
+>> -#define BINDER_THREAD_EXIT           _IOW('b', 8, __s32)
+>> -#define BINDER_VERSION                       _IOWR('b', 9, struct binder_version)
+>> +#define BINDER_SET_CONTEXT_MGR               _IOW('b', 6, __s32)
+>> +#define BINDER_THREAD_EXIT           _IOW('b', 7, __s32)
+>> +#define BINDER_VERSION                       _IOWR('b', 8, struct binder_version)
+>
+> And you just broke all userspace code that uses this interface :(
+>
+> Please be more careful, and test your patches properly.
 
-Yes. Are you OK taking it from this thread or would you like me to prep a GIT pull with it?
+Definitely my fault... Sorry.
+I will be more careful and will not do such mistake again.
 
-Thanks!
-
+>
+> greg k-h
