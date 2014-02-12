@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740AbaBLOy6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 09:54:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39696 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaBLOy4 (ORCPT
+	id S1752046AbaBLOzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 09:55:52 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:35135 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaBLOzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 09:54:56 -0500
-Date: Wed, 12 Feb 2014 15:54:47 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [tip:sched/core] sched: Push put_prev_task() into
- pick_next_task( )
-Message-ID: <20140212145447.GY27965@twins.programming.kicks-ass.net>
-References: <1328936700.2476.17.camel@laptop>
- <tip-606dba2e289446600a0b68422ed2019af5355c12@git.kernel.org>
- <124891392188453@web4h.yandex.ru>
- <20140212140620.GD9987@twins.programming.kicks-ass.net>
- <364441392215058@web18m.yandex.ru>
+	Wed, 12 Feb 2014 09:55:50 -0500
+Date: Wed, 12 Feb 2014 06:55:43 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+Cc: "roland@kernel.org" <roland@kernel.org>,
+        "Hefty, Sean" <sean.hefty@intel.com>,
+        "hal.rosenstock@gmail.com" <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: qib_lookup_qpn() appears to leak pointer out of rcu_read_unlock()
+Message-ID: <20140212145543.GY4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140212003511.GA27242@linux.vnet.ibm.com>
+ <32E1700B9017364D9B60AED9960492BC211F3D24@FMSMSX107.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <364441392215058@web18m.yandex.ru>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <32E1700B9017364D9B60AED9960492BC211F3D24@FMSMSX107.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021214-6688-0000-0000-000006696062
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 06:24:18PM +0400, Kirill Tkhai wrote:
-> Maybe pack prev->sched_class->put_prev_task() into inline function?
+On Wed, Feb 12, 2014 at 01:59:30PM +0000, Marciniszyn, Mike wrote:
+> > So what am I missing here?
+> > 
+> 
+> The atomic increment of a reference count:
 
-Good suggestion, done.
+Got it, thank you, apologies for the noise!
+
+							Thanx, Paul
+
+> struct qib_qp *qib_lookup_qpn(struct qib_ibport *ibp, u32 qpn)
+> {
+>         struct qib_qp *qp = NULL;
+> 
+>         rcu_read_lock();
+>         if (unlikely(qpn <= 1)) {
+>                 if (qpn == 0)
+>                         qp = rcu_dereference(ibp->qp0);
+>                 else
+>                         qp = rcu_dereference(ibp->qp1);
+>                 if (qp)
+>                         atomic_inc(&qp->refcount); <--------------------------
+>         } else {
+>                 struct qib_ibdev *dev = &ppd_from_ibp(ibp)->dd->verbs_dev;
+>                 unsigned n = qpn_hash(dev, qpn);
+> 
+>                 for (qp = rcu_dereference(dev->qp_table[n]); qp;
+>                         qp = rcu_dereference(qp->next))
+>                         if (qp->ibqp.qp_num == qpn) {
+>                                 atomic_inc(&qp->refcount); <---------------------
+>                                 break;
+>                         }
+>         }
+>         rcu_read_unlock();
+>         return qp;
+> }
+> 
+> Mike
+> 
+
