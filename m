@@ -1,275 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaBLKMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:12:45 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55492 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266AbaBLKKL (ORCPT
+	id S1752680AbaBLKM6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:12:58 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:48739 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaBLKMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:10:11 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, b.brezillon@overkiz.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregory.clement@free-electrons.com,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH v4 5/8] at91: dt: sam9261: Device Tree support for the at91sam9261ek
-Date: Wed, 12 Feb 2014 11:06:44 +0100
-Message-Id: <1392199607-27452-6-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
+	Wed, 12 Feb 2014 05:12:51 -0500
+Date: Wed, 12 Feb 2014 11:12:46 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: liujunliang_ljl@163.com
+Cc: davem@davemloft.net, horms@verge.net.au, joe@perches.com,
+        romieu@fr.zoreil.com, gregkh@linuxfoundation.org,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sunhecheng@vip.126.com
+Subject: Re: [PATCH] USB2NET : SR9800 : One chip USB2.0 USB2NET SR9800 Device
+ Driver Support
+Message-ID: <20140212101245.GA3409@ulmo.nvidia.com>
+References: <1392010419-5217-1-git-send-email-liujunliang_ljl@163.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
+Content-Disposition: inline
+In-Reply-To: <1392010419-5217-1-git-send-email-liujunliang_ljl@163.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a DTS to boot a at91sam9261ek with a dt-enabled
-kernel (at91_dt_defconfig).
-supported features are:
-* dbgu
-* lcdc
-* usb host
-* usb gadget,
-* spi dataflash
-* nand flash
-* touchscreen
-* leds
-* user buttons
 
-In the TODO list:
-* dm9000 (ethernet)
-* audio
-* mmc
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
- arch/arm/boot/dts/Makefile          |   2 +
- arch/arm/boot/dts/at91sam9261ek.dts | 204 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 206 insertions(+)
- create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
+On Mon, Feb 10, 2014 at 01:33:39PM +0800, liujunliang_ljl@163.com wrote:
+> From: Liu Junliang <liujunliang_ljl@163.com>
+>=20
+>=20
+> Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
+> ---
+>  drivers/net/usb/Kconfig  |   16 +
+>  drivers/net/usb/Makefile |    1 +
+>  drivers/net/usb/sr9800.c |  873 ++++++++++++++++++++++++++++++++++++++++=
+++++++
+>  drivers/net/usb/sr9800.h |  202 +++++++++++
+>  4 files changed, 1092 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/net/usb/sr9800.c
+>  create mode 100644 drivers/net/usb/sr9800.h
+>=20
+> diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
+> index 47b0f73..2551bf6 100644
+> --- a/drivers/net/usb/Kconfig
+> +++ b/drivers/net/usb/Kconfig
+> @@ -291,6 +291,22 @@ config USB_NET_SR9700
+>  	  This option adds support for CoreChip-sz SR9700 based USB 1.1
+>  	  10/100 Ethernet adapters.
+> =20
+> +config USB_NET_SR9800
+> +	tristate "CoreChip-sz SR9800 based USB 2.0 10/100 ethernet devices"
+> +	depends on USB_USBNET
+> +	select CRC32
+> +	default y
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index b9d6a8b..493082b 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -12,6 +12,8 @@ dtb-$(CONFIG_ARCH_AT91) += ethernut5.dtb
- dtb-$(CONFIG_ARCH_AT91) += evk-pro3.dtb
- dtb-$(CONFIG_ARCH_AT91) += tny_a9260.dtb
- dtb-$(CONFIG_ARCH_AT91) += usb_a9260.dtb
-+# sam9261
-+dtb-$(CONFIG_ARCH_AT91) += at91sam9261ek.dtb
- # sam9263
- dtb-$(CONFIG_ARCH_AT91) += at91sam9263ek.dtb
- dtb-$(CONFIG_ARCH_AT91) += tny_a9263.dtb
-diff --git a/arch/arm/boot/dts/at91sam9261ek.dts b/arch/arm/boot/dts/at91sam9261ek.dts
-new file mode 100644
-index 0000000..03adb7f
---- /dev/null
-+++ b/arch/arm/boot/dts/at91sam9261ek.dts
-@@ -0,0 +1,204 @@
-+/*
-+ * at91sam9261ek.dts - Device Tree file for Atmel at91sam9261 reference board
-+ *
-+ *  Copyright (C) 2013 Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-+ *
-+ * Licensed under GPLv2 only.
-+ */
-+/dts-v1/;
-+#include "at91sam9261.dtsi"
-+
-+/ {
-+	model = "Atmel at91sam9261ek";
-+	compatible = "atmel,at91sam9261ek", "atmel,at91sam9261", "atmel,at91sam9";
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 rootfstype=ubifs ubi.mtd=5 root=ubi0:rootfs rw";
-+	};
-+
-+	memory {
-+		reg = <0x20000000 0x4000000>;
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		main_clock: clock@0 {
-+			compatible = "atmel,osc", "fixed-clock";
-+			clock-frequency = <18432000>;
-+		};
-+	};
-+
-+	ahb {
-+		usb0: ohci@00500000 {
-+			status = "okay";
-+		};
-+
-+		fb0: fb@0x00600000 {
-+			display = <&display0>;
-+			atmel,power-control-gpio = <&pioA 12 GPIO_ACTIVE_LOW>;
-+			status = "okay";
-+
-+			display0: display {
-+				bits-per-pixel = <16>;
-+				atmel,lcdcon-backlight;
-+				atmel,dmacon = <0x1>;
-+				atmel,lcdcon2 = <0x80008002>;
-+				atmel,guard-time = <1>;
-+				atmel,lcd-wiring-mode = "BRG";
-+
-+				display-timings {
-+					native-mode = <&timing0>;
-+					timing0: timing0 {
-+						clock-frequency = <4965000>;
-+						hactive = <240>;
-+						vactive = <320>;
-+						hback-porch = <1>;
-+						hfront-porch = <33>;
-+						vback-porch = <1>;
-+						vfront-porch = <0>;
-+						hsync-len = <5>;
-+						vsync-len = <1>;
-+						hsync-active = <1>;
-+						vsync-active = <1>;
-+					};
-+				};
-+			};
-+		};
-+
-+		nand0: nand@40000000 {
-+			nand-bus-width = <8>;
-+			nand-ecc-mode = "soft";
-+			nand-on-flash-bbt;
-+			status = "okay";
-+
-+			at91bootstrap@0 {
-+				label = "at91bootstrap";
-+				reg = <0x0 0x40000>;
-+			};
-+
-+			bootloader@40000 {
-+				label = "bootloader";
-+				reg = <0x40000 0x80000>;
-+			};
-+
-+			bootloaderenv@c0000 {
-+				label = "bootloader env";
-+				reg = <0xc0000 0xc0000>;
-+			};
-+
-+			dtb@180000 {
-+				label = "device tree";
-+				reg = <0x180000 0x80000>;
-+			};
-+
-+			kernel@200000 {
-+				label = "kernel";
-+				reg = <0x200000 0x600000>;
-+			};
-+
-+			rootfs@800000 {
-+				label = "rootfs";
-+				reg = <0x800000 0x0f800000>;
-+			};
-+		};
-+
-+		apb {
-+			usb1: gadget@fffa4000 {
-+				atmel,vbus-gpio = <&pioB 29 GPIO_ACTIVE_HIGH>;
-+				status = "okay";
-+			};
-+			spi0: spi@fffc8000 {
-+				cs-gpios = <&pioA 3 0>, <0>, <&pioA 28 0>, <0>;
-+				status = "okay";
-+
-+				mtd_dataflash@0 {
-+					compatible = "atmel,at45", "atmel,dataflash";
-+					reg = <0>;
-+					spi-max-frequency = <15000000>;
-+				};
-+				tsc2046@0 {
-+					reg = <2>;
-+					compatible = "ti,ads7843";
-+					interrupts-extended = <&pioC 2 IRQ_TYPE_EDGE_BOTH>;
-+					spi-max-frequency = <3000000>;
-+					pendown-gpio = <&pioC 2 GPIO_ACTIVE_HIGH>;
-+
-+					ti,x-min = /bits/ 16 <150>;
-+					ti,x-max = /bits/ 16 <3830>;
-+					ti,y-min = /bits/ 16 <190>;
-+					ti,y-max = /bits/ 16 <3830>;
-+					ti,vref-delay-usecs = /bits/ 16 <450>;
-+					ti,x-plate-ohms = /bits/ 16 <450>;
-+					ti,y-plate-ohms = /bits/ 16 <250>;
-+					ti,pressure-max = /bits/ 16 <15000>;
-+					ti,debounce-rep = /bits/ 16 <0>;
-+					ti,debounce-tol = /bits/ 16 <65535>;
-+					ti,debounce-max = /bits/ 16 <1>;
-+
-+					linux,wakeup;
-+				};
-+			};
-+
-+			dbgu: serial@fffff200 {
-+				status = "okay";
-+			};
-+
-+			watchdog@fffffd40 {
-+				status = "okay";
-+			};
-+
-+		};
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		ds8 {
-+			label = "ds8";
-+			gpios = <&pioA 13 GPIO_ACTIVE_LOW>;
-+			linux,default-trigger = "none";
-+		};
-+		ds7 {
-+			label = "ds7";
-+			gpios = <&pioA 14 GPIO_ACTIVE_LOW>;
-+			linux,default-trigger = "nand-disk";
-+		};
-+		ds1 {
-+			label = "ds1";
-+			gpios = <&pioA 23 GPIO_ACTIVE_LOW>;
-+			linux,default-trigger = "heartbeat";
-+		};
-+	};
-+
-+	gpio_keys {
-+		compatible = "gpio-keys";
-+
-+		button_0 {
-+			label = "button_0";
-+			gpios = <&pioA 27 GPIO_ACTIVE_LOW>;
-+			linux,code = <256>;
-+			gpio-key,wakeup;
-+		};
-+		button_1 {
-+			label = "button_1";
-+			gpios = <&pioA 26 GPIO_ACTIVE_LOW>;
-+			linux,code = <257>;
-+			gpio-key,wakeup;
-+		};
-+		button_2 {
-+			label = "button_2";
-+			gpios = <&pioA 25 GPIO_ACTIVE_LOW>;
-+			linux,code = <258>;
-+			gpio-key,wakeup;
-+		};
-+		button_3 {
-+			label = "button_3";
-+			gpios = <&pioA 24 GPIO_ACTIVE_LOW>;
-+			linux,code = <259>;
-+			gpio-key,wakeup;
-+		};
-+	};
-+};
--- 
-1.8.5.3
+Why is this selected by default? I can see that some of the other USB
+network drivers are also selected by default, but not all of them. Is
+there some rule of thumb as to which should default to y and which
+shouldn't?
 
+Thierry
+
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+0kdAAoJEN0jrNd/PrOhXvwQAJIW4vgv0NkyQVo5jSvzeLY4
+9PFCrtd6N1n+O7P99x38JCCD9lWtfdin1EZfj+UicCanup2WzpyBWHeBhdSN4oZA
+/+C+TgEIuX0+Be11IXeUOGMP9a3k/12HY3oHuz7BA2JjcK6PnfMxaEC7iGGJSjgz
+q4Goa5kSqjvNgbP8h5bQPTNtMnRdsSytI7PMJbl4t1ho0V7H3pSo9zD7rxaPhmtE
+v/18VQawGcY83Hr0B0Q18XAnNXaQMLZTvdhVfDUxB5VKT4Xhcri0m4adbAzMI9kR
+K9CEChkDn68y13drJVILKqUjW+4LMQHAsQV07yl98Sqk7LYOedL9mQOnIL0crjWa
+OAmLHwLv0ED25W1Hv3UdeSpBdIkO9cD0PCa7vHQnv7lpTlkaDyYelKLQ2D+GXrCw
+1L/341ak9QEGiCU1TiOHDblnsN+OtCt0Pt+hijLHFl4TQKw3QIUoZLa4bQuDPM8M
+juTSV63HRjiDlNGvtjBezlR9GFu5w3SJuNSNsFkZ7ADJwjz9On9JaDwH/Ad7AqmZ
+ylE+zzbIpOWjyNToMH2dattpeVZkIfGkS02y6PcIx51EGMw5B8l6qKLB9YpkJpwR
+7rhMYjpLKIn/6rRGlwmZKYnWYl7p/FdI0yOnVbtMYx406ivUNc+kgvmx5l1mXhT7
+b8gKKYYA0pMEMXjgnkK1
+=3y7X
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
