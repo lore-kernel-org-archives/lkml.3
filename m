@@ -1,128 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaBLNfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 08:35:32 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:37608 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaBLNfY (ORCPT
+	id S1752190AbaBLNf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 08:35:29 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:53728 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaBLNfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 08:35:24 -0500
-X-AuditID: cbfec373-b7f4a6d000005e0a-a4-52fb789acd0e
-Date: Wed, 12 Feb 2014 22:35:15 +0900
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [PATCH v2] [media] of: move graph helpers from
- drivers/media/v4l2-core to drivers/media
-Message-id: <20140212223515.71a445f4.m.chehab@samsung.com>
-In-reply-to: <1392196314.5536.15.camel@pizza.hi.pengutronix.de>
-References: <1392154905-12007-1-git-send-email-p.zabel@pengutronix.de>
- <20140212065306.36a03e82.m.chehab@samsung.com>
- <1392196314.5536.15.camel@pizza.hi.pengutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/hIN1ZFb+DDHp7BCzmHznHavF+4zwm
-	iwN/djBanG16w27ROXEJu8XlXXPYLHo2bGW1uH2Z1+LuvRMsFlvnnWO0aN17hN3i8Jt2Vov1
-	82+xOfB6tDT3sHnsnHWX3ePDxziP2R0zWT02repk87hzbQ+bR/9fA4++LasYPY7f2M7k8XmT
-	XABXFJdNSmpOZllqkb5dAlfGnbfnmQveiFZMubqOuYGxXbCLkZNDQsBEYs6NtywQtpjEhXvr
-	2boYuTiEBJYwSiy8f5UdwmlkkmhZMJ0NpIpFQFVi052vjCA2m4CRxKvGFlYQW0RAS+LplXtg
-	3cwCX5glXi/pZwJJCAukSdxZvgRsBa+AlcTWn8fAmjkF7CW+TlvMBLFhDaPE/1Mr2SHucJJ4
-	9XoyE0SDoMSPyffAmpmBNmze1sQKYctLbF7zlnkCo8AsJGWzkJTNQlK2gJF5FaNoaXFyQXFS
-	eq6RXnFibnFpXrpecn7uJkZITBXvYHyxweoQowAHoxIPb4T3ryAh1sSy4srcQ4wSHMxKIrxb
-	S38HCfGmJFZWpRblxxeV5qQWH2Jk4uCUamD0Ov973oO8TYm7iydo6O27MLuka+vKdY0/Txar
-	Xfn0UyDw1qzT8ndPV0Zs3W6Vrcu29NW6TF6uRtHH05WvV5bYh5/JlJ99oeX7hs+PmVK8J0md
-	9dGXm/yofYFAdXZmjMqT3LfRzosUnlyI+VQUeKjmEcOJ2S8+2ErGdESvzruyt9v7LLPQS28b
-	JZbijERDLeai4kQABJrxzIcCAAA=
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 03/11] watchdog: xilinx: Simplify probe and remove functions
+Date: Wed, 12 Feb 2014 14:34:34 +0100
+Message-Id: <619599eff39de3551d53c75dd6c95678d9a81df1.1392212059.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <cover.1392212059.git.michal.simek@xilinx.com>
+References: <cover.1392212059.git.michal.simek@xilinx.com>
+In-Reply-To: <cover.1392212059.git.michal.simek@xilinx.com>
+References: <cover.1392212059.git.michal.simek@xilinx.com>
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-11861-1392212117-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, 12 Feb 2014 10:11:54 +0100
-Philipp Zabel <p.zabel@pengutronix.de> escreveu:
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-> Hi Mauro,
-> 
-> Am Mittwoch, den 12.02.2014, 06:53 +0900 schrieb Mauro Carvalho Chehab:
-> [...]
-> > > diff --git a/include/media/of_graph.h b/include/media/of_graph.h
-> > > new file mode 100644
-> > > index 0000000..3bbeb60
-> > > --- /dev/null
-> > > +++ b/include/media/of_graph.h
-> > > @@ -0,0 +1,46 @@
-> > > +/*
-> > > + * OF graph binding parsing helpers
-> > > + *
-> > > + * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
-> > > + * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> > > + *
-> > > + * Copyright (C) 2012 Renesas Electronics Corp.
-> > > + * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > > + *
-> > > + * This program is free software; you can redistribute it and/or modify
-> > > + * it under the terms of version 2 of the GNU General Public License as
-> > > + * published by the Free Software Foundation.
-> > > + */
-> > > +#ifndef __LINUX_OF_GRAPH_H
-> > > +#define __LINUX_OF_GRAPH_H
-> > > +
-> > > +#ifdef CONFIG_OF
-> > 
-> > As a matter of consistency, it would be better to test here for
-> > CONFIG_OF_GRAPH instead, to reflect the same symbol that enables such
-> > functions as used on Kconfig/Makefile.
-> 
-> Maybe I'm trying to be too clever for my own good, but my reasoning was
-> as follows:
-> 
-> Suppose I newly use the of_graph_ helpers in a subsystem that does not
-> yet select OF_GRAPH. In that case I'd rather get linking errors earlier
-> rather than stubbed out functions that silently fail to parse the DT
-> later.
+--=_mimegpg-monstr-desktop-11861-1392212117-0001
 
-I see your point, but, imagining that someone pushed a patch using those
-symbols upstream, that would break compilation and git bisection, with 
-will hurt everyone, and not only the very few of us that would actually
-need the OF_GRAPH symbol for an specific driver.
+Use devm_ helper function to simplify probe and error path.
+Move ioremap to the beginning of probe function.
 
-Also, such push would mean that someone forgot to do his homework and
-to test if the committed functionality is actually working.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+---
 
-So, it seems more fair that the one that did the mistake will be the one
-that will suffer the consequences for his errors instead of applying a
-penalty to everybody's else ;)
+Changes in v3: None
+Changes in v2: None
 
-> Since there is
-> config VIDEO_DEV
-> 	select OF_GRAPH if OF
-> already and the same should be added for other users of device tree
-> graphs, I think stubbing out the functions only if OF is disabled should
-> be enough.
+ drivers/watchdog/of_xilinx_wdt.c | 41 +++++++++-------------------------------
+ 1 file changed, 9 insertions(+), 32 deletions(-)
 
-Well, if you want to be sure that the graph will always be there if OF, then
-you could do, instead:
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+index aca9bab..7f371ed 100644
+--- a/drivers/watchdog/of_xilinx_wdt.c
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -12,6 +12,7 @@
 
-config OF_GRAPH
-	bool
-	default OF
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-(that would actually make OF_GRAPH just an alias to OF - so we could just
-use OF instead).
++#include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+@@ -44,7 +45,6 @@
+ #define PFX WATCHDOG_NAME ": "
 
-In any case, I think that we should use the same config name at Makefile, 
-Kconfig and of_graph.h (either OF_GRAPH or just OF).
+ struct xwdt_device {
+-	struct resource  res;
+ 	void __iomem *base;
+ 	u32 wdt_interval;
+ };
+@@ -159,9 +159,15 @@ static int xwdt_probe(struct platform_device *pdev)
+ 	int rc;
+ 	u32 *tmptr;
+ 	u32 *pfreq;
++	struct resource *res;
 
-Regards,
-Mauro
+ 	no_timeout = 0;
+
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	xdev.base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(xdev.base))
++		return PTR_ERR(xdev.base);
++
+ 	pfreq = (u32 *)of_get_property(pdev->dev.of_node,
+ 					"clock-frequency", NULL);
+
+@@ -170,12 +176,6 @@ static int xwdt_probe(struct platform_device *pdev)
+ 		no_timeout = 1;
+ 	}
+
+-	rc = of_address_to_resource(pdev->dev.of_node, 0, &xdev.res);
+-	if (rc) {
+-		pr_warn("invalid address!\n");
+-		return rc;
+-	}
+-
+ 	tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+ 					"xlnx,wdt-interval", NULL);
+ 	if (tmptr == NULL) {
+@@ -199,50 +199,27 @@ static int xwdt_probe(struct platform_device *pdev)
+ 	if (!no_timeout)
+ 		timeout = 2 * ((1<<xdev.wdt_interval) / *pfreq);
+
+-	if (!request_mem_region(xdev.res.start,
+-			xdev.res.end - xdev.res.start + 1, WATCHDOG_NAME)) {
+-		rc = -ENXIO;
+-		pr_err("memory request failure!\n");
+-		goto err_out;
+-	}
+-
+-	xdev.base = ioremap(xdev.res.start, xdev.res.end - xdev.res.start + 1);
+-	if (xdev.base == NULL) {
+-		rc = -ENOMEM;
+-		pr_err("ioremap failure!\n");
+-		goto release_mem;
+-	}
+-
+ 	rc = xwdt_selftest();
+ 	if (rc == XWT_TIMER_FAILED) {
+ 		pr_err("SelfTest routine error!\n");
+-		goto unmap_io;
++		return rc;
+ 	}
+
+ 	rc = watchdog_register_device(&xilinx_wdt_wdd);
+ 	if (rc) {
+ 		pr_err("cannot register watchdog (err=%d)\n", rc);
+-		goto unmap_io;
++		return rc;
+ 	}
+
+ 	dev_info(&pdev->dev, "Xilinx Watchdog Timer at %p with timeout %ds\n",
+ 		 xdev.base, timeout);
+
+ 	return 0;
+-
+-unmap_io:
+-	iounmap(xdev.base);
+-release_mem:
+-	release_mem_region(xdev.res.start, resource_size(&xdev.res));
+-err_out:
+-	return rc;
+ }
+
+ static int xwdt_remove(struct platform_device *dev)
+ {
+ 	watchdog_unregister_device(&xilinx_wdt_wdd);
+-	iounmap(xdev.base);
+-	release_mem_region(xdev.res.start, resource_size(&xdev.res));
+
+ 	return 0;
+ }
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-11861-1392212117-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlL7eJUACgkQykllyylKDCFjGwCcDQ+/QD93s1vxAdWqhAxMQndG
+sRAAnAhmxWZq7z78b9ZcOrdu7TuYELtz
+=0OQD
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-11861-1392212117-0001--
