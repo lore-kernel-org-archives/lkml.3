@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaBLO5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 09:57:18 -0500
-Received: from mga11.intel.com ([192.55.52.93]:4128 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320AbaBLO5Q convert rfc822-to-8bit (ORCPT
+	id S1752481AbaBLO5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 09:57:24 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:36866 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbaBLO5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 09:57:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,832,1384329600"; 
-   d="scan'208";a="480284427"
-From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-CC: "roland@kernel.org" <roland@kernel.org>,
-        "Hefty, Sean" <sean.hefty@intel.com>,
-        "hal.rosenstock@gmail.com" <hal.rosenstock@gmail.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: qib_lookup_qpn() appears to leak pointer out of
- rcu_read_unlock()
-Thread-Topic: qib_lookup_qpn() appears to leak pointer out of
- rcu_read_unlock()
-Thread-Index: AQHPJ4pjFcrhoLEfzEOnJavhYKoyFZqxpd4wgACWKoD//3oOQA==
-Date: Wed, 12 Feb 2014 14:57:14 +0000
-Message-ID: <32E1700B9017364D9B60AED9960492BC211F3D75@FMSMSX107.amr.corp.intel.com>
-References: <20140212003511.GA27242@linux.vnet.ibm.com>
- <32E1700B9017364D9B60AED9960492BC211F3D24@FMSMSX107.amr.corp.intel.com>
- <20140212145543.GY4250@linux.vnet.ibm.com>
-In-Reply-To: <20140212145543.GY4250@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Feb 2014 09:57:21 -0500
+Message-ID: <52FB8BEB.5020506@windriver.com>
+Date: Wed, 12 Feb 2014 09:57:47 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        <x86@kernel.org>
+Subject: Re: [PATCH] x86: fix two sparse warnings in early boot string handling
+References: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com> <alpine.DEB.2.02.1402111425430.32020@chino.kir.corp.google.com> <20140212020010.GB21033@windriver.com> <alpine.DEB.2.02.1402111821510.13509@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1402111821510.13509@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BTW, I am considering eliminating the atomic_inc() in favor of widening the scope of the rcu lock expanse.
+On 14-02-11 09:23 PM, David Rientjes wrote:
+> On Tue, 11 Feb 2014, Paul Gortmaker wrote:
+> 
+>>>> Fixes:
+>>>>
+>>>> arch/x86/boot/compressed/../string.c:60:14: warning: symbol 'atou' was not declared. Should it be static?
+>>>> arch/x86/boot/string.c:133:6: warning: symbol 'strstr' was not declared. Should it be static?
+>>>>
+>>>> The atou one could be considered a false positive; it seems somehow
+>>>> caused by including ./string.c from within /compressed/string.c file.
+>>>> However git grep shows only the atou prototype and declaration, so
+>>>> it is completely unused and we can hence delete it.
+>>>>
+>>>
+>>> Declaring a prototype in a header file would be pointless if there is no 
+>>> current breakage; I don't see why you can't remove strstr() in 
+>>> arch/x86/boot/string.c entirely.  What breaks?
+>>
+>> Explicit breakage vs. sparse warnings are two different things.  It may
+>> be that we can delete strstr() just like I did for atou() -- but in the
+>> interest of doing the minimal change, I did just what was needed for
+>> fixing the sparse warnings for strstr.  I can test if it can be removed,
+>> but it has the smell of generic-libc usage all over it...
+>>
+> 
+> When the minimal change is to add an unnecessary prototype for a function 
+> that is not referenced, it doesn't seem acceptable.
 
-Mike
+OK, fair enough -- it seems surprisingly unused, as well as strcmp, despite
+my gut feeling that they'd be used in multiple places.  I'll send a v2
+that deletes all three once it passes allyesconfig on linux-next for x86
+32/64/uml.
 
-> -----Original Message-----
-> From: Paul E. McKenney [mailto:paulmck@linux.vnet.ibm.com]
-> Sent: Wednesday, February 12, 2014 9:56 AM
-> To: Marciniszyn, Mike
-> Cc: roland@kernel.org; Hefty, Sean; hal.rosenstock@gmail.com; linux-
-> rdma@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: qib_lookup_qpn() appears to leak pointer out of rcu_read_unlock()
-> 
-> On Wed, Feb 12, 2014 at 01:59:30PM +0000, Marciniszyn, Mike wrote:
-> > > So what am I missing here?
-> > >
-> >
-> > The atomic increment of a reference count:
-> 
-> Got it, thank you, apologies for the noise!
-> 
-> 							Thanx, Paul
-> 
-> > struct qib_qp *qib_lookup_qpn(struct qib_ibport *ibp, u32 qpn) {
-> >         struct qib_qp *qp = NULL;
-> >
-> >         rcu_read_lock();
-> >         if (unlikely(qpn <= 1)) {
-> >                 if (qpn == 0)
-> >                         qp = rcu_dereference(ibp->qp0);
-> >                 else
-> >                         qp = rcu_dereference(ibp->qp1);
-> >                 if (qp)
-> >                         atomic_inc(&qp->refcount); <--------------------------
-> >         } else {
-> >                 struct qib_ibdev *dev = &ppd_from_ibp(ibp)->dd->verbs_dev;
-> >                 unsigned n = qpn_hash(dev, qpn);
-> >
-> >                 for (qp = rcu_dereference(dev->qp_table[n]); qp;
-> >                         qp = rcu_dereference(qp->next))
-> >                         if (qp->ibqp.qp_num == qpn) {
-> >                                 atomic_inc(&qp->refcount); <---------------------
-> >                                 break;
-> >                         }
-> >         }
-> >         rcu_read_unlock();
-> >         return qp;
-> > }
-> >
-> > Mike
-> >
-
+Thanks,
+Paul.
