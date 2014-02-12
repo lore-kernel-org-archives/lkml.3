@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaBLIkh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:40:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50052 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751781AbaBLINt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:13:49 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1753927AbaBLIks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:40:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57917 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751519AbaBLIkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 03:40:41 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140212070645.GB4373@gmail.com>
+References: <alpine.DEB.2.02.1402042353030.7839@chino.kir.corp.google.com> <87txcc57y2.fsf@tassilo.jf.intel.com> <alpine.DEB.2.02.1402061430420.29446@chino.kir.corp.google.com> <52F40F21.8070200@zytor.com> <alpine.DEB.2.02.1402111841590.26393@chino.kir.corp.google.com> <52FAF8AD.1000800@zytor.com> <20140212070645.GB4373@gmail.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wenliang Fan" <fanwlexca@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.947630184@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 08/79] drivers/net/hamradio: Integer overflow in 
- hdlcdrv_ioctl()
-In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
-X-SA-Exim-Connect-IP: 91.84.160.45
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [GIT PULL] x86, apic: Remove support for Summit and ES7000
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 12 Feb 2014 00:39:28 -0800
+To: Ingo Molnar <mingo@kernel.org>
+CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Dave Hansen <dave.hansen@intel.com>, Andrey Panin <pazke@donpac.ru>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Dobson <colpatch@us.ibm.com>,
+        Natalie Protasevich <protasnb@gmail.com>,
+        Garry Forsgren <garry.forsgren@unisys.com>
+Message-ID: <553e717b-8be8-4624-8613-e661dea04208@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.55-rc1 review patch.  If anyone has any objections, please let me know.
+Running tests on this branch, will push it into tip tomorrow if ok.
 
-------------------
+On February 11, 2014 11:06:45 PM PST, Ingo Molnar <mingo@kernel.org> wrote:
+>
+>* H. Peter Anvin <hpa@zytor.com> wrote:
+>
+>> On 02/11/2014 06:53 PM, David Rientjes wrote:
+>> > Hi Ingo, Peter, and Thomas,
+>> > 
+>> >  [ Be aware of bouncing emails on the cc, it includes the
+>last-known email
+>> >    addresses of the authors of these subarchitectures and may
+>bounce. ]
+>> > 
+>> > If you agree, please pull from:
+>> > 
+>> >   git://git.kernel.org/pub/scm/linux/kernel/git/rientjes/linux.git
+>x86/apic
+>> > 
+>> >   # HEAD: 7cf6c94591bbf3dbe3bf9573a6551328ad76d885 x86, apic:
+>Remove support for IBM Summit/EXA chipset
+>> > 
+>> > or apply individually.  This branch is based on x86/apic.
+>> > 
+>> > This is the removal of Summit and ES7000 subarchitectures from x86.
+> I'd 
+>> > like to do the same for NumaQ, but am still researching if we can
+>really 
+>> > do away with it.
+>> 
+>> Nice.
+>
+>I'm fine with this too.
+>
+>Thanks,
+>
+>	Ingo
 
-From: Wenliang Fan <fanwlexca@gmail.com>
-
-[ Upstream commit e9db5c21d3646a6454fcd04938dd215ac3ab620a ]
-
-The local variable 'bi' comes from userspace. If userspace passed a
-large number to 'bi.data.calibrate', there would be an integer overflow
-in the following line:
-	s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
-
-Signed-off-by: Wenliang Fan <fanwlexca@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/hamradio/hdlcdrv.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/net/hamradio/hdlcdrv.c b/drivers/net/hamradio/hdlcdrv.c
-index a4a3516..3b3a7e0 100644
---- a/drivers/net/hamradio/hdlcdrv.c
-+++ b/drivers/net/hamradio/hdlcdrv.c
-@@ -571,6 +571,8 @@ static int hdlcdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case HDLCDRVCTL_CALIBRATE:
- 		if(!capable(CAP_SYS_RAWIO))
- 			return -EPERM;
-+		if (bi.data.calibrate > INT_MAX / s->par.bitrate)
-+			return -EINVAL;
- 		s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
- 		return 0;
- 
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
