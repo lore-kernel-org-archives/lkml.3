@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbaBLLjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:39:35 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43469 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaBLLje (ORCPT
+	id S1752100AbaBLLmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:42:04 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:43600 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751767AbaBLLmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:39:34 -0500
-Date: Wed, 12 Feb 2014 11:39:28 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
-        Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140212113928.GO18016@ZenIV.linux.org.uk>
-References: <20140211172707.GA1749@redhat.com>
- <20140211210841.GM13647@dastard>
- <52FA9ADA.9040803@sandeen.net>
- <20140212004403.GA17129@redhat.com>
- <20140212010941.GM18016@ZenIV.linux.org.uk>
- <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
- <20140212040358.GA25327@redhat.com>
- <20140212042215.GN18016@ZenIV.linux.org.uk>
- <20140212054043.GB13997@dastard>
- <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+	Wed, 12 Feb 2014 06:42:02 -0500
+Date: Wed, 12 Feb 2014 12:42:00 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        Josh Wu <josh.wu@atmel.com>, computersforpeace@gmail.com,
+        linux-kernel@vger.kernel.org, dedekind1@gmail.com
+Subject: Re: [PATCH] MTD: atmel_nand: POI fall back is not an issue: change
+ log level
+Message-ID: <20140212114200.GA11498@piout.net>
+References: <1392204414-20700-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+In-Reply-To: <1392204414-20700-1-git-send-email-nicolas.ferre@atmel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 10:28:12PM -0800, Linus Torvalds wrote:
+Small nitpick, subject should read PIO, not POI.
 
-> It looks like just "do_signal()" has a stack frame that is about 230
-> bytes even under normal circumstancs (largely due to "struct ksignal"
-> - which in turn is largely due to the insane 128-byte padding in
-> siginfo_t). Add a few other frames in there, and I guess that if it
-> was close before, the coredump path just makes it go off.
+On 12/02/2014 at 12:26:54 +0100, Nicolas Ferre wrote :
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/mtd/nand/atmel_nand.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+> index c36e9b84487c..8d210f8a072d 100644
+> --- a/drivers/mtd/nand/atmel_nand.c
+> +++ b/drivers/mtd/nand/atmel_nand.c
+> @@ -430,7 +430,7 @@ err_dma:
+>  	dma_unmap_single(dma_dev->dev, phys_addr, len, dir);
+>  err_buf:
+>  	if (err != 0)
+> -		dev_warn(host->dev, "Fall back to CPU I/O\n");
+> +		dev_dbg(host->dev, "Fall back to CPU I/O\n");
+>  	return err;
+>  }
+>  
+> -- 
+> 1.8.2.2
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-We could, in principle, put it into task_struct and make get_signal()
-return its address - do_signal() is called only in the code that does
-assorted returns to userland...
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
