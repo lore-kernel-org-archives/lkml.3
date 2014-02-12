@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaBLClg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 21:41:36 -0500
-Received: from ozlabs.org ([203.10.76.45]:58280 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919AbaBLClf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 21:41:35 -0500
-Date: Wed, 12 Feb 2014 13:41:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: linux-next: build failure after merge of the tip tree
-Message-Id: <20140212134127.2c049bb94175e12201b257ef@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Feb_2014_13_41_27_+1100_aDglfghNEfcP4Eg4"
+	id S1752631AbaBLCnw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 21:43:52 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10613 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaBLCnv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 21:43:51 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 11 Feb 2014 18:42:00 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>
+CC: Tomasz Figa <t.figa@samsung.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v3] ARM: tegra: cpuidle: use firmware for power down
+Date: Wed, 12 Feb 2014 11:43:44 +0900
+Message-ID: <1392173024-11567-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <52FAD4C2.80803@nvidia.com>
+References: <52FAD4C2.80803@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Feb_2014_13_41_27_+1100_aDglfghNEfcP4Eg4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Attempt to invoke the prepare_idle() and do_idle() firmware calls
+to power down a CPU so an underlying firmware gets informed of
+the idle operation and performs it by itself if designed in such a way.
 
-Hi all,
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+This is the only v3 patch in the series.
 
-After merging the tip tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Changes since v2:
+- Use an if statement instead of a switch to handle the single return
+  code we need to care about.
 
-drivers/cpuidle/cpuidle-pseries.c: In function 'idle_loop_prolog':
-drivers/cpuidle/cpuidle-pseries.c:32:2: error: implicit declaration of func=
-tion 'ppc64_runlatch_off' [-Werror=3Dimplicit-function-declaration]
-  ppc64_runlatch_off();
-  ^
-drivers/cpuidle/cpuidle-pseries.c: In function 'idle_loop_epilog':
-drivers/cpuidle/cpuidle-pseries.c:52:2: error: implicit declaration of func=
-tion 'ppc64_runlatch_on' [-Werror=3Dimplicit-function-declaration]
-  ppc64_runlatch_on();
-  ^
+ arch/arm/mach-tegra/cpuidle-tegra114.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Caused by commit d8c6ad3184ca ("sched/idle, PPC: Remove redundant
-cpuidle_idle_call()").
+diff --git a/arch/arm/mach-tegra/cpuidle-tegra114.c b/arch/arm/mach-tegra/cpuidle-tegra114.c
+index e0b87300243d..b5fb7c110c64 100644
+--- a/arch/arm/mach-tegra/cpuidle-tegra114.c
++++ b/arch/arm/mach-tegra/cpuidle-tegra114.c
+@@ -19,6 +19,7 @@
+ #include <linux/cpuidle.h>
+ #include <linux/cpu_pm.h>
+ #include <linux/clockchips.h>
++#include <asm/firmware.h>
+ 
+ #include <asm/cpuidle.h>
+ #include <asm/suspend.h>
+@@ -45,7 +46,11 @@ static int tegra114_idle_power_down(struct cpuidle_device *dev,
+ 
+ 	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
+ 
+-	cpu_suspend(0, tegra30_sleep_cpu_secondary_finish);
++	call_firmware_op(prepare_idle);
++
++	/* Do suspend by ourselves if the firmware does not implement it */
++	if (call_firmware_op(do_idle) == -ENOSYS)
++		cpu_suspend(0, tegra30_sleep_cpu_secondary_finish);
+ 
+ 	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+ 
+-- 
+1.8.5.4
 
-I have used the tip tree from next-20140210 again today (since
-next-20140211 was broken differently).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__12_Feb_2014_13_41_27_+1100_aDglfghNEfcP4Eg4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS+t9bAAoJEMDTa8Ir7ZwVk2EP/0mNCTin2FpOCU5aB6h14JqX
-YWoiroIdm51EHowoH9/QenJ4d53EQxkG8bAjnrHjaK7g5Jc1NMOsdMvAzgsTOSZD
-pOO9DHMp6ZVdG09zcoZGLPRiDryeKbRpmyV8PoZMO0jyvwJD90hW1y3gs4LtNoia
-+vcV3FUo7XLf/SgQ8fu6U/y0rGFF14q2FTsEXaOI32v40yHTSG5HpOosPEXcZ1wx
-Gndijxmhzrjrym66Jh78wpARoOamj5zOVYF9KdNZmO/8niXHLF2BGEyCp+st/N1Q
-hME9zFZtBgezzEBYzgmoOidEhH3kUpJhmqYQ7LBS0z3C598nKLSV4MX8TjO7swEV
-SEDO2NlmHQSWyMArVGaKWFcgmc900WwOHT3gkyRyj2SSsx9w0cfYYixRMEAsDEz+
-IiQFiBGD4ftxHX3OnHB/aCY/RLFVerQYYyybhG6P5DMG81G0BEGScgIjHGOhpt5x
-ZJuW7ZHMYsBS471T9Y3zIC0aTwKgFvWxbBxCuj87FOaSuAlSKnXLvv6BCyHHMARL
-Ul+EExYDGL5Autxi7zZogaq1XyrNYr5Wg7hKsG2Pkre676LI/nzLE3PXV8/hHY4b
-TaXunVwCCfVOPKC1vyKdyCXLghKFVaKUQa4x/rIXq7oyZzps/xNTjBrVyLRu+Rn1
-mzgST90yXQqmPVm+XEnA
-=hkaC
------END PGP SIGNATURE-----
-
---Signature=_Wed__12_Feb_2014_13_41_27_+1100_aDglfghNEfcP4Eg4--
