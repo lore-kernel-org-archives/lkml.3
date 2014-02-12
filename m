@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaBLLiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:38:50 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51863 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaBLLit (ORCPT
+	id S1752007AbaBLLjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:39:35 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43469 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaBLLje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:38:49 -0500
-Date: Wed, 12 Feb 2014 12:38:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kirill Tkhai <ktkhai@parallels.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] smpboot: Use preempt_enable_no_resched() before
- schedule()
-In-Reply-To: <20140212101954.17530.53675.stgit@tkhai>
-Message-ID: <alpine.DEB.2.02.1402121226150.21991@ionos.tec.linutronix.de>
-References: <20140212101954.17530.53675.stgit@tkhai>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 12 Feb 2014 06:39:34 -0500
+Date: Wed, 12 Feb 2014 11:39:28 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140212113928.GO18016@ZenIV.linux.org.uk>
+References: <20140211172707.GA1749@redhat.com>
+ <20140211210841.GM13647@dastard>
+ <52FA9ADA.9040803@sandeen.net>
+ <20140212004403.GA17129@redhat.com>
+ <20140212010941.GM18016@ZenIV.linux.org.uk>
+ <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+ <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+ <20140212054043.GB13997@dastard>
+ <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Feb 2014, Kirill Tkhai wrote:
+On Tue, Feb 11, 2014 at 10:28:12PM -0800, Linus Torvalds wrote:
 
-No, preempt_enable_no_resched() should just die. If you want to get
-rid of the preempt_enable() / schedule() sequence just use
-schedule_preempt_disabled(). See below.
+> It looks like just "do_signal()" has a stack frame that is about 230
+> bytes even under normal circumstancs (largely due to "struct ksignal"
+> - which in turn is largely due to the insane 128-byte padding in
+> siginfo_t). Add a few other frames in there, and I guess that if it
+> was close before, the coredump path just makes it go off.
 
-Thanks,
-
-	tglx
-
-
---- linux-2.6.orig/kernel/smpboot.c
-+++ linux-2.6/kernel/smpboot.c
-@@ -106,9 +106,9 @@ static int smpboot_thread_fn(void *data)
- 	struct smpboot_thread_data *td = data;
- 	struct smp_hotplug_thread *ht = td->ht;
- 
-+	preempt_disable();
- 	while (1) {
- 		set_current_state(TASK_INTERRUPTIBLE);
--		preempt_disable();
- 		if (kthread_should_stop()) {
- 			set_current_state(TASK_RUNNING);
- 			preempt_enable();
-@@ -128,6 +128,7 @@ static int smpboot_thread_fn(void *data)
- 			}
- 			kthread_parkme();
- 			/* We might have been woken for stop */
-+			preempt_disable();
- 			continue;
- 		}
- 
-@@ -152,12 +153,12 @@ static int smpboot_thread_fn(void *data)
- 		}
- 
- 		if (!ht->thread_should_run(td->cpu)) {
--			preempt_enable();
--			schedule();
-+			schedule_preempt_disabled();
- 		} else {
- 			set_current_state(TASK_RUNNING);
- 			preempt_enable();
- 			ht->thread_fn(td->cpu);
-+			preempt_disable();
- 		}
- 	}
- }
+We could, in principle, put it into task_struct and make get_signal()
+return its address - do_signal() is called only in the code that does
+assorted returns to userland...
