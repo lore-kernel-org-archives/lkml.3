@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751084AbaBLIMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:12:53 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:21267 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaBLIMw (ORCPT
+	id S1751284AbaBLINd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:13:33 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:56855 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaBLINb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:12:52 -0500
-Message-ID: <52FB2CF5.8020503@atmel.com>
-Date: Wed, 12 Feb 2014 09:12:37 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 12 Feb 2014 03:13:31 -0500
+Message-ID: <52FB2D23.7090200@monstr.eu>
+Date: Wed, 12 Feb 2014 09:13:23 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>,
-        "'Herbert Xu'" <herbert@gondor.apana.org.au>
-CC: <linux-kernel@vger.kernel.org>, "'Peter Korsgaard'" <jacmet@sunsite.dk>
-Subject: Re: [PATCH 1/2] hwrng: atmel - Use devm_ioremap_resource()
-References: <000001cf27b1$acf29f30$06d7dd90$%han@samsung.com>
-In-Reply-To: <000001cf27b1$acf29f30$06d7dd90$%han@samsung.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-watchdog@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 07/11] watchdog: xilinx: Use of_property_read_u32
+References: <f298edd222c57b0ce1ebad3ae50c3f715406c631.1392101734.git.michal.simek@xilinx.com> <7aa6e41032ebad0ffb2e1df20beb4f00e38d29e2.1392101734.git.michal.simek@xilinx.com> <20140211202038.GC11798@roeck-us.net>
+In-Reply-To: <20140211202038.GC11798@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="FC9rTOcBtukJF2R0DJH4SUcsiQpC7Fssh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 06:17, Jingoo Han :
-> Use devm_ioremap_resource() in order to make the code simpler,
-> and remove redundant return value check of platform_get_resource()
-> because the value is checked by devm_ioremap_resource().
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--FC9rTOcBtukJF2R0DJH4SUcsiQpC7Fssh
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+On 02/11/2014 09:20 PM, Guenter Roeck wrote:
+> On Tue, Feb 11, 2014 at 07:55:50AM +0100, Michal Simek wrote:
+>> Use of_property_read_u32 functions to clean probe function.
+>>
+>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>> ---
+>>
+> [ ... ]
+>=20
+>> +
+>> +	if (enable_once)
+>>  		watchdog_set_nowayout(xilinx_wdt_wdd, true);
+>> -	}
+>=20
+> 	watchdog_set_nowayout(xilinx_wdt_wdd, enable_once);
+>=20
+> would probably do as well (the function checks the flag as well).
+>=20
+> Nitpick, so
+>=20
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Thanks! Bye,
+I will change it and send v3.
 
-> ---
->  drivers/char/hw_random/atmel-rng.c |   15 ++++-----------
->  1 file changed, 4 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
-> index bf9fc6b..dfeddf2 100644
-> --- a/drivers/char/hw_random/atmel-rng.c
-> +++ b/drivers/char/hw_random/atmel-rng.c
-> @@ -54,21 +54,14 @@ static int atmel_trng_probe(struct platform_device *pdev)
->  	struct resource *res;
->  	int ret;
->  
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res)
-> -		return -EINVAL;
-> -
->  	trng = devm_kzalloc(&pdev->dev, sizeof(*trng), GFP_KERNEL);
->  	if (!trng)
->  		return -ENOMEM;
->  
-> -	if (!devm_request_mem_region(&pdev->dev, res->start,
-> -				     resource_size(res), pdev->name))
-> -		return -EBUSY;
-> -
-> -	trng->base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> -	if (!trng->base)
-> -		return -EBUSY;
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	trng->base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(trng->base))
-> +		return PTR_ERR(trng->base);
->  
->  	trng->clk = clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(trng->clk))
-> 
+Thanks,
+Michal
 
 
--- 
-Nicolas Ferre
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--FC9rTOcBtukJF2R0DJH4SUcsiQpC7Fssh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlL7LSQACgkQykllyylKDCHdtQCeNe4fMKfE2zFqqsifu+IKjyI6
+dS4An3VrBPlzGIJc7Wa7nUfehqGGKjRa
+=sh52
+-----END PGP SIGNATURE-----
+
+--FC9rTOcBtukJF2R0DJH4SUcsiQpC7Fssh--
