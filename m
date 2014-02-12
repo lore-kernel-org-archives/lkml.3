@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaBLHwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:52:46 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6346 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbaBLHwo (ORCPT
+	id S1751861AbaBLHyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:54:36 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:50520 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaBLHye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:52:44 -0500
-Message-ID: <52FB2834.3090408@huawei.com>
-Date: Wed, 12 Feb 2014 15:52:20 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "Johannes Weiner" <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 6/8] cgroup: remove cgroup->name
-References: <1391877509-10855-1-git-send-email-tj@kernel.org> <1391877509-10855-7-git-send-email-tj@kernel.org>
-In-Reply-To: <1391877509-10855-7-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	Wed, 12 Feb 2014 02:54:34 -0500
+From: Laszlo Papp <lpapp@kde.org>
+To: rob@landley.net
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Laszlo Papp <lpapp@kde.org>
+Subject: [PATCH RESEND] leds-gpio: fix a typo in the documentation
+Date: Wed, 12 Feb 2014 07:54:09 +0000
+Message-Id: <1392191649-21723-1-git-send-email-lpapp@kde.org>
+X-Mailer: git-send-email 1.8.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index dd52e7f..30eee3b 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -111,8 +111,7 @@ static char *task_group_path(struct task_group *tg)
->  	if (autogroup_path(tg, group_path, PATH_MAX))
->  		return group_path;
->  
-> -	cgroup_path(tg->css.cgroup, group_path, PATH_MAX);
-> -	return group_path;
-> +	return cgroup_path(tg->css.cgroup, group_path, PATH_MAX);
+Signed-off-by: Laszlo Papp <lpapp@kde.org>
+---
+ Documentation/devicetree/bindings/leds/leds-gpio.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The caller won't check the return value but pass it to printk/seq_printf,
-but now cgroup_path() might return -ENAMETOOLONG..
+diff --git a/Documentation/devicetree/bindings/leds/leds-gpio.txt b/Documentation/devicetree/bindings/leds/leds-gpio.txt
+index df1b308..00e94fe 100644
+--- a/Documentation/devicetree/bindings/leds/leds-gpio.txt
++++ b/Documentation/devicetree/bindings/leds/leds-gpio.txt
+@@ -16,7 +16,7 @@ LED sub-node properties:
+   see Documentation/devicetree/bindings/leds/common.txt
+ - default-state:  (optional) The initial state of the LED.  Valid
+   values are "on", "off", and "keep".  If the LED is already on or off
+-  and the default-state property is set the to same value, then no
++  and the default-state property is set to the same value, then no
+   glitch should be produced where the LED momentarily turns off (or
+   on).  The "keep" setting will keep the LED at whatever its current
+   state is, without producing a glitch.  The default is off if this
+-- 
+1.8.5.4
 
