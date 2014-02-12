@@ -1,215 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaBLHJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:09:56 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:57818 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaBLHJx (ORCPT
+	id S1751914AbaBLHKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:10:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57135 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaBLHK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:09:53 -0500
-From: Laszlo Papp <lpapp@kde.org>
-To: lee.jones@linaro.org
-Cc: sachin.kamat@linaro.org, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, k.kozlowski@samsung.com,
-        jdelvare@suse.de, linux@roeck-us.net, Laszlo Papp <lpapp@kde.org>
-Subject: [PATCH v7] mfd: MAX6650/6651 support
-Date: Wed, 12 Feb 2014 07:09:29 +0000
-Message-Id: <1392188969-18486-1-git-send-email-lpapp@kde.org>
-X-Mailer: git-send-email 1.8.5.4
+	Wed, 12 Feb 2014 02:10:29 -0500
+Date: Tue, 11 Feb 2014 23:09:33 -0800
+From: tip-bot for Preeti U Murthy <tipbot@zytor.com>
+Message-ID: <tip-3f67d962c64d9b6de9dab81bdbe6d5c94c80d9b9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, nicolas.pitre@linaro.org,
+        preeti@linux.vnet.ibm.com, tglx@linutronix.de, sfr@canb.auug.org.au
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, nicolas.pitre@linaro.org,
+        preeti@linux.vnet.ibm.com, tglx@linutronix.de, sfr@canb.auug.org.au
+In-Reply-To: <52FAFD2D.2090306@linux.vnet.ibm.com>
+References: <52FAFD2D.2090306@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] cpuidle/pseries:
+  Fix fallout caused due to cleanup in pseries cpuidle backend driver
+Git-Commit-ID: 3f67d962c64d9b6de9dab81bdbe6d5c94c80d9b9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 11 Feb 2014 23:09:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
-chip includes fan-speed regulators and monitors, GPIO, and alarm.
+Commit-ID:  3f67d962c64d9b6de9dab81bdbe6d5c94c80d9b9
+Gitweb:     http://git.kernel.org/tip/3f67d962c64d9b6de9dab81bdbe6d5c94c80d9b9
+Author:     Preeti U Murthy <preeti@linux.vnet.ibm.com>
+AuthorDate: Wed, 12 Feb 2014 10:18:45 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 12 Feb 2014 08:05:03 +0100
 
-This patch is an initial release of a MAX6650/6651 MFD driver that
-supports to enable the chip with its primary I2C bus that will connect
-the hwmon, and then the gpio devices for now.
+cpuidle/pseries: Fix fallout caused due to cleanup in pseries cpuidle backend driver
 
-Signed-off-by: Laszlo Papp <lpapp@kde.org>
+Commit d8c6ad3184ca651 ("sched/idle, PPC: Remove redundant
+cpuidle_idle_call()") reintroduced ppc64_runlatch_off/on() in the
+pseries cpuidle backend driver. Hence the cleanup caused by the
+commit "c0c4301c54adde05:pseries/cpuidle: Remove redundant call
+to ppc64_runlatch_off() in cpu idle routines"  in conjuction
+with the commit d8c6ad3184ca651 causes a build failure.
+
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Link: http://lkml.kernel.org/r/52FAFD2D.2090306@linux.vnet.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/mfd/Kconfig                 | 11 +++++
- drivers/mfd/Makefile                |  1 +
- drivers/mfd/max665x.c               | 93 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/max665x-private.h | 34 ++++++++++++++
- 4 files changed, 139 insertions(+)
- create mode 100644 drivers/mfd/max665x.c
- create mode 100644 include/linux/mfd/max665x-private.h
+ drivers/cpuidle/cpuidle-pseries.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 49bb445..a6c3152 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -368,6 +368,17 @@ config MFD_MAX8907
- 	  accessing the device; additional drivers must be enabled in order
- 	  to use the functionality of the device.
+diff --git a/drivers/cpuidle/cpuidle-pseries.c b/drivers/cpuidle/cpuidle-pseries.c
+index d486489..6f7b019 100644
+--- a/drivers/cpuidle/cpuidle-pseries.c
++++ b/drivers/cpuidle/cpuidle-pseries.c
+@@ -17,6 +17,7 @@
+ #include <asm/reg.h>
+ #include <asm/machdep.h>
+ #include <asm/firmware.h>
++#include <asm/runlatch.h>
+ #include <asm/plpar_wrappers.h>
  
-+config MFD_MAX665X
-+	bool "Maxim Semiconductor MAX6650/MAX6651 Support"
-+	depends on I2C
-+	select MFD_CORE
-+	select REGMAP_I2C
-+	help
-+	  Say yes here to add support for Maxim Semiconductor MAX6650/MAX6651. This
-+	  is a fan speed regulator and monitor IC. This driver provides common
-+	  support for accessing the device, additional drivers must be enabled in
-+	  order to use the functionality of the device.
-+
- config MFD_MAX8925
- 	bool "Maxim Semiconductor MAX8925 PMIC Support"
- 	depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 5aea5ef..63668c5 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -111,6 +111,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
- da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
- obj-$(CONFIG_MFD_DA9063)	+= da9063.o
- 
-+obj-$(CONFIG_MFD_MAX665X)	+= max665x.o
- obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
- obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
- obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
-diff --git a/drivers/mfd/max665x.c b/drivers/mfd/max665x.c
-new file mode 100644
-index 0000000..54fdc11
---- /dev/null
-+++ b/drivers/mfd/max665x.c
-@@ -0,0 +1,93 @@
-+/*
-+ * Device access for MAX6650-MAX6651
-+ *
-+ * Copyright(c) 2013 Polatis Ltd.
-+ *
-+ * Author: Laszlo Papp <laszlo.papp@polatis.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/mfd/core.h>
-+#include <linux/module.h>
-+#include <linux/i2c.h>
-+
-+#include <linux/mfd/max665x-private.h>
-+
-+static struct mfd_cell max665x_devs[] = {
-+	{ .name = "max6651-gpio", },
-+	{ .name = "max6650", }, /* hwmon driver */
-+	{},
-+};
-+
-+static const struct regmap_config max665x_regmap_config = {
-+	.reg_bits = 5,
-+};
-+
-+static int max665x_probe(struct i2c_client *i2c,
-+			    const struct i2c_device_id *id)
-+{
-+	struct max665x_dev *max665x;
-+	int ret;
-+
-+	max665x = devm_kzalloc(&i2c->dev, sizeof(*max665x), GFP_KERNEL);
-+	if (!max665x)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(i2c, max665x);
-+	max665x->dev = &i2c->dev;
-+	max665x->i2c = i2c;
-+	max665x->map = devm_regmap_init_i2c(i2c, &max665x_regmap_config);
-+	if (IS_ERR(max665x->map)) {
-+		ret = PTR_ERR(max665x->map);
-+		dev_err(max665x->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	mutex_init(&max665x->iolock);
-+
-+	ret = mfd_add_devices(max665x->dev, -1, max665x_devs,
-+			ARRAY_SIZE(max665x_devs),
-+			NULL, 0, NULL);
-+
-+	if (ret < 0)
-+		dev_err(max665x->dev, "failed to register child devices\n");
-+
-+	return ret;
-+}
-+
-+static int max665x_remove(struct i2c_client *i2c)
-+{
-+	struct max665x_dev *max665x = i2c_get_clientdata(i2c);
-+
-+	mfd_remove_devices(max665x->dev);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id max665x_dt_match[] = {
-+	{ .compatible = "maxim,max665x" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, max665x_dt_match);
-+
-+static struct i2c_driver max665x_driver = {
-+	.driver = {
-+		.name = "max665x",
-+		.owner = THIS_MODULE,
-+		.of_match_table = max665x_dt_match,
-+	},
-+	.probe = max665x_probe,
-+	.remove = max665x_remove,
-+};
-+
-+module_i2c_driver(max665x_driver);
-+
-+MODULE_AUTHOR("Laszlo Papp <laszlo.papp@polatis.com>");
-+MODULE_DESCRIPTION("MAX6650-MAX6651 MFD");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max665x-private.h b/include/linux/mfd/max665x-private.h
-new file mode 100644
-index 0000000..293db4b
---- /dev/null
-+++ b/include/linux/mfd/max665x-private.h
-@@ -0,0 +1,34 @@
-+/*
-+ * max665x-private.h - Driver for the Maxim 6650/6651
-+ *
-+ * Copyright 2013 Polatis Ltd.
-+ *
-+ * Author: Laszlo Papp <laszlo.papp@polatis.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __LINUX_MFD_MAX665X_PRIVATE_H
-+#define __LINUX_MFD_MAX665X_PRIVATE_H
-+
-+#include <linux/i2c.h>
-+#include <linux/regmap.h>
-+
-+struct max665x_dev {
-+	struct device *dev;
-+	struct mutex iolock;
-+	struct i2c_client *i2c;
-+	struct regmap     *map;
-+	int type;
-+};
-+
-+#endif
--- 
-1.8.5.4
-
+ struct cpuidle_driver pseries_idle_driver = {
