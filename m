@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaBLI35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:29:57 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50183 "EHLO
+	id S1753465AbaBLIbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:31:21 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50155 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752055AbaBLIOA (ORCPT
+	by vger.kernel.org with ESMTP id S1752043AbaBLIN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:14:00 -0500
+	Wed, 12 Feb 2014 03:13:59 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kirill Tkhai" <tkhai@yandex.ru>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Steven Rostedt" <rostedt@goodmis.org>
+CC: akpm@linux-foundation.org, "Steven Rostedt" <rostedt@goodmis.org>,
+        "Miao Xie" <miaox@cn.fujitsu.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.216027001@decadent.org.uk>
+Message-ID: <lsq.1392192612.308570580@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 46/79] sched/rt: Fix rq's cpupri leak while
- enqueue/dequeue child RT entities
+Subject: [PATCH 3.2 43/79] ftrace: Initialize the ftrace profiler for each
+ possible cpu
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,64 +32,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Miao Xie <miaox@cn.fujitsu.com>
 
-commit 757dfcaa41844595964f1220f1d33182dae49976 upstream.
+commit c4602c1c818bd6626178d6d3fcc152d9f2f48ac0 upstream.
 
-This patch touches the RT group scheduling case.
+Ftrace currently initializes only the online CPUs. This implementation has
+two problems:
+- If we online a CPU after we enable the function profile, and then run the
+  test, we will lose the trace information on that CPU.
+  Steps to reproduce:
+  # echo 0 > /sys/devices/system/cpu/cpu1/online
+  # cd <debugfs>/tracing/
+  # echo <some function name> >> set_ftrace_filter
+  # echo 1 > function_profile_enabled
+  # echo 1 > /sys/devices/system/cpu/cpu1/online
+  # run test
+- If we offline a CPU before we enable the function profile, we will not clear
+  the trace information when we enable the function profile. It will trouble
+  the users.
+  Steps to reproduce:
+  # cd <debugfs>/tracing/
+  # echo <some function name> >> set_ftrace_filter
+  # echo 1 > function_profile_enabled
+  # run test
+  # cat trace_stat/function*
+  # echo 0 > /sys/devices/system/cpu/cpu1/online
+  # echo 0 > function_profile_enabled
+  # echo 1 > function_profile_enabled
+  # cat trace_stat/function*
+  # run test
+  # cat trace_stat/function*
 
-Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's
-priority, while rt_rq passed to them may be not the top-level rt_rq.
-This is wrong, because changing of priority on a child level does not
-guarantee that the priority is the highest all over the rq. So, this
-leak makes RT balancing unusable.
+So it is better that we initialize the ftrace profiler for each possible cpu
+every time we enable the function profile instead of just the online ones.
 
-The short example: the task having the highest priority among all rq's
-RT tasks (no one other task has the same priority) are waking on a
-throttle rt_rq.  The rq's cpupri is set to the task's priority
-equivalent, but real rq->rt.highest_prio.curr is less.
+Link: http://lkml.kernel.org/r/1387178401-10619-1-git-send-email-miaox@cn.fujitsu.com
 
-The patch below fixes the problem.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/49231385567953@web4m.yandex.ru
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/sched_rt.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ kernel/trace/ftrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -719,6 +719,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -618,7 +618,7 @@ static int ftrace_profile_init(void)
+ 	int cpu;
+ 	int ret = 0;
  
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && prio < prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
- }
-@@ -728,6 +735,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
- }
+-	for_each_online_cpu(cpu) {
++	for_each_possible_cpu(cpu) {
+ 		ret = ftrace_profile_init_cpu(cpu);
+ 		if (ret)
+ 			break;
 
