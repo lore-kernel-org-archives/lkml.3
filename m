@@ -1,130 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaBLCxY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 21:53:24 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:12625 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaBLCxX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 21:53:23 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Paul Bolle <pebolle@tiscali.nl>, Oliver Neukum <oneukum@suse.de>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: [PATCH part1 v6 3/7] PCI: Add support for Device Serial Number capability
-Date: Wed, 12 Feb 2014 10:52:49 +0800
-Message-ID: <1392173573-59844-4-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-In-Reply-To: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
-References: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
+	id S1752693AbaBLDFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 22:05:37 -0500
+Received: from mga01.intel.com ([192.55.52.88]:36437 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751933AbaBLDFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 22:05:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,829,1384329600"; 
+   d="scan'208";a="480005421"
+Message-ID: <52FAE504.8020001@intel.com>
+Date: Wed, 12 Feb 2014 11:05:40 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: [PATCH] drm/i915/opregion: work around buggy firmware that provides
+ 8+ output devices
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Device Serial Number capability, so we can use the
-unique device serial number to identify the physical device.  This helps
-determine whether a device was replaced while the system was suspended.
+The ACPI table on ASUS UX302LA has more than 8 output devices under the
+graphics controller device node. The problem is, the real active output
+device, the LCD panel, is listed the last. The result is, the LCD's
+device id doesn't get recorded in the active device list CADL array and
+when the _DCS control method for the LCD device is executed, it returns
+0x1d, meaning it is not active. This affects the hotkey delivery ASL
+code that will not deliver a notification if the output device is not
+active on backlight hotkey press.
 
-[bhelgaas: changelog, drop pci_dsn_init(), spell out "serial_number"]
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>
-Cc: Oliver Neukum <oneukum@suse.de>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
+I don't see a clean way to solve this problem since the operation region
+spec doesn't allow more than 8 output devices so we have no way of
+storing all these output devices. The fact that output devices that have
+_BCM control method usually means they have a higher possibility of being
+used than those who don't made me choose a simple way to work around
+the buggy firmware by replacing the last entry in CADL array with the one
+that has _BCM control method. There is no specific reason why the last
+entry is picked instead of others.
+
+Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=70241
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Reported-and-tested-by: Oleksij Rempel <linux@rempel-privat.de>
 ---
- drivers/pci/pci.c   |   30 ++++++++++++++++++++++++++++++
- drivers/pci/pci.h   |    2 +-
- drivers/pci/probe.c |    2 ++
- include/linux/pci.h |    1 +
- 4 files changed, 34 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/i915/intel_opregion.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 4502e6f..a8c1c2d 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2169,6 +2169,36 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
- }
+diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+index 4e960ec7419f..fc4348284f41 100644
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -613,6 +613,7 @@ static void intel_didl_outputs(struct drm_device *dev)
+ 	acpi_status status;
+ 	u32 temp;
+ 	int i = 0;
++	bool done;
  
- /**
-+ * pci_device_serial_number - get device serial number
-+ * @bus: PCI bus the device on
-+ * @devfn: the PCI device
-+ *
-+ * return the device serial number if device support,
-+ * otherwise return 0.
-+ */
-+static u64 pci_device_serial_number(struct pci_bus *bus, int devfn)
-+{
-+	int pos;
-+	u32 lo, hi;
-+
-+	if (!pci_bus_find_capability(bus, devfn, PCI_CAP_ID_EXP))
-+		return 0;
-+
-+	pos = pci_bus_find_ext_capability(bus, devfn, PCI_EXT_CAP_ID_DSN);
-+	if (!pos)
-+		return 0;
-+
-+	pci_bus_read_config_dword(bus, devfn, pos + 4, &lo);
-+	pci_bus_read_config_dword(bus, devfn, pos + 8, &hi);
-+	return ((u64)hi << 32) | lo;
-+}
-+
-+void pci_dsn_init(struct pci_dev *dev)
-+{
-+	dev->sn = pci_device_serial_number(dev->bus, dev->devfn);
-+}
-+
-+/**
-  * pci_configure_ari - enable or disable ARI forwarding
-  * @dev: the PCI device
-  *
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 4df38df..685301a 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -208,7 +208,7 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
- void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
- 				      struct list_head *realloc_head,
- 				      struct list_head *fail_head);
--
-+void pci_dsn_init(struct pci_dev *dev);
- /**
-  * pci_ari_enabled - query ARI forwarding status
-  * @bus: the PCI bus
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 6e34498..27d3e6f 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1324,6 +1324,8 @@ static void pci_init_capabilities(struct pci_dev *dev)
- 	/* Vital Product Data */
- 	pci_vpd_pci22_init(dev);
+ 	handle = ACPI_HANDLE(&dev->pdev->dev);
+ 	if (!handle || acpi_bus_get_device(handle, &acpi_dev))
+@@ -634,11 +635,20 @@ static void intel_didl_outputs(struct drm_device *dev)
+ 		return;
+ 	}
  
-+	pci_dsn_init(dev);
++	done = false;
+ 	list_for_each_entry(acpi_cdev, &acpi_video_bus->children, node) {
+ 		if (i >= 8) {
+ 			dev_dbg(&dev->pdev->dev,
+-				"More than 8 outputs detected via ACPI\n");
+-			return;
++				"More than 8 outputs detected via ACPI, %s\n",
++				acpi_device_bid(acpi_cdev));
++			if (acpi_has_method(acpi_cdev->handle, "_BCM")) {
++				dev_dbg(&dev->pdev->dev,
++					"%s has _BCM, replacing 8th entry\n",
++					acpi_device_bid(acpi_cdev));
++				i = 7;
++				done = true;
++			} else
++				continue;
+ 		}
+ 		status =
+ 			acpi_evaluate_integer(acpi_cdev->handle, "_ADR",
+@@ -650,6 +660,9 @@ static void intel_didl_outputs(struct drm_device *dev)
+ 				  &opregion->acpi->didl[i]);
+ 			i++;
+ 		}
 +
- 	/* Alternative Routing-ID Forwarding */
- 	pci_configure_ari(dev);
++		if (done)
++			return;
+ 	}
  
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 470de02..3631859 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -354,6 +354,7 @@ struct pci_dev {
- 	struct list_head msi_list;
- 	const struct attribute_group **msi_irq_groups;
- #endif
-+	u64 sn;		/* device serial number, 0 if not support */
- 	struct pci_vpd *vpd;
- #ifdef CONFIG_PCI_ATS
- 	union {
+ end:
 -- 
-1.7.1
-
+1.8.5.3
 
