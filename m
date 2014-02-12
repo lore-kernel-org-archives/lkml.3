@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaBLUV2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:21:28 -0500
-Received: from 1wt.eu ([62.212.114.60]:56978 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752916AbaBLUV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:21:27 -0500
-Date: Wed, 12 Feb 2014 21:21:22 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 000/120] 3.13.3-stable review
-Message-ID: <20140212202122.GA22611@1wt.eu>
-References: <20140211184823.492407127@linuxfoundation.org> <20140212083223.GD13873@1wt.eu> <20140212162643.GA21336@kroah.com> <20140212162957.GG17206@1wt.eu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212162957.GG17206@1wt.eu>
-User-Agent: Mutt/1.4.2.3i
+	id S1753845AbaBLUW4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 15:22:56 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:47067 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056AbaBLUWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 15:22:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140212180739.GB4250@linux.vnet.ibm.com>
+References: <20140206221117.GJ4250@linux.vnet.ibm.com>
+	<1391730288.23421.4102.camel@triegel.csb>
+	<20140207042051.GL4250@linux.vnet.ibm.com>
+	<20140207074405.GM5002@laptop.programming.kicks-ass.net>
+	<20140207165028.GO4250@linux.vnet.ibm.com>
+	<20140207165548.GR5976@mudshark.cambridge.arm.com>
+	<20140207180216.GP4250@linux.vnet.ibm.com>
+	<1391992071.18779.99.camel@triegel.csb>
+	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	<1392183564.18779.2187.camel@triegel.csb>
+	<20140212180739.GB4250@linux.vnet.ibm.com>
+Date: Wed, 12 Feb 2014 12:22:53 -0800
+X-Google-Sender-Auth: vt9adMHiGJJBxgiAX8LZ39Np_Ms
+Message-ID: <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, Feb 12, 2014 at 10:07 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> Us Linux-kernel hackers will often need to use volatile semantics in
+> combination with C11 atomics in most cases.  The C11 atomics do cover
+> some of the reasons we currently use ACCESS_ONCE(), but not all of them --
+> in particular, it allows load/store merging.
 
-On Wed, Feb 12, 2014 at 05:29:57PM +0100, Willy Tarreau wrote:
-> > > I upgraded my netbook from 3.10.x to test it (asus 1025C). It seems
-> > > to work, cpufreq, SATA, FB, Xorg (gma500), wifi (ath9k), LAN (atl1c),
-> > > sound, suspend. I'm hearing the fan run all the time without the CPU
-> > > spinning, but I suspect that it's the result of upgrading from 3.10
-> > > to 3.13, I'll have to dig that later (I didn't find anything related
-> > > to this in .3-rc1). I know this is very limited for a test, but it's
-> > > all I can provide for now.
-> > 
-> > Can you verify if 3.13.0 also has this problem for you or not?
-> 
-> I will, I just didn't have enough time this morning to do a second build.
+I really disagree with the "will need to use volatile".
 
-OK false alarm. It's an artefact of the kernel upgrade operations
-(depmod etc). Whatever the version (3.10.18, 3.13, 3.13.3-rc1), the
-fan runs fast at boot and slowly fades out. I usually do not hear
-this since I wake it up from suspend. The CPU heats during boot,
-and I suspect there's some dust in the fan making it spin longer
-than it used to.
+We should never need to use volatile (outside of whatever MMIO we do
+using C) if C11 defines atomics correctly.
 
-So please disregard my comment, 3.13.3-rc1 apparently works correctly
-here!
+Allowing load/store merging is *fine*. All sane CPU's do that anyway -
+it's called a cache - and there's no actual reason to think that
+"ACCESS_ONCE()" has to mean our current "volatile".
 
-Cheers,
-Willy
+Now, it's possible that the C standards simply get atomics _wrong_, so
+that they create visible semantics that are different from what a CPU
+cache already does, but that's a plain bug in the standard if so.
 
+But merging loads and stores is fine. And I *guarantee* it is fine,
+exactly because CPU's already do it, so claiming that the compiler
+couldn't do it is just insanity.
+
+Now, there are things that are *not* fine, like speculative stores
+that could be visible to other threads. Those are *bugs* (either in
+the compiler or in the standard), and anybody who claims otherwise is
+not worth discussing with.
+
+But I really really disagree with the "we might have to use
+'volatile'". Because if we *ever* have to use 'volatile' with the
+standard C atomic types, then we're just better off ignoring the
+atomic types entirely, because they are obviously broken shit - and
+we're better off doing it ourselves the way we have forever.
+
+Seriously. This is not even hyperbole. It really is as simple as that.
+
+                  Linus
