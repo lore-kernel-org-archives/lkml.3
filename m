@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbaBLIXV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:23:21 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50254 "EHLO
+	id S1753075AbaBLIXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:23:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50255 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752138AbaBLIOG (ORCPT
+	by vger.kernel.org with ESMTP id S1752139AbaBLIOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:14:06 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andreas Rohner" <andreas.rohner@gmx.net>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Ryusuke Konishi" <konishi.ryusuke@lab.ntt.co.jp>
+CC: akpm@linux-foundation.org, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Niklas Schnelle" <niklas@komani.de>,
+        "Giorgos" <ganastasiouGR@gmail.com>, "" <dashing.meng@gmail.com>,
+        "Takashi Iwai" <tiwai@suse.de>, "" <art1@vhex.net>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.385738435@decadent.org.uk>
+Message-ID: <lsq.1392192612.241158989@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 72/79] nilfs2: fix segctor bug that causes file system
- corruption
+Subject: [PATCH 3.2 37/79] xhci: Limit the spurious wakeup fix only to HP
+ machines
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,84 +34,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Rohner <andreas.rohner@gmx.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 70f2fe3a26248724d8a5019681a869abdaf3e89a upstream.
+commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
 
-There is a bug in the function nilfs_segctor_collect, which results in
-active data being written to a segment, that is marked as clean.  It is
-possible, that this segment is selected for a later segment
-construction, whereby the old data is overwritten.
+We've got regression reports that my previous fix for spurious wakeups
+after S5 on HP Haswell machines leads to the automatic reboot at
+shutdown on some machines.  It turned out that the fix for one side
+triggers another BIOS bug in other side.  So, it's exclusive.
 
-The problem shows itself with the following kernel log message:
+Since the original S5 wakeups have been confirmed only on HP machines,
+it'd be safer to apply it only to limited machines.  As a wild guess,
+limiting to machines with HP PCI SSID should suffice.
 
-  nilfs_sufile_do_cancel_free: segment 6533 must be clean
+This patch should be backported to kernels as old as 3.12, that
+contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
+spurious wakeups after S5 on Haswell".
 
-Usually a few hours later the file system gets corrupted:
-
-  NILFS: bad btree node (blocknr=8748107): level = 0, flags = 0x0, nchildren = 0
-  NILFS error (device sdc1): nilfs_bmap_last_key: broken bmap (inode number=114660)
-
-The issue can be reproduced with a file system that is nearly full and
-with the cleaner running, while some IO intensive task is running.
-Although it is quite hard to reproduce.
-
-This is what happens:
-
- 1. The cleaner starts the segment construction
- 2. nilfs_segctor_collect is called
- 3. sc_stage is on NILFS_ST_SUFILE and segments are freed
- 4. sc_stage is on NILFS_ST_DAT current segment is full
- 5. nilfs_segctor_extend_segments is called, which
-    allocates a new segment
- 6. The new segment is one of the segments freed in step 3
- 7. nilfs_sufile_cancel_freev is called and produces an error message
- 8. Loop around and the collection starts again
- 9. sc_stage is on NILFS_ST_SUFILE and segments are freed
-    including the newly allocated segment, which will contain active
-    data and can be allocated at a later time
-10. A few hours later another segment construction allocates the
-    segment and causes file system corruption
-
-This can be prevented by simply reordering the statements.  If
-nilfs_sufile_cancel_freev is called before nilfs_segctor_extend_segments
-the freed segments are marked as dirty and cannot be allocated any more.
-
-Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
-Reviewed-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Andreas Rohner <andreas.rohner@gmx.net>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: <dashing.meng@gmail.com>
+Reported-by: Niklas Schnelle <niklas@komani.de>
+Reported-by: Giorgos <ganastasiouGR@gmail.com>
+Reported-by: <art1@vhex.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nilfs2/segment.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-pci.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -1437,17 +1437,19 @@ static int nilfs_segctor_collect(struct
- 
- 		nilfs_clear_logs(&sci->sc_segbufs);
- 
--		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
--		if (unlikely(err))
--			return err;
--
- 		if (sci->sc_stage.flags & NILFS_CF_SUFREED) {
- 			err = nilfs_sufile_cancel_freev(nilfs->ns_sufile,
- 							sci->sc_freesegs,
- 							sci->sc_nfreesegs,
- 							NULL);
- 			WARN_ON(err); /* do not happen */
-+			sci->sc_stage.flags &= ~NILFS_CF_SUFREED;
- 		}
-+
-+		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
-+		if (unlikely(err))
-+			return err;
-+
- 		nadd = min_t(int, nadd << 1, SC_MAX_SEGDELTA);
- 		sci->sc_stage = prev_stage;
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -121,7 +121,12 @@ static void xhci_pci_quirks(struct devic
+ 		 * any other sleep) on Haswell machines with LPT and LPT-LP
+ 		 * with the new Intel BIOS
+ 		 */
+-		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
++		/* Limit the quirk to only known vendors, as this triggers
++		 * yet another BIOS bug on some other machines
++		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
++		 */
++		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
++			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
  	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 
