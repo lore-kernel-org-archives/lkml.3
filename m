@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaBLJig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:38:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35401 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763AbaBLJie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:38:34 -0500
-Date: Wed, 12 Feb 2014 10:38:32 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: protect modifications to cgroup_idr with
- cgroup_mutex
-Message-ID: <20140212093832.GD28085@dhcp22.suse.cz>
-References: <52F9D9DA.7040108@huawei.com>
- <20140211102032.GA11946@dhcp22.suse.cz>
- <20140212091238.GC28085@dhcp22.suse.cz>
- <52FB3E50.8020809@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FB3E50.8020809@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751948AbaBLJlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:41:13 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:62429 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751226AbaBLJlL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 04:41:11 -0500
+Message-ID: <1392198068.23759.7.camel@x220>
+Subject: [PATCH] ARM: S3C24XX: Fix typo "CONFIG_CPUS_3C2443"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Richard Weinberger <richard@nod.at>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 12 Feb 2014 10:41:08 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Feb 2014 09:41:09.0307 (UTC) FILETIME=[8F0640B0:01CF27D6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-02-14 17:26:40, Li Zefan wrote:
-> On 2014/2/12 17:12, Michal Hocko wrote:
-> > Li has pointed out that my previous backport was not correct because
-> > err_unlock label releases a reference to supperblock which was not taken
-> > before idr_alloc. I've also removed cgroup_mutex from free_css_id as per
-> > Li.
-> > Fixed in this version.
-> > 
-> 
-> Looks good to me!
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested. This needs testing by people with access to knowledge,
+compilers, and/or hardware related to CPU_S3C2443. I'm not one of them. 
 
-Thanks for double checking.
+ arch/arm/mach-s3c24xx/common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Are you going to send it to stable mailing list after the fix hits mainline
-> or use it internally?
-
-I plan to have it tested internally and then send it later on when
-stable FAILED to apply mail arrives. Unless you want to send it yourself
-of course.
-
-> It has small conflicts with this patch that will also be backported to 3.12:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/tj/cgroup.git/commit/kernel/cgroup.c?h=for-3.14-fixes&id=b58c89986a77a23658682a100eb15d8edb571ebb
-
-Thanks for the heads up. Should be trivial to resolve.
+diff --git a/arch/arm/mach-s3c24xx/common.c b/arch/arm/mach-s3c24xx/common.c
+index 4adaa4b..1d77d70 100644
+--- a/arch/arm/mach-s3c24xx/common.c
++++ b/arch/arm/mach-s3c24xx/common.c
+@@ -484,7 +484,7 @@ struct platform_device s3c2440_device_dma = {
+ };
+ #endif
+ 
+-#if defined(CONFIG_CPUS_3C2443) || defined(CONFIG_CPU_S3C2416)
++#if defined(CONFIG_CPU_S3C2443) || defined(CONFIG_CPU_S3C2416)
+ static struct resource s3c2443_dma_resource[] = {
+ 	[0] = DEFINE_RES_MEM(S3C24XX_PA_DMA, S3C24XX_SZ_DMA),
+ 	[1] = DEFINE_RES_IRQ(IRQ_S3C2443_DMA0),
 -- 
-Michal Hocko
-SUSE Labs
+1.8.5.3
+
