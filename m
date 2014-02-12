@@ -1,39 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaBLJNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:13:37 -0500
-Received: from mga03.intel.com ([143.182.124.21]:37400 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386AbaBLJNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:13:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,831,1384329600"; 
-   d="scan'208";a="473881263"
-Date: Wed, 12 Feb 2014 11:21:08 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Peter Wu <lekensteyn@gmail.com>,
-        Bastien Traverse <bastien.traverse@gmail.com>,
-        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
-        linux-pm@vger.kernel.org
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend to
- RAM
-Message-ID: <20140212092107.GA5018@intel.com>
-References: <52F2CC7B.80406@gmail.com>
- <20140211104237.GE18029@intel.com>
- <8701691.z6Q6jDD18v@al>
- <1835578.EmLUpvTMQe@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1835578.EmLUpvTMQe@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751519AbaBLJPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:15:31 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:45644 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711AbaBLJP1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 04:15:27 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, sachin.kamat@linaro.org
+Subject: [PATCH 1/4] mfd: wm8400-core: Remove unnecessary goto
+Date: Wed, 12 Feb 2014 14:40:10 +0530
+Message-Id: <1392196213-20576-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 12:58:07AM +0100, Rafael J. Wysocki wrote:
-> Mika, I'll add a changelog to your patch and queue it up as a fix for 3.14.
+Return directly to avoid redundant lines of code.
 
-Thanks Rafael.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/mfd/wm8400-core.c |   22 +++++-----------------
+ 1 file changed, 5 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/mfd/wm8400-core.c b/drivers/mfd/wm8400-core.c
+index d66d256551fb..8788fd1f0a83 100644
+--- a/drivers/mfd/wm8400-core.c
++++ b/drivers/mfd/wm8400-core.c
+@@ -161,31 +161,19 @@ static int wm8400_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+ 	struct wm8400 *wm8400;
+-	int ret;
+ 
+ 	wm8400 = devm_kzalloc(&i2c->dev, sizeof(struct wm8400), GFP_KERNEL);
+-	if (wm8400 == NULL) {
+-		ret = -ENOMEM;
+-		goto err;
+-	}
++	if (wm8400 == NULL)
++		return -ENOMEM;
+ 
+ 	wm8400->regmap = devm_regmap_init_i2c(i2c, &wm8400_regmap_config);
+-	if (IS_ERR(wm8400->regmap)) {
+-		ret = PTR_ERR(wm8400->regmap);
+-		goto err;
+-	}
++	if (IS_ERR(wm8400->regmap))
++		return PTR_ERR(wm8400->regmap);
+ 
+ 	wm8400->dev = &i2c->dev;
+ 	i2c_set_clientdata(i2c, wm8400);
+ 
+-	ret = wm8400_init(wm8400, dev_get_platdata(&i2c->dev));
+-	if (ret != 0)
+-		goto err;
+-
+-	return 0;
+-
+-err:
+-	return ret;
++	return wm8400_init(wm8400, dev_get_platdata(&i2c->dev));
+ }
+ 
+ static int wm8400_i2c_remove(struct i2c_client *i2c)
+-- 
+1.7.9.5
+
