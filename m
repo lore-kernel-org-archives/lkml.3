@@ -1,103 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaBLRay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 12:30:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8173 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472AbaBLRav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 12:30:51 -0500
-Date: Wed, 12 Feb 2014 19:35:24 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
-        virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        davem@davemloft.net, qinchuanyu@huawei.com,
-        Joern Engel <joern@logfs.org>,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH net 1/3] kref: add kref_sub_return
-Message-ID: <20140212173524.GA26860@redhat.com>
-References: <1392222846-26699-1-git-send-email-mst@redhat.com>
- <1392222846-26699-2-git-send-email-mst@redhat.com>
- <20140212165630.GA22991@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212165630.GA22991@kroah.com>
+	id S1752770AbaBLRfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 12:35:08 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45586 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaBLRfG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 12:35:06 -0500
+Message-ID: <1392226480.5536.61.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v2] [media] of: move graph helpers from
+ drivers/media/v4l2-core to drivers/media
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Date: Wed, 12 Feb 2014 18:34:40 +0100
+In-Reply-To: <20140212223515.71a445f4.m.chehab@samsung.com>
+References: <1392154905-12007-1-git-send-email-p.zabel@pengutronix.de>
+	 <20140212065306.36a03e82.m.chehab@samsung.com>
+	 <1392196314.5536.15.camel@pizza.hi.pengutronix.de>
+	 <20140212223515.71a445f4.m.chehab@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 08:56:30AM -0800, Greg Kroah-Hartman wrote:
-> On Wed, Feb 12, 2014 at 06:38:21PM +0200, Michael S. Tsirkin wrote:
-> > It is sometimes useful to get the value of the reference count after
-> > decrement.
-> > For example, vhost wants to execute some periodic cleanup operations
-> > once number of references drops below a specific value, before it
-> > reaches zero (for efficiency).
+Hi Mauro,
+
+Am Mittwoch, den 12.02.2014, 22:35 +0900 schrieb Mauro Carvalho Chehab:
+> Em Wed, 12 Feb 2014 10:11:54 +0100
+> Philipp Zabel <p.zabel@pengutronix.de> escreveu:
 > 
-> You should never care about what the value of the kref is, if you are
-> using it correctly :)
+> > Hi Mauro,
+> > 
+> > Am Mittwoch, den 12.02.2014, 06:53 +0900 schrieb Mauro Carvalho Chehab:
+> > [...]
+> > > > diff --git a/include/media/of_graph.h b/include/media/of_graph.h
+> > > > new file mode 100644
+> > > > index 0000000..3bbeb60
+> > > > --- /dev/null
+> > > > +++ b/include/media/of_graph.h
+> > > > @@ -0,0 +1,46 @@
+> > > > +/*
+> > > > + * OF graph binding parsing helpers
+> > > > + *
+> > > > + * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
+> > > > + * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > > > + *
+> > > > + * Copyright (C) 2012 Renesas Electronics Corp.
+> > > > + * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > > > + *
+> > > > + * This program is free software; you can redistribute it and/or modify
+> > > > + * it under the terms of version 2 of the GNU General Public License as
+> > > > + * published by the Free Software Foundation.
+> > > > + */
+> > > > +#ifndef __LINUX_OF_GRAPH_H
+> > > > +#define __LINUX_OF_GRAPH_H
+> > > > +
+> > > > +#ifdef CONFIG_OF
+> > > 
+> > > As a matter of consistency, it would be better to test here for
+> > > CONFIG_OF_GRAPH instead, to reflect the same symbol that enables such
+> > > functions as used on Kconfig/Makefile.
+> > 
+> > Maybe I'm trying to be too clever for my own good, but my reasoning was
+> > as follows:
+> > 
+> > Suppose I newly use the of_graph_ helpers in a subsystem that does not
+> > yet select OF_GRAPH. In that case I'd rather get linking errors earlier
+> > rather than stubbed out functions that silently fail to parse the DT
+> > later.
 > 
-> So I really don't want to add this function, as I'm sure people will use
-> it incorrectly.  You should only care if the reference drops to 0, if
-> not, then your usage doesn't really fit into the "kref" model, and so,
-> just use an atomic variable.
-
-This happens when you have code that keeps
-reference itself implicitly or explicitly.
-
-	foo(struct kref *k, int bar) {
-
-	sub = kref_sub(k)
-
-	if (sub == 1)
-		FOO(k, bar) /* Here I am the only one
-			       with a reference */
-
-	}
-
-	kref_get(k)
-	foo(k, bar);
-	....
-	kref_put(k)
-
-Why not do FOO in destructor you ask?
-Absolutely but this will be called much later.
-
-Maybe you will reconsider if I document this
-as the only legal use?
-
+> I see your point, but, imagining that someone pushed a patch using those
+> symbols upstream, that would break compilation and git bisection, with 
+> will hurt everyone, and not only the very few of us that would actually
+> need the OF_GRAPH symbol for an specific driver.
 > 
-> I really want to know why it matters for "efficiency" that you know this
-> number.  How does that help anything, as the number could then go up
-> later on, and the work you did at a "lower" number is obsolete, right?
+> Also, such push would mean that someone forgot to do his homework and
+> to test if the committed functionality is actually working.
 > 
-> thanks,
+> So, it seems more fair that the one that did the mistake will be the one
+> that will suffer the consequences for his errors instead of applying a
+> penalty to everybody's else ;)
+
+point taken.
+
+> > Since there is
+> > config VIDEO_DEV
+> > 	select OF_GRAPH if OF
+> > already and the same should be added for other users of device tree
+> > graphs, I think stubbing out the functions only if OF is disabled should
+> > be enough.
 > 
-> greg k-h
+> Well, if you want to be sure that the graph will always be there if OF, then
+> you could do, instead:
+> 
+> config OF_GRAPH
+> 	bool
+> 	default OF
+> 
+> (that would actually make OF_GRAPH just an alias to OF - so we could just
+> use OF instead).
+> 
+> In any case, I think that we should use the same config name at Makefile, 
+> Kconfig and of_graph.h (either OF_GRAPH or just OF).
 
-The issue is that if number dropped to 1, this means
-we must do the cleanup work since there are
-no outstanding buffers, (last user is ourselves)
-if we do not cleanup,
-guest will hang waiting for us.
+If nobody states a strong preference, I'll just get rid of the
+CONFIG_OF_GRAPH option altogether and use CONFIG_OF directly.
 
-But it never drops to 0 since we have our own reference
-in the device.
-If it goes up again this means we didn't have
-to do cleanup, but an alternative is doing
-it all the time and that is slow.
+regards
+Philipp
 
-Yes I can rework vhost to open-code this kref use, it's
-no big deal.
-Alternatively since most of the use does match kref
-model, maybe __kref_sub_return with disclaimers
-that you must know what you are doing?
-Please let me know.
-
-Thanks!
-
--- 
-MST
