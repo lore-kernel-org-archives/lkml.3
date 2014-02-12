@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaBLBgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 20:36:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919AbaBLBgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 20:36:45 -0500
-Date: Wed, 12 Feb 2014 09:37:34 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: keescook@chromium.org, hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] disable kaslr in kdump kernel
-Message-ID: <20140212013734.GE3709@dhcp-16-126.nay.redhat.com>
-References: <20140211100837.GA17202@dhcp-16-126.nay.redhat.com>
- <20140211131640.GB1055@redhat.com>
+	id S1752862AbaBLBgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 20:36:54 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:64226 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484AbaBLBgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 20:36:51 -0500
+Date: Tue, 11 Feb 2014 17:36:50 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com
+Subject: Re: [PATCH v2 6/6] ARM: tegra: cpuidle: use firmware for power down
+Message-ID: <20140212013650.GA7584@quad.lixom.net>
+References: <1391747706-1847-1-git-send-email-acourbot@nvidia.com>
+ <1391747706-1847-7-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140211131640.GB1055@redhat.com>
+In-Reply-To: <1391747706-1847-7-git-send-email-acourbot@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/14 at 08:16am, Vivek Goyal wrote:
-> On Tue, Feb 11, 2014 at 06:08:38PM +0800, Dave Young wrote:
-> > 
-> > KASLR does not work in kdump kernel because it's too early that mem=exactmap
-> > has not been parsed.
-> > 
-> > Since KASLR does not make much sense for kdump kernel thus let's disable it
-> > for kdump kernel. To check if it is a kdump kernel I just check the cmdline
-> > param elfcorehdr just like is_kdump_kernel.
-> > 
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
+On Fri, Feb 07, 2014 at 01:35:06PM +0900, Alexandre Courbot wrote:
+> Attempt to invoke the prepare_idle() and do_idle() firmware calls
+> to power down a CPU so an underlying firmware gets informed of
+> the idle operation and performs it by itself if designed in such a way.
 > 
-> I don't think it is a good idea. I don't like hardcoding second kernel's
-> behavior. I rather vary second kernel's behavior based on command line
-> parameters or based on values passed in bootparams.
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  arch/arm/mach-tegra/cpuidle-tegra114.c | 11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
 > 
-> So I am more than happy to pass command line option "nokaslr" instead
-> of hardcoding this in kernel.
+> diff --git a/arch/arm/mach-tegra/cpuidle-tegra114.c b/arch/arm/mach-tegra/cpuidle-tegra114.c
+> index e0b87300243d..558067ddc186 100644
+> --- a/arch/arm/mach-tegra/cpuidle-tegra114.c
+> +++ b/arch/arm/mach-tegra/cpuidle-tegra114.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/cpuidle.h>
+>  #include <linux/cpu_pm.h>
+>  #include <linux/clockchips.h>
+> +#include <asm/firmware.h>
+>  
+>  #include <asm/cpuidle.h>
+>  #include <asm/suspend.h>
+> @@ -45,7 +46,15 @@ static int tegra114_idle_power_down(struct cpuidle_device *dev,
+>  
+>  	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
+>  
+> -	cpu_suspend(0, tegra30_sleep_cpu_secondary_finish);
+> +	call_firmware_op(prepare_idle);
+> +
+> +	switch (call_firmware_op(do_idle)) {
+> +	case -ENOSYS:
+> +		cpu_suspend(0, tegra30_sleep_cpu_secondary_finish);
+> +		break;
+> +	default:
+> +		break;
 
-That's also fine to me, but I think we'd better add it to documentation?
+Do you expect other cases down the road? If not, this is a simple if instead:
 
-> 
-> Thanks
-> Vivek
-> 
-> > ---
-> >  linux-2.6/arch/x86/boot/compressed/aslr.c |    5 +++++
-> >  1 file changed, 5 insertions(+)
-> > 
-> > Index: dyoung/git/linux-2.6/arch/x86/boot/compressed/aslr.c
-> > ===================================================================
-> > --- linux-2.6/arch/x86/boot/compressed/aslr.c
-> > +++ linux-2.6/arch/x86/boot/compressed/aslr.c
-> > @@ -293,6 +293,11 @@ unsigned char *choose_kernel_location(un
-> >  		goto out;
-> >  	}
-> >  
-> > +	if (cmdline_find_option("elfcorehdr", NULL, 0) != -1) {
-> > +		debug_putstr("KASLR disabled...\n");
-> > +		goto out;
-> > +	}
-> > +
-> >  	/* Record the various known unsafe memory ranges. */
-> >  	mem_avoid_init((unsigned long)input, input_size,
-> >  		       (unsigned long)output, output_size);
+	/* Only call cpu_suspend if TF didn't handle the pre-suspend logic */
+	if (call_firmware_op(do_idle) == -ENOSYS)
+		cpu_suspend(....);
+
+
+-Olof
