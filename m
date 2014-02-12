@@ -1,139 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323AbaBLVU7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:20:59 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:33970 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863AbaBLVU6 (ORCPT
+	id S1754524AbaBLVVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:21:40 -0500
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:36477 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754416AbaBLVVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:20:58 -0500
-Message-ID: <52FBE5B6.2040603@gmail.com>
-Date: Wed, 12 Feb 2014 22:20:54 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gupta Pekon <pekon@ti.com>
-Subject: Re: [RFC PATCH v2 0/4] mtd: nand: add per partition ECC config
-References: <1392155209-14495-1-git-send-email-b.brezillon.dev@gmail.com> <CAGVrzcZei92K9Jeue-Yvcev7n08YEEqfRbN2xgqLpW7epMzFVA@mail.gmail.com>
-In-Reply-To: <CAGVrzcZei92K9Jeue-Yvcev7n08YEEqfRbN2xgqLpW7epMzFVA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Feb 2014 16:21:38 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: rjw@rjwysocki.net, mirq-linux@rere.qmqm.pl, ulf.hansson@linaro.org,
+        chris@printf.net
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: [RFT][PATCH v3] mmc: change cb710-mmc platform power management to use dev_pm_ops
+Date: Wed, 12 Feb 2014 14:21:29 -0700
+Message-Id: <1392240089-19489-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+Change cb710-mmc platform driver to register pm ops using dev_pm_ops instead
+of legacy pm_ops. The existing legacy suspend/resume routines are identical
+and simply clear IRQ mask in the device in case it got undefined during sleep
+state. Changed code to collapse suspend and resume into one .pm interface
+for suspend and resume which gets installed for suspend, freeze, poweroff,
+thaw, restore, and resume states using SIMPLE_DEV_PM_OPS().
 
-On 12/02/2014 20:49, Florian Fainelli wrote:
-> Hi Boris,
->
-> 2014-02-11 13:46 GMT-08:00 Boris BREZILLON <b.brezillon.dev@gmail.com>:
->> Hello,
->>
->> This patch series is a proposal to add per partition ECC config.
->>
->> It defines a new partition type called nand_part which stores a pointer to
->> a nand_ecc_ctrl struct.
->> This specific nand_ecc_ctrl struct is used in place of the base NAND chip
->> nand_ecc_ctrl struct when accessing NAND chip from nand_part MTD device.
->>
->> If the partition does not define any ECC config, the NAND chip ECC config
->> is used instead.
-> Although the idea does look nice on the paper, I wonder if it is
-> really useful to have that much complexity in the kernel. Most likely
-> what is happening is that your bootloader partition has a specific ECC
-> scheme due to the CPU bootrom or whatever early bootagent is running
-> on the system. When that is the case, this can be solved in user-space
-> by preparing full pages (main+spare) along with their specific ECC
-> requirements and use the MTD_FILE_MODE_RAW option on your specific MTD
-> partition.
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
 
-Okay, that should be possible, althought in the sunxi specific case I 
-haven't
-figured out how to generate these ECC data yet (even if it's using BCH 
-algorithms).
+patch v3: Addresses review comments on patch v2
 
-> You do not describe what is the end goal of this patchset, which might
-> help figuring out the potential other platforms requirements etc...
+ drivers/mmc/host/cb710-mmc.c |   40 ++++++++++++++++------------------------
+ 1 file changed, 16 insertions(+), 24 deletions(-)
 
-My goal is exactly the one you described above, I just thought this would be
-much easier to handle this within the kernel, without having to develop 
-extra
-user space tools.
-Moreover the user would be able to directly manipulate the data on the MTD
-partitions.
-
-This implementation is not that complex and should not impact performances
-(it's just using cur_ecc pointer instead of intern ecc struct).
-
-Most of the extra code introduced by this series come from the new 
-partition type
-handling, which is quite straightforward BTW.
-
-Anyway, I understand your concern. Could MTD maintainers (and NAND driver
-developpers) give there opinion too ?
-
-BTW, I'm also working on a data randomization layer (needed by some 
-MLC/TLC chips)
-within the NAND core framework and I'm using the same per partition approach
-(for the exact same reason: boot0 partition uses a randomizer seed that 
-might not fit
-the NAND chip requirements).
-
-Should I reconsider doing this too ?
-
-Thanks for you comments.
-
-Best Regards,
-
-Boris
->
->> This patch series also provides an helper function to parse DT defined NAND
->> partitions (ofnandpart_parse).
->>
->> If you want to test it you'll have to replace calls to
->> mtd_device_parse_register with ofnandpart_parse within your NAND controller
->> driver and implement a driver specific parser function that will provide
->> the ECC config (see ofnandpart_data struct).
->>
->> The 4th patch of this series is here as an example on how to move from MTD
->> partitions to NAND partitions.
->>
->> Best Regards,
->>
->> Boris
->>
->> Changes since v1:
->> - almost everything :-)
->>
->> Boris BREZILLON (4):
->>    mtd: nand: take nand_ecc_ctrl initialization out of nand_scan_tail
->>    mtd: nand: add support for NAND partitions
->>    mtd: nand: add DT NAND partition parser
->>    mtd: nand: add NAND partition support to the sunxi driver
->>
->>   drivers/mtd/nand/Kconfig      |    4 +
->>   drivers/mtd/nand/Makefile     |    2 +
->>   drivers/mtd/nand/nand_base.c  |  763 ++++++++++++++++++++++++++++++++---------
->>   drivers/mtd/nand/ofnandpart.c |  104 ++++++
->>   drivers/mtd/nand/sunxi_nand.c |   69 +++-
->>   include/linux/mtd/nand.h      |   54 +++
->>   6 files changed, 835 insertions(+), 161 deletions(-)
->>   create mode 100644 drivers/mtd/nand/ofnandpart.c
->>
->> --
->> 1.7.9.5
->>
->>
->> ______________________________________________________
->> Linux MTD discussion mailing list
->> http://lists.infradead.org/mailman/listinfo/linux-mtd/
->
->
+diff --git a/drivers/mmc/host/cb710-mmc.c b/drivers/mmc/host/cb710-mmc.c
+index 1087b4c..2dc7b2dc 100644
+--- a/drivers/mmc/host/cb710-mmc.c
++++ b/drivers/mmc/host/cb710-mmc.c
+@@ -662,26 +662,6 @@ static const struct mmc_host_ops cb710_mmc_host = {
+ 	.get_cd = cb710_mmc_get_cd,
+ };
+ 
+-#ifdef CONFIG_PM
+-
+-static int cb710_mmc_suspend(struct platform_device *pdev, pm_message_t state)
+-{
+-	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+-
+-	cb710_mmc_enable_irq(slot, 0, ~0);
+-	return 0;
+-}
+-
+-static int cb710_mmc_resume(struct platform_device *pdev)
+-{
+-	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+-
+-	cb710_mmc_enable_irq(slot, 0, ~0);
+-	return 0;
+-}
+-
+-#endif /* CONFIG_PM */
+-
+ static int cb710_mmc_init(struct platform_device *pdev)
+ {
+ 	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+@@ -762,14 +742,26 @@ static int cb710_mmc_exit(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++static int cb710_mmc_suspend_resume(struct device *dev)
++{
++	struct cb710_slot *slot = cb710_pdev_to_slot(to_platform_device(dev));
++
++	cb710_mmc_enable_irq(slot, 0, ~0);
++	return 0;
++}
++#else
++#define cb710_mmc_suspend_resume NULL
++#endif
++
++static SIMPLE_DEV_PM_OPS(cb710_mmc_dev_pm_ops, cb710_mmc_suspend_resume,
++			 cb710_mmc_suspend_resume);
++
+ static struct platform_driver cb710_mmc_driver = {
+ 	.driver.name = "cb710-mmc",
+ 	.probe = cb710_mmc_init,
+ 	.remove = cb710_mmc_exit,
+-#ifdef CONFIG_PM
+-	.suspend = cb710_mmc_suspend,
+-	.resume = cb710_mmc_resume,
+-#endif
++	.driver.pm = &cb710_mmc_dev_pm_ops,
+ };
+ 
+ module_platform_driver(cb710_mmc_driver);
+-- 
+1.7.10.4
 
