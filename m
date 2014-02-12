@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaBLIbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:31:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50149 "EHLO
+	id S1753504AbaBLIbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:31:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50152 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752039AbaBLIN7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752035AbaBLIN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:13:59 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,17 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Dominik Brodowski" <linux@dominikbrodowski.net>,
-        "Josh Boyer" <jwboyer@redhat.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Josh Boyer" <jwboyer@fedoraproject.org>,
-        "Thomas Renninger" <trenn@suse.de>
+CC: akpm@linux-foundation.org, "Thomas Hellstrom" <thellstrom@vmware.com>,
+        "Joseph Dolinak" <kanilo2@yahoo.com>,
+        "Jakob Bornecrantz" <jakob@vmware.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.821204399@decadent.org.uk>
+Message-ID: <lsq.1392192612.726864176@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 51/79] cpupower: Fix segfault due to incorrect
- getopt_long arugments
+Subject: [PATCH 3.2 45/79] drm/ttm: Fix accesses through vmas with only
+ partial coverage
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,41 +33,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit f447ef4a56dee4b68a91460bcdfe06b5011085f2 upstream.
+commit d386735588c3e22129c2bc6eb64fc1d37a8f805c upstream.
 
-If a user calls 'cpupower set --perf-bias 15', the process will end with
-a SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi
-call.  This is because the getopt_long structure currently has all of
-the options as having an optional_argument when they really have a
-required argument.  We change the structure to use required_argument to
-match the short options and it resolves the issue.
+VMAs covering a bo but that didn't start at the same address space offset as
+the bo they were mapping were incorrectly generating SEGFAULT errors in
+the fault handler.
 
-This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
-
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Joseph Dolinak <kanilo2@yahoo.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+[bwh: Backported to 3.2: drm_vma_node_start() is open-coded;
+ vma_pages() was open-coded]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- tools/power/cpupower/utils/cpupower-set.c | 6 +++---
+ drivers/gpu/drm/ttm/ttm_bo_vm.c | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/tools/power/cpupower/utils/cpupower-set.c
-+++ b/tools/power/cpupower/utils/cpupower-set.c
-@@ -18,9 +18,9 @@
- #include "helpers/bitmask.h"
+--- a/drivers/gpu/drm/ttm/ttm_bo_vm.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_vm.c
+@@ -144,9 +144,9 @@ static int ttm_bo_vm_fault(struct vm_are
+ 	}
  
- static struct option set_opts[] = {
--	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
--	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
--	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
-+	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
-+	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
-+	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
- 	{ },
- };
+ 	page_offset = ((address - vma->vm_start) >> PAGE_SHIFT) +
+-	    bo->vm_node->start - vma->vm_pgoff;
+-	page_last = ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) +
+-	    bo->vm_node->start - vma->vm_pgoff;
++		vma->vm_pgoff - bo->vm_node->start;
++	page_last = vma_pages(vma) + vma->vm_pgoff -
++		bo->vm_node->start;
  
+ 	if (unlikely(page_offset >= bo->num_pages)) {
+ 		retval = VM_FAULT_SIGBUS;
 
