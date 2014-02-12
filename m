@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558AbaBLJtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:49:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58984 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaBLJtl (ORCPT
+	id S1751999AbaBLJwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:52:00 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:14089 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288AbaBLJv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:49:41 -0500
-Date: Wed, 12 Feb 2014 10:49:30 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: kbuild@01.org, Ingo Molnar <mingo@kernel.org>,
+	Wed, 12 Feb 2014 04:51:57 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-46-52fb443b68b4
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] sched: Fix rt/dl hotplug condition
-Message-ID: <20140212094930.GB3545@laptop.programming.kicks-ass.net>
-References: <20140212090222.GK26776@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212090222.GK26776@mwanda>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH] mfd: 88pm800: Fix I2C device resource leak if probe fails
+Date: Wed, 12 Feb 2014 10:51:41 +0100
+Message-id: <1392198701-20547-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t/xK7rWLr+DDGZtUbB4/cLQ4v7Xo4wW
+	l3fNYbM43c1qsWDjI0YHVo871/awecw7GejRt2UVo8fnTXIBLFFcNimpOZllqUX6dglcGfvv
+	vGMt2Mpe8f3df+YGxtlsXYycHBICJhJ/3/dD2WISF+6tB7K5OIQEljJKnNu6nRnC6WOS2PNi
+	HStIFZuAscTm5UvAOkQEsiR+TFvNAmIzC3hKvPv7kB3EFhbwkui8+gUsziKgKrHn/iomEJtX
+	wF1i+pI9QL0cQNsUJOZMspnAyL2AkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgAfN3B
+	uPSY1SFGAQ5GJR5eBs9fQUKsiWXFlbmHGCU4mJVEePVPAIV4UxIrq1KL8uOLSnNSiw8xMnFw
+	SjUwpt2umfpnQ6JH3Ido9gfsucxSer18X2ccU1N2vXxHOnLO5wmu5zn3u775VHT/tvD5sqOP
+	fGQbppUq+LwOiPkg1CJfEWT4JSJ/6W6W9QLPJp5MMNT5smbLOvNDpl4pE/dn6/zKublbZYLG
+	cXs38fvsbMUz2LLOyx+rXdRyu/HAv/jSWN/kZ4vKlViKMxINtZiLihMBGKzbpt4BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter reported:
+During probe the driver allocates two dummy I2C devices for subchips in
+function pm800_pages_init(). Additionally this function allocates
+regmaps for these subchips. If any of these steps fail then these dummy
+I2C devices are not freed and resources leak.
 
-> kernel/sched/rt.c:1347 pick_next_task_rt() warn: variable dereferenced before check 'prev' (see line 1338)
-> kernel/sched/deadline.c:1011 pick_next_task_dl() warn: variable dereferenced before check 'prev' (see line 1005)
+On pm800_pages_init() fail the driver must call pm800_pages_exit() to
+unregister dummy I2C devices.
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>
-Fixes: 38033c37faab ("sched: Push down pre_schedule() and idle_balance()")
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: stable@vger.kernel.org
 ---
- kernel/sched/deadline.c | 2 +-
- kernel/sched/rt.c       | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/88pm800.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index ed31ef66ab9d..d60008e4bce9 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1001,7 +1001,7 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
- 	dl_rq = &rq->dl;
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index 7dca1e640970..28627c1ff9da 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -586,8 +586,8 @@ static int pm800_probe(struct i2c_client *client,
+ 	return 0;
  
- #ifdef CONFIG_SMP
--	if (dl_task(prev))
-+	if (prev && dl_task(prev))
- 		pull_dl_task(rq);
- #endif
- 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 72f9ec759972..7294b498b2c1 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1334,7 +1334,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 
- #ifdef CONFIG_SMP
- 	/* Try to pull RT tasks here if we lower this rq's prio */
--	if (rq->rt.highest_prio.curr > prev->prio)
-+	if (prev && (rq->rt.highest_prio.curr > prev->prio))
- 		pull_rt_task(rq);
- #endif
- 
+ err_device_init:
+-	pm800_pages_exit(chip);
+ err_page_init:
++	pm800_pages_exit(chip);
+ err_subchip_alloc:
+ 	pm80x_deinit();
+ out_init:
+-- 
+1.7.9.5
+
