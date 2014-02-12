@@ -1,75 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaBLI7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:59:25 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:34163 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824AbaBLI7X (ORCPT
+	id S1751824AbaBLJAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:00:43 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:33596 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaBLJAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:59:23 -0500
-Date: Wed, 12 Feb 2014 08:59:13 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 02/14] mfd: sec: Select different RTC regmaps for devices
-Message-ID: <20140212085913.GP15081@lee--X1>
-References: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
- <1392123837-5517-3-git-send-email-k.kozlowski@samsung.com>
+	Wed, 12 Feb 2014 04:00:41 -0500
+Date: Wed, 12 Feb 2014 01:00:36 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch -mm] mm: close PageTail race
+In-Reply-To: <20140205084235.GA30705@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1402120058370.31209@chino.kir.corp.google.com>
+References: <20140203122052.GC2495@dhcp22.suse.cz> <alpine.LRH.2.02.1402031426510.13382@diagnostix.dwd.de> <20140203162036.GJ2495@dhcp22.suse.cz> <52EFC93D.3030106@suse.cz> <alpine.DEB.2.02.1402031602060.10778@chino.kir.corp.google.com>
+ <alpine.LRH.2.02.1402040713220.13901@diagnostix.dwd.de> <alpine.DEB.2.02.1402041557380.10140@chino.kir.corp.google.com> <20140204160641.8f5d369eeb2d0318618d6d5f@linux-foundation.org> <alpine.DEB.2.02.1402041613450.14962@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1402041621350.14962@chino.kir.corp.google.com> <20140205084235.GA30705@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392123837-5517-3-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch prepares for adding support for S2MPS14 RTC driver by
-> selecting different regmaps for S2MPS1X/S5M876X RTC devices.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/sec-core.c |   15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> index 6021c54f74cf..0efa69e123ee 100644
-> --- a/drivers/mfd/sec-core.c
-> +++ b/drivers/mfd/sec-core.c
-> @@ -199,7 +199,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
->  			    const struct i2c_device_id *id)
->  {
->  	struct sec_platform_data *pdata = dev_get_platdata(&i2c->dev);
-> -	const struct regmap_config *regmap;
-> +	const struct regmap_config *regmap, *regmap_rtc;
->  	struct sec_pmic_dev *sec_pmic;
->  	int ret;
->  
-> @@ -233,15 +233,25 @@ static int sec_pmic_probe(struct i2c_client *i2c,
->  	switch (sec_pmic->device_type) {
->  	case S2MPS11X:
->  		regmap = &s2mps11_regmap_config;
-> +		/*
-> +		 * The rtc-s5m driver does not support S2MPS11 and there
-> +		 * is no mfd_cell for S2MPS11 RTC device.
-> +		 * However we must pass something to devm_regmap_init_i2c()
-> +		 * so use S5M-like regmap config even though it wouldn't work.
-> +		 */
-> +		regmap_rtc = &sec_rtc_regmap_config;
+Since "mm, compaction: avoid isolating pinned pages", it has been
+possible for page_count(page) to race with prep_compound_page() by
+finding PageTail(page) set with a NULL or dangling page->first_page.
 
-An odd predicament, but it doesn't look as though the semantics have
-changed.
+"mm, page_alloc: make first_page visible before PageTail" adds a store
+memory barrier to prep_compound_page() to ensure page->first_page is
+set, but nothing is preventing compound_head() from seeing a dangling
+head page.
 
-I guess this set will need to go in as one so for now:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+This patch uses Andrea's implementation of compound_trans_head() that
+deals with such a race and makes it the default compound_head()
+implementation.  This includes a read memory barrier that ensures that
+if PageTail(head) is true that we return a head page that is neither
+NULL nor dangling.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+This is the safest way to ensure we see the head page that we are
+expecting, PageTail(page) is already in the unlikely() path and the
+memory barriers are unfortunately required.
+
+Hugetlbfs is the exception, we don't enforce a store memory barrier
+during init since no race is possible.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Note: this is targeted for -mm because there is a prerequisite patch,
+ mm-page_alloc-make-first_page-visible-before-pagetail.patch, in that
+ tree which adds a smp_wmb() to prep_compound_page().
+
+ drivers/block/aoe/aoecmd.c      |  4 ++--
+ drivers/vfio/vfio_iommu_type1.c |  4 ++--
+ fs/proc/page.c                  |  5 ++---
+ include/linux/huge_mm.h         | 41 -----------------------------------------
+ include/linux/mm.h              | 14 ++++++++++++--
+ mm/ksm.c                        |  2 +-
+ mm/memory-failure.c             |  2 +-
+ mm/swap.c                       |  4 ++--
+ 8 files changed, 22 insertions(+), 54 deletions(-)
+
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -874,7 +874,7 @@ bio_pageinc(struct bio *bio)
+ 		/* Non-zero page count for non-head members of
+ 		 * compound pages is no longer allowed by the kernel.
+ 		 */
+-		page = compound_trans_head(bv.bv_page);
++		page = compound_head(bv.bv_page);
+ 		atomic_inc(&page->_count);
+ 	}
+ }
+@@ -887,7 +887,7 @@ bio_pagedec(struct bio *bio)
+ 	struct bvec_iter iter;
+ 
+ 	bio_for_each_segment(bv, bio, iter) {
+-		page = compound_trans_head(bv.bv_page);
++		page = compound_head(bv.bv_page);
+ 		atomic_dec(&page->_count);
+ 	}
+ }
+diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+--- a/drivers/vfio/vfio_iommu_type1.c
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -186,12 +186,12 @@ static bool is_invalid_reserved_pfn(unsigned long pfn)
+ 	if (pfn_valid(pfn)) {
+ 		bool reserved;
+ 		struct page *tail = pfn_to_page(pfn);
+-		struct page *head = compound_trans_head(tail);
++		struct page *head = compound_head(tail);
+ 		reserved = !!(PageReserved(head));
+ 		if (head != tail) {
+ 			/*
+ 			 * "head" is not a dangling pointer
+-			 * (compound_trans_head takes care of that)
++			 * (compound_head takes care of that)
+ 			 * but the hugepage may have been split
+ 			 * from under us (and we may not hold a
+ 			 * reference count on the head page so it can
+diff --git a/fs/proc/page.c b/fs/proc/page.c
+--- a/fs/proc/page.c
++++ b/fs/proc/page.c
+@@ -121,9 +121,8 @@ u64 stable_page_flags(struct page *page)
+ 	 * just checks PG_head/PG_tail, so we need to check PageLRU/PageAnon
+ 	 * to make sure a given page is a thp, not a non-huge compound page.
+ 	 */
+-	else if (PageTransCompound(page) &&
+-		 (PageLRU(compound_trans_head(page)) ||
+-		  PageAnon(compound_trans_head(page))))
++	else if (PageTransCompound(page) && (PageLRU(compound_head(page)) ||
++					     PageAnon(compound_head(page))))
+ 		u |= 1 << KPF_THP;
+ 
+ 	/*
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -157,46 +157,6 @@ static inline int hpage_nr_pages(struct page *page)
+ 		return HPAGE_PMD_NR;
+ 	return 1;
+ }
+-/*
+- * compound_trans_head() should be used instead of compound_head(),
+- * whenever the "page" passed as parameter could be the tail of a
+- * transparent hugepage that could be undergoing a
+- * __split_huge_page_refcount(). The page structure layout often
+- * changes across releases and it makes extensive use of unions. So if
+- * the page structure layout will change in a way that
+- * page->first_page gets clobbered by __split_huge_page_refcount, the
+- * implementation making use of smp_rmb() will be required.
+- *
+- * Currently we define compound_trans_head as compound_head, because
+- * page->private is in the same union with page->first_page, and
+- * page->private isn't clobbered. However this also means we're
+- * currently leaving dirt into the page->private field of anonymous
+- * pages resulting from a THP split, instead of setting page->private
+- * to zero like for every other page that has PG_private not set. But
+- * anonymous pages don't use page->private so this is not a problem.
+- */
+-#if 0
+-/* This will be needed if page->private will be clobbered in split_huge_page */
+-static inline struct page *compound_trans_head(struct page *page)
+-{
+-	if (PageTail(page)) {
+-		struct page *head;
+-		head = page->first_page;
+-		smp_rmb();
+-		/*
+-		 * head may be a dangling pointer.
+-		 * __split_huge_page_refcount clears PageTail before
+-		 * overwriting first_page, so if PageTail is still
+-		 * there it means the head pointer isn't dangling.
+-		 */
+-		if (PageTail(page))
+-			return head;
+-	}
+-	return page;
+-}
+-#else
+-#define compound_trans_head(page) compound_head(page)
+-#endif
+ 
+ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
+@@ -226,7 +186,6 @@ static inline int split_huge_page(struct page *page)
+ 	do { } while (0)
+ #define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
+ 	do { } while (0)
+-#define compound_trans_head(page) compound_head(page)
+ static inline int hugepage_madvise(struct vm_area_struct *vma,
+ 				   unsigned long *vm_flags, int advice)
+ {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -399,8 +399,18 @@ static inline void compound_unlock_irqrestore(struct page *page,
+ 
+ static inline struct page *compound_head(struct page *page)
+ {
+-	if (unlikely(PageTail(page)))
+-		return page->first_page;
++	if (unlikely(PageTail(page))) {
++		struct page *head = page->first_page;
++
++		/*
++		 * page->first_page may be a dangling pointer to an old
++		 * compound page, so recheck that it is still a tail
++		 * page before returning.
++		 */
++		smp_rmb();
++		if (likely(PageTail(page)))
++			return head;
++	}
+ 	return page;
+ }
+ 
+diff --git a/mm/ksm.c b/mm/ksm.c
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -444,7 +444,7 @@ static void break_cow(struct rmap_item *rmap_item)
+ static struct page *page_trans_compound_anon(struct page *page)
+ {
+ 	if (PageTransCompound(page)) {
+-		struct page *head = compound_trans_head(page);
++		struct page *head = compound_head(page);
+ 		/*
+ 		 * head may actually be splitted and freed from under
+ 		 * us but it's ok here.
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1649,7 +1649,7 @@ int soft_offline_page(struct page *page, int flags)
+ {
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
+-	struct page *hpage = compound_trans_head(page);
++	struct page *hpage = compound_head(page);
+ 
+ 	if (PageHWPoison(page)) {
+ 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+diff --git a/mm/swap.c b/mm/swap.c
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -98,7 +98,7 @@ static void put_compound_page(struct page *page)
+ 	}
+ 
+ 	/* __split_huge_page_refcount can run under us */
+-	page_head = compound_trans_head(page);
++	page_head = compound_head(page);
+ 
+ 	/*
+ 	 * THP can not break up slab pages so avoid taking
+@@ -253,7 +253,7 @@ bool __get_page_tail(struct page *page)
+ 	 */
+ 	unsigned long flags;
+ 	bool got;
+-	struct page *page_head = compound_trans_head(page);
++	struct page *page_head = compound_head(page);
+ 
+ 	/* Ref to put_compound_page() comment. */
+ 	if (!__compound_tail_refcounted(page_head)) {
