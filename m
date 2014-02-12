@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaBLVcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:32:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52865 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470AbaBLVca (ORCPT
+	id S1754575AbaBLVc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:32:57 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:33367 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599AbaBLVc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:32:30 -0500
-Date: Wed, 12 Feb 2014 13:32:28 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        Oleg Nesterov <oleg@redhat.com>, Robin Holt <holt@sgi.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Chen Gang <gang.chen@asianux.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Aditya Kali <adityakali@google.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel: reduce required permission for prctl_set_mm
-Message-Id: <20140212133228.e4ff66c6add0c6b121232aad@linux-foundation.org>
-In-Reply-To: <1392219611-13260-1-git-send-email-avagin@openvz.org>
-References: <1392219611-13260-1-git-send-email-avagin@openvz.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Feb 2014 16:32:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140212211421.GP18016@ZenIV.linux.org.uk>
+References: <52FA9ADA.9040803@sandeen.net>
+	<20140212004403.GA17129@redhat.com>
+	<20140212010941.GM18016@ZenIV.linux.org.uk>
+	<CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+	<20140212040358.GA25327@redhat.com>
+	<20140212042215.GN18016@ZenIV.linux.org.uk>
+	<20140212054043.GB13997@dastard>
+	<CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+	<20140212113928.GO18016@ZenIV.linux.org.uk>
+	<CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
+	<20140212211421.GP18016@ZenIV.linux.org.uk>
+Date: Wed, 12 Feb 2014 13:32:55 -0800
+X-Google-Sender-Auth: jJkWM1SIUIsU6ptTziwb_jI9EkQ
+Message-ID: <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com>
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Feb 2014 19:40:11 +0400 Andrey Vagin <avagin@openvz.org> wrote:
-
-> Currently prctl_set_mm requires the global CAP_SYS_RESOURCE,
-> this patch reduce requiremence to CAP_SYS_RESOURCE in the current
-> namespace.
-> 
-> When we restore a task we need to set up text, data and data heap sizes
-> from userspace to the values a task had at checkpoint time.
-> 
-> Currently we can not restore these parameters, if a task lives in
-> a non-root user name space, because it has no capabilities in the
-> parent namespace.
-> 
-> prctl_set_mm() changes parameters of the current task and doesn't affect
-> other tasks.
-> 
-> This patch affects the RLIMIT_DATA limit, because a consumtiuon is
-> calculated relatively to mm->end_data, mm->start_data, mm->start_brk.
-
-I can't for the life of me work out what you were trying to say here. 
-Please fix and resend this paragraph?
-
-> rlim = rlimit(RLIMIT_DATA);
-> if (rlim < RLIM_INFINITY && (brk - mm->start_brk) +
-> 		(mm->end_data - mm->start_data) > rlim)
-> 	goto out;
-> 
-> This limit affects calls to brk() and sbrk(), but it doesn't affect
-> mmap. So I think requirement of CAP_SYS_RESOURCE in the current
-> namespace is enough for this limit.
-> 
-> ...
+On Wed, Feb 12, 2014 at 1:14 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
-> Cc: security@kernel.org
+> Umm...  What if we delay __sigqueue_free()?  After all, that's where the
+> fat sucker normally comes from.  That way we might get away with much
+> smaller structure on stack...
 
-That list is for reporting kernel security bugs.
+Sounds like the RightThing(tm) to do to me, and I don't see why it
+wouldn't work.
 
->
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -1701,7 +1701,7 @@ static int prctl_set_mm(int opt, unsigned long addr,
->  	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
->  		return -EINVAL;
->  
-> -	if (!capable(CAP_SYS_RESOURCE))
-> +	if (!ns_capable(current_user_ns(), CAP_SYS_RESOURCE))
->  		return -EPERM;
->  
->  	if (opt == PR_SET_MM_EXE_FILE)
+We'd have to teach each user of "dequeue_signal()" to free the siginfo
+thing. Which shouldn't be too bad - I think we've collected all of
+that into generic code, and there isn't the mass or architecture code
+that knows about these things any more. But there are a few odd
+drivers etc and signalfd. I didn't look at what the lifetimes were.
 
-This looks harmless.
+Adding Oleg to the cc, since any time we touch any of that code, he
+should be involved. Oleg - the issue is the biggish size of 'struct
+ksignal' on stack, brought on by the silly "put a whole siginfo_t in
+it".
 
-My relatively-up-to-date manpages don't mention prctl(PR_SET_MM).  I
-see from http://marc.info/?l=linux-man&m=133132612704130&w=2 that
-manpage additions were prepared nearly three years ago.  Michael, did
-this fall through a crack?
-
+            Linus
