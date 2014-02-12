@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaBLUiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:38:01 -0500
-Received: from www84.your-server.de ([213.133.104.84]:47810 "EHLO
+	id S1754080AbaBLUiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 15:38:00 -0500
+Received: from www84.your-server.de ([213.133.104.84]:47814 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847AbaBLUh6 (ORCPT
+	with ESMTP id S1753785AbaBLUh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:37:58 -0500
+	Wed, 12 Feb 2014 15:37:57 -0500
 From: stefani@seibold.net
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
@@ -15,9 +15,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
         Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v15 06/10] cleanup __vdso_gettimeofday
-Date: Wed, 12 Feb 2014 21:37:59 +0100
-Message-Id: <1392237483-6421-7-git-send-email-stefani@seibold.net>
+Subject: [PATCH v15 05/10] replace VVAR(vsyscall_gtod_data) by gtod macro
+Date: Wed, 12 Feb 2014 21:37:58 +0100
+Message-Id: <1392237483-6421-6-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.8.5.4
 In-Reply-To: <1392237483-6421-1-git-send-email-stefani@seibold.net>
 References: <1392237483-6421-1-git-send-email-stefani@seibold.net>
@@ -28,45 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefani Seibold <stefani@seibold.net>
 
-This patch do a little cleanup for the __vdso_gettimeofday() function.
-
-It kick out an unneeded ret local variable and makes the code faster if
-only the timezone is needed.
+There a currently more than 30 users of the gtod macro, so replace the
+last VVAR(vsyscall_gtod_data) by gtod macro.
 
 Signed-off-by: Stefani Seibold <Stefani Seibold stefani@seibold.net>
 ---
- arch/x86/vdso/vclock_gettime.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ arch/x86/vdso/vclock_gettime.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 743f277..09dae4a 100644
+index fd074dd..743f277 100644
 --- a/arch/x86/vdso/vclock_gettime.c
 +++ b/arch/x86/vdso/vclock_gettime.c
-@@ -259,13 +259,12 @@ int clock_gettime(clockid_t, struct timespec *)
+@@ -109,7 +109,7 @@ static notrace cycle_t vread_pvclock(int *mode)
+ 		*mode = VCLOCK_NONE;
  
- notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ 	/* refer to tsc.c read_tsc() comment for rationale */
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
+ 
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -133,7 +133,7 @@ notrace static cycle_t vread_tsc(void)
+ 	rdtsc_barrier();
+ 	ret = (cycle_t)vget_cycles();
+ 
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
+ 
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -288,7 +288,7 @@ int gettimeofday(struct timeval *, struct timezone *)
+ notrace time_t __vdso_time(time_t *t)
  {
--	long ret = VCLOCK_NONE;
--
- 	if (likely(tv != NULL)) {
- 		BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
- 			     offsetof(struct timespec, tv_nsec) ||
- 			     sizeof(*tv) != sizeof(struct timespec));
--		ret = do_realtime((struct timespec *)tv);
-+		if (unlikely(do_realtime((struct timespec *)tv) == VCLOCK_NONE))
-+			return vdso_fallback_gtod(tv, tz);
- 		tv->tv_usec /= 1000;
- 	}
- 	if (unlikely(tz != NULL)) {
-@@ -274,8 +273,6 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- 		tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
- 	}
+ 	/* This is atomic on x86_64 so we don't need any locks. */
+-	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
++	time_t result = ACCESS_ONCE(gtod->wall_time_sec);
  
--	if (ret == VCLOCK_NONE)
--		return vdso_fallback_gtod(tv, tz);
- 	return 0;
- }
- int gettimeofday(struct timeval *, struct timezone *)
+ 	if (t)
+ 		*t = result;
 -- 
 1.8.5.4
 
