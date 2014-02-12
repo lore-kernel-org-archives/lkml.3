@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaBLTYE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 14:24:04 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:62639 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641AbaBLTYB (ORCPT
+	id S1752979AbaBLT2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 14:28:23 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54597 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071AbaBLT2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 14:24:01 -0500
-Date: Wed, 12 Feb 2014 14:23:54 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
- workqueue
-Message-ID: <20140212192354.GC26809@htj.dyndns.org>
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
- <52F8A51F.4090909@cn.fujitsu.com>
- <20140210184729.GL4250@linux.vnet.ibm.com>
- <20140212182336.GD5496@localhost.localdomain>
- <20140212190241.GD4250@linux.vnet.ibm.com>
+	Wed, 12 Feb 2014 14:28:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212190241.GD4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140212133816.GB3147@dhcp-26-207.brq.redhat.com>
+References: <cover.1389904166.git.agordeev@redhat.com> <ad5cc6d6bdf4c8f5ce4681ec27674d07fbda089e.1389904167.git.agordeev@redhat.com>
+ <20140130134819.GA31909@dhcp-26-207.brq.redhat.com> <87y51qohjn.fsf@kamboji.qca.qualcomm.com>
+ <20140204190935.GA1430@dhcp-26-207.brq.redhat.com> <8761oum0l3.fsf@kamboji.qca.qualcomm.com>
+ <20140205085047.GA27820@dhcp-26-207.brq.redhat.com> <871tzilz1u.fsf@kamboji.qca.qualcomm.com>
+ <20140212003143.GD21057@google.com> <20140212133816.GB3147@dhcp-26-207.brq.redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 12 Feb 2014 12:28:00 -0700
+Message-ID: <CAErSpo6c_EPc5c8aaTeD9=eXWw4OowcKhWHG6YZgTOkZRMtZHQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ath10k: Get rid of superfluous call to pci_disable_msi()
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Kalle Valo <kvalo@qca.qualcomm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ath10k@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Feb 12, 2014 at 6:38 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> On Tue, Feb 11, 2014 at 05:31:43PM -0700, Bjorn Helgaas wrote:
+>> I haven't put these in my branch, so you can take them.
+>>
+>> Alexander has a whole batch of network driver updates that I think David
+>> Miller is going to apply; would it make sense to include these in that
+>> batch?
+>>
+>> There's also the wil6210 patch for
+>> drivers/net/wireless/ath/wil6210/pcie_bus.c, which seems like it maybe
+>> could be in that batch, too.
+>
+> Well, as this series is small I thought it could quickly go thru your
+> tree. But since ipr had conflicts, there is no point routing all patches
+> altogether, so up to you guys. The wil6210 patch is already in your pci/msi
+> branch though.
 
-On Wed, Feb 12, 2014 at 11:02:41AM -0800, Paul E. McKenney wrote:
-> +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
-> +	to force the WQ_SYSFS workqueues to run on the specified set
-> +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
-> +	"ls sys/devices/virtual/workqueue".
+It's in pci/msi, but that's not in my -next branch yet, so I can
+easily drop it.  Do drivers/net/wireless patches normally follow a
+different path than the other drivers/net patches?  The wil6210 and
+ath10k patches look just like the others in the 34-patch series (bnx2,
+bnx2x, tg3, bna, cxgb3, etc.), so I thought it would make more sense
+to include them there.
 
-One thing to be careful about is that once published, it becomes part
-of userland visible interface.  Maybe adding some words warning
-against sprinkling WQ_SYSFS willy-nilly is a good idea?
+I think I need to put the ahci regression fix in v3.14, so I'll move
+that to my for-linus branch and just keep the other odds and ends
+(ahci and vfio) for v3.15.
 
-Thanks.
-
--- 
-tejun
+Bjorn
