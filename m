@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaBLKym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:54:42 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:60814 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751530AbaBLKyj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:54:39 -0500
-Message-ID: <1392202477.23759.28.camel@x220>
-Subject: [PATCH] blackfin: Remove GENERIC_GPIO config option again
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Steven Miao <realmz6@gmail.com>
-Cc: adi-buildroot-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Wed, 12 Feb 2014 11:54:37 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Feb 2014 10:54:37.0332 (UTC) FILETIME=[D2697D40:01CF27E0]
-X-RcptDomain: vger.kernel.org
+	id S1751676AbaBLK6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:58:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37487 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750963AbaBLK6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:58:17 -0500
+Date: Wed, 12 Feb 2014 10:58:11 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 02/10] fs: cachefiles: use add_to_page_cache_lru()
+Message-ID: <20140212105811.GP6732@suse.de>
+References: <1391475222-1169-1-git-send-email-hannes@cmpxchg.org>
+ <1391475222-1169-3-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1391475222-1169-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol GENERIC_GPIO was removed in v3.10. Nothing cares
-about it anymore. It popped up somehow in v3.13, so it can be removed
-again.
+On Mon, Feb 03, 2014 at 07:53:34PM -0500, Johannes Weiner wrote:
+> This code used to have its own lru cache pagevec up until a0b8cab3
+> ("mm: remove lru parameter from __pagevec_lru_add and remove parts of
+> pagevec API").  Now it's just add_to_page_cache() followed by
+> lru_cache_add(), might as well use add_to_page_cache_lru() directly.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested, but safe anyhow.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
- arch/blackfin/Kconfig | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index 9ceccef..debd9df 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -51,9 +51,6 @@ config GENERIC_BUG
- config ZONE_DMA
- 	def_bool y
- 
--config GENERIC_GPIO
--	def_bool y
--
- config FORCE_MAX_ZONEORDER
- 	int
- 	default "14"
 -- 
-1.8.5.3
-
+Mel Gorman
+SUSE Labs
