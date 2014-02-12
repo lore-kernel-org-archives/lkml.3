@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796AbaBLPtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:49:16 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:38313 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078AbaBLPtP (ORCPT
+	id S1752849AbaBLPtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:49:31 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:63578 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaBLPt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:49:15 -0500
-Message-ID: <52FB9807.40706@windriver.com>
-Date: Wed, 12 Feb 2014 10:49:27 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 12 Feb 2014 10:49:28 -0500
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        <x86@kernel.org>
-Subject: Re: [PATCH] x86: fix two sparse warnings in early boot string handling
-References: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com> <alpine.DEB.2.02.1402111425430.32020@chino.kir.corp.google.com> <20140212020010.GB21033@windriver.com> <alpine.DEB.2.02.1402111821510.13509@chino.kir.corp.google.com> <52FB8BEB.5020506@windriver.com>
-In-Reply-To: <52FB8BEB.5020506@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+In-Reply-To: <20140212101324.GC3545@laptop.programming.kicks-ass.net>
+References: <CALCETrVL44ewQPJXNwPAm2s5aj9auo2p4tYYieNcxANoL91VWw@mail.gmail.com>
+ <alpine.DEB.2.02.1402112219160.21991@ionos.tec.linutronix.de>
+ <CALCETrUPyG1HoXFToXuVLOzX2f20zzxJyABKASOUPY691JmjMA@mail.gmail.com> <20140212101324.GC3545@laptop.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Feb 2014 07:49:07 -0800
+Message-ID: <CALCETrW-GCNuqSTO=p==0gPE2c8wZKSe98Gi4PP2NRdgk5iKag@mail.gmail.com>
+Subject: Re: Too many rescheduling interrupts (still!)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-02-12 09:57 AM, Paul Gortmaker wrote:
-> On 14-02-11 09:23 PM, David Rientjes wrote:
->> On Tue, 11 Feb 2014, Paul Gortmaker wrote:
+On Wed, Feb 12, 2014 at 2:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Feb 11, 2014 at 02:34:11PM -0800, Andy Lutomirski wrote:
+>> On Tue, Feb 11, 2014 at 1:21 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> >> A small number of reschedule interrupts appear to be due to a race:
+>> >> both resched_task and wake_up_idle_cpu do, essentially:
+>> >>
+>> >> set_tsk_need_resched(t);
+>> >> smb_mb();
+>> >> if (!tsk_is_polling(t))
+>> >>   smp_send_reschedule(cpu);
+>> >>
+>> >> The problem is that set_tsk_need_resched wakes the CPU and, if the CPU
+>> >> is too quick (which isn't surprising if it was in C0 or C1), then it
+>> >> could *clear* TS_POLLING before tsk_is_polling is read.
+>
+> Yeah we have the wrong default for the idle loops.. it should default to
+> polling and only switch to !polling at the very last moment if it really
+> needs an interrupt to wake.
+
+I might be missing something, but won't that break the scheduler?  If
+tsk_is_polling always returns true on mwait-capable systems, then
+other cpus won't be able to use the polling bit to distinguish between
+the idle state (where setting need_resched is enough) and the non-idle
+state (where the IPI is needed to preempt whatever task is running).
+
+Since rq->lock is held, the resched calls could check the rq state
+(curr == idle, maybe) to distinguish these cases.
+
+
+>
+>> There would be an extra benefit of moving the resched-related bits to
+>> some per-cpu structure: it would allow lockless wakeups.
+>> ttwu_queue_remote, and probably all of the other reschedule-a-cpu
+>> functions, could do something like:
 >>
->>>>> Fixes:
->>>>>
->>>>> arch/x86/boot/compressed/../string.c:60:14: warning: symbol 'atou' was not declared. Should it be static?
->>>>> arch/x86/boot/string.c:133:6: warning: symbol 'strstr' was not declared. Should it be static?
->>>>>
->>>>> The atou one could be considered a false positive; it seems somehow
->>>>> caused by including ./string.c from within /compressed/string.c file.
->>>>> However git grep shows only the atou prototype and declaration, so
->>>>> it is completely unused and we can hence delete it.
->>>>>
->>>>
->>>> Declaring a prototype in a header file would be pointless if there is no 
->>>> current breakage; I don't see why you can't remove strstr() in 
->>>> arch/x86/boot/string.c entirely.  What breaks?
->>>
->>> Explicit breakage vs. sparse warnings are two different things.  It may
->>> be that we can delete strstr() just like I did for atou() -- but in the
->>> interest of doing the minimal change, I did just what was needed for
->>> fixing the sparse warnings for strstr.  I can test if it can be removed,
->>> but it has the smell of generic-libc usage all over it...
->>>
->>
->> When the minimal change is to add an unnecessary prototype for a function 
->> that is not referenced, it doesn't seem acceptable.
-> 
-> OK, fair enough -- it seems surprisingly unused, as well as strcmp, despite
-> my gut feeling that they'd be used in multiple places.  I'll send a v2
-> that deletes all three once it passes allyesconfig on linux-next for x86
-> 32/64/uml.
+>> if (...) {
+>>   old = atomic_read(resched_flags(cpu));
+>>   while(true) {
+>>       if (old & RESCHED_NEED_RESCHED)
+>>         return;
+>>       if (!(old & RESCHED_POLLING)) {
+>>         smp_send_reschedule(cpu);
+>>         return;
+>>       }
+>>       new = old | RESCHED_NEED_RESCHED;
+>>       old = atomic_cmpxchg(resched_flags(cpu), old, new);
+>>   }
+>> }
+>
+> That looks hideously expensive.. for no apparent reason.
+>
+> Sending that IPI isn't _that_ bad, esp if we get the false-positive
+> window smaller than it is now (its far too wide because of the wrong
+> default state).
+>
+>> The point being that, with the current location of the flags, either
+>> an interrupt needs to be sent or something needs to be done to prevent
+>> rq->curr from disappearing.  (It probably doesn't matter if the
+>> current task changes, because TS_POLLING will be clear, but what if
+>> the task goes away entirely?)
+>
+> It can't we're holding its rq->lock.
 
-Actually no v2 pending.  The original v1 patch was/is correct as-is.
+Exactly.  AFAICT the only reason that any of this code holds rq->lock
+(especially ttwu_queue_remote, which I seem to call a few thousand
+times per second) is because the only way to make a cpu reschedule
+involves playing with per-task flags.  If the flags were per-rq or
+per-cpu instead, then rq->lock wouldn't be needed.  If this were all
+done locklessly, then I think either a full cmpxchg or some fairly
+careful use of full barriers would be needed, but I bet that cmpxchg
+is still considerably faster than a spinlock plus a set_bit.
 
-While x86-64 defconfig passed, it turns out that both strcmp and strstr
-have to stay, else we will get this on i386 allyesconfig builds:
+>
+>> All that being said, it looks like ttwu_queue_remote doesn't actually
+>> work if the IPI isn't sent.  The attached patch appears to work (and
+>> reduces total rescheduling IPIs by a large amount for my workload),
+>> but I don't really think it's worthy of being applied...
+>
+> We can do something similar though; we can move sched_ttwu_pending()
+> into the generic idle loop, right next to set_preempt_need_resched().
 
-arch/x86/boot/compressed/eboot.o: In function `handle_cmdline_files.isra.5.constprop.6':
-eboot.c:(.text+0x4cf): undefined reference to `strstr'
-eboot.c:(.text+0x601): undefined reference to `strstr'
-make[2]: *** [arch/x86/boot/compressed/vmlinux] Error 1
+Oh, right -- either the IPI or the idle code is guaranteed to happen
+soon.  (But wouldn't setting TS_POLLING always break this, too?)
 
-arch/x86/boot/edd.o: In function `query_edd':
-arch/x86/boot/edd.c:136: undefined reference to `strcmp'
-arch/x86/boot/edd.c:136: undefined reference to `strcmp'
-arch/x86/boot/edd.c:140: undefined reference to `strcmp'
-arch/x86/boot/edd.c:142: undefined reference to `strcmp'
-make[1]: *** [arch/x86/boot/setup.elf] Error 1
-
-So my gut feeling was right after all.  ;)
-
-Thanks,
-Paul.
---
+--Andy
