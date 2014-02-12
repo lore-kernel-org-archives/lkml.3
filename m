@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaBLKrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:47:32 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:59320 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaBLKr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:47:29 -0500
-Message-ID: <52FB5061.1000709@linux.vnet.ibm.com>
-Date: Wed, 12 Feb 2014 16:13:45 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        rjw@rjwysocki.net, nicolas.pitre@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] cpuidle/idle: Move the cpuidle_idle_call function
- to idle.c
-References: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org> <1392131491-5265-2-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1392131491-5265-2-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021210-8256-0000-0000-00000B6C8A79
+	id S1752153AbaBLKry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:47:54 -0500
+Received: from ozlabs.org ([203.10.76.45]:55597 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932AbaBLKrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:47:51 -0500
+Date: Wed, 12 Feb 2014 21:47:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: linux-next: build failure after merge of the final tree (cgroup
+ tree related)
+Message-Id: <20140212214743.22fd2d8e1889ae69986e58aa@canb.auug.org.au>
+In-Reply-To: <20140212063933.GB7984@mtj.dyndns.org>
+References: <20140212162500.242e91e4cc3541b992fa3a0c@canb.auug.org.au>
+	<20140212063933.GB7984@mtj.dyndns.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Feb_2014_21_47_43_+1100_RwAAQvuBnZ4/qlbp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+--Signature=_Wed__12_Feb_2014_21_47_43_+1100_RwAAQvuBnZ4/qlbp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 02/11/2014 08:41 PM, Daniel Lezcano wrote:
-> The cpuidle_idle_call does nothing more than calling the three individuals
-> function and is no longer used by any arch specific code but only in the
-> cpuidle framework code.
-> 
-> We can move this function into the idle task code to ensure better
-> proximity to the scheduler code.
+Hi, Tejun,
 
-So my understanding of this patchset is that by moving
-cpuidle_idle_call() under kernel/sched, we now have a way of calling
-into the cpuidle governor and the cpuidle driver with additional
-parameters like cpu_load(), idle_stamp etc.. so that we can expect the
-governor and driver to take better decisions about entry and exit into
-idle states. Is this the advantage we hope to begin with?
+On Wed, 12 Feb 2014 01:39:33 -0500 Tejun Heo <tj@kernel.org> wrote:
+>
+> On Wed, Feb 12, 2014 at 04:25:00PM +1100, Stephen Rothwell wrote:
+> > Presumably caused by commit 2bd59d48ebfb ("cgroup: convert to kernfs")
+> > (see the comment in commit 1ff6bbfd13ca ("arm, pm, vmpressure: add
+> > missing slab.h includes")).  I wonder how mane more builds are broken by
+> > this :-(
+>=20
+> Dang, I was feeling pretty safe as kbuild bot was reporting build
+> successes.  We better fix them at any rate.  David / Sam, can you
+> please pick this one up?
 
-Thanks
+It really needs to go into the tree with the cgroup commit so it doesn't
+break there.
 
-Regards
-Preeti U Murthy
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-> ---
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__12_Feb_2014_21_47_43_+1100_RwAAQvuBnZ4/qlbp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS+1FVAAoJEMDTa8Ir7ZwVI+8P/0ileBxxuZkdwk1WGBWfpP57
+VSGoZA/XII1zyaONIaUle0xEgny7QUqgvGE3hlqWfq/aTHjQB2ADOHyEPO1QmJGK
+gEKP3znBXkAwDXamFjlO0+TeEvNcWl8QiUAwLL0u/lTDLTrNqc7xPrS3pUpZ4j2/
+YGzH+7zBt24nMfOCxAXqXJN7XccD1xP0Ex/x+lhqImVl4A/lZxOrQrWey0hly73P
+4KRguPWFwwwJwZPsXR3PaIzVrPiLZ6VliLQcsC6YDnYs6N5hbyg4ykOlU0p6H7nc
+w8Ay2JAJ/wzubMyBOU2B6OIF4dATOBvwSEz9UKYXkk223fiqah+XH2YmRz8hSNcW
+5S0HY8BsPhGzS1LXDi8qTV625JqSiHJ6TpuPAwdkMPDhi7bowvkWvLGHNoENqF4C
+lmHls94zURPV5HJmS3KOAah1zzQEVW1YDTqIj8pwoQwIRGzTrH+7PJup9h1/dgG/
+zXQjFZxZN0P42rZyHNGrPolRPAepA4FzOQdFuY6bxRLdgcx9F5zevGWDml5YL4ZI
+RCi+LrkEETYjKX953jTzMggLvjTyYQ4LjgLNnDklHNpEHHKl9KPm4L6C9RatWDTN
+uPC0Ogi2EXyANQASoBQr0qVrNPeRuAP9HWDa3ZZwfCF6rMctk4mBoiU3zmi5700P
+nzfXwR/aSDTlYnJ+4vKA
+=iglP
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Feb_2014_21_47_43_+1100_RwAAQvuBnZ4/qlbp--
