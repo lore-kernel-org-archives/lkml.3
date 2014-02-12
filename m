@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaBLIX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:23:27 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50245 "EHLO
+	id S1753117AbaBLIXX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:23:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50250 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752132AbaBLIOG (ORCPT
+	by vger.kernel.org with ESMTP id S1751767AbaBLIOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:14:06 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>, "Christoph Hellwig" <hch@lst.de>,
-        "Christoph Hellwig" <hch@infradead.org>
+CC: akpm@linux-foundation.org, "Myron Stowe" <myron.stowe@redhat.com>,
+        "Jeff Garzik" <jgarzik@pobox.com>,
+        "Bjorn Helgaas" <bhelgaas@google.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.763222242@decadent.org.uk>
+Message-ID: <lsq.1392192612.337143261@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 35/79] ext2: Fix oops in ext2_get_block() called from
- ext2_quota_write()
+Subject: [PATCH 3.2 62/79] ahci: Use PCI_VENDOR_ID_MARVELL_EXT for 0x1b4b
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,34 +32,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Myron Stowe <myron.stowe@redhat.com>
 
-commit df4e7ac0bb70abc97fbfd9ef09671fc084b3f9db upstream.
+commit 69fd3157363935b1e052bd76b8f8ec65e494306e upstream.
 
-ext2_quota_write() doesn't properly setup bh it passes to
-ext2_get_block() and thus we hit assertion BUG_ON(maxblocks == 0) in
-ext2_get_blocks() (or we could actually ask for mapping arbitrary number
-of blocks depending on whatever value was on stack).
+With the 0x1b4b vendor ID #define in place, convert hard-coded ID
+values.
 
-Fix ext2_quota_write() to properly fill in number of blocks to map.
-
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Jeff Garzik <jgarzik@pobox.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext2/super.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/ahci.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -1448,6 +1448,7 @@ static ssize_t ext2_quota_write(struct s
- 				sb->s_blocksize - offset : towrite;
- 
- 		tmp_bh.b_state = 0;
-+		tmp_bh.b_size = sb->s_blocksize;
- 		err = ext2_get_block(inode, blk, &tmp_bh, 1);
- 		if (err < 0)
- 			goto out;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -429,17 +429,17 @@ static const struct pci_device_id ahci_p
+ 	/* Marvell */
+ 	{ PCI_VDEVICE(MARVELL, 0x6145), board_ahci_mv },	/* 6145 */
+ 	{ PCI_VDEVICE(MARVELL, 0x6121), board_ahci_mv },	/* 6121 */
+-	{ PCI_DEVICE(0x1b4b, 0x9123),
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9123),
+ 	  .class = PCI_CLASS_STORAGE_SATA_AHCI,
+ 	  .class_mask = 0xffffff,
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
+-	{ PCI_DEVICE(0x1b4b, 0x9125),
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9125),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
+-	{ PCI_DEVICE(0x1b4b, 0x917a),
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+-	{ PCI_DEVICE(0x1b4b, 0x9192),
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
+-	{ PCI_DEVICE(0x1b4b, 0x91a3),
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9230),
+ 	  .driver_data = board_ahci_yes_fbs },
 
