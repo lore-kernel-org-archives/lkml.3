@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101AbaBLRf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 12:35:29 -0500
-Received: from adamg.eu ([91.192.224.99]:48487 "EHLO adamg.eu"
+	id S1753467AbaBLRgM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 12:36:12 -0500
+Received: from imap.thunk.org ([74.207.234.97]:57147 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114AbaBLRf0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 12:35:26 -0500
-X-Greylist: delayed 1109 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 12:35:26 EST
-From: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
-To: linux-kernel@vger.kernel.org
-Reply-To: pawel.sikora@agmk.net
-Subject: [3.13.2] list passed to list_sort() too long for efficiency.
-Date: Wed, 12 Feb 2014 18:16:49 +0100
-Message-ID: <1799469.xr2i5c36Hj@localhost.localdomain>
-User-Agent: KMail/4.12.2 (Linux/3.12.10-300.fc20.x86_64; KDE/4.12.2; x86_64; ; )
+	id S1752564AbaBLRgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 12:36:10 -0500
+Date: Wed, 12 Feb 2014 12:36:07 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH 11/21] fs: Mark functions as static in jbd2/journal.c
+Message-ID: <20140212173607.GH14520@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Rashika Kheria <rashika.kheria@gmail.com>,
+	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+	josh@joshtriplett.org
+References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
+ <b13f571ff87a2ee1942578a97b00823373e9bd79.1391949868.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b13f571ff87a2ee1942578a97b00823373e9bd79.1391949868.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Feb 09, 2014 at 06:41:21PM +0530, Rashika Kheria wrote:
+> Mark functions as static in jbd2/journal.c because they are not used
+> outside this file.
+> 
+> This eliminates the following warning in jbd2/journal.c:
+> fs/jbd2/journal.c:125:5: warning: no previous prototype for ‘jbd2_verify_csum_type’ [-Wmissing-prototypes]
+> fs/jbd2/journal.c:146:5: warning: no previous prototype for ‘jbd2_superblock_csum_verify’ [-Wmissing-prototypes]
+> fs/jbd2/journal.c:154:6: warning: no previous prototype for ‘jbd2_superblock_csum_set’ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-i've noticed on my server that dmesg contains following info:
+Thanks, applied to the ext4 tree.
 
-(...)
-[  141.192868] FS-Cache: Loaded
-[  141.203008] FS-Cache: Netfs 'nfs' registered for caching
-[ 1383.278845] Key type dns_resolver registered
-[ 1383.293014] NFS: Registering the id_resolver key type
-[ 1383.293027] Key type id_resolver registered
-[ 1383.293028] Key type id_legacy registered
-[ 3998.115273] perf samples too long (2502 > 2500), lowering 
-kernel.perf_event_max_sample_rate to 50100
-[16855.582522] list passed to list_sort() too long for efficiency
-
-could someone put some light on the last line?
-
-BR,
-Paweł.
-
-please CC on reply.
-
--- 
-gpg key fingerprint = 60B4 9886 AD53 EB3E 88BB 1EB5 C52E D01B 683B 9411
+					- Ted
