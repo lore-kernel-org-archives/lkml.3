@@ -1,191 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaBLHIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:08:35 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:64624 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaBLHId (ORCPT
+	id S1751852AbaBLHJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:09:56 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:57818 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776AbaBLHJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:08:33 -0500
-X-AuditID: 9c93017d-b7c89ae000006ae1-f8-52fb1df01313
-Date: Wed, 12 Feb 2014 16:08:32 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/4] zram: introduce compressing backend abstraction
-Message-ID: <20140212070832.GC19818@bbox>
-References: <1392157266-13488-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1392157266-13488-2-git-send-email-sergey.senozhatsky@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392157266-13488-2-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 12 Feb 2014 02:09:53 -0500
+From: Laszlo Papp <lpapp@kde.org>
+To: lee.jones@linaro.org
+Cc: sachin.kamat@linaro.org, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, k.kozlowski@samsung.com,
+        jdelvare@suse.de, linux@roeck-us.net, Laszlo Papp <lpapp@kde.org>
+Subject: [PATCH v7] mfd: MAX6650/6651 support
+Date: Wed, 12 Feb 2014 07:09:29 +0000
+Message-Id: <1392188969-18486-1-git-send-email-lpapp@kde.org>
+X-Mailer: git-send-email 1.8.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 01:21:03AM +0300, Sergey Senozhatsky wrote:
-> ZRAM performs direct LZO compression algorithm calls, making it the one
-> and only option. Introduce abstract struct zram_comp in order to support
-> multiple compression algorithms. struct zram_comp defines the following
-> set of compressing backend operations:
->         .create
->         .destroy
->         .compress
->         .decompress
-> 
-> Schematically zram write() usually contains the following steps:
-> 0) preparation (decompression of partioal IO, etc.)
-> 1) lock buffer_lock mutex (protects meta compress buffers)
-> 2) compress (using meta compress buffers)
-> 3) alloc and map zs_pool object
-> 4) copy compressed data (from meta compress buffers) to object allocated by 3)
-> 5) free previous pool page, assign a new one
-> 6) unlock buffer_lock mutex
-> 
-> As we can see, compressing buffers must remain untouched from 1) to 4),
-> because, otherwise, concurrent write() can overwrite data. At the same
-> time, zram_meta must be aware of a) specific compression algorithm
-> memory requirements and b) necessary locking to protect compression
-> buffers. Besides, zram holds buffer_lock almost through the whole write()
-> function, making parallel compression impossible. To remove requirement
-> a) new struct zcomp_workmem introduced, which contain buffers required by
-> compression algorithm. While struct zram_comp implements workmem handling
-> and locking by means of get() and put() semantics and removes requirement
-> b) from zram meta. zram_comp ->create() and ->destroy(), respectively,
-> allocate and deallocate algorithm specific zcomp_workmem `private' buffer.
-> 
-> Every zram_comp has a list of idle workmem buffers (at least 1 workmem),
-> spinlock to protect idle list and wait queue, making it possible to perform
-> parallel compressions. Each time zram issues a zcomp_workmem_get() call, the
-> following set of operations performed:
-> - spin lock buffer_lock
-> - if idle list is not empty, remove workmem from idle list, spin
->   unlock and return workmem pointer
-> - if idle list is empty, current adds itself to wait queue. it will be
->   awaken by zcomp_workmem_put() caller.
-> 
-> zcomp_workmem_put():
-> - spin lock buffer_lock
-> - add workmem to idle list
-> - spin unlock, wake up sleeper (if any)
-> 
-> In other words, zcomp_workmem_get() turns caller into exclusive user of workmem
-> and zcomp_workem_put() makes a particular workmem available.
-> 
-> Usage examples.
-> 
-> To initialize compressing backend:
-> 	comp = zcomp_create(NAME) /* NAME e.g. lzo */
-> 
-> which initialises compressing backend if requested algorithm is supported.
-> 
-> Compress:
-> 	wm = zcomp_workmem_get(comp)
-> 	zcomp_compress(comp, wm, src, src_len, &dst_len)
-> 	[..] /* copy compressed data */
-> 	zcomp_workmem_put(comp, wm)
-> 
-> Decompress:
-> 	zcomp_decompress(comp, src, src_len, dst, &dst_len);
-> 
-> Free compessing backend and its workmem:
-> 	zcomp_destroy(comp)
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> ---
->  drivers/block/zram/zcomp_lzo.c |  33 +++++++++
->  drivers/block/zram/zram_comp.c | 147 +++++++++++++++++++++++++++++++++++++++++
->  drivers/block/zram/zram_comp.h |  58 ++++++++++++++++
->  3 files changed, 238 insertions(+)
->  create mode 100644 drivers/block/zram/zcomp_lzo.c
->  create mode 100644 drivers/block/zram/zram_comp.c
->  create mode 100644 drivers/block/zram/zram_comp.h
-> 
-> diff --git a/drivers/block/zram/zcomp_lzo.c b/drivers/block/zram/zcomp_lzo.c
-> new file mode 100644
-> index 0000000..bbde74e
-> --- /dev/null
-> +++ b/drivers/block/zram/zcomp_lzo.c
-> @@ -0,0 +1,33 @@
-> +/*
-> + * Copyright (C) 2014 Sergey Senozhatsky.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/lzo.h>
-> +
-> +#include "zram_comp.h"
-> +
-> +static void * lzo_create(void)
-> +{
-> +	return kmalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> +}
-> +
-> +static void lzo_destroy(void *workmem)
-> +{
-> +	kfree(workmem);
-> +}
-> +
-> +extern struct zram_comp_backend zcomp_lzo;
-> +struct zram_comp_backend zcomp_lzo = {
-> +	.compress = lzo1x_1_compress,
-> +	.decompress = lzo1x_decompress_safe,
-> +	.create = lzo_create,
-> +	.destroy = lzo_destroy,
-> +	.name = "lzo",
-> +};
-> diff --git a/drivers/block/zram/zram_comp.c b/drivers/block/zram/zram_comp.c
-> new file mode 100644
-> index 0000000..139a468
-> --- /dev/null
-> +++ b/drivers/block/zram/zram_comp.c
-> @@ -0,0 +1,147 @@
-> +/*
-> + * Copyright (C) 2014 Sergey Senozhatsky.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/string.h>
-> +#include <linux/slab.h>
-> +#include <linux/vmalloc.h>
-> +#include <linux/wait.h>
-> +#include <linux/sched.h>
-> +
-> +#include "zram_comp.h"
-> +
-> +extern struct zram_comp_backend zcomp_lzo;
-> +
-> +static void workmem_free(struct zram_comp *comp, struct zcomp_workmem *workmem)
-> +{
-> +	comp->backend->destroy(workmem->private);
-> +	free_pages((unsigned long)workmem->buffer, 1);
-> +	kfree(workmem);
-> +}
-> +
-> +/* allocate new workmem structure with ->mem of requested size,
-> + * return NULL on error */
-> +static struct zcomp_workmem *workmem_alloc(struct zram_comp *comp)
-> +{
-> +	struct zcomp_workmem *workmem = kmalloc(sizeof(*workmem), GFP_NOFS);
+MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
+chip includes fan-speed regulators and monitors, GPIO, and alarm.
 
+This patch is an initial release of a MAX6650/6651 MFD driver that
+supports to enable the chip with its primary I2C bus that will connect
+the hwmon, and then the gpio devices for now.
 
-One more thing, pz, say why we need GFP_NOFS in here.
+Signed-off-by: Laszlo Papp <lpapp@kde.org>
+---
+ drivers/mfd/Kconfig                 | 11 +++++
+ drivers/mfd/Makefile                |  1 +
+ drivers/mfd/max665x.c               | 93 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/max665x-private.h | 34 ++++++++++++++
+ 4 files changed, 139 insertions(+)
+ create mode 100644 drivers/mfd/max665x.c
+ create mode 100644 include/linux/mfd/max665x-private.h
 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445..a6c3152 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -368,6 +368,17 @@ config MFD_MAX8907
+ 	  accessing the device; additional drivers must be enabled in order
+ 	  to use the functionality of the device.
+ 
++config MFD_MAX665X
++	bool "Maxim Semiconductor MAX6650/MAX6651 Support"
++	depends on I2C
++	select MFD_CORE
++	select REGMAP_I2C
++	help
++	  Say yes here to add support for Maxim Semiconductor MAX6650/MAX6651. This
++	  is a fan speed regulator and monitor IC. This driver provides common
++	  support for accessing the device, additional drivers must be enabled in
++	  order to use the functionality of the device.
++
+ config MFD_MAX8925
+ 	bool "Maxim Semiconductor MAX8925 PMIC Support"
+ 	depends on I2C=y
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 5aea5ef..63668c5 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -111,6 +111,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
+ da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
+ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+ 
++obj-$(CONFIG_MFD_MAX665X)	+= max665x.o
+ obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+ obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
+ obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
+diff --git a/drivers/mfd/max665x.c b/drivers/mfd/max665x.c
+new file mode 100644
+index 0000000..54fdc11
+--- /dev/null
++++ b/drivers/mfd/max665x.c
+@@ -0,0 +1,93 @@
++/*
++ * Device access for MAX6650-MAX6651
++ *
++ * Copyright(c) 2013 Polatis Ltd.
++ *
++ * Author: Laszlo Papp <laszlo.papp@polatis.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ */
++
++#include <linux/device.h>
++#include <linux/mfd/core.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++
++#include <linux/mfd/max665x-private.h>
++
++static struct mfd_cell max665x_devs[] = {
++	{ .name = "max6651-gpio", },
++	{ .name = "max6650", }, /* hwmon driver */
++	{},
++};
++
++static const struct regmap_config max665x_regmap_config = {
++	.reg_bits = 5,
++};
++
++static int max665x_probe(struct i2c_client *i2c,
++			    const struct i2c_device_id *id)
++{
++	struct max665x_dev *max665x;
++	int ret;
++
++	max665x = devm_kzalloc(&i2c->dev, sizeof(*max665x), GFP_KERNEL);
++	if (!max665x)
++		return -ENOMEM;
++
++	i2c_set_clientdata(i2c, max665x);
++	max665x->dev = &i2c->dev;
++	max665x->i2c = i2c;
++	max665x->map = devm_regmap_init_i2c(i2c, &max665x_regmap_config);
++	if (IS_ERR(max665x->map)) {
++		ret = PTR_ERR(max665x->map);
++		dev_err(max665x->dev, "Failed to allocate register map: %d\n",
++			ret);
++		return ret;
++	}
++
++	mutex_init(&max665x->iolock);
++
++	ret = mfd_add_devices(max665x->dev, -1, max665x_devs,
++			ARRAY_SIZE(max665x_devs),
++			NULL, 0, NULL);
++
++	if (ret < 0)
++		dev_err(max665x->dev, "failed to register child devices\n");
++
++	return ret;
++}
++
++static int max665x_remove(struct i2c_client *i2c)
++{
++	struct max665x_dev *max665x = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(max665x->dev);
++
++	return 0;
++}
++
++static struct of_device_id max665x_dt_match[] = {
++	{ .compatible = "maxim,max665x" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, max665x_dt_match);
++
++static struct i2c_driver max665x_driver = {
++	.driver = {
++		.name = "max665x",
++		.owner = THIS_MODULE,
++		.of_match_table = max665x_dt_match,
++	},
++	.probe = max665x_probe,
++	.remove = max665x_remove,
++};
++
++module_i2c_driver(max665x_driver);
++
++MODULE_AUTHOR("Laszlo Papp <laszlo.papp@polatis.com>");
++MODULE_DESCRIPTION("MAX6650-MAX6651 MFD");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/max665x-private.h b/include/linux/mfd/max665x-private.h
+new file mode 100644
+index 0000000..293db4b
+--- /dev/null
++++ b/include/linux/mfd/max665x-private.h
+@@ -0,0 +1,34 @@
++/*
++ * max665x-private.h - Driver for the Maxim 6650/6651
++ *
++ * Copyright 2013 Polatis Ltd.
++ *
++ * Author: Laszlo Papp <laszlo.papp@polatis.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __LINUX_MFD_MAX665X_PRIVATE_H
++#define __LINUX_MFD_MAX665X_PRIVATE_H
++
++#include <linux/i2c.h>
++#include <linux/regmap.h>
++
++struct max665x_dev {
++	struct device *dev;
++	struct mutex iolock;
++	struct i2c_client *i2c;
++	struct regmap     *map;
++	int type;
++};
++
++#endif
 -- 
-Kind regards,
-Minchan Kim
+1.8.5.4
+
