@@ -1,145 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaBLQzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:55:32 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49003 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752647AbaBLQza (ORCPT
+	id S1753484AbaBLQ4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:56:14 -0500
+Received: from p01c11o145.mxlogic.net ([208.65.144.68]:48175 "EHLO
+	p01c11o145.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647AbaBLQ4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:55:30 -0500
-Date: Wed, 12 Feb 2014 16:54:54 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.torgue@st.com" <alexandre.torgue@st.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH 4/4] phy: miphy365x: Provide support for the MiPHY356x
- Generic PHY
-Message-ID: <20140212165454.GF25957@e106331-lin.cambridge.arm.com>
-References: <1392220985-28189-1-git-send-email-lee.jones@linaro.org>
- <1392220985-28189-4-git-send-email-lee.jones@linaro.org>
+	Wed, 12 Feb 2014 11:56:12 -0500
+X-Greylist: delayed 549 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 11:56:11 EST
+X-MXL-Hash: 52fba7ab3c9b6775-010e5c91708347d39c94a0957dfc74ec11657c63
+X-MXL-Hash: 52fba4a50b34ee6c-3832125d0d43a3e6b33d48ddbf2af700330ce5ff
+Date: Wed, 12 Feb 2014 11:43:08 -0500
+From: Joe Lawrence <joe.lawrence@stratus.com>
+To: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
+CC: "prometheanfire@gentoo.org" <prometheanfire@gentoo.org>,
+        "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
+        Support <support@lsi.com>,
+        DL-MPT Fusion Linux <DL-MPTFusionLinux@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "kernel@gentoo.org" <kernel@gentoo.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: mpt2sas driver barfs when force removing a drive on 3.13.1
+Message-ID: <20140212114308.4f57a8b5@jlaw-desktop.mno.stratus.com>
+In-Reply-To: <188de80a52694613b5a1a045d0658256@CO1PR07MB298.namprd07.prod.outlook.com>
+References: <52EC60C3.1080103@gentoo.org>
+	<20140203092409.63ffd9a0@jlaw-desktop.mno.stratus.com>
+	<188de80a52694613b5a1a045d0658256@CO1PR07MB298.namprd07.prod.outlook.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392220985-28189-4-git-send-email-lee.jones@linaro.org>
-Thread-Topic: [PATCH 4/4] phy: miphy365x: Provide support for the MiPHY356x
- Generic PHY
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-AnalysisOut: [v=2.0 cv=ea+Kic4H c=1 sm=1 a=VNTQBUOG7PJoPU2GWtE7Ww==:17 a]
+X-AnalysisOut: [=9YMJWpya49sA:10 a=_KQqW7t0BisA:10 a=BLceEmwcHowA:10 a=kj9]
+X-AnalysisOut: [zAlcOel0A:10 a=uelBKuKpAAAA:8 a=pqWU5g0ZCoEA:10 a=XJ73DR3w]
+X-AnalysisOut: [AAAA:8 a=7mOBRU54AAAA:8 a=VwQbUJbxAAAA:8 a=tmtSDGaQAAAA:8 ]
+X-AnalysisOut: [a=TSbVqHtbAAAA:8 a=NEAV23lmAAAA:8 a=wHLMOelHIfQHCc7tCCkA:9]
+X-AnalysisOut: [ a=CjuIK1q_8ugA:10 a=g3Y4LtA3PwEA:10 a=kSViFEBMy1sA:10 a=W]
+X-AnalysisOut: [eOa-AV5lc8A:10 a=jkObVMfX7fAA:10]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014021214); S=0.200(2010122901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.17]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 04:03:05PM +0000, Lee Jones wrote:
-> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-> devices. It has 2 ports which it can use for either; both SATA, both
-> PCIe or one of each in any configuration.
->
-> Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/phy/Kconfig         |   8 +
->  drivers/phy/Makefile        |   1 +
->  drivers/phy/phy-miphy365x.c | 634 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 643 insertions(+)
->  create mode 100644 drivers/phy/phy-miphy365x.c
->
+Hi Sreekanth,
 
-[...]
+There hasn't been much recent activity in
+drivers/scsi/scsi_transport_sas.c, so I wasn't sure who could best
+review the patch.
 
-> +static int miphy365x_phy_get_base_addr(struct platform_device *pdev,
-> +                                      struct miphy365x_phy *phy, u8 port)
-> +{
-> +       struct resource *res;
-> +       char sata[16];
-> +       char pcie[16];
+Dan Williams added sas_rphy_unlink() back in 2011, perhaps he can
+remember why sas_bsg_remove wasn't performed there?
 
-Isn't 6 enough for either of these? There are at most two ports IIUC, so
-we only need a single character for the port number.
+Regards,
 
-> +
-> +       sprintf(sata, "sata%d", port);
-> +
-> +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, sata);
-> +       if (!res)
-> +               return -ENODEV;
-> +
-> +       phy->sata = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> +       if (!phy->sata)
-> +               return -ENOMEM;
-> +
-> +       sprintf(pcie, "pcie%d", port);
-> +
-> +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pcie);
-> +       if (!res)
-> +               return -ENODEV;
-> +
-> +       phy->pcie = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> +       if (!phy->pcie)
-> +               return -ENOMEM;
-> +
-> +       return 0;
-> +}
-> +
-> +static int miphy365x_phy_of_probe(struct device_node *np,
-> +                                 struct miphy365x_dev *phy_dev)
-> +{
-> +       const char *sata_gen;
-> +
-> +       phy_dev->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
-> +       if (IS_ERR(phy_dev->regmap)) {
-> +               dev_err(phy_dev->dev, "No syscfg phandle specified\n");
-> +               return PTR_ERR(phy_dev->regmap);
-> +       }
-> +
-> +       /* Default */
-> +       phy_dev->sata_gen = SATA_GEN1;
-> +
-> +       of_property_read_string(np, "st,sata_gen", &sata_gen);
+-- Joe
 
-This wasn't in the binding documentation. It also violates dt style;
-s/_/-/
 
-Could these not be numbers, or can this not come from elsewhere?
+On Wed, 12 Feb 2014 11:43:58 +0000
+"Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com> wrote:
 
-Or are there some crazy SATA generations to support?
+> Hi Joe,
+> 
+> May I known the status of this patch having subject
+> "[PATCH] scsi_transport_sas: move bsg destructor into sas_rphy_remove".
+> 
+> I need the status of this patch as I am also observing the same WARNING call trace on latest 3.14.0-rc2+ kernel whenever we unload the mpt2sas/mpt3sas driver or whenever we unplug the drive attached to the HBA.
+> But after applying yours patch, these WARNING call trace is not observed.
+> 
+> Regards,
+> Sreekanth
+> 
+> >-----Original Message-----
+> >From: Joe Lawrence [mailto:joe.lawrence@stratus.com]
+> >Sent: Monday, February 03, 2014 7:54 PM
+> >To: prometheanfire@gentoo.org
+> >Cc: Nandigama, Nagalakshmi; Reddy, Sreekanth; Support; DL-MPT Fusion
+> >Linux; linux-scsi@vger.kernel.org; JBottomley@parallels.com; linux-
+> >kernel@vger.kernel.org; kernel@gentoo.org
+> >Subject: Re: mpt2sas driver barfs when force removing a drive on 3.13.1
+> >
+> >On Fri, 31 Jan 2014 20:49:39 -0600
+> >Matthew Thode <prometheanfire@gentoo.org> wrote:
+> >
+> >> I decided to pull a drive while it was in use out of laziness (it was
+> >> open via luks, but not in actual use).  Got a fun trace as a result.
+> >> Just thought you'd like to know :D
+> >>
+> >
+> >Hi Matthew,
+> >
+> >The first trace looks a lot like what I see on mpt2sas driver removal [1].  I
+> >posted a suggested fix back in Dec [2], which you might try, however it is not
+> >reviewed at this point.
+> >
+> >[1] http://thread.gmane.org/gmane.linux.scsi/86237
+> >[2] https://github.com/joe-
+> >lawrence/linux/compare/scsi_transport_sas_sysfs_warning.patch
+> >
+> >Regards,
+> >
+> >-- Joe
+> 
 
-> +       if (sata_gen) {
-> +               if (!strcmp(sata_gen, "gen3"))
-> +                       phy_dev->sata_gen = SATA_GEN3;
-> +               else if (!strcmp(sata_gen, "gen2"))
-> +                       phy_dev->sata_gen = SATA_GEN2;
-> +       }
-> +
-> +       phy_dev->pcie_tx_pol_inv =
-> +               of_property_read_bool(np, "st,pcie_tx_pol_inv");
-> +
-> +       phy_dev->sata_tx_pol_inv =
-> +               of_property_read_bool(np, "st,sata_tx_pol_inv");
-
-Likewise for both of these on the first two points.
-
-> +
-> +       return 0;
-> +}
-> +
-> +static int miphy365x_phy_probe(struct platform_device *pdev)
-> +{
-> +       struct device_node *np = pdev->dev.of_node;
-> +       struct miphy365x_dev *phy_dev;
-> +       struct device *dev = &pdev->dev;
-> +       struct phy_provider *provider;
-> +       u8 port;
-> +       int ret;
-> +
-> +       if (!np) {
-> +               dev_err(dev, "No DT found\n");
-
-s/DT/node/ ?
-
-Cheers,
-Mark.
