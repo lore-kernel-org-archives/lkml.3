@@ -1,88 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaBLQFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:05:06 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40907 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978AbaBLQFB (ORCPT
+	id S1753295AbaBLQAA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:00:00 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:57672 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909AbaBLP75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:05:01 -0500
-Date: Wed, 12 Feb 2014 16:04:31 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Richard Weinberger <richard@nod.at>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140212160431.GB28112@sirena.org.uk>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
- <1391971686-9517-15-git-send-email-richard@nod.at>
- <20140210114154.GQ1757@sirena.org.uk>
- <1392039072.3585.15.camel@x220>
- <20140210141255.GI1757@sirena.org.uk>
- <1392046242.3585.41.camel@x220>
- <20140210163621.GA13533@sirena.org.uk>
- <1392070159.27939.34.camel@x220>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2fowzm2eVyDiEwGH"
-Content-Disposition: inline
-In-Reply-To: <1392070159.27939.34.camel@x220>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 14/28] Remove MACH_SMDKC210
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 12 Feb 2014 10:59:57 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 01/13] pinctrl: mvebu: count unnamed controls and allocate name buffer
+Date: Wed, 12 Feb 2014 16:59:24 +0100
+Message-Id: <1392220776-30851-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+pinctrl-mvebu allows SoCs to pass unnamed controls that will get an
+auto-generated name of "mpp<PIN#>". Currently, we are allocating name
+buffers on a per-control basis while looping over passed controls.
+This counts the total number of unnamed controls and allocates a
+global name buffer instead. The new buffer is then used while assigning
+controls to pinctrl groups later.
 
---2fowzm2eVyDiEwGH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+---
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/pinctrl/mvebu/pinctrl-mvebu.c | 24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
 
-On Mon, Feb 10, 2014 at 11:09:19PM +0100, Paul Bolle wrote:
+diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+index 0fd1ad31fbf9..d47650fc5119 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
++++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+@@ -598,6 +598,9 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 	void __iomem *base;
+ 	struct pinctrl_pin_desc *pdesc;
+ 	unsigned gid, n, k;
++	unsigned size, noname = 0;
++	char *noname_buf;
++	void *p;
+ 	int ret;
+ 
+ 	if (!soc || !soc->controls || !soc->modes) {
+@@ -660,6 +663,7 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 			sprintf(names + 8*k, "mpp%d", ctrl->pid+k);
+ 		ctrl->name = names;
+ 		pctl->num_groups += ctrl->npins;
++		noname += ctrl->npins;
+ 	}
+ 
+ 	pdesc = devm_kzalloc(&pdev->dev, pctl->desc.npins *
+@@ -673,12 +677,17 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 		pdesc[n].number = n;
+ 	pctl->desc.pins = pdesc;
+ 
+-	pctl->groups = devm_kzalloc(&pdev->dev, pctl->num_groups *
+-			     sizeof(struct mvebu_pinctrl_group), GFP_KERNEL);
+-	if (!pctl->groups) {
+-		dev_err(&pdev->dev, "failed to alloc pinctrl groups\n");
++	/*
++	 * allocate groups and name buffers for unnamed groups.
++	 */
++	size = pctl->num_groups * sizeof(*pctl->groups) + noname * 8;
++	p = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
++	if (!p) {
++		dev_err(&pdev->dev, "failed to alloc group data\n");
+ 		return -ENOMEM;
+ 	}
++	pctl->groups = p;
++	noname_buf = p + pctl->num_groups * sizeof(*pctl->groups);
+ 
+ 	/* assign mpp controls to groups */
+ 	gid = 0;
+@@ -692,15 +701,20 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 
+ 		/* generic mvebu register control maps to a number of groups */
+ 		if (!ctrl->mpp_get && !ctrl->mpp_set) {
++			pctl->groups[gid].name = noname_buf;
+ 			pctl->groups[gid].npins = 1;
++			sprintf(noname_buf, "mpp%d", ctrl->pid+0);
++			noname_buf += 8;
+ 
+ 			for (k = 1; k < ctrl->npins; k++) {
+ 				gid++;
+ 				pctl->groups[gid].gid = gid;
+ 				pctl->groups[gid].ctrl = ctrl;
+-				pctl->groups[gid].name = &ctrl->name[8*k];
++				pctl->groups[gid].name = noname_buf;
+ 				pctl->groups[gid].pins = &ctrl->pins[k];
+ 				pctl->groups[gid].npins = 1;
++				sprintf(noname_buf, "mpp%d", ctrl->pid+k);
++				noname_buf += 8;
+ 			}
+ 		}
+ 		gid++;
+-- 
+1.8.5.3
 
-> See, if you scan v3.10:arch/arm/mach-exynos/mach-smdkv310.c you'll
-> notice the string "smdk-audio". If you grep that string you get a few
-> hits. But none in v3.10:sound/soc/samsung/smdk_wm9713.c. And if you scan
-> v3.10:sound/soc/samsung/smdk_wm9713.c for strings you'll find stuff like
-> "wm9713-hifi",  "wm9713-codec", and "soc-audio". But these don't show up
-> in v3.10:arch/arm/mach-exynos/mach-smdkv310.c. So it's not obvious how
-> these two files relate.
-
-> And I'm left wondering why SND_SOC_SAMSUNG_SMDK_WM9713 actually depends
-> on (among other symbols) MACH_SMDKV310 and MACH_SMDKC210 in v3.10.
-
-The hardware is physically present on those boards but must be selected
-with DIP switches, the device registration needs to be changed in the
-kernel when that happens (as the DT must be when it is in use).
-
---2fowzm2eVyDiEwGH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+5uLAAoJELSic+t+oim9VugP/iZEteXqtzJ2i8/iw0CbFE2y
-uvRWMNC3L+ewPETDiU+wtsq4MNUQsY25PK0u3FV2Wmqwt742P6AbX3jJ/zeV/knc
-3pMhlRBPYP9/1scM2OBzw/4bkH4xPzgBJgXUQEyxeauj9cROSpg5pdGzWu5OSRyD
-fMmj9tmLDkf30p9IP2s6xNorGhTDc+kXKlW6cU8+93bZyc9ZNG8kZjqRFIX03o36
-SUm9seByWb7l0BQVoP56qAsu+j8yTKpNoqWP6QkYrjtiGHq5v9bX5+ZCoKS2Wlct
-LmqK9x+cui4mfxxlz+d9zbHnQWc6FPIa3fZePqUp05r9BlN9EjqYD88touJiknbj
-4rinWep1dTdqXoGm1rQ8T7PeqhHkyavzfsEVkc6M4g4hLYHP569m9fDtiLmwFGeV
-rP0BguG5qVQ8uCWjPgOj5MMY7pp0/kaqrjGK+/81lyd3Gv/aSmIO/+4t+a4tf60s
-Bqo6gDBY5eWZmNbNrMxhj4SZ0V6QOWI+kzMOdzqfzA+KFr8zwM+DJCWfSTOp+CWU
-6n21C3EiSsLp/lHl2e86cUlVjfeBGjkzssoLqvjl/bc/TBZ5Xh/g4O1wrdwtSdgB
-YB44X2Vc1Gz+wfZHxQ/rr3QSErHWJkIgXd0q2CsdcCFmOW9sTdhVkwsRPzikOKp+
-49AGYVATCmQXu8nB0fB9
-=kl1Y
------END PGP SIGNATURE-----
-
---2fowzm2eVyDiEwGH--
