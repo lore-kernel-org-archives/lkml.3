@@ -1,122 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaBLFkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 00:40:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743AbaBLFkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 00:40:02 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-References: <52F3DA85.1060209@arm.com>
-	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
-	 <20140206192743.GH4250@linux.vnet.ibm.com>
-	 <1391721423.23421.3898.camel@triegel.csb>
-	 <20140206221117.GJ4250@linux.vnet.ibm.com>
-	 <1391730288.23421.4102.camel@triegel.csb>
-	 <20140207042051.GL4250@linux.vnet.ibm.com>
-	 <20140207074405.GM5002@laptop.programming.kicks-ass.net>
-	 <20140207165028.GO4250@linux.vnet.ibm.com>
-	 <20140207165548.GR5976@mudshark.cambridge.arm.com>
-	 <20140207180216.GP4250@linux.vnet.ibm.com>
-	 <1391992071.18779.99.camel@triegel.csb>
-	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 Feb 2014 21:39:24 -0800
-Message-ID: <1392183564.18779.2187.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751808AbaBLFku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 00:40:50 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:63261 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750743AbaBLFkt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 00:40:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnAHAMQI+1J5LJLw/2dsb2JhbABagwy6ZYVQgREXdIIlAQEFOhwjEAgDGAklDwUlAyETiATJMxcWjmMHgySBFASYKYpPh1KDQSg
+Date: Wed, 12 Feb 2014 16:40:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140212054043.GB13997@dastard>
+References: <20140211172707.GA1749@redhat.com>
+ <20140211210841.GM13647@dastard>
+ <52FA9ADA.9040803@sandeen.net>
+ <20140212004403.GA17129@redhat.com>
+ <20140212010941.GM18016@ZenIV.linux.org.uk>
+ <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+ <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212042215.GN18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 11:09 -0800, Linus Torvalds wrote:
-> On Sun, Feb 9, 2014 at 4:27 PM, Torvald Riegel <triegel@redhat.com> wrote:
-> >
-> > Intuitively, this is wrong because this let's the program take a step
-> > the abstract machine wouldn't do.  This is different to the sequential
-> > code that Peter posted because it uses atomics, and thus one can't
-> > easily assume that the difference is not observable.
+On Wed, Feb 12, 2014 at 04:22:15AM +0000, Al Viro wrote:
+> On Tue, Feb 11, 2014 at 11:03:58PM -0500, Dave Jones wrote:
+> > [ 3111.414202]  [<ffffffff8d1f9036>] bio_alloc_bioset+0x156/0x210
+> > [ 3111.414855]  [<ffffffffc0314231>] _xfs_buf_ioapply+0x1c1/0x3c0 [xfs]
+> > [ 3111.415517]  [<ffffffffc03858f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
+> > [ 3111.416175]  [<ffffffffc031449b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
+> > [ 3111.416843]  [<ffffffffc03858f2>] xlog_bdstrat+0x22/0x60 [xfs]
+> > [ 3111.417509]  [<ffffffffc0387a87>] xlog_sync+0x3a7/0x5b0 [xfs]
+> > [ 3111.418175]  [<ffffffffc0387d9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
+> > [ 3111.418846]  [<ffffffffc0388840>] xlog_write+0x6f0/0x800 [xfs]
+> > [ 3111.419518]  [<ffffffffc038a061>] xlog_cil_push+0x2f1/0x410 [xfs]
 > 
-> Btw, what is the definition of "observable" for the atomics?
-> 
-> Because I'm hoping that it's not the same as for volatiles, where
-> "observable" is about the virtual machine itself, and as such volatile
-> accesses cannot be combined or optimized at all.
+> Very interesting.  The first thing xlog_cil_push() is doing is blocking
+> kmalloc().  So at that point it still hadn't been atomic.  I'd probably
+> slap may_sleep() in the beginning of xlog_sync() and see if that triggers...
 
-No, atomics aren't an observable behavior of the abstract machine
-(unless they are volatile).  See 1.8.p8 (citing the C++ standard).
+None of the XFS code disables interrupts in that path, not does is
+call outside XFS except to dispatch IO. The stack is pretty deep at
+this point and I know that the standard (non stacked) IO stack can
+consume >3kb of stack space when it gets down to having to do memory
+reclaim during GFP_NOIO allocation at the lowest level of SCSI
+drivers. Stack overruns typically show up with symptoms like we are
+seeing.
 
-> Now, I claim that atomic accesses cannot be done speculatively for
-> writes, and not re-done for reads (because the value could change),
+Simple example with memory allocation follows. keep in mind that
+memory reclaim uses a whole lot more stack if it is needed, and that
+scheduling at this point requires about 1k of stack to be free for
+the scheduler footprint, too.
 
-Agreed, unless the compiler can prove that this doesn't make a
-difference in the program at hand and it's not volatile atomics.  In
-general, that will be hard and thus won't happen often I suppose, but if
-correctly proved it would fall under the as-if rule I think.
+FWIW, the blk-mq stuff seems to hae added 200-300 bytes of new stack
+usage to the IO path....
 
-> but *combining* them would be possible and good.
-
-Agreed.
-
-> For example, we often have multiple independent atomic accesses that
-> could certainly be combined: testing the individual bits of an atomic
-> value with helper functions, causing things like "load atomic, test
-> bit, load same atomic, test another bit". The two atomic loads could
-> be done as a single load without possibly changing semantics on a real
-> machine, but if "visibility" is defined in the same way it is for
-> "volatile", that wouldn't be a valid transformation. Right now we use
-> "volatile" semantics for these kinds of things, and they really can
-> hurt.
-
-Agreed.  In your example, the compiler would have to prove that the
-abstract machine would always be able to run the two loads atomically
-(ie, as one load) without running into impossible/disallowed behavior of
-the program.  But if there's no loop or branch or such in-between, this
-should be straight-forward because any hardware oddity or similar could
-merge those loads and it wouldn't be disallowed by the standard
-(considering that we're talking about a finite number of loads), so the
-compiler would be allowed to do it as well.
-
-> Same goes for multiple writes (possibly due to setting bits):
-> combining multiple accesses into a single one is generally fine, it's
-> *adding* write accesses speculatively that is broken by design..
-
-Agreed.  As Paul points out, this being correct assumes that there are
-no other ordering guarantees or memory accesses "interfering", but if
-the stores are to the same memory location and adjacent to each other in
-the program, then I don't see a reason why they wouldn't be combinable.
-
-> At the same time, you can't combine atomic loads or stores infinitely
-> - "visibility" on a real machine definitely is about timeliness.
-> Removing all but the last write when there are multiple consecutive
-> writes is generally fine, even if you unroll a loop to generate those
-> writes. But if what remains is a loop, it might be a busy-loop
-> basically waiting for something, so it would be wrong ("untimely") to
-> hoist a store in a loop entirely past the end of the loop, or hoist a
-> load in a loop to before the loop.
-
-Agreed.  That's what 1.10p24 and 1.10p25 are meant to specify for loads,
-although those might not be bullet-proof as Paul points out.  Forward
-progress is rather vaguely specified in the standard, but at least parts
-of the committee (and people in ISO C++ SG1, in particular) are working
-on trying to improve this.
-
-> Does the standard allow for that kind of behavior?
-
-I think the standard requires (or intends to require) the behavior that
-you (and I) seem to prefer in these examples.
+$ sudo cat /sys/kernel/debug/tracing/stack_trace
+        Depth    Size   Location    (45 entries)
+        -----    ----   --------
+  0)     5944      40   zone_statistics+0xbd/0xc0
+  1)     5904     256   get_page_from_freelist+0x3a8/0x8a0
+  2)     5648     256   __alloc_pages_nodemask+0x143/0x8e0
+  3)     5392      80   alloc_pages_current+0xb2/0x170
+  4)     5312      64   new_slab+0x265/0x2e0
+  5)     5248     240   __slab_alloc+0x2fb/0x4c4
+  6)     5008      80   __kmalloc+0x133/0x180
+  7)     4928     112   virtqueue_add_sgs+0x2fe/0x520
+  8)     4816     288   __virtblk_add_req+0xd5/0x180
+  9)     4528      96   virtio_queue_rq+0xdd/0x1d0
+ 10)     4432     112   __blk_mq_run_hw_queue+0x1c3/0x3c0
+ 11)     4320      16   blk_mq_run_hw_queue+0x35/0x40
+ 12)     4304      80   blk_mq_insert_requests+0xc5/0x120
+ 13)     4224      96   blk_mq_flush_plug_list+0x129/0x140
+ 14)     4128     112   blk_flush_plug_list+0xe7/0x240
+ 15)     4016      32   blk_finish_plug+0x18/0x50
+ 16)     3984     192   _xfs_buf_ioapply+0x30f/0x3b0
+ 17)     3792      48   xfs_buf_iorequest+0x6f/0xc0
+....
+ 37)      928      16   xfs_vn_create+0x13/0x20
+ 38)      912      64   vfs_create+0xb5/0xf0
+ 39)      848     208   do_last.isra.53+0x6e0/0xd00
+ 40)      640     176   path_openat+0xbe/0x620
+ 41)      464     208   do_filp_open+0x43/0xa0
+ 42)      256     112   do_sys_open+0x13c/0x230
+ 43)      144      16   SyS_open+0x22/0x30
+ 44)      128     128   system_call_fastpath+0x16/0x1b
 
 
+Dave, before chasing ghosts, can you (like Eric originally asked)
+turn on stack overrun detection?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
