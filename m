@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaBLJlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:41:13 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:62429 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751226AbaBLJlL (ORCPT
+	id S1751516AbaBLJp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:45:56 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:65501 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750932AbaBLJpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:41:11 -0500
-Message-ID: <1392198068.23759.7.camel@x220>
-Subject: [PATCH] ARM: S3C24XX: Fix typo "CONFIG_CPUS_3C2443"
+	Wed, 12 Feb 2014 04:45:54 -0500
+Message-ID: <1392198352.23759.10.camel@x220>
+Subject: [PATCH] ARM: OMAP2+: Remove legacy macros for zoom platforms
 From: Paul Bolle <pebolle@tiscali.nl>
-To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
 Cc: Richard Weinberger <richard@nod.at>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 12 Feb 2014 10:41:08 +0100
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 12 Feb 2014 10:45:52 +0100
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Feb 2014 09:41:09.0307 (UTC) FILETIME=[8F0640B0:01CF27D6]
+X-OriginalArrivalTime: 12 Feb 2014 09:45:52.0962 (UTC) FILETIME=[38189220:01CF27D7]
 X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 97411608fd5f ("ARM: OMAP2+: Remove legacy support for zoom
+platforms") removed the Kconfig symbols MACH_OMAP_ZOOM2 and
+MACH_OMAP_ZOOM3. Remove the last usage of the related macros too.
+
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
-Untested. This needs testing by people with access to knowledge,
-compilers, and/or hardware related to CPU_S3C2443. I'm not one of them. 
+Untested, but should have zero impact.
 
- arch/arm/mach-s3c24xx/common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-omap2/io.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/arch/arm/mach-s3c24xx/common.c b/arch/arm/mach-s3c24xx/common.c
-index 4adaa4b..1d77d70 100644
---- a/arch/arm/mach-s3c24xx/common.c
-+++ b/arch/arm/mach-s3c24xx/common.c
-@@ -484,7 +484,7 @@ struct platform_device s3c2440_device_dma = {
+diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
+index d408b15..af432b1 100644
+--- a/arch/arm/mach-omap2/io.c
++++ b/arch/arm/mach-omap2/io.c
+@@ -179,15 +179,6 @@ static struct map_desc omap34xx_io_desc[] __initdata = {
+ 		.length		= L4_EMU_34XX_SIZE,
+ 		.type		= MT_DEVICE
+ 	},
+-#if defined(CONFIG_DEBUG_LL) &&							\
+-	(defined(CONFIG_MACH_OMAP_ZOOM2) || defined(CONFIG_MACH_OMAP_ZOOM3))
+-	{
+-		.virtual	= ZOOM_UART_VIRT,
+-		.pfn		= __phys_to_pfn(ZOOM_UART_BASE),
+-		.length		= SZ_1M,
+-		.type		= MT_DEVICE
+-	},
+-#endif
  };
  #endif
  
--#if defined(CONFIG_CPUS_3C2443) || defined(CONFIG_CPU_S3C2416)
-+#if defined(CONFIG_CPU_S3C2443) || defined(CONFIG_CPU_S3C2416)
- static struct resource s3c2443_dma_resource[] = {
- 	[0] = DEFINE_RES_MEM(S3C24XX_PA_DMA, S3C24XX_SZ_DMA),
- 	[1] = DEFINE_RES_IRQ(IRQ_S3C2443_DMA0),
 -- 
 1.8.5.3
 
