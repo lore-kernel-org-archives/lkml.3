@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaBLUJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:09:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36906 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752869AbaBLUJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:09:31 -0500
-Date: Wed, 12 Feb 2014 15:09:12 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, mtosatti@redhat.com,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 0/4] hugetlb: add hugepagesnid= command-line option
-Message-ID: <20140212150912.14ef65be@redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1402111951490.31912@chino.kir.corp.google.com>
-References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
- <alpine.DEB.2.02.1402101851190.3447@chino.kir.corp.google.com>
- <20140211103624.7edf1423@redhat.com>
- <alpine.DEB.2.02.1402111951490.31912@chino.kir.corp.google.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753670AbaBLUNV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 15:13:21 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:58146 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084AbaBLUNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 15:13:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140212113928.GO18016@ZenIV.linux.org.uk>
+References: <20140211172707.GA1749@redhat.com>
+	<20140211210841.GM13647@dastard>
+	<52FA9ADA.9040803@sandeen.net>
+	<20140212004403.GA17129@redhat.com>
+	<20140212010941.GM18016@ZenIV.linux.org.uk>
+	<CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+	<20140212040358.GA25327@redhat.com>
+	<20140212042215.GN18016@ZenIV.linux.org.uk>
+	<20140212054043.GB13997@dastard>
+	<CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+	<20140212113928.GO18016@ZenIV.linux.org.uk>
+Date: Wed, 12 Feb 2014 12:13:19 -0800
+X-Google-Sender-Auth: pxORrkSP4cPaPAaczNRJC15i-Ok
+Message-ID: <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014 19:59:40 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+On Wed, Feb 12, 2014 at 3:39 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Feb 11, 2014 at 10:28:12PM -0800, Linus Torvalds wrote:
+>
+>> It looks like just "do_signal()" has a stack frame that is about 230
+>> bytes even under normal circumstancs (largely due to "struct ksignal"
+>> - which in turn is largely due to the insane 128-byte padding in
+>> siginfo_t). Add a few other frames in there, and I guess that if it
+>> was close before, the coredump path just makes it go off.
+>
+> We could, in principle, put it into task_struct and make get_signal()
+> return its address - do_signal() is called only in the code that does
+> assorted returns to userland...
 
-> On Tue, 11 Feb 2014, Luiz Capitulino wrote:
-> 
-> > > > HugeTLB command-line option hugepages= allows the user to specify how many
-> > > > huge pages should be allocated at boot. On NUMA systems, this argument
-> > > > automatically distributes huge pages allocation among nodes, which can
-> > > > be undesirable.
-> > > > 
-> > > 
-> > > And when hugepages can no longer be allocated on a node because it is too 
-> > > small, the remaining hugepages are distributed over nodes with memory 
-> > > available, correct?
-> > 
-> > No. hugepagesnid= tries to obey what was specified by the uses as much as
-> > possible.
-> 
-> I'm referring to what I quoted above, the hugepages= parameter. 
+We have better uses for random buffers in "struct task_struct", I'd
+hate to put a siginfo_t there.
 
-Oh, OK.
+The thing is, siginfo_t has that idiotic 128-byte area, but it's all
+"for future expansion". I think it's some damn glibc disease - we've
+seen these kinds of insane paddings before.
 
-> I'm 
-> saying that using existing functionality you can reserve an excess of 
-> hugepages and then free unneeded hugepages at runtime to get the desired 
-> amount allocated only on a specific node.
+The actual *useful* part of siginfo_t is on the order of 32 bytes. If that.
 
-I got that part. I only think this is not a good solution as I explained
-bellow.
+Sad.
 
-> > > Strange, it would seem better to just reserve as many hugepages as you 
-> > > want so that you get the desired number on each node and then free the 
-> > > ones you don't need at runtime.
-> > 
-> > You mean, for example, if I have a 2 node system and want 2 1G huge pages
-> > from node 1, then I have to allocate 4 1G huge pages and then free 2 pages
-> > on node 0 after boot? That seems very cumbersome to me. Besides, what if
-> > node0 needs this memory during boot?
-> > 
-> 
-> All of this functionality, including the current hugepages= reservation at 
-> boot, needs to show that it can't be done as late as when you could run an 
-> initscript to do the reservation at runtime and fragmentation is at its 
-> lowest level when userspace first becomes available.
-
-It's not that it can't. The point is that for 1G huge pages it's more
-reliable to allocate them as early as possible during the kernel boot
-process. I'm all for having/improving 1G allocation support at run-time,
-and volunteer to help with that effort, but that's something that can
-(and IMO should) be done on top of this series.
-
-> I don't see any justification given in the patchset that suggests you 
-> can't simply do this in an initscript if it is possible to allocate 1GB 
-> pages at runtime.  If it's too late because of oom, then your userspace is 
-> going to oom anyway if you reserve the hugepages at boot; if it's too late 
-> because of fragmentation, let's work on that issue (and justification why 
-> things like movablecore= don't work for you).
-> 
-
+                Linus
