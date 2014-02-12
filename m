@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaBLDen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 22:34:43 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42663 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002AbaBLDem (ORCPT
+	id S1752502AbaBLDhd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 22:37:33 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:47786 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831AbaBLDhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 22:34:42 -0500
-Date: Tue, 11 Feb 2014 20:34:37 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        mrushton@amazon.com, msw@amazon.com, boris.ostrovsky@oracle.com
-Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-jens-3.14 : NFO: trying
- to register non-static key. the code is fine but needs lockdep annotation.
-Message-ID: <20140212033437.GA9739@kernel.dk>
-References: <771950784.20140211165215@eikelenboom.it>
- <20140211155650.GA23026@phenom.dumpdata.com>
- <1542261541.20140211170750@eikelenboom.it>
- <52FA6072.40908@citrix.com>
- <52FA6352.1010403@citrix.com>
- <52FA68AE.6070608@citrix.com>
- <52FA6A44.6050003@citrix.com>
- <1009282985.20140211212157@eikelenboom.it>
- <52FA99CA.8070505@kernel.dk>
- <92e1a6a9-1993-4203-b38c-9c8da96a3ce7@email.android.com>
+	Tue, 11 Feb 2014 22:37:31 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1C3aj1A020589, This message is accepted by code: ctloc85258
+Message-ID: <52FAECEB.3060902@realtek.com>
+Date: Wed, 12 Feb 2014 11:39:23 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <92e1a6a9-1993-4203-b38c-9c8da96a3ce7@email.android.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        <driverdev-devel@linuxdriverproject.org>,
+        Wei WANG <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH v3 2/3] mmc: Add realtek USB sdmmc host driver
+References: <1391697307-23457-1-git-send-email-rogerable@realtek.com>	<1391697307-23457-3-git-send-email-rogerable@realtek.com>	<201402110748.s1B7miQ8010938@rtits1.realtek.com>	<52F9ED02.6000604@realtek.com> <201402111621.s1BGLdOt002176@rtits1.realtek.com>
+In-Reply-To: <201402111621.s1BGLdOt002176@rtits1.realtek.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11 2014, Konrad Rzeszutek Wilk wrote:
-> On February 11, 2014 4:44:42 PM EST, Jens Axboe <axboe@kernel.dk> wrote:
-> >On 2014-02-11 13:21, Sander Eikelenboom wrote:
-> >>
-> >> Tuesday, February 11, 2014, 7:21:56 PM, you wrote:
-> >>
-> >>> On 11/02/14 18:15, Roger Pau Monné wrote:
-> >>>> On 11/02/14 18:52, David Vrabel wrote:
-> >>>>>
-> >>>> That would mean that unmap_purged_grants would no longer be static
-> >and
-> >>>> I should also add a prototype for it in blkback/common.h, which is
-> >kind
-> >>>> of ugly IMHO.
-> >>
-> >>> But less ugly than initializing work with a NULL function, IMO.
-> >>
-> >>>> commit 980e72e45454b64ccb7f23b6794a769384e51038
-> >>>> Author: Roger Pau Monne <roger.pau@citrix.com>
-> >>>> Date:   Tue Feb 11 19:04:06 2014 +0100
-> >>>>
-> >>>>      xen-blkback: init persistent_purge_work work_struct
-> >>>>
-> >>>>      Initialize persistent_purge_work work_struct on
-> >xen_blkif_alloc (and
-> >>>>      remove the previous initialization done in
-> >purge_persistent_gnt). This
-> >>>>      prevents flush_work from complaining even if
-> >purge_persistent_gnt has
-> >>>>      not been used.
-> >>>>
-> >>>>      Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-> >>
-> >>> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> >>
-> >> And a Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
-> >
-> >Konrad, I was going to ship my current tree today, but looks like we 
-> >need this too.
-> 
-> Yes. Are you OK taking it from this thread or would you like me to prep a GIT pull with it?
+On 02/11/2014 05:50 PM, Ulf Hansson wrote:
+> On 11 February 2014 10:27, Roger <rogerable@realtek.com> wrote:
+>> On 02/10/2014 10:58 PM, Ulf Hansson wrote:
+>>>
+>>> On 6 February 2014 15:35,  <rogerable@realtek.com> wrote:
+>>>>
+>>>> From: Roger Tseng <rogerable@realtek.com>
+>>>>
+>>>> Realtek USB SD/MMC host driver provides mmc host support based on the
+>>>> Realtek
+>>>> USB card reader MFD driver.
+>>>>
+>>>> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+>>>> ---
+>>>>    drivers/mmc/host/Kconfig          |    7 +
+>>>>    drivers/mmc/host/Makefile         |    1 +
+>>>>    drivers/mmc/host/rtsx_usb_sdmmc.c | 1500
+>>>> +++++++++++++++++++++++++++++++++++++
+>>>>    3 files changed, 1508 insertions(+)
+>>>>    create mode 100644 drivers/mmc/host/rtsx_usb_sdmmc.c
+>>
+>> [snip]
+>>
+>>>> +#ifdef CONFIG_PM_RUNTIME
+>>>
+>>>
+>>> There are stubs for pm_runtime* functions, thus the ifdefs can be removed.
+>>> Please go though the complete patch and remove all instances.
+>>>
+>>>> +               pm_runtime_put(sdmmc_dev(host));
+>>>
+>>>
+>>> I don't know so much about USB mmc hosts hardware, but I just wanted
+>>> to find out if I have understood this correct.
+>>>
+>>> You can't do fine grained power management of the USB parent device,
+>>> since it needs to be runtime resumed to be able keep the power the
+>>> card? Once it becomes runtime suspended, the power to the card will
+>>> thus also be dropped?
+>>>
+>> Yes, and to keep some internal state of the controller.
+>
+> Okay.
+>
+> But the internal state of the controller should be possible to restore
+> at runtime_resume, so that should not be the reason, right?
+>
 
-I'll just grab it from here, no problem. Done.
-
--- 
-Jens Axboe
-
+I checked again. Internal registers will hold its state during suspend.
+Card power is the exact reason.
+>>> Kind regards
+>>> Ulf Hansson
+> .
+>
