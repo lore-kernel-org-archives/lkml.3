@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaBLLG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:06:27 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:42269 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaBLLGZ (ORCPT
+	id S1752265AbaBLLGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:06:53 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:49619 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397AbaBLLGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:06:25 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>, Josh Wu <josh.wu@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Boris BREZILLON <b.brezillon@overkiz.com>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91/DT: add NAND + DMA property
-Date: Wed, 12 Feb 2014 12:06:23 +0100
-Message-ID: <1392203183-9851-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
+	Wed, 12 Feb 2014 06:06:50 -0500
+Date: Wed, 12 Feb 2014 12:06:44 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1259174563.20140212120644@eikelenboom.it>
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: Peter Hurley <peter@hurleysoftware.com>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Gianluca Anzolin <gianluca@sottospazio.it>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Andrey Vihrov <andrey.vihrov@gmail.com>,
+        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/24] rfcomm fixes
+In-Reply-To: <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org>
+References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the "atmel,nand-has-dma" property to NAND node for SoC that
-can use the DMA to perform NAND accesses.
-Use of this property was added in 1b7192658a08f70df0f290634fd7cd2ecb629fc9
-(mtd: atmel_nand: add a new dt binding item for nand dma support).
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/at91sam9g45.dtsi | 1 +
- arch/arm/boot/dts/at91sam9n12.dtsi | 1 +
- arch/arm/boot/dts/at91sam9x5.dtsi  | 1 +
- arch/arm/boot/dts/sama5d3.dtsi     | 1 +
- 4 files changed, 4 insertions(+)
+Monday, February 10, 2014, 11:09:38 PM, you wrote:
 
-diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-index cbcc058b26b4..9b6683f252cf 100644
---- a/arch/arm/boot/dts/at91sam9g45.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-@@ -817,6 +817,7 @@
- 			      >;
- 			atmel,nand-addr-offset = <21>;
- 			atmel,nand-cmd-offset = <22>;
-+			atmel,nand-has-dma;
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&pinctrl_nand>;
- 			gpios = <&pioC 8 GPIO_ACTIVE_HIGH
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index 394e6ce2afb7..9f04808fc697 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -570,6 +570,7 @@
- 			atmel,pmecc-lookup-table-offset = <0x0 0x8000>;
- 			atmel,nand-addr-offset = <21>;
- 			atmel,nand-cmd-offset = <22>;
-+			atmel,nand-has-dma;
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&pinctrl_nand>;
- 			gpios = <&pioD 5 GPIO_ACTIVE_HIGH
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index 174219de92fa..67e32067eb25 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -790,6 +790,7 @@
- 			atmel,pmecc-lookup-table-offset = <0x0 0x8000>;
- 			atmel,nand-addr-offset = <21>;
- 			atmel,nand-cmd-offset = <22>;
-+			atmel,nand-has-dma;
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&pinctrl_nand>;
- 			gpios = <&pioD 5 GPIO_ACTIVE_HIGH
-diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index 3d5faf85f51b..d075c5326ce7 100644
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -1256,6 +1256,7 @@
- 			interrupts = <5 IRQ_TYPE_LEVEL_HIGH 6>;
- 			atmel,nand-addr-offset = <21>;
- 			atmel,nand-cmd-offset = <22>;
-+			atmel,nand-has-dma;
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&pinctrl_nand0_ale_cle>;
- 			atmel,pmecc-lookup-table-offset = <0x0 0x8000>;
--- 
-1.8.2.2
+> Hi Peter,
+
+>> This patch series addresses a number of previously unknown issues
+>> with the RFCOMM tty device implementation, in addition to
+>> addressing the locking regression recently reported [1].
+>> 
+>> As Gianluca suggested and I agree, this series first reverts
+>> 3 of the 4 patches of 3.14-rc1 for bluetooth/rfcomm/tty.c.
+
+> so for 3.14 we should revert 3 patches. And then the other 21 are intended for 3.15 merge window.
+
+> I realize that we still have to deal with some breakage, but we do not want regressions and I clearly not going to take 24 patches for 3.14 at this point in time.
+
+> What I can do is take all 24 patches into bluetooth-next and let them sit for 1 week and have people test them. And then we go ahead with reverting 3 patches from 3.14. Does that make sense?
+
+Reverting those 3 patches works for me.
+
+--
+Sander
+
+> Regards
+
+> Marcel
+
+
 
