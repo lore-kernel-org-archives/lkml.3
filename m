@@ -1,50 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801AbaBLSXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:23:43 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50959 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbaBLSXl (ORCPT
+	id S1753661AbaBLS02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:26:28 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:39747 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038AbaBLS0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:23:41 -0500
-Date: Wed, 12 Feb 2014 19:23:38 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kevin Hilman <khilman@linaro.org>, Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, tj@kernel.org
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
- workqueue
-Message-ID: <20140212182336.GD5496@localhost.localdomain>
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
- <52F8A51F.4090909@cn.fujitsu.com>
- <20140210184729.GL4250@linux.vnet.ibm.com>
+	Wed, 12 Feb 2014 13:26:25 -0500
+Date: Wed, 12 Feb 2014 10:26:13 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140212182613.GC4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <52F3DA85.1060209@arm.com>
+ <20140206185910.GE27276@mudshark.cambridge.arm.com>
+ <20140206192743.GH4250@linux.vnet.ibm.com>
+ <1391721423.23421.3898.camel@triegel.csb>
+ <20140206221117.GJ4250@linux.vnet.ibm.com>
+ <1391730288.23421.4102.camel@triegel.csb>
+ <20140207042051.GL4250@linux.vnet.ibm.com>
+ <1391990808.18779.63.camel@triegel.csb>
+ <20140210035157.GB15831@linux.vnet.ibm.com>
+ <1392182014.18779.2137.camel@triegel.csb>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140210184729.GL4250@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392182014.18779.2137.camel@triegel.csb>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021218-9332-0000-0000-0000031522E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 10:47:29AM -0800, Paul E. McKenney wrote:
-> On Mon, Feb 10, 2014 at 06:08:31PM +0800, Lai Jiangshan wrote:
-> > Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+On Tue, Feb 11, 2014 at 09:13:34PM -0800, Torvald Riegel wrote:
+> On Sun, 2014-02-09 at 19:51 -0800, Paul E. McKenney wrote:
+> > On Mon, Feb 10, 2014 at 01:06:48AM +0100, Torvald Riegel wrote:
+> > > On Thu, 2014-02-06 at 20:20 -0800, Paul E. McKenney wrote:
+> > > > On Fri, Feb 07, 2014 at 12:44:48AM +0100, Torvald Riegel wrote:
+> > > > > On Thu, 2014-02-06 at 14:11 -0800, Paul E. McKenney wrote:
+> > > > > > On Thu, Feb 06, 2014 at 10:17:03PM +0100, Torvald Riegel wrote:
+> > > > > > > On Thu, 2014-02-06 at 11:27 -0800, Paul E. McKenney wrote:
+> > > > > > > > On Thu, Feb 06, 2014 at 06:59:10PM +0000, Will Deacon wrote:
+> > > > > > > > > There are also so many ways to blow your head off it's untrue. For example,
+> > > > > > > > > cmpxchg takes a separate memory model parameter for failure and success, but
+> > > > > > > > > then there are restrictions on the sets you can use for each. It's not hard
+> > > > > > > > > to find well-known memory-ordering experts shouting "Just use
+> > > > > > > > > memory_model_seq_cst for everything, it's too hard otherwise". Then there's
+> > > > > > > > > the fun of load-consume vs load-acquire (arm64 GCC completely ignores consume
+> > > > > > > > > atm and optimises all of the data dependencies away) as well as the definition
+> > > > > > > > > of "data races", which seem to be used as an excuse to miscompile a program
+> > > > > > > > > at the earliest opportunity.
+> > > > > > > > 
+> > > > > > > > Trust me, rcu_dereference() is not going to be defined in terms of
+> > > > > > > > memory_order_consume until the compilers implement it both correctly and
+> > > > > > > > efficiently.  They are not there yet, and there is currently no shortage
+> > > > > > > > of compiler writers who would prefer to ignore memory_order_consume.
+> > > > > > > 
+> > > > > > > Do you have any input on
+> > > > > > > http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59448?  In particular, the
+> > > > > > > language standard's definition of dependencies?
+> > > > > > 
+> > > > > > Let's see...  1.10p9 says that a dependency must be carried unless:
+> > > > > > 
+> > > > > > — B is an invocation of any specialization of std::kill_dependency (29.3), or
+> > > > > > — A is the left operand of a built-in logical AND (&&, see 5.14) or logical OR (||, see 5.15) operator,
+> > > > > > or
+> > > > > > — A is the left operand of a conditional (?:, see 5.16) operator, or
+> > > > > > — A is the left operand of the built-in comma (,) operator (5.18);
+> > > > > > 
+> > > > > > So the use of "flag" before the "?" is ignored.  But the "flag - flag"
+> > > > > > after the "?" will carry a dependency, so the code fragment in 59448
+> > > > > > needs to do the ordering rather than just optimizing "flag - flag" out
+> > > > > > of existence.  One way to do that on both ARM and Power is to actually
+> > > > > > emit code for "flag - flag", but there are a number of other ways to
+> > > > > > make that work.
+> > > > > 
+> > > > > And that's what would concern me, considering that these requirements
+> > > > > seem to be able to creep out easily.  Also, whereas the other atomics
+> > > > > just constrain compilers wrt. reordering across atomic accesses or
+> > > > > changes to the atomic accesses themselves, the dependencies are new
+> > > > > requirements on pieces of otherwise non-synchronizing code.  The latter
+> > > > > seems far more involved to me.
+> > > > 
+> > > > Well, the wording of 1.10p9 is pretty explicit on this point.
+> > > > There are only a few exceptions to the rule that dependencies from
+> > > > memory_order_consume loads must be tracked.  And to your point about
+> > > > requirements being placed on pieces of otherwise non-synchronizing code,
+> > > > we already have that with plain old load acquire and store release --
+> > > > both of these put ordering constraints that affect the surrounding
+> > > > non-synchronizing code.
+> > > 
+> > > I think there's a significant difference.  With acquire/release or more
+> > > general memory orders, it's true that we can't order _across_ the atomic
+> > > access.  However, we can reorder and optimize without additional
+> > > constraints if we do not reorder.  This is not the case with consume
+> > > memory order, as the (p + flag - flag) example shows.
+> > 
+> > Agreed, memory_order_consume does introduce additional restrictions.
+> > 
+> > > > This issue got a lot of discussion, and the compromise is that
+> > > > dependencies cannot leak into or out of functions unless the relevant
+> > > > parameters or return values are annotated with [[carries_dependency]].
+> > > > This means that the compiler can see all the places where dependencies
+> > > > must be tracked.  This is described in 7.6.4.
+> > > 
+> > > I wasn't aware of 7.6.4 (but it isn't referred to as an additional
+> > > constraint--what it is--in 1.10, so I guess at least that should be
+> > > fixed).
+> > > Also, AFAIU, 7.6.4p3 is wrong in that the attribute does make a semantic
+> > > difference, at least if one is assuming that normal optimization of
+> > > sequential code is the default, and that maintaining things such as
+> > > (flag-flag) is not; if optimizing away (flag-flag) would require the
+> > > insertion of fences unless there is the carries_dependency attribute,
+> > > then this would be bad I think.
+> > 
+> > No, the attribute does not make a semantic difference.  If a dependency
+> > flows into a function without [[carries_dependency]], the implementation
+> > is within its right to emit an acquire barrier or similar.
 > 
-> Thank you all, queued for 3.15.
+> So you can't just ignore the attribute when generating code -- you would
+> at the very least have to do this consistently across all the compilers
+> compiling parts of your code.  Which tells me that it does make a
+> semantic difference.  But I know that what should or should not be an
+> attribute is controversial.
+
+Actually, I believe that you -can- ignore the attribute when generating
+code.  In that case, you do the same thing that you would do the same
+thing as you would if there was no attribute, namely emit whatever
+barrier was required to render irrelevant any dependency breaking that
+might occur in the called function.
+
+> > > IMHO, the dependencies construct (carries_dependency, kill_dependency)
+> > > seem to be backwards to me.  They assume that the compiler preserves all
+> > > those dependencies including (flag-flag) by default, which prohibits
+> > > meaningful optimizations.  Instead, I guess there should be a construct
+> > > for explicitly exploiting the dependencies (e.g., a
+> > > preserve_dependencies call, whose argument will not be optimized fully).
+> > > Exploiting dependencies will be special code and isn't the common case,
+> > > so it can be require additional annotations.
+> > 
+> > If you are compiling a function that has no [[carries_dependency]]
+> > attributes on it arguments and return value, and none on any of the
+> > functions that it calls, and contains no memomry_order_consume loads,
+> > then you can break dependencies all you like within that function.
+> > 
+> > That said, I am of course open to discussing alternative approaches.
+> > Especially those that ease the migration of the existing code in the
+> > Linux kernel that rely on dependencies.  ;-)
+> > 
+> > > > If a dependency chain
+> > > > headed by a memory_order_consume load goes into or out of a function
+> > > > without the aid of the [[carries_dependency]] attribute, the compiler
+> > > > needs to do something else to enforce ordering, e.g., emit a memory
+> > > > barrier.
+> > > 
+> > > I agree that this is a way to see it.  But I can't see how this will
+> > > motivate compiler implementers to not just emit a stronger barrier right
+> > > away.
+> > 
+> > That certainly has been the most common approach.
+> > 
+> > > > From a Linux-kernel viewpoint, this is a bit ugly, as it requires
+> > > > annotations and use of kill_dependency, but it was the best I could do
+> > > > at the time.  If things go as they usually do, there will be some other
+> > > > reason why those are needed...
+> > > 
+> > > Did you consider something along the "preserve_dependencies" call?  If
+> > > so, why did you go for kill_dependency?
+> > 
+> > Could you please give more detail on what a "preserve_dependencies" call
+> > would do and where it would be used?
 > 
-> We should also have some facility for moving the SRCU workqueues to
-> housekeeping/timekeeping kthreads in the NO_HZ_FULL case.  Or does
-> this patch already have that effect?
+> Demarcating regions of code (or particular expressions) that require the
+> preservation of source-code-level dependencies (eg, "p + flag - flag"),
+> and which thus constraints optimizations allowed on normal code.
+> 
+> What we have right now is a "blacklist" of things that kill
+> dependencies, which still requires compilers to not touch things like
+> "flag - flag".  Doing so isn't useful in most code, so it would be
+> better to have a "whitelist" of things in which dependencies are
+> strictly preserved.  The list of relevant expressions found in the
+> current RCU uses might be one such list.  Another would be to require
+> programmers to explicitly annotate the expressions where those
+> dependencies should be specially preserved, with something like a
+> "preserve_dependencies(p + flag - flag)" call.
+> 
+> I agree that this might be harder when dependency tracking is scattered
+> throughout a larger region of code, as you pointed out today.  But I'm
+> just looking for a setting that is more likely to see good support by
+> compilers.
 
-Kevin Hilman and me plan to try to bring a new Kconfig option that could let
-us control the unbound workqueues affinity through sysfs.
+The 3.13 version of the Linux kernel contains almost 1300 instances
+of the rcu_dereference() family of macros, including wrappers.  I have
+thus far gone through about 300 of them by hand and another 200 via
+scripts.  Here are the preliminary results:
 
-The feature actually exist currently but is only enabled for workqueues that
-have WQ_SYSFS. Writeback and raid5 are the only current users.
+Common operations on pointers returned from rcu_dereference():
 
-See for example: /sys/devices/virtual/workqueue/writeback/cpumask
+->	To dereference, can be chained, assuming entire linked structure
+	published with single rcu_assign_pointer().  The & prefix operator
+	is applied to dereferenced pointer, as are many other things,
+	including rcu_dereference() itself.
+
+[]	To index array referenced by RCU-protected index,
+	and to specify array indexed by something else.
+
+& infix	To strip low-order bits, but clearly mask must be non-zero.
+	Should include infix "|" as well, but only if mask has some
+	zero bits.
+
++ infix	To index RCU-protected array.  (Should include infix "-" too.)
+
+=	To assign to a temporary variable.
+
+()	To invoke an RCU-protected pointer to a function.
+
+cast	To emulate subtypes.
+
+?:	To substitute defaults, however, dependencies need to be carried only
+	through middle and right-hand arguments.
+
+For completeness, unary "*" and "&" should also be included, as these
+are sometimes used in macros that apply casts.  One could argue that
+symmetry would require that "|" be treated the same as infix "&", but
+excluding the case where the other operand is all one bits, but I don't
+feel strongly about "|".
+
+Please note that I am not aware of any reasonable compiler optimization
+that would break dependency chains in these cases, at least not in the
+case where the original memory_order_consume load had volatile semantics,
+as rcu_dereference() and friends in fact do have.
+
+Many dependency chains are short and contained, but there are quite a few
+large ones, particularly in the networking code.  Here is one moderately
+ornate example dependency chain:
+
+o	The arp_process() function calls __in_dev_get_rcu(), which
+	returns an RCU-protected pointer.
+
+	Then arp_process() invokes the following macros and functions:
+	
+		IN_DEV_ROUTE_LOCALNET() -> ipv4_devconf_get()
+		arp_ignore() -- which calls:
+			IN_DEV_ARP_IGNORE() -> ipv4_devconf_get()
+			inet_confirm_addr() -- which calls:
+				dev_net() -- which calls:
+					read_pnet()
+		IN_DEV_ARPFILTER() -> ipv4_devconf_get()
+		IN_DEV_CONF_GET() -> ipv4_devconf_get()
+		arp_fwd_proxy() -- which calls:
+			IN_DEV_PROXY_ARP() -> ipv4_devconf_get()
+			IN_DEV_MEDIUM_ID() -> ipv4_devconf_get()
+		arp_fwd_pvlan() -- which calls IN_DEV_PROXY_ARP_PVLAN(),
+			which eventually maps to ipv4_devconf_get()
+		pneigh_enqueue()
+
+This sort of example is one reason why I would not look fondly on any
+suggestion that required decorating the operators called out above.  That
+said, I would be OK with dropping the non-volatile memory_order_consume
+load from C11 and C++11 -- I don't see how memory_order_consume is useful
+unless it includes volatile semantics.
+
+							Thanx, Paul
+
