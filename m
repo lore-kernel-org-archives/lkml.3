@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaBLCtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 21:49:09 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:34313 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaBLCtH (ORCPT
+	id S1752845AbaBLCwV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 21:52:21 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:40157 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaBLCwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 21:49:07 -0500
-Date: Tue, 11 Feb 2014 18:49:04 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jean Delvare <jdelvare@suse.de>,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH 09/12] hwmon: vexpress: Use devm helper for hwmon device
- registration
-Message-ID: <20140212024904.GA19352@roeck-us.net>
+	Tue, 11 Feb 2014 21:52:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140212010941.GM18016@ZenIV.linux.org.uk>
+References: <20140211172707.GA1749@redhat.com>
+	<20140211210841.GM13647@dastard>
+	<52FA9ADA.9040803@sandeen.net>
+	<20140212004403.GA17129@redhat.com>
+	<20140212010941.GM18016@ZenIV.linux.org.uk>
+Date: Tue, 11 Feb 2014 18:52:19 -0800
+X-Google-Sender-Auth: AAAZddWX80Xi9pNTx8jDrkdACsY
+Message-ID: <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 05:10:33PM +0000, Pawel Moll wrote:
-> Use devm_hwmon_device_register_with_groups instead of
-> the old-style manual attributes and hwmon device registration.
-> 
+On Tue, Feb 11, 2014 at 5:09 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Slap the check in vfs_create(), see if interrupts had been disabled by it or
+> by something in ->create().  Since it's reproducible...
 
-[ ... ]
+path_openat() starts off with a get_empty_filp(), which allocates a
+file pointer with GFP_KERNEL. So that should have triggered the
+might_sleep warning if irq's were already disabled at that point.
 
->  static int vexpress_hwmon_probe(struct platform_device *pdev)
->  {
-> -	int err;
->  	const struct of_device_id *match;
->  	struct vexpress_hwmon_data *data;
-> +	const char *name;
-> +	const struct attribute_group **groups;
->  
->  	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
->  	if (!data)
-> @@ -176,42 +151,19 @@ static int vexpress_hwmon_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  
+So it's not before that - in particular, it's not in the signal
+handling or do_coredump() paths.
 
-There is a leftover platform_set_drvdata() above which you can remove;
-attributes are now attached to the hwmon device and no longer
-to the platform device.
+Also, at least xfs_buf_lock() - which is much deeper in that chain -
+does a down(&bp->b_sema). I'm disguested that that doesn't have a
+might_sleep() in it.
 
->  
-> -	match = of_match_device(vexpress_hwmon_of_match, &pdev->dev);
-> -	sysfs_remove_group(&pdev->dev.kobj, match->data);
-> +	name = of_get_property(pdev->dev.of_node, "compatible", NULL);
+Dave, mind adding a "might_sleep()" to the top of
+"down[_interruptible]()". It's silly to not have coverage of semaphore
+use in bad contexts.
 
-Couple of problems, two of which escaped me earlier.
-
-First, can of_get_property ever return NULL ? I think not, just wondering.
-
-Second is a real problem. You have a '-' in the compatible property which is
-illegal for the 'name' attribute in hwmon devices. It messes up libsensors
-and thus every application using it. Not sure what a good fix (or name)
-would be; simplest might be to copy the name string and replace it with '_'.
-Sorry for not noticing this earlier; it might actually make sense to submit
-a separate patch to address this so we can apply it to the current kernel
-and if necessary patch it into earlier kernels.
-
-Third, I noticed that the 'label' attribute is always created but returns  
--ENOENT if there is no label. A much better implementation would be to use
-.is_visible and not create the label attribute if its devicetree entry
-does not exist. I don't know how libsensors reacts to -ENOENT on a read,
-but no matter how it does react, it is pretty much undefined.
-Again, that should be handled in a separate patch.
-
-I agree with Arnd that it would be nice to get rid of the local macro,
-but I won't mandate that.
-
-Thanks,
-Guenter
+             Linus
