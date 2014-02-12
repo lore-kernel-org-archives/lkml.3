@@ -1,74 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaBLTe5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 14:34:57 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:60843 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774AbaBLTe4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 14:34:56 -0500
-Date: Wed, 12 Feb 2014 23:34:48 +0400
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] battery-2.6.git: fixes for v3.14
-Message-ID: <20140212193448.GA6565@anuminas.rup.mentorg.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753601AbaBLTjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 14:39:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41547 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752357AbaBLTji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 14:39:38 -0500
+Date: Wed, 12 Feb 2014 14:39:14 -0500
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <mtosatti@redhat.com>, <mgorman@suse.de>,
+        <aarcange@redhat.com>, <andi@firstfloor.org>, <riel@redhat.com>
+Subject: Re: [PATCH 3/4] hugetlb: add hugepagesnid= command-line option
+Message-ID: <20140212143914.5424ed6d@redhat.com>
+In-Reply-To: <52FAEE24.8090509@jp.fujitsu.com>
+References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
+ <1392053268-29239-4-git-send-email-lcapitulino@redhat.com>
+ <52FAEE24.8090509@jp.fujitsu.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Wed, 12 Feb 2014 12:44:36 +0900
+Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
 
-Could you please pull battery-2.6.git tree containing several fixes
-for v3.14 kernel.
+> (2014/02/11 2:27), Luiz Capitulino wrote:
+> > From: Luiz capitulino <lcapitulino@redhat.com>
+> > 
+> > The HugeTLB command-line option hugepages= allow the user to specify
+> > how many huge pages should be allocated at boot-time. On NUMA systems,
+> > this option will try to automatically distribute the allocation equally
+> > among nodes. For example, if you have a 2-node NUMA system and allocates
+> > 200 huge pages, than hugepages= will try to allocate 100 huge pages from
+> > node0 and 100 from node1.
+> > 
+> > The hugepagesnid= option introduced by this commit allows the user
+> > to specify the nodes from which huge pages are allocated. For example,
+> > if you have a 2-node NUMA system and want 300 2M huge pages to be
+> > allocated from node1, you could do:
+> > 
+> >   hugepagesnid=1,300,2M
+> > 
+> > Or, say you want node0 to allocate 100 huge pages and node1 to
+> > allocate 200 huge pages, you do:
+> > 
+> >   hugepagesnid=0,100,2M hugepagesnid=1,200,1M
+> > 
+> > This commit adds support only for 2M huge pages, next commit will
+> > add support for 1G huge pages.
+> > 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > ---
+> >   Documentation/kernel-parameters.txt |  8 ++++
+> >   arch/x86/mm/hugetlbpage.c           | 35 +++++++++++++++++
+> >   include/linux/hugetlb.h             |  2 +
+> >   mm/hugetlb.c                        | 77 +++++++++++++++++++++++++++++++++++++
+> >   4 files changed, 122 insertions(+)
+> > 
+> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > index 7116fda..3cbe950 100644
+> > --- a/Documentation/kernel-parameters.txt
+> > +++ b/Documentation/kernel-parameters.txt
+> > @@ -1125,6 +1125,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >   			registers.  Default set by CONFIG_HPET_MMAP_DEFAULT.
+> >   
+> >   	hugepages=	[HW,X86-32,IA-64] HugeTLB pages to allocate at boot.
+> > +	hugepagesnid= [X86-64] HugeTLB pages to allocate at boot on a NUMA system.
+> > +				Format: <nid>,<nrpages>,<size>
+> > +				nid: NUMA node id to allocate pages from
+> > +				nrpages: number of huge pages to allocate
+> > +				size: huge pages size (see hugepagsz below)
+> > +			This argument can be specified multiple times for different
+> > +			NUMA nodes, but it shouldn't be mixed with hugepages= and
+> > +			hugepagesz=.
+> >   	hugepagesz=	[HW,IA-64,PPC,X86-64] The size of the HugeTLB pages.
+> >   			On x86-64 and powerpc, this option can be specified
+> >   			multiple times interleaved with hugepages= to reserve
+> > diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+> > index 8c9f647..91c5c98 100644
+> > --- a/arch/x86/mm/hugetlbpage.c
+> > +++ b/arch/x86/mm/hugetlbpage.c
+> > @@ -188,4 +188,39 @@ static __init int setup_hugepagesz(char *opt)
+> >   	return 1;
+> >   }
+> >   __setup("hugepagesz=", setup_hugepagesz);
+> > +
+> > +static __init int setup_hugepagesnid(char *opt)
+> > +{
+> > +	unsigned long order, ps, nid, nr_pages;
+> > +	char size_str[3];
+> > +
+> > +	size_str[2] = '\0';
+> > +	if (sscanf(opt, "%lu,%lu,%c%c",
+> > +			&nid, &nr_pages, &size_str[0], &size_str[1]) < 4) {
+> > +		printk(KERN_ERR "hugepagesnid: failed to parse arguments\n");
+> > +			return 0;
+> > +	}
+> > +
+> > +	if (!nr_pages) {
+> > +		printk(KERN_ERR
+> > +			"hugepagesnid: zero number of pages, ignoring\n");
+> > +		return 0;
+> > +	}
+> > +
+> > +	ps = memparse(size_str, NULL);
+> > +	if (ps == PMD_SIZE) {
+> > +		order = PMD_SHIFT - PAGE_SHIFT;
+> > +	} else if (ps == PUD_SIZE && cpu_has_gbpages) {
+> > +		order = PUD_SHIFT - PAGE_SHIFT;
+> > +	} else {
+> > +		printk(KERN_ERR "hugepagesnid: Unsupported page size %lu M\n",
+> > +			ps >> 20);
+> > +		return 0;
+> > +	}
+> 
+> You must check that nid is valid or not. When nid is MAX_NUMNODES or more,
+> hugetlb_add_nrpages_nid() sets nr_pages to wrong memory region.
 
-The following changes since commit 573189354b7c97cd2256b87cf083ee435584594e:
+Correct. I'll fix it, thank for reviewing.
 
-  MAINTAINERS: Pick up power supply maintainership (2014-01-21 03:33:09 +0400)
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+> > +
+> > +	hugetlb_add_nrpages_nid(order, nid, nr_pages);
+> > +	return 1;
+> > +}
+> > +__setup("hugepagesnid=", setup_hugepagesnid);
+> > +
+> >   #endif
+> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> > index 8c43cc4..aae2f9b 100644
+> > --- a/include/linux/hugetlb.h
+> > +++ b/include/linux/hugetlb.h
+> > @@ -274,6 +274,8 @@ struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
+> >   int __init alloc_bootmem_huge_page(struct hstate *h);
+> >   
+> >   void __init hugetlb_add_hstate(unsigned order);
+> > +void __init hugetlb_add_nrpages_nid(unsigned order, unsigned long nid,
+> > +				unsigned long nr_pages);
+> >   struct hstate *size_to_hstate(unsigned long size);
+> >   
+> >   #ifndef HUGE_MAX_HSTATE
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index c01cb9f..439c3b7 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -46,6 +46,7 @@ __initdata LIST_HEAD(huge_boot_pages);
+> >   static struct hstate * __initdata parsed_hstate;
+> >   static unsigned long __initdata default_hstate_max_huge_pages;
+> >   static unsigned long __initdata default_hstate_size;
+> > +static unsigned long __initdata boot_alloc_nodes[HUGE_MAX_HSTATE][MAX_NUMNODES];
+> >   
+> >   /*
+> >    * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
+> > @@ -1348,6 +1349,50 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+> >   	h->max_huge_pages = i;
+> >   }
+> >   
+> > +static unsigned long __init alloc_huge_pages_nid(struct hstate *h,
+> > +						int nid,
+> > +						unsigned long nr_pages)
+> > +{
+> > +	unsigned long i;
+> > +	struct page *page;
+> > +
+> > +	for (i = 0; i < nr_pages; i++) {
+> > +		page = alloc_fresh_huge_page_node(h, nid);
+> > +		if (!page) {
+> > +			count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
+> > +			break;
+> > +		}
+> > +		count_vm_event(HTLB_BUDDY_PGALLOC);
+> > +	}
+> > +
+> > +	return i;
+> > +}
+> > +
+> > +static unsigned long __init alloc_huge_pages_nodes(struct hstate *h)
+> > +{
+> > +	unsigned long i, *entry, ret = 0;
+> > +
+> > +	for (i = 0; i < MAX_NUMNODES; i++) {
+> > +		entry = &boot_alloc_nodes[hstate_index(h)][i];
+> > +		if (*entry > 0)
+> > +			ret += alloc_huge_pages_nid(h, i, *entry);
+> > +	}
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static void __init hugetlb_init_hstates_nodes(void)
+> > +{
+> > +	struct hstate *h;
+> > +	unsigned long ret;
+> > +
+> > +	for_each_hstate(h)
+> > +		if (h->order < MAX_ORDER) {
+> > +			ret = alloc_huge_pages_nodes(h);
+> > +			h->max_huge_pages += ret;
+> > +		}
+> > +}
+> > +
+> >   static void __init hugetlb_init_hstates(void)
+> >   {
+> >   	struct hstate *h;
+> > @@ -1966,6 +2011,7 @@ static int __init hugetlb_init(void)
+> >   		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
+> >   
+> >   	hugetlb_init_hstates();
+> > +	hugetlb_init_hstates_nodes();
+> >   	gather_bootmem_prealloc();
+> >   	report_hugepages();
+> >   
+> > @@ -2005,6 +2051,37 @@ void __init hugetlb_add_hstate(unsigned order)
+> >   	parsed_hstate = h;
+> >   }
+> >   
+> > +void __init hugetlb_add_nrpages_nid(unsigned order, unsigned long nid,
+> > +				unsigned long nr_pages)
+> > +{
+> > +	struct hstate *h;
+> > +	unsigned long *p;
+> > +
+> > +	if (parsed_hstate) {
+> > +		printk(KERN_WARNING
+> > +			"hugepagesnid: hugepagesz= specified, ignoring\n");
+> > +		return;
+> > +	}
+> > +
+> > +	for_each_hstate(h)
+> > +		if (h->order == order)
+> > +			break;
+> > +
+> > +	if (h->order != order) {
+> > +		hugetlb_add_hstate(order);
+> > +		parsed_hstate = NULL;
+> > +	}
+> > +
+> > +	p = &boot_alloc_nodes[hstate_index(h)][nid];
+> > +	if (*p != 0) {
+> > +		printk(KERN_WARNING
+> > +			"hugepagesnid: node %lu already specified, ignoring\n", nid);
+> > +		return;
+> > +	}
+> > +
+> > +	*p = nr_pages;
+> > +}
+> > +
+> >   static int __init hugetlb_nrpages_setup(char *s)
+> >   {
+> >   	unsigned long *mhp;
+> > 
+> 
+> 
 
-are available in the git repository at:
-
-  git://git.infradead.org/battery-2.6.git tags/for-v3.14-fixes
-
-for you to fetch changes up to ac323d8d807060f7c95a685a9fe861e7b6300993:
-
-  power: max17040: Fix NULL pointer dereference when there is no platform_data (2014-02-01 20:11:32 +0400)
-
-----------------------------------------------------------------
-Few fixes:
-
-- Fix NULL pointer dereference in max17040 driver
-
-- Add bq2415x dts bindings documentation
-
-- Fix misleading comment in ds2782 driver
-
-- Remove useless check in isp1704 charger driver.
-
-----------------------------------------------------------------
-Krzysztof Kozlowski (1):
-      power: max17040: Fix NULL pointer dereference when there is no platform_data
-
-Matthias Brugger (1):
-      power: ds2782_battery: Typo in comment
-
-Sebastian Reichel (1):
-      dt: binding documentation for bq2415x charger
-
-Wei Yongjun (1):
-      isp1704_charger: remove useless check in isp1704_charger_probe()
-
- .../devicetree/bindings/power/bq2415x.txt          | 47 ++++++++++++++++++++++
- drivers/power/ds2782_battery.c                     |  2 +-
- drivers/power/isp1704_charger.c                    |  2 -
- drivers/power/max17040_battery.c                   |  5 ++-
- 4 files changed, 51 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/bq2415x.txt
-
--- 
-With best wishes
-Dmitry
