@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199AbaBLE3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 23:29:11 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:50275 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaBLE3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 23:29:09 -0500
-Date: Tue, 11 Feb 2014 20:29:06 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 000/120] 3.13.3-stable review
-Message-ID: <20140212042906.GD26490@roeck-us.net>
-References: <20140211184823.492407127@linuxfoundation.org>
+	id S1751462AbaBLEad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 23:30:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55830 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776AbaBLEac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 23:30:32 -0500
+Message-ID: <52FAF8AD.1000800@zytor.com>
+Date: Tue, 11 Feb 2014 20:29:33 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Dave Hansen <dave.hansen@intel.com>,
+        Andrey Panin <pazke@donpac.ru>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Dobson <colpatch@us.ibm.com>,
+        Natalie Protasevich <protasnb@gmail.com>,
+        Garry Forsgren <garry.forsgren@unisys.com>
+Subject: Re: [GIT PULL] x86, apic: Remove support for Summit and ES7000
+References: <alpine.DEB.2.02.1402042353030.7839@chino.kir.corp.google.com> <87txcc57y2.fsf@tassilo.jf.intel.com> <alpine.DEB.2.02.1402061430420.29446@chino.kir.corp.google.com> <52F40F21.8070200@zytor.com> <alpine.DEB.2.02.1402111841590.26393@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1402111841590.26393@chino.kir.corp.google.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 11:04:01AM -0800, Greg Kroah-Hartman wrote:
-> Some -stable releases spring out from my build system bright and shiny
-> and ready to go.  Not so with these releases.  Maybe it's the horrid
-> weather that was happening during the creation of these kernels, or
-> something else, but whatever it was, they came into this world
-> screaming, kicking, killing build servers left-and-right, and breaking
-> the build every other patch.  Some developers decided to get into the
-> act, constantly pushing the boundaries of what is an acceptable -stable
-> patch, and trying to skirt the rules of upstream patches first numerous
-> times, making me even grumpier than normal, "forcing" me to relax and
-> take in an afternoon playing of the Lego movie...
+On 02/11/2014 06:53 PM, David Rientjes wrote:
+> Hi Ingo, Peter, and Thomas,
 > 
-Come on, compared to me you are never grumpy.
-
-> Test these out well, they have barely survived my systems, and I don't
-> trust them in the slightest to not eat your disks, reap your tasks, and
-> run away laughing as your CPU turns into a space heater.
+>  [ Be aware of bouncing emails on the cc, it includes the last-known email
+>    addresses of the authors of these subarchitectures and may bounce. ]
 > 
-> You have been warned.
+> If you agree, please pull from:
 > 
-Hmm ... not sure if I want to take that risk :-). Going to be fun.
-And looking for volunteers to provide me with a really great test suite
-which I can run in qemu (and which doesn't take me days to set up).
-
-> -----------------
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rientjes/linux.git x86/apic
 > 
-> This is the start of the stable review cycle for the 3.13.3 release.
-> There are 120 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+>   # HEAD: 7cf6c94591bbf3dbe3bf9573a6551328ad76d885 x86, apic: Remove support for IBM Summit/EXA chipset
 > 
-> Responses should be made by Thu Feb 13 18:47:55 UTC 2014.
-> Anything received after that time might be too late.
+> or apply individually.  This branch is based on x86/apic.
 > 
+> This is the removal of Summit and ES7000 subarchitectures from x86.  I'd 
+> like to do the same for NumaQ, but am still researching if we can really 
+> do away with it.
 
-Build results:
-	total: 126 pass: 122 skipped: 4 fail: 0
+Nice.
 
-qemu tests all passed.
+	-hpa
 
-Results are as expected (even though that may be unexpected in this case ;-).
 
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
