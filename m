@@ -1,119 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaBMKtH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:49:07 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:15440 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752826AbaBMKtF (ORCPT
+	id S1753803AbaBMKxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:53:06 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:36273 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaBMKxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:49:05 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-3.tower-39.messagelabs.com!1392288350!13299030!3
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <574af9f46ca08e66f6e9bda8ef3a51e7c5c5178b.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Thu, 13 Feb 2014 10:45:52 +0000
-Subject: [PATCH 2/2] mfd: da9055: Add DT binding documentation for PMIC
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Rob Herring <robh+dt@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 13 Feb 2014 05:53:03 -0500
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 1/3] staging/lustre/libcfs: remove user space code from kernel_user_comm.c
+Date: Wed, 12 Feb 2014 19:21:38 +0800
+Message-Id: <1392204100-968-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Cc: Andreas Dilger <andreas.dilger@intel.com>
+Cc: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
 ---
- Documentation/devicetree/bindings/mfd/da9055.txt |   73 ++++++++++++++++++++++
- 1 files changed, 73 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/da9055.txt
+ .../lustre/lustre/libcfs/kernel_user_comm.c        |  102 --------------------
+ 1 files changed, 0 insertions(+), 102 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/da9055.txt b/Documentation/devicetree/bindings/mfd/da9055.txt
-new file mode 100644
-index 0000000..f903c3f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/da9055.txt
-@@ -0,0 +1,73 @@
-+* Dialog DA9055 Power Management Integrated Circuit (PMIC)
-+
-+DA9055 consists of a large and varied group of sub-devices (I2C Only):
-+
-+Device			 Supply Names	 Description
-+------			 ------------	 -----------
-+da9055-gpio		:		: GPIOs
-+da9055-regulator	:		: Regulators
-+da9055-onkey		:		: On key
-+da9055-rtc		:		: RTC
-+da9055-hwmon		:		: ADC
-+da9055-watchdog		:		: Watchdog
-+
-+The CODEC device in DA9055 has a separate, configurable I2C address and so
-+is instantiated separately from the PMIC.
-+
-+For details on accompanying CODEC I2C device, see the following:
-+Documentation/devicetree/bindings/sound/da9055.txt
-+
-+======
-+
-+Required properties:
-+- compatible : Should be "dlg,da9055-pmic"
-+- reg: Specifies the I2C slave address (defaults to 0x5a but can be modified)
-+- interrupt-parent: Specifies the phandle of the interrupt controller to which
-+  the IRQs from da9055 are delivered to.
-+- interrupts: IRQ line info for da9055 chip.
-+- interrupt-controller: da9055 has internal IRQs (has own IRQ domain).
-+- #interrupt-cells: Should be 1, is the local IRQ number for da9055.
-+
-+Sub-nodes:
-+- regulators : Contain the regulator nodes. The DA9055 regulators are
-+  bound using their names as listed below:
-+
-+    buck1     : regulator BUCK1
-+    buck2     : regulator BUCK2
-+    ldo1      : regulator LDO1
-+    ldo2      : regulator LDO2
-+    ldo3      : regulator LDO3
-+    ldo4      : regulator LDO4
-+    ldo5      : regulator LDO5
-+    ldo6      : regulator LDO6
-+
-+  The bindings details of individual regulator device can be found in:
-+  Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+
-+Example:
-+
-+	pmic: da9055-pmic@5a {
-+		compatible = "dlg,da9055-pmic";
-+		reg = <0x5a>;
-+		interrupt-parent = <&intc>;
-+		interrupts = <5 0x8>;
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+
-+		regulators {
-+			buck1: BUCK1 {
-+				regulator-min-microvolt = <725000>;
-+				regulator-max-microvolt = <2075000>;
-+			};
-+
-+			buck2: BUCK2 {
-+				regulator-min-microvolt = <925000>;
-+				regulator-max-microvolt = <2500000>;
-+			};
-+			ldo1: LDO1 {
-+				regulator-min-microvolt = <900000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+		};
-+	};
---
-1.7.0.4
+diff --git a/drivers/staging/lustre/lustre/libcfs/kernel_user_comm.c b/drivers/staging/lustre/lustre/libcfs/kernel_user_comm.c
+index 7b2c315..b6ddc99 100644
+--- a/drivers/staging/lustre/lustre/libcfs/kernel_user_comm.c
++++ b/drivers/staging/lustre/lustre/libcfs/kernel_user_comm.c
+@@ -44,106 +44,6 @@
+ 
+ #include <linux/libcfs/libcfs.h>
+ 
+-#ifdef LUSTRE_UTILS
+-/* This is the userspace side. */
+-
+-/** Start the userspace side of a KUC pipe.
+- * @param link Private descriptor for pipe/socket.
+- * @param groups KUC broadcast group to listen to
+- *	  (can be null for unicast to this pid)
+- */
+-int libcfs_ukuc_start(lustre_kernelcomm *link, int group)
+-{
+-	int pfd[2];
+-
+-	if (pipe(pfd) < 0)
+-		return -errno;
+-
+-	memset(link, 0, sizeof(*link));
+-	link->lk_rfd = pfd[0];
+-	link->lk_wfd = pfd[1];
+-	link->lk_group = group;
+-	link->lk_uid = getpid();
+-	return 0;
+-}
+-
+-int libcfs_ukuc_stop(lustre_kernelcomm *link)
+-{
+-	if (link->lk_wfd > 0)
+-		close(link->lk_wfd);
+-	return close(link->lk_rfd);
+-}
+-
+-#define lhsz sizeof(*kuch)
+-
+-/** Read a message from the link.
+- * Allocates memory, returns handle
+- *
+- * @param link Private descriptor for pipe/socket.
+- * @param buf Buffer to read into, must include size for kuc_hdr
+- * @param maxsize Maximum message size allowed
+- * @param transport Only listen to messages on this transport
+- *      (and the generic transport)
+- */
+-int libcfs_ukuc_msg_get(lustre_kernelcomm *link, char *buf, int maxsize,
+-			int transport)
+-{
+-	struct kuc_hdr *kuch;
+-	int rc = 0;
+-
+-	memset(buf, 0, maxsize);
+-
+-	CDEBUG(D_KUC, "Waiting for message from kernel on fd %d\n",
+-	       link->lk_rfd);
+-
+-	while (1) {
+-		/* Read header first to get message size */
+-		rc = read(link->lk_rfd, buf, lhsz);
+-		if (rc <= 0) {
+-			rc = -errno;
+-			break;
+-		}
+-		kuch = (struct kuc_hdr *)buf;
+-
+-		CDEBUG(D_KUC, "Received message mg=%x t=%d m=%d l=%d\n",
+-		       kuch->kuc_magic, kuch->kuc_transport, kuch->kuc_msgtype,
+-		       kuch->kuc_msglen);
+-
+-		if (kuch->kuc_magic != KUC_MAGIC) {
+-			CERROR("bad message magic %x != %x\n",
+-			       kuch->kuc_magic, KUC_MAGIC);
+-			rc = -EPROTO;
+-			break;
+-		}
+-
+-		if (kuch->kuc_msglen > maxsize) {
+-			rc = -EMSGSIZE;
+-			break;
+-		}
+-
+-		/* Read payload */
+-		rc = read(link->lk_rfd, buf + lhsz, kuch->kuc_msglen - lhsz);
+-		if (rc < 0) {
+-			rc = -errno;
+-			break;
+-		}
+-		if (rc < (kuch->kuc_msglen - lhsz)) {
+-			CERROR("short read: got %d of %d bytes\n",
+-			       rc, kuch->kuc_msglen);
+-			rc = -EPROTO;
+-			break;
+-		}
+-
+-		if (kuch->kuc_transport == transport ||
+-		    kuch->kuc_transport == KUC_TRANSPORT_GENERIC) {
+-			return 0;
+-		}
+-		/* Drop messages for other transports */
+-	}
+-	return rc;
+-}
+-
+-#else /* LUSTRE_UTILS */
+ /* This is the kernel side (liblustre as well). */
+ 
+ /**
+@@ -338,5 +238,3 @@ int libcfs_kkuc_group_foreach(int group, libcfs_kkuc_cb_t cb_func,
+ 	return rc;
+ }
+ EXPORT_SYMBOL(libcfs_kkuc_group_foreach);
+-
+-#endif /* LUSTRE_UTILS */
+-- 
+1.7.7.6
 
