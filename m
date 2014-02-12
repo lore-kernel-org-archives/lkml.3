@@ -1,113 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaBLKyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:54:32 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:58518 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133AbaBLKy3 (ORCPT
+	id S1751968AbaBLKym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:54:42 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:60814 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751530AbaBLKyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:54:29 -0500
-Message-ID: <52FB52D7.4000906@atmel.com>
-Date: Wed, 12 Feb 2014 11:54:15 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        <b.brezillon@overkiz.com>
-CC: <plagnioj@jcrosoft.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 1/8] at91: dt: Adds support for the bus matrix declaration
- in the DT
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com> <1392199607-27452-2-git-send-email-jjhiblot@traphandler.com> <52FB50BB.5070603@free-electrons.com>
-In-Reply-To: <52FB50BB.5070603@free-electrons.com>
-X-Enigmail-Version: 1.5.2
+	Wed, 12 Feb 2014 05:54:39 -0500
+Message-ID: <1392202477.23759.28.camel@x220>
+Subject: [PATCH] blackfin: Remove GENERIC_GPIO config option again
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Steven Miao <realmz6@gmail.com>
+Cc: adi-buildroot-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Wed, 12 Feb 2014 11:54:37 +0100
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-OriginalArrivalTime: 12 Feb 2014 10:54:37.0332 (UTC) FILETIME=[D2697D40:01CF27E0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 11:45, Gregory CLEMENT :
-> Hi Jean-Jacques,
-> 
-> Thanks for this new series, I have one little comment:
-> 
-> On 12/02/2014 11:06, Jean-Jacques Hiblot wrote:
->> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
->> ---
->>  arch/arm/mach-at91/setup.c | 23 +++++++++++++++++++++++
->>  1 file changed, 23 insertions(+)
->>
->> diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
->> index f7ca97b..b8d0b66 100644
->> --- a/arch/arm/mach-at91/setup.c
->> +++ b/arch/arm/mach-at91/setup.c
->> @@ -487,6 +487,28 @@ end:
->>  	of_node_put(np);
->>  }
->>  
->> +static struct of_device_id matrix_ids[] = {
->> +	{ .compatible = "atmel,at91sam9261-bus-matrix", },
->> +	{ /*sentinel*/ }
+The Kconfig symbol GENERIC_GPIO was removed in v3.10. Nothing cares
+about it anymore. It popped up somehow in v3.13, so it can be removed
+again.
 
-I think that we can introduce this compatible string with sam9260
-product: "atmel,at91sam9260-bus-matrix".
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested, but safe anyhow.
 
-In addition, can you add this new binding in the documentation file:
-Documentation/devicetree/bindings/arm/atmel-at91.txt
-(in another patch with the "dt: bindings: " subject prefix + add the DT
-mailing-list: devicetree@vger.kernel.org).
+ arch/blackfin/Kconfig | 3 ---
+ 1 file changed, 3 deletions(-)
 
-
->> +};
->> +
->> +static void at91_dt_matrix(void)
->> +{
->> +	struct device_node *np;
->> +
->> +	np = of_find_matching_node(NULL, matrix_ids);
->> +	if (!np) {
->> +		pr_debug("AT91: unable to find compatible bus matrix controller node in dtb\n");
-> 
-> I think that a panic here should be more consistent with the next check.
-> Indeed if it fails here then at91_matrix_base will be uninitialized too,
-> and it will make the kernel crash when at91_matrix_base will be accessed.
-
-Yes.
-
-> Thanks,
-> 
-> Gregory
-> 
-> 
->> +		return;
->> +	}
->> +
->> +	at91_matrix_base = of_iomap(np, 0);
->> +	if (!at91_matrix_base)
->> +		panic("Impossible to ioremap at91_matrix_base\n");
->> +
->> +	of_node_put(np);
->> +}
->> +
->>  void __init at91rm9200_dt_initialize(void)
->>  {
->>  	at91_dt_ramc();
->> @@ -506,6 +528,7 @@ void __init at91_dt_initialize(void)
->>  	at91_dt_rstc();
->>  	at91_dt_ramc();
->>  	at91_dt_shdwc();
->> +	at91_dt_matrix();
->>  
->>  	/* Init clock subsystem */
->>  	at91_dt_clock_init();
->>
-> 
-> 
-
-
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index 9ceccef..debd9df 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -51,9 +51,6 @@ config GENERIC_BUG
+ config ZONE_DMA
+ 	def_bool y
+ 
+-config GENERIC_GPIO
+-	def_bool y
+-
+ config FORCE_MAX_ZONEORDER
+ 	int
+ 	default "14"
 -- 
-Nicolas Ferre
+1.8.5.3
+
