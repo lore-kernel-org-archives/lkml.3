@@ -1,102 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaBLEwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 23:52:24 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37769 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872AbaBLEwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 23:52:22 -0500
-Message-ID: <52FAFD2D.2090306@linux.vnet.ibm.com>
-Date: Wed, 12 Feb 2014 10:18:45 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751626AbaBLEwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 23:52:47 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:53451 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750872AbaBLEwj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 23:52:39 -0500
+From: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Pratyush ANAND <pratyush.anand@st.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Date: Wed, 12 Feb 2014 12:52:02 +0800
+Subject: RE: [PATCH V5 4/8] phy: st-miphy-40lp: Add skeleton driver
+Thread-Topic: [PATCH V5 4/8] phy: st-miphy-40lp: Add skeleton driver
+Thread-Index: Ac8nNxChuHF81Y+JRBCV5ollScfbmAAcOi5w
+Message-ID: <2CC2A0A4A178534D93D5159BF3BCB66189FD2CAD14@EAPEX1MAIL1.st.com>
+References: <cover.1391871170.git.pratyush.anand@st.com>
+ <201402101654.22187.arnd@arndb.de>
+ <2CC2A0A4A178534D93D5159BF3BCB66189FD2CAA9B@EAPEX1MAIL1.st.com>
+ <10315753.nkNxr0yDnp@wuerfel>
+In-Reply-To: <10315753.nkNxr0yDnp@wuerfel>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: linux-next: build failure after merge of the tip tree
-References: <20140212134127.2c049bb94175e12201b257ef@canb.auug.org.au>
-In-Reply-To: <20140212134127.2c049bb94175e12201b257ef@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021204-5816-0000-0000-00000C391D0C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hello Arnd,
 
-On 02/12/2014 08:11 AM, Stephen Rothwell wrote:
-> Hi all,
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Tuesday, February 11, 2014 8:09 PM
+> To: Mohit KUMAR DCG
+> Cc: Pratyush ANAND; Kishon Vijay Abraham I; spear-devel; linux-arm-
+> kernel@lists.infradead.org; devicetree@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Lee Jones
+> Subject: Re: [PATCH V5 4/8] phy: st-miphy-40lp: Add skeleton driver
 > 
-> After merging the tip tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+> On Tuesday 11 February 2014 11:57:46 Mohit KUMAR DCG wrote:
+> >
+> > > Maybe mention that this phy is used inside the spear13xx SoC here
+> > > rather than a standalone phy.
+> >
+> > - Yes, for spear13xx its used internally. Do you think that it
+> > requires to be mentioned here?
+> > We have few prototype boards that uses this as external phy.
 > 
-> drivers/cpuidle/cpuidle-pseries.c: In function 'idle_loop_prolog':
-> drivers/cpuidle/cpuidle-pseries.c:32:2: error: implicit declaration of function 'ppc64_runlatch_off' [-Werror=implicit-function-declaration]
->   ppc64_runlatch_off();
->   ^
-> drivers/cpuidle/cpuidle-pseries.c: In function 'idle_loop_epilog':
-> drivers/cpuidle/cpuidle-pseries.c:52:2: error: implicit declaration of function 'ppc64_runlatch_on' [-Werror=implicit-function-declaration]
->   ppc64_runlatch_on();
->   ^
+> [adding Lee since he mentioned working on a similar part]
 > 
-> Caused by commit d8c6ad3184ca ("sched/idle, PPC: Remove redundant
-> cpuidle_idle_call()").
+> I'm a bit confused. Is it actually the same IP block that can be used internally
+> as part of a SoC and as a standalone chip?
+> 
+> Since some of the settings of the PHY are controlled through the misc
+> register in case of spear13xx, I assume that part is different on the
+> standalone version. How do you actually select the mode in that case?
+> 
+> It would certainly be helpful to explain this somewhere, and the binding
+> might not be the worst place for this.
+> 
+> On a related note, the driver in its current shape looks a bit silly since it
+> doesn't contain any of the miphy specific code but only the SoC specific parts
+> (as I suggested you do, so I'm not blaming you :-)) and a multiplexer that
+> switches between the two possible implementations.
 
-Ok so after the commit
+- yes, thats what we were explaining earlier. If it is integrated into some SoC 
+Then there are some soc specific configurations. Actual phy reg settings could
+also vary for the different SoCs for the best tuning.
 
-d8c6ad3184ca651:sched/idle, PPC: Remove redundant cpuidle_idle_call()
-reintroduced ppc64_runlatch_off/on() in drivers/cpuidle/cpuidle-pseries.c
-the cleanup caused by the commit "c0c4301c54adde05:pseries/cpuidle:
-Remove redundant call to ppc64_runlatch_off() in cpu idle routines"
-now needs to be introduced in part.
+However we agreed to your idea as miphy40lp register definitions would remain
+same across the SoCs.
 
-Below is the patch which should fix this. This is based on top of tip-tree.
+> 
+> What is your plan for the future, do you intend to add the actual miphy code
+> soon, or is that something you just want to leave as an option for the future
+> but have no specific plans to do right now? If not, the driver would probably
+> look nicer if it were split into two separate implementations, one for each
+> spear13xx SoC and with a separate set of phy_ops but no multiplexer.
 
-Thanks
+Do you want  it to split the code into two different files like phy-miphyspear1310.c
+and phy-miphyspear1340.c ?
 
 Regards
-Preeti U Murthy
-
----------------------------------------------------------------------------------
-
-cpuidle/pseries: Fix fallout caused due to cleanup in pseries cpuidle backend driver
-
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-
-Commit "d8c6ad3184ca651:sched/idle, PPC: Remove redundant cpuidle_idle_call()"
-reintroduced ppc64_runlatch_off/on() in the pseries cpuidle backend driver.
-Hence the cleanup caused by the commit "c0c4301c54adde05:pseries/cpuidle:
-Remove redundant call to ppc64_runlatch_off() in cpu idle routines"  in
-conjuction with the commit d8c6ad3184ca651 causes a build failure.
-
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
- drivers/cpuidle/cpuidle-pseries.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/cpuidle/cpuidle-pseries.c b/drivers/cpuidle/cpuidle-pseries.c
-index d486489..6f7b019 100644
---- a/drivers/cpuidle/cpuidle-pseries.c
-+++ b/drivers/cpuidle/cpuidle-pseries.c
-@@ -17,6 +17,7 @@
- #include <asm/reg.h>
- #include <asm/machdep.h>
- #include <asm/firmware.h>
-+#include <asm/runlatch.h>
- #include <asm/plpar_wrappers.h>
- 
- struct cpuidle_driver pseries_idle_driver = {
-
-
-> 
-> I have used the tip tree from next-20140210 again today (since
-> next-20140211 was broken differently).
-> 
-
+Mohit
