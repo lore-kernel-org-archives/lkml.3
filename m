@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaBLIfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:35:31 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50116 "EHLO
+	id S1751927AbaBLINx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:13:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50041 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751668AbaBLINy (ORCPT
+	by vger.kernel.org with ESMTP id S1751668AbaBLINq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:13:54 -0500
+	Wed, 12 Feb 2014 03:13:46 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "JongHo Kim" <furmuwon@gmail.com>
+CC: akpm@linux-foundation.org, "Sasha Levin" <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.78029344@decadent.org.uk>
+Message-ID: <lsq.1392192612.362010125@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 47/79] ALSA: Add SNDRV_PCM_STATE_PAUSED case in
- wait_for_avail function
+Subject: [PATCH 3.2 06/79] net: unix: allow bind to fail on mutex lock
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: JongHo Kim <furmuwon@gmail.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit ed697e1aaf7237b1a62af39f64463b05c262808d upstream.
+[ Upstream commit 37ab4fa7844a044dc21fde45e2a0fc2f3c3b6490 ]
 
-When the process is sleeping at the SNDRV_PCM_STATE_PAUSED
-state from the wait_for_avail function, the sleep process will be woken by
-timeout(10 seconds). Even if the sleep process wake up by timeout, by this
-patch, the process will continue with sleep and wait for the other state.
+This is similar to the set_peek_off patch where calling bind while the
+socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
+spew after a while.
 
-Signed-off-by: JongHo Kim <furmuwon@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This is also the last place that did a straightforward mutex_lock(), so
+there shouldn't be any more of these patches.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/core/pcm_lib.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/unix/af_unix.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -1846,6 +1846,8 @@ static int wait_for_avail(struct snd_pcm
- 		case SNDRV_PCM_STATE_DISCONNECTED:
- 			err = -EBADFD;
- 			goto _endloop;
-+		case SNDRV_PCM_STATE_PAUSED:
-+			continue;
- 		}
- 		if (!tout) {
- 			snd_printd("%s write error (DMA or IRQ trouble?)\n",
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 9338ccc..eddfdec 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -696,7 +696,9 @@ static int unix_autobind(struct socket *sock)
+ 	int err;
+ 	unsigned int retries = 0;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		return err;
+ 
+ 	err = 0;
+ 	if (u->addr)
+@@ -829,7 +831,9 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 		goto out;
+ 	addr_len = err;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		goto out;
+ 
+ 	err = -EINVAL;
+ 	if (u->addr)
 
