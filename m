@@ -1,60 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaBLIda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:33:30 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:40505 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274AbaBLId1 (ORCPT
+	id S1753474AbaBLIbv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:31:51 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50153 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752037AbaBLIN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:33:27 -0500
-Message-ID: <52FB31D3.8030209@gmail.com>
-Date: Wed, 12 Feb 2014 09:33:23 +0100
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 12 Feb 2014 03:13:59 -0500
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>
-Subject: WARNING: CPU: 2 PID: 4415 at lib/idr.c:527 idr_remove.part.6+0x243/0x250()
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "David Whipple" <whipple@securedatainnovations.ch>,
+        "Vinod Koul" <vinod.koul@intel.com>,
+        "Dave Jiang" <dave.jiang@intel.com>,
+        "Alexander Duyck" <alexander.h.duyck@intel.com>,
+        "Dan Williams" <dan.j.williams@intel.com>
+Date: Wed, 12 Feb 2014 08:10:12 +0000
+Message-ID: <lsq.1392192612.666307691@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 53/79] net_dma: mark broken
+In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
+X-SA-Exim-Connect-IP: 91.84.160.45
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2.55-rc1 review patch.  If anyone has any objections, please let me know.
 
-Ahoy!
+------------------
 
-My trace is the last one, therefore per LIFO I am sending this report to
-you.
+From: Dan Williams <dan.j.williams@intel.com>
 
- ------------[ cut here ]------------
- WARNING: CPU: 2 PID: 4415 at lib/idr.c:527 idr_remove.part.6+0x243/0x250()
- idr_remove called for id=136 which is not allocated.
- CPU: 2 PID: 4415 Comm: systemd Not tainted 3.12.10-300.fc20.x86_64 #1
+commit 77873803363c9e831fc1d1e6895c084279090c22 upstream.
+
+net_dma can cause data to be copied to a stale mapping if a
+copy-on-write fault occurs during dma.  The application sees missing
+data.
+
+The following trace is triggered by modifying the kernel to WARN if it
+ever triggers copy-on-write on a page that is undergoing dma:
+
+ WARNING: CPU: 24 PID: 2529 at lib/dma-debug.c:485 debug_dma_assert_idle+0xd2/0x120()
+ ioatdma 0000:00:04.0: DMA-API: cpu touching an active dma mapped page [pfn=0x16bcd9]
+ Modules linked in: iTCO_wdt iTCO_vendor_support ioatdma lpc_ich pcspkr dca
+ CPU: 24 PID: 2529 Comm: linbug Tainted: G        W    3.13.0-rc1+ #353
+  00000000000001e5 ffff88016f45f688 ffffffff81751041 ffff88017ab0ef70
+  ffff88016f45f6d8 ffff88016f45f6c8 ffffffff8104ed9c ffffffff810f3646
+  ffff8801768f4840 0000000000000282 ffff88016f6cca10 00007fa2bb699349
  Call Trace:
-  [<ffffffff81667ed5>] dump_stack+0x45/0x56
-  [<ffffffff8106903d>] warn_slowpath_common+0x7d/0xa0
-  [<ffffffff810690ac>] warn_slowpath_fmt+0x4c/0x50
-  [<ffffffff81304073>] idr_remove.part.6+0x243/0x250
-  [<ffffffff811c458c>] ? d_walk+0xdc/0x2a0
-  [<ffffffff8130408d>] idr_remove+0xd/0x10
-  [<ffffffff810defa6>] cgroup_destroy_css_killed+0x46/0x70
-  [<ffffffff810e1c98>] cgroup_destroy_locked+0x2d8/0x310
-  [<ffffffff810e1cf2>] cgroup_rmdir+0x22/0x40
-  [<ffffffff811bc108>] vfs_rmdir+0xa8/0x100
-  [<ffffffff811bc2dd>] do_rmdir+0x17d/0x1d0
-  [<ffffffff81087b6c>] ? task_work_run+0xac/0xe0
-  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
-  [<ffffffff811bf616>] SyS_rmdir+0x16/0x20
-  [<ffffffff81676ea9>] system_call_fastpath+0x16/0x1b
- ---[ end trace 4ebc2893b27b190d ]---
+  [<ffffffff81751041>] dump_stack+0x46/0x58
+  [<ffffffff8104ed9c>] warn_slowpath_common+0x8c/0xc0
+  [<ffffffff810f3646>] ? ftrace_pid_func+0x26/0x30
+  [<ffffffff8104ee86>] warn_slowpath_fmt+0x46/0x50
+  [<ffffffff8139c062>] debug_dma_assert_idle+0xd2/0x120
+  [<ffffffff81154a40>] do_wp_page+0xd0/0x790
+  [<ffffffff811582ac>] handle_mm_fault+0x51c/0xde0
+  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
+  [<ffffffff8175fc2c>] __do_page_fault+0x19c/0x530
+  [<ffffffff8175c196>] ? _raw_spin_lock_bh+0x16/0x40
+  [<ffffffff810f3539>] ? trace_clock_local+0x9/0x10
+  [<ffffffff810fa1f4>] ? rb_reserve_next_event+0x64/0x310
+  [<ffffffffa0014c00>] ? ioat2_dma_prep_memcpy_lock+0x60/0x130 [ioatdma]
+  [<ffffffff8175ffce>] do_page_fault+0xe/0x10
+  [<ffffffff8175c862>] page_fault+0x22/0x30
+  [<ffffffff81643991>] ? __kfree_skb+0x51/0xd0
+  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
+  [<ffffffff81388ea2>] ? memcpy_toiovec+0x52/0xa0
+  [<ffffffff8164770f>] skb_copy_datagram_iovec+0x5f/0x2a0
+  [<ffffffff8169d0f4>] tcp_rcv_established+0x674/0x7f0
+  [<ffffffff816a68c5>] tcp_v4_do_rcv+0x2e5/0x4a0
+  [..]
+ ---[ end trace e30e3b01191b7617 ]---
+ Mapped at:
+  [<ffffffff8139c169>] debug_dma_map_page+0xb9/0x160
+  [<ffffffff8142bf47>] dma_async_memcpy_pg_to_pg+0x127/0x210
+  [<ffffffff8142cce9>] dma_memcpy_pg_to_iovec+0x119/0x1f0
+  [<ffffffff81669d3c>] dma_skb_copy_datagram_iovec+0x11c/0x2b0
+  [<ffffffff8169d1ca>] tcp_rcv_established+0x74a/0x7f0:
 
-There are a bunch of here:
-https://bugzilla.redhat.com/show_bug.cgi?id=1045755
+...the problem is that the receive path falls back to cpu-copy in
+several locations and this trace is just one of the areas.  A few
+options were considered to fix this:
 
-Thanks.
+1/ sync all dma whenever a cpu copy branch is taken
 
-poma
+2/ modify the page fault handler to hold off while dma is in-flight
 
+Option 1 adds yet more cpu overhead to an "offload" that struggles to compete
+with cpu-copy.  Option 2 adds checks for behavior that is already documented as
+broken when using get_user_pages().  At a minimum a debug mode is warranted to
+catch and flag these violations of the dma-api vs get_user_pages().
+
+Thanks to David for his reproducer.
+
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Reported-by: David Whipple <whipple@securedatainnovations.ch>
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/dma/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -254,6 +254,7 @@ config NET_DMA
+ 	bool "Network: TCP receive copy offload"
+ 	depends on DMA_ENGINE && NET
+ 	default (INTEL_IOATDMA || FSL_DMA)
++	depends on BROKEN
+ 	help
+ 	  This enables the use of DMA engines in the network stack to
+ 	  offload receive copy-to-user operations, freeing CPU cycles.
 
