@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaBLPor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:44:47 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:28345 "EHLO relay.sw.ru"
+	id S1752622AbaBLPpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:45:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61246 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883AbaBLPoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:44:46 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Robin Holt <holt@sgi.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Chen Gang <gang.chen@asianux.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Aditya Kali <adityakali@google.com>, security@kernel.org
-Subject: [PATCH] kernel: reduce required permission for prctl_set_mm
-Date: Wed, 12 Feb 2014 19:40:11 +0400
-Message-Id: <1392219611-13260-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.5.3
+	id S1751530AbaBLPpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 10:45:51 -0500
+Subject: [PATCH 0/4] Final asm/system.h cleanups
+From: David Howells <dhowells@redhat.com>
+To: akpm@linux-foundation.org
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Date: Wed, 12 Feb 2014 15:45:44 +0000
+Message-ID: <20140212154544.2405.2992.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently prctl_set_mm requires the global CAP_SYS_RESOURCE,
-this patch reduce requiremence to CAP_SYS_RESOURCE in the current
-namespace.
 
-When we restore a task we need to set up text, data and data heap sizes
-from userspace to the values a task had at checkpoint time.
+Here are some patches to clean up the last bits of the asm/system.h
+disintegration.  They comprise:
 
-Currently we can not restore these parameters, if a task lives in
-a non-root user name space, because it has no capabilities in the
-parent namespace.
+ (*) Some doc changes.
 
-prctl_set_mm() changes parameters of the current task and doesn't affect
-other tasks.
+ (*) Some comment changes.
 
-This patch affects the RLIMIT_DATA limit, because a consumtiuon is
-calculated relatively to mm->end_data, mm->start_data, mm->start_brk.
+ (*) Final removal of ARM's asm/system.h and fixing up all remaining
+     users thereof.
 
-rlim = rlimit(RLIMIT_DATA);
-if (rlim < RLIM_INFINITY && (brk - mm->start_brk) +
-		(mm->end_data - mm->start_data) > rlim)
-	goto out;
-
-This limit affects calls to brk() and sbrk(), but it doesn't affect
-mmap. So I think requirement of CAP_SYS_RESOURCE in the current
-namespace is enough for this limit.
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Chen Gang <gang.chen@asianux.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Aditya Kali <adityakali@google.com>
-Cc: security@kernel.org
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+David
 ---
- kernel/sys.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+David Howells (4):
+      Clean asm/system.h from docs
+      Sparc: sparc_cpu_model isn't in asm/system.h any more
+      UM: arch_align_stack() moved to asm/exec.h
+      ARM: Delete asm/system.h
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index c0a58be..6f36fb3 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1701,7 +1701,7 @@ static int prctl_set_mm(int opt, unsigned long addr,
- 	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
- 		return -EINVAL;
- 
--	if (!capable(CAP_SYS_RESOURCE))
-+	if (!ns_capable(current_user_ns(), CAP_SYS_RESOURCE))
- 		return -EPERM;
- 
- 	if (opt == PR_SET_MM_EXE_FILE)
--- 
-1.8.5.3
+
+ Documentation/DocBook/kernel-hacking.tmpl |    2 +-
+ Documentation/irqflags-tracing.txt        |    7 -------
+ Documentation/scheduler/sched-arch.txt    |    2 +-
+ arch/arm/include/asm/jump_label.h         |    1 -
+ arch/arm/include/asm/sync_bitops.h        |    1 -
+ arch/arm/include/asm/system.h             |    7 -------
+ arch/arm/mach-gemini/idle.c               |    2 +-
+ arch/arm/mach-omap2/am35xx-emac.c         |    1 -
+ arch/um/kernel/process.c                  |    2 +-
+ drivers/sbus/char/jsflash.c               |    4 +---
+ drivers/usb/gadget/lpc32xx_udc.c          |    1 -
+ 11 files changed, 5 insertions(+), 25 deletions(-)
+ delete mode 100644 arch/arm/include/asm/system.h
 
