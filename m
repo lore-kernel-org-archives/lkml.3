@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaBLRrd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 12:47:33 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:40443 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542AbaBLRrc (ORCPT
+	id S1753552AbaBLRsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 12:48:53 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:56553 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737AbaBLRsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 12:47:32 -0500
-Message-ID: <52FBB3A4.8020706@atmel.com>
-Date: Wed, 12 Feb 2014 18:47:16 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 12 Feb 2014 12:48:52 -0500
 MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, <b.brezillon@overkiz.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: <plagnioj@jcrosoft.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v4 2/8] at91: pinctrl: don't request GPIOs used for interrupts
- but lock them as IRQ
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com> <1392199607-27452-3-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1392199607-27452-3-git-send-email-jjhiblot@traphandler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <20140212164055.GB22377@kroah.com>
+References: <1391004120-687-1-git-send-email-dh.herrmann@gmail.com>
+	<1391004120-687-6-git-send-email-dh.herrmann@gmail.com>
+	<20140212132541.GU17001@phenom.ffwll.local>
+	<CANq1E4RACz+bZmBGFtVGNKZhcJtC6iQtCpsCTTjEXrGUDP6C+A@mail.gmail.com>
+	<CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
+	<20140212164055.GB22377@kroah.com>
+Date: Wed, 12 Feb 2014 18:48:50 +0100
+Message-ID: <CANq1E4TJbZv1e=OSshR740k3UkwdRwWo+zY-hrVKuUh31SqKrg@mail.gmail.com>
+Subject: Re: [PATCH 05/13] drm: provide device-refcount
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 11:06, Jean-Jacques Hiblot :
-> During the xlate stage of the DT interrupt parsing, the at91 pinctrl driver
-> requests the GPIOs that are described as interrupt sources. This prevents a
-> driver to request the gpio later to get its electrical value.
-> This patch replaces the gpio_request with a gpio_lock_as_irq to prevent the
-> gpio to be set as an ouput while allowing a subsequent gpio_request to succeed
-> 
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Hi
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Wed, Feb 12, 2014 at 5:40 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Feb 12, 2014 at 05:26:57PM +0100, Daniel Vetter wrote:
+>> On Wed, Feb 12, 2014 at 3:44 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> >>> +/**
+>> >>> + * drm_dev_ref - Take reference of a DRM device
+>> >>> + * @dev: device to take reference of or NULL
+>> >>> + *
+>> >>> + * This increases the ref-count of @dev by one. You *must* already own a
+>> >>> + * reference when calling this. Use drm_dev_unref() to drop this reference
+>> >>> + * again.
+>> >>> + *
+>> >>> + * This function never fails. However, this function does not provide *any*
+>> >>> + * guarantee whether the device is alive or running. It only provides a
+>> >>> + * reference to the object and the memory associated with it.
+>> >>> + */
+>> >>> +void drm_dev_ref(struct drm_device *dev)
+>> >>> +{
+>> >>> +     if (dev)
+>> >>
+>> >> This check here (and below in the unref code) look funny. What's the
+>> >> reason for it? Trying to grab/drop a ref on a NULL pointer sounds like a
+>> >> pretty serious bug to me. This is in contrast to kfree(NULL) which imo
+>> >> makes sense - freeing nothing is a legitimate operation imo.
+>> >
+>> > I added it mainly to simplify cleanup-code paths. You can then just
+>> > call unref() and set it to NULL regardless whether you actually hold a
+>> > reference or not. For ref() I don't really care but I think the
+>> > NULL-test doesn't hurt either.
+>> >
+>> > I copied this behavior from get_device() and put_device(), btw.
+>> > Similar to these functions, I think a lot more will go wrong if the
+>> > NULL pointer is not intentional. Imo, ref-counting on a NULL object
+>> > just means "no object", so it shouldn't do anything.
+>>
+>> My fear with this kind of magic is that someone accidentally exchanges
+>> the pointer clearing to NULL (or assignement when grabbing a ref) with
+>> the unref/ref call and then we have a very subtle bug at hand. If we
+>> don't accept NULL objects the failure will be much more obvious.
+>>
+>> The entire kernel kobject stuff is very consistent about this, but I
+>> couldn't find a reason for it - all the NULL checks predate git
+>> history. Greg can you please shed some lights on best practice here
+>> and whether my fears are justified given your experience with shoddy
+>> drivers in general?
+>
+> Yes, the driver core does test for NULL here, as sometimes you are
+> passing in a "parent" pointer, and don't really care if it is NULL or
+> not, so just treating it as if you really do have a reference is usually
+> fine.
+>
+> But, for a subsystem where you "know" you will not be doing anything as
+> foolish as that, I'd not allow that :)
+>
+> So I'd recommend taking those checks out of the drm code.
 
-But I suspect it may go through another patch: the pinctrl one: add
-Linux W. to the recipient list please.
+Ok, for _ref() I'm fine dropping it, but for _unref() I really don't
+understand the concerns. I like to follow the principle of making
+teardown-functions work with partially initialized objects. A caller
+shouldn't be required to reverse all it's setup functions if one last
+step of object-initialization fails. It's much easier if they can just
+call the destructor which figures itself out which parts are
+initialized. Obviously, this isn't always possible, but checking for
+NULL in _unref() or _put() paths simplifies this a lot and avoids
+non-sense if(obj) unref(obj);
 
-Thanks,
+For instance for drm_minor objects we only initialize the minors that
+are enabled by the specific driver. However, it's enough to test for
+the flags during device-initialization. device-registration,
+-deregistration and -teardown just call _free/unref on all possible
+minors. Allowing NULL avoids testing for these flags in every path but
+the initialization.
 
-> ---
->  drivers/pinctrl/pinctrl-at91.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-> index d990e33..db55b96 100644
-> --- a/drivers/pinctrl/pinctrl-at91.c
-> +++ b/drivers/pinctrl/pinctrl-at91.c
-> @@ -1478,18 +1478,17 @@ static int at91_gpio_irq_domain_xlate(struct irq_domain *d,
->  {
->  	struct at91_gpio_chip *at91_gpio = d->host_data;
->  	int ret;
-> -	int pin = at91_gpio->chip.base + intspec[0];
->  
->  	if (WARN_ON(intsize < 2))
->  		return -EINVAL;
->  	*out_hwirq = intspec[0];
->  	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
->  
-> -	ret = gpio_request(pin, ctrlr->full_name);
-> +	ret = gpio_lock_as_irq(&at91_gpio->chip, intspec[0]);
->  	if (ret)
->  		return ret;
->  
-> -	ret = gpio_direction_input(pin);
-> +	ret = at91_gpio_direction_input(&at91_gpio->chip, intspec[0]);
->  	if (ret)
->  		return ret;
->  
-> 
+Anyhow, shared code -> many opinions, so if people agree on dropping
+it, I will do so.
 
-
--- 
-Nicolas Ferre
+Thanks
+David
