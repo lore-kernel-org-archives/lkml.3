@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaBLPAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:00:54 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:31148 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284AbaBLPAw (ORCPT
+	id S1752230AbaBLPC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:02:26 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51427 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751218AbaBLPCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:00:52 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-36-52fb8ca253ec
-Message-id: <1392217248.22265.28.camel@AMDC1943>
-Subject: Re: [PATCH 07/14] regulator: s2mps11: Choose number of supported
- regulators during probe
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Date: Wed, 12 Feb 2014 16:00:48 +0100
-In-reply-to: <CAKew6eV4t-CybRe0h3jVTFH5xZvj5+XLVTKdNyWyYNby_jMnZQ@mail.gmail.com>
-References: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
- <1392123837-5517-8-git-send-email-k.kozlowski@samsung.com>
- <CAKew6eV4t-CybRe0h3jVTFH5xZvj5+XLVTKdNyWyYNby_jMnZQ@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/xK7qLen4HGbxfJWixccZ6VoupD5+w
-	WVz/8pzV4mzTG3aL+1+PMlp8u9LBZHF51xw2ixnn9zFZrD1yl93idDerxcUVX5gs5v5uZHXg
-	8dg56y67x6ZVnWwed67tYfOYdzLQo2/LKkaPz5vkAtiiuGxSUnMyy1KL9O0SuDL2/zrPVLCG
-	paL1dwd7A+Nk5i5GDg4JAROJtsNOXYycQKaYxIV769m6GLk4hASWMkqcnd7DDOF8ZpSY0nKJ
-	EaSKV8BAYv/CZUwgtrBAssS9cwfBbDYBY4nNy5ewgdgiQDUTl8xjBbGZBW4xS6y9bAayjEVA
-	VeLbslyQMKdAsMSzm8tYIeafYpT4tvoUM0S9usSkeYuYIS5Sktjd3skOEZeX2LzmLTPEDYIS
-	PybfY5nAKDALScssJGWzkJQtYGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESHV93MC49
-	ZnWIUYCDUYmHl8HzV5AQa2JZcWXuIUYJDmYlEV6j5t9BQrwpiZVVqUX58UWlOanFhxiZODil
-	GhgX7m9ao61444jhVeu539VVzGzWeM6NXdCytmSNq97a3//qWXc7rsk8VzhfxMFZ9Xt45G2P
-	s2Jf/N3Olmb5HD0v61xq2rHnE9u17lvzlXoOV1/bIL48l7ny6CplSUanOVYBJrX6Oa4zXhyd
-	9HpJT6zaTbtN9h9lz1m+rn58wND88o/d3hcYlyoqsRRnJBpqMRcVJwIA68J/A2wCAAA=
+	Wed, 12 Feb 2014 10:02:25 -0500
+Date: Wed, 12 Feb 2014 15:01:49 +0000
+From: Dave Martin <Dave.Martin@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 7/7] perf: kill perf_event_context::pmu
+Message-ID: <20140212150132.GA2231@e103592.cambridge.arm.com>
+References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
+ <1392054264-23570-8-git-send-email-mark.rutland@arm.com>
+ <20140210181026.GD27965@twins.programming.kicks-ass.net>
+ <20140211175651.GA15200@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211175651.GA15200@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-12 at 15:31 +0530, Yadwinder Singh Brar wrote:
-> Hi,
+On Tue, Feb 11, 2014 at 05:56:51PM +0000, Mark Rutland wrote:
+> On Mon, Feb 10, 2014 at 06:10:26PM +0000, Peter Zijlstra wrote:
+> > On Mon, Feb 10, 2014 at 05:44:24PM +0000, Mark Rutland wrote:
+> > > Currently portions of the perf subsystem assume that a
+> > > perf_event_context is associated with a single pmu while in reality a
+> > > single perf_event_context may be shared by a number of pmus, as commit
+> > > 443772776c69 (perf: Disable all pmus on unthrottling and rescheduling)
+> > > describes.
+> > > 
+> > > This patch removes perf_event_context::pmu, replacing it with a direct
+> > > pointer to the associated perf_cpu_context and a task_ctx_nr (as all
+> > > pmus sharing a context have the same task_ctx_nr). This makes the
+> > > relationship between pmus and perf_event_contexts clearer and allows us
+> > > to save on some pointer chasing.
+> > > 
+> > > This also fixes a potential misuse of ctx->pmu introduced in commit
+> > > bad7192b842c (perf: Fix PERF_EVENT_IOC_PERIOD to force-reset the
+> > > period), where ctx->pmu is disabled before modifying state on
+> > > event->pmu. In this case the two pmus are not guaranteed to be the same.
+> > > 
+> > > As perf_pmu_rotate_{start,stop} only really care about the context they
+> > > are rotating, they are renamed to perf_event_ctx_{start,stop}.
+> > 
+> > This very much relies on the previous patch where you make pmu_disable
+> > iterate all the events.
+> > 
+> > We could also change this to keep a pmu list for each context and
+> > iterate that instead. Given there is indeed a fair limit on different
+> > PMUs in the system that iteration should be much shorter.
 > 
-> 
-> >
-> > +       dev_type = platform_get_device_id(pdev)->driver_data;
-> > +       switch (dev_type) {
-> > +       case S2MPS11X:
-> > +               s2mps11->rdev_num = ARRAY_SIZE(s2mps11_regulators);
-> > +               regulators = s2mps11_regulators;
-> 
-> How about creating and passing copy of s2mps11_regulators at runtime
-> and making s2mps11_regulators __initdata ?
+> Another option would be to have a context per-pmu. Each context's pmu
+> pointer would be valid, and (other than the case of software events) it
+> doesn't make sense to place events from disparate PMUs into the same
+> group anyway. Then you don't need a fixed sized pmu list in the context
+> or some arcane list structs.
 
-Sounds good, I'll add this in next version of patchset.
+Getting event rotation to work in a sensible way when there are mixtures
+of events for different PMUs in a single context.  I've not come up with
+a good enough solution for that to post yet.
 
+Splitting out each PMU as a separate hardware context would make this
+work a lot more naturally.
 
-Best regards,
-Krzysztof
-
-
-
+Cheers
+---Dave
