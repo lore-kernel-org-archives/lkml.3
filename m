@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaBLQUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:20:55 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38987 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000AbaBLQUv (ORCPT
+	id S1753191AbaBLQVo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:21:44 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:45072 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922AbaBLQVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:20:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAVeFuJ6BP4JnVb6qD1DYXqPQ3zBKw8hb+xLqcmUjktOxAjdGA@mail.gmail.com>
-References: <1392044614-6837-1-git-send-email-jjhiblot@traphandler.com>
-	<CAAVeFuJ6BP4JnVb6qD1DYXqPQ3zBKw8hb+xLqcmUjktOxAjdGA@mail.gmail.com>
-Date: Wed, 12 Feb 2014 17:20:51 +0100
-Message-ID: <CACRpkdbZ0LJorKN_ydk=8KBkyHToYZVAj7xUCYkU=Agtb4sVrA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: take in account the active low flag when
- configuring the gpio as an ouput
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Feb 2014 11:21:40 -0500
+Message-ID: <1392221703.5612.164.camel@misato.fc.hp.com>
+Subject: Re: [BUG] can't boot up: unable to handle kernel paging request at
+ ffffffffff340003
+From: Toshi Kani <toshi.kani@hp.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Madper Xie <cxie@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Josh Triplett <josh@joshtriplett.org>
+Date: Wed, 12 Feb 2014 09:15:03 -0700
+In-Reply-To: <20140211141846.GA1725@console-pimps.org>
+References: <8738jr5t3e.fsf@redhat.com>
+	 <20140210175246.GB2887@console-pimps.org> <87mwhy8iaj.fsf@redhat.com>
+	 <20140211131640.GD2887@console-pimps.org> <87lhxh69u0.fsf@redhat.com>
+	 <20140211141846.GA1725@console-pimps.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 5:22 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Tue, Feb 11, 2014 at 12:03 AM, Jean-Jacques Hiblot
-> <jjhiblot@traphandler.com> wrote:
->> The initial value of the gpio is passed to gpiod_direction_output. Currently
->> this value is the raw value of the GPIO line, but it should be the logical
->> value.
->
-> I think we have a patch that already does this:
->
-> http://www.kernelhub.org/?msg=390263&p=2
->
-> Linus said it would be merged for 3.15, but I am not seeing it in -next. Linus?
+On Tue, 2014-02-11 at 14:18 +0000, Matt Fleming wrote:
+> (Entering the realm of ACPI, pulling in more folks)
+> 
+> On Tue, 11 Feb, at 09:47:57PM, Madper Xie wrote:
+> > Thanks for your reply. I attached the all the dmesg outputs for you.
+> > [    0.000000] ACPI: BGRT 00000000d9bb5100 00003C (v00 HPQOEM SLIC-BPC 01072009 AMI  00010013)
+>  
+> Your BGRT table has an extra 4 bytes for some reason, (0x3C should be
+> 0x38) and doesn't match the defintion in include/acpi/actbl3.h,
+> 
+> 
+> struct acpi_table_bgrt {
+> 	struct acpi_table_header header;	/* Common ACPI table header */
+> 	u16 version;
+> 	u8 status;
+> 	u8 image_type;
+> 	u64 image_address;
+> 	u32 image_offset_x;
+> 	u32 image_offset_y;
+> };
+> 
+> 
+> which explains why when we dereference ->image_address we don't get a
+> sensible value.
+> 
+> Guys, what do you make of this? Firmware bug? Full thread here,
+> 
+>   http://article.gmane.org/gmane.linux.kernel.efi/3499
+> 
 
-I just haven't queued my devel branch for next yet. Will do
-today now that I sent a batch of fixes to Torvalds.
+Hi Matt,
 
-Yours,
-Linus Walleij
+Yes, I agree that the table size should be 0x38.  However, ACPI spec
+states that bit0 of status indicates if the boot image graphic is valid.
+This bit is set to 0 (invalid) on the system.  Can you check this bit
+and return when invalid? 
+
+Thanks,
+-Toshi
+
