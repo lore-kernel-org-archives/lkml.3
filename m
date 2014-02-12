@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaBLHAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:00:00 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:55407 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaBLG77 (ORCPT
+	id S1751692AbaBLHAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:00:21 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:46406 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614AbaBLHAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 01:59:59 -0500
+	Wed, 12 Feb 2014 02:00:17 -0500
+Message-ID: <52FB005E.1000207@gmail.com>
+Date: Wed, 12 Feb 2014 18:02:22 +1300
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <20140212063150.GD13997@dastard>
-References: <20140211210841.GM13647@dastard>
-	<52FA9ADA.9040803@sandeen.net>
-	<20140212004403.GA17129@redhat.com>
-	<20140212010941.GM18016@ZenIV.linux.org.uk>
-	<CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
-	<20140212040358.GA25327@redhat.com>
-	<20140212042215.GN18016@ZenIV.linux.org.uk>
-	<20140212054043.GB13997@dastard>
-	<20140212055027.GA28502@redhat.com>
-	<20140212061038.GC13997@dastard>
-	<20140212063150.GD13997@dastard>
-Date: Tue, 11 Feb 2014 22:59:58 -0800
-X-Google-Sender-Auth: EiFCTSF5TlKGlqUNDA3j4W39urA
-Message-ID: <CA+55aFyp91=1seVT0ZV8T+GjOuafWvvjHNHn+MKGydsG+8eUEQ@mail.gmail.com>
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Cc: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Content-Type: text/plain; charset=UTF-8
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] video: Use fb_sys_write rather than open-coding in
+ drivers
+References: <523BF40B.1090002@gmail.com> <52FA2E57.3010300@ti.com> <52FA7509.1060704@gmail.com> <52FB1AB0.6090601@ti.com>
+In-Reply-To: <52FB1AB0.6090601@ti.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 10:31 PM, Dave Chinner <david@fromorbit.com> wrote:
->
-> FYI, just creating lots of files with open(O_CREAT):
->
-> [  348.718357] fs_mark (4828) used greatest stack depth: 2968 bytes left
-> [  348.769846] fs_mark (4814) used greatest stack depth: 2312 bytes left
-> [  349.777717] fs_mark (4826) used greatest stack depth: 2280 bytes left
-> [  418.139415] fs_mark (4928) used greatest stack depth: 1936 bytes left
-> [  460.492282] fs_mark (4993) used greatest stack depth: 1336 bytes left
-> [  544.825418] fs_mark (5104) used greatest stack depth: 1112 bytes left
-> [  689.503970] fs_mark (5265) used greatest stack depth: 1000 bytes left
->
-> We've got absolutely no spare stack space anymore in the IO path.
-> And the IO path can't get much simpler than filesystem -> virtio
-> block device.
+On 12/02/14 19:54, Tomi Valkeinen wrote:
 
-Ugh, that's bad. A thousand bytes of stack space is much too close to
-any limits.
+> On 11/02/14 21:07, Ryan Mallon wrote:
+>> On 12/02/14 03:06, Tomi Valkeinen wrote:
+>>
+>>> On 20/09/13 10:06, Ryan Mallon wrote:
+>>>> Several video drivers open code the fb_write write function with code
+>>>> which is very similar to fb_sys_write. Replace the open code versions
+>>>> with calls to fb_sys_write. An fb_sync callback is added to each of
+>>>> the drivers.
+>>>>     
+>>>> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+>>>> ---
+>>>
+>>> Doesn't this change the behavior so that fb_write does no longer update
+>>> the display, but fb_sync does? I don't think fb_sync is even meant to
+>>> update the display, it's meant to wait for an update to finish. Then
+>>> again, I'm not sure about that, all I see in fb.h is "wait for blit
+>>> idle, optional"
+>>
+>>
+>> fb_write() in fbmem.c calls ->fb_sync() after ->fb_write(), and I've set
+>> the fb_sync() for each of the drivers, so the behaviour should be
+>> unchanged for writes.
+>>
+>> The fb_sync() function is also called by fb_read() and 
+>> fb_get_buffer_offset() (if FB_PIXMAP_SYNC flag is set). I don't know if
+>> that will adversely affect behaviour.
+> 
+> Well, by just looking at the function names the drivers' fb_syncs call,
+> it sounds to me that with your patch fb_sync will update the LCD, i.e.
+> send data to it. Doing that in fb_read sounds totally wrong.
 
-Do you have the stack traces for these things so that we can look at
-worst offenders?
 
-If the new block-mq code is to blame, it needs to be fixed.
-__virtblk_add_req() has a 300-byte stack frame, it seems. Looking
-elsewhere, blkdev_issue_discard() has 350 bytes of stack frame, but is
-hopefully not in any normal path - online discard is moronic, and I'm
-assuming XFS doesn't do that.
+Well, the alternative is to supply an fb_write() implementation for each
+driver that calls fb_sys_write(), and then updates the display. The
+fb_sync() additions can be removed. That would cut down the boiler-plate
+code, and should keep the behaviour the same.
 
-There's a lot of 200+ byte stack frames in block/blk-core.s, and they
-all seem to be of the type perf_trace_block_buffer() - things created
-with DECLARE_EVENT_CLASS(), afaik. Why they all have 200+ bytes of
-frame, I have no idea. That sounds like a potential disaster too,
-although hopefully it's mostly leaf functions - but leaf functions
-*deep* in the callchain. Tejun? Steven, why _do_ they end up with such
-huge frames?
+If you don't think it is worth the effort, then the patch can just be
+dropped.
 
-And if the stack use comes from the VFS layer, we can probably work on
-that too. But I don't think that has really changed much lately..
-
-                Linus
+~Ryan
