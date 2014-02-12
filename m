@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214AbaBLIOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:14:11 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50145 "EHLO
+	id S1752878AbaBLITT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:19:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50305 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752032AbaBLIN6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752201AbaBLIOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:13:58 -0500
+	Wed, 12 Feb 2014 03:14:10 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jani Nikula" <jani.nikula@linux.intel.com>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Jani Nikula" <jani.nikula@intel.com>,
-        "Ville =?UTF-8?Q?Syrj=C3=A4l=C3=A4?=" <ville.syrjala@linux.intel.com>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>
+CC: akpm@linux-foundation.org, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Sage Weil" <sage@inktank.com>, "Greg Farnum" <greg@inktank.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.375235821@decadent.org.uk>
+Message-ID: <lsq.1392192612.290810454@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 48/79] drm/i915: Use the correct GMCH_CTRL register
- for Sandybridge+
+Subject: [PATCH 3.2 28/79] ceph: cleanup aborted requests when re-sending
+ requests.
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,57 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-commit a885b3ccc74d8e38074e1c43a47c354c5ea0b01e upstream.
+commit eb1b8af33c2e42a9a57fc0a7588f4a7b255d2e79 upstream.
 
-The GMCH_CTRL register (or MGCC in the spec) is at a different address
-on Sandybridge, and the address to which we currently write to is
-undefined. These stray writes appear to upset (hard hang) my Ivybridge
-machine whilst it is in UEFI mode.
+Aborted requests usually get cleared when the reply is received.
+If MDS crashes, no reply will be received. So we need to cleanup
+aborted requests when re-sending requests.
 
-Note that the register is still marked as locked RO on Sandybridge, so
-vgaarb is still dysfunctional.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: add definition of SNB_GMCH_CTRL in i915_reg.h]
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Reviewed-by: Greg Farnum <greg@inktank.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_display.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/ceph/mds_client.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9141,14 +9141,15 @@ void intel_connector_attach_encoder(stru
- int intel_modeset_vga_set_state(struct drm_device *dev, bool state)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-+	unsigned reg = INTEL_INFO(dev)->gen >= 6 ? SNB_GMCH_CTRL : INTEL_GMCH_CTRL;
- 	u16 gmch_ctrl;
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index cf1b9e0..cd682f2 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -1815,8 +1815,11 @@ static int __do_request(struct ceph_mds_client *mdsc,
+ 	int mds = -1;
+ 	int err = -EAGAIN;
  
--	pci_read_config_word(dev_priv->bridge_dev, INTEL_GMCH_CTRL, &gmch_ctrl);
-+	pci_read_config_word(dev_priv->bridge_dev, reg, &gmch_ctrl);
- 	if (state)
- 		gmch_ctrl &= ~INTEL_GMCH_VGA_DISABLE;
- 	else
- 		gmch_ctrl |= INTEL_GMCH_VGA_DISABLE;
--	pci_write_config_word(dev_priv->bridge_dev, INTEL_GMCH_CTRL, gmch_ctrl);
-+	pci_write_config_word(dev_priv->bridge_dev, reg, gmch_ctrl);
- 	return 0;
- }
+-	if (req->r_err || req->r_got_result)
++	if (req->r_err || req->r_got_result) {
++		if (req->r_aborted)
++			__unregister_request(mdsc, req);
+ 		goto out;
++	}
  
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -37,6 +37,7 @@
-  */
- #define INTEL_GMCH_CTRL		0x52
- #define INTEL_GMCH_VGA_DISABLE  (1 << 1)
-+#define SNB_GMCH_CTRL		0x50
- 
- /* PCI config space */
- 
+ 	if (req->r_timeout &&
+ 	    time_after_eq(jiffies, req->r_started + req->r_timeout)) {
 
