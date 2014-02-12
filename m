@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaBLKUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:20:04 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:54989 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752066AbaBLKTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:19:52 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <bcousson@baylibre.com>, <lee.jones@linaro.org>
-CC: <balbi@ti.com>, <nm@ti.com>, <khilman@linaro.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH v7 04/12] mfd: omap-usb-host: Update DT clock binding information
-Date: Wed, 12 Feb 2014 12:18:45 +0200
-Message-ID: <1392200333-28397-5-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392200333-28397-1-git-send-email-rogerq@ti.com>
-References: <1392200333-28397-1-git-send-email-rogerq@ti.com>
+	id S1752298AbaBLKXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:23:06 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60395 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaBLKXB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:23:01 -0500
+Date: Wed, 12 Feb 2014 11:22:51 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Push down pre_schedule() and
+ idle_balance ()
+Message-ID: <20140212102251.GD3545@laptop.programming.kicks-ass.net>
+References: <tip-a8k6vvaebtn64nie345kx1je@git.kernel.org>
+ <52FB1411.1040305@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52FB1411.1040305@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The omap-usb-host driver expects certained named clocks.
-Add this information to the DT binding document.
+On Wed, Feb 12, 2014 at 02:26:25PM +0800, Michael wang wrote:
+> Hi, Peter
+> 
+> On 02/11/2014 08:17 PM, tip-bot for Peter Zijlstra wrote:
+> [snip]
+> > +
+> > +idle:
+> > +#ifdef CONFIG_SMP
+> > +	idle_enter_fair(rq);
+> > +	/*
+> > +	 * We must set idle_stamp _before_ calling idle_balance(), such that we
+> > +	 * measure the duration of idle_balance() as idle time.
+> > +	 */
+> > +	rq->idle_stamp = rq_clock(rq);
+> > +	if (idle_balance(rq)) { /* drops rq->lock */
+> 
+> Since idle_balance() will release the rq lock, will it happen that some
+> rt or dl tasks was waken up and enqueued before it hold the lock again?
+> 
+> Should we recheck 'rq->nr_running == rq->cfs.h_nr_running' here before
+> goto pick fair entity to make sure the priority?
+> 
+> May be like:
+> 
+> if (idle_balance(rq) &&
+> 	rq->nr_running == rq->cfs.h_nr_running)
 
-CC: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- .../devicetree/bindings/mfd/omap-usb-host.txt      | 23 ++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+Yes I think there might be a problem here because of how we re-arranged
+things. Let me brew of pot of tea and try to actually wake up.
 
-diff --git a/Documentation/devicetree/bindings/mfd/omap-usb-host.txt b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
-index b381fa6..4721b2d 100644
---- a/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
-+++ b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
-@@ -32,6 +32,29 @@ Optional properties:
- - single-ulpi-bypass: Must be present if the controller contains a single
-   ULPI bypass control bit. e.g. OMAP3 silicon <= ES2.1
- 
-+- clocks: a list of phandles and clock-specifier pairs, one for each entry in
-+  clock-names.
-+
-+- clock-names: should include:
-+  For OMAP3
-+  * "usbhost_120m_fck" - 120MHz Functional clock.
-+
-+  For OMAP4+
-+  * "refclk_60m_int" - 60MHz internal reference clock for UTMI clock mux
-+  * "refclk_60m_ext_p1" - 60MHz external ref. clock for Port 1's UTMI clock mux.
-+  * "refclk_60m_ext_p2" - 60MHz external ref. clock for Port 2's UTMI clock mux
-+  * "utmi_p1_gfclk" - Port 1 UTMI clock mux.
-+  * "utmi_p2_gfclk" - Port 2 UTMI clock mux.
-+  * "usb_host_hs_utmi_p1_clk" - Port 1 UTMI clock gate.
-+  * "usb_host_hs_utmi_p2_clk" - Port 2 UTMI clock gate.
-+  * "usb_host_hs_utmi_p3_clk" - Port 3 UTMI clock gate.
-+  * "usb_host_hs_hsic480m_p1_clk" - Port 1 480MHz HSIC clock gate.
-+  * "usb_host_hs_hsic480m_p2_clk" - Port 2 480MHz HSIC clock gate.
-+  * "usb_host_hs_hsic480m_p3_clk" - Port 3 480MHz HSIC clock gate.
-+  * "usb_host_hs_hsic60m_p1_clk" - Port 1 60MHz HSIC clock gate.
-+  * "usb_host_hs_hsic60m_p2_clk" - Port 2 60MHz HSIC clock gate.
-+  * "usb_host_hs_hsic60m_p3_clk" - Port 3 60MHz HSIC clock gate.
-+
- Required properties if child node exists:
- 
- - #address-cells: Must be 1
--- 
-1.8.3.2
-
+I suspect we might be good if we clear the need_resched flags before
+calling pick_next_task. Then any RT/DL task that gets moved here will
+set need resched, and we'll retry the pick_next_task loop.
