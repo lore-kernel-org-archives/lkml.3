@@ -1,124 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548AbaBLSgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:36:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51783 "EHLO
+	id S1753764AbaBLShl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:37:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834AbaBLSgl (ORCPT
+	with ESMTP id S1753565AbaBLShk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:36:41 -0500
-Date: Wed, 12 Feb 2014 10:37:57 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
-        virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        davem@davemloft.net, qinchuanyu@huawei.com,
-        Joern Engel <joern@logfs.org>,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH net 1/3] kref: add kref_sub_return
-Message-ID: <20140212183757.GA27840@kroah.com>
-References: <1392222846-26699-1-git-send-email-mst@redhat.com>
- <1392222846-26699-2-git-send-email-mst@redhat.com>
- <20140212165630.GA22991@kroah.com>
- <20140212173524.GA26860@redhat.com>
+	Wed, 12 Feb 2014 13:37:40 -0500
+Date: Wed, 12 Feb 2014 10:38:56 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/13] drm: provide device-refcount
+Message-ID: <20140212183856.GB27840@kroah.com>
+References: <1391004120-687-1-git-send-email-dh.herrmann@gmail.com>
+ <1391004120-687-6-git-send-email-dh.herrmann@gmail.com>
+ <20140212132541.GU17001@phenom.ffwll.local>
+ <CANq1E4RACz+bZmBGFtVGNKZhcJtC6iQtCpsCTTjEXrGUDP6C+A@mail.gmail.com>
+ <CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
+ <20140212164055.GB22377@kroah.com>
+ <CANq1E4TJbZv1e=OSshR740k3UkwdRwWo+zY-hrVKuUh31SqKrg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140212173524.GA26860@redhat.com>
+In-Reply-To: <CANq1E4TJbZv1e=OSshR740k3UkwdRwWo+zY-hrVKuUh31SqKrg@mail.gmail.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 07:35:24PM +0200, Michael S. Tsirkin wrote:
-> On Wed, Feb 12, 2014 at 08:56:30AM -0800, Greg Kroah-Hartman wrote:
-> > On Wed, Feb 12, 2014 at 06:38:21PM +0200, Michael S. Tsirkin wrote:
-> > > It is sometimes useful to get the value of the reference count after
-> > > decrement.
-> > > For example, vhost wants to execute some periodic cleanup operations
-> > > once number of references drops below a specific value, before it
-> > > reaches zero (for efficiency).
-> > 
-> > You should never care about what the value of the kref is, if you are
-> > using it correctly :)
-> > 
-> > So I really don't want to add this function, as I'm sure people will use
-> > it incorrectly.  You should only care if the reference drops to 0, if
-> > not, then your usage doesn't really fit into the "kref" model, and so,
-> > just use an atomic variable.
+On Wed, Feb 12, 2014 at 06:48:50PM +0100, David Herrmann wrote:
+> Hi
 > 
-> This happens when you have code that keeps
-> reference itself implicitly or explicitly.
+> On Wed, Feb 12, 2014 at 5:40 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Feb 12, 2014 at 05:26:57PM +0100, Daniel Vetter wrote:
+> >> On Wed, Feb 12, 2014 at 3:44 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> >> >>> +/**
+> >> >>> + * drm_dev_ref - Take reference of a DRM device
+> >> >>> + * @dev: device to take reference of or NULL
+> >> >>> + *
+> >> >>> + * This increases the ref-count of @dev by one. You *must* already own a
+> >> >>> + * reference when calling this. Use drm_dev_unref() to drop this reference
+> >> >>> + * again.
+> >> >>> + *
+> >> >>> + * This function never fails. However, this function does not provide *any*
+> >> >>> + * guarantee whether the device is alive or running. It only provides a
+> >> >>> + * reference to the object and the memory associated with it.
+> >> >>> + */
+> >> >>> +void drm_dev_ref(struct drm_device *dev)
+> >> >>> +{
+> >> >>> +     if (dev)
+> >> >>
+> >> >> This check here (and below in the unref code) look funny. What's the
+> >> >> reason for it? Trying to grab/drop a ref on a NULL pointer sounds like a
+> >> >> pretty serious bug to me. This is in contrast to kfree(NULL) which imo
+> >> >> makes sense - freeing nothing is a legitimate operation imo.
+> >> >
+> >> > I added it mainly to simplify cleanup-code paths. You can then just
+> >> > call unref() and set it to NULL regardless whether you actually hold a
+> >> > reference or not. For ref() I don't really care but I think the
+> >> > NULL-test doesn't hurt either.
+> >> >
+> >> > I copied this behavior from get_device() and put_device(), btw.
+> >> > Similar to these functions, I think a lot more will go wrong if the
+> >> > NULL pointer is not intentional. Imo, ref-counting on a NULL object
+> >> > just means "no object", so it shouldn't do anything.
+> >>
+> >> My fear with this kind of magic is that someone accidentally exchanges
+> >> the pointer clearing to NULL (or assignement when grabbing a ref) with
+> >> the unref/ref call and then we have a very subtle bug at hand. If we
+> >> don't accept NULL objects the failure will be much more obvious.
+> >>
+> >> The entire kernel kobject stuff is very consistent about this, but I
+> >> couldn't find a reason for it - all the NULL checks predate git
+> >> history. Greg can you please shed some lights on best practice here
+> >> and whether my fears are justified given your experience with shoddy
+> >> drivers in general?
+> >
+> > Yes, the driver core does test for NULL here, as sometimes you are
+> > passing in a "parent" pointer, and don't really care if it is NULL or
+> > not, so just treating it as if you really do have a reference is usually
+> > fine.
+> >
+> > But, for a subsystem where you "know" you will not be doing anything as
+> > foolish as that, I'd not allow that :)
+> >
+> > So I'd recommend taking those checks out of the drm code.
 > 
-> 	foo(struct kref *k, int bar) {
+> Ok, for _ref() I'm fine dropping it, but for _unref() I really don't
+> understand the concerns. I like to follow the principle of making
+> teardown-functions work with partially initialized objects. A caller
+> shouldn't be required to reverse all it's setup functions if one last
+> step of object-initialization fails. It's much easier if they can just
+> call the destructor which figures itself out which parts are
+> initialized. Obviously, this isn't always possible, but checking for
+> NULL in _unref() or _put() paths simplifies this a lot and avoids
+> non-sense if(obj) unref(obj);
 > 
-> 	sub = kref_sub(k)
-> 
-> 	if (sub == 1)
-> 		FOO(k, bar) /* Here I am the only one
-> 			       with a reference */
+> For instance for drm_minor objects we only initialize the minors that
+> are enabled by the specific driver. However, it's enough to test for
+> the flags during device-initialization. device-registration,
+> -deregistration and -teardown just call _free/unref on all possible
+> minors. Allowing NULL avoids testing for these flags in every path but
+> the initialization.
 
-Why do you care if you are the only one with a reference?
-
-If you do, then just don't grab that reference and do the work in the
-cleanup callback :)
-
-> 	}
-> 
-> 	kref_get(k)
-> 	foo(k, bar);
-> 	....
-> 	kref_put(k)
-> 
-> Why not do FOO in destructor you ask?
-> Absolutely but this will be called much later.
-> 
-> Maybe you will reconsider if I document this
-> as the only legal use?
-
-No one reads documentation :(
-
-> > I really want to know why it matters for "efficiency" that you know this
-> > number.  How does that help anything, as the number could then go up
-> > later on, and the work you did at a "lower" number is obsolete, right?
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> The issue is that if number dropped to 1, this means
-> we must do the cleanup work since there are
-> no outstanding buffers, (last user is ourselves)
-> if we do not cleanup,
-> guest will hang waiting for us.
-
-This doesn't make sense, nor does it sound like a use for a kref (or you
-are using it wrong.)
-
-> But it never drops to 0 since we have our own reference
-> in the device.
-
-Then don't do that.
-
-> If it goes up again this means we didn't have
-> to do cleanup, but an alternative is doing
-> it all the time and that is slow.
-
-Then just cleanup when it hits 0, like the rest of the world does.
-
-> Yes I can rework vhost to open-code this kref use, it's
-> no big deal.
-> Alternatively since most of the use does match kref
-> model, maybe __kref_sub_return with disclaimers
-> that you must know what you are doing?
-
-No, no one reads documentation, sorry.  Either fix your use of kref
-(i.e. don't care about the count), or do something else, as you don't
-want a kref, but rather, an atomic count of what is going on and "1"
-means something "special" to you.
-
-sorry,
+I have no objection to that justification for it.
 
 greg k-h
