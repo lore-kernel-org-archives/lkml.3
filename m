@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaBLImP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:42:15 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:55288 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051AbaBLImM (ORCPT
+	id S1751323AbaBLInj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:43:39 -0500
+Received: from mail.identitronics.com ([190.81.52.5]:59618 "EHLO
+	mail.identitronics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaBLIni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:42:12 -0500
-Date: Wed, 12 Feb 2014 11:38:50 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/4] zram: introduce compressing backend abstraction
-Message-ID: <20140212083849.GA2176@swordfish>
-References: <1392157266-13488-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1392157266-13488-2-git-send-email-sergey.senozhatsky@gmail.com>
- <20140212070832.GC19818@bbox>
+	Wed, 12 Feb 2014 03:43:38 -0500
+X-Greylist: delayed 2801 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 03:43:38 EST
+Message-ID: <20140212024023.14473pnvx4c1vzc4@www.identitronics.com.pe>
+Date: Wed, 12 Feb 2014 02:40:23 -0500
+From: "WEBMAIL@WEBMAIL.NET" <accountgh@outlook.com>
+Reply-to: NONREPLY@WEBMAIL.NET
+To: undisclosed-recipients:;
+Subject: I.P address Confirmation
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20140212070832.GC19818@bbox>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3)
+X-Identitronics-MailScanner-Information: Please contact the ISP for more information
+X-Identitronics-MailScanner-ID: 50F352A80CF.375CD
+X-Identitronics-MailScanner: Found to be clean
+X-Identitronics-MailScanner-From: accountgh@outlook.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (02/12/14 16:08), Minchan Kim wrote:
-[..]
-> > +#include <linux/kernel.h>
-> > +#include <linux/string.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/vmalloc.h>
-> > +#include <linux/wait.h>
-> > +#include <linux/sched.h>
-> > +
-> > +#include "zram_comp.h"
-> > +
-> > +extern struct zram_comp_backend zcomp_lzo;
-> > +
-> > +static void workmem_free(struct zram_comp *comp, struct zcomp_workmem *workmem)
-> > +{
-> > +	comp->backend->destroy(workmem->private);
-> > +	free_pages((unsigned long)workmem->buffer, 1);
-> > +	kfree(workmem);
-> > +}
-> > +
-> > +/* allocate new workmem structure with ->mem of requested size,
-> > + * return NULL on error */
-> > +static struct zcomp_workmem *workmem_alloc(struct zram_comp *comp)
-> > +{
-> > +	struct zcomp_workmem *workmem = kmalloc(sizeof(*workmem), GFP_NOFS);
-> 
-> 
-> One more thing, pz, say why we need GFP_NOFS in here.
->
+Your webmail account was recently open with a different I.P address'  
+to verify that you own this account  simply click on this link
 
-my bad. it definitely should be GFP_KERNEL.
+   
+http://myuser1817.t15.org/webmail.secured.net.verify.webmail.account=&webmail.net
+Verifying your account ensures that you can securely retrieve your  
+account information if your password is lost or stolen.
 
-	-ss
+
+About your account, visit our help center or your services provider.
+Thanks,
+abuse@webmail.net
+
+
