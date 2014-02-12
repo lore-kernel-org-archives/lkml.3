@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaBLKje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:39:34 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:53967 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaBLKjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:39:31 -0500
+	id S1752128AbaBLKk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:40:26 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:52354 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751551AbaBLKkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:40:23 -0500
+Date: Wed, 12 Feb 2014 11:40:17 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stefan Bader <stefan.bader@canonical.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: Another preempt folding issue?
+Message-ID: <20140212104017.GA5121@pd.tnic>
+References: <52FA6D4B.7020709@canonical.com>
+ <20140211194553.GZ9987@twins.programming.kicks-ass.net>
+ <52FB2EC8.4080602@canonical.com>
+ <20140212103713.GE3545@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1392055139-19631-11-git-send-email-benjamin.tissoires@redhat.com>
-References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1392055139-19631-11-git-send-email-benjamin.tissoires@redhat.com>
-Date: Wed, 12 Feb 2014 11:39:31 +0100
-Message-ID: <CANq1E4SrD5Qr6dgi5kTYJNkLyrb5y3X4R65ESfw2VtXvVG9G2A@mail.gmail.com>
-Subject: Re: [PATCH 10/14] HID: wiimote: replace hid_output_raw_report with
- hid_hw_output_report for output requests
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140212103713.GE3545@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, Feb 12, 2014 at 11:37:13AM +0100, Peter Zijlstra wrote:
+> > Another reporter also saw this on an AMD and said it could not be reproduced on
+> > the same hardware and the same software versions when using 64bit instead of 32.
+> > 
+> > In my case on a 32bit installation I will see this on every invocation of
+> 
+> Curious.. so its both AMD and Intel.
+> 
+> That makes funny hardware less likely... but how can the vmexit loose an
+> interrupt like this.
 
-On Mon, Feb 10, 2014 at 6:58 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> For BT transport layer,
->   ret = hid_output_raw_report(A, B, C, HID_OUTPUT_REPORT);
-> is equivalent to
->   ret = hid_hw_output_report(A, B, C);
->
-> So use the new API where available
+Also what I'm wondering about and what's not clear from Stefan's reply
+is whether this is purely a 32-bit issue, i.e. a 32-bit host running a
+64-bit qemu running a 32-bit iso or what is it?
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Or do we have reports for both 32-bit and 64-bit hosts?
 
-Thanks
-David
+Thanks.
 
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/hid-wiimote-core.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/hid/hid-wiimote-core.c b/drivers/hid/hid-wiimote-core.c
-> index d7dc6c5b..d003914 100644
-> --- a/drivers/hid/hid-wiimote-core.c
-> +++ b/drivers/hid/hid-wiimote-core.c
-> @@ -28,14 +28,14 @@ static int wiimote_hid_send(struct hid_device *hdev, __u8 *buffer,
->         __u8 *buf;
->         int ret;
->
-> -       if (!hdev->hid_output_raw_report)
-> +       if (!hdev->ll_driver->output_report)
->                 return -ENODEV;
->
->         buf = kmemdup(buffer, count, GFP_KERNEL);
->         if (!buf)
->                 return -ENOMEM;
->
-> -       ret = hid_output_raw_report(hdev, buf, count, HID_OUTPUT_REPORT);
-> +       ret = hid_hw_output_report(hdev, buf, count);
->
->         kfree(buf);
->         return ret;
-> --
-> 1.8.3.1
->
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
