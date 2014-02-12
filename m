@@ -1,163 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaBLOQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 09:16:19 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:52521 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaBLOQQ (ORCPT
+	id S1752158AbaBLOSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 09:18:55 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39020 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaBLOSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 09:16:16 -0500
-Message-ID: <52FB82AC.1010405@gmail.com>
-Date: Wed, 12 Feb 2014 14:18:20 +0000
-From: Emil Velikov <emil.l.velikov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 12 Feb 2014 09:18:53 -0500
+Date: Wed, 12 Feb 2014 11:18:37 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Michael Ellerman <michaele@au1.ibm.com>
+Subject: Re: [PATCH 06/35] perf hists: Leave symbol addr hist bucket auto
+ alloc to symbol layer
+Message-ID: <20140212141837.GB7116@ghostprotocols.net>
+References: <1387566550-3524-1-git-send-email-acme@infradead.org>
+ <1387566550-3524-7-git-send-email-acme@infradead.org>
+ <20140212182316.44a10ca6@kryten>
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-CC: emil.l.velikov@gmail.com, nouveau@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [Nouveau] [PATCH v2] drm/nouveau: support for platform devices
-References: <CAAVeFuJaD1C7yPRGm3+hByLDuSiBhftehcbwFfrbLaYsAwRcZQ@mail.gmail.com> <1392183495-11481-1-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1392183495-11481-1-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212182316.44a10ca6@kryten>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/14 05:38, Alexandre Courbot wrote:
-> Upcoming mobile Kepler GPUs (such as GK20A) use the platform bus instead
-> of PCI to which Nouveau is tightly dependent. This patch allows Nouveau
-> to handle platform devices by:
+Em Wed, Feb 12, 2014 at 06:23:16PM +1100, Anton Blanchard escreveu:
+> Hi,
 > 
-> - abstracting PCI-dependent functions that were typically used for
->   resource querying and page mapping,
-> - introducing a nv_device_is_pci() function that allows to make
->   PCI-dependent code conditional,
-> - providing a nouveau_drm_platform_probe() function that takes a GPU
->   platform device to be probed.
+> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > 
+> > Since now symbol__addr_inc_samples() does the auto alloc, no need to
+> > do it prior to calling hist_entry__inc_addr_samples.
 > 
-> Core code as well as engine/subdev drivers are updated wherever possible
-> to make use of these functions. Some older drivers are too dependent on
-> PCI to be properly updated, but all newer code on which future chips may
-> depend should at least be runnable with platform devices.
-> 
-Hi Alexandre
+> perf annotate on a ppc64 build (no TUI) is failing. I get zero output.
+> I haven't had a chance to look closer, but I used the following git
+> bisect test script to isolate:
 
-I've tried really hard to find something wrong with this patch but it
-seems that you have it polished very nicely.
+Can you try the following patch?
 
-There is one quite minor nit in-line, but I'm not fussed either way.
+It should fix another problem, i.e. we were allocating, but annotation
+would fail in the !TUI case, as it would return at
+symbol__inc_addr_samples when use_browser != 1, now it will allocate and
+mark the right bucket.
 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> Changes since v1:
-> - Refactored nouveau_device_create_() to take an additional bus type
->   argument instead of having two versions of it that duplicate code.
-> - Fixed a typo when substituting pci_resource_* with nv_device_resource_*
-> - Check whether devices are PCI in relevant functions instead of
->   nouveau_drm_load().
-> 
->  drivers/gpu/drm/nouveau/core/engine/device/base.c  | 83 ++++++++++++++++++++--
->  drivers/gpu/drm/nouveau/core/engine/falcon.c       |  6 +-
->  drivers/gpu/drm/nouveau/core/engine/fifo/base.c    |  2 +-
->  drivers/gpu/drm/nouveau/core/engine/graph/nv20.c   |  2 +-
->  drivers/gpu/drm/nouveau/core/engine/graph/nv40.c   |  2 +-
->  drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c   |  4 +-
->  drivers/gpu/drm/nouveau/core/engine/xtensa.c       |  2 +-
->  drivers/gpu/drm/nouveau/core/include/core/device.h | 30 ++++++++
->  .../gpu/drm/nouveau/core/include/engine/device.h   | 17 +++--
->  drivers/gpu/drm/nouveau/core/include/subdev/mc.h   |  1 +
->  drivers/gpu/drm/nouveau/core/os.h                  |  1 +
->  drivers/gpu/drm/nouveau/core/subdev/bar/base.c     |  4 +-
->  drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c     |  4 +-
->  drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c     | 15 ++--
->  .../gpu/drm/nouveau/core/subdev/devinit/fbmem.h    |  8 ++-
->  drivers/gpu/drm/nouveau/core/subdev/devinit/nv04.c |  2 +-
->  drivers/gpu/drm/nouveau/core/subdev/devinit/nv05.c |  2 +-
->  drivers/gpu/drm/nouveau/core/subdev/devinit/nv10.c |  2 +-
->  drivers/gpu/drm/nouveau/core/subdev/devinit/nv20.c |  2 +-
->  drivers/gpu/drm/nouveau/core/subdev/fb/nv50.c      |  9 +--
->  drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c      |  9 +--
->  drivers/gpu/drm/nouveau/core/subdev/i2c/base.c     |  2 +-
->  drivers/gpu/drm/nouveau/core/subdev/instmem/nv40.c |  7 +-
->  drivers/gpu/drm/nouveau/core/subdev/mc/base.c      | 39 ++++++----
->  drivers/gpu/drm/nouveau/core/subdev/mxm/base.c     |  2 +-
->  drivers/gpu/drm/nouveau/nouveau_abi16.c            | 13 +++-
->  drivers/gpu/drm/nouveau/nouveau_agp.c              |  2 +-
->  drivers/gpu/drm/nouveau/nouveau_bios.c             |  4 ++
->  drivers/gpu/drm/nouveau/nouveau_bo.c               | 22 +++---
->  drivers/gpu/drm/nouveau/nouveau_chan.c             |  2 +-
->  drivers/gpu/drm/nouveau/nouveau_display.c          |  3 +-
->  drivers/gpu/drm/nouveau/nouveau_drm.c              | 59 ++++++++++++---
->  drivers/gpu/drm/nouveau/nouveau_sysfs.c            |  8 ++-
->  drivers/gpu/drm/nouveau/nouveau_ttm.c              | 31 ++++----
->  drivers/gpu/drm/nouveau/nouveau_vga.c              |  5 ++
->  35 files changed, 297 insertions(+), 109 deletions(-)
-> 
-[snip]
-> diff --git a/drivers/gpu/drm/nouveau/core/subdev/mc/base.c b/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
-> index b4b9943773bc..572190c8363b 100644
-> --- a/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
-> +++ b/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
-> @@ -93,8 +93,8 @@ _nouveau_mc_dtor(struct nouveau_object *object)
->  {
->  	struct nouveau_device *device = nv_device(object);
->  	struct nouveau_mc *pmc = (void *)object;
-> -	free_irq(device->pdev->irq, pmc);
-> -	if (pmc->use_msi)
-> +	free_irq(pmc->irq, pmc);
-> +	if (nv_device_is_pci(device) && pmc->use_msi)
-You should be able to keep the conditional as is.
+I'll have this in perf/urgent and will do the optimization of not
+allocating those buckets in the report case when not doing integrated
+annotation, i.e. report --stdio doesn't provide a way to go to the
+annotation --stdio, so no point on allocating the buckets. Just on
+'annotate --stdio' we should allocate it, etc.
 
->  		pci_disable_msi(device->pdev);
->  	nouveau_subdev_destroy(&pmc->base);
->  }
-> @@ -114,22 +114,25 @@ nouveau_mc_create_(struct nouveau_object *parent, struct nouveau_object *engine,
->  	if (ret)
->  		return ret;
->  
-> -	switch (device->pdev->device & 0x0ff0) {
-> -	case 0x00f0:
-> -	case 0x02e0:
-> -		/* BR02? NFI how these would be handled yet exactly */
-> -		break;
-> -	default:
-> -		switch (device->chipset) {
-> -		case 0xaa: break; /* reported broken, nv also disable it */
-> -		default:
-> -			pmc->use_msi = true;
-> +	if (nv_device_is_pci(device))
-> +		switch (device->pdev->device & 0x0ff0) {
-> +		case 0x00f0:
-> +		case 0x02e0:
-> +			/* BR02? NFI how these would be handled yet exactly */
->  			break;
-> +		default:
-> +			switch (device->chipset) {
-> +			case 0xaa:
-> +				/* reported broken, nv also disable it */
-> +				break;
-> +			default:
-> +				pmc->use_msi = true;
-> +				break;
->  		}
->  	}
->  
->  	pmc->use_msi = nouveau_boolopt(device->cfgopt, "NvMSI", pmc->use_msi);
-As you explicitly disable msi on platform devices you can move the
-option parsing within the if (nv_device_is_pci()) block.
+- Arnaldo
 
-This way you can drop the change in the following conditional and the
-similar one in _nouveau_mc_dtor.
-
-> -	if (pmc->use_msi && oclass->msi_rearm) {
-> +	if (nv_device_is_pci(device) && pmc->use_msi && oclass->msi_rearm) {
-
-
-Many thanks, and again, welcome to nouveau :-)
-
--Emil
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 469eb679fb9d..7cf522523c12 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -489,7 +489,7 @@ static int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+ {
+ 	struct annotation *notes;
+ 
+-	if (sym == NULL || use_browser != 1 || !sort__has_sym)
++	if (sym == NULL || !sort__has_sym)
+ 		return 0;
+ 
+ 	notes = symbol__annotation(sym);
