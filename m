@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482AbaBLIOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:14:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50375 "EHLO
+	id S1752453AbaBLIOl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:14:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50378 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752314AbaBLIOR (ORCPT
+	by vger.kernel.org with ESMTP id S1752333AbaBLIOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:14:17 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,21 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andrea Arcangeli" <aarcange@redhat.com>,
-        "Johannes Weiner" <hannes@cmpxchg.org>,
-        "Andi Kleen" <andi@firstfloor.org>,
-        "Pravin B Shelar" <pshelar@nicira.com>,
-        "Rik van Riel" <riel@redhat.com>,
+CC: akpm@linux-foundation.org,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Khalid Aziz" <khalid.aziz@oracle.com>,
-        "Minchan Kim" <minchan@kernel.org>, "Christoph Lameter" <cl@linux.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Mel Gorman" <mel@csn.ul.ie>
+        "Paul Mundt" <lethal@linux-sh.org>,
+        "Nobuhiro Iwamatsu" <nobuhiro.iwamatsu.yj@renesas.com>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.216494617@decadent.org.uk>
+Message-ID: <lsq.1392192612.509793696@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 74/79] mm: fix aio performance regression for database
- caused by THP
+Subject: [PATCH 3.2 30/79] sh: always link in helper functions extracted
+ from libgcc
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -40,137 +35,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khalid Aziz <khalid.aziz@oracle.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
+commit 84ed8a99058e61567f495cc43118344261641c5f upstream.
 
-I am working with a tool that simulates oracle database I/O workload.
-This tool (orion to be specific -
-<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
-allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
-does aio into these pages from flash disks using various common block
-sizes used by database.  I am looking at performance with two of the most
-common block sizes - 1M and 64K.  aio performance with these two block
-sizes plunged after Transparent HugePages was introduced in the kernel.
-Here are performance numbers:
+E.g. landisk_defconfig, which has CONFIG_NTFS_FS=m:
 
-		pre-THP		2.6.39		3.11-rc5
-1M read		8384 MB/s	5629 MB/s	6501 MB/s
-64K read	7867 MB/s	4576 MB/s	4251 MB/s
+  ERROR: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!
 
-I have narrowed the performance impact down to the overheads introduced by
-THP in __get_page_tail() and put_compound_page() routines.  perf top shows
->40% of cycles being spent in these two routines.  Every time direct I/O
-to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
-the pages and calls put_page() when I/O completes to put the reference
-away.  THP introduced significant amount of locking overhead to get_page()
-and put_page() when dealing with compound pages because hugepages can be
-split underneath get_page() and put_page().  It added this overhead
-irrespective of whether it is dealing with hugetlbfs pages or transparent
-hugepages.  This resulted in 20%-45% drop in aio performance when using
-hugetlbfs pages.
+For "lib-y", if no symbols in a compilation unit are referenced by other
+units, the compilation unit will not be included in vmlinux.  This
+breaks modules that do reference those symbols.
 
-Since hugetlbfs pages can not be split, there is no reason to go through
-all the locking overhead for these pages from what I can see.  I added
-code to __get_page_tail() and put_compound_page() to bypass all the
-locking code when working with hugetlbfs pages.  This improved performance
-significantly.  Performance numbers with this patch:
+Use "obj-y" instead to fix this.
 
-		pre-THP		3.11-rc5	3.11-rc5 + Patch
-1M read		8384 MB/s	6501 MB/s	8371 MB/s
-64K read	7867 MB/s	4251 MB/s	6510 MB/s
+http://kisskb.ellerman.id.au/kisskb/buildresult/8838077/
 
-Performance with 64K read is still lower than what it was before THP, but
-still a 53% improvement.  It does mean there is more work to be done but I
-will take a 53% improvement for now.
+This doesn't fix all cases. There are others, e.g. udivsi3.
+This is also not limited to sh, many architectures handle this in the
+same way.
 
-Please take a look at the following patch and let me know if it looks
-reasonable.
+A simple solution is to unconditionally include all helper functions.
+A more complex solution is to make the choice of "lib-y" or "obj-y" depend
+on CONFIG_MODULES:
 
-[akpm@linux-foundation.org: tweak comments]
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
+  obj-$(CONFIG_MODULES) += ...
+  lib-y($CONFIG_MODULES) += ...
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Reviewed-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/swap.c | 31 +++++++++++++++++++++++++++++--
- 1 file changed, 29 insertions(+), 2 deletions(-)
+ arch/sh/lib/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -31,6 +31,7 @@
- #include <linux/backing-dev.h>
- #include <linux/memcontrol.h>
- #include <linux/gfp.h>
-+#include <linux/hugetlb.h>
+diff --git a/arch/sh/lib/Makefile b/arch/sh/lib/Makefile
+index 7b95f29..3baff31 100644
+--- a/arch/sh/lib/Makefile
++++ b/arch/sh/lib/Makefile
+@@ -6,7 +6,7 @@ lib-y  = delay.o memmove.o memchr.o \
+ 	 checksum.o strlen.o div64.o div64-generic.o
  
- #include "internal.h"
+ # Extracted from libgcc
+-lib-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
++obj-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
+ 	 ashlsi3.o ashrsi3.o ashiftrt.o lshrsi3.o \
+ 	 udiv_qrnnd.o
  
-@@ -69,13 +70,26 @@ static void __put_compound_page(struct p
- {
- 	compound_page_dtor *dtor;
- 
--	__page_cache_release(page);
-+	if (!PageHuge(page))
-+		__page_cache_release(page);
- 	dtor = get_compound_page_dtor(page);
- 	(*dtor)(page);
- }
- 
- static void put_compound_page(struct page *page)
- {
-+	/*
-+	 * hugetlbfs pages cannot be split from under us.  If this is a
-+	 * hugetlbfs page, check refcount on head page and release the page if
-+	 * the refcount becomes zero.
-+	 */
-+	if (PageHuge(page)) {
-+		page = compound_head(page);
-+		if (put_page_testzero(page))
-+			__put_compound_page(page);
-+		return;
-+	}
-+
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -160,8 +174,20 @@ bool __get_page_tail(struct page *page)
- 	 */
- 	unsigned long flags;
- 	bool got = false;
--	struct page *page_head = compound_trans_head(page);
-+	struct page *page_head;
-+
-+	/*
-+	 * If this is a hugetlbfs page it cannot be split under us.  Simply
-+	 * increment refcount for the head page.
-+	 */
-+	if (PageHuge(page)) {
-+		page_head = compound_head(page);
-+		atomic_inc(&page_head->_count);
-+		got = true;
-+		goto out;
-+	}
- 
-+	page_head = compound_trans_head(page);
- 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
- 		/*
- 		 * page_head wasn't a dangling pointer but it
-@@ -179,6 +205,7 @@ bool __get_page_tail(struct page *page)
- 		if (unlikely(!got))
- 			put_page(page_head);
- 	}
-+out:
- 	return got;
- }
- EXPORT_SYMBOL(__get_page_tail);
 
