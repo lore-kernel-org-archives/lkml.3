@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbaBLIjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:39:08 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50067 "EHLO
+	id S1753875AbaBLIjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:39:07 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50064 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751792AbaBLINt (ORCPT
+	by vger.kernel.org with ESMTP id S1751788AbaBLINt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:13:49 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Sasha Levin" <sasha.levin@oracle.com>
+CC: akpm@linux-foundation.org,
+        "Thadeu Lima de Souza Cascardo" <cascardo@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric Dumazet" <edumazet@google.com>,
+        "Anirudha Sarangi" <anirudh@xilinx.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.662940308@decadent.org.uk>
+Message-ID: <lsq.1392192612.392177383@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 10/79] rds: prevent dereference of a NULL device
+Subject: [PATCH 3.2 01/79] net: do not pretend FRAGLIST support
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,78 +34,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit c2349758acf1874e4c2b93fe41d072336f1a31d0 ]
+[ Upstream commit 28e24c62ab3062e965ef1b3bcc244d50aee7fa85 ]
 
-Binding might result in a NULL device, which is dereferenced
-causing this BUG:
+Few network drivers really supports frag_list : virtual drivers.
 
-[ 1317.260548] BUG: unable to handle kernel NULL pointer dereference at 000000000000097
-4
-[ 1317.261847] IP: [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
-[ 1317.263315] PGD 418bcb067 PUD 3ceb21067 PMD 0
-[ 1317.263502] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1317.264179] Dumping ftrace buffer:
-[ 1317.264774]    (ftrace buffer empty)
-[ 1317.265220] Modules linked in:
-[ 1317.265824] CPU: 4 PID: 836 Comm: trinity-child46 Tainted: G        W    3.13.0-rc4-
-next-20131218-sasha-00013-g2cebb9b-dirty #4159
-[ 1317.267415] task: ffff8803ddf33000 ti: ffff8803cd31a000 task.ti: ffff8803cd31a000
-[ 1317.268399] RIP: 0010:[<ffffffff84225f52>]  [<ffffffff84225f52>] rds_ib_laddr_check+
-0x82/0x110
-[ 1317.269670] RSP: 0000:ffff8803cd31bdf8  EFLAGS: 00010246
-[ 1317.270230] RAX: 0000000000000000 RBX: ffff88020b0dd388 RCX: 0000000000000000
-[ 1317.270230] RDX: ffffffff8439822e RSI: 00000000000c000a RDI: 0000000000000286
-[ 1317.270230] RBP: ffff8803cd31be38 R08: 0000000000000000 R09: 0000000000000000
-[ 1317.270230] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-[ 1317.270230] R13: 0000000054086700 R14: 0000000000a25de0 R15: 0000000000000031
-[ 1317.270230] FS:  00007ff40251d700(0000) GS:ffff88022e200000(0000) knlGS:000000000000
-0000
-[ 1317.270230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1317.270230] CR2: 0000000000000974 CR3: 00000003cd478000 CR4: 00000000000006e0
-[ 1317.270230] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1317.270230] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000090602
-[ 1317.270230] Stack:
-[ 1317.270230]  0000000054086700 5408670000a25de0 5408670000000002 0000000000000000
-[ 1317.270230]  ffffffff84223542 00000000ea54c767 0000000000000000 ffffffff86d26160
-[ 1317.270230]  ffff8803cd31be68 ffffffff84223556 ffff8803cd31beb8 ffff8800c6765280
-[ 1317.270230] Call Trace:
-[ 1317.270230]  [<ffffffff84223542>] ? rds_trans_get_preferred+0x42/0xa0
-[ 1317.270230]  [<ffffffff84223556>] rds_trans_get_preferred+0x56/0xa0
-[ 1317.270230]  [<ffffffff8421c9c3>] rds_bind+0x73/0xf0
-[ 1317.270230]  [<ffffffff83e4ce62>] SYSC_bind+0x92/0xf0
-[ 1317.270230]  [<ffffffff812493f8>] ? context_tracking_user_exit+0xb8/0x1d0
-[ 1317.270230]  [<ffffffff8119313d>] ? trace_hardirqs_on+0xd/0x10
-[ 1317.270230]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
-[ 1317.270230]  [<ffffffff83e4cece>] SyS_bind+0xe/0x10
-[ 1317.270230]  [<ffffffff843a6ad0>] tracesys+0xdd/0xe2
-[ 1317.270230] Code: 00 8b 45 cc 48 8d 75 d0 48 c7 45 d8 00 00 00 00 66 c7 45 d0 02 00
-89 45 d4 48 89 df e8 78 49 76 ff 41 89 c4 85 c0 75 0c 48 8b 03 <80> b8 74 09 00 00 01 7
-4 06 41 bc 9d ff ff ff f6 05 2a b6 c2 02
-[ 1317.270230] RIP  [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
-[ 1317.270230]  RSP <ffff8803cd31bdf8>
-[ 1317.270230] CR2: 0000000000000974
+Some drivers wrongly advertise NETIF_F_FRAGLIST feature.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+If skb with a frag_list is given to them, packet on the wire will be
+corrupt.
+
+Remove this flag, as core networking stack will make sure to
+provide packets that can be sent without corruption.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Anirudha Sarangi <anirudh@xilinx.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/rds/ib.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/ibm/ehea/ehea_main.c   | 2 +-
+ drivers/net/ethernet/tehuti/tehuti.c        | 1 -
+ drivers/net/ethernet/xilinx/ll_temac_main.c | 2 +-
+ 3 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/net/rds/ib.c b/net/rds/ib.c
-index b4c8b00..ba2dffe 100644
---- a/net/rds/ib.c
-+++ b/net/rds/ib.c
-@@ -338,7 +338,8 @@ static int rds_ib_laddr_check(__be32 addr)
- 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
- 	/* due to this, we will claim to support iWARP devices unless we
- 	   check node_type. */
--	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
-+	if (ret || !cm_id->device ||
-+	    cm_id->device->node_type != RDMA_NODE_IB_CA)
- 		ret = -EADDRNOTAVAIL;
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+index bfeccbf..297f0b6 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -3015,7 +3015,7 @@ struct ehea_port *ehea_setup_single_port(struct ehea_adapter *adapter,
  
- 	rdsdebug("addr %pI4 ret %d node type %d\n",
+ 	dev->hw_features = NETIF_F_SG | NETIF_F_TSO
+ 		      | NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_TX | NETIF_F_LRO;
+-	dev->features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_TSO
++	dev->features = NETIF_F_SG | NETIF_F_TSO
+ 		      | NETIF_F_HIGHDMA | NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_TX
+ 		      | NETIF_F_HW_VLAN_RX | NETIF_F_HW_VLAN_FILTER
+ 		      | NETIF_F_RXCSUM;
+diff --git a/drivers/net/ethernet/tehuti/tehuti.c b/drivers/net/ethernet/tehuti/tehuti.c
+index 3a90af6..cc7e7de 100644
+--- a/drivers/net/ethernet/tehuti/tehuti.c
++++ b/drivers/net/ethernet/tehuti/tehuti.c
+@@ -1995,7 +1995,6 @@ bdx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		ndev->features = NETIF_F_IP_CSUM | NETIF_F_SG | NETIF_F_TSO
+ 		    | NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX |
+ 		    NETIF_F_HW_VLAN_FILTER | NETIF_F_RXCSUM
+-		    /*| NETIF_F_FRAGLIST */
+ 		    ;
+ 		ndev->hw_features = NETIF_F_IP_CSUM | NETIF_F_SG |
+ 			NETIF_F_TSO | NETIF_F_HW_VLAN_TX;
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index e26945d..1b7b3be 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -1011,7 +1011,7 @@ static int __devinit temac_of_probe(struct platform_device *op)
+ 	dev_set_drvdata(&op->dev, ndev);
+ 	SET_NETDEV_DEV(ndev, &op->dev);
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+-	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
++	ndev->features = NETIF_F_SG;
+ 	ndev->netdev_ops = &temac_netdev_ops;
+ 	ndev->ethtool_ops = &temac_ethtool_ops;
+ #if 0
 
