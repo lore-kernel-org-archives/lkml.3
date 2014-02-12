@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaBLCTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 21:19:49 -0500
-Received: from mail.windriver.com ([147.11.1.11]:57468 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaBLCTs (ORCPT
+	id S1752767AbaBLCVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 21:21:09 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:53767 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175AbaBLCVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 21:19:48 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH v2] Documentation/networking: delete orphaned 3c505.txt file.
-Date: Tue, 11 Feb 2014 21:19:34 -0500
-Message-ID: <1392171574-6231-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1392169920-5713-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1392169920-5713-1-git-send-email-paul.gortmaker@windriver.com>
+	Tue, 11 Feb 2014 21:21:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1392148200-5393-2-git-send-email-ddaney.cavm@gmail.com>
+References: <1392148200-5393-1-git-send-email-ddaney.cavm@gmail.com> <1392148200-5393-2-git-send-email-ddaney.cavm@gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 12 Feb 2014 11:20:47 +0900
+Message-ID: <CAAVeFuKxoT-fvhNAqJYdXgwXiw6LbE1ks_upkWjCYee_YtQPnw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] of/gpio: Define OF_GPIO_OPEN_DRAIN and
+ OF_GPIO_OPEN_SOURCE flags.
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the commit 0e245dbaac9fa1c2fd0f4e2af7b9f6d874083a8b
-("drivers/net: delete the 3Com 3c505/3c507 intel i825xx support")
-we clobbered the 3c505 driver (over a year ago) along with other
-abandoned ISA drivers.
+On Wed, Feb 12, 2014 at 4:49 AM, David Daney <ddaney.cavm@gmail.com> wrote:
+> From: David Daney <david.daney@cavium.com>
+>
+> When we have a GPIO pin connected to an open-drain network, we want a
+> standard way of specifying this in the device tree.  So we choose bit
+> 1 of the flag field to indicate open drain.
+>
+> A typical use case would be something like:
+>
+>         enum of_gpio_flags f;
+>         .
+>         .
+>         .
+>         reset_gpio = of_get_named_gpio_flags(node, "reset", 0, &f);
+>         .
+>         .
+>         .
+>         ret = gpio_request_one(reset_gpio,
+>                 (f & OF_GPIO_OPEN_DRAIN) ? GPIOF_OPEN_DRAIN : 0,
+>                  "reset");
+>         .
+>         .
+>         .
+>         gpio_direction_output(reset_gpio, 1);
+>         gpio_set_value(reset_gpio, 0);
+>         msleep(20);
+>         gpio_set_value(reset_gpio, 1);
+>         .
+>         .
+>         .
+>
+> Since the same arguments hold for open-source configurations, add a
+> definition for OF_GPIO_OPEN_SOURCE as well.
+>
+> Signed-off-by: David Daney <david.daney@cavium.com>
 
-However, this orphaned README file escaped detection at that
-time, and has lived on until today. Get rid of it now.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
-
-[v2: also delete the 00-INDEX entry]
-
-diff --git a/Documentation/networking/00-INDEX b/Documentation/networking/00-INDEX
-index 557b6ef70c26..c3a55d68f1e6 100644
---- a/Documentation/networking/00-INDEX
-+++ b/Documentation/networking/00-INDEX
-@@ -1,7 +1,5 @@
- 00-INDEX
- 	- this file
--3c505.txt
--	- information on the 3Com EtherLink Plus (3c505) driver.
- 3c509.txt
- 	- information on the 3Com Etherlink III Series Ethernet cards.
- 6pack.txt
-diff --git a/Documentation/networking/3c505.txt b/Documentation/networking/3c505.txt
-deleted file mode 100644
-index 72f38b13101d..000000000000
---- a/Documentation/networking/3c505.txt
-+++ /dev/null
-@@ -1,45 +0,0 @@
--The 3Com Etherlink Plus (3c505) driver.
--
--This driver now uses DMA.  There is currently no support for PIO operation.
--The default DMA channel is 6; this is _not_ autoprobed, so you must
--make sure you configure it correctly.  If loading the driver as a
--module, you can do this with "modprobe 3c505 dma=n".  If the driver is
--linked statically into the kernel, you must either use an "ether="
--statement on the command line, or change the definition of ELP_DMA in 3c505.h.
--
--The driver will warn you if it has to fall back on the compiled in
--default DMA channel. 
--
--If no base address is given at boot time, the driver will autoprobe
--ports 0x300, 0x280 and 0x310 (in that order).  If no IRQ is given, the driver
--will try to probe for it.
--
--The driver can be used as a loadable module.
--
--Theoretically, one instance of the driver can now run multiple cards,
--in the standard way (when loading a module, say "modprobe 3c505
--io=0x300,0x340 irq=10,11 dma=6,7" or whatever).  I have not tested
--this, though.
--
--The driver may now support revision 2 hardware; the dependency on
--being able to read the host control register has been removed.  This
--is also untested, since I don't have a suitable card.
--
--Known problems:
-- I still see "DMA upload timed out" messages from time to time.  These
--seem to be fairly non-fatal though.
-- The card is old and slow.
--
--To do:
-- Improve probe/setup code
-- Test multicast and promiscuous operation
--
--Authors:
-- The driver is mainly written by Craig Southeren, email
-- <craigs@ineluki.apana.org.au>.
-- Parts of the driver (adapting the driver to 1.1.4+ kernels,
-- IRQ/address detection, some changes) and this README by
-- Juha Laiho <jlaiho@ichaos.nullnet.fi>.
-- DMA mode, more fixes, etc, by Philip Blundell <pjb27@cam.ac.uk>
-- Multicard support, Software configurable DMA, etc., by
-- Christopher Collins <ccollins@pcug.org.au>
--- 
-1.8.5.2
-
+Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
