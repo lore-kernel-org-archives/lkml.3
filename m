@@ -1,109 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaBLKFn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:05:43 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:19911 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaBLKFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:05:39 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-6e-52fb47728191
-Message-id: <1392199536.22265.14.camel@AMDC1943>
-Subject: Re: [PATCH 11/14] regulator: s2mps11: Add opmode for S2MPS14 regulators
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Date: Wed, 12 Feb 2014 11:05:36 +0100
-In-reply-to: <20140212092108.GT15081@lee--X1>
-References: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
- <1392123837-5517-12-git-send-email-k.kozlowski@samsung.com>
- <20140212092108.GT15081@lee--X1>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xK7pF7r+DDGb8ULHYOGM9q8XUh0/Y
-	LK5/ec5qcbbpDbvF/a9HGS2+Xelgsri8aw6bxYzz+5gs1h65y25xupvV4uKKL0wO3B47Z91l
-	99i0qpPN4861PWwe804GevRtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfGgYY9rAWfhSt6131i
-	bGDcx9/FyMkhIWAicfzAI2YIW0ziwr31bF2MXBxCAksZJSbtX8gC4XxmlPh66zQ7SBWvgIHE
-	779ngTo4OIQFAiR+dvqDhNkEjCU2L1/CBhIWEVCROPfGHKSVWWAys8ThOV8ZQWpYBFQlNk5f
-	wgJicwroSpxpXA41fzmjxMlvfawgCWYBdYlJ8xZBXaQksbu9kx0iLi+xec1bZogbBCV+TL7H
-	MoFRYBaSlllIymYhKVvAyLyKUTS1NLmgOCk910ivODG3uDQvXS85P3cTIyQqvu5gXHrM6hCj
-	AAejEg8vg+evICHWxLLiytxDjBIczEoivHddfgcJ8aYkVlalFuXHF5XmpBYfYmTi4JRqYPQS
-	O5FcrXzEMEns8ZPXoTm9rLHenFX/RKLZlgprNBWF7p/7hJf1mYhLvFAVk+NNbb2lZ3M8U64l
-	uti2fuwMY9rcOFf41x2njcbXitUWv7cvOrv2eXaHbMtLQYlGSz3TNo8XP/zmWYQIhUz9Iydn
-	zLVPwm2C2bFeIw+eqasKdtZfDtog+EdTiaU4I9FQi7moOBEAEL4BomgCAAA=
+	id S1752449AbaBLKG2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:06:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751461AbaBLKGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:06:25 -0500
+Message-ID: <52FB4797.2020101@redhat.com>
+Date: Wed, 12 Feb 2014 18:06:15 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Qin Chuanyu <qinchuanyu@huawei.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: mst@redhat.com, kvm@vger.kernel.org
+Subject: Re: [PATCH V2 5/6] vhost_net: poll vhost queue after marking DMA
+ is done
+References: <1377836962-49780-1-git-send-email-jasowang@redhat.com> <1377836962-49780-6-git-send-email-jasowang@redhat.com> <52FB24EA.3060001@huawei.com>
+In-Reply-To: <52FB24EA.3060001@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-12 at 09:21 +0000, Lee Jones wrote:
-> > S2MPS11/S2MPS14 regulators support different modes of operation:
-> >  - Always off;
-> >  - On/Off controlled by pin/GPIO (PWREN/LDOEN/EMMCEN);
-> >  - Always on;
-> > This is very similar to S5M8767 regulator driver which also supports
-> > opmodes (although S5M8767 have also low-power mode).
-> > 
-> > This patch adds parsing the operation mode from DTS by reading a
-> > "op_mode" property from regulator child node.
-> > 
-> > The op_mode is then used for enabling the S2MPS14 regulators.
-> > On S2MPS11 the DTS "op_mode" property is parsed but not used for
-> > enabling, as this was not tested.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> > Cc: Mark Brown <broonie@kernel.org>
-> > Cc: Liam Girdwood <lgirdwood@gmail.com>
-> > ---
-> >  drivers/regulator/s2mps11.c         |   98 ++++++++++++++++++++++++++++++++++-
-> >  include/linux/mfd/samsung/s2mps14.h |   17 ++++++
-> >  2 files changed, 114 insertions(+), 1 deletion(-)
-> 
-> <snip>
-> 
-> > diff --git a/include/linux/mfd/samsung/s2mps14.h b/include/linux/mfd/samsung/s2mps14.h
-> > index c4bfb8edc836..69582ae4c971 100644
-> > --- a/include/linux/mfd/samsung/s2mps14.h
-> > +++ b/include/linux/mfd/samsung/s2mps14.h
-> > @@ -149,4 +149,21 @@ enum s2mps14_regulators {
-> >  #define S2MPS14_LDO_N_VOLTAGES	(S2MPS14_LDO_VSEL_MASK + 1)
-> >  #define S2MPS14_BUCK_N_VOLTAGES (S2MPS14_BUCK_VSEL_MASK + 1)
-> >  
-> > +#define S2MPS14_ENCTRL_SHIFT		6
-> > +#define S2MPS14_ENCTRL_MASK		(0x3 << S2MPS14_ENCTRL_SHIFT)
-> > +
-> > +/*
-> > + * Values of regulator operation modes match device tree bindings.
-> > + */
-> > +enum s2mps14_regulator_opmode {
-> > +	S2MPS14_REGULATOR_OPMODE_OFF		= 0,
-> > +	S2MPS14_REGULATOR_OPMODE_ON		= 1,
-> > +	/* Reserved for compatibility with S5M8767 where this
-> > +	 * is a low power mode. */
-> 
-> Sorry to be an arse, but can you use proper multi-line comments
-> please?
-> 
-> The preferred style for long (multi-line) comments is:
-> 
->         /*
->          * This is the preferred style for multi-line
->          * comments in the Linux kernel source code.
->          * Please use it consistently.
->          *
->          * Description:  A column of asterisks on the left side,
->          * with beginning and ending almost-blank lines.
->          */
+On 02/12/2014 03:38 PM, Qin Chuanyu wrote:
+> On 2013/8/30 12:29, Jason Wang wrote:
+>> We used to poll vhost queue before making DMA is done, this is racy
+>> if vhost
+>> thread were waked up before marking DMA is done which can result the
+>> signal to
+>> be missed. Fix this by always poll the vhost thread before DMA is done.
+>>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>   drivers/vhost/net.c |    9 +++++----
+>>   1 files changed, 5 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>> index ff60c2a..d09c17c 100644
+>> --- a/drivers/vhost/net.c
+>> +++ b/drivers/vhost/net.c
+>> @@ -308,6 +308,11 @@ static void vhost_zerocopy_callback(struct
+>> ubuf_info *ubuf, bool success)
+>>       struct vhost_virtqueue *vq = ubufs->vq;
+>>       int cnt = atomic_read(&ubufs->kref.refcount);
+>>
+>> +    /* set len to mark this desc buffers done DMA */
+>> +    vq->heads[ubuf->desc].len = success ?
+>> +        VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+>> +    vhost_net_ubuf_put(ubufs);
+>> +
+>>       /*
+>>        * Trigger polling thread if guest stopped submitting new buffers:
+>>        * in this case, the refcount after decrement will eventually
+>> reach 1
+>> @@ -318,10 +323,6 @@ static void vhost_zerocopy_callback(struct
+>> ubuf_info *ubuf, bool success)
+>>        */
+>>       if (cnt <= 2 || !(cnt % 16))
+>>           vhost_poll_queue(&vq->poll);
+>> -    /* set len to mark this desc buffers done DMA */
+>> -    vq->heads[ubuf->desc].len = success ?
+>> -        VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+>> -    vhost_net_ubuf_put(ubufs);
+>>   }
+>>
+>>   /* Expects to be always run from workqueue - which acts as
+>>
+> with this change, vq would lose protection that provided by ubufs->kref.
+> if another thread is waiting at vhost_net_ubuf_put_and_wait called by
+> vhost_net_release, then after vhost_net_ubuf_put, vq would been free
+> by vhost_net_release soon, vhost_poll_queue(&vq->poll) may cause NULL
+> pointer Exception.
+>
 
-No problem, I'll fix it. The preferred comment in such case had 4 lines
-instead of 2 so it looked a little weird to me :).
+Good catch.
+> another question is that vhost_zerocopy_callback is called by kfree_skb,
+> it may called in different thread context.
+> vhost_poll_queue is called decided by ubufs->kref.refcount, this may
+> cause there isn't any thread call  vhost_poll_queue, but at least one
+> is needed. and this cause network break.
+> We could repeat it by using 8 netperf thread in guest to xmit tcp to
+> its host.
+>
+> I think if using atomic_read to decide while do vhost_poll_queue or not,
+> at least a spink_lock is needed.
 
+Then you need another ref count to protect that spinlock? Care to send
+patches?
+
+Thanks
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
