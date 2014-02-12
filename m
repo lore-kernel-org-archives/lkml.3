@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaBLPQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:16:34 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:48859 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452AbaBLPQc convert rfc822-to-8bit (ORCPT
+	id S1752534AbaBLPRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:17:04 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:37150 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037AbaBLPRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:16:32 -0500
-Date: Wed, 12 Feb 2014 15:16:26 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Len Brown <len.brown@intel.com>, Preeti Murthy <preeti.lkml@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
-Message-ID: <20140212151626.GE28661@e102568-lin.cambridge.arm.com>
-References: <20140131090230.GM5002@laptop.programming.kicks-ass.net>
- <52EB6F65.8050008@linux.vnet.ibm.com>
- <52EBBC23.8020603@linux.intel.com>
- <52EBC33A.6080101@linaro.org>
- <52EBC645.2040607@linux.intel.com>
- <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
- <20140203125441.GD19029@e103034-lin>
- <52EFA9D3.1030601@linux.intel.com>
- <20140203145605.GL8874@twins.programming.kicks-ass.net>
- <52EFC12B.50704@linux.intel.com>
+	Wed, 12 Feb 2014 10:17:01 -0500
+Date: Wed, 12 Feb 2014 10:16:57 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Prarit Bhargava <prarit@redhat.com>, linux-edac@vger.kernel.org,
+        Doug Thompson <dougthompson@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] edac, poll timeout cannot be zero
+Message-ID: <20140212151657.GL24490@htj.dyndns.org>
+References: <1391457913-881-1-git-send-email-prarit@redhat.com>
+ <20140212150748.GE5121@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <52EFC12B.50704@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 12 Feb 2014 15:16:27.0280 (UTC) FILETIME=[66455100:01CF2805]
-X-MC-Unique: 114021215162807601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140212150748.GE5121@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 04:17:47PM +0000, Arjan van de Ven wrote:
+Hello,
 
-[...]
-
-> >> 1) A latency driven one
-> >> 2) A performance impact on
-> >>
-> >> first one is pretty much the exit latency related time, sort of a
-> >> "expected time to first instruction" (currently menuidle has the
-> >> 99.999% worst case number, which is not useful for this, but is a
-> >> first approximation). This is obviously the dominating number for
-> >> expected-short running tasks
-> >>
-> >> second on is more of a "is there any cache/TLB left or is it flushed"
-> >> kind of metric. It's more tricky to compute, since what is the cost of
-> >> an empty cache (or even a cache migration) after all....  .... but I
-> >> suspect it's in part what the scheduler will care about more for
-> >> expected-long  running tasks.
-> >
-> > Yeah, so currently we 'assume' cache hotness based on runtime; see
-> > task_hot(). A hint that the CPU wiped its caches might help there.
+On Wed, Feb 12, 2014 at 04:07:48PM +0100, Borislav Petkov wrote:
+> While testing, however, I keep seeing the splat below and that's:
 > 
-> if there's a simple api like
+>         if (WARN_ON(!list_empty(&work->entry))) {
+>                 spin_unlock(&pwq->pool->lock);
+>                 return;
+>         }
 > 
-> sched_cpu_cache_wiped(int llc)
+> and there seems to be some interference with edac_mc_workq_setup()
+> which does mod_delayed_work() and then the workqueue callback
+> edac_mc_workq_function() which does queue_delayed_work().
 > 
-> that would be very nice for this; the menuidle side knows this
-> for some cases and thus can just call it. This would be a very
-> small and minimal change
+> What I'm seeing in the splat is that when the timer fires to run the
+> delayed work, __queue_work() complains that the work list is not empty
+> even though we've done mod_delayed_work() which is supposed to cancel
+> any pending work.
+> 
+> Tejun, any ideas what's happening? Do we need synchronization here or do
+> you have a _sync version of mod_delayed_work() which makes sure any work
+> is cancelled?
 
-What do you mean by "menuidle side knows this for some cases" ?
-You mean you know that some C-state entries imply llc clean/invalidate ?
+No, you don't need to.  All workqueue operations should be able to
+synchronize with each other.
 
-Thanks,
-Lorenzo
+> Or does this mean that once the work is getting queued from the timer
+> callback delayed_work_timer_fn, it cannot be cancelled anymore? Or
+> something else I'm missing...?
 
+Looking at edac_mc_workq_setup().... it contains INIT_DELAYED_WORK().
+Does this race with other workqueue operations on the work item?  If
+so, it of course breaks.  It's like doing spin_lock_init() while other
+spinlock operations are in progress.
+
+Thanks.
+
+-- 
+tejun
