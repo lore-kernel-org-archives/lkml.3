@@ -1,33 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaBLIPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:15:20 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50371 "EHLO
+	id S1752613AbaBLIPx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:15:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50358 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752305AbaBLIOR (ORCPT
+	by vger.kernel.org with ESMTP id S1752276AbaBLIOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:14:17 -0500
+	Wed, 12 Feb 2014 03:14:15 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Khalid Aziz" <khalid.aziz@oracle.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Christoph Lameter" <cl@linux.com>,
-        "Ben Hutchings" <bhutchings@solarflare.com>,
-        "Minchan Kim" <minchan@kernel.org>, "Andi Kleen" <andi@firstfloor.org>,
-        "Pravin Shelar" <pshelar@nicira.com>,
-        "Andrea Arcangeli" <aarcange@redhat.com>,
-        "Mel Gorman" <mgorman@suse.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Johannes Weiner" <jweiner@redhat.com>,
-        "Rik van Riel" <riel@redhat.com>
+CC: akpm@linux-foundation.org, "Paolo Bonzini" <pbonzini@redhat.com>,
+        "Andy Honig" <ahonig@google.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.133215022@decadent.org.uk>
+Message-ID: <lsq.1392192612.104543523@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 75/79] mm: hugetlbfs: fix hugetlbfs optimization
+Subject: [PATCH 3.2 25/79] KVM: x86: Convert vapic synchronization to
+ _cached functions  (CVE-2013-6368)
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -40,268 +32,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 27c73ae759774e63313c1fbfeb17ba076cea64c5 upstream.
+commit fda4e2e85589191b123d31cdc21fd33ee70f50fd upstream.
 
-Commit 7cb2ef56e6a8 ("mm: fix aio performance regression for database
-caused by THP") can cause dereference of a dangling pointer if
-split_huge_page runs during PageHuge() if there are updates to the
-tail_page->private field.
+In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
+potential to corrupt kernel memory if userspace provides an address that
+is at the end of a page.  This patches concerts those functions to use
+kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
+vapic_address specified by userspace during ioctl processing and returns
+an error to userspace if the address is not a valid GPA.
 
-Also it is repeating compound_head twice for hugetlbfs and it is running
-compound_head+compound_trans_head for THP when a single one is needed in
-both cases.
+This is generally not guest triggerable, because the required write is
+done by firmware that runs before the guest.  Also, it only affects AMD
+processors and oldish Intel that do not have the FlexPriority feature
+(unless you disable FlexPriority, of course; then newer processors are
+also affected).
 
-The new code within the PageSlab() check doesn't need to verify that the
-THP page size is never bigger than the smallest hugetlbfs page size, to
-avoid memory corruption.
+Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
 
-A longstanding theoretical race condition was found while fixing the
-above (see the change right after the skip_unlock label, that is
-relevant for the compound_lock path too).
-
-By re-establishing the _mapcount tail refcounting for all compound
-pages, this also fixes the below problem:
-
-  echo 0 >/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-
-  BUG: Bad page state in process bash  pfn:59a01
-  page:ffffea000139b038 count:0 mapcount:10 mapping:          (null) index:0x0
-  page flags: 0x1c00000000008000(tail)
-  Modules linked in:
-  CPU: 6 PID: 2018 Comm: bash Not tainted 3.12.0+ #25
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  Call Trace:
-    dump_stack+0x55/0x76
-    bad_page+0xd5/0x130
-    free_pages_prepare+0x213/0x280
-    __free_pages+0x36/0x80
-    update_and_free_page+0xc1/0xd0
-    free_pool_huge_page+0xc2/0xe0
-    set_max_huge_pages.part.58+0x14c/0x220
-    nr_hugepages_store_common.isra.60+0xd0/0xf0
-    nr_hugepages_store+0x13/0x20
-    kobj_attr_store+0xf/0x20
-    sysfs_write_file+0x189/0x1e0
-    vfs_write+0xc5/0x1f0
-    SyS_write+0x55/0xb0
-    system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Tested-by: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Pravin Shelar <pshelar@nicira.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[Khalid Aziz: Backported to 3.4]
+Reported-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[dannf: backported to Debian's 3.2]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/hugetlb.h |    6 +++
- mm/hugetlb.c            |   17 ++++++++
- mm/swap.c               |  107 ++++++++++++++++++++++++++++++++++-------------
- 3 files changed, 101 insertions(+), 29 deletions(-)
-
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -24,6 +24,7 @@ struct hugepage_subpool *hugepage_new_su
- void hugepage_put_subpool(struct hugepage_subpool *spool);
- 
- int PageHuge(struct page *page);
-+int PageHeadHuge(struct page *page_head);
- 
- void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
- int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-@@ -87,6 +88,11 @@ static inline int PageHuge(struct page *
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1278,14 +1278,12 @@ void __kvm_migrate_apic_timer(struct kvm
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
  {
- 	return 0;
- }
-+
-+static inline int PageHeadHuge(struct page *page_head)
-+{
-+	return 0;
-+}
+ 	u32 data;
+-	void *vapic;
  
- static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+ 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
+ 		return;
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page, KM_USER0);
+-	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
+-	kunmap_atomic(vapic, KM_USER0);
++	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
+ 
+ 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
+ }
+@@ -1295,7 +1293,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_
+ 	u32 data, tpr;
+ 	int max_irr, max_isr;
+ 	struct kvm_lapic *apic;
+-	void *vapic;
+ 
+ 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
+ 		return;
+@@ -1310,17 +1307,22 @@ void kvm_lapic_sync_to_vapic(struct kvm_
+ 		max_isr = 0;
+ 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page, KM_USER0);
+-	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
+-	kunmap_atomic(vapic, KM_USER0);
++	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
+ }
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
  {
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -679,6 +679,23 @@ int PageHuge(struct page *page)
- }
- EXPORT_SYMBOL_GPL(PageHuge);
- 
-+/*
-+ * PageHeadHuge() only returns true for hugetlbfs head page, but not for
-+ * normal or transparent huge pages.
-+ */
-+int PageHeadHuge(struct page *page_head)
-+{
-+	compound_page_dtor *dtor;
-+
-+	if (!PageHead(page_head))
+ 	if (!irqchip_in_kernel(vcpu->kvm))
+-		return;
 +		return 0;
 +
-+	dtor = get_compound_page_dtor(page_head);
-+
-+	return dtor == free_huge_page;
-+}
-+EXPORT_SYMBOL_GPL(PageHeadHuge);
-+
- pgoff_t __basepage_index(struct page *page)
- {
- 	struct page *page_head = compound_head(page);
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -78,18 +78,6 @@ static void __put_compound_page(struct p
++	if (vapic_addr && kvm_gfn_to_hva_cache_init(vcpu->kvm,
++					  &vcpu->arch.apic->vapic_cache,
++					  vapic_addr, sizeof(u32)))
++		return -EINVAL;
  
- static void put_compound_page(struct page *page)
- {
--	/*
--	 * hugetlbfs pages cannot be split from under us.  If this is a
--	 * hugetlbfs page, check refcount on head page and release the page if
--	 * the refcount becomes zero.
--	 */
--	if (PageHuge(page)) {
--		page = compound_head(page);
--		if (put_page_testzero(page))
--			__put_compound_page(page);
--		return;
--	}
--
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -97,6 +85,35 @@ static void put_compound_page(struct pag
- 		if (likely(page != page_head &&
- 			   get_page_unless_zero(page_head))) {
- 			unsigned long flags;
-+
-+			 if (PageHeadHuge(page_head)) {
-+				if (likely(PageTail(page))) {
-+					/*
-+					 * __split_huge_page_refcount
-+					 * cannot race here.
-+					 */
-+					VM_BUG_ON(!PageHead(page_head));
-+					atomic_dec(&page->_mapcount);
-+					if (put_page_testzero(page_head))
-+						VM_BUG_ON(1);
-+					if (put_page_testzero(page_head))
-+						__put_compound_page(page_head);
-+					return;
-+				} else {
-+					/*
-+					 * __split_huge_page_refcount
-+					 * run before us, "page" was a
-+					 * THP tail. The split
-+					 * page_head has been freed
-+					 * and reallocated as slab or
-+					 * hugetlbfs page of smaller
-+					 * order (only possible if
-+					 * reallocated as slab on
-+					 * x86).
-+					 */
-+					goto skip_lock;
-+				}
-+			}
- 			/*
- 			 * page_head wasn't a dangling pointer but it
- 			 * may not be a head page anymore by the time
-@@ -108,9 +125,29 @@ static void put_compound_page(struct pag
- 				/* __split_huge_page_refcount run before us */
- 				compound_unlock_irqrestore(page_head, flags);
- 				VM_BUG_ON(PageHead(page_head));
--				if (put_page_testzero(page_head))
--					__put_single_page(page_head);
--			out_put_single:
-+skip_lock:
-+				if (put_page_testzero(page_head)) {
-+					/*
-+					 * The head page may have been
-+					 * freed and reallocated as a
-+					 * compound page of smaller
-+					 * order and then freed again.
-+					 * All we know is that it
-+					 * cannot have become: a THP
-+					 * page, a compound page of
-+					 * higher order, a tail page.
-+					 * That is because we still
-+					 * hold the refcount of the
-+					 * split THP tail and
-+					 * page_head was the THP head
-+					 * before the split.
-+					 */
-+					if (PageHead(page_head))
-+						__put_compound_page(page_head);
-+					else
-+						__put_single_page(page_head);
-+				}
-+out_put_single:
- 				if (put_page_testzero(page))
- 					__put_single_page(page);
- 				return;
-@@ -174,21 +211,34 @@ bool __get_page_tail(struct page *page)
- 	 */
- 	unsigned long flags;
- 	bool got = false;
--	struct page *page_head;
-+	struct page *page_head = compound_trans_head(page);
- 
--	/*
--	 * If this is a hugetlbfs page it cannot be split under us.  Simply
--	 * increment refcount for the head page.
--	 */
--	if (PageHuge(page)) {
--		page_head = compound_head(page);
--		atomic_inc(&page_head->_count);
--		got = true;
--		goto out;
--	}
--
--	page_head = compound_trans_head(page);
- 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+		/* Ref to put_compound_page() comment. */
-+		if (PageHeadHuge(page_head)) {
-+			if (likely(PageTail(page))) {
-+				/*
-+				 * This is a hugetlbfs
-+				 * page. __split_huge_page_refcount
-+				 * cannot race here.
-+				 */
-+				VM_BUG_ON(!PageHead(page_head));
-+				__get_page_tail_foll(page, false);
-+				return true;
-+			} else {
-+				/*
-+				 * __split_huge_page_refcount run
-+				 * before us, "page" was a THP
-+				 * tail. The split page_head has been
-+				 * freed and reallocated as slab or
-+				 * hugetlbfs page of smaller order
-+				 * (only possible if reallocated as
-+				 * slab on x86).
-+				 */
-+				put_page(page_head);
-+				return false;
-+			}
-+		}
- 		/*
- 		 * page_head wasn't a dangling pointer but it
- 		 * may not be a head page anymore by the time
-@@ -205,7 +255,6 @@ bool __get_page_tail(struct page *page)
- 		if (unlikely(!got))
- 			put_page(page_head);
- 	}
--out:
- 	return got;
+ 	vcpu->arch.apic->vapic_addr = vapic_addr;
++	return 0;
  }
- EXPORT_SYMBOL(__get_page_tail);
+ 
+ int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -15,7 +15,7 @@ struct kvm_lapic {
+ 	bool irr_pending;
+ 	void *regs;
+ 	gpa_t vapic_addr;
+-	struct page *vapic_page;
++	struct gfn_to_hva_cache vapic_cache;
+ };
+ int kvm_create_lapic(struct kvm_vcpu *vcpu);
+ void kvm_free_lapic(struct kvm_vcpu *vcpu);
+@@ -45,7 +45,7 @@ int kvm_lapic_find_highest_irr(struct kv
+ u64 kvm_get_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu);
+ void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
+ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
+ 
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3140,8 +3140,7 @@ long kvm_arch_vcpu_ioctl(struct file *fi
+ 		r = -EFAULT;
+ 		if (copy_from_user(&va, argp, sizeof va))
+ 			goto out;
+-		r = 0;
+-		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
++		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
+ 		break;
+ 	}
+ 	case KVM_X86_SETUP_MCE: {
+@@ -5537,33 +5536,6 @@ static void post_kvm_run_save(struct kvm
+ 			!kvm_event_needs_reinjection(vcpu);
+ }
+ 
+-static void vapic_enter(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	struct page *page;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return;
+-
+-	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-
+-	vcpu->arch.apic->vapic_page = page;
+-}
+-
+-static void vapic_exit(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	int idx;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return;
+-
+-	idx = srcu_read_lock(&vcpu->kvm->srcu);
+-	kvm_release_page_dirty(apic->vapic_page);
+-	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+-}
+-
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu)
+ {
+ 	int max_irr, tpr;
+@@ -5836,7 +5808,6 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 	}
+ 
+ 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+-	vapic_enter(vcpu);
+ 
+ 	r = 1;
+ 	while (r > 0) {
+@@ -5893,8 +5864,6 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 
+ 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+ 
+-	vapic_exit(vcpu);
+-
+ 	return r;
+ }
+ 
 
