@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053AbaBLI1D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:27:03 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50217 "EHLO
+	id S1752779AbaBLI2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:28:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50200 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752094AbaBLIOE (ORCPT
+	by vger.kernel.org with ESMTP id S1752071AbaBLIOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:14:04 -0500
+	Wed, 12 Feb 2014 03:14:03 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "NeilBrown" <neilb@suse.de>,
-        "Damian Nowak" <spam@nowaker.net>
+CC: akpm@linux-foundation.org
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.617652727@decadent.org.uk>
+Message-ID: <lsq.1392192612.386207612@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 69/79] md/raid10: fix two bugs in handling of
- known-bad-blocks.
+Subject: [PATCH 3.2 64/79] pci: Add PCI_DEVICE_SUB() macro
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,48 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit b50c259e25d9260b9108dc0c2964c26e5ecbe1c1 upstream.
+This was added as part of commit 3d567e0e291c ('tg3: Set 10_100_ONLY
+flag for additional 10/100 Mbps devices') upstream and is needed by
+the following patch to ahci.
 
-If we discover a bad block when reading we split the request and
-potentially read some of it from a different device.
-
-The code path of this has two bugs in RAID10.
-1/ we get a spin_lock with _irq, but unlock without _irq!!
-2/ The calculation of 'sectors_handled' is wrong, as can be clearly
-   seen by comparison with raid1.c
-
-This leads to at least 2 warnings and a probable crash is a RAID10
-ever had known bad blocks.
-
-Fixes: 856e08e23762dfb92ffc68fd0a8d228f9e152160
-Reported-by: Damian Nowak <spam@nowaker.net>
-URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
-Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/raid10.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/pci.h | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -997,7 +997,7 @@ read_again:
- 			/* Could not read all from this device, so we will
- 			 * need another r10_bio.
- 			 */
--			sectors_handled = (r10_bio->sectors + max_sectors
-+			sectors_handled = (r10_bio->sector + max_sectors
- 					   - bio->bi_sector);
- 			r10_bio->sectors = max_sectors;
- 			spin_lock_irq(&conf->device_lock);
-@@ -1005,7 +1005,7 @@ read_again:
- 				bio->bi_phys_segments = 2;
- 			else
- 				bio->bi_phys_segments++;
--			spin_unlock(&conf->device_lock);
-+			spin_unlock_irq(&conf->device_lock);
- 			/* Cannot call generic_make_request directly
- 			 * as that will be queued in __generic_make_request
- 			 * and subsequent mempool_alloc might block
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -590,6 +590,20 @@ struct pci_driver {
+ 	.subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID
+ 
+ /**
++ * PCI_DEVICE_SUB - macro used to describe a specific pci device with subsystem
++ * @vend: the 16 bit PCI Vendor ID
++ * @dev: the 16 bit PCI Device ID
++ * @subvend: the 16 bit PCI Subvendor ID
++ * @subdev: the 16 bit PCI Subdevice ID
++ *
++ * This macro is used to create a struct pci_device_id that matches a
++ * specific device with subsystem information.
++ */
++#define PCI_DEVICE_SUB(vend, dev, subvend, subdev) \
++	.vendor = (vend), .device = (dev), \
++	.subvendor = (subvend), .subdevice = (subdev)
++
++/**
+  * PCI_DEVICE_CLASS - macro used to describe a specific pci device class
+  * @dev_class: the class, subclass, prog-if triple for this device
+  * @dev_class_mask: the class mask for this device
 
