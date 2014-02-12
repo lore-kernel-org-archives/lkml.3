@@ -1,153 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaBLTmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 14:42:53 -0500
+	id S1754098AbaBLTmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 14:42:52 -0500
 Received: from mga11.intel.com ([192.55.52.93]:34523 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754109AbaBLTmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 14:42:52 -0500
+	id S1753640AbaBLTmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 14:42:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,834,1384329600"; 
-   d="scan'208";a="480457398"
+   d="scan'208";a="480457381"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 1/4] mei: rename MEI_FOP_IOCTL to MEI_FOP_CONNECT
-Date: Wed, 12 Feb 2014 21:41:51 +0200
-Message-Id: <1392234114-4926-2-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 0/4] mei: fix txe write issue
+Date: Wed, 12 Feb 2014 21:41:50 +0200
+Message-Id: <1392234114-4926-1-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392234114-4926-1-git-send-email-tomas.winkler@intel.com>
-References: <1392234114-4926-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This operation actually only support connection
-and not a generic ioctl
+This series fixes issue on the TXE hardware
+when parallel clients would override each others
+writes to host.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/amthif.c    |  2 +-
- drivers/misc/mei/client.c    |  2 +-
- drivers/misc/mei/hbm.c       |  2 +-
- drivers/misc/mei/interrupt.c | 14 +++++++-------
- drivers/misc/mei/mei_dev.h   | 12 ++++++------
- 5 files changed, 16 insertions(+), 16 deletions(-)
+In order to avoid conflicts please apply after
+mei: set client's read_cb to NULL when flow control fails
+https://lkml.org/lkml/2014/2/12/389
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index d9f14ef..f88cb26 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -364,7 +364,7 @@ int mei_amthif_write(struct mei_device *dev, struct mei_cl_cb *cb)
- 	if (ret)
- 		return ret;
- 
--	cb->fop_type = MEI_FOP_IOCTL;
-+	cb->fop_type = MEI_FOP_WRITE;
- 
- 	if (!list_empty(&dev->amthif_cmd_list.list) ||
- 	    dev->iamthif_state != MEI_IAMTHIF_IDLE) {
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 26da5e1..270ef15 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -505,7 +505,7 @@ int mei_cl_connect(struct mei_cl *cl, struct file *file)
- 		goto out;
- 	}
- 
--	cb->fop_type = MEI_FOP_IOCTL;
-+	cb->fop_type = MEI_FOP_CONNECT;
- 
- 	if (dev->hbuf_is_ready && !mei_cl_is_other_connecting(cl)) {
- 		dev->hbuf_is_ready = false;
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 0aaf2c5..0c77025 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -507,7 +507,7 @@ static void mei_hbm_cl_connect_res(struct mei_device *dev,
- 			list_del(&pos->list);
- 			return;
- 		}
--		if (pos->fop_type == MEI_FOP_IOCTL) {
-+		if (pos->fop_type == MEI_FOP_CONNECT) {
- 			if (is_treat_specially_client(cl, rs)) {
- 				list_del(&pos->list);
- 				cl->status = 0;
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index f0fbb51..3f0b0b9 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -244,8 +244,7 @@ static int mei_cl_irq_read(struct mei_cl *cl, struct mei_cl_cb *cb,
- 
- 
- /**
-- * mei_cl_irq_ioctl - processes client ioctl related operation from the
-- *	interrupt thread context -   send connection request
-+ * mei_cl_irq_connect - send connect request in irq_thread context
-  *
-  * @cl: client
-  * @cb: callback block.
-@@ -254,7 +253,7 @@ static int mei_cl_irq_read(struct mei_cl *cl, struct mei_cl_cb *cb,
-  *
-  * returns 0, OK; otherwise, error.
-  */
--static int mei_cl_irq_ioctl(struct mei_cl *cl, struct mei_cl_cb *cb,
-+static int mei_cl_irq_connect(struct mei_cl *cl, struct mei_cl_cb *cb,
- 			   s32 *slots, struct mei_cl_cb *cmpl_list)
- {
- 	struct mei_device *dev = cl->dev;
-@@ -263,6 +262,9 @@ static int mei_cl_irq_ioctl(struct mei_cl *cl, struct mei_cl_cb *cb,
- 	u32 msg_slots =
- 		mei_data2slots(sizeof(struct hbm_client_connect_request));
- 
-+	if (mei_cl_is_other_connecting(cl))
-+		return 0;
-+
- 	if (*slots < msg_slots) {
- 		/* return the cancel routine */
- 		list_del(&cb->list);
-@@ -496,11 +498,9 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- 				return ret;
- 
- 			break;
--		case MEI_FOP_IOCTL:
-+		case MEI_FOP_CONNECT:
- 			/* connect message */
--			if (mei_cl_is_other_connecting(cl))
--				continue;
--			ret = mei_cl_irq_ioctl(cl, cb, &slots, cmpl_list);
-+			ret = mei_cl_irq_connect(cl, cb, &slots, cmpl_list);
- 			if (ret)
- 				return ret;
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index f7de95b..f2c949e 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -130,16 +130,16 @@ enum mei_wd_states {
- 
- /**
-  * enum mei_cb_file_ops  - file operation associated with the callback
-- * @MEI_FOP_READ   - read
-- * @MEI_FOP_WRITE  - write
-- * @MEI_FOP_IOCTL  - ioctl
-- * @MEI_FOP_OPEN   - open
-- * @MEI_FOP_CLOSE  - close
-+ * @MEI_FOP_READ      - read
-+ * @MEI_FOP_WRITE     - write
-+ * @MEI_FOP_CONNECT   - connect
-+ * @MEI_FOP_OPEN      - open
-+ * @MEI_FOP_CLOSE     - close
-  */
- enum mei_cb_file_ops {
- 	MEI_FOP_READ = 0,
- 	MEI_FOP_WRITE,
--	MEI_FOP_IOCTL,
-+	MEI_FOP_CONNECT,
- 	MEI_FOP_OPEN,
- 	MEI_FOP_CLOSE
- };
+
+Tomas Winkler (4):
+  mei: rename MEI_FOP_IOCTL to MEI_FOP_CONNECT
+  mei: get rid of ext_msg
+  mei: add mei_hbuf_acquire wrapper
+  mei: revamp writing slot counting
+
+ drivers/misc/mei/amthif.c    |  28 ++++------
+ drivers/misc/mei/client.c    |  77 +++++++++++++++-----------
+ drivers/misc/mei/client.h    |   4 +-
+ drivers/misc/mei/hbm.c       |  66 +++++++++++++++-------
+ drivers/misc/mei/hbm.h       |   1 +
+ drivers/misc/mei/hw-me.c     |   7 +--
+ drivers/misc/mei/hw-txe.c    |  38 ++++++-------
+ drivers/misc/mei/hw-txe.h    |   1 +
+ drivers/misc/mei/init.c      |   1 -
+ drivers/misc/mei/interrupt.c | 127 ++++++++++++++++++++++++-------------------
+ drivers/misc/mei/mei_dev.h   |  26 ++++-----
+ drivers/misc/mei/wd.c        |  14 ++---
+ 12 files changed, 220 insertions(+), 170 deletions(-)
+
 -- 
 1.8.5.3
 
