@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaBLIYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:24:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50227 "EHLO
+	id S1753231AbaBLIYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:24:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50229 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752105AbaBLIOF (ORCPT
+	by vger.kernel.org with ESMTP id S1752107AbaBLIOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:14:05 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "George Spelvin" <linux@horizon.com>
+CC: akpm@linux-foundation.org,
+        "David Henningsson" <david.henningsson@canonical.com>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.96645193@decadent.org.uk>
+Message-ID: <lsq.1392192612.435811247@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 63/79] ahci: add an observed PCI ID for Marvell
- 88se9172 SATA controller
+Subject: [PATCH 3.2 40/79] ALSA: hda - Add enable_msi=0 workaround for
+ four HP machines
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,29 +33,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Spelvin <linux@horizon.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit fcce9a35f8faaa1f52236c554ef1b15d99a7537e upstream.
+commit 693e0cb052c607e2d41edf9e9f1fa99ff8c266c1 upstream.
 
-A third possible PCI ID, as personally observed, and found in the
-pci.ids list.
+While enabling these machines, we found we would sometimes lose an
+interrupt if we change hardware volume during playback, and that
+disabling msi fixed this issue. (Losing the interrupt caused underruns
+and crackling audio, as the one second timeout is usually bigger than
+the period size.)
 
-Signed-off-by: George Spelvin <linux@horizon.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The machines were all machines from HP, running AMD Hudson controller,
+and Realtek ALC282 codec.
+
+BugLink: https://bugs.launchpad.net/bugs/1260225
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ahci.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/hda_intel.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -437,6 +437,8 @@ static const struct pci_device_id ahci_p
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x91a3),
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2618,6 +2618,10 @@ static void __devinit check_probe_mask(s
+  * white/black-list for enable_msi
+  */
+ static struct snd_pci_quirk msi_black_list[] __devinitdata = {
++	SND_PCI_QUIRK(0x103c, 0x2191, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x2192, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x21f7, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x21fa, "HP", 0), /* AMD Hudson */
+ 	SND_PCI_QUIRK(0x1043, 0x81f2, "ASUS", 0), /* Athlon64 X2 + nvidia */
+ 	SND_PCI_QUIRK(0x1043, 0x81f6, "ASUS", 0), /* nvidia */
+ 	SND_PCI_QUIRK(0x1043, 0x822d, "ASUS", 0), /* Athlon64 X2 + nvidia MCP55 */
 
