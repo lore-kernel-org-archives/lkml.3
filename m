@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaBLKp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:45:28 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:43044 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751354AbaBLKpZ (ORCPT
+	id S1752011AbaBLKq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:46:57 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:54362 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaBLKqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:45:25 -0500
-Message-ID: <52FB50BB.5070603@free-electrons.com>
-Date: Wed, 12 Feb 2014 11:45:15 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com,
-        plagnioj@jcrosoft.com, b.brezillon@overkiz.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/8] at91: dt: Adds support for the bus matrix declaration
- in the DT
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com> <1392199607-27452-2-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1392199607-27452-2-git-send-email-jjhiblot@traphandler.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	Wed, 12 Feb 2014 05:46:54 -0500
+Message-ID: <1392202001.4146.11.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH v4] ieee80211: Print human-readable disassoc/deauth
+ reason codes
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Calvin Owens <jcalvinowens@gmail.com>
+Cc: Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 12 Feb 2014 11:46:41 +0100
+In-Reply-To: <20140211183624.GA2291@gmail.com> (sfid-20140211_193654_194490_DD27EA29)
+References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>
+	 <1391661863.30094.56.camel@joe-AO722>
+	 <1392030546.4128.11.camel@jlt4.sipsolutions.net>
+	 <1392050359.2507.10.camel@joe-AO722> <20140211012523.GA2739@gmail.com>
+	 <1392082740.2507.49.camel@joe-AO722> <20140211163738.GA32043@gmail.com>
+	 <1392138837.2511.2.camel@joe-AO722> <20140211175232.GA782@gmail.com>
+	 <20140211183624.GA2291@gmail.com> (sfid-20140211_193654_194490_DD27EA29)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Jacques,
+On Tue, 2014-02-11 at 12:36 -0600, Calvin Owens wrote:
+> Create a function to return a descriptive string for each reason code,
+> and print that in addition to the numeric value in the kernel log. These
+> codes are easily found on popular search engines, but one is generally
+> not able to access the internet when dealing with wireless connectivity
+> issues.
 
-Thanks for this new series, I have one little comment:
+Applied.
 
-On 12/02/2014 11:06, Jean-Jacques Hiblot wrote:
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> ---
->  arch/arm/mach-at91/setup.c | 23 +++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
-> 
-> diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-> index f7ca97b..b8d0b66 100644
-> --- a/arch/arm/mach-at91/setup.c
-> +++ b/arch/arm/mach-at91/setup.c
-> @@ -487,6 +487,28 @@ end:
->  	of_node_put(np);
->  }
->  
-> +static struct of_device_id matrix_ids[] = {
-> +	{ .compatible = "atmel,at91sam9261-bus-matrix", },
-> +	{ /*sentinel*/ }
-> +};
-> +
-> +static void at91_dt_matrix(void)
-> +{
-> +	struct device_node *np;
-> +
-> +	np = of_find_matching_node(NULL, matrix_ids);
-> +	if (!np) {
-> +		pr_debug("AT91: unable to find compatible bus matrix controller node in dtb\n");
+> Changes in v2: Refactored array of strings into switch statement.
+> Changes in v3: Fix style problem, use simplifying macro for switch
+> statement, eliminate temporary enum variable.
+> Changes in v4: Move new function to net/mac80211/mlme.c and make it
+> static, since all of its callers are there.
 
-I think that a panic here should be more consistent with the next check.
-Indeed if it fails here then at91_matrix_base will be uninitialized too,
-and it will make the kernel crash when at91_matrix_base will be accessed.
+I removed all this, it belongs after the --- imho.
 
-Thanks,
+> +	default: return "<INVALID>";
 
-Gregory
+There are many more valid reason codes that this function doesn't
+understand, so <invalid> is misleading, I replaced that by "<unknown>". 
 
+johannes
 
-> +		return;
-> +	}
-> +
-> +	at91_matrix_base = of_iomap(np, 0);
-> +	if (!at91_matrix_base)
-> +		panic("Impossible to ioremap at91_matrix_base\n");
-> +
-> +	of_node_put(np);
-> +}
-> +
->  void __init at91rm9200_dt_initialize(void)
->  {
->  	at91_dt_ramc();
-> @@ -506,6 +528,7 @@ void __init at91_dt_initialize(void)
->  	at91_dt_rstc();
->  	at91_dt_ramc();
->  	at91_dt_shdwc();
-> +	at91_dt_matrix();
->  
->  	/* Init clock subsystem */
->  	at91_dt_clock_init();
-> 
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
