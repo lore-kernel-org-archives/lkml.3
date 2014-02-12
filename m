@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaBLBA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 20:00:29 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:51048 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaBLBA2 (ORCPT
+	id S1752626AbaBLBJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 20:09:47 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41324 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaBLBJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 20:00:28 -0500
+	Tue, 11 Feb 2014 20:09:46 -0500
+Date: Wed, 12 Feb 2014 01:09:41 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140212010941.GM18016@ZenIV.linux.org.uk>
+References: <20140211172707.GA1749@redhat.com>
+ <20140211210841.GM13647@dastard>
+ <52FA9ADA.9040803@sandeen.net>
+ <20140212004403.GA17129@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140211155440.62c5e90eb498ec2964258969@linux-foundation.org>
-References: <52F592F2.6010008@huawei.com>
-	<52F5934B.4000101@huawei.com>
-	<20140211155440.62c5e90eb498ec2964258969@linux-foundation.org>
-Date: Tue, 11 Feb 2014 17:00:27 -0800
-Message-ID: <CAN8TOE-fCLM4_7rez=jdVBmav0D2dnqO56mPCNQoG4AGgSiwbw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
-From: Brian Norris <computersforpeace@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Li Zefan <lizefan@huawei.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212004403.GA17129@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, Feb 11, 2014 at 07:44:03PM -0500, Dave Jones wrote:
 
-On Tue, Feb 11, 2014 at 3:54 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat, 8 Feb 2014 10:15:39 +0800 Li Zefan <lizefan@huawei.com> wrote:
-> I now have four jffs2 bugfixes but cannot unload them on anyone.
-> Waddup?
+> The 'good' news is I seem to be able to reproduce it fairly quickly.
+> I've seen it 3-4 times this afternoon. (Always from the coredump path)
+> 
+> I was on vacation last week, but I wasn't hitting this before then, so it's a
+> fairly recent change that's introduced this.
 
-Well, at best we have 3 "maintainers" involved in MTD (David, Artem,
-and me), but David is often quite unresponsive unless you yell, and
-Artem has more or less left non-UBI/UBIFS stuff to me. I personally
-have little knowledge of JFFS2, and I have seen a fair number of
-dubious JFFS2 patches from people with automated tools and no testing.
-So I'm understandably cautious to merge them. But if you have properly
-tested (or at least reviewed) patches sitting around, I can take a
-look at them and merge them. Are you referring to the top 4 here?
-
-http://www.spinics.net/linux/lists/mm-commits/
-
-Brian
+Slap the check in vfs_create(), see if interrupts had been disabled by it or
+by something in ->create().  Since it's reproducible...
