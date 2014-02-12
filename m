@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaBLVEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:04:50 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:46893 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753067AbaBLVEt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:04:49 -0500
-Date: Wed, 12 Feb 2014 22:04:46 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, b.brezillon@overkiz.com,
-        gregory.clement@free-electrons.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 3/8] at91: dt: Add at91sam9261 dt SoC support
-Message-ID: <20140212210446.GF11498@piout.net>
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
- <1392199607-27452-4-git-send-email-jjhiblot@traphandler.com>
+	id S1754328AbaBLVGD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:06:03 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:38553 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753664AbaBLVGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 16:06:01 -0500
+Date: Wed, 12 Feb 2014 13:05:54 -0800
+From: Kees Cook <kees@outflux.net>
+To: Dave Jones <davej@redhat.com>, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Subject: Re: flaw in "nf_tables: add reject module for NFPROTO_INET"
+Message-ID: <20140212210554.GM23300@outflux.net>
+References: <52fb24097b42_6b5073486c727c3@209.249.196.67.mail>
+ <20140212204307.GK23300@outflux.net>
+ <20140212205037.GA6563@redhat.com>
+ <20140212205453.GL23300@outflux.net>
+ <20140212210347.GB6563@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392199607-27452-4-git-send-email-jjhiblot@traphandler.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140212210347.GB6563@redhat.com>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, one more comment on that patch:
+On Wed, Feb 12, 2014 at 04:03:47PM -0500, Dave Jones wrote:
+> I wonder if it's worth getting a coverity@vger.kernel.org list set up for
+> cc'ing stuff like this to reduce dupe reports (though this is the first I
+> recall in a while), and for review of patches etc before forwarding them on
+> to their relevant list/maintainers.
+> 
+> thoughts?
 
-On 12/02/2014 at 11:06:42 +0100, Jean-Jacques Hiblot wrote :
-> +			pinctrl@fffff400 {
-> +				#address-cells = <1>;
-> +				#size-cells = <1>;
-> +				compatible = "atmel,at91rm9200-pinctrl", "simple-bus";
-> +				ranges = <0xfffff400 0xfffff400 0xa00>;
-> +
-I believe you got the range wrong, shouldn't it be:
-				ranges = <0xfffff400 0xfffff400 0x600>;
+I'd be up for it. It's why I CC'd you, I figured if I'd missed the
+report it would have likely have come from you. :) Perhaps just start
+by CCing each other, and if others want to get in on the fun too, move
+to a list then?
 
+-Kees
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Kees Cook                                            @outflux.net
