@@ -1,105 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262AbaBLP56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:57:58 -0500
-Received: from sandeen.net ([63.231.237.45]:54783 "EHLO sandeen.net"
+	id S1753282AbaBLP6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:58:04 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48827 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782AbaBLP54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:57:56 -0500
-Message-ID: <52FB9A01.8060601@sandeen.net>
-Date: Wed, 12 Feb 2014 09:57:53 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753253AbaBLP56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 10:57:58 -0500
+Date: Wed, 12 Feb 2014 16:57:53 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Prarit Bhargava <prarit@redhat.com>, linux-edac@vger.kernel.org,
+        Doug Thompson <dougthompson@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] edac, poll timeout cannot be zero
+Message-ID: <20140212155752.GF5121@pd.tnic>
+References: <1391457913-881-1-git-send-email-prarit@redhat.com>
+ <20140212150748.GE5121@pd.tnic>
+ <20140212151657.GL24490@htj.dyndns.org>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-References: <20140211172707.GA1749@redhat.com> <20140211210841.GM13647@dastard>	<52FA9ADA.9040803@sandeen.net> <20140212004403.GA17129@redhat.com>	<20140212010941.GM18016@ZenIV.linux.org.uk>	<CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>	<20140212040358.GA25327@redhat.com>	<20140212042215.GN18016@ZenIV.linux.org.uk>	<20140212054043.GB13997@dastard>	<20140212055027.GA28502@redhat.com> <20140212061038.GC13997@dastard>
-In-Reply-To: <20140212061038.GC13997@dastard>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140212151657.GL24490@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/12/14, 12:10 AM, Dave Chinner wrote:
-> On Wed, Feb 12, 2014 at 12:50:27AM -0500, Dave Jones wrote:
->> On Wed, Feb 12, 2014 at 04:40:43PM +1100, Dave Chinner wrote:
->>
->>  > None of the XFS code disables interrupts in that path, not does is
->>  > call outside XFS except to dispatch IO. The stack is pretty deep at
->>  > this point and I know that the standard (non stacked) IO stack can
->>  > consume >3kb of stack space when it gets down to having to do memory
->>  > reclaim during GFP_NOIO allocation at the lowest level of SCSI
->>  > drivers. Stack overruns typically show up with symptoms like we are
->>  > seeing.
->>  > ..
->>  > 
->>  > Dave, before chasing ghosts, can you (like Eric originally asked)
->>  > turn on stack overrun detection?
->>
->> CONFIG_DEBUG_STACKOVERFLOW ? Already turned on.
+On Wed, Feb 12, 2014 at 10:16:57AM -0500, Tejun Heo wrote:
+> No, you don't need to.  All workqueue operations should be able to
+> synchronize with each other.
+
+Ok.
+
+> > Or does this mean that once the work is getting queued from the timer
+> > callback delayed_work_timer_fn, it cannot be cancelled anymore? Or
+> > something else I'm missing...?
 > 
-> That only checks stack usage when an interrupt is taken. If no
-> interrupts are taken when stack usage is within 128 bytes of
-> overflow, then it doesn't catch it.
-> 
-> I tend to use CONFIG_DEBUG_STACK_USAGE=y as it records the maximum
-> stack usage of a process via canary overwrites and it records it in
-> do_exit(). I also use the stack tracer to record the largest stack
-> usage seen so I know exactly what code paths are approaching stack
-> overruns...
-> 
-> Cheers,
-> 
-> Dave.
-> 
+> Looking at edac_mc_workq_setup().... it contains INIT_DELAYED_WORK().
+> Does this race with other workqueue operations on the work item?  If
+> so, it of course breaks.  It's like doing spin_lock_init() while other
+> spinlock operations are in progress.
 
+Ha, so this sounds like the issue because the splat happens
+when updating /sys/.../edac_mc_poll_msec and it goes and calls
+edac_mc_workq_setup()...
 
-I'm not sure if I'm off base here, but maybe this would make sense: check
-for a corrupted stack in __might_sleep.  Compile tested only,
-possibly inelegant, and/or completely wrong, but:
+And this code is pretty old and edac_mc_workq_setup() is used both
+when one inits an edac driver and also when one wants to change the
+polling period (edac_mc_reset_delay_period) and thus needs to mod the
+workqueue's timeout.
 
+So I'm guessing a simple fix would be to differentiate between the two
+paths, something like the diff below.
 
-From: Eric Sandeen <sandeen@redhat.com>
+Or is there a reliable way to check whether a workqueue has been
+initialized already, say, something like
 
-sched: Test for corrupted task_struct in __might_sleep
+	if (work->func)
 
-If a thread overruns the stack, it may corrupt the task_struct,
-leading to false positives on tests like irqs_disabled().
+or so... I.e., what PREPARE_WORK() does?
 
-Warn if this seems to be the case.
+Thanks!
 
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 ---
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..6920c3c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6934,6 +6934,8 @@ static inline int preempt_count_equals(int preempt_offset)
- 
- void __might_sleep(const char *file, int line, int preempt_offset)
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index e8c9ef03495b..17c51d3a1143 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -559,7 +559,8 @@ static void edac_mc_workq_function(struct work_struct *work_req)
+  *
+  *		called with the mem_ctls_mutex held
+  */
+-static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
++static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
++				bool init)
  {
-+	struct task_struct *tsk = current;
-+	unsigned long *stackend;
- 	static unsigned long prev_jiffy;	/* ratelimiting */
+ 	edac_dbg(0, "\n");
  
- 	rcu_sleep_check(); /* WARN_ON_ONCE() by default, no rate limit reqd. */
-@@ -6952,6 +6954,11 @@ void __might_sleep(const char *file, int line, int preempt_offset)
- 			in_atomic(), irqs_disabled(),
- 			current->pid, current->comm);
+@@ -567,7 +568,9 @@ static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
+ 	if (mci->op_state != OP_RUNNING_POLL)
+ 		return;
  
-+	/* A corrupted stack can cause a false positive on irqs_disabled etc */
-+	stackend = end_of_stack(tsk);
-+	if (tsk != &init_task && *stackend != STACK_END_MAGIC)
-+		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
-+	
- 	debug_show_held_locks(current);
- 	if (irqs_disabled())
- 		print_irqtrace_events(current);
+-	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++	if (init)
++		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++
+ 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
+ }
+ 
+@@ -611,7 +614,7 @@ void edac_mc_reset_delay_period(int value)
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
+ 
+-		edac_mc_workq_setup(mci, (unsigned long) value);
++		edac_mc_workq_setup(mci, (unsigned long) value, false);
+ 	}
+ 
+ 	mutex_unlock(&mem_ctls_mutex);
+@@ -782,7 +785,7 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
+ 		/* This instance is NOW RUNNING */
+ 		mci->op_state = OP_RUNNING_POLL;
+ 
+-		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
++		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
+ 	} else {
+ 		mci->op_state = OP_RUNNING_INTERRUPT;
+ 	}
 
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
