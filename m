@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaBLIgy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:36:54 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50081 "EHLO
+	id S1753773AbaBLIgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:36:51 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50072 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751833AbaBLINu (ORCPT
+	by vger.kernel.org with ESMTP id S1751802AbaBLINu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:13:50 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -14,14 +14,13 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Stephen Hemminger" <stephen@networkplumber.org>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
-        "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>,
-        "Daniel Borkmann" <dborkman@redhat.com>
+        "Florian Westphal" <fw@strlen.de>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.24119970@decadent.org.uk>
+Message-ID: <lsq.1392192612.852002172@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 13/79] net: llc: fix use after free in llc_ui_recvmsg
+Subject: [PATCH 3.2 11/79] net: rose: restore old recvmsg behavior
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,66 +33,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit 4d231b76eef6c4a6bd9c96769e191517765942cb ]
+[ Upstream commit f81152e35001e91997ec74a7b4e040e6ab0acccf ]
 
-While commit 30a584d944fb fixes datagram interface in LLC, a use
-after free bug has been introduced for SOCK_STREAM sockets that do
-not make use of MSG_PEEK.
+recvmsg handler in net/rose/af_rose.c performs size-check ->msg_namelen.
 
-The flow is as follow ...
+After commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+(net: rework recvmsg handler msg_name and msg_namelen logic), we now
+always take the else branch due to namelen being initialized to 0.
 
-  if (!(flags & MSG_PEEK)) {
-    ...
-    sk_eat_skb(sk, skb, false);
-    ...
-  }
-  ...
-  if (used + offset < skb->len)
-    continue;
+Digging in netdev-vger-cvs git repo shows that msg_namelen was
+initialized with a fixed-size since at least 1995, so the else branch
+was never taken.
 
-... where sk_eat_skb() calls __kfree_skb(). Therefore, cache
-original length and work on skb_len to check partial reads.
+Compile tested only.
 
-Fixes: 30a584d944fb ("[LLX]: SOCK_DGRAM interface fixes")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/llc/af_llc.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/rose/af_rose.c | 16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-index 99a60d5..f432d7b 100644
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -715,7 +715,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct llc_sock *llc = llc_sk(sk);
- 	size_t copied = 0;
- 	u32 peek_seq = 0;
--	u32 *seq;
-+	u32 *seq, skb_len;
- 	unsigned long used;
- 	int target;	/* Read at least this many bytes */
- 	long timeo;
-@@ -813,6 +813,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		}
- 		continue;
- 	found_ok_skb:
-+		skb_len = skb->len;
- 		/* Ok so how much can we use? */
- 		used = skb->len - offset;
- 		if (len < used)
-@@ -843,7 +844,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		}
+diff --git a/net/rose/af_rose.c b/net/rose/af_rose.c
+index bf76dec7..686fb1a 100644
+--- a/net/rose/af_rose.c
++++ b/net/rose/af_rose.c
+@@ -1258,6 +1258,7 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
  
- 		/* Partial read */
--		if (used + offset < skb->len)
-+		if (used + offset < skb_len)
- 			continue;
- 	} while (len > 0);
+ 	if (msg->msg_name) {
+ 		struct sockaddr_rose *srose;
++		struct full_sockaddr_rose *full_srose = msg->msg_name;
  
+ 		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
+ 		srose = msg->msg_name;
+@@ -1265,18 +1266,9 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		srose->srose_addr   = rose->dest_addr;
+ 		srose->srose_call   = rose->dest_call;
+ 		srose->srose_ndigis = rose->dest_ndigis;
+-		if (msg->msg_namelen >= sizeof(struct full_sockaddr_rose)) {
+-			struct full_sockaddr_rose *full_srose = (struct full_sockaddr_rose *)msg->msg_name;
+-			for (n = 0 ; n < rose->dest_ndigis ; n++)
+-				full_srose->srose_digis[n] = rose->dest_digis[n];
+-			msg->msg_namelen = sizeof(struct full_sockaddr_rose);
+-		} else {
+-			if (rose->dest_ndigis >= 1) {
+-				srose->srose_ndigis = 1;
+-				srose->srose_digi = rose->dest_digis[0];
+-			}
+-			msg->msg_namelen = sizeof(struct sockaddr_rose);
+-		}
++		for (n = 0 ; n < rose->dest_ndigis ; n++)
++			full_srose->srose_digis[n] = rose->dest_digis[n];
++		msg->msg_namelen = sizeof(struct full_sockaddr_rose);
+ 	}
+ 
+ 	skb_free_datagram(sk, skb);
 
