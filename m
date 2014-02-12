@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737AbaBLIgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:36:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50092 "EHLO
+	id S1753709AbaBLIgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:36:46 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50088 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751676AbaBLINv (ORCPT
+	by vger.kernel.org with ESMTP id S1751878AbaBLINv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:13:51 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Yijing Wang" <wangyijing@huawei.com>,
-        "Jiang Liu" <jiang.liu@huawei.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Curt Brune" <curt@cumulusnetworks.com>,
+        "Scott Feldman" <sfeldma@cumulusnetworks.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.798732969@decadent.org.uk>
+Message-ID: <lsq.1392192612.19997116@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 19/79] PCI: Enable ARI if dev and upstream bridge
- support it; disable otherwise
+Subject: [PATCH 3.2 14/79] bridge: use spin_lock_bh() in br_multicast_set_hash_max
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,61 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yijing Wang <wangyijing@huawei.com>
+From: Curt Brune <curt@cumulusnetworks.com>
 
-commit b0cc6020e1cc62f1253215f189611b34be4a83c7 upstream.
+[ Upstream commit fe0d692bbc645786bce1a98439e548ae619269f5 ]
 
-Currently, we enable ARI in a device's upstream bridge if the bridge and
-the device support it.  But we never disable ARI, even if the device is
-removed and replaced with a device that doesn't support ARI.
+br_multicast_set_hash_max() is called from process context in
+net/bridge/br_sysfs_br.c by the sysfs store_hash_max() function.
 
-This means that if we hot-remove an ARI device and replace it with a
-non-ARI multi-function device, we find only function 0 of the new device
-because the upstream bridge still has ARI enabled, and next_ari_fn()
-only returns function 0 for the new non-ARI device.
+br_multicast_set_hash_max() calls spin_lock(&br->multicast_lock),
+which can deadlock the CPU if a softirq that also tries to take the
+same lock interrupts br_multicast_set_hash_max() while the lock is
+held .  This can happen quite easily when any of the bridge multicast
+timers expire, which try to take the same lock.
 
-This patch disables ARI in the upstream bridge if the device doesn't
-support ARI.  See the PCIe spec, r3.0, sec 6.13.
+The fix here is to use spin_lock_bh(), preventing other softirqs from
+executing on this CPU.
 
-[bhelgaas: changelog, function comment]
-[yijing: replace PCIe Cap accessor with legacy PCI accessor]
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Steps to reproduce:
+
+1. Create a bridge with several interfaces (I used 4).
+2. Set the "multicast query interval" to a low number, like 2.
+3. Enable the bridge as a multicast querier.
+4. Repeatedly set the bridge hash_max parameter via sysfs.
+
+  # brctl addbr br0
+  # brctl addif br0 eth1 eth2 eth3 eth4
+  # brctl setmcqi br0 2
+  # brctl setmcquerier br0 1
+
+  # while true ; do echo 4096 > /sys/class/net/br0/bridge/hash_max; done
+
+Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
+Signed-off-by: Scott Feldman <sfeldma@cumulusnetworks.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/pci.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ net/bridge/br_multicast.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1915,10 +1915,6 @@ void pci_enable_ari(struct pci_dev *dev)
- 	if (!pci_is_pcie(dev) || dev->devfn)
- 		return;
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index a06deca..2157984 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1743,7 +1743,7 @@ int br_multicast_set_hash_max(struct net_bridge *br, unsigned long val)
+ 	u32 old;
+ 	struct net_bridge_mdb_htable *mdb;
  
--	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI);
--	if (!pos)
--		return;
--
- 	bridge = dev->bus->self;
- 	if (!bridge || !pci_is_pcie(bridge))
- 		return;
-@@ -1937,10 +1933,14 @@ void pci_enable_ari(struct pci_dev *dev)
- 		return;
+-	spin_lock(&br->multicast_lock);
++	spin_lock_bh(&br->multicast_lock);
+ 	if (!netif_running(br->dev))
+ 		goto unlock;
  
- 	pci_read_config_word(bridge, pos + PCI_EXP_DEVCTL2, &ctrl);
--	ctrl |= PCI_EXP_DEVCTL2_ARI;
-+	if (pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI)) {
-+		ctrl |= PCI_EXP_DEVCTL2_ARI;
-+		bridge->ari_enabled = 1;
-+	} else {
-+		ctrl &= ~PCI_EXP_DEVCTL2_ARI;
-+		bridge->ari_enabled = 0;
-+	}
- 	pci_write_config_word(bridge, pos + PCI_EXP_DEVCTL2, ctrl);
--
--	bridge->ari_enabled = 1;
+@@ -1775,7 +1775,7 @@ rollback:
+ 	}
+ 
+ unlock:
+-	spin_unlock(&br->multicast_lock);
++	spin_unlock_bh(&br->multicast_lock);
+ 
+ 	return err;
  }
- 
- /**
 
