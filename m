@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaBLRUQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 12:20:16 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37886 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaBLRUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 12:20:14 -0500
+	id S1752854AbaBLRXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 12:23:01 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51814 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837AbaBLRW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 12:22:59 -0500
+Date: Wed, 12 Feb 2014 18:22:54 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: linux-edac@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Prarit Bhargava <prarit@redhat.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] EDAC: Correct workqueue setup path
+Message-ID: <20140212172254.GI5121@pd.tnic>
+References: <1391457913-881-1-git-send-email-prarit@redhat.com>
+ <20140212150748.GE5121@pd.tnic>
+ <20140212151657.GL24490@htj.dyndns.org>
+ <20140212155752.GF5121@pd.tnic>
+ <20140212162311.GB26809@htj.dyndns.org>
+ <20140212163644.GG5121@pd.tnic>
 MIME-Version: 1.0
-Date: Wed, 12 Feb 2014 09:20:13 -0800
-Message-ID: <CAEPRUYpCVpV7HwuO6c95ybk3yp1teJgW-9qwyHnjKbs03C9bgQ@mail.gmail.com>
-Subject: [GIT PULL] bcm pinctrl rename
-From: Christian Daudt <bcm@fixthebug.org>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>, Matt Porter <mporter@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Sherman Yin <syin@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        arm@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140212163644.GG5121@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+From: Borislav Petkov <bp@suse.de>
 
-  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+We're using edac_mc_workq_setup() both on the init path, when
+we load an edac driver and when we change the polling period
+(edac_mc_reset_delay_period) through /sys/.../edac_mc_poll_msec.
 
-are available in the git repository at:
+On that second path we don't need to init the workqueue which has been
+initialized already.
 
-  git://github.com/broadcom/bcm11351.git tags/bcm-for-3.14-pinctrl-rename
+Thanks to Tejun for workqueue insights.
 
-for you to fetch changes up to f5310a1712b68c7f83539fce6ebbfb6f0f510f5b:
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: <stable@vger.kernel.org>
+---
+ drivers/edac/edac_mc.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-  Update dtsi with new pinctrl compatible string (2014-02-12 09:06:53 -0800)
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index aef5ec24908e..33edd6766344 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -559,7 +559,8 @@ static void edac_mc_workq_function(struct work_struct *work_req)
+  *
+  *		called with the mem_ctls_mutex held
+  */
+-static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
++static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
++				bool init)
+ {
+ 	edac_dbg(0, "\n");
+ 
+@@ -567,7 +568,9 @@ static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
+ 	if (mci->op_state != OP_RUNNING_POLL)
+ 		return;
+ 
+-	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++	if (init)
++		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++
+ 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
+ }
+ 
+@@ -611,7 +614,7 @@ void edac_mc_reset_delay_period(unsigned long value)
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
+ 
+-		edac_mc_workq_setup(mci, value);
++		edac_mc_workq_setup(mci, value, false);
+ 	}
+ 
+ 	mutex_unlock(&mem_ctls_mutex);
+@@ -782,7 +785,7 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
+ 		/* This instance is NOW RUNNING */
+ 		mci->op_state = OP_RUNNING_POLL;
+ 
+-		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
++		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
+ 	} else {
+ 		mci->op_state = OP_RUNNING_INTERRUPT;
+ 	}
+-- 
+1.8.5.2.192.g7794a68
 
-----------------------------------------------------------------
-Renaming pinctrl code to keep in line with rest of bcm mobile
+-- 
+Regards/Gruss,
+    Boris.
 
-Given that this driver has been in the works for a while, it
-was written prior to the code standardizing on bcm-based naming.
-this patchset brings it in line with the remainder of the code.
-
-----------------------------------------------------------------
-Sherman Yin (4):
-      pinctrl: Rename Broadcom Capri pinctrl binding
-      pinctrl: Rename Broadcom Capri pinctrl driver
-      Update bcm_defconfig with new pinctrl CONFIG
-      Update dtsi with new pinctrl compatible string
-
- .../bindings/pinctrl/{brcm,capri-pinctrl.txt =>
-brcm,bcm11351-pinctrl.txt}        |    8 +-
- arch/arm/boot/dts/bcm11351.dtsi
-            |    2 +-
- arch/arm/configs/bcm_defconfig
-            |    2 +-
- drivers/pinctrl/Kconfig
-            |    8 +-
- drivers/pinctrl/Makefile
-            |    2 +-
- drivers/pinctrl/pinctrl-bcm281xx.c
-            | 1461 ++++++++++++++++++++++++++++++++++++++
- drivers/pinctrl/pinctrl-capri.c
-            | 1454 -------------------------------------
- 7 files changed, 1472 insertions(+), 1465 deletions(-)
- rename Documentation/devicetree/bindings/pinctrl/{brcm,capri-pinctrl.txt
-=> brcm,bcm11351-pinctrl.txt} (98%)
- create mode 100644 drivers/pinctrl/pinctrl-bcm281xx.c
- delete mode 100644 drivers/pinctrl/pinctrl-capri.c
+Sent from a fat crate under my desk. Formatting is fine.
+--
