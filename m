@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbaBLNmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 08:42:25 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:43028 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381AbaBLNmW (ORCPT
+	id S1752540AbaBLNmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 08:42:32 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:37873 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402AbaBLNm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 08:42:22 -0500
+	Wed, 12 Feb 2014 08:42:27 -0500
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org, monstr@monstr.eu
 Cc: linux@roeck-us.net, wim@iguana.be, linux-watchdog@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 10/11] watchdog: xilinx: Enable this driver for Zynq
-Date: Wed, 12 Feb 2014 14:41:24 +0100
-Message-Id: <a978b8d0511748e4558f5169896da44c742a49f3.1392212059.git.michal.simek@xilinx.com>
+Subject: [PATCH v3 11/11] watchdog: xilinx: Remove no_timeout variable
+Date: Wed, 12 Feb 2014 14:41:25 +0100
+Message-Id: <e0612677b5e59221ff4d91da27f261f2b7bbea66.1392212059.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <bdd7c2c78dd491d02d1c1ae8a59b92b7a1a17ec6.1392212059.git.michal.simek@xilinx.com>
 References: <bdd7c2c78dd491d02d1c1ae8a59b92b7a1a17ec6.1392212059.git.michal.simek@xilinx.com>
 In-Reply-To: <cover.1392212059.git.michal.simek@xilinx.com>
 References: <cover.1392212059.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-12533-1392212536-0001";
+    boundary="=_mimegpg-monstr-desktop-12542-1392212540-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,77 +32,84 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-12533-1392212536-0001
+--=_mimegpg-monstr-desktop-12542-1392212540-0001
 
-Enable this driver for Zynq.
-Move it to architecture independent Kconfig part.
+Remove no_timeout variable and check variables
+directly.
 
+Suggested-by: Rob Herring <robherring2@gmail.com>
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 ---
 
 Changes in v3: None
-Changes in v2: None
+Changes in v2:
+- New patch in this series
 
-Build tested by zero day testing system.
----
- drivers/watchdog/Kconfig | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ drivers/watchdog/of_xilinx_wdt.c | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 9db5d3c..6120403 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -111,6 +111,15 @@ config WM8350_WATCHDOG
- 	  Support for the watchdog in the WM8350 AudioPlus PMIC.  When
- 	  the watchdog triggers the system will be reset.
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+index 9dd16cf..c7fb85e 100644
+--- a/drivers/watchdog/of_xilinx_wdt.c
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -147,10 +147,9 @@ static u32 xwdt_selftest(struct xwdt_device *xdev)
+ static int xwdt_probe(struct platform_device *pdev)
+ {
+ 	int rc;
+-	u32 pfreq, enable_once = 0;
++	u32 pfreq = 0, enable_once = 0;
+ 	struct resource *res;
+ 	struct xwdt_device *xdev;
+-	bool no_timeout = false;
+ 	struct watchdog_device *xilinx_wdt_wdd;
 
-+config XILINX_WATCHDOG
-+	tristate "Xilinx Watchdog timer"
-+	select WATCHDOG_CORE
-+	help
-+	  Watchdog driver for the xps_timebase_wdt ip core.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called of_xilinx_wdt.
-+
- # ALPHA Architecture
+ 	xdev = devm_kzalloc(&pdev->dev, sizeof(*xdev), GFP_KERNEL);
+@@ -168,19 +167,15 @@ static int xwdt_probe(struct platform_device *pdev)
+ 		return PTR_ERR(xdev->base);
 
- # ARM Architecture
-@@ -1022,19 +1031,6 @@ config M54xx_WATCHDOG
+ 	rc = of_property_read_u32(pdev->dev.of_node, "clock-frequency", &pfreq);
+-	if (rc) {
++	if (rc)
+ 		dev_warn(&pdev->dev,
+ 			 "The watchdog clock frequency cannot be obtained\n");
+-		no_timeout = true;
+-	}
 
- # MicroBlaze Architecture
+ 	rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-interval",
+ 				  &xdev->wdt_interval);
+-	if (rc) {
++	if (rc)
+ 		dev_warn(&pdev->dev,
+ 			 "Parameter \"xlnx,wdt-interval\" not found\n");
+-		no_timeout = true;
+-	}
 
--config XILINX_WATCHDOG
--	tristate "Xilinx Watchdog timer"
--	depends on MICROBLAZE
--	select WATCHDOG_CORE
--	---help---
--	  Watchdog driver for the xps_timebase_wdt ip core.
--
--	  IMPORTANT: The xps_timebase_wdt parent must have the property
--	  "clock-frequency" at device tree.
--
--	  To compile this driver as a module, choose M here: the
--	  module will be called of_xilinx_wdt.
--
- # MIPS Architecture
+ 	rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-enable-once",
+ 				  &enable_once);
+@@ -194,7 +189,7 @@ static int xwdt_probe(struct platform_device *pdev)
+ 	 * Twice of the 2^wdt_interval / freq  because the first wdt overflow is
+ 	 * ignored (interrupt), reset is only generated at second wdt overflow
+ 	 */
+-	if (!no_timeout)
++	if (pfreq && xdev->wdt_interval)
+ 		xilinx_wdt_wdd->timeout = 2 * ((1 << xdev->wdt_interval) /
+ 					  pfreq);
 
- config ATH79_WDT
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-12533-1392212536-0001
+--=_mimegpg-monstr-desktop-12542-1392212540-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlL7ejgACgkQykllyylKDCFD1gCgmTQzWEWGIwOYqlc4rAILcPFc
-fpUAnAj6F01tLEKOnrNRKAr0bJbykVtv
-=5b7Y
+iEYEABECAAYFAlL7ejwACgkQykllyylKDCE0mQCeI62dB0/wgkm4TLxCYhBsMyD5
+BzYAn1xlvfxcoHLZVYWcNUcNdm8uMJqp
+=g5vY
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-12533-1392212536-0001--
+--=_mimegpg-monstr-desktop-12542-1392212540-0001--
