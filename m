@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaBLA4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 19:56:20 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:3441 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214AbaBLA4S (ORCPT
+	id S1752571AbaBLBA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 20:00:29 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:51048 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaBLBA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 19:56:18 -0500
-Message-ID: <52FA702E.7020503@hp.com>
-Date: Tue, 11 Feb 2014 11:47:10 -0700
-From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 11 Feb 2014 20:00:28 -0500
 MIME-Version: 1.0
-To: Andreas Dilger <adilger@dilger.ca>, George Spelvin <linux@horizon.com>
-CC: T Makphaibulchoke <tmac@hp.com>, Andi Kleen <andi@firstfloor.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/3] ext4: increase mbcache scalability
-References: <20140128122623.26029.qmail@science.horizon.com> <848E47EB-5FDF-4DB9-9800-4B1F4B1FA71C@dilger.ca>
-In-Reply-To: <848E47EB-5FDF-4DB9-9800-4B1F4B1FA71C@dilger.ca>
+In-Reply-To: <20140211155440.62c5e90eb498ec2964258969@linux-foundation.org>
+References: <52F592F2.6010008@huawei.com>
+	<52F5934B.4000101@huawei.com>
+	<20140211155440.62c5e90eb498ec2964258969@linux-foundation.org>
+Date: Tue, 11 Feb 2014 17:00:27 -0800
+Message-ID: <CAN8TOE-fCLM4_7rez=jdVBmav0D2dnqO56mPCNQoG4AGgSiwbw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
+From: Brian Norris <computersforpeace@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Li Zefan <lizefan@huawei.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 02:09 PM, Andreas Dilger wrote:
-> On Jan 28, 2014, at 5:26 AM, George Spelvin <linux@horizon.com> wrote:
->>> The third part of the patch further increases the scalablity of an ext4
->>> filesystem by having each ext4 fielsystem allocate and use its own private
->>> mbcache structure, instead of sharing a single mcache structures across all
->>> ext4 filesystems, and increases the size of its mbcache hash tables.
->>
->> Are you sure this helps?  The idea behind having one large mbcache is
->> that one large hash table will always be at least as well balanced as
->> multiple separate tables, if the total size is the same.
->>
->> If you have two size 2^n hash tables, the chance of collision is equal to
->> one size  2^(n+1) table if they're equally busy, and if they're unequally
->> busy. the latter is better.  The busier file system will take less time
->> per search, and since it's searched more often than the less-busy one,
->> net win.
->>
->> How does it compare with just increasing the hash table size but leaving
->> them combined?
-> 
-> Except that having one mbcache per block device would avoid the need
-> to store the e_bdev pointer in thousands/millions of entries.  Since
-> the blocks are never shared between different block devices, there
-> is no caching benefit even if the same block is on two block devices.
-> 
-> Cheers, Andreas
-> 
+Hi Andrew,
 
-On all 3 systems, with 80, 60 and 20 cores, that I ran aim7 on, spreading test files across 4 ext4 filesystems, there seems to be no different in performance either with a single large hash table or a smaller one per filesystem.
+On Tue, Feb 11, 2014 at 3:54 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sat, 8 Feb 2014 10:15:39 +0800 Li Zefan <lizefan@huawei.com> wrote:
+> I now have four jffs2 bugfixes but cannot unload them on anyone.
+> Waddup?
 
-Having said that, I still believe that having a separate hash table for each filesystem should scale better, as the size of a larger single hash table would be very arbitrary. As Andres mentioned above, with an mbcache per filesystem we would be able to remove the e_bdev member from the mb_cache_entry. It would also work well and also result in less mb_cache_entry lock contention, if we are to use the blockgroup locks, which are also on a per filesystem base, to implement the mb_cache_entry lock as suggested by Andreas.  
+Well, at best we have 3 "maintainers" involved in MTD (David, Artem,
+and me), but David is often quite unresponsive unless you yell, and
+Artem has more or less left non-UBI/UBIFS stuff to me. I personally
+have little knowledge of JFFS2, and I have seen a fair number of
+dubious JFFS2 patches from people with automated tools and no testing.
+So I'm understandably cautious to merge them. But if you have properly
+tested (or at least reviewed) patches sitting around, I can take a
+look at them and merge them. Are you referring to the top 4 here?
 
-Please let me know if you have any further comment or concerns.
+http://www.spinics.net/linux/lists/mm-commits/
 
-Thanks,
-Mak.
-
- 
-
+Brian
