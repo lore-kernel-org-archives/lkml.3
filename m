@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaBLJIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:08:15 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:55974 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942AbaBLJH5 (ORCPT
+	id S1751554AbaBLJMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:12:36 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45529 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890AbaBLJMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:07:57 -0500
-Date: Wed, 12 Feb 2014 09:07:46 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+	Wed, 12 Feb 2014 04:12:32 -0500
+Message-ID: <1392196314.5536.15.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v2] [media] of: move graph helpers from
+ drivers/media/v4l2-core to drivers/media
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 05/14] mfd: sec: Use consistent S2MPS11 RTC alarm
- interrupt indexes
-Message-ID: <20140212090746.GR15081@lee--X1>
-References: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
- <1392123837-5517-6-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392123837-5517-6-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Date: Wed, 12 Feb 2014 10:11:54 +0100
+In-Reply-To: <20140212065306.36a03e82.m.chehab@samsung.com>
+References: <1392154905-12007-1-git-send-email-p.zabel@pengutronix.de>
+	 <20140212065306.36a03e82.m.chehab@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mauro,
 
-> The S2MPS11 RTC has two alarms: alarm0 and alarm1 (corresponding
-> interrupts are named similarly). Use consistent names for interrupts to
-> limit possible errors.
+Am Mittwoch, den 12.02.2014, 06:53 +0900 schrieb Mauro Carvalho Chehab:
+[...]
+> > diff --git a/include/media/of_graph.h b/include/media/of_graph.h
+> > new file mode 100644
+> > index 0000000..3bbeb60
+> > --- /dev/null
+> > +++ b/include/media/of_graph.h
+> > @@ -0,0 +1,46 @@
+> > +/*
+> > + * OF graph binding parsing helpers
+> > + *
+> > + * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
+> > + * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > + *
+> > + * Copyright (C) 2012 Renesas Electronics Corp.
+> > + * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of version 2 of the GNU General Public License as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +#ifndef __LINUX_OF_GRAPH_H
+> > +#define __LINUX_OF_GRAPH_H
+> > +
+> > +#ifdef CONFIG_OF
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/sec-irq.c           |    8 ++++----
->  include/linux/mfd/samsung/irq.h |    4 ++--
->  2 files changed, 6 insertions(+), 6 deletions(-)
+> As a matter of consistency, it would be better to test here for
+> CONFIG_OF_GRAPH instead, to reflect the same symbol that enables such
+> functions as used on Kconfig/Makefile.
 
-<snip>
+Maybe I'm trying to be too clever for my own good, but my reasoning was
+as follows:
 
->  #define S2MPS11_IRQ_RTC60S_MASK		(1 << 0)
->  #define S2MPS11_IRQ_RTCA1_MASK		(1 << 1)
-> -#define S2MPS11_IRQ_RTCA2_MASK		(1 << 2)
-> +#define S2MPS11_IRQ_RTCA0_MASK		(1 << 2)
+Suppose I newly use the of_graph_ helpers in a subsystem that does not
+yet select OF_GRAPH. In that case I'd rather get linking errors earlier
+rather than stubbed out functions that silently fail to parse the DT
+later.
 
-This doesn't look correct to me.
+Since there is
+config VIDEO_DEV
+	select OF_GRAPH if OF
+already and the same should be added for other users of device tree
+graphs, I think stubbing out the functions only if OF is disabled should
+be enough.
 
->  #define S2MPS11_IRQ_SMPL_MASK		(1 << 3)
->  #define S2MPS11_IRQ_RTC1S_MASK		(1 << 4)
->  #define S2MPS11_IRQ_WTSR_MASK		(1 << 5)
+regards
+Philipp
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
