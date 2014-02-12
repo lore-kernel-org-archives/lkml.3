@@ -1,141 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaBLSbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:31:53 -0500
-Received: from mx02a.posteo.de ([89.146.194.168]:45860 "EHLO mx02a.posteo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372AbaBLSbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:31:52 -0500
-Message-ID: <52FBBE08.5030902@posteo.de>
-Date: Wed, 12 Feb 2014 19:31:36 +0100
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+	id S1753886AbaBLScl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:32:41 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51570 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702AbaBLScj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 13:32:39 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19g2U4PoepLjLeVtazrFFyvp8+dy/Vs6iM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 7050D525D2F
+Date: Wed, 12 Feb 2014 13:32:09 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Olof Johansson <olof@lixom.net>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
+Message-ID: <20140212183209.GN27395@titan.lakedaemon.net>
+References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
+ <201402121251.06280.arnd@arndb.de>
+ <20140212174554.GM27395@titan.lakedaemon.net>
+ <CAOesGMgNkdxW4znmns10-DPc4+OTWJLyx2fcJGTgdND6pp0zUQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: perex@perex.cz, david.henningsson@canonical.com, hui.wang@canonical.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG]3.14-rc2 [PATCH] Revert "ALSA: hda/realtek - Avoid invalid
- COEFs for ALC271X"
-References: <1392221363-5447-1-git-send-email-martink@posteo.de> <s5h4n445mm2.wl%tiwai@suse.de> <s5hwqh046w5.wl%tiwai@suse.de>
-In-Reply-To: <s5hwqh046w5.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMgNkdxW4znmns10-DPc4+OTWJLyx2fcJGTgdND6pp0zUQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-02-12 17:45, schrieb Takashi Iwai:
-> At Wed, 12 Feb 2014 17:20:21 +0100,
-> Takashi Iwai wrote:
->>
->> At Wed, 12 Feb 2014 17:09:23 +0100,
->> Martin Kepplinger wrote:
->>>
->>> This reverts commit d3c56568f43807135f2c2a09582a69f809f0d8b7.
->>>
->>> The reverted commit breaks audio through headphone line out on
->>> the Acer TravelMate B113 (Type1Sku0) Notebook, my main work
->>> machine. I don't know much about it but this fixes my problem.
->>> Bisected and tested.
->>>
->>> Tested-by: Martin Kepplinger <martink@posteo.de>
->>> Signed-off-by: Martin Kepplinger <martink@posteo.de>
->>
->> Too bad, we need COEF for some machine but it breaks for some.
->> Since reverting breaks obviously another machine, we need a different
->> approach, e.g. checking the machine ID.  Please give alsa-info.sh
->> output of your machine.
+On Wed, Feb 12, 2014 at 10:13:59AM -0800, Olof Johansson wrote:
+> On Wed, Feb 12, 2014 at 9:45 AM, Jason Cooper <jason@lakedaemon.net> wrote:
 > 
-> Thinking it again, I'll take your patch as is, and put an additional
-> fix for AO725 as below.  Could you try it to see whether it brings any
-> regressions?  It's to be applied after your revert patch.
+> > I brought this up at last weeks devicetree irc meeting.  My goal is to
+> > provide early randomness for kaslr on ARM.  Currently, my idea is modify
+> > the init script to save an additional random seed from /dev/urandom to
+> > /boot/random-seed.
+> >
+> > The bootloader would then load this file into ram, and pass the
+> > address/size to the kernel either via dt, or commandline.  kaslr (run in
+> > the decompressor) would consume some of this randomness, and then
+> > random.c would consume the rest in a non-crediting initialization.
+> >
+> > While not ideal, it works in absence of an HRNG, and is no worse than
+> > the current situation of storing the seed in /var/lib/misc/random-seed.
+> > It also doesn't require modification of the bootloaders.  Just an
+> > updated kernel, and update the bootloader environment to load the
+> > seed.
 > 
-> 
-> thanks,
-> 
-> Takashi
-> 
-> -- 8< --
-> From: Takashi Iwai <tiwai@suse.de>
-> Subject: [PATCH] ALSA: hda - Better fix for invalid COEF setup on Acer AO725
-> 
-> Instead of disabling the COEF setup for all ALC271X codec (like commit
-> d3c56568), do it only if needed.  Currently, Acer AO725 is known to
-> show the problem, so clear the bad init_hook in the fixup.
-> 
-> The explicit call of alc269_fill_coef() in patch_alc269() is also
-> removed, since the function will be called anyway at init callback.
-> 
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52181
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  sound/pci/hda/patch_realtek.c | 18 ++++++++++++++++--
->  1 file changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-> index a9a83b85517a..eaff10598f67 100644
-> --- a/sound/pci/hda/patch_realtek.c
-> +++ b/sound/pci/hda/patch_realtek.c
-> @@ -3817,6 +3817,14 @@ static void alc290_fixup_mono_speakers(struct hda_codec *codec,
->  	}
->  }
->  
-> +static void alc_fixup_clear_init_hook(struct hda_codec *codec,
-> +				      const struct hda_fixup *fix, int action)
-> +{
-> +	struct alc_spec *spec = codec->spec;
-> +	if (action == HDA_FIXUP_ACT_PROBE)
-> +		spec->init_hook = NULL;
-> +}
-> +
->  /* for hda_fixup_thinkpad_acpi() */
->  #include "thinkpad_helper.c"
->  
-> @@ -3858,6 +3866,7 @@ enum {
->  	ALC271_FIXUP_HP_GATE_MIC_JACK,
->  	ALC271_FIXUP_HP_GATE_MIC_JACK_E1_572,
->  	ALC269_FIXUP_ACER_AC700,
-> +	ALC271_FIXUP_ACER_AO725,
->  	ALC269_FIXUP_LIMIT_INT_MIC_BOOST,
->  	ALC269VB_FIXUP_ASUS_ZENBOOK,
->  	ALC269VB_FIXUP_ASUS_ZENBOOK_UX31A,
-> @@ -4250,13 +4259,19 @@ static const struct hda_fixup alc269_fixups[] = {
->  		.type = HDA_FIXUP_FUNC,
->  		.v.func = alc_fixup_headset_mode_alc255,
->  	},
-> +	[ALC271_FIXUP_ACER_AO725] = {
-> +		.type = HDA_FIXUP_FUNC,
-> +		.v.func = alc_fixup_clear_init_hook,
-> +		.chained = true,
-> +		.chain_id = ALC271_FIXUP_HP_GATE_MIC_JACK,
-> +	},
->  };
->  
->  static const struct snd_pci_quirk alc269_fixup_tbl[] = {
->  	SND_PCI_QUIRK(0x1025, 0x029b, "Acer 1810TZ", ALC269_FIXUP_INV_DMIC),
->  	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
->  	SND_PCI_QUIRK(0x1025, 0x047c, "Acer AC700", ALC269_FIXUP_ACER_AC700),
-> -	SND_PCI_QUIRK(0x1025, 0x0740, "Acer AO725", ALC271_FIXUP_HP_GATE_MIC_JACK),
-> +	SND_PCI_QUIRK(0x1025, 0x0740, "Acer AO725", ALC271_FIXUP_ACER_AO725),
->  	SND_PCI_QUIRK(0x1025, 0x0742, "Acer AO756", ALC271_FIXUP_HP_GATE_MIC_JACK),
->  	SND_PCI_QUIRK_VENDOR(0x1025, "Acer Aspire", ALC271_FIXUP_DMIC),
->  	SND_PCI_QUIRK(0x1025, 0x0775, "Acer Aspire E1-572", ALC271_FIXUP_HP_GATE_MIC_JACK_E1_572),
-> @@ -4523,7 +4538,6 @@ static int patch_alc269(struct hda_codec *codec)
->  		if (err < 0)
->  			goto error;
->  		spec->init_hook = alc269_fill_coef;
-> -		alc269_fill_coef(codec);
->  		break;
->  
->  	case 0x10ec0280:
-> 
+> Hmm. There are some drawbacks with this -- it assumes you can "just
+> update the bootloader environment" which in general isn't easy to do.
 
-So my alsa-info.sh is
-http://www.alsa-project.org/db/?f=3e9c5d39ff057106d6ae307f9b86c1e562056c1b
-and I'm running your patch on top of mine without any problems.
+true, the scope of my experience is consumer grade NASs, routers and
+APs.  At the very least, it's much easier than upgrading the bootloader.
 
-thanks,
+Also, my pov is as a hobbyist modifying devices post-sale.  The idea is
+something I could add to my existing boxes without having to upgrade the
+bootloaders.
 
-            martin
+> Also, you can't assume that /boot is writable or exists on all
+> embedded systems.
+
+In systems missing this capability, they often have the ability to
+update the kernel.  All that's needed is one block of flash.  Current
+random-seed size is 512 bytes.  I'm not saying it's easy or desirable.
+But for folks who feel it's necessary to have kaslr on embedded devices,
+it would facilitate better random numbers.  "Better" meaning much harder
+for an attacker to guess.
+
+> In general, taking both runtime and system-dependend data and using
+> that to see entropy is a good idea.
+
+Of course, I wasn't arguing for one or the other.  As you said later, in
+situations where you can't feed in a seed file, MAC addresses and serial
+numbers are better than nothing.
+
+thx,
+
+Jason.
