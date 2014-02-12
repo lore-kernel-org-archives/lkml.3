@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaBLPRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:17:04 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:37150 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037AbaBLPRB (ORCPT
+	id S1752583AbaBLPRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:17:09 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40837 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037AbaBLPRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:17:01 -0500
-Date: Wed, 12 Feb 2014 10:16:57 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-edac@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] edac, poll timeout cannot be zero
-Message-ID: <20140212151657.GL24490@htj.dyndns.org>
-References: <1391457913-881-1-git-send-email-prarit@redhat.com>
- <20140212150748.GE5121@pd.tnic>
+	Wed, 12 Feb 2014 10:17:06 -0500
+Date: Wed, 12 Feb 2014 15:16:57 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Steve Twiss <stwiss.opensource@diasemi.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Message-ID: <20140212151657.GS28112@sirena.org.uk>
+References: <201402121239.s1CCdZpd014527@swsrvapps-01.diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gV1yUYniiDLxW66s"
 Content-Disposition: inline
-In-Reply-To: <20140212150748.GE5121@pd.tnic>
+In-Reply-To: <201402121239.s1CCdZpd014527@swsrvapps-01.diasemi.com>
+X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2] regulator: da9063: Bug fix when setting max voltage
+ on LDOs 5-11
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Wed, Feb 12, 2014 at 04:07:48PM +0100, Borislav Petkov wrote:
-> While testing, however, I keep seeing the splat below and that's:
-> 
->         if (WARN_ON(!list_empty(&work->entry))) {
->                 spin_unlock(&pwq->pool->lock);
->                 return;
->         }
-> 
-> and there seems to be some interference with edac_mc_workq_setup()
-> which does mod_delayed_work() and then the workqueue callback
-> edac_mc_workq_function() which does queue_delayed_work().
-> 
-> What I'm seeing in the splat is that when the timer fires to run the
-> delayed work, __queue_work() complains that the work list is not empty
-> even though we've done mod_delayed_work() which is supposed to cancel
-> any pending work.
-> 
-> Tejun, any ideas what's happening? Do we need synchronization here or do
-> you have a _sync version of mod_delayed_work() which makes sure any work
-> is cancelled?
+--gV1yUYniiDLxW66s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No, you don't need to.  All workqueue operations should be able to
-synchronize with each other.
+On Wed, Feb 12, 2014 at 09:57:52AM +0000, Steve Twiss wrote:
+> From: Steve Twiss <stwiss.opensource@diasemi.com>
+>=20
+> Bug fix to allow the setting of maximum voltage for certain LDOs.
+>=20
+> What the bug is:
 
-> Or does this mean that once the work is getting queued from the timer
-> callback delayed_work_timer_fn, it cannot be cancelled anymore? Or
-> something else I'm missing...?
+Applied, thanks.  It's probably worth renaming the _BIAS macros when
+doing the stylistic cleanups as it's not an obvious name for them - I'd
+expect them to specify some sort of voltage offset.
 
-Looking at edac_mc_workq_setup().... it contains INIT_DELAYED_WORK().
-Does this race with other workqueue operations on the work item?  If
-so, it of course breaks.  It's like doing spin_lock_init() while other
-spinlock operations are in progress.
+--gV1yUYniiDLxW66s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
-tejun
+iQIcBAEBAgAGBQJS+5BmAAoJELSic+t+oim9oaIP/0VZseGK6qmHzo10oihgaPK9
+cdltZ2CSEPRFOvPkNDZuuHw4I7tvMpCNDCMRYFNipM7rPV8BkMhCm5KAzwXd2yUo
+shUoPimrkZWixvM46b9ji80+irMusWu8JuYDUoDWZcIEXxfARNhqYM5li1gCkMvr
+FrlS5XxBscYViFbam48kGBuHYz3n/vTJ4IieGQ0jA2irAwSzyxB+qePheRHJTwtY
+xHoZSiLHSRo2n+EQsdQM8pTCGWuVHSkhTdsHnEBEJuFNt7OHkoIpKnygTGp5Pp37
+LB1iLMO4aerOcs96eHivw/bwbCobi/jTrdvfTH5/fRY2SvXi0PI5xAc5IOrgSGIp
+CnUZ2vBQ3+S503JJSchpQ5qwbiqlKl2TjCofjP7niHXnapYtKjVJN/Mk8UW8EJdt
+xeMZUvr2pEvZZCPzKtzeLPSnGxySlMCdDdNKJpHgUz/TxF/iEH8b7J00N8NZJzG4
+CoTe044FkZoYVnCWUkJpRkd7o+fP+cRLnGC3K/9OdsRHfSCotSp95vC4rNjGaUZw
++pnKN7ggvrznKAqNu+PcwdWunhWiymgF/fCrT1AZ+VNvH1/aA3iPVmRYF1HuXIg2
+KcsvRpv4qzR0iDFsUlOuJemGs3Cks3Ly9ndJzGEXaSpgy6PH/Mzr0a3HV6xJ2a6z
+JB+/AcOOZ9F0dXx5z7iN
+=0hMK
+-----END PGP SIGNATURE-----
+
+--gV1yUYniiDLxW66s--
