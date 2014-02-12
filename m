@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711AbaBLSMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:12:18 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46015 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672AbaBLSMO (ORCPT
+	id S1753571AbaBLSN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:13:29 -0500
+Received: from adamg.eu ([91.192.224.99]:49026 "EHLO adamg.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752685AbaBLSN2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:12:14 -0500
-Date: Wed, 12 Feb 2014 19:12:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140212181205.GD27965@twins.programming.kicks-ass.net>
-References: <20140207074405.GM5002@laptop.programming.kicks-ass.net>
- <20140207165028.GO4250@linux.vnet.ibm.com>
- <20140207165548.GR5976@mudshark.cambridge.arm.com>
- <20140207180216.GP4250@linux.vnet.ibm.com>
- <1391992071.18779.99.camel@triegel.csb>
- <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
- <20140211155941.GU4250@linux.vnet.ibm.com>
- <1392185194.18779.2239.camel@triegel.csb>
- <20140212091907.GA3545@laptop.programming.kicks-ass.net>
- <20140212174209.GA4250@linux.vnet.ibm.com>
+	Wed, 12 Feb 2014 13:13:28 -0500
+From: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
+To: Dave Jones <davej@redhat.com>
+Reply-To: pawel.sikora@agmk.net
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: Re: [3.13.2] list passed to list_sort() too long for efficiency.
+Date: Wed, 12 Feb 2014 19:13:21 +0100
+Message-ID: <5006918.CkfDURZEXl@localhost.localdomain>
+User-Agent: KMail/4.12.2 (Linux/3.12.10-300.fc20.x86_64; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <20140212180356.GA28354@redhat.com>
+References: <1799469.xr2i5c36Hj@localhost.localdomain> <4850975.2GAlrTXDHt@localhost.localdomain> <20140212180356.GA28354@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212174209.GA4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 09:42:09AM -0800, Paul E. McKenney wrote:
-> You need volatile semantics to force the compiler to ignore any proofs
-> it might otherwise attempt to construct.  Hence all the ACCESS_ONCE()
-> calls in my email to Torvald.  (Hopefully I translated your example
-> reasonably.)
+On Wednesday 12 of February 2014 13:03:56 Dave Jones wrote:
+> On Wed, Feb 12, 2014 at 06:59:07PM +0100, Paweł Sikora wrote:
+>  > On Wednesday 12 of February 2014 09:46:26 Joe Perches wrote:
+>  > > On Wed, 2014-02-12 at 18:16 +0100, Paweł Sikora wrote:
+>  > > > [16855.582522] list passed to list_sort() too long for efficiency
+>  > > > 
+>  > > > could someone put some light on the last line?
+>  > > 
+>  > > Did you look at the list_sort function in lib/list_sort.c?
+>  > > 
+>  > > (granted the dmesg is harder to find that it should be
+>  > > 
+>  > >  because the format is split)
+>  > > 
+>  > > It just means it's slower than it could otherwise be
+>  > 
+>  > thanks,
+>  > so without a stacktrace in dmesg we can't isolate a root of cause :/
+> 
+> The commit message mentions xfs and ubifs have long lists that get
+> passed in. Do you use either of those ?
 
-My brain gave out for today; but it did appear to have the right
-structure.
+this is a test-farm server which utilizes only cpu/ext4/nfs/lvm/mdadm.
 
-I would prefer it C11 would not require the volatile casts. It should
-simply _never_ speculate with atomic writes, volatile or not.
-
-
-
+-- 
+gpg key fingerprint = 60B4 9886 AD53 EB3E 88BB 1EB5 C52E D01B 683B 9411
