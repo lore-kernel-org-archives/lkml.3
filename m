@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaBLQku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:40:50 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48615 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753453AbaBLQkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:40:46 -0500
-Date: Wed, 12 Feb 2014 16:40:19 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.torgue@st.com" <alexandre.torgue@st.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the
- MiPHY365x
-Message-ID: <20140212164019.GE25957@e106331-lin.cambridge.arm.com>
-References: <1392220985-28189-1-git-send-email-lee.jones@linaro.org>
+	id S1753513AbaBLQk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:40:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753453AbaBLQky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 11:40:54 -0500
+Date: Wed, 12 Feb 2014 18:38:21 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        davem@davemloft.net, qinchuanyu@huawei.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joern Engel <joern@logfs.org>,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH net 1/3] kref: add kref_sub_return
+Message-ID: <1392222846-26699-2-git-send-email-mst@redhat.com>
+References: <1392222846-26699-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392220985-28189-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1392222846-26699-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 04:03:02PM +0000, Lee Jones wrote:
-> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-> devices. It has 2 ports which it can use for either; both SATA, both
-> PCIe or one of each in any configuration.
-> 
-> Cc: devicetree@vger.kernel.org
-> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  .../devicetree/bindings/phy/phy-miphy365x.txt      | 43 ++++++++++++++++++++++
->  1 file changed, 43 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> new file mode 100644
-> index 0000000..fdfa7ca
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> @@ -0,0 +1,43 @@
-> +STMicroelectronics STi MIPHY365x PHY binding
-> +============================================
-> +
-> +This binding describes a miphy device that is used to control PHY hardware
-> +for SATA and PCIe.
-> +
-> +Required properties:
-> +- compatible: Should be "st,miphy365x-phy"
-> +- #phy-cells: Should be 2 (See example)
+It is sometimes useful to get the value of the reference count after
+decrement.
+For example, vhost wants to execute some periodic cleanup operations
+once number of references drops below a specific value, before it
+reaches zero (for efficiency).
 
-The first example has #phy-cells = <1>.
+Add an API to do this atomically and efficiently using
+atomic_sub_return.
 
-What do the cells mean? What are the expected values?
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-> +- reg:	      Address and length of the register set for the device
-> +- reg-names:  The names of the register addresses corresponding to the
-> +	      registers filled in "reg".
+Greg, could you ack this API extension please?
+I think it is cleanest to merge this through -net together
+with the first user.
 
-Whenever there is a ${PROP}-names property, there should be a list of
-explicit values, and a description of how it relates to ${PROP}. Without
-that it's a bit useless.
+ include/linux/kref.h | 34 +++++++++++++++++++++++++++++++++-
+ 1 file changed, 33 insertions(+), 1 deletion(-)
 
-Please provide an explicit list of expected names here.
-
-I assume here what you want is something like:
-
-- reg: a list of address + length pairs, one for each entry in reg-names
-- reg-names: should contain:
-  * "sata0" for the sata0 control registers...
-  * "sata1" ...
-  * "pcie0" ...
-  * "pcie1" ...
-
-> +- st,syscfg : Should be a phandle of the syscfg node.
-
-What's this used for?
-
-Cheers,
-Mark.
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 484604d..cb20550 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -61,7 +61,7 @@ static inline void kref_get(struct kref *kref)
+  *
+  * Subtract @count from the refcount, and if 0, call release().
+  * Return 1 if the object was removed, otherwise return 0.  Beware, if this
+- * function returns 0, you still can not count on the kref from remaining in
++ * function returns 0, you still can not count on the kref remaining in
+  * memory.  Only use the return value if you want to see if the kref is now
+  * gone, not present.
+  */
+@@ -78,6 +78,38 @@ static inline int kref_sub(struct kref *kref, unsigned int count,
+ }
+ 
+ /**
++ * kref_sub_return - subtract a number of refcounts for object.
++ * @kref: object.
++ * @count: Number of recounts to subtract.
++ * @release: pointer to the function that will clean up the object when the
++ *	     last reference to the object is released.
++ *	     This pointer is required, and it is not acceptable to pass kfree
++ *	     in as this function.  If the caller does pass kfree to this
++ *	     function, you will be publicly mocked mercilessly by the kref
++ *	     maintainer, and anyone else who happens to notice it.  You have
++ *	     been warned.
++ *
++ * Subtract @count from the refcount, and if 0, call release().
++ * Return the new refcount.  Beware, if this function returns > N, you still
++ * can not count on there being at least N other references, and in
++ * particular, on the kref remaining in memory.
++ * Only use the return value if you want to see if there are at most,
++ * not at least, N other references to kref,
++ */
++static inline int kref_sub_return(struct kref *kref, unsigned int count,
++				  void (*release)(struct kref *kref))
++{
++	int r;
++
++	WARN_ON(release == NULL);
++
++	r = atomic_sub_return((int) count, &kref->refcount);
++	if (!r)
++		release(kref);
++	return r;
++}
++
++/**
+  * kref_put - decrement refcount for object.
+  * @kref: object.
+  * @release: pointer to the function that will clean up the object when the
+-- 
+MST
