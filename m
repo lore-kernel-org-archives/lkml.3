@@ -1,263 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaBLTjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 14:39:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41547 "EHLO mx1.redhat.com"
+	id S1754157AbaBLTm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 14:42:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34523 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357AbaBLTji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 14:39:38 -0500
-Date: Wed, 12 Feb 2014 14:39:14 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <mtosatti@redhat.com>, <mgorman@suse.de>,
-        <aarcange@redhat.com>, <andi@firstfloor.org>, <riel@redhat.com>
-Subject: Re: [PATCH 3/4] hugetlb: add hugepagesnid= command-line option
-Message-ID: <20140212143914.5424ed6d@redhat.com>
-In-Reply-To: <52FAEE24.8090509@jp.fujitsu.com>
-References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
- <1392053268-29239-4-git-send-email-lcapitulino@redhat.com>
- <52FAEE24.8090509@jp.fujitsu.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754109AbaBLTmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 14:42:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,834,1384329600"; 
+   d="scan'208";a="480457407"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 2/4] mei: get rid of ext_msg
+Date: Wed, 12 Feb 2014 21:41:52 +0200
+Message-Id: <1392234114-4926-3-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392234114-4926-1-git-send-email-tomas.winkler@intel.com>
+References: <1392234114-4926-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Feb 2014 12:44:36 +0900
-Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+Use more standard message writing for
+oob data.
 
-> (2014/02/11 2:27), Luiz Capitulino wrote:
-> > From: Luiz capitulino <lcapitulino@redhat.com>
-> > 
-> > The HugeTLB command-line option hugepages= allow the user to specify
-> > how many huge pages should be allocated at boot-time. On NUMA systems,
-> > this option will try to automatically distribute the allocation equally
-> > among nodes. For example, if you have a 2-node NUMA system and allocates
-> > 200 huge pages, than hugepages= will try to allocate 100 huge pages from
-> > node0 and 100 from node1.
-> > 
-> > The hugepagesnid= option introduced by this commit allows the user
-> > to specify the nodes from which huge pages are allocated. For example,
-> > if you have a 2-node NUMA system and want 300 2M huge pages to be
-> > allocated from node1, you could do:
-> > 
-> >   hugepagesnid=1,300,2M
-> > 
-> > Or, say you want node0 to allocate 100 huge pages and node1 to
-> > allocate 200 huge pages, you do:
-> > 
-> >   hugepagesnid=0,100,2M hugepagesnid=1,200,1M
-> > 
-> > This commit adds support only for 2M huge pages, next commit will
-> > add support for 1G huge pages.
-> > 
-> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> > ---
-> >   Documentation/kernel-parameters.txt |  8 ++++
-> >   arch/x86/mm/hugetlbpage.c           | 35 +++++++++++++++++
-> >   include/linux/hugetlb.h             |  2 +
-> >   mm/hugetlb.c                        | 77 +++++++++++++++++++++++++++++++++++++
-> >   4 files changed, 122 insertions(+)
-> > 
-> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > index 7116fda..3cbe950 100644
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -1125,6 +1125,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> >   			registers.  Default set by CONFIG_HPET_MMAP_DEFAULT.
-> >   
-> >   	hugepages=	[HW,X86-32,IA-64] HugeTLB pages to allocate at boot.
-> > +	hugepagesnid= [X86-64] HugeTLB pages to allocate at boot on a NUMA system.
-> > +				Format: <nid>,<nrpages>,<size>
-> > +				nid: NUMA node id to allocate pages from
-> > +				nrpages: number of huge pages to allocate
-> > +				size: huge pages size (see hugepagsz below)
-> > +			This argument can be specified multiple times for different
-> > +			NUMA nodes, but it shouldn't be mixed with hugepages= and
-> > +			hugepagesz=.
-> >   	hugepagesz=	[HW,IA-64,PPC,X86-64] The size of the HugeTLB pages.
-> >   			On x86-64 and powerpc, this option can be specified
-> >   			multiple times interleaved with hugepages= to reserve
-> > diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> > index 8c9f647..91c5c98 100644
-> > --- a/arch/x86/mm/hugetlbpage.c
-> > +++ b/arch/x86/mm/hugetlbpage.c
-> > @@ -188,4 +188,39 @@ static __init int setup_hugepagesz(char *opt)
-> >   	return 1;
-> >   }
-> >   __setup("hugepagesz=", setup_hugepagesz);
-> > +
-> > +static __init int setup_hugepagesnid(char *opt)
-> > +{
-> > +	unsigned long order, ps, nid, nr_pages;
-> > +	char size_str[3];
-> > +
-> > +	size_str[2] = '\0';
-> > +	if (sscanf(opt, "%lu,%lu,%c%c",
-> > +			&nid, &nr_pages, &size_str[0], &size_str[1]) < 4) {
-> > +		printk(KERN_ERR "hugepagesnid: failed to parse arguments\n");
-> > +			return 0;
-> > +	}
-> > +
-> > +	if (!nr_pages) {
-> > +		printk(KERN_ERR
-> > +			"hugepagesnid: zero number of pages, ignoring\n");
-> > +		return 0;
-> > +	}
-> > +
-> > +	ps = memparse(size_str, NULL);
-> > +	if (ps == PMD_SIZE) {
-> > +		order = PMD_SHIFT - PAGE_SHIFT;
-> > +	} else if (ps == PUD_SIZE && cpu_has_gbpages) {
-> > +		order = PUD_SHIFT - PAGE_SHIFT;
-> > +	} else {
-> > +		printk(KERN_ERR "hugepagesnid: Unsupported page size %lu M\n",
-> > +			ps >> 20);
-> > +		return 0;
-> > +	}
-> 
-> You must check that nid is valid or not. When nid is MAX_NUMNODES or more,
-> hugetlb_add_nrpages_nid() sets nr_pages to wrong memory region.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+Note This patch causes 'over 80 characters' checkpatch waring,
+but can be ignored as this is fixed in consequent patch
 
-Correct. I'll fix it, thank for reviewing.
+ drivers/misc/mei/hbm.c       | 64 +++++++++++++++++++++++++++++++-------------
+ drivers/misc/mei/hbm.h       |  1 +
+ drivers/misc/mei/hw-me.c     |  3 ---
+ drivers/misc/mei/init.c      |  1 -
+ drivers/misc/mei/interrupt.c | 47 +++++++++++++++++++++++++++-----
+ drivers/misc/mei/mei_dev.h   |  8 ++----
+ 6 files changed, 88 insertions(+), 36 deletions(-)
 
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
-> > +
-> > +	hugetlb_add_nrpages_nid(order, nid, nr_pages);
-> > +	return 1;
-> > +}
-> > +__setup("hugepagesnid=", setup_hugepagesnid);
-> > +
-> >   #endif
-> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> > index 8c43cc4..aae2f9b 100644
-> > --- a/include/linux/hugetlb.h
-> > +++ b/include/linux/hugetlb.h
-> > @@ -274,6 +274,8 @@ struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
-> >   int __init alloc_bootmem_huge_page(struct hstate *h);
-> >   
-> >   void __init hugetlb_add_hstate(unsigned order);
-> > +void __init hugetlb_add_nrpages_nid(unsigned order, unsigned long nid,
-> > +				unsigned long nr_pages);
-> >   struct hstate *size_to_hstate(unsigned long size);
-> >   
-> >   #ifndef HUGE_MAX_HSTATE
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index c01cb9f..439c3b7 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -46,6 +46,7 @@ __initdata LIST_HEAD(huge_boot_pages);
-> >   static struct hstate * __initdata parsed_hstate;
-> >   static unsigned long __initdata default_hstate_max_huge_pages;
-> >   static unsigned long __initdata default_hstate_size;
-> > +static unsigned long __initdata boot_alloc_nodes[HUGE_MAX_HSTATE][MAX_NUMNODES];
-> >   
-> >   /*
-> >    * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
-> > @@ -1348,6 +1349,50 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
-> >   	h->max_huge_pages = i;
-> >   }
-> >   
-> > +static unsigned long __init alloc_huge_pages_nid(struct hstate *h,
-> > +						int nid,
-> > +						unsigned long nr_pages)
-> > +{
-> > +	unsigned long i;
-> > +	struct page *page;
-> > +
-> > +	for (i = 0; i < nr_pages; i++) {
-> > +		page = alloc_fresh_huge_page_node(h, nid);
-> > +		if (!page) {
-> > +			count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
-> > +			break;
-> > +		}
-> > +		count_vm_event(HTLB_BUDDY_PGALLOC);
-> > +	}
-> > +
-> > +	return i;
-> > +}
-> > +
-> > +static unsigned long __init alloc_huge_pages_nodes(struct hstate *h)
-> > +{
-> > +	unsigned long i, *entry, ret = 0;
-> > +
-> > +	for (i = 0; i < MAX_NUMNODES; i++) {
-> > +		entry = &boot_alloc_nodes[hstate_index(h)][i];
-> > +		if (*entry > 0)
-> > +			ret += alloc_huge_pages_nid(h, i, *entry);
-> > +	}
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static void __init hugetlb_init_hstates_nodes(void)
-> > +{
-> > +	struct hstate *h;
-> > +	unsigned long ret;
-> > +
-> > +	for_each_hstate(h)
-> > +		if (h->order < MAX_ORDER) {
-> > +			ret = alloc_huge_pages_nodes(h);
-> > +			h->max_huge_pages += ret;
-> > +		}
-> > +}
-> > +
-> >   static void __init hugetlb_init_hstates(void)
-> >   {
-> >   	struct hstate *h;
-> > @@ -1966,6 +2011,7 @@ static int __init hugetlb_init(void)
-> >   		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
-> >   
-> >   	hugetlb_init_hstates();
-> > +	hugetlb_init_hstates_nodes();
-> >   	gather_bootmem_prealloc();
-> >   	report_hugepages();
-> >   
-> > @@ -2005,6 +2051,37 @@ void __init hugetlb_add_hstate(unsigned order)
-> >   	parsed_hstate = h;
-> >   }
-> >   
-> > +void __init hugetlb_add_nrpages_nid(unsigned order, unsigned long nid,
-> > +				unsigned long nr_pages)
-> > +{
-> > +	struct hstate *h;
-> > +	unsigned long *p;
-> > +
-> > +	if (parsed_hstate) {
-> > +		printk(KERN_WARNING
-> > +			"hugepagesnid: hugepagesz= specified, ignoring\n");
-> > +		return;
-> > +	}
-> > +
-> > +	for_each_hstate(h)
-> > +		if (h->order == order)
-> > +			break;
-> > +
-> > +	if (h->order != order) {
-> > +		hugetlb_add_hstate(order);
-> > +		parsed_hstate = NULL;
-> > +	}
-> > +
-> > +	p = &boot_alloc_nodes[hstate_index(h)][nid];
-> > +	if (*p != 0) {
-> > +		printk(KERN_WARNING
-> > +			"hugepagesnid: node %lu already specified, ignoring\n", nid);
-> > +		return;
-> > +	}
-> > +
-> > +	*p = nr_pages;
-> > +}
-> > +
-> >   static int __init hugetlb_nrpages_setup(char *s)
-> >   {
-> >   	unsigned long *mhp;
-> > 
-> 
-> 
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index 0c77025..d3fcb23 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -283,17 +283,18 @@ static int mei_hbm_prop_req(struct mei_device *dev)
+ }
+ 
+ /**
+- * mei_hbm_stop_req_prepare - prepare stop request message
++ * mei_hbm_stop_req - send stop request message
+  *
+  * @dev - mei device
+- * @mei_hdr - mei message header
+- * @data - hbm message body buffer
++ * @cl: client info
++ *
++ * This function returns -EIO on write failure
+  */
+-static void mei_hbm_stop_req_prepare(struct mei_device *dev,
+-		struct mei_msg_hdr *mei_hdr, unsigned char *data)
++static int mei_hbm_stop_req(struct mei_device *dev)
+ {
++	struct mei_msg_hdr *mei_hdr = &dev->wr_msg.hdr;
+ 	struct hbm_host_stop_request *req =
+-			(struct hbm_host_stop_request *)data;
++			(struct hbm_host_stop_request *)dev->wr_msg.data;
+ 	const size_t len = sizeof(struct hbm_host_stop_request);
+ 
+ 	mei_hbm_hdr(mei_hdr, len);
+@@ -301,6 +302,8 @@ static void mei_hbm_stop_req_prepare(struct mei_device *dev,
+ 	memset(req, 0, len);
+ 	req->hbm_cmd = HOST_STOP_REQ_CMD;
+ 	req->reason = DRIVER_STOP_REQUEST;
++
++	return mei_write_message(dev, mei_hdr, dev->wr_msg.data);
+ }
+ 
+ /**
+@@ -405,6 +408,25 @@ int mei_hbm_cl_disconnect_req(struct mei_device *dev, struct mei_cl *cl)
+ }
+ 
+ /**
++ * mei_hbm_cl_disconnect_rsp - sends disconnect respose to the FW
++ *
++ * @dev: the device structure
++ * @cl: a client to disconnect from
++ *
++ * This function returns -EIO on write failure
++ */
++int mei_hbm_cl_disconnect_rsp(struct mei_device *dev, struct mei_cl *cl)
++{
++	struct mei_msg_hdr *mei_hdr = &dev->wr_msg.hdr;
++	const size_t len = sizeof(struct hbm_client_connect_response);
++
++	mei_hbm_hdr(mei_hdr, len);
++	mei_hbm_cl_hdr(cl, CLIENT_DISCONNECT_RES_CMD, dev->wr_msg.data, len);
++
++	return mei_write_message(dev, mei_hdr, dev->wr_msg.data);
++}
++
++/**
+  * mei_hbm_cl_disconnect_res - disconnect response from ME
+  *
+  * @dev: the device structure
+@@ -525,12 +547,14 @@ static void mei_hbm_cl_connect_res(struct mei_device *dev,
+  *
+  * @dev: the device structure.
+  * @disconnect_req: disconnect request bus message from the me
++ *
++ * returns -ENOMEM on allocation failure
+  */
+-static void mei_hbm_fw_disconnect_req(struct mei_device *dev,
++static int mei_hbm_fw_disconnect_req(struct mei_device *dev,
+ 		struct hbm_client_connect_request *disconnect_req)
+ {
+ 	struct mei_cl *cl, *next;
+-	const size_t len = sizeof(struct hbm_client_connect_response);
++	struct mei_cl_cb *cb;
+ 
+ 	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
+ 		if (mei_hbm_cl_addr_equal(cl, disconnect_req)) {
+@@ -544,13 +568,17 @@ static void mei_hbm_fw_disconnect_req(struct mei_device *dev,
+ 			else if (cl == &dev->iamthif_cl)
+ 				dev->iamthif_timer = 0;
+ 
+-			/* prepare disconnect response */
+-			mei_hbm_hdr(&dev->wr_ext_msg.hdr, len);
+-			mei_hbm_cl_hdr(cl, CLIENT_DISCONNECT_RES_CMD,
+-					 dev->wr_ext_msg.data, len);
++			cb = mei_io_cb_init(cl, NULL);
++			if (!cb)
++				return -ENOMEM;
++			cb->fop_type = MEI_FOP_DISCONNECT_RSP;
++			cl_dbg(dev, cl, "add disconnect response as first\n");
++			list_add(&cb->list, &dev->ctrl_wr_list.list);
++
+ 			break;
+ 		}
+ 	}
++	return 0;
+ }
+ 
+ 
+@@ -629,10 +657,7 @@ int mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
+ 			dev_warn(&dev->pdev->dev, "hbm: start: version mismatch - stopping the driver.\n");
+ 
+ 			dev->hbm_state = MEI_HBM_STOPPED;
+-			mei_hbm_stop_req_prepare(dev, &dev->wr_msg.hdr,
+-						dev->wr_msg.data);
+-			if (mei_write_message(dev, &dev->wr_msg.hdr,
+-					dev->wr_msg.data)) {
++			if (mei_hbm_stop_req(dev)) {
+ 				dev_err(&dev->pdev->dev, "hbm: start: failed to send stop request\n");
+ 				return -EIO;
+ 			}
+@@ -778,10 +803,11 @@ int mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
+ 
+ 	case ME_STOP_REQ_CMD:
+ 		dev_dbg(&dev->pdev->dev, "hbm: stop request: message received\n");
+-
+ 		dev->hbm_state = MEI_HBM_STOPPED;
+-		mei_hbm_stop_req_prepare(dev, &dev->wr_ext_msg.hdr,
+-					dev->wr_ext_msg.data);
++		if (mei_hbm_stop_req(dev)) {
++			dev_err(&dev->pdev->dev, "hbm: start: failed to send stop request\n");
++			return -EIO;
++		}
+ 		break;
+ 	default:
+ 		BUG();
+diff --git a/drivers/misc/mei/hbm.h b/drivers/misc/mei/hbm.h
+index 5f92188..20e8782 100644
+--- a/drivers/misc/mei/hbm.h
++++ b/drivers/misc/mei/hbm.h
+@@ -54,6 +54,7 @@ int mei_hbm_start_req(struct mei_device *dev);
+ int mei_hbm_start_wait(struct mei_device *dev);
+ int mei_hbm_cl_flow_control_req(struct mei_device *dev, struct mei_cl *cl);
+ int mei_hbm_cl_disconnect_req(struct mei_device *dev, struct mei_cl *cl);
++int mei_hbm_cl_disconnect_rsp(struct mei_device *dev, struct mei_cl *cl);
+ int mei_hbm_cl_connect_req(struct mei_device *dev, struct mei_cl *cl);
+ bool mei_hbm_version_is_supported(struct mei_device *dev);
+ 
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 54286f3..847c9e5 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -505,9 +505,6 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
+ 	/* check slots available for reading */
+ 	slots = mei_count_full_read_slots(dev);
+ 	while (slots > 0) {
+-		/* we have urgent data to send so break the read */
+-		if (dev->wr_ext_msg.hdr.length)
+-			break;
+ 		dev_dbg(&dev->pdev->dev, "slots to read = %08x\n", slots);
+ 		rets = mei_irq_read_handler(dev, &complete_list, &slots);
+ 		if (rets && dev->dev_state != MEI_DEV_RESETTING) {
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 95a7180..214dcef 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -116,7 +116,6 @@ int mei_reset(struct mei_device *dev)
+ 		mei_cl_unlink(&dev->wd_cl);
+ 		mei_cl_unlink(&dev->iamthif_cl);
+ 		mei_amthif_reset_params(dev);
+-		memset(&dev->wr_ext_msg, 0, sizeof(dev->wr_ext_msg));
+ 	}
+ 
+ 
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 3f0b0b9..75ff409 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -161,6 +161,41 @@ static int mei_cl_irq_read_msg(struct mei_device *dev,
+ }
+ 
+ /**
++ * mei_cl_irq_disconnect_rsp - send disconnection response message
++ *
++ * @cl: client
++ * @cb: callback block.
++ * @slots: free slots.
++ * @cmpl_list: complete list.
++ *
++ * returns 0, OK; otherwise, error.
++ */
++static int mei_cl_irq_disconnect_rsp(struct mei_cl *cl, struct mei_cl_cb *cb,
++			s32 *slots, struct mei_cl_cb *cmpl_list)
++{
++	struct mei_device *dev = cl->dev;
++	int ret;
++
++	u32 msg_slots =
++		mei_data2slots(sizeof(struct hbm_client_connect_response));
++
++	if (*slots < msg_slots)
++		return -EMSGSIZE;
++
++	*slots -= msg_slots;
++
++	ret = mei_hbm_cl_disconnect_rsp(dev, cl);
++
++	cl->state = MEI_FILE_DISCONNECTED;
++	cl->status = 0;
++	mei_io_cb_free(cb);
++
++	return ret;
++}
++
++
++
++/**
+  * mei_cl_irq_close - processes close related operation from
+  *	interrupt thread context - send disconnect request
+  *
+@@ -452,12 +487,6 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 		wake_up_interruptible(&dev->wait_stop_wd);
+ 	}
+ 
+-	if (dev->wr_ext_msg.hdr.length) {
+-		mei_write_message(dev, &dev->wr_ext_msg.hdr,
+-				dev->wr_ext_msg.data);
+-		slots -= mei_data2slots(dev->wr_ext_msg.hdr.length);
+-		dev->wr_ext_msg.hdr.length = 0;
+-	}
+ 	if (dev->dev_state == MEI_DEV_ENABLED) {
+ 		if (dev->wd_pending &&
+ 		    mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
+@@ -505,7 +534,11 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 				return ret;
+ 
+ 			break;
+-
++		case MEI_FOP_DISCONNECT_RSP:
++			/* send disconnect resp */
++			ret = mei_cl_irq_disconnect_rsp(cl, cb, &slots, cmpl_list);
++			if (ret)
++				return ret;
+ 		default:
+ 			BUG();
+ 		}
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index f2c949e..21e5249 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -133,6 +133,7 @@ enum mei_wd_states {
+  * @MEI_FOP_READ      - read
+  * @MEI_FOP_WRITE     - write
+  * @MEI_FOP_CONNECT   - connect
++ * @MEI_FOP_DISCONNECT_RSP - disconnect response
+  * @MEI_FOP_OPEN      - open
+  * @MEI_FOP_CLOSE     - close
+  */
+@@ -140,6 +141,7 @@ enum mei_cb_file_ops {
+ 	MEI_FOP_READ = 0,
+ 	MEI_FOP_WRITE,
+ 	MEI_FOP_CONNECT,
++	MEI_FOP_DISCONNECT_RSP,
+ 	MEI_FOP_OPEN,
+ 	MEI_FOP_CLOSE
+ };
+@@ -339,7 +341,6 @@ struct mei_cl_device {
+  * @hbuf_depth - depth of hardware host/write buffer is slots
+  * @hbuf_is_ready - query if the host host/write buffer is ready
+  * @wr_msg - the buffer for hbm control messages
+- * @wr_ext_msg - the buffer for hbm control responses (set in read cycle)
+  */
+ struct mei_device {
+ 	struct pci_dev *pdev;	/* pointer to pci device struct */
+@@ -394,11 +395,6 @@ struct mei_device {
+ 		unsigned char data[128];
+ 	} wr_msg;
+ 
+-	struct {
+-		struct mei_msg_hdr hdr;
+-		unsigned char data[4];	/* All HBM messages are 4 bytes */
+-	} wr_ext_msg;		/* for control responses */
+-
+ 	struct hbm_version version;
+ 
+ 	struct mei_me_client *me_clients; /* Note: memory has to be allocated */
+-- 
+1.8.5.3
 
