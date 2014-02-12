@@ -1,31 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842AbaBLIiq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:38:46 -0500
-Received: from eng.unideb.hu ([193.6.145.139]:43175 "EHLO
-	infosrv.eng.unideb.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390AbaBLIin (ORCPT
+	id S1753893AbaBLIjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:39:08 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50067 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751792AbaBLINt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:38:43 -0500
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 03:38:43 EST
-Message-ID: <d4a398d2564657917842f578a1e3426f.squirrel@www.eng.unideb.hu>
-Date: Wed, 12 Feb 2014 09:25:05 +0100
-Subject: rendszergazda
-From: =?utf-8?B?IkUta2FyYmFudGFydMOhcyI=?= <gantal@eng.unideb.hu>
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
+	Wed, 12 Feb 2014 03:13:49 -0500
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Sasha Levin" <sasha.levin@oracle.com>
+Date: Wed, 12 Feb 2014 08:10:12 +0000
+Message-ID: <lsq.1392192612.662940308@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 10/79] rds: prevent dereference of a NULL device
+In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
+X-SA-Exim-Connect-IP: 91.84.160.45
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kedves Felhasználó
-Jelszó lejár 3 napon belül Kattintson ide, hogy ellenorizze az e-mail
-http://web-hronline.jimdo.com/
-köszönöm
-rendszergazda
+3.2.55-rc1 review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Sasha Levin <sasha.levin@oracle.com>
+
+[ Upstream commit c2349758acf1874e4c2b93fe41d072336f1a31d0 ]
+
+Binding might result in a NULL device, which is dereferenced
+causing this BUG:
+
+[ 1317.260548] BUG: unable to handle kernel NULL pointer dereference at 000000000000097
+4
+[ 1317.261847] IP: [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.263315] PGD 418bcb067 PUD 3ceb21067 PMD 0
+[ 1317.263502] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1317.264179] Dumping ftrace buffer:
+[ 1317.264774]    (ftrace buffer empty)
+[ 1317.265220] Modules linked in:
+[ 1317.265824] CPU: 4 PID: 836 Comm: trinity-child46 Tainted: G        W    3.13.0-rc4-
+next-20131218-sasha-00013-g2cebb9b-dirty #4159
+[ 1317.267415] task: ffff8803ddf33000 ti: ffff8803cd31a000 task.ti: ffff8803cd31a000
+[ 1317.268399] RIP: 0010:[<ffffffff84225f52>]  [<ffffffff84225f52>] rds_ib_laddr_check+
+0x82/0x110
+[ 1317.269670] RSP: 0000:ffff8803cd31bdf8  EFLAGS: 00010246
+[ 1317.270230] RAX: 0000000000000000 RBX: ffff88020b0dd388 RCX: 0000000000000000
+[ 1317.270230] RDX: ffffffff8439822e RSI: 00000000000c000a RDI: 0000000000000286
+[ 1317.270230] RBP: ffff8803cd31be38 R08: 0000000000000000 R09: 0000000000000000
+[ 1317.270230] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+[ 1317.270230] R13: 0000000054086700 R14: 0000000000a25de0 R15: 0000000000000031
+[ 1317.270230] FS:  00007ff40251d700(0000) GS:ffff88022e200000(0000) knlGS:000000000000
+0000
+[ 1317.270230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1317.270230] CR2: 0000000000000974 CR3: 00000003cd478000 CR4: 00000000000006e0
+[ 1317.270230] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1317.270230] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000090602
+[ 1317.270230] Stack:
+[ 1317.270230]  0000000054086700 5408670000a25de0 5408670000000002 0000000000000000
+[ 1317.270230]  ffffffff84223542 00000000ea54c767 0000000000000000 ffffffff86d26160
+[ 1317.270230]  ffff8803cd31be68 ffffffff84223556 ffff8803cd31beb8 ffff8800c6765280
+[ 1317.270230] Call Trace:
+[ 1317.270230]  [<ffffffff84223542>] ? rds_trans_get_preferred+0x42/0xa0
+[ 1317.270230]  [<ffffffff84223556>] rds_trans_get_preferred+0x56/0xa0
+[ 1317.270230]  [<ffffffff8421c9c3>] rds_bind+0x73/0xf0
+[ 1317.270230]  [<ffffffff83e4ce62>] SYSC_bind+0x92/0xf0
+[ 1317.270230]  [<ffffffff812493f8>] ? context_tracking_user_exit+0xb8/0x1d0
+[ 1317.270230]  [<ffffffff8119313d>] ? trace_hardirqs_on+0xd/0x10
+[ 1317.270230]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
+[ 1317.270230]  [<ffffffff83e4cece>] SyS_bind+0xe/0x10
+[ 1317.270230]  [<ffffffff843a6ad0>] tracesys+0xdd/0xe2
+[ 1317.270230] Code: 00 8b 45 cc 48 8d 75 d0 48 c7 45 d8 00 00 00 00 66 c7 45 d0 02 00
+89 45 d4 48 89 df e8 78 49 76 ff 41 89 c4 85 c0 75 0c 48 8b 03 <80> b8 74 09 00 00 01 7
+4 06 41 bc 9d ff ff ff f6 05 2a b6 c2 02
+[ 1317.270230] RIP  [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.270230]  RSP <ffff8803cd31bdf8>
+[ 1317.270230] CR2: 0000000000000974
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/rds/ib.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/rds/ib.c b/net/rds/ib.c
+index b4c8b00..ba2dffe 100644
+--- a/net/rds/ib.c
++++ b/net/rds/ib.c
+@@ -338,7 +338,8 @@ static int rds_ib_laddr_check(__be32 addr)
+ 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
+ 	/* due to this, we will claim to support iWARP devices unless we
+ 	   check node_type. */
+-	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
++	if (ret || !cm_id->device ||
++	    cm_id->device->node_type != RDMA_NODE_IB_CA)
+ 		ret = -EADDRNOTAVAIL;
+ 
+ 	rdsdebug("addr %pI4 ret %d node type %d\n",
 
