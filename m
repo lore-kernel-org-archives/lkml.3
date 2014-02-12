@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222AbaBLVyy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:54:54 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:40860 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaBLVyv (ORCPT
+	id S1753930AbaBLVzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:55:15 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:60915 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379AbaBLVzF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:54:51 -0500
-Date: Wed, 12 Feb 2014 13:54:43 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: dl9pf@gmx.de
-cc: Behan Webster <behanw@converseincode.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, acpi: LLVMLinux: Remove nested functions from
- Thinkpad ACPI
-In-Reply-To: <1392238726-18787-1-git-send-email-dl9pf@gmx.de>
-Message-ID: <alpine.DEB.2.02.1402121351510.27082@chino.kir.corp.google.com>
-References: <1392238726-18787-1-git-send-email-dl9pf@gmx.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 12 Feb 2014 16:55:05 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: Question about nfs4_destroy_session()
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+In-Reply-To: <20140212214209.GA4136@linux.vnet.ibm.com>
+Date: Wed, 12 Feb 2014 16:55:02 -0500
+Cc: linuxnfs <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5BCC49E0-6F92-49EC-BFCD-17D5CA4D30C7@primarydata.com>
+References: <20140212214209.GA4136@linux.vnet.ibm.com>
+To: paulmck@linux.vnet.ibm.com
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Feb 2014, dl9pf@gmx.de wrote:
 
-> From: Behan Webster <behanw@converseincode.com>
+On Feb 12, 2014, at 16:42, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+> Hello, Trond,
 > 
-> The only real change is passing in event_mask to the formerly nested functions.
-> Otherwise it's just moving around function and macro code.
+> In nfs4_destroy_session(), there is an rcu_dereference() that looks to
+> leak the returned pointer out of an RCU read-side critical section.
+> If the pointed-to object might have just now been created, this is a
+> bug because xprt_destroy_backchannel() dereferences this pointer.
 > 
-> This is the only place in the Linux kernel where nested functions are still in
-> use. Nested functions aren't part of the C standards, and complicate the
-> generated code. Although the Linux Kernel has never set out to be entirely C
-> standard compliant, it is increasingly compliant to the standard which is
-> supported by other compilers such as Clang. The LLVMLinux project is working on
-> being able to compile the Linux kernel with Clang. The use of nested functions
-> blocks this effort.
+> So, does xprt_destroy_backchannel() exclude creation-side code?  (If so,
+> no bug -- but a comment might be good.)
+> 
+> 							Thanx, Paul
+> 
+> void nfs4_destroy_session(struct nfs4_session *session)
+> {
+> 	struct rpc_xprt *xprt;
+> 	struct rpc_cred *cred;
+> 
+> 	cred = nfs4_get_clid_cred(session->clp);
+> 	nfs4_proc_destroy_session(session, cred);
+> 	if (cred)
+> 		put_rpccred(cred);
+> 
+> 	rcu_read_lock();
+> 	xprt = rcu_dereference(session->clp->cl_rpcclient->cl_xprt);
+> 	rcu_read_unlock();
+> 	dprintk("%s Destroy backchannel for xprt %p\n",
+> 		__func__, xprt);
+> 	xprt_destroy_backchannel(xprt, NFS41_BC_MIN_CALLBACKS);
+> 	nfs4_destroy_session_slot_tables(session);
+> 	kfree(session);
+> }
 > 
 
-So this patch is only as a courtesy to clang and you're not complaining 
-about things like __builtin() functions, typeof, or a ? : b conditional 
-operators because clang happens to support them?
+Hi Paul,
+
+nfs4_destroy_session() is only called when we’re tearing down the struct nfs_client that owns the cl_rppcclient, and the associated cl_xprt, so the code above should be safe, despite being ugly.
+
+Is there a better annotation for use in the above kind of situation?
+
+Cheers,
+  Trond
+
+_________________________________
+Trond Myklebust
+Linux NFS client maintainer, PrimaryData
+trond.myklebust@primarydata.com
+
