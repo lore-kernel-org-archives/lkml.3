@@ -1,52 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaBLVf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:35:57 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:49131 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921AbaBLVfz (ORCPT
+	id S1752377AbaBLVkP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:40:15 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:46257 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaBLVkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:35:55 -0500
+	Wed, 12 Feb 2014 16:40:13 -0500
+Message-ID: <52FBEA38.1050902@gmail.com>
+Date: Wed, 12 Feb 2014 22:40:08 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140212174554.GM27395@titan.lakedaemon.net>
-References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
-	<201402121251.06280.arnd@arndb.de>
-	<20140212174554.GM27395@titan.lakedaemon.net>
-Date: Wed, 12 Feb 2014 13:35:54 -0800
-X-Google-Sender-Auth: I3vOzn9z7snq0AiS2MeZ5lzEzDQ
-Message-ID: <CAGXu5j+BQzrgoAN-TiCaaoQaEjB+JQOCZLKq+_rFoWdFR-UpqQ@mail.gmail.com>
-Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
-From: Kees Cook <keescook@chromium.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Laura Abbott <lauraa@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+To: Florian Fainelli <f.fainelli@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gupta Pekon <pekon@ti.com>
+Subject: Re: [RFC PATCH v2 0/4] mtd: nand: add per partition ECC config
+References: <1392155209-14495-1-git-send-email-b.brezillon.dev@gmail.com> <CAGVrzcZei92K9Jeue-Yvcev7n08YEEqfRbN2xgqLpW7epMzFVA@mail.gmail.com> <52FBE5B6.2040603@gmail.com>
+In-Reply-To: <52FBE5B6.2040603@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 9:45 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> I brought this up at last weeks devicetree irc meeting.  My goal is to
-> provide early randomness for kaslr on ARM.  Currently, my idea is modify
-> the init script to save an additional random seed from /dev/urandom to
-> /boot/random-seed.
+On 12/02/2014 22:20, Boris BREZILLON wrote:
+> Hi Florian,
+>
+> On 12/02/2014 20:49, Florian Fainelli wrote:
+>> Hi Boris,
+>>
+>> 2014-02-11 13:46 GMT-08:00 Boris BREZILLON <b.brezillon.dev@gmail.com>:
+>>> Hello,
+>>>
+>>> This patch series is a proposal to add per partition ECC config.
+>>>
+>>> It defines a new partition type called nand_part which stores a 
+>>> pointer to
+>>> a nand_ecc_ctrl struct.
+>>> This specific nand_ecc_ctrl struct is used in place of the base NAND 
+>>> chip
+>>> nand_ecc_ctrl struct when accessing NAND chip from nand_part MTD 
+>>> device.
+>>>
+>>> If the partition does not define any ECC config, the NAND chip ECC 
+>>> config
+>>> is used instead.
+>> Although the idea does look nice on the paper, I wonder if it is
+>> really useful to have that much complexity in the kernel. Most likely
+>> what is happening is that your bootloader partition has a specific ECC
+>> scheme due to the CPU bootrom or whatever early bootagent is running
+>> on the system. When that is the case, this can be solved in user-space
+>> by preparing full pages (main+spare) along with their specific ECC
+>> requirements and use the MTD_FILE_MODE_RAW option on your specific MTD
+>> partition.
+>
+> Okay, that should be possible, althought in the sunxi specific case I 
+> haven't
+> figured out how to generate these ECC data yet (even if it's using BCH 
+> algorithms).
+>
+>> You do not describe what is the end goal of this patchset, which might
+>> help figuring out the potential other platforms requirements etc...
+>
 
-I'm all for a good entropy source for early boot. :)
+BTW, here is another case where per partition ECC would have been useful 
+:-) :
+http://comments.gmane.org/gmane.linux.ports.arm.omap/108083
 
-I need to figure out what's needed for relocation support first
-though, before we can really tackle kernel base-address randomization
-on ARM. I haven't had a chance to look around too closely yet, but it
-seems like only x86 and ppc do this currently? Has anyone looked in
-detail and what would be needed on ARM for CONFIG_RELOCATABLE
-behavior?
+> My goal is exactly the one you described above, I just thought this 
+> would be
+> much easier to handle this within the kernel, without having to 
+> develop extra
+> user space tools.
+> Moreover the user would be able to directly manipulate the data on the 
+> MTD
+> partitions.
+>
+> This implementation is not that complex and should not impact 
+> performances
+> (it's just using cur_ecc pointer instead of intern ecc struct).
+>
+> Most of the extra code introduced by this series come from the new 
+> partition type
+> handling, which is quite straightforward BTW.
+>
+> Anyway, I understand your concern. Could MTD maintainers (and NAND driver
+> developpers) give there opinion too ?
+>
+> BTW, I'm also working on a data randomization layer (needed by some 
+> MLC/TLC chips)
+> within the NAND core framework and I'm using the same per partition 
+> approach
+> (for the exact same reason: boot0 partition uses a randomizer seed 
+> that might not fit
+> the NAND chip requirements).
+>
+> Should I reconsider doing this too ?
+>
+> Thanks for you comments.
+>
+> Best Regards,
+>
+> Boris
+>>
+>>> This patch series also provides an helper function to parse DT 
+>>> defined NAND
+>>> partitions (ofnandpart_parse).
+>>>
+>>> If you want to test it you'll have to replace calls to
+>>> mtd_device_parse_register with ofnandpart_parse within your NAND 
+>>> controller
+>>> driver and implement a driver specific parser function that will 
+>>> provide
+>>> the ECC config (see ofnandpart_data struct).
+>>>
+>>> The 4th patch of this series is here as an example on how to move 
+>>> from MTD
+>>> partitions to NAND partitions.
+>>>
+>>> Best Regards,
+>>>
+>>> Boris
+>>>
+>>> Changes since v1:
+>>> - almost everything :-)
+>>>
+>>> Boris BREZILLON (4):
+>>>    mtd: nand: take nand_ecc_ctrl initialization out of nand_scan_tail
+>>>    mtd: nand: add support for NAND partitions
+>>>    mtd: nand: add DT NAND partition parser
+>>>    mtd: nand: add NAND partition support to the sunxi driver
+>>>
+>>>   drivers/mtd/nand/Kconfig      |    4 +
+>>>   drivers/mtd/nand/Makefile     |    2 +
+>>>   drivers/mtd/nand/nand_base.c  |  763 
+>>> ++++++++++++++++++++++++++++++++---------
+>>>   drivers/mtd/nand/ofnandpart.c |  104 ++++++
+>>>   drivers/mtd/nand/sunxi_nand.c |   69 +++-
+>>>   include/linux/mtd/nand.h      |   54 +++
+>>>   6 files changed, 835 insertions(+), 161 deletions(-)
+>>>   create mode 100644 drivers/mtd/nand/ofnandpart.c
+>>>
+>>> -- 
+>>> 1.7.9.5
+>>>
+>>>
+>>> ______________________________________________________
+>>> Linux MTD discussion mailing list
+>>> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>>
+>>
+>
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
