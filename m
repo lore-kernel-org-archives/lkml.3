@@ -1,305 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaBMWLf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:11:35 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:60758 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaBMWLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752199AbaBMWLs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:11:48 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:36059 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643AbaBMWLc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Feb 2014 17:11:32 -0500
-Date: Thu, 13 Feb 2014 17:11:26 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 00/10] mm: thrash detection-based file cache sizing v9
-Message-ID: <20140213221126.GP6963@cmpxchg.org>
-References: <1391475222-1169-1-git-send-email-hannes@cmpxchg.org>
- <201402130321.s1D3LH41073563@www262.sakura.ne.jp>
+Date: Thu, 13 Feb 2014 17:13:20 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
+Subject: Re: x86_pmu_start WARN_ON.
+In-Reply-To: <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
+References: <20140130190253.GA11819@redhat.com> <alpine.DEB.2.10.1402101620170.29602@vincent-weaver-1.um.maine.edu> <20140211132956.GY9987@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402121559350.20738@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201402130321.s1D3LH41073563@www262.sakura.ne.jp>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tetsuo,
+On Thu, 13 Feb 2014, Vince Weaver wrote:
 
-On Thu, Feb 13, 2014 at 12:21:17PM +0900, Tetsuo Handa wrote:
-> Hello.
-> 
-> I got a lockdep warning shown below, and the bad commit seems to be de055616
-> \"mm: keep page cache radix tree nodes in check\" as of next-20140212
-> on linux-next.git.
+> The plot thickens.  The WARN_ON is not caused by the cycles event that we 
+> open, but it's caused by the NMI Watchdog cycles event.
 
-Thanks for the report.  There is already a fix for this in -mm:
-http://marc.info/?l=linux-mm-commits&m=139180637114625&w=2
+The WARN_ON_ONCE at line 1076 in perf_event.c is triggering because
+in x86_pmu_enable() is calling x86_pmu_start() for all of the active x86 
+events (three plus the NMI watchdog) the NMI watchdog is unexpectedly
+not having PERF_HES_STOPPED set (it's hw.state is 0).
 
-It was merged on the 7th, so it should show up in -next... any day
-now?
+What's the deal with the PERF_HES_STOPPED name?  Is HES an acronym?
+Or is it just a male event?  
+Also it's not really clear what PERF_HES_ARCH indicates.
 
-> Regards.
-> 
-> =========================================================
-> [ INFO: possible irq lock inversion dependency detected ]
-> 3.14.0-rc1-00099-gde05561 #126 Tainted: GF           
-> ---------------------------------------------------------
-> swapper/0/0 just changed the state of lock:
->  (&(&mapping->tree_lock)->rlock){..-.-.}, at: [<ffffffff8116f3e8>] test_clear_page_writeback+0x48/0x190
-> but this lock took another, SOFTIRQ-unsafe lock in the past:
->  (&(&lru->node[i].lock)->rlock){+.+.-.}
-> 
-> and interrupts could create inverse lock ordering between them.
-> 
-> 
-> other info that might help us debug this:
->  Possible interrupt unsafe locking scenario:
-> 
->        CPU0                    CPU1
->        ----                    ----
->   lock(&(&lru->node[i].lock)->rlock);
->                                local_irq_disable();
->                                lock(&(&mapping->tree_lock)->rlock);
->                                lock(&(&lru->node[i].lock)->rlock);
->   <Interrupt>
->     lock(&(&mapping->tree_lock)->rlock);
-> 
->  *** DEADLOCK ***
-> 
-> no locks held by swapper/0/0.
-> 
-> the shortest dependencies between 2nd lock and 1st lock:
->  -> (&(&lru->node[i].lock)->rlock){+.+.-.} ops: 445715 {
->     HARDIRQ-ON-W at:
->                       [<ffffffff810b6490>] mark_irqflags+0x130/0x190
->                       [<ffffffff810b7edc>] __lock_acquire+0x3bc/0x5e0
->                       [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->                       [<ffffffff816305ae>] _raw_spin_lock+0x3e/0x80
->                       [<ffffffff8118c82b>] list_lru_add+0x5b/0xf0
->                       [<ffffffff811e5c1c>] dput+0xbc/0x120
->                       [<ffffffff811cebc2>] __fput+0x1d2/0x310
->                       [<ffffffff811cedae>] ____fput+0xe/0x10
->                       [<ffffffff8107cc2d>] task_work_run+0xad/0xe0
->                       [<ffffffff81003be5>] do_notify_resume+0x75/0x80
->                       [<ffffffff8163b01a>] int_signal+0x12/0x17
->     SOFTIRQ-ON-W at:
->                       [<ffffffff810b64b4>] mark_irqflags+0x154/0x190
->                       [<ffffffff810b7edc>] __lock_acquire+0x3bc/0x5e0
->                       [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->                       [<ffffffff816305ae>] _raw_spin_lock+0x3e/0x80
->                       [<ffffffff8118c82b>] list_lru_add+0x5b/0xf0
->                       [<ffffffff811e5c1c>] dput+0xbc/0x120
->                       [<ffffffff811cebc2>] __fput+0x1d2/0x310
->                       [<ffffffff811cedae>] ____fput+0xe/0x10
->                       [<ffffffff8107cc2d>] task_work_run+0xad/0xe0
->                       [<ffffffff81003be5>] do_notify_resume+0x75/0x80
->                       [<ffffffff8163b01a>] int_signal+0x12/0x17
->     IN-RECLAIM_FS-W at:
->                          [<ffffffff810b6426>] mark_irqflags+0xc6/0x190
->                          [<ffffffff810b7edc>] __lock_acquire+0x3bc/0x5e0
->                          [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->                          [<ffffffff816305ae>] _raw_spin_lock+0x3e/0x80
->                          [<ffffffff8118c698>] list_lru_count_node+0x28/0x70
->                          [<ffffffff811d05b3>] super_cache_count+0x83/0x120
->                          [<ffffffff81176647>] shrink_slab_node+0x47/0x350
->                          [<ffffffff811769dd>] shrink_slab+0x8d/0x160
->                          [<ffffffff81179480>] kswapd_shrink_zone+0x130/0x1c0
->                          [<ffffffff81179fe9>] balance_pgdat+0x389/0x520
->                          [<ffffffff8117b92f>] kswapd+0x1bf/0x380
->                          [<ffffffff81080abe>] kthread+0xee/0x110
->                          [<ffffffff8163ac6c>] ret_from_fork+0x7c/0xb0
->     INITIAL USE at:
->                      [<ffffffff810b7d34>] __lock_acquire+0x214/0x5e0
->                      [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->                      [<ffffffff816305ae>] _raw_spin_lock+0x3e/0x80
->                      [<ffffffff8118c82b>] list_lru_add+0x5b/0xf0
->                      [<ffffffff811e5c1c>] dput+0xbc/0x120
->                      [<ffffffff811cebc2>] __fput+0x1d2/0x310
->                      [<ffffffff811cedae>] ____fput+0xe/0x10
->                      [<ffffffff8107cc2d>] task_work_run+0xad/0xe0
->                      [<ffffffff81003be5>] do_notify_resume+0x75/0x80
->                      [<ffffffff8163b01a>] int_signal+0x12/0x17
->   }
->   ... key      at: [<ffffffff82b59f34>] __key.23573+0x0/0xc
->   ... acquired at:
->    [<ffffffff810b79c1>] validate_chain+0x6e1/0x840
->    [<ffffffff810b7e87>] __lock_acquire+0x367/0x5e0
->    [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->    [<ffffffff816305ae>] _raw_spin_lock+0x3e/0x80
->    [<ffffffff8118c82b>] list_lru_add+0x5b/0xf0
->    [<ffffffff81161180>] page_cache_tree_delete+0x140/0x1a0
->    [<ffffffff81161230>] __delete_from_page_cache+0x50/0x1c0
->    [<ffffffff8117571d>] __remove_mapping+0x9d/0x170
->    [<ffffffff81177347>] shrink_page_list+0x617/0x7f0
->    [<ffffffff811783aa>] shrink_inactive_list+0x26a/0x520
->    [<ffffffff81178cc6>] shrink_lruvec+0x336/0x420
->    [<ffffffff81178e0c>] shrink_zone+0x5c/0x120
->    [<ffffffff8117944b>] kswapd_shrink_zone+0xfb/0x1c0
->    [<ffffffff81179fe9>] balance_pgdat+0x389/0x520
->    [<ffffffff8117b92f>] kswapd+0x1bf/0x380
->    [<ffffffff81080abe>] kthread+0xee/0x110
->    [<ffffffff8163ac6c>] ret_from_fork+0x7c/0xb0
-> 
-> -> (&(&mapping->tree_lock)->rlock){..-.-.} ops: 11597 {
->    IN-SOFTIRQ-W at:
->                     [<ffffffff810b6469>] mark_irqflags+0x109/0x190
->                     [<ffffffff810b7edc>] __lock_acquire+0x3bc/0x5e0
->                     [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->                     [<ffffffff81630760>] _raw_spin_lock_irqsave+0x50/0x90
->                     [<ffffffff8116f3e8>] test_clear_page_writeback+0x48/0x190
->                     [<ffffffff811604f0>] end_page_writeback+0x20/0x60
->                     [<ffffffffa00c17b8>] ext4_finish_bio+0x168/0x220 [ext4]
->                     [<ffffffffa00c1c37>] ext4_end_bio+0x97/0xe0 [ext4]
->                     [<ffffffff8120b9e3>] bio_endio+0x53/0xa0
->                     [<ffffffff812da333>] blk_update_request+0x213/0x430
->                     [<ffffffff812da577>] blk_update_bidi_request+0x27/0xb0
->                     [<ffffffff812db18f>] blk_end_bidi_request+0x2f/0x80
->                     [<ffffffff812db230>] blk_end_request+0x10/0x20
->                     [<ffffffff8143d770>] scsi_end_request+0x40/0xb0
->                     [<ffffffff8143daff>] scsi_io_completion+0x9f/0x6c0
->                     [<ffffffff81433204>] scsi_finish_command+0xd4/0x140
->                     [<ffffffff8143e28f>] scsi_softirq_done+0x14f/0x170
->                     [<ffffffff812e3144>] blk_done_softirq+0x84/0xa0
->                     [<ffffffff8105b29d>] __do_softirq+0x12d/0x430
->                     [<ffffffff8105b6d5>] irq_exit+0xc5/0xd0
->                     [<ffffffff8163cc47>] do_IRQ+0x67/0x110
->                     [<ffffffff8163156f>] ret_from_intr+0x0/0x13
->                     [<ffffffff8100dd26>] arch_cpu_idle+0x26/0x30
->                     [<ffffffff810cac39>] cpu_idle_loop+0xa9/0x3c0
->                     [<ffffffff810caf73>] cpu_startup_entry+0x23/0x30
->                     [<ffffffff81623434>] rest_init+0xf4/0x170
->                     [<ffffffff81f491dc>] start_kernel+0x346/0x34d
->                     [<ffffffff81f483a8>] x86_64_start_reservations+0x2a/0x2c
->                     [<ffffffff81f484d8>] x86_64_start_kernel+0xf5/0xfc
->    IN-RECLAIM_FS-W at:
->                        [<ffffffff810b6426>] mark_irqflags+0xc6/0x190
->                        [<ffffffff810b7edc>] __lock_acquire+0x3bc/0x5e0
->                        [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->                        [<ffffffff816306d4>] _raw_spin_lock_irq+0x44/0x80
->                        [<ffffffff811756d5>] __remove_mapping+0x55/0x170
->                        [<ffffffff81177347>] shrink_page_list+0x617/0x7f0
->                        [<ffffffff811783aa>] shrink_inactive_list+0x26a/0x520
->                        [<ffffffff81178cc6>] shrink_lruvec+0x336/0x420
->                        [<ffffffff81178e0c>] shrink_zone+0x5c/0x120
->                        [<ffffffff8117944b>] kswapd_shrink_zone+0xfb/0x1c0
->                        [<ffffffff81179fe9>] balance_pgdat+0x389/0x520
->                        [<ffffffff8117b92f>] kswapd+0x1bf/0x380
->                        [<ffffffff81080abe>] kthread+0xee/0x110
->                        [<ffffffff8163ac6c>] ret_from_fork+0x7c/0xb0
->    INITIAL USE at:
->                    [<ffffffff810b7d34>] __lock_acquire+0x214/0x5e0
->                    [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->                    [<ffffffff816306d4>] _raw_spin_lock_irq+0x44/0x80
->                    [<ffffffff81161810>] __add_to_page_cache_locked+0xa0/0x1d0
->                    [<ffffffff81161968>] add_to_page_cache_lru+0x28/0x80
->                    [<ffffffff81162c28>] grab_cache_page_write_begin+0x98/0xe0
->                    [<ffffffff811f95e4>] simple_write_begin+0x34/0x100
->                    [<ffffffff8115fc9a>] generic_perform_write+0xca/0x210
->                    [<ffffffff8115fe43>] generic_file_buffered_write+0x63/0xa0
->                    [<ffffffff81163aea>] __generic_file_aio_write+0x1ca/0x3c0
->                    [<ffffffff81163d46>] generic_file_aio_write+0x66/0xb0
->                    [<ffffffff811cc20f>] do_sync_write+0x5f/0xa0
->                    [<ffffffff811ce127>] vfs_write+0xc7/0x1f0
->                    [<ffffffff811ce362>] SyS_write+0x62/0xb0
->                    [<ffffffff81f4b0c6>] do_copy+0x2b/0xb0
->                    [<ffffffff81f4ad46>] flush_buffer+0x7d/0xa3
->                    [<ffffffff81f7e9ab>] gunzip+0x287/0x330
->                    [<ffffffff81f4b967>] unpack_to_rootfs+0x167/0x293
->                    [<ffffffff81f4bb97>] populate_rootfs+0x62/0xdf
->                    [<ffffffff810002a2>] do_one_initcall+0xd2/0x180
->                    [<ffffffff81f48933>] do_basic_setup+0x9d/0xc0
->                    [<ffffffff81f48bd6>] kernel_init_freeable+0x280/0x303
->                    [<ffffffff816234be>] kernel_init+0xe/0x130
->                    [<ffffffff8163ac6c>] ret_from_fork+0x7c/0xb0
->  }
->  ... key      at: [<ffffffff82bb7f98>] __key.41448+0x0/0x8
->  ... acquired at:
->    [<ffffffff810b51f0>] check_usage_forwards+0x90/0x110
->    [<ffffffff810b5f4f>] mark_lock_irq+0x9f/0x2c0
->    [<ffffffff810b628c>] mark_lock+0x11c/0x1f0
->    [<ffffffff810b6469>] mark_irqflags+0x109/0x190
->    [<ffffffff810b7edc>] __lock_acquire+0x3bc/0x5e0
->    [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->    [<ffffffff81630760>] _raw_spin_lock_irqsave+0x50/0x90
->    [<ffffffff8116f3e8>] test_clear_page_writeback+0x48/0x190
->    [<ffffffff811604f0>] end_page_writeback+0x20/0x60
->    [<ffffffffa00c17b8>] ext4_finish_bio+0x168/0x220 [ext4]
->    [<ffffffffa00c1c37>] ext4_end_bio+0x97/0xe0 [ext4]
->    [<ffffffff8120b9e3>] bio_endio+0x53/0xa0
->    [<ffffffff812da333>] blk_update_request+0x213/0x430
->    [<ffffffff812da577>] blk_update_bidi_request+0x27/0xb0
->    [<ffffffff812db18f>] blk_end_bidi_request+0x2f/0x80
->    [<ffffffff812db230>] blk_end_request+0x10/0x20
->    [<ffffffff8143d770>] scsi_end_request+0x40/0xb0
->    [<ffffffff8143daff>] scsi_io_completion+0x9f/0x6c0
->    [<ffffffff81433204>] scsi_finish_command+0xd4/0x140
->    [<ffffffff8143e28f>] scsi_softirq_done+0x14f/0x170
->    [<ffffffff812e3144>] blk_done_softirq+0x84/0xa0
->    [<ffffffff8105b29d>] __do_softirq+0x12d/0x430
->    [<ffffffff8105b6d5>] irq_exit+0xc5/0xd0
->    [<ffffffff8163cc47>] do_IRQ+0x67/0x110
->    [<ffffffff8163156f>] ret_from_intr+0x0/0x13
->    [<ffffffff8100dd26>] arch_cpu_idle+0x26/0x30
->    [<ffffffff810cac39>] cpu_idle_loop+0xa9/0x3c0
->    [<ffffffff810caf73>] cpu_startup_entry+0x23/0x30
->    [<ffffffff81623434>] rest_init+0xf4/0x170
->    [<ffffffff81f491dc>] start_kernel+0x346/0x34d
->    [<ffffffff81f483a8>] x86_64_start_reservations+0x2a/0x2c
->    [<ffffffff81f484d8>] x86_64_start_kernel+0xf5/0xfc
-> 
-> 
-> stack backtrace:
-> CPU: 0 PID: 0 Comm: swapper/0 Tainted: GF            3.14.0-rc1-00099-gde05561 #126
-> Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 09/20/2012
->  ffffffff8233b140 ffff8800792038d8 ffffffff8162aa99 0000000000000002
->  ffffffff8233b140 ffff880079203928 ffffffff810b5118 ffffffff81a08d4a
->  ffffffff81a08d4a ffff880079203928 ffffffff81c110a8 ffff880079203938
-> Call Trace:
->  <IRQ>  [<ffffffff8162aa99>] dump_stack+0x51/0x70
->  [<ffffffff810b5118>] print_irq_inversion_bug+0x1c8/0x210
->  [<ffffffff810b51f0>] check_usage_forwards+0x90/0x110
->  [<ffffffff8107cec8>] ? __kernel_text_address+0x58/0x80
->  [<ffffffff810b5160>] ? print_irq_inversion_bug+0x210/0x210
->  [<ffffffff810b5f4f>] mark_lock_irq+0x9f/0x2c0
->  [<ffffffff810b628c>] mark_lock+0x11c/0x1f0
->  [<ffffffff810b6469>] mark_irqflags+0x109/0x190
->  [<ffffffff810b7edc>] __lock_acquire+0x3bc/0x5e0
->  [<ffffffff810b819e>] lock_acquire+0x9e/0x170
->  [<ffffffff8116f3e8>] ? test_clear_page_writeback+0x48/0x190
->  [<ffffffff81048aed>] ? __change_page_attr_set_clr+0x4d/0xb0
->  [<ffffffff81630760>] _raw_spin_lock_irqsave+0x50/0x90
->  [<ffffffff8116f3e8>] ? test_clear_page_writeback+0x48/0x190
->  [<ffffffff8116f3e8>] test_clear_page_writeback+0x48/0x190
->  [<ffffffffa00c1825>] ? ext4_finish_bio+0x1d5/0x220 [ext4]
->  [<ffffffff811604f0>] end_page_writeback+0x20/0x60
->  [<ffffffffa00c17b8>] ext4_finish_bio+0x168/0x220 [ext4]
->  [<ffffffffa00c18ec>] ? ext4_release_io_end+0x7c/0x100 [ext4]
->  [<ffffffff812da079>] ? blk_account_io_completion+0x119/0x1c0
->  [<ffffffffa00c1c37>] ext4_end_bio+0x97/0xe0 [ext4]
->  [<ffffffff8120b9e3>] bio_endio+0x53/0xa0
->  [<ffffffff812da333>] blk_update_request+0x213/0x430
->  [<ffffffff812da577>] blk_update_bidi_request+0x27/0xb0
->  [<ffffffff812db18f>] blk_end_bidi_request+0x2f/0x80
->  [<ffffffff812db230>] blk_end_request+0x10/0x20
->  [<ffffffff8143d770>] scsi_end_request+0x40/0xb0
->  [<ffffffff816310c0>] ? _raw_spin_unlock_irqrestore+0x40/0x70
->  [<ffffffff8143daff>] scsi_io_completion+0x9f/0x6c0
->  [<ffffffff810b6add>] ? trace_hardirqs_on+0xd/0x10
->  [<ffffffff81433204>] scsi_finish_command+0xd4/0x140
->  [<ffffffff8143e28f>] scsi_softirq_done+0x14f/0x170
->  [<ffffffff812e3144>] blk_done_softirq+0x84/0xa0
->  [<ffffffff8105b29d>] __do_softirq+0x12d/0x430
->  [<ffffffff8105b6d5>] irq_exit+0xc5/0xd0
->  [<ffffffff8163cc47>] do_IRQ+0x67/0x110
->  [<ffffffff8163156f>] common_interrupt+0x6f/0x6f
->  <EOI>  [<ffffffff8100e426>] ? default_idle+0x26/0x210
->  [<ffffffff8100e424>] ? default_idle+0x24/0x210
->  [<ffffffff8100dd26>] arch_cpu_idle+0x26/0x30
->  [<ffffffff810cac39>] cpu_idle_loop+0xa9/0x3c0
->  [<ffffffff810caf73>] cpu_startup_entry+0x23/0x30
->  [<ffffffff81623434>] rest_init+0xf4/0x170
->  [<ffffffff81623340>] ? csum_partial_copy_generic+0x170/0x170
->  [<ffffffff81f491dc>] start_kernel+0x346/0x34d
->  [<ffffffff81f48cb4>] ? repair_env_string+0x5b/0x5b
->  [<ffffffff816293ea>] ? memblock_reserve+0x49/0x4e
->  [<ffffffff81f483a8>] x86_64_start_reservations+0x2a/0x2c
->  [<ffffffff81f484d8>] x86_64_start_kernel+0xf5/0xfc
+Things rapidly get complicated beyond that, as the NMI watchdog is a 
+kernel-created event bound to the CPU, wheras 2 of the events are x86 hw 
+events with a breakpoint-event groupleader (and the fact one of the events 
+has precise set).
+
+>From the stacktrace it looks like it is the close of a completely 
+unrelated tracepoint event that triggers this all off, but I'm not
+sure why a list_del_event() call of the tracepoint name would
+trigger a schedule_timeout() and an ensuing __perf_event_task_sched_in()
+which is what eventually triggers the problem.
+
+Scattering printks around doesn't see to work because a lot of the related 
+calls are happening in contexts where printks don't really work.
+
+Anyway I just wanted to summarize my findings as I might not have a chance 
+to look at this again for a while.  For completion I'm including the 
+backtrace below.
+
+Vince
+
+[   49.972034] ------------[ cut here ]------------
+[   49.976014] WARNING: CPU: 1 PID: 2867 at arch/x86/kernel/cpu/perf_event.c:1076 x86_pmu_start+0x38/0x102()
+[   49.976014] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg evdev mcs7830 usbnet ohci_pci video acpi_cpufreq processor thermal_sys wmi psmouse serio_raw pcspkr coretemp button ohci_hcd i2c_nforce2 ehci_pci ehci_hcd sg sd_mod usbcore usb_common
+[   49.976014] CPU: 1 PID: 2867 Comm: pec_1076_warn Not tainted 3.14.0-rc2+ #7
+[   49.976014] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+[   49.976014]  0000000000000000 ffffffff817f256d ffffffff814e750b 0000000000000000
+[   49.976014]  ffffffff8103bf2c ffff8800ca005820 ffffffff81012119 ffff88011fc93400
+[   49.976014]  0000000000000021 ffff88011b31dc00 ffff88011fc8b940 0000000000000000
+[   49.976014] Call Trace:
+[   49.976014]  [<ffffffff814e750b>] ? dump_stack+0x41/0x56
+[   49.976014]  [<ffffffff8103bf2c>] ? warn_slowpath_common+0x79/0x92
+[   49.976014]  [<ffffffff81012119>] ? x86_pmu_start+0x38/0x102
+[   49.976014]  [<ffffffff81012119>] ? x86_pmu_start+0x38/0x102
+[   49.976014]  [<ffffffff810123b6>] ? x86_pmu_enable+0x1d3/0x285
+[   49.976014]  [<ffffffff810bca20>] ? perf_event_context_sched_in+0x6d/0x8d
+[   49.976014]  [<ffffffff810bca61>] ? __perf_event_task_sched_in+0x21/0x108
+[   49.976014]  [<ffffffff810666cc>] ? idle_balance+0x11a/0x157
+[   49.976014]  [<ffffffff81062905>] ? finish_task_switch+0x40/0xa5
+[   49.976014]  [<ffffffff814e7ee5>] ? __schedule+0x46a/0x4bd
+[   49.976014]  [<ffffffff814e753d>] ? schedule_timeout+0x1d/0xb4
+[   49.976014]  [<ffffffff810b9d96>] ? list_del_event+0x78/0x8f
+[   49.976014]  [<ffffffff814e7520>] ? dump_stack+0x56/0x56
+[   49.976014]  [<ffffffff814e8627>] ? __wait_for_common+0xce/0x14a
+[   49.976014]  [<ffffffff8106287d>] ? try_to_wake_up+0x19a/0x19a
+[   49.976014]  [<ffffffff810a1b5a>] ? get_tracepoint+0x20/0x53
+[   49.976014]  [<ffffffff8107ea5a>] ? T.944+0x1c8/0x1c8
+[   49.976014]  [<ffffffff8107ca0c>] ? wait_rcu_gp+0x3f/0x46
+[   49.976014]  [<ffffffff8107ca13>] ? wait_rcu_gp+0x46/0x46
+[   49.976014]  [<ffffffff810b2027>] ? perf_trace_event_unreg+0x2e/0xbd
+[   49.976014]  [<ffffffff810b20e4>] ? perf_trace_destroy+0x2e/0x3b
+[   49.976014]  [<ffffffff810bc0d2>] ? __free_event+0x2d/0x52
+[   49.976014]  [<ffffffff810bfdff>] ? perf_event_release_kernel+0x74/0x7b
+[   49.976014]  [<ffffffff810bfeb0>] ? perf_release+0x10/0x14
+[   49.976014]  [<ffffffff81105b17>] ? __fput+0xdf/0x1a4
+[   49.976014]  [<ffffffff810538e9>] ? task_work_run+0x7f/0x96
+[   49.976014]  [<ffffffff814f0a70>] ? int_signal+0x12/0x17
+[   49.976014] ---[ end trace 0b1abb2bc23cc0c5 ]---
+[   49.976014] VMW: idx=33 state=0 type=0 config=0 samp_per=5e5fc1760
+
