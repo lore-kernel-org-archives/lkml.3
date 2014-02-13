@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaBMXsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:48:31 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51569 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaBMXs2 (ORCPT
+	id S1752661AbaBMXhb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:37:31 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:54934 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaBMXh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:48:28 -0500
-Date: Thu, 13 Feb 2014 18:48:25 -0500 (EST)
-Message-Id: <20140213.184825.32399543190618715.davem@davemloft.net>
-To: mst@redhat.com
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        jasowang@redhat.com
-Subject: Re: [PATCH net v2] vhost: fix a theoretical race in device cleanup
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1392284540-2031-1-git-send-email-mst@redhat.com>
-References: <1392284540-2031-1-git-send-email-mst@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 13 Feb 2014 18:37:29 -0500
+X-Auth-Info: ysJh/Cix06aDr7qU6MRdRwx5BgYyX2ZbDwrw8iU3k1A=
+Date: Fri, 14 Feb 2014 00:37:20 +0100
+From: Anatolij Gustschin <agust@denx.de>
+To: Heiko Schocher <hs@denx.de>
+Cc: linux-arm-kernel@lists.infradead.org, Benoit Parrot <bparrot@ti.com>,
+        Rob Clark <robdclark@gmail.com>, David Airlie <airlied@linux.ie>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] gpu:drm:tilcdc: backlight node never found
+Message-ID: <20140214003720.168c2d10@crub>
+In-Reply-To: <1392299258-16968-1-git-send-email-hs@denx.de>
+References: <1392299258-16968-1-git-send-email-hs@denx.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Feb 2014 15:48:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Thu, 13 Feb 2014 11:45:11 +0200
+On Thu, 13 Feb 2014 14:47:38 +0100
+Heiko Schocher <hs@denx.de> wrote:
 
-> vhost_zerocopy_callback accesses VQ right after it drops a ubuf
-> reference.  In theory, this could race with device removal which waits
-> on the ubuf kref, and crash on use after free.
+> In panel_probe() the backlight node is never found, correct this.
 > 
-> Do all accesses within rcu read side critical section, and synchronize
-> on release.
-> 
-> Since callbacks are always invoked from bh, synchronize_rcu_bh seems
-> enough and will help release complete a bit faster.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Heiko Schocher <hs@denx.de>
+
+Acked-by: Anatolij Gustschin <agust@denx.de>
+
+> Cc: Anatolij Gustschin <agust@denx.de>
+> Cc: Benoit Parrot <bparrot@ti.com>
+> Cc: Rob Clark <robdclark@gmail.com>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Cc: Sachin Kamat <sachin.kamat@linaro.org>
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: devicetree@vger.kernel.org
 > ---
+>  drivers/gpu/drm/tilcdc/tilcdc_panel.c | 13 ++++++++++---
+>  1 file changed, 10 insertions(+), 3 deletions(-)
 > 
-> This is was previously posted as part of patch
-> series, but it's an independent fix really.
-> Theoretical race so not needed for stable I think.
-
-Ok, no -stable, applied.
+> diff --git a/drivers/gpu/drm/tilcdc/tilcdc_panel.c b/drivers/gpu/drm/tilcdc/tilcdc_panel.c
+> index 86c6732..0b97cf4 100644
+> --- a/drivers/gpu/drm/tilcdc/tilcdc_panel.c
+> +++ b/drivers/gpu/drm/tilcdc/tilcdc_panel.c
+> @@ -356,6 +356,7 @@ static struct of_device_id panel_of_match[];
+>  static int panel_probe(struct platform_device *pdev)
+>  {
+>  	struct device_node *node = pdev->dev.of_node;
+> +	struct device_node *backlight_node;
+>  	struct panel_module *panel_mod;
+>  	struct tilcdc_module *mod;
+>  	struct pinctrl *pinctrl;
+> @@ -395,9 +396,15 @@ static int panel_probe(struct platform_device *pdev)
+>  
+>  	mod->preferred_bpp = panel_mod->info->bpp;
+>  
+> -	panel_mod->backlight = of_find_backlight_by_node(node);
+> -	if (panel_mod->backlight)
+> -		dev_info(&pdev->dev, "found backlight\n");
+> +	backlight_node = of_parse_phandle(pdev->dev.of_node, "backlight", 0);
+> +	if (backlight_node) {
+> +		panel_mod->backlight =
+> +			of_find_backlight_by_node(backlight_node);
+> +		if (panel_mod->backlight)
+> +			dev_info(&pdev->dev, "found backlight\n");
+> +	} else {
+> +		dev_warn(&pdev->dev, "backlight node missing...\n");
+> +	}
+>  
+>  	return 0;
+>  
