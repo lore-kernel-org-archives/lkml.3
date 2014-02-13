@@ -1,161 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746AbaBMJhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:37:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8164 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385AbaBMJhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:37:13 -0500
-Date: Thu, 13 Feb 2014 11:42:05 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Cc: Qin Chuanyu <qinchuanyu@huawei.com>, kvm@vger.kernel.org,
-        virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>
-Subject: [PATCH net v2] vhost: fix ref cnt checking deadlock
-Message-ID: <1392284448-1977-1-git-send-email-mst@redhat.com>
+	id S1753769AbaBMJiH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:38:07 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:45548 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaBMJiD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 04:38:03 -0500
+Date: Thu, 13 Feb 2014 10:38:00 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>, X86 ML <x86@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] sched: Add a new lockless wake-from-idle implementation
+Message-ID: <20140213093800.GA6078@gmail.com>
+References: <20140212201709.GB6835@laptop.programming.kicks-ass.net>
+ <218b548b69479baa005af8a7b04a3abbea8ed6fa.1392252790.git.luto@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-Fcc: =sent
+In-Reply-To: <218b548b69479baa005af8a7b04a3abbea8ed6fa.1392252790.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vhost checked the counter within the refcnt before decrementing.  It
-really wanted to know that it is the one that has the last reference, as
-a way to batch freeing resources a bit more efficiently.
 
-Note: we only let refcount go to 0 on device release.
+* Andy Lutomirski <luto@amacapital.net> wrote:
 
-This works well but we now access the ref counter twice so there's a
-race: all users might see a high count and decide to defer freeing
-resources.
-In the end no one initiates freeing resources until the last reference
-is gone (which is on VM shotdown so might happen after a looooong time).
+> This is a strawman proposal to simplify the idle implementation, eliminate
+> a race
+> 
+> Benefits over current code:
+>  - ttwu_queue_remote doesn't use an IPI unless needed
 
-Let's do what we probably should have done straight away:
-switch from kref to plain atomic, documenting the
-semantics, return the refcount value atomically after decrement,
-then use that to avoid the deadlock.
+Cool.
 
-Reported-by: Qin Chuanyu <qinchuanyu@huawei.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+>  - The diffstat should speak for itself :)
 
-This patch is needed for 3.14 and -stable.
+Neat!
 
- drivers/vhost/net.c | 41 ++++++++++++++++++++---------------------
- 1 file changed, 20 insertions(+), 21 deletions(-)
+>  - Less racy.  Spurious IPIs are possible, but only in narrow windows or
+>    when two wakeups occur in rapid succession.
+>  - Seems to work (?)
+> 
+> Issues:
+>  - Am I doing the percpu stuff right?
+>  - Needs work on non-x86 architectures
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 831eb4f..b12176f 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -70,7 +70,12 @@ enum {
- };
- 
- struct vhost_net_ubuf_ref {
--	struct kref kref;
-+	/* refcount follows semantics similar to kref:
-+	 *  0: object is released
-+	 *  1: no outstanding ubufs
-+	 * >1: outstanding ubufs
-+	 */
-+	atomic_t refcount;
- 	wait_queue_head_t wait;
- 	struct vhost_virtqueue *vq;
- };
-@@ -116,14 +121,6 @@ static void vhost_net_enable_zcopy(int vq)
- 	vhost_net_zcopy_mask |= 0x1 << vq;
- }
- 
--static void vhost_net_zerocopy_done_signal(struct kref *kref)
--{
--	struct vhost_net_ubuf_ref *ubufs;
--
--	ubufs = container_of(kref, struct vhost_net_ubuf_ref, kref);
--	wake_up(&ubufs->wait);
--}
--
- static struct vhost_net_ubuf_ref *
- vhost_net_ubuf_alloc(struct vhost_virtqueue *vq, bool zcopy)
- {
-@@ -134,21 +131,24 @@ vhost_net_ubuf_alloc(struct vhost_virtqueue *vq, bool zcopy)
- 	ubufs = kmalloc(sizeof(*ubufs), GFP_KERNEL);
- 	if (!ubufs)
- 		return ERR_PTR(-ENOMEM);
--	kref_init(&ubufs->kref);
-+	atomic_set(&ubufs->refcount, 1);
- 	init_waitqueue_head(&ubufs->wait);
- 	ubufs->vq = vq;
- 	return ubufs;
- }
- 
--static void vhost_net_ubuf_put(struct vhost_net_ubuf_ref *ubufs)
-+static int vhost_net_ubuf_put(struct vhost_net_ubuf_ref *ubufs)
- {
--	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
-+	int r = atomic_sub_return(1, &ubufs->refcount);
-+	if (unlikely(!r))
-+		wake_up(&ubufs->wait);
-+	return r;
- }
- 
- static void vhost_net_ubuf_put_and_wait(struct vhost_net_ubuf_ref *ubufs)
- {
--	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
--	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
-+	vhost_net_ubuf_put(ubufs);
-+	wait_event(ubufs->wait, !atomic_read(&ubufs->refcount));
- }
- 
- static void vhost_net_ubuf_put_wait_and_free(struct vhost_net_ubuf_ref *ubufs)
-@@ -306,22 +306,21 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
- {
- 	struct vhost_net_ubuf_ref *ubufs = ubuf->ctx;
- 	struct vhost_virtqueue *vq = ubufs->vq;
--	int cnt = atomic_read(&ubufs->kref.refcount);
-+	int cnt;
- 
- 	/* set len to mark this desc buffers done DMA */
- 	vq->heads[ubuf->desc].len = success ?
- 		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
--	vhost_net_ubuf_put(ubufs);
-+	cnt = vhost_net_ubuf_put(ubufs);
- 
- 	/*
- 	 * Trigger polling thread if guest stopped submitting new buffers:
--	 * in this case, the refcount after decrement will eventually reach 1
--	 * so here it is 2.
-+	 * in this case, the refcount after decrement will eventually reach 1.
- 	 * We also trigger polling periodically after each 16 packets
- 	 * (the value 16 here is more or less arbitrary, it's tuned to trigger
- 	 * less than 10% of times).
- 	 */
--	if (cnt <= 2 || !(cnt % 16))
-+	if (cnt <= 1 || !(cnt % 16))
- 		vhost_poll_queue(&vq->poll);
- }
- 
-@@ -420,7 +419,7 @@ static void handle_tx(struct vhost_net *net)
- 			msg.msg_control = ubuf;
- 			msg.msg_controllen = sizeof(ubuf);
- 			ubufs = nvq->ubufs;
--			kref_get(&ubufs->kref);
-+			atomic_inc(&ubufs->refcount);
- 			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
- 		} else {
- 			msg.msg_control = NULL;
-@@ -785,7 +784,7 @@ static void vhost_net_flush(struct vhost_net *n)
- 		vhost_net_ubuf_put_and_wait(n->vqs[VHOST_NET_VQ_TX].ubufs);
- 		mutex_lock(&n->vqs[VHOST_NET_VQ_TX].vq.mutex);
- 		n->tx_flush = false;
--		kref_init(&n->vqs[VHOST_NET_VQ_TX].ubufs->kref);
-+		atomic_set(&n->vqs[VHOST_NET_VQ_TX].ubufs->refcount, 1);
- 		mutex_unlock(&n->vqs[VHOST_NET_VQ_TX].vq.mutex);
- 	}
- }
--- 
-MST
+Absolutely, and with the least amount of disruption possible, as 
+people are not very good at testing 'all' of them.
+
+>  - The !CONFIG_SMP case needs to be checked
+
+Which also happens to be the default for half of all non-x86 arches.
+
+>  - Is "idlepoll" a good name for the new code?  It doesn't have *that*
+>    much to do with the idle state.  Maybe cpukick?
+
+'cpukick', hands down.
+
+> If this turns out okay, TIF_NEED_RESCHED could possibly be deleted as well.
+
+Cool ...
+
+Thanks,
+
+	Ingo
