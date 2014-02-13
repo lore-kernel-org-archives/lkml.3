@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaBMLhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 06:37:22 -0500
-Received: from canardo.mork.no ([148.122.252.1]:58625 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284AbaBMLhU convert rfc822-to-8bit (ORCPT
+	id S1754441AbaBMLiP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 06:38:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35986 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156AbaBMLiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 06:37:20 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: Steve Glendinning <steve.glendinning@shawell.net>,
-        Oliver Neukum <oneukum@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Freddy Xin <freddy@asix.com.tw>, Eric Dumazet <edumazet@google.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Liu Junliang <liujunliang_ljl@163.com>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usbnet: remove generic hard_header_len check
-Organization: m
-References: <1392249836-27151-1-git-send-email-emilgoode@gmail.com>
-	<87fvnn4c2k.fsf@nemi.mork.no> <20140213112016.GA4245@lianli>
-Date: Thu, 13 Feb 2014 12:36:30 +0100
-In-Reply-To: <20140213112016.GA4245@lianli> (Emil Goode's message of "Thu, 13
-	Feb 2014 12:20:16 +0100")
-Message-ID: <87y51f2qip.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
+	Thu, 13 Feb 2014 06:38:13 -0500
+Date: Thu, 13 Feb 2014 03:37:08 -0800
+From: tip-bot for Steven Noonan <tipbot@zytor.com>
+Message-ID: <tip-a9f180345f5378ac87d80ed0bea55ba421d83859@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        stable@vger.kernel.org, steven@uplinklabs.net,
+        akpm@linux-foundation.org, rostedt@goodmis.org, jakub@redhat.com,
+        oleg@redhat.com, tglx@linutronix.de, rth@twiddle.net
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        stable@vger.kernel.org, steven@uplinklabs.net, jakub@redhat.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        oleg@redhat.com, rth@twiddle.net
+In-Reply-To: <1392274867-15236-1-git-send-email-steven@uplinklabs.net>
+References: <1392274867-15236-1-git-send-email-steven@uplinklabs.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] compiler/gcc4: Make quirk for asm_volatile_goto(
+ ) unconditional
+Git-Commit-ID: a9f180345f5378ac87d80ed0bea55ba421d83859
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 13 Feb 2014 03:37:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emil Goode <emilgoode@gmail.com> writes:
+Commit-ID:  a9f180345f5378ac87d80ed0bea55ba421d83859
+Gitweb:     http://git.kernel.org/tip/a9f180345f5378ac87d80ed0bea55ba421d83859
+Author:     Steven Noonan <steven@uplinklabs.net>
+AuthorDate: Wed, 12 Feb 2014 23:01:07 -0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 13 Feb 2014 12:34:05 +0100
 
-> Yes I should have put a comment in the changelog about this. All skbs that
-> are passed to rx_process have their state set to rx_cleanup and just because
-> the skb was cloned doesn't mean that we should free the original in a
-> different way. As it is I think we are acctually missing a call to
-> usb_free_urb that is called on the common rx_cleanup path.
+compiler/gcc4: Make quirk for asm_volatile_goto() unconditional
 
-Yes, I wondered about that as well, thinking that this part actually
-should be a separate patch for net+stable.
+I started noticing problems with KVM guest destruction on Linux
+3.12+, where guest memory wasn't being cleaned up. I bisected it
+down to the commit introducing the new 'asm goto'-based atomics,
+and found this quirk was later applied to those.
 
-But then I wondered how we could possibly have had a bug like that
-living here for so long, and the answer is we haven't.  You don't want
-to free the URB.  It is already resubmitted with a different skb as its
-buffer.  The call to usb_free_urb in the rx_cleanup path is there only
-for the cases where the URB is not resubmitted. The rx_complete callback
-is controlling this by updating entry->urb as appropriate.  So it will
-always be NULL if rx_process is called, and the call to usb_free_urb has
-no effect.
+Unfortunately, even with GCC 4.8.2 (which ostensibly fixed the
+known 'asm goto' bug) I am still getting some kind of
+miscompilation. If I enable the asm_volatile_goto quirk for my
+compiler, KVM guests are destroyed correctly and the memory is
+cleaned up.
 
-Rearranging this code to always take the same cleanup path is still a
-very nice cleanup IMHO.
+So make the quirk unconditional for now, until bug is found
+and fixed.
 
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven Noonan <steven@uplinklabs.net>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: <stable@vger.kernel.org>
+Link: http://lkml.kernel.org/r/1392274867-15236-1-git-send-email-steven@uplinklabs.net
+Link: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/compiler-gcc4.h | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-Bjørn
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index ded4299..2507fd2 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -75,11 +75,7 @@
+  *
+  * (asm goto is automatically volatile - the naming reflects this.)
+  */
+-#if GCC_VERSION <= 40801
+-# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
+-#else
+-# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
+-#endif
++#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
+ 
+ #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
+ #if GCC_VERSION >= 40400
