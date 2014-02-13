@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaBMTDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:03:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790AbaBMTDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:03:22 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com>
-References: <CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com> <1391791751-2533-1-git-send-email-miklos@szeredi.hu> <19258.1392306854@warthog.procyon.org.uk> <20140213162534.GB4026@tucsk.piliscsaba.szeredi.hu> <20106.1392309770@warthog.procyon.org.uk> <CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bruce Fields <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Re: [PATCH 00/13] cross rename v4
-Date: Thu, 13 Feb 2014 19:02:41 +0000
-Message-ID: <16729.1392318161@warthog.procyon.org.uk>
+	id S1751889AbaBMTDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:03:36 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42895 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaBMTDe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 14:03:34 -0500
+Date: Thu, 13 Feb 2014 19:03:22 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140213190322.GA28112@sirena.org.uk>
+References: <9348920.79Ktlcbcai@phil>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Z6tBdMCc7//q+vBX"
+Content-Disposition: inline
+In-Reply-To: <9348920.79Ktlcbcai@phil>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: gpio-regulator: fix forgotten gpios-states
+ reading
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> So what do others that support this do?  Looking at the gitweb for
-> ls.c in coreutils, we find:
-> 
-> http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/ls.c
-> 
->     # ifdef DT_WHT
->                     case DT_WHT:  type = whiteout;          break;
->     # endif
-> 
-> so that's presumably what we should use.
+--Z6tBdMCc7//q+vBX
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Whilst that does seem reasonable, what about all the other software that
-iterates over a directory?  Some of that is surely not going to know about
-DT_WHT.
+On Thu, Feb 13, 2014 at 12:48:52AM +0100, Heiko St=FCbner wrote:
+> From: Heiko Stuebner <heiko.stuebner@bqreaders.com>
+>=20
+> Commit 934624d6e9f0 ("regulator: gpio-regulator: do not open-code counting
+> and access of dt array elements") forgot to convert the recently added
+> gpios-states property using the same pattern.
 
-Further, while that may sort whiteouts, what about fallthroughs?  There isn't
-a DT_ symbol for that...  Fallthroughs are 'really there' in the sense that
-they're positive, but they should take on the underlying object type - which
-in this situation we can't retrieve:-/
+Morimoto-san sent a fix which did apply so I took that.
 
-I wonder if it would be possible to require filesystems that can store
-fallthroughs to store the lower type in the upper dentry (ie. there is no
-fallthrough type per se, but rather fallthrough-to-file, f-to-char, f-to-sym,
-etc.).
+--Z6tBdMCc7//q+vBX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-David
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS/Rb3AAoJELSic+t+oim92O8P/37BBNmqc34v/xZESVga3cL2
+OtZlurWPL1Ovzhcv4n7IA6qy4i5ZhFXdtPTfB7Ou0+Dj8LWsChmMYX7F+WkyJiDe
+3vkZlC3jLqkHEgovUxxk7/ekPAIEXxS9KYXYusb6YHXXdz7mSS93R/y5+NvYxlBS
+qowpiq8bjrKemcYa9nUQ97NQC8X6rcyLa6FTqBmp942eV/zdU7EuvH6KEDhPTFQ+
+wPlhR3glYBdUzT/uhsnpdOQP6D3Vf2Z2eIjW9LGBBMiEhEbpNPXYnU5SnW4YjBE9
+UrrTtHdMuxYW0RXmXTSVXsNWYEIZXxx0ItGj480hj4wUHc1n2gGpAaHrNIZ0ljXX
+X89mAPYvL1taNzmkZiZ6FR0pzqajhqMR4r/3n9v2CJDr4NkVWQ7/IvXrG2gvDIqK
+aZs9xWqUccRlr73FXERng3rYksNu13Wvfdq9crMGtU6EKHzYPVAuSfNafipzvk4v
+KZerZiw1f0RAmDeyZV2s2dXMvaMo+oEnQ8JZ1+4jSKlmb/8O20+3itGbPvNUty8v
+PbDpckZfOOBhUEVYw63kW0n9myXgE5wy2R0dHz9drCjGTMWgYZ11Q/LUZjfrYes+
+f+vyXDp/dLBaddt9/zk+6xia0LluWY/BAdqu09EmYSiIKdlwXi8TXiN9QcHVN4Vr
+rqiUQDJ6K3u9BPleGES8
+=fbhg
+-----END PGP SIGNATURE-----
+
+--Z6tBdMCc7//q+vBX--
