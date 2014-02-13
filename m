@@ -1,98 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136AbaBMTwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:52:07 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:52407 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009AbaBMTwE (ORCPT
+	id S1752638AbaBMTwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:52:37 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:35256 "EHLO
+	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaBMTwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:52:04 -0500
+	Thu, 13 Feb 2014 14:52:34 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Thu, 13 Feb 2014 11:39:54 -0800
+Message-ID: <52FD2280.2020807@synaptics.com>
+Date: Thu, 13 Feb 2014 11:52:32 -0800
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140213171211.GJ19841@arm.com>
-References: <20140212224638.GA4558@www.outflux.net>
-	<20140213171211.GJ19841@arm.com>
-Date: Thu, 13 Feb 2014 11:52:03 -0800
-X-Google-Sender-Auth: ehZVvYPI9eh36WYD0y6r7cmtQe4
-Message-ID: <CAGXu5jKG=8Fwd=yJEFF0-8tO0v4H_3sr_x2JLW4jm1Y2ouDFHQ@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: mm: report both sections from PMD
-From: Kees Cook <keescook@chromium.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <Will.Deacon@arm.com>,
-        Steven Capper <steve.capper@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Andrew Duggan <aduggan@synaptics.com>,
+        Vincent Huang <vincent.huang@tw.synaptics.com>,
+        Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/11] Input: synaptics-rmi4 - consolidate memory allocations
+ in F01
+References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com> <1392269277-16391-9-git-send-email-dmitry.torokhov@gmail.com>
+In-Reply-To: <1392269277-16391-9-git-send-email-dmitry.torokhov@gmail.com>
+X-Originating-IP: [10.3.20.103]
+X-Brightmail-Tracker: AAAAAQAAAWE=
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 9:12 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Wed, Feb 12, 2014 at 10:46:38PM +0000, Kees Cook wrote:
->> diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
->> index 03243f7eeddf..fb3de59ee811 100644
->> --- a/arch/arm/include/asm/pgtable-3level.h
->> +++ b/arch/arm/include/asm/pgtable-3level.h
->> @@ -138,10 +138,6 @@
->>  #define pud_none(pud)                (!pud_val(pud))
->>  #define pud_bad(pud)         (!(pud_val(pud) & 2))
->>  #define pud_present(pud)     (pud_val(pud))
->> -#define pmd_table(pmd)               ((pmd_val(pmd) & PMD_TYPE_MASK) == \
->> -                                              PMD_TYPE_TABLE)
->> -#define pmd_sect(pmd)                ((pmd_val(pmd) & PMD_TYPE_MASK) == \
->> -                                              PMD_TYPE_SECT)
->>  #define pmd_large(pmd)               pmd_sect(pmd)
->>
->>  #define pud_clear(pudp)                      \
->> diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
->> index 7d59b524f2af..934aa5b60c7c 100644
->> --- a/arch/arm/include/asm/pgtable.h
->> +++ b/arch/arm/include/asm/pgtable.h
->> @@ -183,6 +183,10 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
->>
->>  #define pmd_none(pmd)                (!pmd_val(pmd))
->>  #define pmd_present(pmd)     (pmd_val(pmd))
->> +#define pmd_table(pmd)               ((pmd_val(pmd) & PMD_TYPE_MASK) == \
->> +                                              PMD_TYPE_TABLE)
->> +#define pmd_sect(pmd)                ((pmd_val(pmd) & PMD_TYPE_MASK) == \
->> +                                              PMD_TYPE_SECT)
+On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
+> Let's allocate interrupt mask together with the main structure and combine
+> rmi_f01_alloc_memory, rmi_f01_initialize and rmi_f01_probe into single
+> function.
 >
-> Do you still need to move these two if you only use pmd_large()? AFAICT,
-> it is equivalent to pmd_sect().
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Why does pmd_sect exist? I can reduce it to just using pmd_large.
+Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
 
+> ---
+>   drivers/input/rmi4/rmi_f01.c | 86 ++++++++++++++++----------------------------
+>   1 file changed, 30 insertions(+), 56 deletions(-)
 >
->>  static inline pte_t *pmd_page_vaddr(pmd_t pmd)
->>  {
->> diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
->> index 2b342177f5de..32635b474832 100644
->> --- a/arch/arm/mm/dump.c
->> +++ b/arch/arm/mm/dump.c
->> @@ -260,8 +260,14 @@ static void walk_pmd(struct pg_state *st, pud_t *pud, unsigned long start)
->>
->>       for (i = 0; i < PTRS_PER_PMD; i++, pmd++) {
->>               addr = start + i * PMD_SIZE;
->> -             if (pmd_none(*pmd) || pmd_large(*pmd) || !pmd_present(*pmd))
->> +             if (pmd_none(*pmd) || pmd_large(*pmd) || !pmd_present(*pmd)) {
->>                       note_page(st, addr, 3, pmd_val(*pmd));
->> +                     if (SECTION_SIZE < PMD_SIZE &&
->> +                         pmd_sect(*pmd) && pmd_sect(pmd[1])) {
+> diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
+> index a2f05bc..0e21004 100644
+> --- a/drivers/input/rmi4/rmi_f01.c
+> +++ b/drivers/input/rmi4/rmi_f01.c
+> @@ -130,37 +130,15 @@ struct f01_data {
+>   	u16 doze_interval_addr;
+>   	u16 wakeup_threshold_addr;
+>   	u16 doze_holdoff_addr;
+> -	int irq_count;
+> -	int num_of_irq_regs;
 >
-> I think the first patch was better with pmd[0] and pmd[1] treated
-> independently if SECTION_SIZE < PMD_SIZE, only that it should have
-> checked for pmd_sect(pmd[1]). I don't see anything in
-> __map_init_section() that would prevent populating only the second pmd
-> leaving the first one empty.
+>   #ifdef CONFIG_PM_SLEEP
+>   	bool suspended;
+>   	bool old_nosleep;
+>   #endif
+> -};
+> -
+> -static int rmi_f01_alloc_memory(struct rmi_function *fn,
+> -				int num_of_irq_regs)
+> -{
+> -	struct f01_data *f01;
+>
+> -	f01 = devm_kzalloc(&fn->dev, sizeof(struct f01_data), GFP_KERNEL);
+> -	if (!f01) {
+> -		dev_err(&fn->dev, "Failed to allocate fn_01_data.\n");
+> -		return -ENOMEM;
+> -	}
+> -
+> -	f01->device_control.interrupt_enable = devm_kzalloc(&fn->dev,
+> -			sizeof(u8) * (num_of_irq_regs),
+> -			GFP_KERNEL);
+> -	if (!f01->device_control.interrupt_enable) {
+> -		dev_err(&fn->dev, "Failed to allocate interrupt enable.\n");
+> -		return -ENOMEM;
+> -	}
+> -	fn->data = f01;
+> -
+> -	return 0;
+> -}
+> +	unsigned int num_of_irq_regs;
+> +	u8 interrupt_enable[];
+> +};
+>
+>   static int rmi_f01_read_properties(struct rmi_device *rmi_dev,
+>   				   u16 query_base_addr,
+> @@ -202,16 +180,28 @@ static int rmi_f01_read_properties(struct rmi_device *rmi_dev,
+>   	return 0;
+>   }
+>
+> -static int rmi_f01_initialize(struct rmi_function *fn)
+> +static int rmi_f01_probe(struct rmi_function *fn)
+>   {
+> -	u8 temp;
+> -	int error;
+>   	struct rmi_device *rmi_dev = fn->rmi_dev;
+>   	struct rmi_driver_data *driver_data = dev_get_drvdata(&rmi_dev->dev);
+> -	struct f01_data *f01 = fn->data;
+>   	const struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
+> +	struct f01_data *f01;
+> +	size_t f01_size;
+> +	int error;
+>   	u16 ctrl_base_addr = fn->fd.control_base_addr;
+>   	u8 device_status;
+> +	u8 temp;
+> +
+> +	f01_size = sizeof(struct f01_data) +
+> +				sizeof(u8) * driver_data->num_of_irq_regs;
+> +	f01 = devm_kzalloc(&fn->dev, f01_size, GFP_KERNEL);
+> +	if (!f01) {
+> +		dev_err(&fn->dev, "Failed to allocate fn01_data.\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	f01->num_of_irq_regs = driver_data->num_of_irq_regs;
+> +	f01->device_control.interrupt_enable = f01->interrupt_enable;
+>
+>   	/*
+>   	 * Set the configured bit and (optionally) other important stuff
+> @@ -257,12 +247,11 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+>   		return error;
+>   	}
+>
+> -	f01->irq_count = driver_data->irq_count;
+> -	f01->num_of_irq_regs = driver_data->num_of_irq_regs;
+> -	ctrl_base_addr += sizeof(u8);
+> -
+> +	/* Advance to interrupt control registers */
+> +	ctrl_base_addr++;
+>   	f01->interrupt_enable_addr = ctrl_base_addr;
+> -	error = rmi_read_block(rmi_dev, ctrl_base_addr,
+> +
+> +	error = rmi_read_block(rmi_dev, f01->interrupt_enable_addr,
+>   				f01->device_control.interrupt_enable,
+>   				sizeof(u8) * (f01->num_of_irq_regs));
+>   	if (error) {
+> @@ -272,9 +261,7 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+>   		return error;
+>   	}
+>
+> -	ctrl_base_addr += f01->num_of_irq_regs;
+> -
+> -	/* dummy read in order to clear irqs */
+> +	/* Dummy read in order to clear irqs */
+>   	error = rmi_read(rmi_dev, fn->fd.data_base_addr + 1, &temp);
+>   	if (error < 0) {
+>   		dev_err(&fn->dev, "Failed to read Interrupt Status.\n");
+> @@ -287,11 +274,13 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+>   		dev_err(&fn->dev, "Failed to read F01 properties.\n");
+>   		return error;
+>   	}
+> +
+>   	dev_info(&fn->dev, "found RMI device, manufacturer: %s, product: %s\n",
+> -		 f01->properties.manufacturer_id == 1 ?
+> -							"Synaptics" : "unknown",
+> +		 f01->properties.manufacturer_id == 1 ? "Synaptics" : "unknown",
+>   		 f01->properties.product_id);
+>
+> +	ctrl_base_addr += f01->num_of_irq_regs;
+> +
+>   	/* read control register */
+>   	if (f01->properties.has_adjustable_doze) {
+>   		f01->doze_interval_addr = ctrl_base_addr;
+> @@ -365,6 +354,8 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+>   		return -EINVAL;
+>   	}
+>
+> +	fn->data = f01;
+> +
+>   	return 0;
+>   }
+>
+> @@ -424,23 +415,6 @@ static int rmi_f01_config(struct rmi_function *fn)
+>   	return 0;
+>   }
+>
+> -static int rmi_f01_probe(struct rmi_function *fn)
+> -{
+> -	struct rmi_driver_data *driver_data =
+> -			dev_get_drvdata(&fn->rmi_dev->dev);
+> -	int error;
+> -
+> -	error = rmi_f01_alloc_memory(fn, driver_data->num_of_irq_regs);
+> -	if (error)
+> -		return error;
+> -
+> -	error = rmi_f01_initialize(fn);
+> -	if (error)
+> -		return error;
+> -
+> -	return 0;
+> -}
+> -
+>   #ifdef CONFIG_PM_SLEEP
+>   static int rmi_f01_suspend(struct device *dev)
+>   {
+>
 
-Ah, gotcha. Okay, I will send a new version. Thanks!
-
--Kees
 
 -- 
-Kees Cook
-Chrome OS Security
+
+Christopher Heiny
+Senior Staff Firmware Engineer
+Synaptics Incorporated
