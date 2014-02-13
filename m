@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaBMJDL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:03:11 -0500
-Received: from smtp-4.sys.kth.se ([130.237.48.193]:56187 "EHLO
-	smtp-4.sys.kth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaBMJDE (ORCPT
+	id S1753631AbaBMJEG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:04:06 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:34622 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409AbaBMJD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:03:04 -0500
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 04:03:04 EST
-X-KTH-Auth: tommie [89.100.2.51]
-X-KTH-mail-from: tommie@gannert.se
-Message-ID: <52FC87B6.4070001@gannert.se>
-Date: Thu, 13 Feb 2014 08:52:06 +0000
-From: Tommie Gannert <tommie@gannert.se>
+	Thu, 13 Feb 2014 04:03:59 -0500
+Message-ID: <52FC8A78.1050500@ti.com>
+Date: Thu, 13 Feb 2014 11:03:52 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Samuel Ortiz <samuel@sortiz.org>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] irtty-sir.c: Do not set_termios() on irtty_close()
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Christoph Fritz <chf.fritz@googlemail.com>, Tero Kristo <t-kristo@ti.com>
+CC: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: OMAP: clock DT conversion issues with omap36xx
+References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>	 <52F10C3D.7000507@ti.com> <1391767923.4937.110.camel@mars> <52FB748E.6050007@ti.com>
+In-Reply-To: <52FB748E.6050007@ti.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="i14cdrHiJG2Pfjt8r58ua8vBpwe0DJWxo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tommie Gannert <tommie@gannert.se>
+--i14cdrHiJG2Pfjt8r58ua8vBpwe0DJWxo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Issuing set_termios() from irtty_close() causes kernel Oops for
-unplugged usb-serial devices.
+On 12/02/14 15:18, Tomi Valkeinen wrote:
 
-Since no other tty_ldisc calls set_termios() on close and no tty driver
-seem to check if tty->device_data is NULL or not on entry to set_termios(),
-the only solution I can come up with is to remove the irtty_stop_receiver()
-call, which only updates termios.
+> However, I hacked together the patch below, which "fixes" the issue for=
 
-Signed-off-by: Tommie Gannert <tommie@gannert.se>
+> 96m and dss fclk. It sets the clock parents so that the x2 clocks are
+> skipped, and makes the x2 clock nodes compatible with "unused", making
+> them effectively disappear. I only verified dss fclk, so Christoph, can=
 
----
-I know very little of this code, and I'm not sure this is a good solution,
-so here's some background:
+> you verify the 96m clock?
 
-I have a gadget using IrLAP over RS-232, and it's connected to a
-USB-RS232 converter. I have udev rules to start/stop irattach on USB
-connect/disconnect, but I see an oops if I simply disconnect the device
-while irattach is still running:
+Aaand the hack patch I sent is crap... We can't skip the x2 clock path,
+as the dpll4_mNx2_ck clock nodes handle enable/disable bit, which is
+present on 3630 also.
 
-Crash log:
+I think the best and simplest way to fix this is by setting the
+multiplier in the dpll4_mNx2_mul_ck nodes to 1. I don't know why I
+didn't think of it yesterday.
 
-[  631.791294] BUG: unable to handle kernel NULL pointer dereference at 0000000000000024
-[  631.791390] IP: [<ffffffffa0c07e42>] ftdi_set_termios+0x42/0x670 [ftdi_sio]
-...
-[  631.793963]  [<ffffffffa0b7fba3>] serial_set_termios+0x43/0x90 [usbserial]
-[  631.794031]  [<ffffffffa0c013ec>] irtty_close+0x10c/0x190 [irtty_sir]
-[  631.794096]  [<ffffffff81356e88>] tty_ldisc_close.isra.1+0x38/0x50
-[  631.794157]  [<ffffffff81356eb8>] tty_ldisc_kill+0x18/0x90
-[  631.794209]  [<ffffffff81357894>] tty_ldisc_release+0x34/0x90
-[  631.794266]  [<ffffffff8134fe00>] tty_release+0x470/0x600
+I have a bunch of other patches needed to get the clocks right, so I'll
+send a series separately a bit later today.
 
-There is a comment in irtty_close() speculating about potential problems
-with usb-serial. I'm not sure if that comment belongs to sirdev_put_instance() or
-the irtty_stop_receiver() call. I would guess both, so I let it be.
+ Tomi
 
-The effect of this is that /dev/ttyUSB* is still in use, and thus leaking
-at least dev nodes. This is a minimal patch that solves that oops.
---- linux-3.12/drivers/net/irda/irtty-sir.c.orig	2014-02-12 21:36:46.132496089 +0000
-+++ linux-3.12/drivers/net/irda/irtty-sir.c	2014-02-12 21:57:21.635843884 +0000
-@@ -521,7 +521,6 @@ static void irtty_close(struct tty_struc
-  	sirdev_put_instance(priv->dev);
-  
-  	/* Stop tty */
--	irtty_stop_receiver(tty, TRUE);
-  	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-  	if (tty->ops->stop)
-  		tty->ops->stop(tty);
+
+
+--i14cdrHiJG2Pfjt8r58ua8vBpwe0DJWxo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS/Ip4AAoJEPo9qoy8lh71Z5MP/iSntFIJXnIY4mlMoM1mWH3j
+MvahhzY4M/faeNyLEt9mTs7f5aa/D5wE0gRMHxN8GIpzLC8C1JByMMkV0D1kZxTD
+5uQOrL/JrmHU0DYiW5Rdr0hpu4ZcynHYsqEEfxRIswJHiSTO2fvMwP6vva8UQkaF
+7GRucXAa4GIwspmRa+JRdcorMTjUkq5lYXCarvvgUkq87DaUBewQPGf+lEgg39sS
+amJv1qPTLFPECXCYa+2ccxRrgDbAzhlYJuKjLj3BbQptC5CTWxDY5nYJlZs3XOUC
+CrntRxiG51WsSU0lb6tyCZjm+igpmwa9NsvwBae9FpjMNSUfskXztSkbwXHXb3Ve
+89/Tmoy40KYVv4OldK4kPYddz0FkxC0Xeeav9c2ht4M2DcbA4UuHwzkJi4KVsR6t
+6L5GI+OZirznICO9Eld/mJrojpDVulWz2mg7I9Bo5xddsytAca5mhwrCh8NLaBXp
+1Umr3/t7igOt9+FJc2dXt9Rdip4Ngk8FASKixEQOvigmieQQ8+ZGMOYpkybRNl3E
+xeBa9fx56A7Oi0HRUbKsAexod6m2gRI6HUH9zDNkeYAoF+lGvbbcrP1ph3TF88A+
+hIQ8gKFG3I4drFip+lOAUVOScBrCscsK2Qq5DDH+lLPx1s8hDPJwci3WW5spq7UM
+pRvcLxGAGtZP6hp+9WgO
+=BrcT
+-----END PGP SIGNATURE-----
+
+--i14cdrHiJG2Pfjt8r58ua8vBpwe0DJWxo--
