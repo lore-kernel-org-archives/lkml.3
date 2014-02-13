@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaBMHA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 02:00:27 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:55992
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751089AbaBMHAZ (ORCPT
+	id S1752955AbaBMHB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 02:01:29 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38936 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506AbaBMHB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 02:00:25 -0500
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzbb2dI98dI9371I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh19b6n1155h)
-Date: Thu, 13 Feb 2014 08:00:10 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 13 Feb 2014 02:01:27 -0500
+Message-ID: <52FC6F2A.30905@linux.vnet.ibm.com>
+Date: Thu, 13 Feb 2014 12:37:22 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <michal.simek@xilinx.com>, <netdev@vger.kernel.org>, <sthokal@xilinx.com>,
-        <devicetree@vger.kernel.org>, <monstr@monstr.eu>,
-        <John.Linn@xilinx.com>, <anirudh@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/14] Xilinx axi ethernet patches
-References: <cover.1392220536.git.michal.simek@xilinx.com> <20140212.191846.1464564509609498703.davem@davemloft.net>
-In-Reply-To: <20140212.191846.1464564509609498703.davem@davemloft.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+References: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140206145105.27dec37b16f24e4ac5fd90ce@linux-foundation.org> <alpine.DEB.2.02.1402061456290.31828@chino.kir.corp.google.com> <20140206152219.45c2039e5092c8ea1c31fd38@linux-foundation.org> <alpine.DEB.2.02.1402061537180.3441@chino.kir.corp.google.com> <alpine.DEB.2.02.1402061557210.5061@chino.kir.corp.google.com> <52F4B8A4.70405@linux.vnet.ibm.com> <alpine.DEB.2.02.1402071239301.4212@chino.kir.corp.google.com> <52F88C16.70204@linux.vnet.ibm.com> <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com> <52F8C556.6090006@linux.vnet.ibm.com> <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <3744167b-7f37-4a86-8569-2a17bd5d3845@CH1EHSMHS035.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021307-1396-0000-0000-00000448E0B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 01:18 AM, David Miller wrote:
-> From: Michal Simek <michal.simek@xilinx.com>
-> Date: Wed, 12 Feb 2014 16:55:34 +0100
-> 
->> I have exctracted patches which I have in our
->> xilinx git tree which are missing in the mainline.
+On 02/11/2014 03:05 AM, David Rientjes wrote:
+> On Mon, 10 Feb 2014, Raghavendra K T wrote:
+>
+>> So I understood that you are suggesting implementations like below
 >>
->> The first two patches fix compilation error and
->> warnings. Then 5 feature patches
->> and the rest is OF cleanup and with kernel-doc
->> and checkpatch problems.
-> 
-> You should not combine bug fix and feature patches.
-> 
-> Rather, you should submit bug fixes against the 'net' tree.  Then when
-> those bug fixes get applied and propagate to the 'net-next' tree you
-> can submit the feature patches and cleanups against the 'net-next'
-> tree.
+>> 1) I do not have problem with the below approach, I could post this in
+>> next version.
+>> ( But this did not include 4k limit Linus mentioned to apply)
+>>
+>> unsigned long max_sane_readahead(unsigned long nr)
+>> {
+>>          unsigned long local_free_page;
+>>          int nid;
+>>
+>>          nid = numa_mem_id();
+>>
+>>          /*
+>>           * We sanitize readahead size depending on free memory in
+>>           * the local node.
+>>           */
+>>          local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
+>>                            + node_page_state(nid, NR_FREE_PAGES);
+>>          return min(nr, local_free_page / 2);
+>> }
+>>
+>> 2) I did not go for below because Honza (Jan Kara) had some
+>> concerns for 4k limit for normal case, and since I am not
+>> the expert, I was waiting for opinions.
+>>
+>> unsigned long max_sane_readahead(unsigned long nr)
+>> {
+>>          unsigned long local_free_page, sane_nr;
+>>          int nid;
+>>
+>>          nid = numa_mem_id();
+>> 	/* limit the max readahead to 4k pages */
+>> 	sane_nr = min(nr, MAX_REMOTE_READAHEAD);
+>>
+>>          /*
+>>           * We sanitize readahead size depending on free memory in
+>>           * the local node.
+>>           */
+>>          local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
+>>                            + node_page_state(nid, NR_FREE_PAGES);
+>>          return min(sane_nr, local_free_page / 2);
+>> }
+>>
+>
+> I have no opinion on the 4KB pages, either of the above is just fine.
+>
 
-Ok. I will.
+I was able to test (1) implementation on the system where readahead 
+problem occurred. Unfortunately it did not help.
 
-Thanks,
-Michal
+Reason seem to be that CONFIG_HAVE_MEMORYLESS_NODES dependency of
+numa_mem_id(). The PPC machine I am facing problem has topology like
+this:
 
+numactl -H
+---------
+available: 2 nodes (0-1)
+node 0 cpus: 0 1 2 3 4 5 6 7 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+...
+node 0 size: 0 MB
+node 0 free: 0 MB
+node 1 cpus: 8 9 10 11 32 33 34 35 ...
+node 1 size: 8071 MB
+node 1 free: 2479 MB
+node distances:
+node   0   1
+   0:  10  20
+   1:  20  10
+
+So it seems numa_mem_id() does not help for all the configs..
+Am I missing something ?
 
