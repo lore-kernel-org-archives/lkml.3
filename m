@@ -1,47 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaBMVsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:48:50 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:36591 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaBMVst (ORCPT
+	id S1752025AbaBMVtg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:49:36 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:36001 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469AbaBMVte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:48:49 -0500
-Message-ID: <52FD3DB5.303@ahsoftware.de>
-Date: Thu, 13 Feb 2014 22:48:37 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 13 Feb 2014 16:49:34 -0500
+Date: Thu, 13 Feb 2014 22:49:22 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <343228200.20140213224922@eikelenboom.it>
+To: Dan Williams <dan.j.williams@intel.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Wei Liu <wei.liu2@citrix.com>, Francois Romieu <romieu@fr.zoreil.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: 3.14-mw regression: rtl8169 WARNING: DMA-API: exceeded 7 overlapping mappings of pfn 55ebe
+In-Reply-To: <1392322487.11022.4.camel@dwillia2-mobl2.amr.corp.intel.com>
+References: <1859471893.20140126115521@eikelenboom.it> <20140127000305.GA14236@electric-eye.fr.zoreil.com> <CAA9_cme2hgJ=jCDkPh5n5RP8fiJE-dVwbFr-apKv1=mNGPHYZg@mail.gmail.com> <84816226.20140206123631@eikelenboom.it> <942972114.20140206140909@eikelenboom.it> <CAPcyv4g2EnCLFWfLfSDnjtwrid2tCq2k6wh-8sPYY06eJpM83A@mail.gmail.com> <1434499348.20140211205617@eikelenboom.it> <CAPcyv4juAS0ODRPKE-_wXYu5bixLnvsgs3jgo4vzWcatfnyVsw@mail.gmail.com> <1392178661.1752.1.camel@edumazet-glaptop2.roam.corp.google.com> <1392322487.11022.4.camel@dwillia2-mobl2.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-CC: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Gianluca Anzolin <gianluca@sottospazio.it>,
-        Andrey Vihrov <andrey.vihrov@gmail.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/24] rfcomm fixes
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org> <52F95A10.5010507@hurleysoftware.com> <433F6D97-A126-4F9F-96AC-4385575E005E@holtmann.org> <52FC13F0.8040809@hurleysoftware.com>
-In-Reply-To: <52FC13F0.8040809@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.02.2014 01:38, schrieb Peter Hurley:
-> Hi Marcel,
->
-> On 02/12/2014 05:58 PM, Marcel Holtmann wrote:
->> we might also want to add some end-to-end test cases to rfcomm-tester
->> that covers this behavior.
 
-Sounds great. Such would have found the problem with disappearing remote 
-bt (rfcomm) devices since 3.8 likely earlier than I did (which was 
-around 3.10 if I remember correctly).
+Thursday, February 13, 2014, 9:14:47 PM, you wrote:
 
-Regards,
+> On Tue, 2014-02-11 at 20:17 -0800, Eric Dumazet wrote:
+>> On Tue, 2014-02-11 at 18:07 -0800, Dan Williams wrote:
+>> 
+>> > The overlap granularity is too large.  Multiple dma_map_single
+>> > mappings are allowed to a given page as long as they don't collide on
+>> > the same cache line.
+>> > 
+>> 
+>> I am not sure why you try number of mappings of a page.
+>> 
+>> Try launching 100 concurrent netperf -t TCP_SENFILE
+>> 
+>> Same page might be mapped more than 100 times, more than 10000 times in
+>> some cases.
 
-Alexander Holler
+> Thanks for that test case.
+
+> I updated the fix patch with the following.
+
+> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+> index 42b12740940b..611010df1e9c 100644
+> --- a/lib/dma-debug.c
+> +++ b/lib/dma-debug.c
+> @@ -513,6 +513,13 @@ static int active_cln_insert(struct dma_debug_entry *entry)
+>         unsigned long flags;
+>         int rc;
+>  
+> +       /* If the device is not writing memory then we don't have any
+> +        * concerns about the cpu consuming stale data.  This mitigates
+> +        * legitimate usages of overlapping mappings.
+> +        */
++       if (entry->>direction == DMA_TO_DEVICE)
+> +               return 0;
+> +
+>         spin_lock_irqsave(&radix_lock, flags);
+>         rc = radix_tree_insert(&dma_active_cacheline, to_cln(entry), entry);
+>         if (rc == -EEXIST)
+> @@ -526,6 +533,10 @@ static void active_cln_remove(struct dma_debug_entry *entry)
+>  {
+>         unsigned long flags;
+>  
+> +       /* ...mirror the insert case */
++       if (entry->>direction == DMA_TO_DEVICE)
+> +               return;
+> +
+>         spin_lock_irqsave(&radix_lock, flags);
+>         /* since we are counting overlaps the final put of the
+>          * cacheline will occur when the overlap count is 0.
+
+
+> Sander, barring a negative test result from you I'll send the attached
+> patch to Andrew.
+
+Hi Dan,
+
+That seems to effectively suppress the warning, thanks and:
+
+Tested-by; Sander Eikelenboom <linux@eikelenboom.it>
+
+--
+Sander
+
+> --
+> Dan
+
+
