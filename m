@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaBMS21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:28:27 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:54557 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172AbaBMS2Z (ORCPT
+	id S1753019AbaBMS3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:29:22 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:45549 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaBMS3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:28:25 -0500
-From: Emil Goode <emilgoode@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, Ming Lei <ming.lei@canonical.com>,
-        Mark Brown <broonie@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Glen Turner <gdt@gdt.id.au>
-Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH Resend] net: asix: add missing flag to struct driver_info
-Date: Thu, 13 Feb 2014 19:30:39 +0100
-Message-Id: <1392316239-17335-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 13 Feb 2014 13:29:20 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com>
+References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+	<19258.1392306854@warthog.procyon.org.uk>
+	<20140213162534.GB4026@tucsk.piliscsaba.szeredi.hu>
+	<20106.1392309770@warthog.procyon.org.uk>
+	<CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com>
+Date: Thu, 13 Feb 2014 10:29:19 -0800
+X-Google-Sender-Auth: mZhT7cWcCdx-2cOS2J313cNZOXM
+Message-ID: <CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com>
+Subject: Re: [PATCH 00/13] cross rename v4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bruce Fields <bfields@fieldses.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The struct driver_info ax88178_info is assigned the function
-asix_rx_fixup_common as it's rx_fixup callback. This means that
-FLAG_MULTI_PACKET must be set as this function is cloning the
-data and calling usbnet_skb_return. Not setting this flag leads
-to usbnet_skb_return beeing called a second time from within
-the rx_process function in the usbnet module.
+On Thu, Feb 13, 2014 at 9:28 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>>
+>> I would suggest that whiteouts appear as otherwise negative dentries and that
+>> they don't appear in getdents().
+>
+> I'd argue that this is an administration nightmare.  E.g. what if the
+> a backup needs to be made of the rw layer?
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Reported-by: Bjørn Mork <bjorn@mork.no>
----
- drivers/net/usb/asix_devices.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+The major issue is user space support.
 
-diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
-index 9765a7d..5d19409 100644
---- a/drivers/net/usb/asix_devices.c
-+++ b/drivers/net/usb/asix_devices.c
-@@ -917,7 +917,8 @@ static const struct driver_info ax88178_info = {
- 	.status = asix_status,
- 	.link_reset = ax88178_link_reset,
- 	.reset = ax88178_reset,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
-+		 FLAG_MULTI_PACKET,
- 	.rx_fixup = asix_rx_fixup_common,
- 	.tx_fixup = asix_tx_fixup,
- };
--- 
-1.7.10.4
+So what do others that support this do?  Looking at the gitweb for
+ls.c in coreutils, we find:
 
+http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/ls.c
+
+    # ifdef DT_WHT
+                    case DT_WHT:  type = whiteout;          break;
+    # endif
+
+so that's presumably what we should use.
+
+                     Linus
