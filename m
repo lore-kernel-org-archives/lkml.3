@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaBMSQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:16:15 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35199 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751994AbaBMSQL (ORCPT
+	id S1752407AbaBMSVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:21:49 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44668 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752039AbaBMSVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:16:11 -0500
-Date: Thu, 13 Feb 2014 18:15:59 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
-	device probe
-Message-ID: <20140213181559.GB30257@n2100.arm.linux.org.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org> <1390208555-27770-3-git-send-email-tushar.behera@linaro.org> <20140120100415.GX15937@n2100.arm.linux.org.uk> <20140213181216.GB24155@kroah.com>
+	Thu, 13 Feb 2014 13:21:48 -0500
+Date: Thu, 13 Feb 2014 18:21:06 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Pavel Machek <pavel@ucw.cz>, Sebastian Reichel <sre@ring0.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [BISECTED] ssh - Received disconnect from x.x.x.x: 2: Bad packet
+ length 3149594624
+Message-ID: <20140213182105.GN13576@mudshark.cambridge.arm.com>
+References: <52FD08D1.3030405@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140213181216.GB24155@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52FD08D1.3030405@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 10:12:16AM -0800, Greg KH wrote:
-> On Mon, Jan 20, 2014 at 10:04:15AM +0000, Russell King - ARM Linux wrote:
-> > On Mon, Jan 20, 2014 at 02:32:35PM +0530, Tushar Behera wrote:
-> > > uart_register_driver call binds the driver to a specific device
-> > > node through tty_register_driver call. This should typically happen
-> > > during device probe call.
-> > > 
-> > > In a multiplatform scenario, it is possible that multiple serial
-> > > drivers are part of the kernel. Currently the driver registration fails
-> > > if multiple serial drivers with same default major/minor numbers are
-> > > included in the kernel.
-> > > 
-> > > A typical case is observed with amba-pl011 and samsung-uart drivers.
-> > 
-> > NAK.  There should not be any other driver using amba-pl011's device numbers.
-> 
-> I agree, but there is.  And because of that, moving the registration to
-> the probe call fixes the issue with building a kernel with all of the
-> drivers built into them, so I'm going to take both of these patches, as
-> it does solve that problem, while still allowing the device number
-> collision to happen.
+Hi Ivo,
 
-So what happens when two _devices_ are probed by this driver at the same
-time?
+Thanks for bisecting this.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+On Thu, Feb 13, 2014 at 06:02:57PM +0000, Ivaylo Dimitrov wrote:
+> Since next-21012014 I started to receive "Received disconnect from 
+> x.x.x.x: 2: Bad packet length 3149594624" errors when trying to 
+> establish ssh session over wifi to my N900, running Maemo 5. I bisected 
+> and it turned out that commit dce5c9e35bc4085bd33eccdb8c9ec5a643507a14 
+> "ARM: 7928/1: kconfig: select HAVE_EFFICIENT_UNALIGNED_ACCESS for CPUv6+ 
+> && MMU" is the first bad. There is nothing related in either dmesg or 
+> syslog on the device. Reverting that commit on 3.14-rc1 make those 
+> errors disappear.
+
+That's certainly unexpected. The n900 has (iirc) a Cortex-A8, which as an
+ARMv7 core, can perform unaligned accesses to normal, cacheable memory in
+hardware.
+
+Can you provide your .config and/or any information about your network chip
+please? There's a chance that the driver is doing something odd.
+
+Cheers,
+
+Will
