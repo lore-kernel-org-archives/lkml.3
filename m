@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaBMWNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:13:51 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:50620 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254AbaBMWNu (ORCPT
+	id S1752337AbaBMWOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:14:41 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:40322 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaBMWOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:13:50 -0500
-Date: Thu, 13 Feb 2014 17:13:48 -0500 (EST)
-Message-Id: <20140213.171348.584083783987595218.davem@davemloft.net>
-To: paul.gortmaker@windriver.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Documentation/networking: delete orphaned 3c505.txt
- file.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1392171574-6231-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1392169920-5713-1-git-send-email-paul.gortmaker@windriver.com>
-	<1392171574-6231-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Feb 2014 14:13:50 -0800 (PST)
+	Thu, 13 Feb 2014 17:14:39 -0500
+Date: Thu, 13 Feb 2014 14:14:37 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christian Kujau <lists@nerdbynature.de>
+cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com, linux-mm@kvack.org
+Subject: Re: 3.14.0-rc2: WARNING: at mm/slub.c:1007
+In-Reply-To: <alpine.DEB.2.19.4.1402131158590.6233@trent.utfs.org>
+Message-ID: <alpine.DEB.2.02.1402131413070.13899@chino.kir.corp.google.com>
+References: <alpine.DEB.2.19.4.1402131144390.6233@trent.utfs.org> <alpine.DEB.2.19.4.1402131158590.6233@trent.utfs.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Tue, 11 Feb 2014 21:19:34 -0500
+On Thu, 13 Feb 2014, Christian Kujau wrote:
 
-> In the commit 0e245dbaac9fa1c2fd0f4e2af7b9f6d874083a8b
-> ("drivers/net: delete the 3Com 3c505/3c507 intel i825xx support")
-> we clobbered the 3c505 driver (over a year ago) along with other
-> abandoned ISA drivers.
+> > after upgrading from 3.13-rc8 to 3.14.0-rc2 on this PowerPC G4 machine, 
+> > the WARNING below was printed.
+> > 
+> > Shortly after, a lockdep warning appeared (possibly related to my 
+> > post to the XFS list yesterday[0]).
 > 
-> However, this orphaned README file escaped detection at that
-> time, and has lived on until today. Get rid of it now.
+> Sigh, only _after_ sending the email, I came across an earlier posting on 
+> lkml: http://marc.info/?l=linux-mm&m=139145788623391
 > 
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Applied to 'net', thanks.
+There's a fix for that: http://marc.info/?l=linux-kernel&m=139145999324131
+or alternatively wait for 3.14-rc3 which will already have it.
