@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaBMVKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:10:05 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43406 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaBMVKD (ORCPT
+	id S1752030AbaBMVMH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:12:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:13451 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751001AbaBMVMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:10:03 -0500
-Date: Thu, 13 Feb 2014 21:09:56 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140213210956.GE28112@sirena.org.uk>
-References: <9348920.79Ktlcbcai@phil>
- <20140213190322.GA28112@sirena.org.uk>
- <1528469.iBzMKAUgWB@phil>
+	Thu, 13 Feb 2014 16:12:05 -0500
+Date: Thu, 13 Feb 2014 16:11:56 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
+ TAINT_UNSIGNED_MODULE
+Message-ID: <20140213161156.3548df43@gandalf.local.home>
+In-Reply-To: <877g8zg0ed.fsf@rustcorp.com.au>
+References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
+	<20140211072738.GA24232@gmail.com>
+	<20140211234534.6bc34e57@gandalf.local.home>
+	<877g8zg0ed.fsf@rustcorp.com.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="klLku2wdS+WFztDq"
-Content-Disposition: inline
-In-Reply-To: <1528469.iBzMKAUgWB@phil>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: gpio-regulator: fix forgotten gpios-states
- reading
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 13 Feb 2014 13:54:42 +1030
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
---klLku2wdS+WFztDq
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Feb 13, 2014 at 08:17:54PM +0100, Heiko St=FCbner wrote:
+> I'm ambivalent towards out-of-tree modules, so not tempted unless I see
+> a bug report indicating a concrete problem.  Then we can discuss...
 
-> So I would argue for removing this commit again in favor of my v2 sent 16=
-:34.
+As I replied in another email, this is a concrete problem, and affects
+in-tree kernel modules.
 
-Yes, that's fine - it hasn't arrived here yet though and I wanted to get
-a proper fix in.
+If you have the following in your .config:
 
---klLku2wdS+WFztDq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+CONFIG_MODULE_SIG=y
+# CONFIG_MODULE_SIG_FORCE is not set
+# CONFIG_MODULE_SIG_ALL is not set
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Modules will not be signed at build, and they can be loaded with a
+simple modprobe or insmod with no --force flag set. You may get an
+error message like:
 
-iQIcBAEBAgAGBQJS/TShAAoJELSic+t+oim9r+UP/iDA1OyaALQfIqsbaq6ah1uf
-4FXWYlZR9pA8ax2tn1P9hqdy8Cx/mcwCB/LtOX8v4y/MG7HHGaBNPLPFqWJG58JS
-oBRxecBq1i81EY6VifMJ4aigoQI+Fmq5fYMRoce2zETE+pvgXFffJMyG0vOvu6kw
-/BREneDq+vrsEU9JrKgp9Rj2NTxlksdB0g76XWq9fJwc4yZBH19wa+dx4x16l21r
-Ji3VleaSEFWNZbTJJlcH59OBJEjEB4D+sN12VAkiEWaDd09n9RMN0PcDld3mmnsd
-jpHaKl8/Q6yAzzAUO0tZO8pbivtartRhn1OBGb+JVAU7OLss28uvB1O09TWkUWUx
-rirwnMyDyeJ8O/Hlj+GNDCeHx0MZn52A3fR2/MaslllCGNbrz/K08TFTnxuQJqYK
-xTYtPjD3NNFN7dxmMCI1KPpmvuCNvfCOUvZYUedvcaIjiy+xisGuz2VR+Ympn6vR
-8MZgPiGYu7YNnSBi9VmcJGteV2jLGKMeQHdmFAPqWIxhrcqszyBUZJnB22s75aaN
-1OFLkoBrjT1TO8MgRmySfG9+2nj60cAzC0Mf99WeohpCMHNVwvF2khPewbOdryQ8
-Eo4NMI7TqcBaIwcp9BkhinkK5N5bOaj/sOlc15w7eV2c7o3qD0OqEtpbNCd6VQeY
-i+2oNXRNtJ/C6M5jYpeS
-=/dZk
------END PGP SIGNATURE-----
+  sunrpc: module verification failed: signature and/or required key missing - tainting kernel
 
---klLku2wdS+WFztDq--
+But nothing else that indicates a problem.
+
+In the module code, the above was printed by:
+
+#ifdef CONFIG_MODULE_SIG
+	mod->sig_ok = info->sig_ok;
+	if (!mod->sig_ok) {
+		pr_notice_once("%s: module verification failed: signature "
+			       "and/or  required key missing - tainting "
+			       "kernel\n", mod->name);
+		add_taint_module(mod, TAINT_FORCED_MODULE, LOCKDEP_STILL_OK);
+	}
+#endif
+
+Now in the tracepoint code, we have:
+
+in tracepoint_module_coming():
+
+	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
+		return 0;
+
+If the module is tainted as other than out-of-tree or crap (staging),
+the module is ignored with respect to tracepoints. No error, no nothing.
+
+This means that all modules loaded with the config will not have their
+tracepoints enabled.
+
+I highly doubt this is the expected result. I think Mathieu's patch is
+a fix to this problem (and my patch fixes the problem where tracepoints
+do not give any feedback that they failed to be enabled).
+
+Are you fine with his fix, if so, please ack it, and I'll apply it.
+
+Although, is "N" the best letter to use for this taint? Not sure, but
+everything else I can think of looks to be already taken. Maybe "X"?
+You know. When you sign your name and don't know how to spell it, you
+just simply use an "X". :-)
+
+Thanks!
+
+-- Steve
