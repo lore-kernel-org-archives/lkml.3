@@ -1,132 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643AbaBMTXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:23:47 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:8864 "EHLO
-	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaBMTXq (ORCPT
+	id S1751902AbaBMT2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:28:47 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42987 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaBMT2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:23:46 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Thu, 13 Feb 2014 11:11:06 -0800
-Message-ID: <52FD1BC0.1050009@synaptics.com>
-Date: Thu, 13 Feb 2014 11:23:44 -0800
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 13 Feb 2014 14:28:44 -0500
+Date: Thu, 13 Feb 2014 19:10:28 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140213191028.GC28112@sirena.org.uk>
+References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
+ <1392282847-25444-10-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Andrew Duggan <aduggan@synaptics.com>,
-        Vincent Huang <vincent.huang@tw.synaptics.com>,
-        Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/11] Input: synaptics-rmi4 - do not update configuration
- in rmi_f01_probe()
-References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com> <1392269277-16391-3-git-send-email-dmitry.torokhov@gmail.com>
-In-Reply-To: <1392269277-16391-3-git-send-email-dmitry.torokhov@gmail.com>
-X-Originating-IP: [10.3.20.103]
-X-Brightmail-Tracker: AAAAAQAAAWE=
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HOIXJDerRg0rVrcW"
+Content-Disposition: inline
+In-Reply-To: <1392282847-25444-10-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 09/14] regulator: s2mps11: Add support for S2MPS14
+ regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
-> Do not write configuration data in probe(), we have config() for that.
 
-Then we should call config() in rmi_function_probe() to ensure that
-any platform data or device tree configuration settings get written
-to the device.
+--HOIXJDerRg0rVrcW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thinking about that, it looks like it's not fatal if the config
-write fails in that situation.  The device might not function as
-intended, but you can hopefully get some use out of it (for
-instance, a phone's touchscreen sensitivity might be wacky, but
-the user will still be able to dial tech support).
+On Thu, Feb 13, 2014 at 10:14:02AM +0100, Krzysztof Kozlowski wrote:
+> Add support for S2MPS14 PMIC regulators to s2mps11 driver. The S2MPS14
+> has fewer BUCK-s and LDO-s than S2MPS11. It also does not support
+> controlling the BUCK ramp delay.
 
-For example:
+How different are the other Samsung PMICs?  They share the core driver
+code and this makes the driver more parameterisable so perhaps it means
+the others could be merged in here too.
 
-static int rmi_function_probe(struct device *dev)
-{
-	struct rmi_function *fn = to_rmi_function(dev);
-	struct rmi_function_handler *handler = 			 
-to_rmi_function_handler(dev->driver);
-	int error;
+--HOIXJDerRg0rVrcW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	if (handler->probe) {
-		error = handler->probe(fn);
-		if (error)
-			return error;
-	}
-	if (handler->config) {
-		error = handler->config(fn);
-		if (error)
-			dev_warn(dev, "Driver config failed.\n");
-	}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-	return 0;
-}
+iQIcBAEBAgAGBQJS/RihAAoJELSic+t+oim9LUMP/2tprxbWnfGcoBkZWA9Ju7wC
+V/q0p3ZxFXuyOegEwTNwymzZw6z7YyvWwTDiiPEXP4NTB1RClTVndK1zC5IX0npS
+/infRE6fZvXr0ecxrjqq6OXykH9JTp4/mUItMlqZsx1BnGeMm4RwXTMRYMqr2b26
+WRfy3s93o11ZuXKZaENrnS/Av+P8zL/SL4fYvP1MOPFUFozMvt9c/vUt3YkwJxiM
+a7Ro0UBi9P6Ec+aWmwHOHUlQgL8Q5g6cn6TIu1q/U/LaB/wj9zgP3Y6L17dbRc0w
+QGRl0CVLF4pKE1ALg9NemTLgfgbjDZAwRaQysTly55VxWgDCyrBSE+p8OBlmgQvc
+DLrX1217c0sCdA2MhMChxAkSN/aWz0WvF3lSbHxJ5OeM3oo7u7GEHyJq5ikjHMSj
+6uc5WaB4j5hCK1LZvBMFx3puIz8IdhVLyG0oENtqd3cvSUqtA738uVVE74A0Y2+/
+WGOw+HORT36BhojCOSN5SHQlXTqSXVtBNOT0bl6ABUujmAMPcfSH37OzaQEZdVl9
+i10y9+FimDr+6AesvIgbqJWIDCA/4xDbHW1jl3SxsR7M0rq8jOY95uOJfxTIvO3/
+vfymx7urFt9s76V/w4xCgEP5I/N7aRZtkELb8endeRfh8PAXKMa5H9t6ljRRmRjc
+NjYabPtTKsDhze+aSoyb
+=RFIj
+-----END PGP SIGNATURE-----
 
->
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->   drivers/input/rmi4/rmi_f01.c | 18 ------------------
->   1 file changed, 18 deletions(-)
->
-> diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
-> index 897d8ac..976aba3 100644
-> --- a/drivers/input/rmi4/rmi_f01.c
-> +++ b/drivers/input/rmi4/rmi_f01.c
-> @@ -303,12 +303,6 @@ static int rmi_f01_initialize(struct rmi_function *fn)
->   		if (pdata->power_management.doze_interval) {
->   			data->device_control.doze_interval =
->   				pdata->power_management.doze_interval;
-> -			error = rmi_write(rmi_dev, data->doze_interval_addr,
-> -					data->device_control.doze_interval);
-> -			if (error < 0) {
-> -				dev_err(&fn->dev, "Failed to configure F01 doze interval register.\n");
-> -				return error;
-> -			}
->   		} else {
->   			error = rmi_read(rmi_dev, data->doze_interval_addr,
->   					&data->device_control.doze_interval);
-> @@ -324,12 +318,6 @@ static int rmi_f01_initialize(struct rmi_function *fn)
->   		if (pdata->power_management.wakeup_threshold) {
->   			data->device_control.wakeup_threshold =
->   				pdata->power_management.wakeup_threshold;
-> -			error = rmi_write(rmi_dev, data->wakeup_threshold_addr,
-> -					data->device_control.wakeup_threshold);
-> -			if (error < 0) {
-> -				dev_err(&fn->dev, "Failed to configure F01 wakeup threshold register.\n");
-> -				return error;
-> -			}
->   		} else {
->   			error = rmi_read(rmi_dev, data->wakeup_threshold_addr,
->   					&data->device_control.wakeup_threshold);
-> @@ -347,12 +335,6 @@ static int rmi_f01_initialize(struct rmi_function *fn)
->   		if (pdata->power_management.doze_holdoff) {
->   			data->device_control.doze_holdoff =
->   				pdata->power_management.doze_holdoff;
-> -			error = rmi_write(rmi_dev, data->doze_holdoff_addr,
-> -					data->device_control.doze_holdoff);
-> -			if (error < 0) {
-> -				dev_err(&fn->dev, "Failed to configure F01 doze holdoff register.\n");
-> -				return error;
-> -			}
->   		} else {
->   			error = rmi_read(rmi_dev, data->doze_holdoff_addr,
->   					&data->device_control.doze_holdoff);
->
-
-
--- 
-
-Christopher Heiny
-Senior Staff Firmware Engineer
-Synaptics Incorporated
+--HOIXJDerRg0rVrcW--
