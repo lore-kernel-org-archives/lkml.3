@@ -1,88 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaBMM5i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 07:57:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36162 "EHLO mx2.suse.de"
+	id S1754609AbaBMM5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 07:57:25 -0500
+Received: from mout.web.de ([212.227.15.14]:58050 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753455AbaBMM5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 07:57:36 -0500
-Date: Thu, 13 Feb 2014 13:57:31 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [RFC PATCH] hwmon: (max6650) Convert to be a 
- platform driver
-Message-ID: <20140213135731.139b23aa@endymion.delvare>
-In-Reply-To: <CAOMwXhMNHqXnzR0YHF9rx710JbaL3YFn=3cLf_WdNkCx7hbZug@mail.gmail.com>
-References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
-	<20140213095817.GD32508@lee--X1>
-	<20140213111530.2a2b4982@endymion.delvare>
-	<CAOMwXhML8LvDCzmk1ZVT+7cARj9C3VtxERWBgOPM9vTc6qQXZQ@mail.gmail.com>
-	<CAOMwXhOv-as1W69wcSno49jEXsXWZZ7odnu8og-vgnDwRTJ4sA@mail.gmail.com>
-	<20140213113313.GL32508@lee--X1>
-	<CAOMwXhMNHqXnzR0YHF9rx710JbaL3YFn=3cLf_WdNkCx7hbZug@mail.gmail.com>
-Organization: Suse Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1754477AbaBMM5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 07:57:16 -0500
+From: Martin Walch <walch.martin@web.de>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [PATCH 1/2] kconfig: completely remove expr_eliminate_dups2() and related code
+Date: Thu, 13 Feb 2014 13:57:13 +0100
+Message-ID: <4074365.1YlsYGzSFT@tacticalops>
+User-Agent: KMail/4.12.2 (Linux/3.10.7-gentoo-r1-gnu; KDE/4.12.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="UTF-8"
+X-Provags-ID: V03:K0:iPVYZp8dFFKXlILQj6uwrs9eMyxxldkQG+eP9IhWC2WdO4vZ3y9
+ P2N5ERgmkZFh9Vo36p/3iaxRZ0IN6P3NZM+aMn9UWhuoenXYy7/7WVLOVZOFtNxsvqlqov9
+ 3XJftvZDicmrikTAgcHrggbDke8KQftYHmavV3OKndIZczfW6pvngG8Kj62Utzmlc43VTh5
+ Pv1uj+rO27TNfm5pyQC1g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laszlo,	
+From: Martin Walch <walch.martin@web.de>
+Date: Thu, 13 Feb 2014 02:13:01 +0100
+Subject: [PATCH 1/2] kconfig: completely remove expr_eliminate_dups2() and related code
 
-On Thu, 13 Feb 2014 12:27:28 +0000, Laszlo Papp wrote:
-> On Thu, Feb 13, 2014 at 11:33 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > Right, I've had enough. I'm removing your patch from the MFD tree.
-> >
-> > I've asked too many people to give you a second chance and asked you
-> > privately to behave yourself and treat others with respect. So far I
-> > haven't seen an ounce of self control or depomacy from you.
-> >
-> > This is how it's going to work from now on:
-> >
-> >  - You submit a patch
-> >  - It gets reviewed                            <----\
-> >  - You fix up the review comments as requested -----/
-> >  - Non-compliance or arguments with the _experts_ results in:
-> >     `$INTEREST > /dev/null || \
-> >       grep "From: Laszio Papp" ~/.mail | xargs rm -rf`
-> 
-> http://comments.gmane.org/gmane.linux.kernel/1645251
-> 
-> Step 2 did not happen. I did not get any review for my change. I
-> literally submitted that within a couple of hours after the request.
+this removes expr_eliminate_dups2(), expr_extract_eq_and(), expr_extract_eq_or(), and expr_extract_eq() from scripts/kconfig/expr.[ch]
 
-Yes, twice even, and broken each time. And without a changelog on v2
-(despite Documentation/SubmittingPatches explaining this is a good
-practice - see section 15.)
+As the comments in the code state, expr_eliminate_dups2 applies these two transformations:
+(FOO || BAR) && (!FOO && !BAR) -> n
+(FOO && BAR) || (!FOO || !BAR) -> y
+At first glance, this may look like a good idea. On second thought, one should verify all possible values for FOO and BAR, finally leading to the assignment
 
-> Could you please tell me what was wrong with that change, and why I
-> did not get any respect not to "xargs rm -rf" my work in that area? I
-> believe I was ignored instead of improving the change, and someone
-> else tried to address the same thing. There was no argument in that
-> thread. It was a technical change. I personally do not feel happy
-> about it.
+FOO << 1
+BAR << 1
 
-The change itself was so wrong that I don't even know where to start.
+which yields for both expressions the interpretation 1 (syntactically this corresponds to an m) when applying the evaluation rules from
+Documentation/kbuild/kconfig-language.txt:
 
-But the main problem really was you. You had pissed me (and I suspect,
-everybody else) off so much that day that I really didn't want to deal
-with your rants or code any longer. As you can imagine, I have more
-than enough on my plate, so I just moved on to another task.
+(FOO || BAR) && (!FOO && !BAR)
+-> min(max(1, 1), min(2-1, 2-1)) = min(1, 1) = 1
 
-Then by the time I may have been willing to give you another chance and
-review your code, Guenter wrote a more complete, better patch set. So I
-thought I'd just review that one. And it was good, and it took me less
-time to review and test it than to (attempt to) teach you how to behave.
+(FOO && BAR) || (!FOO || !BAR)
+-> max(min(1, 1), max(2-1, 2-1)) = max(1, 1) = 1
 
-Working with Guenter is a pleasure. Working with you is a pain, really.
-And guess what, I get to choose who I'm working with.
+As n always evaluates to 0 and y to 2, this means that the transformation does not preserve semantics, which I guess is not intended here.
+In particular, the expression m && !m expands to (m && MODULES) && !(m && MODULES), then to (m && MODULES) && (!m || !MODULES), and finally in
+expr_eliminate_dups2 to n. I therefore think it is a bug which should be fixed.
 
-If people no longer want to work with you, well, blame it on yourself.
+This patch should fix the problem by just removing the corresponding code. Nothing should break: a quick check did not yield any expression in the
+mainline kernel that the (bad) transformation currently applies to. Also, as far as I understand the code, expr_eliminate_dups2 does not do anything
+except those two transformations that are to be removed.
 
+As a positive side effect, this reduces code size in expr.c by roughly 10% and slightly improves startup time for all configuration frontends.
+
+Signed-off-by: Martin Walch <walch.martin@web.de>
+---
+ scripts/kconfig/expr.c | 108 -------------------------------------------------
+ scripts/kconfig/expr.h |   3 --
+ 2 files changed, 111 deletions(-)
+
+diff --git a/scripts/kconfig/expr.c b/scripts/kconfig/expr.c
+index d662652..4aa171b 100644
+--- a/scripts/kconfig/expr.c
++++ b/scripts/kconfig/expr.c
+@@ -553,62 +553,6 @@ static void expr_eliminate_dups1(enum expr_type type, struct expr **ep1, struct
+ #undef e2
+ }
+ 
+-static void expr_eliminate_dups2(enum expr_type type, struct expr **ep1, struct expr **ep2)
+-{
+-#define e1 (*ep1)
+-#define e2 (*ep2)
+-	struct expr *tmp, *tmp1, *tmp2;
+-
+-	if (e1->type == type) {
+-		expr_eliminate_dups2(type, &e1->left.expr, &e2);
+-		expr_eliminate_dups2(type, &e1->right.expr, &e2);
+-		return;
+-	}
+-	if (e2->type == type) {
+-		expr_eliminate_dups2(type, &e1, &e2->left.expr);
+-		expr_eliminate_dups2(type, &e1, &e2->right.expr);
+-	}
+-	if (e1 == e2)
+-		return;
+-
+-	switch (e1->type) {
+-	case E_OR:
+-		expr_eliminate_dups2(e1->type, &e1, &e1);
+-		// (FOO || BAR) && (!FOO && !BAR) -> n
+-		tmp1 = expr_transform(expr_alloc_one(E_NOT, expr_copy(e1)));
+-		tmp2 = expr_copy(e2);
+-		tmp = expr_extract_eq_and(&tmp1, &tmp2);
+-		if (expr_is_yes(tmp1)) {
+-			expr_free(e1);
+-			e1 = expr_alloc_symbol(&symbol_no);
+-			trans_count++;
+-		}
+-		expr_free(tmp2);
+-		expr_free(tmp1);
+-		expr_free(tmp);
+-		break;
+-	case E_AND:
+-		expr_eliminate_dups2(e1->type, &e1, &e1);
+-		// (FOO && BAR) || (!FOO || !BAR) -> y
+-		tmp1 = expr_transform(expr_alloc_one(E_NOT, expr_copy(e1)));
+-		tmp2 = expr_copy(e2);
+-		tmp = expr_extract_eq_or(&tmp1, &tmp2);
+-		if (expr_is_no(tmp1)) {
+-			expr_free(e1);
+-			e1 = expr_alloc_symbol(&symbol_yes);
+-			trans_count++;
+-		}
+-		expr_free(tmp2);
+-		expr_free(tmp1);
+-		expr_free(tmp);
+-		break;
+-	default:
+-		;
+-	}
+-#undef e1
+-#undef e2
+-}
+-
+ struct expr *expr_eliminate_dups(struct expr *e)
+ {
+ 	int oldcount;
+@@ -621,7 +565,6 @@ struct expr *expr_eliminate_dups(struct expr *e)
+ 		switch (e->type) {
+ 		case E_OR: case E_AND:
+ 			expr_eliminate_dups1(e->type, &e, &e);
+-			expr_eliminate_dups2(e->type, &e, &e);
+ 		default:
+ 			;
+ 		}
+@@ -823,57 +766,6 @@ bool expr_depends_symbol(struct expr *dep, struct symbol *sym)
+  	return false;
+ }
+ 
+-struct expr *expr_extract_eq_and(struct expr **ep1, struct expr **ep2)
+-{
+-	struct expr *tmp = NULL;
+-	expr_extract_eq(E_AND, &tmp, ep1, ep2);
+-	if (tmp) {
+-		*ep1 = expr_eliminate_yn(*ep1);
+-		*ep2 = expr_eliminate_yn(*ep2);
+-	}
+-	return tmp;
+-}
+-
+-struct expr *expr_extract_eq_or(struct expr **ep1, struct expr **ep2)
+-{
+-	struct expr *tmp = NULL;
+-	expr_extract_eq(E_OR, &tmp, ep1, ep2);
+-	if (tmp) {
+-		*ep1 = expr_eliminate_yn(*ep1);
+-		*ep2 = expr_eliminate_yn(*ep2);
+-	}
+-	return tmp;
+-}
+-
+-void expr_extract_eq(enum expr_type type, struct expr **ep, struct expr **ep1, struct expr **ep2)
+-{
+-#define e1 (*ep1)
+-#define e2 (*ep2)
+-	if (e1->type == type) {
+-		expr_extract_eq(type, ep, &e1->left.expr, &e2);
+-		expr_extract_eq(type, ep, &e1->right.expr, &e2);
+-		return;
+-	}
+-	if (e2->type == type) {
+-		expr_extract_eq(type, ep, ep1, &e2->left.expr);
+-		expr_extract_eq(type, ep, ep1, &e2->right.expr);
+-		return;
+-	}
+-	if (expr_eq(e1, e2)) {
+-		*ep = *ep ? expr_alloc_two(type, *ep, e1) : e1;
+-		expr_free(e2);
+-		if (type == E_AND) {
+-			e1 = expr_alloc_symbol(&symbol_yes);
+-			e2 = expr_alloc_symbol(&symbol_yes);
+-		} else if (type == E_OR) {
+-			e1 = expr_alloc_symbol(&symbol_no);
+-			e2 = expr_alloc_symbol(&symbol_no);
+-		}
+-	}
+-#undef e1
+-#undef e2
+-}
+-
+ struct expr *expr_trans_compare(struct expr *e, enum expr_type type, struct symbol *sym)
+ {
+ 	struct expr *e1, *e2;
+diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
+index ba663e1..fb9e470 100644
+--- a/scripts/kconfig/expr.h
++++ b/scripts/kconfig/expr.h
+@@ -211,9 +211,6 @@ struct expr *expr_eliminate_dups(struct expr *e);
+ struct expr *expr_transform(struct expr *e);
+ int expr_contains_symbol(struct expr *dep, struct symbol *sym);
+ bool expr_depends_symbol(struct expr *dep, struct symbol *sym);
+-struct expr *expr_extract_eq_and(struct expr **ep1, struct expr **ep2);
+-struct expr *expr_extract_eq_or(struct expr **ep1, struct expr **ep2);
+-void expr_extract_eq(enum expr_type type, struct expr **ep, struct expr **ep1, struct expr **ep2);
+ struct expr *expr_trans_compare(struct expr *e, enum expr_type type, struct symbol *sym);
+ struct expr *expr_simplify_unmet_dep(struct expr *e1, struct expr *e2);
+ 
 -- 
-Jean Delvare
-Suse L3 Support
+1.8.3.2
+
+
