@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290AbaBMQyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 11:54:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40930 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaBMQyq (ORCPT
+	id S1752385AbaBMQ5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 11:57:20 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:43170 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751538AbaBMQ5S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 11:54:46 -0500
-Date: Thu, 13 Feb 2014 08:54:27 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-4640c7ee9b8953237d05a61ea3ea93981d1bc961@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, fengguang.wu@intel.com, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, fengguang.wu@intel.com
-In-Reply-To: <20140213124550.GA30497@localhost>
-References: <20140213124550.GA30497@localhost>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, smap: smap_violation()
-  is bogus if CONFIG_X86_SMAP is off
-Git-Commit-ID: 4640c7ee9b8953237d05a61ea3ea93981d1bc961
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 13 Feb 2014 11:57:18 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Emil Goode'" <emilgoode@gmail.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Oliver Neukum <oneukum@suse.de>,
+        =?Windows-1252?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        Freddy Xin <freddy@asix.com.tw>, Eric Dumazet <edumazet@google.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Liu Junliang <liujunliang_ljl@163.com>,
+        Octavian Purdila <octavian.purdila@intel.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] usbnet: remove generic hard_header_len check
+Thread-Topic: [PATCH v2] usbnet: remove generic hard_header_len check
+Thread-Index: AQHPKNtcE98IdcPLXUm0k0U9/GtxE5qzZj1Q
+Date: Thu, 13 Feb 2014 16:56:58 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6BEF3A@AcuExch.aculab.com>
+References: <1392310219-5719-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <1392310219-5719-1-git-send-email-emilgoode@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 13 Feb 2014 08:54:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4640c7ee9b8953237d05a61ea3ea93981d1bc961
-Gitweb:     http://git.kernel.org/tip/4640c7ee9b8953237d05a61ea3ea93981d1bc961
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 13 Feb 2014 07:46:04 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 13 Feb 2014 08:40:52 -0800
+From: Of Emil Goode
+> This patch removes a generic hard_header_len check from the usbnet
+> module that is causing dropped packages under certain circumstances
+> for devices that send rx packets that cross urb boundaries.
+> 
+> One example is the AX88772B which occasionally send rx packets that
+> cross urb boundaries where the remaining partial packet is sent with
+> no hardware header. When the buffer with a partial packet is of less
+> number of octets than the value of hard_header_len the buffer is
+> discarded by the usbnet module.
+...
+> diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+> index d6f64da..955df81 100644
+> --- a/drivers/net/usb/ax88179_178a.c
+> +++ b/drivers/net/usb/ax88179_178a.c
+> @@ -1118,6 +1118,10 @@ static int ax88179_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+>  	u16 hdr_off;
+>  	u32 *pkt_hdr;
+> 
+> +	/* This check is no longer done by usbnet */
+> +	if (skb->len < dev->net->hard_header_len)
+> +		return 0;
+> +
 
-x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
+The ax88179 driver can also receive ethernet frames that cross the
+end of rx URB.
+It should have the code to save the last fragment (of a urb) until
+the next data arrives, and then correctly merge the fragments.
 
-If CONFIG_X86_SMAP is disabled, smap_violation() tests for conditions
-which are incorrect (as the AC flag doesn't matter), causing spurious
-faults.
+It is likely that any sub-driver that sets the receive urb length
+to a multiple of 1k (rather than leaving it at hard_hdr+mtu) can defrag
+rx data that crosses urb boundaries.
 
-The dynamic disabling of SMAP (nosmap on the command line) is fine
-because it disables X86_FEATURE_SMAP, therefore causing the
-static_cpu_has() to return false.
+	David
 
-Found by Fengguang Wu's test system.
 
-[ v3: move all predicates into smap_violation() ]
-[ v2: use IS_ENABLED() instead of #ifdef ]
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org> # v3.7+
----
- arch/x86/mm/fault.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 9d591c8..6dea040 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1001,6 +1001,12 @@ static int fault_in_kernel_space(unsigned long address)
- 
- static inline bool smap_violation(int error_code, struct pt_regs *regs)
- {
-+	if (!IS_ENABLED(CONFIG_X86_SMAP))
-+		return false;
-+
-+	if (!static_cpu_has(X86_FEATURE_SMAP))
-+		return false;
-+
- 	if (error_code & PF_USER)
- 		return false;
- 
-@@ -1087,11 +1093,9 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	if (unlikely(error_code & PF_RSVD))
- 		pgtable_bad(regs, error_code, address);
- 
--	if (static_cpu_has(X86_FEATURE_SMAP)) {
--		if (unlikely(smap_violation(error_code, regs))) {
--			bad_area_nosemaphore(regs, error_code, address);
--			return;
--		}
-+	if (unlikely(smap_violation(error_code, regs))) {
-+		bad_area_nosemaphore(regs, error_code, address);
-+		return;
- 	}
- 
- 	/*
