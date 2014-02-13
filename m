@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaBMSKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:10:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097AbaBMSKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:10:21 -0500
-Date: Thu, 13 Feb 2014 19:10:13 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140213181013.GA15596@redhat.com>
-References: <20140212040358.GA25327@redhat.com> <20140212042215.GN18016@ZenIV.linux.org.uk> <20140212054043.GB13997@dastard> <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com> <20140212113928.GO18016@ZenIV.linux.org.uk> <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com> <20140212211421.GP18016@ZenIV.linux.org.uk> <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com> <20140213174020.GA14455@redhat.com> <CA+55aFxwozCQ05axLB02R3huX8sj=20EoFfw0cSDDL8fBE_Y6Q@mail.gmail.com>
+	id S1752580AbaBMSLA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:11:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32943 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107AbaBMSK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 13:10:58 -0500
+Date: Thu, 13 Feb 2014 10:12:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
+Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
+ device probe
+Message-ID: <20140213181216.GB24155@kroah.com>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
+ <1390208555-27770-3-git-send-email-tushar.behera@linaro.org>
+ <20140120100415.GX15937@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxwozCQ05axLB02R3huX8sj=20EoFfw0cSDDL8fBE_Y6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140120100415.GX15937@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13, Linus Torvalds wrote:
->
-> On Thu, Feb 13, 2014 at 9:40 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > And we should be careful with SIGQUEUE_PREALLOC, at least
-> > collect_signal() should not do list_del_init()... Plus we need to
-> > handle the SEND_SIG_FORCED-like case.
->
-> I don't think the users need to care. They'd just call
-> "sigqueue_free()" not knowing about our preallocations etc.
+On Mon, Jan 20, 2014 at 10:04:15AM +0000, Russell King - ARM Linux wrote:
+> On Mon, Jan 20, 2014 at 02:32:35PM +0530, Tushar Behera wrote:
+> > uart_register_driver call binds the driver to a specific device
+> > node through tty_register_driver call. This should typically happen
+> > during device probe call.
+> > 
+> > In a multiplatform scenario, it is possible that multiple serial
+> > drivers are part of the kernel. Currently the driver registration fails
+> > if multiple serial drivers with same default major/minor numbers are
+> > included in the kernel.
+> > 
+> > A typical case is observed with amba-pl011 and samsung-uart drivers.
+> 
+> NAK.  There should not be any other driver using amba-pl011's device numbers.
 
-Yes, but we need to be careful to avoid the races with
-release_posix_timer().
+I agree, but there is.  And because of that, moving the registration to
+the probe call fixes the issue with building a kernel with all of the
+drivers built into them, so I'm going to take both of these patches, as
+it does solve that problem, while still allowing the device number
+collision to happen.
 
-> That kind
-> of detail should be confined to inside signal.c.
+thanks,
 
-Yes, sure.
-
-> But there really aren't that many users. There's a couple of
-> "dequeue_signal_lock()" users, but they don't actually *want* the
-> siginfo at all (they're kernel threads), so we can just make that
-> function free the siginfo immediately (and get rid of the totally
-> unnecessay kernel stack allocation).
-
-Yes. Perhaps this helper should be changed/renamed. And perhaps we
-can even change __send_signal() to avoid __sigqueue_alloc() if
-PF_KTHREAD. Or sig == SIGKILL.
-
-Oleg.
-
+greg k-h
