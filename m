@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaBMJOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:14:49 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:48550 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723AbaBMJOe (ORCPT
+	id S1753986AbaBMJQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:16:30 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:54737 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaBMJOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:14:34 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-cd-52fc8cf19ee0
+	Thu, 13 Feb 2014 04:14:48 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-ab-52fc8cf68bab
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
@@ -16,202 +16,261 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Subject: [PATCH v2 07/14] regulator: s2mps11: Copy supported regulators from
- initconst
-Date: Thu, 13 Feb 2014 10:14:00 +0100
-Message-id: <1392282847-25444-8-git-send-email-k.kozlowski@samsung.com>
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Subject: [PATCH v2 14/14] rtc: s5m: Add support for S2MPS14 RTC
+Date: Thu, 13 Feb 2014 10:14:07 +0100
+Message-id: <1392282847-25444-15-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
 References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xy7ofe/4EGZxbzmOxccZ6VoupD5+w
-	WVz/8pzV4vULQ4uzTW/YLe5/Pcpo8e1KB5PF5V1z2CxmnN/HZLH2yF12i9PdrBYXV3xhspj7
-	u5HVgddj56y77B6bVnWyedy5tofNY97JQI++LasYPT5vkgtgi+KySUnNySxLLdK3S+DK+Nk5
-	h7HgtHbF3we+DYw9Kl2MnBwSAiYSB35/ZIWwxSQu3FvP1sXIxSEksJRR4ueLx8wQTh+TxKVN
-	v8Gq2ASMJTYvXwJWJSKwmVFi8ferYAlmgadMEh/vSoLYwgIREte/t4HFWQRUJRYcuskIYvMK
-	uEu03PvP1MXIAbROQWLOJBuQMKeAh8S/H7+ZQWwhoJKexbPYJzDyLmBkWMUomlqaXFCclJ5r
-	pFecmFtcmpeul5yfu4kREpRfdzAuPWZ1iFGAg1GJh/fB4t9BQqyJZcWVuYcYJTiYlUR4ZST+
-	BAnxpiRWVqUW5ccXleakFh9iZOLglGpg9J+0Mynt8IKFL5lPO3l+ydj/6Xe4Q0nFQdGu2ydP
-	hVYdLK7NPnexadnZqWJTmTiLDuv7HvT5fbxHUPBQatz1DZetpTUnvSyYZH42207J4fRnxi9L
-	LRLeGWlm3TCqObxnc3zjsax9c7UWbP8bVH3M/uP3RPafT6b81JzswnVZOPBlwZYnnTyczkos
-	xRmJhlrMRcWJAOJJp2QoAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4Zd1vPX+CDFZNZ7VYcvEqu8XGGetZ
+	LV6/MLQ42/SG3eL+16OMFpd3zWGzmHF+H5PF2iN32S32d3YwWpzuZrW4uOILkwO3x56JJ9k8
+	7lzbw+Yx72SgR9+WVYwe0+f9ZPL4vEkugC2KyyYlNSezLLVI3y6BK+P6vFa2gpcWFY9P9LA1
+	MH7X7WLk5JAQMJFYN/MnM4QtJnHh3nq2LkYuDiGBpYwSP1e+Y4dw+pgkrp+fxgJSxSZgLLF5
+	+RKwKhGBzYwSi79fZQVxmAV6mCSutc8FqxIWsJf4MHsrI4jNIqAqsXPJBrAdvAIeEieefQOK
+	cwDtU5CYM8kGJMwJFP734zdYiZCAu0TP4lnsExh5FzAyrGIUTS1NLihOSs811CtOzC0uzUvX
+	S87P3cQICcIvOxgXH7M6xCjAwajEw2ux7HeQEGtiWXFl7iFGCQ5mJRFeGYk/QUK8KYmVValF
+	+fFFpTmpxYcYmTg4pRoYee6es5o7JXIfI9fXgOtrHrQUsfna+k9b0CY0yT7mnmhsZYFTxYqO
+	LQ7yh2t137arPLH5vqjToUFO97LHGauwzR+CRTd/9or+mfDt/WvDkzvPbJjx2tO632vaRtH1
+	5RZiO08ybOHg7ItxXZ3x703Qo/ezHWKMkm9y5dptrji5IOJf4T6nzs0zlViKMxINtZiLihMB
+	c73KpSACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add __initconst to 'regulator_desc' array with supported regulators.
-During probe choose how many and which regulators will be supported
-according to device ID. Then copy the 'regulator_desc' array to
-allocated memory so the regulator core can use it.
+Add support for S2MPS14 to the rtc-s5m driver. Differences in S2MPS14
+(in comparison to S5M8767):
+ - Layout of registers;
+ - Lack of century support for time and alarms (7 registers used for
+   storing time/alarm);
+ - Two buffer control registers: WUDR and RUDR;
+ - No register for enabling writing time;
+ - RTC interrupts are reported in main PMIC I2C device;
 
-Additionally allocate array of of_regulator_match() dynamically (based
-on number of regulators) instead of allocation on the stack.
-
-This is needed for supporting different devices in s2mps11
-driver and actually prepares the regulator driver for supporting the
-S2MPS14 device.
-
-Code for supporting the S2MPS14 device will add its own array of
-'regulator_desc' (also marked as __initconst). This way memory footprint
-of the driver will be reduced (approximately 'regulators_desc' array for
-S2MPS11 occupies 5 kB on 32-bit ARM, for S2MPS14 will occupy 3 kB).
+This patch also adds missing mfd_cell for RTC in the MFD core driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com
 ---
- drivers/regulator/s2mps11.c |   74 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 64 insertions(+), 10 deletions(-)
+ drivers/rtc/rtc-s5m.c |   89 +++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 78 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index d44bd5b3fe8e..246b25d58c2b 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -25,10 +25,9 @@
+diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
+index 6a1290f8709a..6e4faffe4b5b 100644
+--- a/drivers/rtc/rtc-s5m.c
++++ b/drivers/rtc/rtc-s5m.c
+@@ -17,16 +17,14 @@
+ 
+ #include <linux/module.h>
+ #include <linux/i2c.h>
+-#include <linux/slab.h>
+ #include <linux/bcd.h>
+-#include <linux/bitops.h>
+ #include <linux/regmap.h>
+ #include <linux/rtc.h>
+-#include <linux/delay.h>
+ #include <linux/platform_device.h>
  #include <linux/mfd/samsung/core.h>
- #include <linux/mfd/samsung/s2mps11.h>
+ #include <linux/mfd/samsung/irq.h>
+ #include <linux/mfd/samsung/rtc.h>
++#include <linux/mfd/samsung/s2mps14.h>
  
--#define S2MPS11_REGULATOR_CNT ARRAY_SIZE(regulators)
--
- struct s2mps11_info {
--	struct regulator_dev *rdev[S2MPS11_REGULATOR_MAX];
-+	struct regulator_dev **rdev;
-+	unsigned int rdev_num;
- 
- 	int ramp_delay2;
- 	int ramp_delay34;
-@@ -345,7 +344,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
- 
--static const struct regulator_desc regulators[] = {
-+static const struct regulator_desc s2mps11_regulators[] __initconst = {
- 	regulator_desc_ldo2(1),
- 	regulator_desc_ldo1(2),
- 	regulator_desc_ldo1(3),
-@@ -396,21 +395,62 @@ static const struct regulator_desc regulators[] = {
- 	regulator_desc_buck10,
+ /*
+  * Maximum number of retries for checking changes in UDR field
+@@ -74,6 +72,21 @@ static const struct s5m_rtc_reg_config s5m_rtc_regs = {
+ 	.rtc_udr_mask		= S5M_RTC_UDR_MASK,
  };
  
 +/*
-+ * Allocates memory under 'regulators' pointer and copies there array
-+ * of regulator_desc for given device.
-+ *
-+ * Returns number of regulators or negative ERRNO on error.
++ * Register map for S2MPS14.
++ * It may be also suitable for S2MPS11 but this was not tested.
 + */
-+static int __init
-+s2mps11_pmic_init_regulators_desc(struct platform_device *pdev,
-+		struct regulator_desc **regulators)
-+{
-+	const struct regulator_desc *regulators_init;
-+	enum sec_device_type dev_type;
-+	int rdev_num;
++static const struct s5m_rtc_reg_config s2mps_rtc_regs = {
++	.regs_count		= 7,
++	.time			= S2MPS_RTC_SEC,
++	.ctrl			= S2MPS_RTC_CTRL,
++	.alarm0			= S2MPS_ALARM0_SEC,
++	.alarm1			= S2MPS_ALARM1_SEC,
++	.smpl_wtsr		= S2MPS_WTSR_SMPL_CNTL,
++	.rtc_udr_update		= S2MPS_RTC_UDR_CON,
++	.rtc_udr_mask		= S2MPS_RTC_WUDR_MASK,
++};
 +
-+	dev_type = platform_get_device_id(pdev)->driver_data;
-+	switch (dev_type) {
-+	case S2MPS11X:
-+		rdev_num = ARRAY_SIZE(s2mps11_regulators);
-+		regulators_init = s2mps11_regulators;
+ struct s5m_rtc_info {
+ 	struct device *dev;
+ 	struct sec_pmic_dev *s5m87xx;
+@@ -163,6 +176,11 @@ static inline int s5m_check_peding_alarm_interrupt(struct s5m_rtc_info *info,
+ 		ret = regmap_read(info->regmap, S5M_RTC_STATUS, &val);
+ 		val &= S5M_ALARM0_STATUS;
+ 		break;
++	case S2MPS14X:
++		ret = regmap_read(info->s5m87xx->regmap_pmic, S2MPS14_REG_ST2,
++				&val);
++		val &= S2MPS_ALARM0_STATUS;
 +		break;
-+	default:
-+		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
-+		return -EINVAL;
-+	};
-+
-+	*regulators = devm_kzalloc(&pdev->dev, sizeof(**regulators)*rdev_num,
-+			GFP_KERNEL);
-+	if (!*regulators)
-+		return -ENOMEM;
-+
-+	memcpy(*regulators, regulators_init, sizeof(**regulators)*rdev_num);
-+
-+	return rdev_num;
-+}
-+
- static int s2mps11_pmic_probe(struct platform_device *pdev)
- {
- 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
--	struct of_regulator_match rdata[S2MPS11_REGULATOR_MAX];
-+	struct sec_platform_data *pdata = iodev->pdata;
-+	struct of_regulator_match *rdata = NULL;
- 	struct device_node *reg_np = NULL;
- 	struct regulator_config config = { };
- 	struct s2mps11_info *s2mps11;
- 	int i, ret;
-+	struct regulator_desc *regulators = NULL;
-+	unsigned int rdev_num;
- 
- 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
- 				GFP_KERNEL);
- 	if (!s2mps11)
- 		return -ENOMEM;
- 
-+	rdev_num = s2mps11_pmic_init_regulators_desc(pdev, &regulators);
-+	if (rdev_num < 0)
-+		return rdev_num;
-+
- 	if (!iodev->dev->of_node) {
- 		if (pdata) {
- 			goto common_reg;
-@@ -421,7 +461,16 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	for (i = 0; i < S2MPS11_REGULATOR_CNT; i++)
-+	s2mps11->rdev = devm_kzalloc(&pdev->dev,
-+			sizeof(*s2mps11->rdev)*rdev_num, GFP_KERNEL);
-+	if (!s2mps11->rdev)
-+		return -ENOMEM;
-+
-+	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata)*rdev_num, GFP_KERNEL);
-+	if (!rdata)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < rdev_num; i++)
- 		rdata[i].name = regulators[i].name;
- 
- 	reg_np = of_find_node_by_name(iodev->dev->of_node, "regulators");
-@@ -430,15 +479,16 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	default:
  		return -EINVAL;
  	}
- 
--	of_regulator_match(&pdev->dev, reg_np, rdata, S2MPS11_REGULATOR_MAX);
-+	of_regulator_match(&pdev->dev, reg_np, rdata, rdev_num);
- 
- common_reg:
- 	platform_set_drvdata(pdev, s2mps11);
-+	s2mps11->rdev_num = rdev_num;
- 
- 	config.dev = &pdev->dev;
- 	config.regmap = iodev->regmap_pmic;
- 	config.driver_data = s2mps11;
--	for (i = 0; i < S2MPS11_REGULATOR_MAX; i++) {
-+	for (i = 0; i < rdev_num; i++) {
- 		if (!reg_np) {
- 			config.init_data = pdata->regulators[i].initdata;
- 			config.of_node = pdata->regulators[i].reg_node;
-@@ -457,11 +507,15 @@ common_reg:
- 		}
+@@ -188,8 +206,9 @@ static inline int s5m8767_rtc_set_time_reg(struct s5m_rtc_info *info)
+ 		return ret;
  	}
  
-+	/* rdata was needed only for of_regulator_match() during probe */
-+	if (rdata)
-+		devm_kfree(&pdev->dev, rdata);
-+
- 	return 0;
- }
+-	data |= S5M_RTC_TIME_EN_MASK;
+ 	data |= info->regs->rtc_udr_mask;
++	if (info->device_type == S5M8763X || info->device_type == S5M8767X)
++		data |= S5M_RTC_TIME_EN_MASK;
  
- static const struct platform_device_id s2mps11_pmic_id[] = {
--	{ "s2mps11-pmic", 0},
-+	{ "s2mps11-pmic", S2MPS11X},
- 	{ },
+ 	ret = regmap_write(info->regmap, info->regs->rtc_udr_update, data);
+ 	if (ret < 0) {
+@@ -214,8 +233,18 @@ static inline int s5m8767_rtc_set_alarm_reg(struct s5m_rtc_info *info)
+ 		return ret;
+ 	}
+ 
+-	data &= ~S5M_RTC_TIME_EN_MASK;
+ 	data |= info->regs->rtc_udr_mask;
++	switch (info->device_type) {
++	case S5M8763X:
++	case S5M8767X:
++		data &= ~S5M_RTC_TIME_EN_MASK;
++		break;
++	case S2MPS14X:
++		data |= S2MPS_RTC_RUDR_MASK;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	ret = regmap_write(info->regmap, info->regs->rtc_udr_update, data);
+ 	if (ret < 0) {
+@@ -267,6 +296,17 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	u8 data[info->regs->regs_count];
+ 	int ret;
+ 
++	if (info->device_type == S2MPS14X) {
++		ret = regmap_update_bits(info->regmap,
++				info->regs->rtc_udr_update,
++				S2MPS_RTC_RUDR_MASK, S2MPS_RTC_RUDR_MASK);
++		if (ret) {
++			dev_err(dev,
++				"Failed to prepare registers for time reading: %d\n",
++				ret);
++			return ret;
++		}
++	}
+ 	ret = regmap_bulk_read(info->regmap, info->regs->time, data,
+ 			info->regs->regs_count);
+ 	if (ret < 0)
+@@ -278,6 +318,7 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS14X:
+ 		s5m8767_data_to_tm(data, tm, info->rtc_24hr_mode);
+ 		break;
+ 
+@@ -303,6 +344,7 @@ static int s5m_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ 		s5m8763_tm_to_data(tm, data);
+ 		break;
+ 	case S5M8767X:
++	case S2MPS14X:
+ 		ret = s5m8767_tm_to_data(tm, data);
+ 		break;
+ 	default:
+@@ -349,6 +391,7 @@ static int s5m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS14X:
+ 		s5m8767_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
+ 		alrm->enabled = 0;
+ 		for (i = 0; i < info->regs->regs_count; i++) {
+@@ -396,6 +439,7 @@ static int s5m_rtc_stop_alarm(struct s5m_rtc_info *info)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS14X:
+ 		for (i = 0; i < info->regs->regs_count; i++)
+ 			data[i] &= ~ALARM_ENABLE_MASK;
+ 
+@@ -439,6 +483,7 @@ static int s5m_rtc_start_alarm(struct s5m_rtc_info *info)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS14X:
+ 		data[RTC_SEC] |= ALARM_ENABLE_MASK;
+ 		data[RTC_MIN] |= ALARM_ENABLE_MASK;
+ 		data[RTC_HOUR] |= ALARM_ENABLE_MASK;
+@@ -477,6 +522,7 @@ static int s5m_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		break;
+ 
+ 	case S5M8767X:
++	case S2MPS14X:
+ 		s5m8767_tm_to_data(&alrm->time, data);
+ 		break;
+ 
+@@ -563,12 +609,26 @@ static int s5m8767_rtc_init_reg(struct s5m_rtc_info *info)
+ 	u8 data[2];
+ 	int ret;
+ 
+-	/* Set RTC control register : Binary mode, 24hour mode */
+-	data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
+-	data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++	switch (info->device_type) {
++	case S5M8763X:
++	case S5M8767X:
++		/* Set RTC control register : Binary mode, 24hour mode */
++		data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++		data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++
++		ret = regmap_raw_write(info->regmap, S5M_ALARM0_CONF, data, 2);
++		break;
++
++	case S2MPS14X:
++		data[0] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++		ret = regmap_write(info->regmap, info->regs->ctrl, data[0]);
++		break;
++
++	default:
++		return -EINVAL;
++	}
+ 
+ 	info->rtc_24hr_mode = 1;
+-	ret = regmap_raw_write(info->regmap, S5M_ALARM0_CONF, data, 2);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "%s: fail to write controlm reg(%d)\n",
+ 			__func__, ret);
+@@ -613,6 +673,12 @@ static int s5m_rtc_probe(struct platform_device *pdev)
+ 		info->regs = &s5m_rtc_regs;
+ 		break;
+ 
++	case S2MPS14X:
++		info->irq = regmap_irq_get_virq(s5m87xx->irq_data,
++				S2MPS14_IRQ_RTCA0);
++		info->regs = &s2mps_rtc_regs;
++		break;
++
+ 	default:
+ 		ret = -EINVAL;
+ 		dev_err(&pdev->dev, "Unsupported device type: %d\n", ret);
+@@ -697,7 +763,8 @@ static int s5m_rtc_suspend(struct device *dev)
+ static SIMPLE_DEV_PM_OPS(s5m_rtc_pm_ops, s5m_rtc_suspend, s5m_rtc_resume);
+ 
+ static const struct platform_device_id s5m_rtc_id[] = {
+-	{ "s5m-rtc", 0 },
++	{ "s5m-rtc",		S5M8767X },
++	{ "s2mps14-rtc",	S2MPS14X },
  };
- MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
+ 
+ static struct platform_driver s5m_rtc_driver = {
+@@ -715,6 +782,6 @@ module_platform_driver(s5m_rtc_driver);
+ 
+ /* Module information */
+ MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
+-MODULE_DESCRIPTION("Samsung S5M RTC driver");
++MODULE_DESCRIPTION("Samsung S5M/S2MPS14 RTC driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:s5m-rtc");
 -- 
 1.7.9.5
 
