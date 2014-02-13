@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaBMNDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 08:03:54 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48066 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753910AbaBMNDw (ORCPT
+	id S1754541AbaBMNIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 08:08:23 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:56784 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaBMNIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 08:03:52 -0500
-X-Sasl-enc: kgygwOwnlsNbWp2F+jawzVIvrmByN5QKgBTyVWSPZTJB 1392296629
-Date: Thu, 13 Feb 2014 11:03:44 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: dl9pf@gmx.de
-Cc: Behan Webster <behanw@converseincode.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, acpi: LLVMLinux: Remove nested functions from
- Thinkpad ACPI
-Message-ID: <20140213130343.GA25725@khazad-dum.debian.net>
-References: <1392238726-18787-1-git-send-email-dl9pf@gmx.de>
+	Thu, 13 Feb 2014 08:08:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392238726-18787-1-git-send-email-dl9pf@gmx.de>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392138636-29240-7-git-send-email-pawel.moll@arm.com>
+References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
+	<1392138636-29240-7-git-send-email-pawel.moll@arm.com>
+Date: Thu, 13 Feb 2014 14:08:21 +0100
+Message-ID: <CACRpkdZjrCdhyBMF2WbDCnHuuMSpcpwiPx2k555PY3yBwdc1aw@mail.gmail.com>
+Subject: Re: [PATCH 06/12] mfd: vexpress-sysreg: Add labels to gpio banks
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Feb 2014, dl9pf@gmx.de wrote:
-> From: Behan Webster <behanw@converseincode.com>
-> The only real change is passing in event_mask to the formerly nested functions.
-> Otherwise it's just moving around function and macro code.
-> 
-> This is the only place in the Linux kernel where nested functions are still in
-> use. Nested functions aren't part of the C standards, and complicate the
-> generated code. Although the Linux Kernel has never set out to be entirely C
-> standard compliant, it is increasingly compliant to the standard which is
-> supported by other compilers such as Clang. The LLVMLinux project is working on
-> being able to compile the Linux kernel with Clang. The use of nested functions
-> blocks this effort.
-> 
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-> 
-> CC: David Woodhouse <David.Woodhouse@intel.com>
-> CC: Matthew Garrett <matthew.garrett@nebula.com>
-> CC: ibm-acpi-devel@lists.sourceforge.net
-> CC: platform-driver-x86@vger.kernel.org
-> CC: linux-kernel@vger.kernel.org
+On Tue, Feb 11, 2014 at 6:10 PM, Pawel Moll <pawel.moll@arm.com> wrote:
 
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> ... so debugfs interfaces are easier to use.
+>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Alexandre Courbot <gnurou@gmail.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+This doesn't apply to the v3.14-rc1-based GPIO tree. Can you rebase it
+with Lee's ACK so I can apply this?
+
+Yours,
+Linus Walleij
