@@ -1,326 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaBMXuv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:50:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53644 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320AbaBMXuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:50:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,841,1384329600"; 
-   d="scan'208";a="474920830"
-Subject: [PATCH v2 regression] dma debug: account for cachelines and
- read-only mappings in overlap tracking
-From: Dan Williams <dan.j.williams@intel.com>
-To: akpm@linux-foundation.org
-Cc: Wei Liu <wei.liu2@citrix.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Francois Romieu <romieu@fr.zoreil.com>, Dave Jones <davej@redhat.com>
-Date: Thu, 13 Feb 2014 15:50:46 -0800
-Message-ID: <20140213234357.7559.64726.stgit@viggo.jf.intel.com>
-User-Agent: StGit/0.17.1-3-g7cb9
+	id S1752556AbaBMXkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:40:47 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:56835 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaBMXko (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 18:40:44 -0500
+Message-ID: <52FD57F2.8@samsung.com>
+Date: Fri, 14 Feb 2014 08:40:34 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+CC: linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        kgene.kim@samsung.com, devicetree-discuss@lists.ozlabs.org,
+        w.sang@pengutronix.de, balbi@ti.com, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, taeggyun.ko@samsung.com, cpgs@samsung.com,
+        naveenkrishna.ch@gmail.com, t.figa@samsung.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: DTS: exynos5420: Rename hsi2c compatible to exynos5250-hsi2c
+References: <1391688477-8124-1-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1391688477-8124-1-git-send-email-ch.naveen@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While debug_dma_assert_idle() checks if a given *page* is actively
-undergoing dma the valid granularity of a dma mapping is a *cacheline*.
-Sander's testing shows that the warning message "DMA-API: exceeded 7
-overlapping mappings of pfn..." is falsely triggering.  The test is
-simply mapping multiple cachelines in a given page.
+On 02/06/14 21:07, Naveen Krishna Chatradhi wrote:
+> As per the changes submitted for the i2c-exynos5.c driver with the
+> compatible string being named after the first SoC it is observed on.
+> This patch modifes the existing hsi2c compatible strings in
+> arch/arm/boot/dts.
+>
+> Signed-off-by: Naveen Krishna Chatradhi<ch.naveen@samsung.com>
+> ---
+>   arch/arm/boot/dts/exynos5420.dtsi |   14 +++++++-------
+>   1 file changed, 7 insertions(+), 7 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+> index 11dd202..c5187d1 100644
+> --- a/arch/arm/boot/dts/exynos5420.dtsi
+> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+> @@ -486,7 +486,7 @@
+>   	};
+>
+>   	hsi2c_4: i2c@12CA0000 {
+> -		compatible = "samsung,exynos5-hsi2c";
+> +		compatible = "samsung,exynos5250-hsi2c";
+>   		reg =<0x12CA0000 0x1000>;
+>   		interrupts =<0 60 0>;
+>   		#address-cells =<1>;
+> @@ -499,7 +499,7 @@
+>   	};
+>
+>   	hsi2c_5: i2c@12CB0000 {
+> -		compatible = "samsung,exynos5-hsi2c";
+> +		compatible = "samsung,exynos5250-hsi2c";
+>   		reg =<0x12CB0000 0x1000>;
+>   		interrupts =<0 61 0>;
+>   		#address-cells =<1>;
+> @@ -512,7 +512,7 @@
+>   	};
+>
+>   	hsi2c_6: i2c@12CC0000 {
+> -		compatible = "samsung,exynos5-hsi2c";
+> +		compatible = "samsung,exynos5250-hsi2c";
+>   		reg =<0x12CC0000 0x1000>;
+>   		interrupts =<0 62 0>;
+>   		#address-cells =<1>;
+> @@ -525,7 +525,7 @@
+>   	};
+>
+>   	hsi2c_7: i2c@12CD0000 {
+> -		compatible = "samsung,exynos5-hsi2c";
+> +		compatible = "samsung,exynos5250-hsi2c";
+>   		reg =<0x12CD0000 0x1000>;
+>   		interrupts =<0 63 0>;
+>   		#address-cells =<1>;
+> @@ -538,7 +538,7 @@
+>   	};
+>
+>   	hsi2c_8: i2c@12E00000 {
+> -		compatible = "samsung,exynos5-hsi2c";
+> +		compatible = "samsung,exynos5250-hsi2c";
+>   		reg =<0x12E00000 0x1000>;
+>   		interrupts =<0 87 0>;
+>   		#address-cells =<1>;
+> @@ -551,7 +551,7 @@
+>   	};
+>
+>   	hsi2c_9: i2c@12E10000 {
+> -		compatible = "samsung,exynos5-hsi2c";
+> +		compatible = "samsung,exynos5250-hsi2c";
+>   		reg =<0x12E10000 0x1000>;
+>   		interrupts =<0 88 0>;
+>   		#address-cells =<1>;
+> @@ -564,7 +564,7 @@
+>   	};
+>
+>   	hsi2c_10: i2c@12E20000 {
+> -		compatible = "samsung,exynos5-hsi2c";
+> +		compatible = "samsung,exynos5250-hsi2c";
+>   		reg =<0x12E20000 0x1000>;
+>   		interrupts =<0 203 0>;
+>   		#address-cells =<1>;
 
-Ultimately we want overlap tracking to be valid as it is a real api
-violation, so we need to track active mappings by cachelines.  Update
-the active dma tracking to use the page-frame-relative cacheline of the
-mapping as the key, and update debug_dma_assert_idle() to check for all
-possible mapped cachelines for a given page.
+Naveen,
 
-However, the need to track active mappings is only relevant when the
-dma-mapping is writable by the device.  In fact it is fairly standard
-for read-only mappings to have hundreds or thousands of overlapping
-mappings at once.  Limiting the overlap tracking to writable
-(!DMA_TO_DEVICE) eliminates this class of false-positive overlap
-reports.
+Please don't post separately for one series. It's hard to find to look 
+at regarding patches.
 
-Note, the radix gang lookup is sub-optimal.  It would be best if it
-stopped fetching entries once the search passed a page boundary.
-Nevertheless, this implementation does not perturb the original net_dma
-failing case.  That is to say the extra overhead does not show up in
-terms of making the failing case pass due to a timing change.
+And please post regarding binding doc together. Additionally if you run 
+checkpatch, you can see see below complaining.
 
-References:
-http://marc.info/?l=linux-netdev&m=139232263419315&w=2
-http://marc.info/?l=linux-netdev&m=139217088107122&w=2
+"WARNING: DT compatible string "samsung,exynos5250-hsi2c" appears 
+un-documented -- check ./Documentation/devicetree/bindings/"
 
-Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
-Reported-by: Dave Jones <davej@redhat.com>
-Tested-by: Dave Jones <davej@redhat.com>
-Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
-
-Changes in v2:
-1/ replaced 'cln' acronym with 'cacheline'. Now 'cln' is only a local
-   variable name
-
-2/ renamed 'to_cln()' to 'to_cacheline_number()'
-
-3/ made the storage for a 'cacheline number' phys_addr_t since...
-   "unsigned long cln = page_to_pfn(page) << CACHELINE_PER_PAGE_SHIFT;"
-   ...may drop bits on some archs/memory-models.
-
- lib/dma-debug.c |  131 ++++++++++++++++++++++++++++++++++++-------------------
- 1 files changed, 85 insertions(+), 46 deletions(-)
-
-diff --git a/lib/dma-debug.c b/lib/dma-debug.c
-index 2defd1308b04..98f2d7e91a91 100644
---- a/lib/dma-debug.c
-+++ b/lib/dma-debug.c
-@@ -424,111 +424,134 @@ void debug_dma_dump_mappings(struct device *dev)
- EXPORT_SYMBOL(debug_dma_dump_mappings);
- 
- /*
-- * For each page mapped (initial page in the case of
-- * dma_alloc_coherent/dma_map_{single|page}, or each page in a
-- * scatterlist) insert into this tree using the pfn as the key. At
-+ * For each mapping (initial cacheline in the case of
-+ * dma_alloc_coherent/dma_map_page, initial cacheline in each page of a
-+ * scatterlist, or the cacheline specified in dma_map_single) insert
-+ * into this tree using the cacheline as the key. At
-  * dma_unmap_{single|sg|page} or dma_free_coherent delete the entry.  If
-- * the pfn already exists at insertion time add a tag as a reference
-+ * the entry already exists at insertion time add a tag as a reference
-  * count for the overlapping mappings.  For now, the overlap tracking
-- * just ensures that 'unmaps' balance 'maps' before marking the pfn
-- * idle, but we should also be flagging overlaps as an API violation.
-+ * just ensures that 'unmaps' balance 'maps' before marking the
-+ * cacheline idle, but we should also be flagging overlaps as an API
-+ * violation.
-  *
-  * Memory usage is mostly constrained by the maximum number of available
-  * dma-debug entries in that we need a free dma_debug_entry before
-- * inserting into the tree.  In the case of dma_map_{single|page} and
-- * dma_alloc_coherent there is only one dma_debug_entry and one pfn to
-- * track per event.  dma_map_sg(), on the other hand,
-- * consumes a single dma_debug_entry, but inserts 'nents' entries into
-- * the tree.
-+ * inserting into the tree.  In the case of dma_map_page and
-+ * dma_alloc_coherent there is only one dma_debug_entry and one
-+ * dma_active_cacheline entry to track per event.  dma_map_sg(), on the
-+ * other hand, consumes a single dma_debug_entry, but inserts 'nents'
-+ * entries into the tree.
-  *
-  * At any time debug_dma_assert_idle() can be called to trigger a
-- * warning if the given page is in the active set.
-+ * warning if any cachelines in the given page are in the active set.
-  */
--static RADIX_TREE(dma_active_pfn, GFP_NOWAIT);
-+static RADIX_TREE(dma_active_cacheline, GFP_NOWAIT);
- static DEFINE_SPINLOCK(radix_lock);
--#define ACTIVE_PFN_MAX_OVERLAP ((1 << RADIX_TREE_MAX_TAGS) - 1)
-+#define ACTIVE_CACHELINE_MAX_OVERLAP ((1 << RADIX_TREE_MAX_TAGS) - 1)
-+#define CACHELINE_PER_PAGE_SHIFT (PAGE_SHIFT - L1_CACHE_SHIFT)
-+#define CACHELINES_PER_PAGE (1 << CACHELINE_PER_PAGE_SHIFT)
- 
--static int active_pfn_read_overlap(unsigned long pfn)
-+static phys_addr_t to_cacheline_number(struct dma_debug_entry *entry)
-+{
-+	return (entry->pfn << CACHELINE_PER_PAGE_SHIFT) +
-+		(entry->offset >> L1_CACHE_SHIFT);
-+}
-+
-+static int active_cacheline_read_overlap(phys_addr_t cln)
- {
- 	int overlap = 0, i;
- 
- 	for (i = RADIX_TREE_MAX_TAGS - 1; i >= 0; i--)
--		if (radix_tree_tag_get(&dma_active_pfn, pfn, i))
-+		if (radix_tree_tag_get(&dma_active_cacheline, cln, i))
- 			overlap |= 1 << i;
- 	return overlap;
- }
- 
--static int active_pfn_set_overlap(unsigned long pfn, int overlap)
-+static int active_cacheline_set_overlap(phys_addr_t cln, int overlap)
- {
- 	int i;
- 
--	if (overlap > ACTIVE_PFN_MAX_OVERLAP || overlap < 0)
-+	if (overlap > ACTIVE_CACHELINE_MAX_OVERLAP || overlap < 0)
- 		return overlap;
- 
- 	for (i = RADIX_TREE_MAX_TAGS - 1; i >= 0; i--)
- 		if (overlap & 1 << i)
--			radix_tree_tag_set(&dma_active_pfn, pfn, i);
-+			radix_tree_tag_set(&dma_active_cacheline, cln, i);
- 		else
--			radix_tree_tag_clear(&dma_active_pfn, pfn, i);
-+			radix_tree_tag_clear(&dma_active_cacheline, cln, i);
- 
- 	return overlap;
- }
- 
--static void active_pfn_inc_overlap(unsigned long pfn)
-+static void active_cacheline_inc_overlap(phys_addr_t cln)
- {
--	int overlap = active_pfn_read_overlap(pfn);
-+	int overlap = active_cacheline_read_overlap(cln);
- 
--	overlap = active_pfn_set_overlap(pfn, ++overlap);
-+	overlap = active_cacheline_set_overlap(cln, ++overlap);
- 
- 	/* If we overflowed the overlap counter then we're potentially
- 	 * leaking dma-mappings.  Otherwise, if maps and unmaps are
- 	 * balanced then this overflow may cause false negatives in
--	 * debug_dma_assert_idle() as the pfn may be marked idle
-+	 * debug_dma_assert_idle() as the cacheline may be marked idle
- 	 * prematurely.
- 	 */
--	WARN_ONCE(overlap > ACTIVE_PFN_MAX_OVERLAP,
--		  "DMA-API: exceeded %d overlapping mappings of pfn %lx\n",
--		  ACTIVE_PFN_MAX_OVERLAP, pfn);
-+	WARN_ONCE(overlap > ACTIVE_CACHELINE_MAX_OVERLAP,
-+		  "DMA-API: exceeded %d overlapping mappings of cacheline %pa\n",
-+		  ACTIVE_CACHELINE_MAX_OVERLAP, &cln);
- }
- 
--static int active_pfn_dec_overlap(unsigned long pfn)
-+static int active_cacheline_dec_overlap(phys_addr_t cln)
- {
--	int overlap = active_pfn_read_overlap(pfn);
-+	int overlap = active_cacheline_read_overlap(cln);
- 
--	return active_pfn_set_overlap(pfn, --overlap);
-+	return active_cacheline_set_overlap(cln, --overlap);
- }
- 
--static int active_pfn_insert(struct dma_debug_entry *entry)
-+static int active_cacheline_insert(struct dma_debug_entry *entry)
- {
-+	phys_addr_t cln = to_cacheline_number(entry);
- 	unsigned long flags;
- 	int rc;
- 
-+	/* If the device is not writing memory then we don't have any
-+	 * concerns about the cpu consuming stale data.  This mitigates
-+	 * legitimate usages of overlapping mappings.
-+	 */
-+	if (entry->direction == DMA_TO_DEVICE)
-+		return 0;
-+
- 	spin_lock_irqsave(&radix_lock, flags);
--	rc = radix_tree_insert(&dma_active_pfn, entry->pfn, entry);
-+	rc = radix_tree_insert(&dma_active_cacheline, cln, entry);
- 	if (rc == -EEXIST)
--		active_pfn_inc_overlap(entry->pfn);
-+		active_cacheline_inc_overlap(cln);
- 	spin_unlock_irqrestore(&radix_lock, flags);
- 
- 	return rc;
- }
- 
--static void active_pfn_remove(struct dma_debug_entry *entry)
-+static void active_cacheline_remove(struct dma_debug_entry *entry)
- {
-+	phys_addr_t cln = to_cacheline_number(entry);
- 	unsigned long flags;
- 
-+	/* ...mirror the insert case */
-+	if (entry->direction == DMA_TO_DEVICE)
-+		return;
-+
- 	spin_lock_irqsave(&radix_lock, flags);
- 	/* since we are counting overlaps the final put of the
--	 * entry->pfn will occur when the overlap count is 0.
--	 * active_pfn_dec_overlap() returns -1 in that case
-+	 * cacheline will occur when the overlap count is 0.
-+	 * active_cacheline_dec_overlap() returns -1 in that case
- 	 */
--	if (active_pfn_dec_overlap(entry->pfn) < 0)
--		radix_tree_delete(&dma_active_pfn, entry->pfn);
-+	if (active_cacheline_dec_overlap(cln) < 0)
-+		radix_tree_delete(&dma_active_cacheline, cln);
- 	spin_unlock_irqrestore(&radix_lock, flags);
- }
- 
- /**
-  * debug_dma_assert_idle() - assert that a page is not undergoing dma
-- * @page: page to lookup in the dma_active_pfn tree
-+ * @page: page to lookup in the dma_active_cacheline tree
-  *
-  * Place a call to this routine in cases where the cpu touching the page
-  * before the dma completes (page is dma_unmapped) will lead to data
-@@ -536,22 +559,38 @@ static void active_pfn_remove(struct dma_debug_entry *entry)
-  */
- void debug_dma_assert_idle(struct page *page)
- {
-+	static struct dma_debug_entry *ents[CACHELINES_PER_PAGE];
-+	struct dma_debug_entry *entry = NULL;
-+	void **results = (void **) &ents;
-+	unsigned int nents, i;
- 	unsigned long flags;
--	struct dma_debug_entry *entry;
-+	phys_addr_t cln;
- 
- 	if (!page)
- 		return;
- 
-+	cln = (phys_addr_t) page_to_pfn(page) << CACHELINE_PER_PAGE_SHIFT;
- 	spin_lock_irqsave(&radix_lock, flags);
--	entry = radix_tree_lookup(&dma_active_pfn, page_to_pfn(page));
-+	nents = radix_tree_gang_lookup(&dma_active_cacheline, results, cln,
-+				       CACHELINES_PER_PAGE);
-+	for (i = 0; i < nents; i++) {
-+		phys_addr_t ent_cln = to_cacheline_number(ents[i]);
-+
-+		if (ent_cln == cln) {
-+			entry = ents[i];
-+			break;
-+		} else if (ent_cln >= cln + CACHELINES_PER_PAGE)
-+			break;
-+	}
- 	spin_unlock_irqrestore(&radix_lock, flags);
- 
- 	if (!entry)
- 		return;
- 
-+	cln = to_cacheline_number(entry);
- 	err_printk(entry->dev, entry,
--		   "DMA-API: cpu touching an active dma mapped page "
--		   "[pfn=0x%lx]\n", entry->pfn);
-+		   "DMA-API: cpu touching an active dma mapped cacheline [cln=%pa]\n",
-+		   &cln);
- }
- 
- /*
-@@ -568,9 +607,9 @@ static void add_dma_entry(struct dma_debug_entry *entry)
- 	hash_bucket_add(bucket, entry);
- 	put_hash_bucket(bucket, &flags);
- 
--	rc = active_pfn_insert(entry);
-+	rc = active_cacheline_insert(entry);
- 	if (rc == -ENOMEM) {
--		pr_err("DMA-API: pfn tracking ENOMEM, dma-debug disabled\n");
-+		pr_err("DMA-API: cacheline tracking ENOMEM, dma-debug disabled\n");
- 		global_disable = true;
- 	}
- 
-@@ -631,7 +670,7 @@ static void dma_entry_free(struct dma_debug_entry *entry)
- {
- 	unsigned long flags;
- 
--	active_pfn_remove(entry);
-+	active_cacheline_remove(entry);
- 
- 	/*
- 	 * add to beginning of the list - this way the entries are
-
+- Kukjin
