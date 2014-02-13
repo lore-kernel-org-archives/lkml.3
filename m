@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaBLXzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 18:55:12 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:62374 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108AbaBLXzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 18:55:10 -0500
+	id S1751749AbaBMAAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 19:00:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10134 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767AbaBMAAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 19:00:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,835,1384329600"; 
+   d="scan'208";a="480575245"
+Date: Wed, 12 Feb 2014 17:00:00 -0700 (MST)
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+X-X-Sender: rzwisler@scrumpy
+To: Ross Zwisler <ross.zwisler@linux.intel.com>
+cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-ext4@vger.kernel.org, david@fromorbit.com
+Subject: Re: [PATCH v5 19/22] ext4: Add XIP functionality
+In-Reply-To: <alpine.OSX.2.00.1402111536290.55274@scrumpy>
+Message-ID: <alpine.OSX.2.00.1402121654410.60058@scrumpy>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CF1FF3EB.24114%matthew.r.wilcox@intel.com> <alpine.OSX.2.00.1402111536290.55274@scrumpy>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1882539.R1gpoLLYks@wuerfel>
-References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
-	<1571508.yGAAZ8TNH0@wuerfel>
-	<20140212184521.GO27395@titan.lakedaemon.net>
-	<1882539.R1gpoLLYks@wuerfel>
-Date: Wed, 12 Feb 2014 17:55:08 -0600
-Message-ID: <CAL_JsqJetHbdsJd5B-FnwHRPgP9J=SXBhiYptHZMk9dhe20Fgg@mail.gmail.com>
-Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 1:12 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 12 February 2014 13:45:21 Jason Cooper wrote:
->> On Wed, Feb 12, 2014 at 07:17:41PM +0100, Arnd Bergmann wrote:
->> > On Wednesday 12 February 2014 12:45:54 Jason Cooper wrote:
->> > > I brought this up at last weeks devicetree irc meeting.  My goal is to
->> > > provide early randomness for kaslr on ARM.  Currently, my idea is modify
->> > > the init script to save an additional random seed from /dev/urandom to
->> > > /boot/random-seed.
->> > >
->> > > The bootloader would then load this file into ram, and pass the
->> > > address/size to the kernel either via dt, or commandline.  kaslr (run in
->> > > the decompressor) would consume some of this randomness, and then
->> > > random.c would consume the rest in a non-crediting initialization.
->> >
->> > I like the idea, but wouldn't it be easier to pass actual random data
->> > using DT, rather than the address/size?
->>
->> I thought about that at first, but that requires either that the
->> bootloader be upgraded to insert the data, or that userspace is
->> modifying the dtb at least twice per boot.
->>
->> I chose address/size to facilitate modifying existing/fielded devices.
->> The user could modify the dtb once, and modify the bootloader
->> environment to load X amount to Y address.  As a fallback, it could be
->> expressed on the commandline for non-DT bootloaders.
->
-> Ah, so you are interested in boot loaders that can be scripted to do
-> what you had in mind but cannot be scripted to add or modify a DT
-> property. I hadn't considered that, but you are probably right that
-> this is at least 90% of the systems you'd find in the wild today.
->
-> Thinking this a bit further, I wonder if (at least upstream) u-boot
-> has a way to modify DT properties in a scripted way that would allow
-> the direct property. It sounds like a generally useful feature not
-> just for randomness, so if that doesn't already work, maybe someone
-> can implement it. In the simplest case, you'd only need to find the
-> address of an existing property in the dtb and load a file to
-> that location.
+On Tue, 11 Feb 2014, Ross Zwisler wrote:
+> On Wed, 15 Jan 2014, Matthew Wilcox wrote:
+> > From: Ross Zwisler <ross.zwisler@linux.intel.com>
+> > 
+> > This is a port of the XIP functionality found in the current version of
+> > ext2.
+> > 
+> > Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+> > Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+> > [heavily tweaked]
+> > Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> 
+> ...
+> 
+> > diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> > index c767666..8b73d77 100644
+> > --- a/fs/ext4/inode.c
+> > +++ b/fs/ext4/inode.c
+> > @@ -663,6 +663,18 @@ found:
+> >  			WARN_ON(1);
+> >  		}
+> >  
+> > +		/* this is probably wrong for ext4.  unlike ext2, ext4 supports
+> > +		 * uninitialised extents, so we should probably be hooking
+> > +		 * into the "make it initialised" code instead. */
+> > +		if (IS_XIP(inode)) {
+> 
+> With the very first version of this patch the above logic seemed to work
+> correctly, zeroing blocks as we allocated them.  With the current XIP
+> infrastructure based tightly on direct IO this ends up being wrong because in
+> some cases we can call ext4_map_blocks() twice for a given block.  
+> 
+> A quick userland test program that creates a new file, truncates it up to 4k
+> and then does a partial block write will end up giving you a file filled with
+> all zeros.  This is because we zero the data before the write, do the write,
+> and then zero again, overwriting the data.  The second call to
+> ext4_map_blocks() happens via ext4_ext_direct_IO =>
+> ext4_convert_unwritten_extents() => ext4_map_blocks().
+> 
+> We can know in ext4_map_blocks() that we are being called after a write has
+> already completed by looking at the flags.  One solution to get around this
+> double-zeroing would be to change the above test to:
+> 
+> +                 if (IS_XIP(inode) && !(flags & EXT4_GET_BLOCKS_CONVERT)) {
+> 
+> This fixes the tests I've been able to come up with, but I'm not certain it's
+> the correct fix for the long term.  It seems wasteful to zero the blocks we're
+> allocating, just to have the zeros overwritten immediately by a write.  Maybe
+> a cleaner way would be to try and zero the unwritten bits inside of
+> ext4_convert_unwritten_extents(), or somewhere similar?
+> 
+> It's worth noting that I don't think the direct I/O path has this kind of
+> logic because they don't allow partial block writes.  The regular I/O path
+> knows to zero unwritten space based on the BH_New flag, as set via the
+> set_buffer_new() call in ext4_da_map_blocks().  This is a pretty different I/O
+> path, though, so I'm not sure how much we can borrow for the XIP code.
+> 
+> Thoughts on the correct fix?
+> 
+> - Ross
 
-You would be referring to the u-boot fdt command which can read and
-set properties. Of course, like all u-boot commands, that may or may
-not be enabled by a vendor's u-boot. :(
+It looks like Dave Chinner outlined a way to deal with this in response to the
+"[PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4" mail.
 
-Rob
+I'll try and implement things as Dave has described (zero full blocks in the
+case of xip_fault() and mark extents as written, use buffer_new(bh) to zero
+edges for normal I/O) and send out code or questions as I have them.
+
+- Ross
