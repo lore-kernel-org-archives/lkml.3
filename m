@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532AbaBMDjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 22:39:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58807 "EHLO mail.zytor.com"
+	id S1751813AbaBMDsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 22:48:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62975 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976AbaBMDjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 22:39:05 -0500
-Message-ID: <52FC3DFC.4020601@zytor.com>
-Date: Wed, 12 Feb 2014 19:37:32 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751246AbaBMDsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 22:48:07 -0500
+Date: Wed, 12 Feb 2014 22:47:51 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: moinejf@free.fr, rmk+kernel@arm.linux.org.uk,
+        linux-coverity@vger.kernel.org
+Subject: drm/i2c: tda998x: Fix memory leak in tda998x_encoder_init error path.
+Message-ID: <20140213034751.GA26499@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	moinejf@free.fr, rmk+kernel@arm.linux.org.uk,
+	linux-coverity@vger.kernel.org
+References: <20140212171058.6CCD6660CAF@gitolite.kernel.org>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [Patch v1] ACPI, x86: fix bug in associating hot-added CPUs with
- corresponding NUMA node
-References: <1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com> <4676819.HL23G4Egmr@vostro.rjw.lan> <52F4A4B9.2060006@linux.intel.com> <1440384.cOMzyfyUzg@vostro.rjw.lan> <52FC2EB5.3010805@linux.intel.com>
-In-Reply-To: <52FC2EB5.3010805@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212171058.6CCD6660CAF@gitolite.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 06:32 PM, Jiang Liu wrote:
-> Ping...
+Commit 6ae668cc19e8b18df28cd67b3448d9abd79284a4 introduced a memory leak
+in the error path of tda998x_encoder_init
 
-Sorry, will look at it tomorrow.
+Picked up by the nightly Coverity scan. CID 1174076
+    
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
 
-	-hpa
-
-
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index fa18cf374470..faa77f543a07 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -1151,8 +1151,10 @@ tda998x_encoder_init(struct i2c_client *client,
+ 
+ 	priv->current_page = 0xff;
+ 	priv->cec = i2c_new_dummy(client->adapter, 0x34);
+-	if (!priv->cec)
++	if (!priv->cec) {
++		kfree(priv);
+ 		return -ENODEV;
++	}
+ 	priv->dpms = DRM_MODE_DPMS_OFF;
+ 
+ 	encoder_slave->slave_priv = priv;
