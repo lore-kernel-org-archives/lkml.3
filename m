@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaBMWaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:30:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36802 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbaBMWaG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:30:06 -0500
-Date: Thu, 13 Feb 2014 14:30:05 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] swapoff tmpfs radix_tree: remember to rcu_read_unlock
-Message-Id: <20140213143005.9aea5709d5befd1df84b19a7@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.11.1402121840500.6398@eggly.anvils>
-References: <alpine.LSU.2.11.1402121840500.6398@eggly.anvils>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752458AbaBMWcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:32:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751320AbaBMWcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 17:32:20 -0500
+Date: Thu, 13 Feb 2014 17:31:41 -0500
+From: Dave Jones <davej@redhat.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, akpm <akpm@linux-foundation.org>,
+        rdunlap <rdunlap@infradead.org>, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/1] sys_sysfs: Add CONFIG_SYSFS_SYSCALL
+Message-ID: <20140213223141.GA1232@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
+	akpm <akpm@linux-foundation.org>, rdunlap <rdunlap@infradead.org>,
+	gregkh@linuxfoundation.org
+References: <20140213220942.ff2ebaeff3876b7136fa4b10@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140213220942.ff2ebaeff3876b7136fa4b10@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Feb 2014 18:45:07 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
+On Thu, Feb 13, 2014 at 10:09:42PM +0800, Fabian Frederick wrote:
+ > sys_sysfs is an obsolete system call no longer supported by libc ...
+ > -This patch adds a default CONFIG_SYSFS_SYSCALL=y
+ > -Option can be turned off in expert mode.
+ > -cond_syscall added to kernel/sys_ni.c
+ > 
+ > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+ > ---
+ >  fs/filesystems.c |  2 ++
+ >  init/Kconfig     | 10 ++++++++++
+ >  kernel/sys_ni.c  |  1 +
+ >  3 files changed, 13 insertions(+)
 
-> Running fsx on tmpfs with concurrent memhog-swapoff-swapon, lots of
-> 
-> BUG: sleeping function called from invalid context at kernel/fork.c:606
-> in_atomic(): 0, irqs_disabled(): 0, pid: 1394, name: swapoff
-> 1 lock held by swapoff/1394:
->  #0:  (rcu_read_lock){.+.+.+}, at: [<ffffffff812520a1>] radix_tree_locate_item+0x1f/0x2b6
-> followed by
-> ================================================
-> [ BUG: lock held when returning to user space! ]
-> 3.14.0-rc1 #3 Not tainted
-> ------------------------------------------------
-> swapoff/1394 is leaving the kernel with locks still held!
-> 1 lock held by swapoff/1394:
->  #0:  (rcu_read_lock){.+.+.+}, at: [<ffffffff812520a1>] radix_tree_locate_item+0x1f/0x2b6
-> after which the system recovered nicely.
-> 
-> Whoops, I long ago forgot the rcu_read_unlock() on one unlikely branch.
-> 
-> Fixes: e504f3fdd63d ("tmpfs radix_tree: locate_item to speed up swapoff")
+did anyone ever ship userspace that actually used that syscall ?
+Some ancient version of udev that probably doesn't work on a modern kernel anyway maybe ?
 
-huh.  Venerable.  I'm surprised that such an obvious blooper wasn't
-spotted at review.  Why didn't anyone else hit this.
+I wonder if it's something we can make -ENOSYS unconditionally at some point,
+and remove all that code entirely.
 
-
-> Of course, the truth is that I had been hoping to break Johannes's
-> patchset in mmotm, was thrilled to get this on that, then despondent
-> to realize that the only bug I had found was mine.  Surprised I've
-> not seen it before in 2.5 years: tried again on 3.14-rc1, got the
-> same after 25 minutes.  Probably not serious enough for -stable,
-> but please can we slip the fix into 3.14 - sorry, Johannes's
-> mm-keep-page-cache-radix-tree-nodes-in-check.patch will need a refresh.
-
-I fixed it up.
-
-unsigned long radix_tree_locate_item(struct radix_tree_root *root, void *item)
-{
-	struct radix_tree_node *node;
-	unsigned long max_index;
-	unsigned long cur_index = 0;
-	unsigned long found_index = -1;
-
-	do {
-		rcu_read_lock();
-		node = rcu_dereference_raw(root->rnode);
-		if (!radix_tree_is_indirect_ptr(node)) {
-			rcu_read_unlock();
-			if (node == item)
-				found_index = 0;
-			break;
-		}
-
-		node = indirect_to_ptr(node);
-		max_index = radix_tree_maxindex(node->path &
-						RADIX_TREE_HEIGHT_MASK);
-		if (cur_index > max_index) {
-			rcu_read_unlock();
-			break;
-		}
-
-		cur_index = __locate(node, item, cur_index, &found_index);
-		rcu_read_unlock();
-		cond_resched();
-	} while (cur_index != 0 && cur_index <= max_index);
-
-	return found_index;
-}
+	Dave
 
