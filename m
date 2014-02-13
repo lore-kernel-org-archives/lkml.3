@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaBMU2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:28:52 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:55036 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaBMU2v (ORCPT
+	id S1752132AbaBMU3E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:29:04 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:43812 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBMU3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:28:51 -0500
-MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <CA+55aFyT9_XSFQwv82Qwv5US7QMOvW8RhbsxOa8B2mm3MChWLA@mail.gmail.com>
-References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
-	<19258.1392306854@warthog.procyon.org.uk>
-	<20140213162534.GB4026@tucsk.piliscsaba.szeredi.hu>
-	<20106.1392309770@warthog.procyon.org.uk>
-	<CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com>
-	<CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com>
-	<16729.1392318161@warthog.procyon.org.uk>
-	<CA+55aFyT9_XSFQwv82Qwv5US7QMOvW8RhbsxOa8B2mm3MChWLA@mail.gmail.com>
-Date: Thu, 13 Feb 2014 21:28:50 +0100
-Message-ID: <CAJfpegsDG-NoqvYog5PWqR=XOQgT0dSOTsjDwhd8v11T0kiEVA@mail.gmail.com>
-Subject: Re: [PATCH 00/13] cross rename v4
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bruce Fields <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 13 Feb 2014 15:29:01 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/7] cgroup: separate out cset_group_from_root() from task_cgroup_from_root()
+Date: Thu, 13 Feb 2014 15:28:49 -0500
+Message-Id: <1392323333-18907-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392323333-18907-1-git-send-email-tj@kernel.org>
+References: <1392323333-18907-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 8:32 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Feb 13, 2014 at 11:02 AM, David Howells <dhowells@redhat.com> wrote:
->>
->> Whilst that does seem reasonable, what about all the other software that
->> iterates over a directory?  Some of that is surely not going to know about
->> DT_WHT.
->
-> So?
->
-> Remeber: whiteout entries do not exist "normally". No normal apps
-> should care or see them, since the whole and only point of them is
-> when they are part of a union mount (in which case they are not
-> visible).
->
-> So the "how do you see whiteouts" is really only about the raw
-> filesystem mount when *not* in the normal place.
->
-> IOW, it's not like these guys are going to show up in users home
-> directories etc. It's more like a special device node than a file - we
-> need to care about some basic system management interfaces, not about
-> "random apps". So "coreutils" is the primary user, although I guess a
-> few IT people would prefer for things like Nautilus etc random file
-> managers to be able to show them nicely too. But if they show up as an
-> icon with a question mark on them or whatever, that's really not a big
-> deal either.
->
-> Sure, maybe they'll look odd in some graphical file chooser *if*
-> somebody makes them show up, but I think creation of a whiteout - if
-> we allow it at all outside of the union mount itself - should be a
-> root-only thing (the same way mknod is) so quite frankly, it falls
-> under "filesystem corruption makes my directory listings look odd -
-> cry me a river".
->
-> (I do think we should allow creation - but for root only - for
-> management and testing purposes, but I really think it's a secondary
-> issue, and I do think we should literally use "mknod()" - either with
-> a new S_IFWHT or even just making use of existing S_IFCHR just so you
-> could use the user-space "mknod" to create it with some magic
-> major/minor combination.
+This will be used by the planned migration path update.
 
-And IMO the magic S_IFCHR is a lot better in many respects than a new
-filetype, since now all backup tools automatically work.  And I think
-that's a lot more important than looking like a nice new design.
-Sure, if S_IFWHT was there from the start, it would be wonderful.  But
-as it stands, it's a lot more difficult to add support for such a
-thing to userspace than adding a hack, using the existing intefaces,
-to the kernel.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 29 +++++++++++++++++------------
+ 1 file changed, 17 insertions(+), 12 deletions(-)
 
-Thanks,
-Miklos
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 539758c..cc35a20 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -758,25 +758,15 @@ static void cgroup_destroy_root(struct cgroupfs_root *root)
+ 	cgroup_free_root(root);
+ }
+ 
+-/*
+- * Return the cgroup for "task" from the given hierarchy. Must be
+- * called with cgroup_mutex and css_set_rwsem held.
+- */
+-static struct cgroup *task_cgroup_from_root(struct task_struct *task,
++/* look up cgroup associated with given css_set on the specified hierarchy */
++static struct cgroup *cset_cgroup_from_root(struct css_set *cset,
+ 					    struct cgroupfs_root *root)
+ {
+-	struct css_set *cset;
+ 	struct cgroup *res = NULL;
+ 
+ 	lockdep_assert_held(&cgroup_mutex);
+ 	lockdep_assert_held(&css_set_rwsem);
+ 
+-	/*
+-	 * No need to lock the task - since we hold cgroup_mutex the
+-	 * task can't change groups, so the only thing that can happen
+-	 * is that it exits and its css is set back to init_css_set.
+-	 */
+-	cset = task_css_set(task);
+ 	if (cset == &init_css_set) {
+ 		res = &root->top_cgroup;
+ 	} else {
+@@ -797,6 +787,21 @@ static struct cgroup *task_cgroup_from_root(struct task_struct *task,
+ }
+ 
+ /*
++ * Return the cgroup for "task" from the given hierarchy. Must be
++ * called with cgroup_mutex and css_set_rwsem held.
++ */
++static struct cgroup *task_cgroup_from_root(struct task_struct *task,
++					    struct cgroupfs_root *root)
++{
++	/*
++	 * No need to lock the task - since we hold cgroup_mutex the
++	 * task can't change groups, so the only thing that can happen
++	 * is that it exits and its css is set back to init_css_set.
++	 */
++	return cset_cgroup_from_root(task_css_set(task), root);
++}
++
++/*
+  * There is one global cgroup mutex. We also require taking
+  * task_lock() when dereferencing a task's cgroup subsys pointers.
+  * See "The task_lock() exception", at the end of this comment.
+-- 
+1.8.5.3
 
-
-
-
->
->                Linus
