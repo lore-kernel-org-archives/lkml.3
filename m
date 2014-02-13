@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156AbaBMPyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:54:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40289 "EHLO
+	id S1752220AbaBMPyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:54:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40298 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014AbaBMPyl (ORCPT
+	with ESMTP id S1752014AbaBMPyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:54:41 -0500
-Date: Thu, 13 Feb 2014 07:54:28 -0800
+	Thu, 13 Feb 2014 10:54:49 -0500
+Date: Thu, 13 Feb 2014 07:54:39 -0800
 From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-03bbd596ac04fef47ce93a730b8f086d797c3021@git.kernel.org>
+Message-ID: <tip-f27d7759ad1ff48673831e598d6df4c76b2bcd06@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, fengguang.wu@intel.com, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
 In-Reply-To: <20140213124550.GA30497@localhost>
 References: <20140213124550.GA30497@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, smap: Don'
- t enable SMAP if CONFIG_X86_SMAP is disabled
-Git-Commit-ID: 03bbd596ac04fef47ce93a730b8f086d797c3021
+Subject: [tip:x86/urgent] x86, smap: smap_violation()
+  is bogus if CONFIG_X86_SMAP is off
+Git-Commit-ID: f27d7759ad1ff48673831e598d6df4c76b2bcd06
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,23 +28,27 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 13 Feb 2014 07:54:34 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 13 Feb 2014 07:54:45 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  03bbd596ac04fef47ce93a730b8f086d797c3021
-Gitweb:     http://git.kernel.org/tip/03bbd596ac04fef47ce93a730b8f086d797c3021
+Commit-ID:  f27d7759ad1ff48673831e598d6df4c76b2bcd06
+Gitweb:     http://git.kernel.org/tip/f27d7759ad1ff48673831e598d6df4c76b2bcd06
 Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 13 Feb 2014 07:34:30 -0800
+AuthorDate: Thu, 13 Feb 2014 07:46:04 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 13 Feb 2014 07:50:25 -0800
+CommitDate: Thu, 13 Feb 2014 07:50:45 -0800
 
-x86, smap: Don't enable SMAP if CONFIG_X86_SMAP is disabled
+x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
 
-If SMAP support is not compiled into the kernel, don't enable SMAP in
-CR4 -- in fact, we should clear it, because the kernel doesn't contain
-the proper STAC/CLAC instructions for SMAP support.
+If CONFIG_X86_SMAP is disabled, smap_violation() tests for conditions
+which are incorrect (as the AC flag doesn't matter), causing spurious
+faults.
+
+The dynamic disabling of SMAP (nosmap on the command line) is fine
+because it disables X86_FEATURE_SMAP, therefore causing the
+static_cpu_has() to return false.
 
 Found by Fengguang Wu's test system.
 
@@ -53,25 +57,25 @@ Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Cc: <stable@vger.kernel.org> # v3.7+
 ---
- arch/x86/kernel/cpu/common.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/mm/fault.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 24b6fd1..8e28bf2 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -284,8 +284,13 @@ static __always_inline void setup_smap(struct cpuinfo_x86 *c)
- 	raw_local_save_flags(eflags);
- 	BUG_ON(eflags & X86_EFLAGS_AC);
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 9d591c8..4b39bb7 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -1087,12 +1087,14 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	if (unlikely(error_code & PF_RSVD))
+ 		pgtable_bad(regs, error_code, address);
  
--	if (cpu_has(c, X86_FEATURE_SMAP))
-+	if (cpu_has(c, X86_FEATURE_SMAP)) {
 +#ifdef CONFIG_X86_SMAP
- 		set_in_cr4(X86_CR4_SMAP);
-+#else
-+		clear_in_cr4(X86_CR4_SMAP);
+ 	if (static_cpu_has(X86_FEATURE_SMAP)) {
+ 		if (unlikely(smap_violation(error_code, regs))) {
+ 			bad_area_nosemaphore(regs, error_code, address);
+ 			return;
+ 		}
+ 	}
 +#endif
-+	}
- }
  
- /*
+ 	/*
+ 	 * If we're in an interrupt, have no user context or are running
