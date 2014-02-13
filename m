@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaBMTyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:54:10 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:47170 "EHLO smtp.outflux.net"
+	id S1752371AbaBMTqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:46:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42945 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752342AbaBMTyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:54:08 -0500
-Date: Thu, 13 Feb 2014 11:52:30 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] ARM: mm: report both sections from PMD
-Message-ID: <20140213195230.GA15275@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S1752341AbaBMTqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 14:46:32 -0500
+Date: Thu, 13 Feb 2014 14:46:22 -0500
+Message-Id: <201402131946.s1DJkM6J022573@gelk.kernelslacker.org>
+From: Dave Jones <davej@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org
+Subject: [PATCH 16/38] staging/bcm: move IOCTL_BCM_SWITCH_TRANSFER_MODE case out to its own function.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2-level page table systems, the PMD has 2 section entries. Report
-these, otherwise ARM_PTDUMP will miss reporting permission changes on
-odd section boundaries.
+bcm_char_ioctl is one of the longest non-generated functions in the kernel,
+at 1906 lines.  Splitting it up into multiple functions should simplify
+this a lot.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
 ---
-v3:
- - re-reorganize, drop use of pmd_sect; suggested by Catalin Marinas.
-v2:
- - reorganize, suggested by Catalin Marinas.
----
- arch/arm/mm/dump.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/bcm/Bcmchar.c | 39 ++++++++++++++++++++++-----------------
+ 1 file changed, 22 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
-index 2b342177f5de..61cc78ae9f21 100644
---- a/arch/arm/mm/dump.c
-+++ b/arch/arm/mm/dump.c
-@@ -264,6 +264,9 @@ static void walk_pmd(struct pg_state *st, pud_t *pud, unsigned long start)
- 			note_page(st, addr, 3, pmd_val(*pmd));
- 		else
- 			walk_pte(st, pmd, addr);
-+
-+		if (SECTION_SIZE < PMD_SIZE && pmd_large(pmd[1]))
-+			note_page(st, addr + SECTION_SIZE, 3, pmd_val(pmd[1]));
- 	}
+diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
+index 5dc9f71189fe..9d8048feae23 100644
+--- a/drivers/staging/bcm/Bcmchar.c
++++ b/drivers/staging/bcm/Bcmchar.c
+@@ -994,6 +994,25 @@ static int bcm_char_ioctl_qos_threshold(ULONG arg, struct bcm_mini_adapter *Adap
+ 	return 0;
  }
  
++static int bcm_char_ioctl_switch_transfer_mode(void __user *argp, struct bcm_mini_adapter *Adapter)
++{
++	UINT uiData = 0;
++
++	if (copy_from_user(&uiData, argp, sizeof(UINT)))
++		return -EFAULT;
++
++	if (uiData) {
++		/* Allow All Packets */
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_SWITCH_TRANSFER_MODE: ETH_PACKET_TUNNELING_MODE\n");
++			Adapter->TransferMode = ETH_PACKET_TUNNELING_MODE;
++	} else {
++		/* Allow IP only Packets */
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_SWITCH_TRANSFER_MODE: IP_PACKET_ONLY_MODE\n");
++		Adapter->TransferMode = IP_PACKET_ONLY_MODE;
++	}
++	return STATUS_SUCCESS;
++}
++
+ 
+ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ {
+@@ -1136,23 +1155,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ 		Status = STATUS_SUCCESS;
+ 		break;
+ 
+-	case IOCTL_BCM_SWITCH_TRANSFER_MODE: {
+-		UINT uiData = 0;
+-		if (copy_from_user(&uiData, argp, sizeof(UINT)))
+-			return -EFAULT;
+-
+-		if (uiData) {
+-			/* Allow All Packets */
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_SWITCH_TRANSFER_MODE: ETH_PACKET_TUNNELING_MODE\n");
+-				Adapter->TransferMode = ETH_PACKET_TUNNELING_MODE;
+-		} else {
+-			/* Allow IP only Packets */
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_SWITCH_TRANSFER_MODE: IP_PACKET_ONLY_MODE\n");
+-			Adapter->TransferMode = IP_PACKET_ONLY_MODE;
+-		}
+-		Status = STATUS_SUCCESS;
+-		break;
+-	}
++	case IOCTL_BCM_SWITCH_TRANSFER_MODE:
++		Status = bcm_char_ioctl_switch_transfer_mode(argp, Adapter);
++		return Status;
+ 
+ 	case IOCTL_BCM_GET_DRIVER_VERSION: {
+ 		ulong len;
 -- 
-1.7.9.5
+1.8.5.3
 
-
--- 
-Kees Cook
-Chrome OS Security
