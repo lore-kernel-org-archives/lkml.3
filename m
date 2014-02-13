@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaBMXVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:21:09 -0500
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:42871 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaBMXVH (ORCPT
+	id S1752508AbaBMXWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:22:34 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:58074 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751031AbaBMXWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:21:07 -0500
-X-AuditID: cbfec372-b7fa96d000006a7b-87-52fd53621905
-Date: Fri, 14 Feb 2014 08:20:59 +0900
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-edac <linux-edac@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] MAINTAINERS: Add Mauro and me as interim patch collectors
-Message-id: <20140214082059.179c283a.m.chehab@samsung.com>
-In-reply-to: <1392327316-15789-1-git-send-email-bp@alien8.de>
-References: <1392327316-15789-1-git-send-email-bp@alien8.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t/hEN2k4L9BBlPfSVvMWb+GzeLzhn9s
-	FhP7NS0unGpgsri8aw6bA6vH99Y+Fo8TM36zeGw+Xe3xeZNcAEsUl01Kak5mWWqRvl0CV8b2
-	25+ZCqazV+y53crYwPiUtYuRk0NCwERi5rEpLBC2mMSFe+vZuhi5OIQEljBKLJ9zkxHCaWCS
-	mNX1hhGkikVAVWLbufNg3WwCRhKvGlvAbBEBJYmvi+YygTQwC8xllPh24jBYQljAT2Lvvkdg
-	zbwCVhIXV+8Fsjk4OAVsJc7tCwQJCwnYSHy/vAfqCieJV68nM0GUC0r8mHwPLM4soCWxeVsT
-	K4QtL7F5zVvmCYwCs5CUzUJSNgtJ2QJG5lWMoqXFyQXFSem5hnrFibnFpXnpesn5uZsYIUFc
-	tIPx2QarQ4wCHIxKPLwf7v4JEmJNLCuuzD3EKMHBrCTCO1Hrb5AQb0piZVVqUX58UWlOavEh
-	RiYOTqkGRoOZP7eZWx2zeiDPeLbNzLf2bGDx7OVvdpyN1RKX2nHN22mJTO1tZv1n81j6Nxye
-	Wlp/fvqyT8EdPoq2PDmdUz985BH48yjulmZvt1dZWU/lKZVVp4XyX+X3zDbea/Vd0cksWmPu
-	jtlHgmftExG/0s80p9f4acPMypzJzeJxy3U15rKE39ZNUGIpzkg01GIuKk4EAP9BXFZAAgAA
+	Thu, 13 Feb 2014 18:22:33 -0500
+Message-ID: <1392333751.29034.3.camel@x220>
+Subject: Re: [PATCH] staging: r8188eu: default to "y" in Kconfig
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Martin Walch <walch.martin@web.de>, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Date: Fri, 14 Feb 2014 00:22:31 +0100
+In-Reply-To: <20140211131747.GX26722@mwanda>
+References: <1392121892.13064.9.camel@x220> <20140211125306.GW26722@mwanda>
+	 <1392123668.13064.23.camel@x220> <20140211131747.GX26722@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Feb 2014 23:22:31.0646 (UTC) FILETIME=[780027E0:01CF2912]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 13 Feb 2014 22:35:16 +0100
-Borislav Petkov <bp@alien8.de> escreveu:
-
-> From: Borislav Petkov <bp@suse.de>
+On Tue, 2014-02-11 at 16:17 +0300, Dan Carpenter wrote:
+> On Tue, Feb 11, 2014 at 02:01:08PM +0100, Paul Bolle wrote:
+> > I would have done, if I hadn't bothered to check
+> > Documentation/SubmittingPatches first. It contains:
+> >    Please note that this tag should not be added without the reporter's
+> >    permission, especially if the problem was not reported in a public
+> >    forum.
+> > 
+> > Perhaps that should read:
+> >    [...], unless the problem was reported in a public forum.
 > 
-> We're more or less collecting EDAC patches already anyway so let's hold
-> it down so that get_maintainer sees it too.
+> Or maybe:
 > 
-> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> 	Please note that if the problem was reported in private then you
+> 	should ask for permission before adding a Reported-by tag.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  MAINTAINERS | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index fee5e94b0d5e..5cded4b19918 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3082,6 +3082,8 @@ F:	fs/ecryptfs/
->  
->  EDAC-CORE
->  M:	Doug Thompson <dougthompson@xmission.com>
-> +M:	Borislav Petkov <bp@alien8.de>
-> +M:	Mauro Carvalho Chehab <m.chehab@samsung.com>
->  L:	linux-edac@vger.kernel.org
->  W:	bluesmoke.sourceforge.net
->  S:	Supported
+Your suggestion is clear and to the point. Care to submit a patch? That
+also gives you a chance to mock my reading of the current text.
 
 
--- 
+Paul Bolle
 
-Cheers,
-Mauro
