@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652AbaBMM52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 07:57:28 -0500
-Received: from mout.web.de ([212.227.15.3]:59980 "EHLO mout.web.de"
+	id S1754675AbaBMM5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 07:57:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36162 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754537AbaBMM5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 07:57:23 -0500
-From: Martin Walch <walch.martin@web.de>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 2/2] kconfig: trivial - adjust comments
-Date: Thu, 13 Feb 2014 13:57:21 +0100
-Message-ID: <1552040.ObFWAZURHi@tacticalops>
-User-Agent: KMail/4.12.2 (Linux/3.10.7-gentoo-r1-gnu; KDE/4.12.2; x86_64; ; )
+	id S1753455AbaBMM5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 07:57:36 -0500
+Date: Thu, 13 Feb 2014 13:57:31 +0100
+From: Jean Delvare <jdelvare@suse.de>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [RFC PATCH] hwmon: (max6650) Convert to be a 
+ platform driver
+Message-ID: <20140213135731.139b23aa@endymion.delvare>
+In-Reply-To: <CAOMwXhMNHqXnzR0YHF9rx710JbaL3YFn=3cLf_WdNkCx7hbZug@mail.gmail.com>
+References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
+	<20140213095817.GD32508@lee--X1>
+	<20140213111530.2a2b4982@endymion.delvare>
+	<CAOMwXhML8LvDCzmk1ZVT+7cARj9C3VtxERWBgOPM9vTc6qQXZQ@mail.gmail.com>
+	<CAOMwXhOv-as1W69wcSno49jEXsXWZZ7odnu8og-vgnDwRTJ4sA@mail.gmail.com>
+	<20140213113313.GL32508@lee--X1>
+	<CAOMwXhMNHqXnzR0YHF9rx710JbaL3YFn=3cLf_WdNkCx7hbZug@mail.gmail.com>
+Organization: Suse Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="UTF-8"
-X-Provags-ID: V03:K0:T2Fv1wWBMfJF+iOz6PyfI/6vdMsWTIS2PawuoSN2jcM1ef4QEUN
- 8/Xt49yex9zL3n460bs+uE+WzHD4hF1vFhPQmmUqtZyH4PVzaLn6urhittQZDNLs8oYk3OR
- gBzX4JOij82gy6aL5ORDCvpJIxNy4u4A9bDdGG5amofEEp2BlshaRZJFvviK6vylN9Ryj6U
- byiiUSmboPXU0/gIsxfTw==
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Walch <walch.martin@web.de>
-Date: Thu, 13 Feb 2014 12:17:06 +0100
-Subject: [PATCH 2/2] kconfig: trivial - adjust comments
+Hi Laszlo,	
 
-the line
-(a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
-is probably copy & paste from above, missing the adjustment done in the code.
-It should probably read
-(a!='b') && (a='c') -> 'b'='c' ? 'n' : a='c'
+On Thu, 13 Feb 2014 12:27:28 +0000, Laszlo Papp wrote:
+> On Thu, Feb 13, 2014 at 11:33 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > Right, I've had enough. I'm removing your patch from the MFD tree.
+> >
+> > I've asked too many people to give you a second chance and asked you
+> > privately to behave yourself and treat others with respect. So far I
+> > haven't seen an ounce of self control or depomacy from you.
+> >
+> > This is how it's going to work from now on:
+> >
+> >  - You submit a patch
+> >  - It gets reviewed                            <----\
+> >  - You fix up the review comments as requested -----/
+> >  - Non-compliance or arguments with the _experts_ results in:
+> >     `$INTEREST > /dev/null || \
+> >       grep "From: Laszio Papp" ~/.mail | xargs rm -rf`
+> 
+> http://comments.gmane.org/gmane.linux.kernel/1645251
+> 
+> Step 2 did not happen. I did not get any review for my change. I
+> literally submitted that within a couple of hours after the request.
 
-the second case is similar:
-(a!='m') && (a!='n') -> (a='m')
-should be
-(a!='m') && (a!='n') -> (a='y')
+Yes, twice even, and broken each time. And without a changelog on v2
+(despite Documentation/SubmittingPatches explaining this is a good
+practice - see section 15.)
 
-This patch intentionally violates the checkpatch.pl style check by keeping C99 comments:
-there are many of them, and consequently they all should be converted, but this is beyond
-the scope of this patch.
+> Could you please tell me what was wrong with that change, and why I
+> did not get any respect not to "xargs rm -rf" my work in that area? I
+> believe I was ignored instead of improving the change, and someone
+> else tried to address the same thing. There was no argument in that
+> thread. It was a technical change. I personally do not feel happy
+> about it.
 
-Signed-off-by: Martin Walch <walch.martin@web.de>
----
- scripts/kconfig/expr.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The change itself was so wrong that I don't even know where to start.
 
-diff --git a/scripts/kconfig/expr.c b/scripts/kconfig/expr.c
-index 4aa171b..4b73854 100644
---- a/scripts/kconfig/expr.c
-+++ b/scripts/kconfig/expr.c
-@@ -460,7 +460,7 @@ static struct expr *expr_join_and(struct expr *e1, struct expr *e2)
- 							     : expr_alloc_symbol(&symbol_no);
- 		}
- 		if (e1->type == E_UNEQUAL && e2->type == E_EQUAL) {
--			// (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
-+			// (a!='b') && (a='c') -> 'b'='c' ? 'n' : a='c'
- 			sym2 = e2->right.sym;
- 			if ((e1->right.sym->flags & SYMBOL_CONST) && (sym2->flags & SYMBOL_CONST))
- 				return sym2 != e1->right.sym ? expr_alloc_comp(E_EQUAL, sym1, sym2)
-@@ -481,7 +481,7 @@ static struct expr *expr_join_and(struct expr *e1, struct expr *e2)
- 		if (e1->type == E_UNEQUAL && e2->type == E_UNEQUAL &&
- 			   ((e1->right.sym == &symbol_mod && e2->right.sym == &symbol_no) ||
- 			    (e1->right.sym == &symbol_no && e2->right.sym == &symbol_mod)))
--			// (a!='m') && (a!='n') -> (a='m')
-+			// (a!='m') && (a!='n') -> (a='y')
- 			return expr_alloc_comp(E_EQUAL, sym1, &symbol_yes);
- 
- 		if ((e1->type == E_SYMBOL && e2->type == E_EQUAL && e2->right.sym == &symbol_mod) ||
+But the main problem really was you. You had pissed me (and I suspect,
+everybody else) off so much that day that I really didn't want to deal
+with your rants or code any longer. As you can imagine, I have more
+than enough on my plate, so I just moved on to another task.
+
+Then by the time I may have been willing to give you another chance and
+review your code, Guenter wrote a more complete, better patch set. So I
+thought I'd just review that one. And it was good, and it took me less
+time to review and test it than to (attempt to) teach you how to behave.
+
+Working with Guenter is a pleasure. Working with you is a pain, really.
+And guess what, I get to choose who I'm working with.
+
+If people no longer want to work with you, well, blame it on yourself.
+
 -- 
-1.8.3.2
-
-
+Jean Delvare
+Suse L3 Support
