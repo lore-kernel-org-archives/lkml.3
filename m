@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaBMVmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:42:31 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:44181 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaBMVl6 (ORCPT
+	id S1751889AbaBMVsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:48:50 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:36591 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaBMVst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:41:58 -0500
-Date: Thu, 13 Feb 2014 16:41:46 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH 48/73] drivers/ata: delete non-required instances of
- include <linux/init.h>
-Message-ID: <20140213214146.GI17608@htj.dyndns.org>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
- <1390339396-3479-49-git-send-email-paul.gortmaker@windriver.com>
+	Thu, 13 Feb 2014 16:48:49 -0500
+Message-ID: <52FD3DB5.303@ahsoftware.de>
+Date: Thu, 13 Feb 2014 22:48:37 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390339396-3479-49-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+CC: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Gianluca Anzolin <gianluca@sottospazio.it>,
+        Andrey Vihrov <andrey.vihrov@gmail.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/24] rfcomm fixes
+References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org> <52F95A10.5010507@hurleysoftware.com> <433F6D97-A126-4F9F-96AC-4385575E005E@holtmann.org> <52FC13F0.8040809@hurleysoftware.com>
+In-Reply-To: <52FC13F0.8040809@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 04:22:51PM -0500, Paul Gortmaker wrote:
-> None of these files are actually using any __init type directives
-> and hence don't need to include <linux/init.h>.  Most are just a
-> left over from __devinit and __cpuinit removal, or simply due to
-> code getting copied from one driver to the next.
-> 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: linux-ide@vger.kernel.org
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Am 13.02.2014 01:38, schrieb Peter Hurley:
+> Hi Marcel,
+>
+> On 02/12/2014 05:58 PM, Marcel Holtmann wrote:
+>> we might also want to add some end-to-end test cases to rfcomm-tester
+>> that covers this behavior.
 
-Applied to libata/for-3.15.
+Sounds great. Such would have found the problem with disappearing remote 
+bt (rfcomm) devices since 3.8 likely earlier than I did (which was 
+around 3.10 if I remember correctly).
 
-Thanks.
+Regards,
 
--- 
-tejun
+Alexander Holler
