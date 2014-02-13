@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752AbaBMJsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:48:36 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:59304 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065AbaBMJsd (ORCPT
+	id S1753881AbaBMJuc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:50:32 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:64853 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751880AbaBMJua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:48:33 -0500
-Date: Thu, 13 Feb 2014 10:48:24 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <939539486.20140213104824@eikelenboom.it>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Tony Luck <tony.luck@intel.com>, Dave Airlie <airlied@redhat.com>,
-        Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-        "linux-pci @ vger . kernel . org" <linux-pci@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>
-Subject: Re: [PATCH v2] Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary prevents it from reading it's own rom. It will get the content of the shadowrom at C000 instead, which is of the primary VGA card and the driver of the secondary card will bail out.
-In-Reply-To: <20140203145205.GB2992@phenom.dumpdata.com>
-References: <20140130000831.GJ16825@google.com> <1391160503-11122-1-git-send-email-linux@eikelenboom.it> <20140203145205.GB2992@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 13 Feb 2014 04:50:30 -0500
+Message-ID: <1392285028.30853.24.camel@x220>
+Subject: Re: [PATCH] Blackfin: remove "config IP_CHECKSUM_L1"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Steven Miao <realmz6@gmail.com>
+Cc: adi-buildroot-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Thu, 13 Feb 2014 10:50:28 +0100
+In-Reply-To: <1363899006.1390.157.camel@x61.thuisdomein>
+References: <1363899006.1390.157.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Feb 2014 09:50:28.0568 (UTC) FILETIME=[06C87580:01CF28A1]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+[Replaced previous maintainer and list with current maintainer and
+list.]
 
-I have given it another email and another week, but without gaining any reviewed or acked-by's.
-It seems the only way forward is to shovel it in linux-next earlier, give it a good soak and see if
-anyone starts to squeal .. or that everything seems to be ok :-)
+On Thu, 2013-03-21 at 21:50 +0100, Paul Bolle wrote:
+> The only user of Kconfig symbol IP_CHECKSUM_L1 got removed in v2.6.33,
+> with commit ddf9ddacef0989fdeb22e182212a232488f0f3ad ("Blackfin: convert
+> to generic checksum code"). We can remove the Kconfig entry for this
+> unused symbol now.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Would you need a v3 with the acked and reviewed-by from Konrad for x86 in it ?
+Has someone ever looked at this trivial patch? The Kconfig entry for
+this symbol is still present in v3.14-rc2.
 
---
+> Untested.
+> 
+>  arch/blackfin/Kconfig | 8 --------
+>  1 file changed, 8 deletions(-)
+> 
+> diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+> index c3f2e0b..a8acb1d 100644
+> --- a/arch/blackfin/Kconfig
+> +++ b/arch/blackfin/Kconfig
+> @@ -866,14 +866,6 @@ config SYS_BFIN_SPINLOCK_L1
+>  	  If enabled, sys_bfin_spinlock function is linked
+>  	  into L1 instruction memory. (less latency)
+>  
+> -config IP_CHECKSUM_L1
+> -	bool "Locate IP Checksum function in L1 Memory"
+> -	default n
+> -	depends on !SMP
+> -	help
+> -	  If enabled, the IP Checksum function is linked
+> -	  into L1 instruction memory. (less latency)
+> -
+>  config CACHELINE_ALIGNED_L1
+>  	bool "Locate cacheline_aligned data to L1 Data Memory"
+>  	default y if !BF54x
 
-Sander
 
-
-Monday, February 3, 2014, 3:52:05 PM, you wrote:
-
-> On Fri, Jan 31, 2014 at 10:28:22AM +0100, Sander Eikelenboom wrote:
->> Hi Bjorn / Tony,
->> 
->> I fixed up ia64 as well and brought it inline again with the x86 code,
->> but i don't have a ia64 machine, so that part is untested.
->> Perhaps Tony is able to review/test it ?
->> 
->> Sander
->> 
->> 
->> 
->> Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary
->> prevents it from reading it's own rom. It will get the content of the shadowrom
->> at C000 instead, which is of the primary VGA card and the driver of the
->> secondary card will bail out.
->> 
->> Fix this by checking if the arch code or vga-arbitration has already
->> determined the vga_default_device, if so only apply the fix to this
->> primary video device and let the comment reflect this.
->> 
->> v2:
->>     - Fix pci_fixup_video both in x86 and ia64
->> 
->> 
->> Sander Eikelenboom (1):
->>   Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the
->>     primary     prevents it from reading it's own rom. It will get the
->>     content of the shadowrom     at C000 instead, which is of the
->>     primary VGA card and the driver of the     secondary card will bail
->>     out.
-
-> Your editor mutilated your subject line. It ought to have been just
-> one line.
-
-> Anyhow, you can also add 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com'
-> on the patch for the x86 part.
-
-> The ia64 "looks" OK to me, but my ia64 box won't boot v3.11 or later
-> so I can't give it a 'Tested-by' yet.
-
->> 
->>  arch/ia64/pci/fixup.c |   24 +++++++++++++-----------
->>  arch/x86/pci/fixup.c  |   18 ++++++++++--------
->>  2 files changed, 23 insertions(+), 19 deletions(-)
->> 
->> -- 
->> 1.7.10.4
->> 
-
+Paul Bolle
 
