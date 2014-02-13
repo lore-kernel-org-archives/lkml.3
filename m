@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbaBMLxi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 06:53:38 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34917 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753199AbaBMLxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 06:53:36 -0500
-Date: Thu, 13 Feb 2014 11:53:27 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-kernel@lists.linaro.org, devicetree@vger.kernel.org,
-        "'linux-pci'" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Tanmay Inamdar'" <tinamdar@apm.com>,
-        "'Catalin Marinas'" <Catalin.Marinas@arm.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'LAKML'" <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge
-	from device tree
-Message-ID: <20140213115327.GV26684@n2100.arm.linux.org.uk>
-References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com> <CACoXjc=epN8=tFQKw6kZ27hTA=a+c56q1pikX_SSMKK1rsScCw@mail.gmail.com> <000001cf2899$a6eb75b0$f4c26110$%han@samsung.com> <3204351.WykFFcX4zJ@wuerfel>
+	id S1754376AbaBML4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 06:56:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18908 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752989AbaBML4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 06:56:40 -0500
+Date: Thu, 13 Feb 2014 12:55:52 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        stable@vger.kernel.org, steven@uplinklabs.net, rostedt@goodmis.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, oleg@redhat.com,
+        rth@twiddle.net
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] compiler/gcc4: Make quirk for
+ asm_volatile_goto( ) unconditional
+Message-ID: <20140213115552.GU20378@tucnak.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <1392274867-15236-1-git-send-email-steven@uplinklabs.net>
+ <tip-a9f180345f5378ac87d80ed0bea55ba421d83859@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3204351.WykFFcX4zJ@wuerfel>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <tip-a9f180345f5378ac87d80ed0bea55ba421d83859@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 12:27:05PM +0100, Arnd Bergmann wrote:
-> I would rather get rid of struct hw_pci for architecture independent
-> drivers and add a different registration method on arm32 that is
-> compatible with what we come up with on arm64. The main purpose of
-> hw_pci is to allow multiple PCI controllers to be initialized at
-> once, but we don't actually need that for any of the "modern" platforms
-> where we already have a probe function that gets called once for
-> each controller.
+On Thu, Feb 13, 2014 at 03:37:08AM -0800, tip-bot for Steven Noonan wrote:
+> Commit-ID:  a9f180345f5378ac87d80ed0bea55ba421d83859
+> Gitweb:     http://git.kernel.org/tip/a9f180345f5378ac87d80ed0bea55ba421d83859
+> Author:     Steven Noonan <steven@uplinklabs.net>
+> AuthorDate: Wed, 12 Feb 2014 23:01:07 -0800
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Thu, 13 Feb 2014 12:34:05 +0100
+> 
+> compiler/gcc4: Make quirk for asm_volatile_goto() unconditional
+> 
+> I started noticing problems with KVM guest destruction on Linux
+> 3.12+, where guest memory wasn't being cleaned up. I bisected it
+> down to the commit introducing the new 'asm goto'-based atomics,
+> and found this quirk was later applied to those.
+> 
+> Unfortunately, even with GCC 4.8.2 (which ostensibly fixed the
+> known 'asm goto' bug) I am still getting some kind of
+> miscompilation. If I enable the asm_volatile_goto quirk for my
+> compiler, KVM guests are destroyed correctly and the memory is
+> cleaned up.
 
-No.  The main purpose of hw_pci is as a container to support multiple
-different platform specific PCI implementations in one kernel.  It's
-exactly what you need for single zImage.
+BTW, which exact 4.8.2 were you using?
+The last known asm goto bug has been fixed on October, 10th, 2013:
+http://gcc.gnu.org/PR58670
+so before the October, 16th, 2013 4.8.2 release.  But already since
+May 31th, 2013 the tip of the 4.8 GCC branch has been announcing itself
+as 4.8.2 prerelease.  While some distribution versions of GCC announce
+themselves as the new version only starting from the release date,
+i.e. snapshots in between 4.8.1 release and 4.8.2 release announce
+themselves as 4.8.1, in other distributions or upstream it announces itself
+as 4.8.2.  So, if you are using the latter and a snapshot in between May
+31th, 2013 and October, 10th, 2013, then you could see gcc patchlevel 2,
+yet have a gcc with that bug unfixed.
+So, if the kernel doesn't use a runtime test/configure test to check for
+this issue, but instead just relies on the patchlevel version, the only
+safe way would be to look for GCC >= 4.9 or GCC 4.8 with patchlevel > 2
+rather than > 1.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+	Jakub
