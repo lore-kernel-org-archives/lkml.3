@@ -1,79 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaBMXBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:01:53 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:35399 "EHLO
-	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbaBMXBv (ORCPT
+	id S1752202AbaBMXGb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:06:31 -0500
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:57843 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806AbaBMXG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:01:51 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Thu, 13 Feb 2014 14:49:12 -0800
-Message-ID: <52FD4EDE.20208@synaptics.com>
-Date: Thu, 13 Feb 2014 15:01:50 -0800
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Andrew Duggan <aduggan@synaptics.com>,
-        Vincent Huang <vincent.huang@tw.synaptics.com>,
-        Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/11] Input: synaptics-rmi4 - remove control_mutex from
- f01_data
-References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com> <1392269277-16391-5-git-send-email-dmitry.torokhov@gmail.com>
-In-Reply-To: <1392269277-16391-5-git-send-email-dmitry.torokhov@gmail.com>
-X-Originating-IP: [10.3.20.103]
-X-Brightmail-Tracker: AAAAAQAAAWE=
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Feb 2014 18:06:29 -0500
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Laurent Chavey <chavey@google.com>, linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] tracing: Fix array size mismatch in format string
+Date: Thu, 13 Feb 2014 15:05:43 -0800
+Message-Id: <1392332743-15550-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.9.0.rc1.175.g0b1dcb5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
-> It is not used by anyone.
->
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+In event format strings, the array size is reported in two locations.
+One in array subscript and then via the "size:" attribute. The values
+reported there have a mismatch.
 
-Acked-by: Christopher Heiny <cheiny@synaptics.com>
+For e.g., in sched:sched_switch the prev_comm and next_comm character
+arrays have subscript values as [32] where as the actual field size is
+16.
 
-> ---
->   drivers/input/rmi4/rmi_f01.c | 3 ---
->   1 file changed, 3 deletions(-)
->
-> diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
-> index 30e0b50..6f90a6c 100644
-> --- a/drivers/input/rmi4/rmi_f01.c
-> +++ b/drivers/input/rmi4/rmi_f01.c
-> @@ -125,7 +125,6 @@ struct f01_data {
->   	struct f01_basic_properties properties;
->
->   	struct f01_device_control device_control;
-> -	struct mutex control_mutex;
->
->   	u8 device_status;
->
-> @@ -214,8 +213,6 @@ static int rmi_f01_initialize(struct rmi_function *fn)
->   	struct f01_data *data = fn->data;
->   	struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
->
-> -	mutex_init(&data->control_mutex);
-> -
->   	/*
->   	 * Set the configured bit and (optionally) other important stuff
->   	 * in the device control register.
->
+name: sched_switch
+ID: 301
+format:
+        field:unsigned short common_type;       offset:0;       size:2; signed:0;
+        field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+        field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
+        field:int common_pid;   offset:4;       size:4; signed:1;
 
+        field:char prev_comm[32];       offset:8;       size:16;        signed:1;
+        field:pid_t prev_pid;   offset:24;      size:4; signed:1;
+        field:int prev_prio;    offset:28;      size:4; signed:1;
+        field:long prev_state;  offset:32;      size:8; signed:1;
+        field:char next_comm[32];       offset:40;      size:16;        signed:1;
+        field:pid_t next_pid;   offset:56;      size:4; signed:1;
+        field:int next_prio;    offset:60;      size:4; signed:1;
 
+After bisection, the following commit was blamed:
+92edca0 tracing: Use direct field, type and system names
+
+This commit removes the duplication of strings for field->name and
+field->type assuming that all the strings passed in
+__trace_define_field() are immutable. This is not true for arrays, where
+the type string is created in event_storage variable and field->type for
+all array fields points to event_storage.
+
+Use __stringify() to create a string constant for the type string.
+
+Also, get rid of event_storage and event_storage_mutex that are not
+needed anymore.
+
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ include/linux/ftrace_event.h | 4 ----
+ include/trace/ftrace.h       | 7 ++-----
+ kernel/trace/trace_events.c  | 6 ------
+ kernel/trace/trace_export.c  | 7 ++-----
+ 4 files changed, 4 insertions(+), 20 deletions(-)
+
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4e4cc28..4cdb3a1 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -495,10 +495,6 @@ enum {
+ 	FILTER_TRACE_FN,
+ };
+ 
+-#define EVENT_STORAGE_SIZE 128
+-extern struct mutex event_storage_mutex;
+-extern char event_storage[EVENT_STORAGE_SIZE];
+-
+ extern int trace_event_raw_init(struct ftrace_event_call *call);
+ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
+ 			      const char *name, int offset, int size,
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 1a8b28d..487841d 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -310,15 +310,12 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
+ #undef __array
+ #define __array(type, item, len)					\
+ 	do {								\
+-		mutex_lock(&event_storage_mutex);			\
+ 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
+-		snprintf(event_storage, sizeof(event_storage),		\
+-			 "%s[%d]", #type, len);				\
+-		ret = trace_define_field(event_call, event_storage, #item, \
++		char *type_str = #type"["__stringify(len)"]";		\
++		ret = trace_define_field(event_call, type_str, #item,	\
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+ 				 is_signed_type(type), FILTER_OTHER);	\
+-		mutex_unlock(&event_storage_mutex);			\
+ 		if (ret)						\
+ 			return ret;					\
+ 	} while (0);
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index e71ffd4..22826c7 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -27,12 +27,6 @@
+ 
+ DEFINE_MUTEX(event_mutex);
+ 
+-DEFINE_MUTEX(event_storage_mutex);
+-EXPORT_SYMBOL_GPL(event_storage_mutex);
+-
+-char event_storage[EVENT_STORAGE_SIZE];
+-EXPORT_SYMBOL_GPL(event_storage);
+-
+ LIST_HEAD(ftrace_events);
+ static LIST_HEAD(ftrace_common_fields);
+ 
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 7c3e3e7..0f9a9fd 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -96,14 +96,11 @@ static void __always_unused ____ftrace_check_##name(void)		\
+ #define __array(type, item, len)					\
+ 	do {								\
+ 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
+-		mutex_lock(&event_storage_mutex);			\
+-		snprintf(event_storage, sizeof(event_storage),		\
+-			 "%s[%d]", #type, len);				\
+-		ret = trace_define_field(event_call, event_storage, #item, \
++		char *type_str = #type"["__stringify(len)"]";		\
++		ret = trace_define_field(event_call, type_str, #item,	\
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+ 				 is_signed_type(type), filter_type);	\
+-		mutex_unlock(&event_storage_mutex);			\
+ 		if (ret)						\
+ 			return ret;					\
+ 	} while (0);
 -- 
+1.9.0.rc1.175.g0b1dcb5
 
-Christopher Heiny
-Senior Staff Firmware Engineer
-Synaptics Incorporated
