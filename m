@@ -1,36 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710AbaBMNDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 08:03:12 -0500
-Received: from webmail.ilhasolteira.sp.gov.br ([189.108.142.7]:44220 "EHLO
-	webmail.ilhasolteira.sp.gov.br" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754632AbaBMNDK (ORCPT
+	id S1754731AbaBMNDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 08:03:54 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48066 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753910AbaBMNDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 08:03:10 -0500
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 08:03:09 EST
-Date: Thu, 13 Feb 2014 10:44:44 -0200 (BRST)
-From: YUNG KYU KIM <angelica.ribeiro@ilhasolteira.sp.gov.br>
-Message-ID: <14091707.4365.1392295484465.JavaMail.root@webmail.ilhasolteira.sp.gov.br>
-Subject: Foreign Business Director Needed!!!
+	Thu, 13 Feb 2014 08:03:52 -0500
+X-Sasl-enc: kgygwOwnlsNbWp2F+jawzVIvrmByN5QKgBTyVWSPZTJB 1392296629
+Date: Thu, 13 Feb 2014 11:03:44 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: dl9pf@gmx.de
+Cc: Behan Webster <behanw@converseincode.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, acpi: LLVMLinux: Remove nested functions from
+ Thinkpad ACPI
+Message-ID: <20140213130343.GA25725@khazad-dum.debian.net>
+References: <1392238726-18787-1-git-send-email-dl9pf@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.203.69.1]
-X-Mailer: Zimbra 6.0.4_GA_2038.RHEL5 (zclient/6.0.4_GA_2038.RHEL5)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392238726-18787-1-git-send-email-dl9pf@gmx.de>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 12 Feb 2014, dl9pf@gmx.de wrote:
+> From: Behan Webster <behanw@converseincode.com>
+> The only real change is passing in event_mask to the formerly nested functions.
+> Otherwise it's just moving around function and macro code.
+> 
+> This is the only place in the Linux kernel where nested functions are still in
+> use. Nested functions aren't part of the C standards, and complicate the
+> generated code. Although the Linux Kernel has never set out to be entirely C
+> standard compliant, it is increasingly compliant to the standard which is
+> supported by other compilers such as Clang. The LLVMLinux project is working on
+> being able to compile the Linux kernel with Clang. The use of nested functions
+> blocks this effort.
+> 
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+> 
+> CC: David Woodhouse <David.Woodhouse@intel.com>
+> CC: Matthew Garrett <matthew.garrett@nebula.com>
+> CC: ibm-acpi-devel@lists.sourceforge.net
+> CC: platform-driver-x86@vger.kernel.org
+> CC: linux-kernel@vger.kernel.org
 
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-The Project is about the exportation of 100,000 barrels of Light CrudeOil daily out from Iraq to Turkey through my client's company in Iraq
-at the rate of $92.00 a barrel. This amount to $9,200,000 daily. I ask for your support as a foreigner to handle this business project with my
-client and you are not expected to invest in Iraq
-
-If yes, let me know and we will discuss this project proper.
-
-Kim.
-
-Contact my private email :   2936410069@qq.com
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
