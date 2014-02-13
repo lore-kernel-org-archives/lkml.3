@@ -1,102 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaBMKyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:54:38 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:53033 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751823AbaBMKyh (ORCPT
+	id S1754360AbaBMKz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:55:58 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:54072 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075AbaBMKz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:54:37 -0500
-Message-ID: <1392288875.30853.54.camel@x220>
-Subject: Re: [PATCH] Blackfin: bf537: rename ad2s120x ->ad2s1200
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Steven Miao <realmz6@gmail.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Feb 2014 11:54:35 +0100
-In-Reply-To: <1365073330.1830.34.camel@x61.thuisdomein>
-References: <1365073330.1830.34.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Feb 2014 10:54:35.0806 (UTC) FILETIME=[FBEA63E0:01CF28A9]
-X-RcptDomain: vger.kernel.org
+	Thu, 13 Feb 2014 05:55:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140213095817.GD32508@lee--X1>
+References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
+	<20140213095817.GD32508@lee--X1>
+Date: Thu, 13 Feb 2014 10:55:55 +0000
+X-Google-Sender-Auth: AE4i3kO5FdMdzHtym7xEsV3JDm0
+Message-ID: <CAOMwXhNVuDhSZ7WAKMN7_uZ6EK4rcVN-zbJP-+KO7cpiyPuL0g@mail.gmail.com>
+Subject: Re: [RFC PATCH] hwmon: (max6650) Convert to be a platform driver
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        lm-sensors@lm-sensors.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Replaced previous maintainer and list with current maintainer and
-list.]
+On Thu, Feb 13, 2014 at 9:58 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> The MFD driver has now been added, so this driver is now being adopted to be a
+>> subdevice driver on top of it. This means, the i2c driver usage is being
+>> converted to platform driver usage all around.
+>>
+>> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+>> ---
+>> This patch has been compile tested only and will be tested with real hardware,
+>> but early reviews to catch any trivial issues would be welcome.
+>>  drivers/hwmon/Kconfig   |   2 +-
+>>  drivers/hwmon/max6650.c | 155 ++++++++++++++++++++++++------------------------
+>>  2 files changed, 79 insertions(+), 78 deletions(-)
+>
+> <snip>
+>
+>>  /*
+>>   * Insmod parameters
+>> @@ -105,24 +108,23 @@ module_param(clock, int, S_IRUGO);
+>>
+>>  #define DIV_FROM_REG(reg) (1 << (reg & 7))
+>>
+>> -static int max6650_probe(struct i2c_client *client,
+>> -                      const struct i2c_device_id *id);
+>> -static int max6650_init_client(struct i2c_client *client);
+>> -static int max6650_remove(struct i2c_client *client);
+>> +static int max6650_probe(struct platform_device *pdev);
+>> +static int max6650_init_client(struct platform_device *pdev);
+>> +static int max6650_remove(struct platform_device *pdev);
+>>  static struct max6650_data *max6650_update_device(struct device *dev);
+>
+> It would be good to remove these forward declarations in the future.
+>
+> If no one volunteers I'll happily do it.
 
-On Thu, 2013-04-04 at 13:02 +0200, Paul Bolle wrote:
-> In v3.2 the Analog Devices ad2s1200/ad2s1205 driver was renamed from
-> ad2s120x to ad2s1200. But it apparently forgot to rename the references
-> to this driver in the BF537-STAMP code. Rename these now, and use the
-> IS_ENABLED() macro, while we're at it.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+I personally do not see any problem with the code either way, hence I
+would not personally touch what works. :)
 
-This issue is also still present in v3.14-rc2. Can someone please have a
-look at this patch?
+But if it is a strong opinionated style restriction in the codebase,
+then yeah, someone could do it, except me.
 
-> 0) Also untested. The ".modalias" change is educated guesswork.
-> 
-> 1) See commit 10e4a52b6e471cea2e87e71f8708a8c8c6b75266
-> ("staging:iio:resolver rename ad2s120x ->ad2s1200") for the commit that
-> started all this.
-> 
->  arch/blackfin/mach-bf537/boards/stamp.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-> index 9735345..e6fdc2a 100644
-> --- a/arch/blackfin/mach-bf537/boards/stamp.c
-> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
-> @@ -654,13 +654,13 @@ static struct bfin5xx_spi_chip ad2s90_spi_chip_info = {
->  };
->  #endif
->  
-> -#if defined(CONFIG_AD2S120X) || defined(CONFIG_AD2S120X_MODULE)
-> -static unsigned short ad2s120x_platform_data[] = {
-> +#if IS_ENABLED(CONFIG_AD2S1200)
-> +static unsigned short ad2s1200_platform_data[] = {
->  	/* used as SAMPLE and RDVEL */
->  	GPIO_PF5, GPIO_PF6, 0
->  };
->  
-> -static struct bfin5xx_spi_chip ad2s120x_spi_chip_info = {
-> +static struct bfin5xx_spi_chip ad2s1200_spi_chip_info = {
->  	.enable_dma = 0,
->  };
->  #endif
-> @@ -1018,13 +1018,13 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
->  	},
->  #endif
->  
-> -#if defined(CONFIG_AD2S120X) || defined(CONFIG_AD2S120X_MODULE)
-> +#if IS_ENABLED(CONFIG_AD2S1200)
->  	{
-> -		.modalias = "ad2s120x",
-> +		.modalias = "ad2s1200",
->  		.bus_num = 0,
->  		.chip_select = 4,            /* CS, change it for your board */
-> -		.platform_data = ad2s120x_platform_data,
-> -		.controller_data = &ad2s120x_spi_chip_info,
-> +		.platform_data = ad2s1200_platform_data,
-> +		.controller_data = &ad2s1200_spi_chip_info,
->  	},
->  #endif
->  
+>>  /*
+>>   * Driver data (common to all clients)
+>>   */
+>>
+>> -static const struct i2c_device_id max6650_id[] = {
+>> +static const struct platform_device_id max6650_id[] = {
+>>       { "max6650", 1 },
+>>       { "max6651", 4 },
+>>       { }
+>>  };
+>> -MODULE_DEVICE_TABLE(i2c, max6650_id);
+>> +MODULE_DEVICE_TABLE(platform, max6650_id);
+>
+> I thought you were going to do the matching in the MFD driver?
+>
+> If not, what's the point in the exported 'type' attribute?
 
-This should be the last Kconfig related issue that I reported last year,
-but was never fixed. I'm haven't checked what else lurks in blackfin.
-Let's first see how these issues get resolved.
+I am yet to understand the concept here. You were objecting to those,
+so I removed this in MFD. I could add it to that back in this patch as
+proposed.
 
-Thanks,
+>> -static struct i2c_driver max6650_driver = {
+>> +static struct platform_driver max6650_driver = {
+>>       .driver = {
+>>               .name   = "max6650",
+>
+> This should be changed as it now supports max665{0,1} right?
 
+This is a strange historical driver. It has always supported both, yet
+it was named max6650 weirdly enough as you note.
 
-Paul Bolle
+> <snip>
+>
+>> -     i2c_smbus_write_byte_data(client, MAX6650_REG_SPEED, data->speed);
+>> +     regmap_write(data->iodev->map, MAX6650_REG_SPEED, data->speed);
+>
+> Ensure all of the regmap stuff is fully tested.
 
+Yes, sure.
+
+> <snip>
+>
+>> @@ -484,10 +482,12 @@ static umode_t max6650_attrs_visible(struct kobject *kobj, struct attribute *a,
+>>                                   int n)
+>>  {
+>>       struct device *dev = container_of(kobj, struct device, kobj);
+>> -     struct i2c_client *client = to_i2c_client(dev);
+>> -     u8 alarm_en = i2c_smbus_read_byte_data(client, MAX6650_REG_ALARM_EN);
+>> +     struct max6650_data *data = dev_get_drvdata(dev);
+>> +     int alarm_en;
+>>       struct device_attribute *devattr;
+>>
+>> +     regmap_read(data->iodev->map, MAX6650_REG_ALARM_EN, &alarm_en);
+>> +
+>
+> Where is this then used?
+
+Nowhere, so it was a sub-optimal situation in the old code. It is just
+a direct platform device port of it whatever it was. Perhaps it is the
+right time to clean it a bit, I agree.
+
+>> -static int max6650_probe(struct i2c_client *client,
+>> -                      const struct i2c_device_id *id)
+>> +static int max6650_probe(struct platform_device *pdev)
+>>  {
+>> +     struct max665x_dev *max665x = dev_get_drvdata(pdev->dev.parent);
+>>       struct max6650_data *data;
+>> +     const struct platform_device_id *id = platform_get_device_id(pdev);
+>
+> What's the point in 'type' in the global container?
+>
+> It's looking as though you're not going to need it to be global after
+> all, right?
+
+I would need it for the bit fiddling, too, I think.
