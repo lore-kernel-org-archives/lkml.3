@@ -1,119 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaBMU3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:29:01 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:58169 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaBMU25 (ORCPT
+	id S1752184AbaBMU3I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:29:08 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:45754 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbaBMU3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:28:57 -0500
+	Thu, 13 Feb 2014 15:29:04 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET v2 cgroup/for-3.15] cgroup: update task migration path
-Date: Thu, 13 Feb 2014 15:28:46 -0500
-Message-Id: <1392323333-18907-1-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/7] cgroup: update how a newly forked task gets associated with css_set
+Date: Thu, 13 Feb 2014 15:28:51 -0500
+Message-Id: <1392323333-18907-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392323333-18907-1-git-send-email-tj@kernel.org>
+References: <1392323333-18907-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+When a new process is forked, cgroup_fork() associates it with the
+css_set of its parent but doesn't link it into it.  After the new
+process is linked to tasklist, cgroup_post_fork() does the linking.
 
-This is v2 of update-task-migration-path patchset.  Changes from v1[L]
-are
+This is problematic for cgroup_transfer_tasks() as there's no way to
+tell whether there are tasks which are pointing to a css_set but not
+linked yet.  It is impossible to implement an operation which transfer
+all tasks of a cgroup to another and the current
+cgroup_transfer_tasks() can easily be tricked into leaving a newly
+forked process behind if it gets called between cgroup_fork() and
+cgroup_post_fork().
 
-* Rebased on top of "[PATCH cgroup/for-3.14-fixes] cgroup: update
-  cgroup_enable_task_cg_lists() to grab siglock"
+Let's make association with a css_set and linking atomic by moving it
+to cgroup_post_fork().  cgroup_fork() sets child->cgroups to
+init_css_set as a placeholder and cgroup_post_fork() is updated to
+perform both the association with the parent's cgroup and linking
+there.  This means that a newly created task will point to
+init_css_set without holding a ref to it much like what it does on the
+exit path.  Empty cg_list is used to indicate that the task isn't
+holding a ref to the associated css_set.
 
-* 0005-cgroup-update-how-a-newly-forked-task-gets-associate.patch and
-  0006-cgroup-drop-task_lock-protection-around-task-cgroups.patch
-  added to address the race between migration and fork paths.
+This fixes an actual bug with cgroup_transfer_tasks(); however, I'm
+not marking it for -stable.  The whole thing is broken in multiple
+other ways which require invasive updates to fix and I don't think
+it's worthwhile to bother with backporting this particular one.
+Fortunately, the only user is cpuset and these bugs don't crash the
+machine.
 
-Currently, when migrating a task or process from one cgroup to
-another, a flex_array is used to keep track of the target tasks and
-associated css_sets.  The current implementation has several issues.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 86 ++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 55 insertions(+), 31 deletions(-)
 
-* flex_array size is limited.  Given the current data structure, the
-  limit is ~87k on 64bit, which is pretty high but not impossible to
-  hit.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index aca3661..1fdc38e 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1342,8 +1342,12 @@ static void cgroup_enable_task_cg_lists(void)
+ 		 * racing against cgroup_exit().
+ 		 */
+ 		spin_lock_irq(&p->sighand->siglock);
+-		if (!(p->flags & PF_EXITING))
+-			list_add(&p->cg_list, &task_css_set(p)->tasks);
++		if (!(p->flags & PF_EXITING)) {
++			struct css_set *cset = task_css_set(p);
++
++			list_add(&p->cg_list, &cset->tasks);
++			get_css_set(cset);
++		}
+ 		spin_unlock_irq(&p->sighand->siglock);
+ 
+ 		task_unlock(p);
+@@ -1909,6 +1913,10 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
+ 		if (task->flags & PF_EXITING)
+ 			goto next;
+ 
++		/* leave @task alone if post_fork() hasn't linked it yet */
++		if (list_empty(&task->cg_list))
++			goto next;
++
+ 		cset = task_css_set(task);
+ 		if (!cset->mg_src_cgrp)
+ 			goto next;
+@@ -2812,6 +2820,12 @@ void css_task_iter_end(struct css_task_iter *it)
+  * cgroup_trasnsfer_tasks - move tasks from one cgroup to another
+  * @to: cgroup to which the tasks will be moved
+  * @from: cgroup in which the tasks currently reside
++ *
++ * Locking rules between cgroup_post_fork() and the migration path
++ * guarantee that, if a task is forking while being migrated, the new child
++ * is guaranteed to be either visible in the source cgroup after the
++ * parent's migration is complete or put into the target cgroup.  No task
++ * can slip out of migration through forking.
+  */
+ int cgroup_transfer_tasks(struct cgroup *to, struct cgroup *from)
+ {
+@@ -4240,27 +4254,16 @@ static const struct file_operations proc_cgroupstats_operations = {
+ };
+ 
+ /**
+- * cgroup_fork - attach newly forked task to its parents cgroup.
++ * cgroup_fork - initialize cgroup related fields during copy_process()
+  * @child: pointer to task_struct of forking parent process.
+  *
+- * Description: A task inherits its parent's cgroup at fork().
+- *
+- * A pointer to the shared css_set was automatically copied in
+- * fork.c by dup_task_struct().  However, we ignore that copy, since
+- * it was not made under the protection of RCU or cgroup_mutex, so
+- * might no longer be a valid cgroup pointer.  cgroup_attach_task() might
+- * have already changed current->cgroups, allowing the previously
+- * referenced cgroup group to be removed and freed.
+- *
+- * At the point that cgroup_fork() is called, 'current' is the parent
+- * task, and the passed argument 'child' points to the child task.
++ * A task is associated with the init_css_set until cgroup_post_fork()
++ * attaches it to the parent's css_set.  Empty cg_list indicates that
++ * @child isn't holding reference to its css_set.
+  */
+ void cgroup_fork(struct task_struct *child)
+ {
+-	task_lock(current);
+-	get_css_set(task_css_set(current));
+-	child->cgroups = current->cgroups;
+-	task_unlock(current);
++	RCU_INIT_POINTER(child->cgroups, &init_css_set);
+ 	INIT_LIST_HEAD(&child->cg_list);
+ }
+ 
+@@ -4280,21 +4283,38 @@ void cgroup_post_fork(struct task_struct *child)
+ 	int i;
+ 
+ 	/*
+-	 * use_task_css_set_links is set to 1 before we walk the tasklist
+-	 * under the tasklist_lock and we read it here after we added the child
+-	 * to the tasklist under the tasklist_lock as well. If the child wasn't
+-	 * yet in the tasklist when we walked through it from
+-	 * cgroup_enable_task_cg_lists(), then use_task_css_set_links value
+-	 * should be visible now due to the paired locking and barriers implied
+-	 * by LOCK/UNLOCK: it is written before the tasklist_lock unlock
+-	 * in cgroup_enable_task_cg_lists() and read here after the tasklist_lock
+-	 * lock on fork.
++	 * This may race against cgroup_enable_task_cg_links().  As that
++	 * function sets use_task_css_set_links before grabbing
++	 * tasklist_lock and we just went through tasklist_lock to add
++	 * @child, it's guaranteed that either we see the set
++	 * use_task_css_set_links or cgroup_enable_task_cg_lists() sees
++	 * @child during its iteration.
++	 *
++	 * If we won the race, @child is associated with %current's
++	 * css_set.  Grabbing css_set_rwsem guarantees both that the
++	 * association is stable, and, on completion of the parent's
++	 * migration, @child is visible in the source of migration or
++	 * already in the destination cgroup.  This guarantee is necessary
++	 * when implementing operations which need to migrate all tasks of
++	 * a cgroup to another.
++	 *
++	 * Note that if we lose to cgroup_enable_task_cg_links(), @child
++	 * will remain in init_css_set.  This is safe because all tasks are
++	 * in the init_css_set before cg_links is enabled and there's no
++	 * operation which transfers all tasks out of init_css_set.
+ 	 */
+ 	if (use_task_css_set_links) {
++		struct css_set *cset;
++
+ 		down_write(&css_set_rwsem);
++		cset = task_css_set_check(current,
++					  lockdep_is_held(&css_set_rwsem));
+ 		task_lock(child);
+-		if (list_empty(&child->cg_list))
+-			list_add(&child->cg_list, &task_css_set(child)->tasks);
++		if (list_empty(&child->cg_list)) {
++			rcu_assign_pointer(child->cgroups, cset);
++			list_add(&child->cg_list, &cset->tasks);
++			get_css_set(cset);
++		}
+ 		task_unlock(child);
+ 		up_write(&css_set_rwsem);
+ 	}
+@@ -4350,6 +4370,7 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+ {
+ 	struct cgroup_subsys *ss;
+ 	struct css_set *cset;
++	bool put_cset = false;
+ 	int i;
+ 
+ 	/*
+@@ -4358,8 +4379,10 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+ 	 */
+ 	if (!list_empty(&tsk->cg_list)) {
+ 		down_write(&css_set_rwsem);
+-		if (!list_empty(&tsk->cg_list))
++		if (!list_empty(&tsk->cg_list)) {
+ 			list_del_init(&tsk->cg_list);
++			put_cset = true;
++		}
+ 		up_write(&css_set_rwsem);
+ 	}
+ 
+@@ -4381,7 +4404,8 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+ 	}
+ 	task_unlock(tsk);
+ 
+-	put_css_set(cset, true);
++	if (put_cset)
++		put_css_set(cset, true);
+ }
+ 
+ static void check_for_release(struct cgroup *cgrp)
+-- 
+1.8.5.3
 
-* If multiple targets are being migrated, as migrating each target
-  involves memory allocation, it can fail at any point.  cgroup core
-  doesn't keep track of enough state to roll back partial migration
-  either, so it ends up aborting with some targets migrated with no
-  way of finding out which.  While this isn't a big issue now, we're
-  gonna be making more use of multi-target migration.
-
-* Fork path could race against migration path and it was impossible to
-  implement a mechanism to migrate all tasks of a cgroup to another
-  because migration path can't tell whether there are just forked
-  tasks pointing to the css_set but not linked yet.
-
-This patchset updates task migration path such that
-
-* task->cg_list and css_sets are also used to keep track of targets
-  during migration so that no extra memory allocation is necessary to
-  keep track of migration targets.
-
-* Migration is split into several stages so that all preparations
-  which may fail can be performed for all targets before actually
-  starting migrating tasks.  Ignoring ->can_attach() failure, this can
-  guarantee all-or-nothing semantics of multi-target migration.
-
-* Newly forked tasks are now atomically associated with and linked to
-  the parent's css_set in cgroup_post_fork().  This guarantees that
-  the new task either is visible in the source cgroup once the
-  parent's migration is complete or ends up in the target cgroup in
-  the first place.  This means that just keeping moving tasks out of a
-  cgroup until it's empty is guaranteed to migrate all tasks.
-
-This patchset contains the following seven patches.
-
- 0001-cgroup-add-css_set-mg_tasks.patch
- 0002-cgroup-use-css_set-mg_tasks-to-track-target-tasks-du.patch
- 0003-cgroup-separate-out-cset_group_from_root-from-task_c.patch
- 0004-cgroup-split-process-task-migration-into-four-steps.patch
- 0005-cgroup-update-how-a-newly-forked-task-gets-associate.patch
- 0006-cgroup-drop-task_lock-protection-around-task-cgroups.patch
- 0007-cgroup-update-cgroup_transfer_tasks-to-either-succee.patch
-
-0001-0002 update migration path so that it uses task->cg_list for
-keeping track of migration targets.
-
-0003-0004 split migration into multiple steps so that preparation
-which may fail can be done up-front.
-
-0005 updates how a newly forked task is associated with the parent's
-css_set to address the race between migration and fork paths.
-
-0006 drops task_lock() protection around task->cgroups as it's no
-longer necessary after 0005.
-
-0007 updates cgroup_transfer_tasks() to use multi-step migration to
-guarantee all-or-nothing behavior as long as ->can_attach() doesn't
-fail.
-
-This patch is on top of
-
-  cgroup/for-3.15 32940b0bad26 ("cgroup: update cgroup_transfer_tasks() to either succeed or fail")
-+ [1] [PATCH cgroup/for-3.14-fixes] cgroup: update cgroup_enable_task_cg_lists() to grab siglock
-
-and also available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-migration-update-v2
-
-diffstat follows.
-
- include/linux/cgroup.h |   31 +-
- kernel/cgroup.c        |  677 +++++++++++++++++++++++++++++--------------------
- 2 files changed, 438 insertions(+), 270 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[L] http://lkml.kernel.org/g/1392063694-26465-1-git-send-email-tj@kernel.org
-[1] http://lkml.kernel.org/g/20140213182931.GB17608@htj.dyndns.org
