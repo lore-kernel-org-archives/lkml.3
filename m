@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaBMHqJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 02:46:09 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:55158 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaBMHqH (ORCPT
+	id S1752998AbaBMHqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 02:46:40 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:41881 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783AbaBMHqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 02:46:07 -0500
-Message-ID: <52FC7835.1090509@linaro.org>
-Date: Thu, 13 Feb 2014 15:45:57 +0800
+	Thu, 13 Feb 2014 02:46:39 -0500
+Message-ID: <52FC7858.3070000@linaro.org>
+Date: Thu, 13 Feb 2014 15:46:32 +0800
 From: Alex Shi <alex.shi@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti Murthy <preeti.lkml@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, peterz@infradead.org,
+        mingo@kernel.org
+CC: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
 Subject: Re: [PATCH V2 2/3] sched: Fix race in idle_balance()
-References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org>	<1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pMEFTe6pQVDFzaXmqt_A3vw3tyj7Ewqib6zbzH++YzY3w@mail.gmail.com> <52FA0577.6080607@linaro.org>
-In-Reply-To: <52FA0577.6080607@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org> <1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 07:11 PM, Daniel Lezcano wrote:
-> On 02/10/2014 10:24 AM, Preeti Murthy wrote:
->> HI Daniel,
->>
->> Isn't the only scenario where another cpu can put an idle task on
->> our runqueue,
+On 02/07/2014 07:10 AM, Daniel Lezcano wrote:
+> The scheduler main function 'schedule()' checks if there are no more tasks
+> on the runqueue. Then it checks if a task should be pulled in the current
+> runqueue in idle_balance() assuming it will go to idle otherwise.
 > 
-> Well, I am not sure to understand what you meant, but I assume you are
-> asking if it is possible to have a task to be pulled when we are idle,
-> right ?
+> But the idle_balance() releases the rq->lock in order to lookup in the sched
+> domains and takes the lock again right after. That opens a window where
+> another cpu may put a task in our runqueue, so we won't go to idle but
+> we have filled the idle_stamp, thinking we will.
 > 
-> This patch fixes the race when the current cpu is *about* to enter idle
-> when calling schedule().
+> This patch closes the window by checking if the runqueue has been modified
+> but without pulling a task after taking the lock again, so we won't go to idle
+> right after in the __schedule() function.
+> 
+> Cc: alex.shi@linaro.org
+> Cc: peterz@infradead.org
+> Cc: mingo@kernel.org
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/fair.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 428bc9d..5ebc681 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -6589,6 +6589,13 @@ void idle_balance(struct rq *this_rq)
+>  
+>  	raw_spin_lock(&this_rq->lock);
+>  
+> +	/*
+> +	 * While browsing the domains, we released the rq lock.
+> +	 * A task could have be enqueued in the meantime
+> +	 */
 
-Preeti said the she didn't see a possible to insert a task on the cpu.
+Mind to move the following line up to here?
 
-I also did a quick check, maybe task come from wakeup path?
+        if (curr_cost > this_rq->max_idle_balance_cost)
+                this_rq->max_idle_balance_cost = curr_cost;
+
+> +	if (this_rq->nr_running && !pulled_task)
+> +		return;
+> +
+>  	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+>  		/*
+>  		 * We are going idle. next_balance may be set based on
+> 
+
+
+
 
 -- 
 Thanks
