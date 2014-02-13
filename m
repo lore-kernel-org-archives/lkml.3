@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaBMLEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 06:04:41 -0500
-Received: from plane.gmane.org ([80.91.229.3]:37920 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753910AbaBMLEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 06:04:40 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>
-Subject: Re: [PATCH 3.13 000/120] 3.13.3-stable review
-Date: Thu, 13 Feb 2014 12:04:28 +0100
-Message-ID: <52FCA6BC.2030508@web.de>
-References: <20140211184823.492407127@linuxfoundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5b37b3c8.dip0.t-ipconnect.de
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-Cc: stable@vger.kernel.org
+	id S1754224AbaBMLG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 06:06:28 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:36967 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864AbaBMLG0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 06:06:26 -0500
+Date: Thu, 13 Feb 2014 11:06:19 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 7/7] devicetree: bindings: Document PM8921/8058 PMICs
+Message-ID: <20140213110619.GI32508@lee--X1>
+References: <1389206270-3728-1-git-send-email-sboyd@codeaurora.org>
+ <1389206270-3728-8-git-send-email-sboyd@codeaurora.org>
+ <20140211092937.GG32042@lee--X1>
+ <20140213053813.GB14769@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140213053813.GB14769@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.3-rc1 running without flaws on a laptop HP Pavilion dv7 for over 16 hours
-now. Desktop usage, compilation, networking on debian testing/sid.
+> > > +- interrupts:
+> > > +	Usage: required
+> > > +	Value type: <prop-encoded-array>
+> > 
+> > Either provide an example or a comment to see the description of
+> > #interrupt-cells 
+> 
+> It is part of the example. We also state that the format is
+> defined by the interrupt parent binding.
 
-Normally I'm using the latest stable on different laptops and am silent as long
-as nothing breaks.
+Okay, fair enough.
 
-Thanks for your care and regards,
-jvp.
+> > > +	Definition: specifies the interrupt that indicates a subdevice
+> > > +		    has generated an interrupt (summary interrupt). The
+> > > +		    format of the specifier is defined by the binding document
+> > > +		    describing the node's interrupt parent.
+> > > +
+> > > +- #interrupt-cells:
+> > > +	Usage: required
+> > > +	Value type : <u32>
+> > > +	Definition: must be 2. Specifies the number of cells needed to encode
+> > > +		    an interrupt source. The 1st cell contains the interrupt
+> > > +		    number. The 2nd cell is the trigger type and level flags
+> > > +		    encoded as follows:
+> > > +
+> > > +			1 = low-to-high edge triggered
+> > > +			2 = high-to-low edge triggered
+> > > +			4 = active high level-sensitive
+> > > +			8 = active low level-sensitive
+> > 
+> > Actually I'd prefer if you used the definitions in:
+> >   dt-bindings/interrupt-controller/irq.h
+> 
+> These match the #defines in that file. I'd like to be explicit
+> about the numbers to prevent people from thinking they have to
+> use #defines and to match what other irq controllers have done
+> (gic, atmel-aic, etc.)
 
+I believe people _do_ have to use the #defines? Is there a good reason
+for you not wanting to use them?
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
