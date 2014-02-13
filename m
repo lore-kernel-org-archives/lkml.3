@@ -1,116 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaBMUCC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:02:02 -0500
-Received: from trent.utfs.org ([94.185.90.103]:42281 "EHLO trent.utfs.org"
+	id S1751831AbaBMUMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:12:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34953 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892AbaBMUB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:01:59 -0500
-Date: Thu, 13 Feb 2014 12:01:56 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-cc: linux-mm@kvack.org
-Subject: Re: 3.14.0-rc2: WARNING: at mm/slub.c:1007
-In-Reply-To: <alpine.DEB.2.19.4.1402131144390.6233@trent.utfs.org>
-Message-ID: <alpine.DEB.2.19.4.1402131158590.6233@trent.utfs.org>
-References: <alpine.DEB.2.19.4.1402131144390.6233@trent.utfs.org>
-User-Agent: Alpine 2.19.4 (DEB 40 2013-11-18)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1751053AbaBMUMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 15:12:37 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140213002355.GI4250@linux.vnet.ibm.com>
+References: <20140207042051.GL4250@linux.vnet.ibm.com>
+	 <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+	 <20140207165028.GO4250@linux.vnet.ibm.com>
+	 <20140207165548.GR5976@mudshark.cambridge.arm.com>
+	 <20140207180216.GP4250@linux.vnet.ibm.com>
+	 <1391992071.18779.99.camel@triegel.csb>
+	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	 <1392183564.18779.2187.camel@triegel.csb>
+	 <20140212180739.GB4250@linux.vnet.ibm.com>
+	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	 <20140213002355.GI4250@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Feb 2014 12:03:57 -0800
+Message-ID: <1392321837.18779.3249.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014 at 11:53, Christian Kujau wrote:
-> after upgrading from 3.13-rc8 to 3.14.0-rc2 on this PowerPC G4 machine, 
-> the WARNING below was printed.
+On Wed, 2014-02-12 at 16:23 -0800, Paul E. McKenney wrote:
+> On Wed, Feb 12, 2014 at 12:22:53PM -0800, Linus Torvalds wrote:
+> > On Wed, Feb 12, 2014 at 10:07 AM, Paul E. McKenney
+> > <paulmck@linux.vnet.ibm.com> wrote:
+> > >
+> > > Us Linux-kernel hackers will often need to use volatile semantics in
+> > > combination with C11 atomics in most cases.  The C11 atomics do cover
+> > > some of the reasons we currently use ACCESS_ONCE(), but not all of them --
+> > > in particular, it allows load/store merging.
+> > 
+> > I really disagree with the "will need to use volatile".
+> > 
+> > We should never need to use volatile (outside of whatever MMIO we do
+> > using C) if C11 defines atomics correctly.
+> > 
+> > Allowing load/store merging is *fine*. All sane CPU's do that anyway -
+> > it's called a cache - and there's no actual reason to think that
+> > "ACCESS_ONCE()" has to mean our current "volatile".
+> > 
+> > Now, it's possible that the C standards simply get atomics _wrong_, so
+> > that they create visible semantics that are different from what a CPU
+> > cache already does, but that's a plain bug in the standard if so.
+> > 
+> > But merging loads and stores is fine. And I *guarantee* it is fine,
+> > exactly because CPU's already do it, so claiming that the compiler
+> > couldn't do it is just insanity.
 > 
-> Shortly after, a lockdep warning appeared (possibly related to my 
-> post to the XFS list yesterday[0]).
+> Agreed, both CPUs and compilers can merge loads and stores.  But CPUs
+> normally get their stores pushed through the store buffer in reasonable
+> time, and CPUs also use things like invalidations to ensure that a
+> store is seen in reasonable time by readers.  Compilers don't always
+> have these two properties, so we do need to be more careful of load
+> and store merging by compilers.
 
-Sigh, only _after_ sending the email, I came across an earlier posting on 
-lkml: http://marc.info/?l=linux-mm&m=139145788623391
+The standard's _wording_ is a little vague about forward-progress
+guarantees, but I believe the vast majority of the people involved do
+want compilers to not prevent forward progress.  There is of course a
+difference whether a compiler establishes _eventual_ forward progress in
+the sense of after 10 years or forward progress in a small bounded
+interval of time, but this is a QoI issue, and good compilers won't want
+to introduce unnecessary latencies.  I believe that it is fine if the
+standard merely talks about eventual forward progress.
 
-Sorry for the noise. These out-of-memory messages below appeared without 
-the WARNING though and started somewhere in 3.13, but are impossible to 
-bisect, as they're happening only every few days / weeks.
+> > Now, there are things that are *not* fine, like speculative stores
+> > that could be visible to other threads. Those are *bugs* (either in
+> > the compiler or in the standard), and anybody who claims otherwise is
+> > not worth discussing with.
+> 
+> And as near as I can tell, volatile semantics are required in C11 to
+> avoid speculative stores.  I might be wrong about this, and hope that
+> I am wrong.  But I am currently not seeing it in the current standard.
+> (Though I expect that most compilers would avoid speculating stores,
+> especially in the near term.
 
-Christian.
+This really depends on how we define speculative stores.  The memory
+model is absolutely clear that programs have to behave as if executed by
+the virtual machine, and that rules out speculative stores to volatiles
+and other locations.  Under certain circumstances, there will be
+"speculative" stores in the sense that they will happen at different
+times as if you had a trivial implementation of the abstract machine.
+But to be allowed to do that, the compiler has to prove that such a
+transformation still fulfills the as-if rule.
 
-> Even later in the log an out-of-memory error appeared, that may or may not 
-> be relatd to that WARNING at all but which I'm trying to chase down ever 
-> since 3.13, but which tends to appear more often lately.
-> 
-> Can anyone take a look if this is something to worry about?
-> 
-> Full dmesg & .config: http://nerdbynature.de/bits/3.14-rc2/mm/
-> 
-> Thanks,
-> Christian.
-> 
-> [0] http://oss.sgi.com/pipermail/xfs/2014-February/034054.html
-> 
->  ------------[ cut here ]------------
->  WARNING: at /usr/local/src/linux-git/mm/slub.c:1007
->  Modules linked in: md5 ecb nfs i2c_powermac therm_adt746x ecryptfs arc4 
-> firewire_sbp2 b43 usb_storage mac80211 cfg80211
->  CPU: 0 PID: 9025 Comm: nfsd Not tainted 3.14.0-rc2 #1
->  task: efbf8000 ti: ed2a0000 task.ti: ed2a0000
->  NIP: c00ccc28 LR: c00ccc20 CTR: 00000000
->  REGS: ed2a1980 TRAP: 0700   Not tainted  (3.14.0-rc2)
->  MSR: 00021032 <ME,IR,DR,RI>  CR: 22f82b82  XER: 20000000
->  
->  GPR00: c00ccc20 ed2a1a30 efbf8000 00000000 ef96e550 00000000 00000000 
-> 00002ce0 
->  GPR08: 00000000 00000001 efbf86f8 000005e7 82fc2b88 00000000 00000001 
-> 00080011 
->  GPR16: 00000000 00000000 c0760000 00000000 ef96e564 00100100 00200200 
-> c1203914 
->  GPR24: 00000000 ef96e540 00000002 ef96fa80 00000000 00000000 ed2a0000 
-> c1203900 
->  NIP [c00ccc28] deactivate_slab+0x4c0/0x538
->  LR [c00ccc20] deactivate_slab+0x4b8/0x538
->  Call Trace:
->  [ed2a1a30] [c00ccc20] deactivate_slab+0x4b8/0x538 (unreliable)
->  [ed2a1ae0] [c055d5f0] __slab_alloc.constprop.77+0x260/0x38c
->  [ed2a1b50] [c00cd524] kmem_cache_alloc+0x118/0x140
->  [ed2a1b70] [c01de4bc] kmem_zone_alloc+0x94/0x108
->  [ed2a1ba0] [c01cccd4] xfs_inode_alloc+0x2c/0xd4
->  [ed2a1bc0] [c01cd7a4] xfs_iget+0x2e4/0x584
->  [ed2a1c30] [c020e664] xfs_lookup+0xc8/0xe4
->  [ed2a1c70] [c01d3c28] xfs_vn_lookup+0x64/0xbc
->  [ed2a1c90] [c00db3ac] lookup_real+0x30/0x70
->  [ed2a1ca0] [c00dc384] __lookup_hash+0x3c/0x58
->  [ed2a1cc0] [c00e1438] lookup_one_len+0x10c/0x15c
->  [ed2a1ce0] [c01a170c] nfsd4_encode_dirent+0xb4/0x328
->  [ed2a1d10] [c018f580] nfsd_readdir+0x1d4/0x288
->  [ed2a1d90] [c019d648] nfsd4_encode_readdir+0x138/0x1f4
->  [ed2a1dd0] [c01a1b18] nfsd4_encode_operation+0x8c/0xf0
->  [ed2a1df0] [c019aa4c] nfsd4_proc_compound+0x1b8/0x4f8
->  [ed2a1e30] [c0189d20] nfsd_dispatch+0x90/0x1a0
->  [ed2a1e50] [c0536b04] svc_process+0x3d0/0x698
->  [ed2a1e90] [c01895bc] nfsd+0xc0/0x120
->  [ed2a1eb0] [c004f8fc] kthread+0xbc/0xd0
->  [ed2a1f40] [c0010ae4] ret_from_kernel_thread+0x5c/0x64
->  Instruction dump:
->  7fe4fb78 800100b4 b9c10068 7d810120 7d808120 7c0803a6 382100b0 4bfffb00 
->  80610048 4bf95dc5 2f830000 40beff4c <0fe00000> 4bffff44 815e000c 394a0001 
->  ---[ end trace 1f5ed3ea8b3e4403 ]---
-> 
-> 
-> -- 
-> BOFH excuse #65:
-> 
-> system needs to be rebooted
-> 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
-> 
+IOW, the abstract machine is what currently defines disallowed
+speculative stores.  If you want to put *further* constraints on what
+implementations are allowed to do, I suppose it is best to talk about
+those and see how we can add rules that allow programmers to express
+those constraints.  For example, control dependencies might be such a
+case.  I don't have a specific suggestion -- maybe the control
+dependencies are best tackled similar to consume dependencies (even
+though we don't have a good solution for those yets).  But using
+volatile accesses for that seems to be a big hammer, or even the wrong
+one.
 
--- 
-BOFH excuse #65:
-
-system needs to be rebooted
