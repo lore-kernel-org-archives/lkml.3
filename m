@@ -1,185 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707AbaBMMfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 07:35:48 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:8905 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031AbaBMMfp (ORCPT
+	id S1754722AbaBMMg0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 07:36:26 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:13625 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaBMMgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 07:35:45 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-06-52fcbc201836
-Message-id: <52FCBC1D.7050501@samsung.com>
-Date: Thu, 13 Feb 2014 13:35:41 +0100
+	Thu, 13 Feb 2014 07:36:24 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-95-52fcbc4565d8
+Message-id: <52FCBC42.6020904@samsung.com>
+Date: Thu, 13 Feb 2014 13:36:18 +0100
 From: Tomasz Figa <t.figa@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
  Thunderbird/24.1.1
 MIME-version: 1.0
-To: Arend van Spriel <arend@broadcom.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chen-Yu Tsai <wens@csie.org>, Mark Brown <broonie@kernel.org>
-Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
-References: <1392059868-8782-1-git-send-email-arend@broadcom.com>
- <52FC8CB3.4090305@gmail.com> <52FCB571.4020904@broadcom.com>
-In-reply-to: <52FCB571.4020904@broadcom.com>
+To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tarek Dakhran <t.dakhran@gmail.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v1 0/2] exynos_mct driver: fix irq allocation and cleanup
+References: <1392260923-31659-1-git-send-email-t.dakhran@samsung.com>
+In-reply-to: <1392260923-31659-1-git-send-email-t.dakhran@samsung.com>
 Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xy7oKe/4EGXxrkbJoftPPbDH14RM2
-	i/lHzrFaXN41h82ide8RdotVu/4wWvw8dJ7Jgd1j1v2zbB4bHq1m9dg56y67x6ZVnWwenzfJ
-	BbBGcdmkpOZklqUW6dslcGXsfriIveCkZsWsS9fYGxh3K3YxcnJICJhIzNi1kBHCFpO4cG89
-	WxcjF4eQwFJGiWXNvcwQzmdGicYTK4GqODh4BbQkJsznAWlgEVCVWPf1EhOIzSagJvG54REb
-	iC0qECHxd956sKG8AoISPybfYwGxRQSKJHa9+wdWwyxQKzFv0xQWkJHCAv4Sv/t4IVY1MEps
-	P9MH1sspoCPx/GE3C0S9tcTKSdsYIWx5ic1r3jJPYBSYhWTFLCRls5CULWBkXsUomlqaXFCc
-	lJ5rpFecmFtcmpeul5yfu4kREuRfdzAuPWZ1iFGAg1GJh/fB4t9BQqyJZcWVuYcYJTiYlUR4
-	G7f9CRLiTUmsrEotyo8vKs1JLT7EyMTBKdXAuIk1SbKxNZ5ropTcc/tNxxV0HsiumHNVX8N/
-	t8zimvYElZO3A5l/nljK9XRTsORafv3Pf6eGZ51+9SWinTX52SKGdJGUhIANTD9Pbn8Zuak/
-	3kpgmVwhR2AE67afV7KvP2IQtXMt3LPiphZH2qxfOXtO3zBs+6t9/NDPylym59rmEvJGfi/t
-	lFiKMxINtZiLihMBKdUMMFACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xq7que/4EGSzdpG0x77OsRe+Cq2wW
+	mx5fY7W4vGsOm8WM8/uYLG5f5rU4+aeX0eJ3zydmi/XPTzFabN40ldli6owf7A7cHi3NPWwe
+	O2fdZfe4c20Pm8e7c+fYPTYvqffo27KK0ePzJrkA9igum5TUnMyy1CJ9uwSujBWTVrIWTFGs
+	WLm5m6mBsV+mi5GTQ0LARGL/5DPMELaYxIV769m6GLk4hASWMkr0fvvJBOF8ZpTY03acHaSK
+	V0BLYt3v1WA2i4CqxJdDr9hAbDYBNYnPDY/AbFGBCIm/89YzQtQLSvyYfI8FxBYRcJfo2z2Z
+	HWQos8BzJoln6/+DJYQFfCW2HJgG1iAk4CrxbfF1sEGcAm4SPVebwc5jFrCWWDlpGyOELS+x
+	ec1b5gmMArOQ7JiFpGwWkrIFjMyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MULi4+sOxqXH
+	rA4xCnAwKvHwPlj8O0iINbGsuDL3EKMEB7OSCG/jtj9BQrwpiZVVqUX58UWlOanFhxiZODil
+	Ghg9Xcq2nFNmi1196Xhmrt1Mh8SPH64seRMmEq/7y6DbT/2zR5yOIeutv5aVF3TE56rOuOCf
+	92/+kSvqV+ZJOd5+Hb3b745VXcu39be7kwwa9zulLJMyCUxiW6z1STxe3qolPWtCOov23rnu
+	muqMl9Ylu7X33O/y25ymXncuZ+PCXM2s283fxJRYijMSDbWYi4oTATRX+39tAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.02.2014 13:07, Arend van Spriel wrote:
-> On 02/13/2014 10:13 AM, Tomasz Figa wrote:
->> Hi Arend,
->>
->> On 10.02.2014 20:17, Arend van Spriel wrote:
->>> The Broadcom bcm43xx sdio devices are fullmac devices that may be
->>> integrated in ARM platforms. Currently, the brcmfmac driver for
->>> these devices support use of platform data. This patch specifies
->>> the bindings that allow this platform data to be expressed in the
->>> devicetree.
->>>
->>> Cc: Chen-Yu Tsai <wens@csie.org>
->>> Cc: Tomasz Figa <tomasz.figa@gmail.com>
->>> Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
->>> Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
->>> Signed-off-by: Arend van Spriel <arend@broadcom.com>
->>> ---
->>> This devicetree binding proposal is intended for platforms with
->>> Broadcom wireless device in MMC sdio slot. These devices may
->>> have their own interrupt and power line. Also the SDIO drive
->>> strength is often hardware dependent and expressed in this
->>> binding.
->>>
->>> Not sure if this should go in staging or not. Feel free to
->>> comment on this proposal.
->>>
->>> Regards,
->>> Arend
->>> ---
->>>    .../staging/net/wireless/brcm,bcm43xx-fmac.txt     |   37
->>> ++++++++++++++++++++
->>>    1 file changed, 37 insertions(+)
->>>    create mode 100644
->>> Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
->>>
->>>
->>> diff --git
->>> a/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
->>> b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
->>>
->>> new file mode 100644
->>> index 0000000..535f343
->>> --- /dev/null
->>> +++
->>> b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
->>>
->>> @@ -0,0 +1,37 @@
->>> +Broadcom BCM43xx Fullmac wireless SDIO devices
->>> +
->>> +This node provides properties for controlling the Broadcom wireless
->>> device. The
->>> +node is expected to be specified as a child node to the MMC
->>> controller that
->>> +connects the device to the system.
->>> +
->>> +Required properties:
->>> +
->>> + - compatible : Should be "brcm,bcm43xx-fmac".
->>> + - wlan-supply : phandle for fixed regulator used to control power for
->>> +    the device/module.
->>
->> The BCM43xx WLAN chips I used to work always have been controlled by a
->> simple power enable GPIO of the chip itself. Has this changed in newer
->> chips?
->>
->> If you need to simply toggle a GPIO to control the power, you don't need
->> to use the regulator API at all, controlling the GPIO directly.
+Hi Tarek,
+
+On 13.02.2014 04:08, Tarek Dakhran wrote:
+> exynos4_local_timer_setup called on the secondary cpu before
+> irqs are enabled. request_irq can sleep, which produces next warning:
 >
-> Not sure I understand. Do you really mean 'chip' or 'wifi module' here.
-> The chip needs to be powered and for that it is hooked up to a
-> host/module provided GPIO (at least that is my understanding).
-
-Your binding asks for a regulator, not a simple GPIO, which is all I 
-believe you need for BCM43xx power handling.
-
-Mark (added to Cc), could we get your opinion on this?
-
+> on boot:
+> [    0.370000] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+> [    0.370000] Setting up static identity map for 0x403b5700 - 0x403b5758
+> [    0.395000] CPU1: Booted secondary processor
+> [    0.395000] ------------[ cut here ]------------
+> [    0.395000] WARNING: CPU: 1 PID: 0 at kernel/locking/lockdep.c:2742 lockdep_trace_alloc+0xe0/0xfc()
+> [    0.395000] DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+> [    0.395000] Modules linked in:
+> [    0.395000] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.14.0-rc2-00004-g0db95f4 #128
+> [    0.395000] [<c0014308>] (unwind_backtrace) from [<c0011690>] (show_stack+0x10/0x14)
+> [    0.395000] [<c0011690>] (show_stack) from [<c03ae7d0>] (dump_stack+0x6c/0xb8)
+> [    0.395000] [<c03ae7d0>] (dump_stack) from [<c001d504>] (warn_slowpath_common+0x68/0x8c)
+> [    0.395000] [<c001d504>] (warn_slowpath_common) from [<c001d5bc>] (warn_slowpath_fmt+0x30/0x40)
+> [    0.395000] [<c001d5bc>] (warn_slowpath_fmt) from [<c0059824>] (lockdep_trace_alloc+0xe0/0xfc)
+> [    0.395000] [<c0059824>] (lockdep_trace_alloc) from [<c00bee24>] (kmem_cache_alloc+0x24/0x160)
+> [    0.395000] [<c00bee24>] (kmem_cache_alloc) from [<c0068174>] (request_threaded_irq+0x64/0x130)
+> [    0.395000] [<c0068174>] (request_threaded_irq) from [<c02efaf8>] (exynos4_local_timer_setup+0xd0/0x124)
+> [    0.395000] [<c02efaf8>] (exynos4_local_timer_setup) from [<c02efc34>] (exynos4_mct_cpu_notify+0x78/0xf0)
+> [    0.395000] [<c02efc34>] (exynos4_mct_cpu_notify) from [<c003d318>] (notifier_call_chain+0x44/0x84)
+> [    0.395000] [<c003d318>] (notifier_call_chain) from [<c001d61c>] (__cpu_notify+0x24/0x40)
+> [    0.395000] [<c001d61c>] (__cpu_notify) from [<c0013314>] (secondary_start_kernel+0xe4/0x134)
+> [    0.395000] [<c0013314>] (secondary_start_kernel) from [<40008624>] (0x40008624)
+> [    0.395000] ---[ end trace 347890460e745f50 ]---
+> [    0.420000] CPU1: update cpu_power 1024
+> [    0.420000] CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
 >
->>> +
->>> +Optional properties:
->>> + - drive-strength : drive strength used for SDIO pins on device
->>> (default = 6mA).
->>
->> This should be a part of the MMC binding, I think. Probably also moved
->> under MMC controller's node, since it's a board-specific property
->> altering the parameters of the MMC controller, not the WLAN chip.
+> on hotplug:
+> [  108.040000] CPU3: Booted secondary processor
+> [  108.040000] BUG: sleeping function called from invalid context at mm/slub.c:965
+> [  108.040000] in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper/3
+> [  108.040000] INFO: lockdep is turned off.
+> [  108.040000] irq event stamp: 0
+> [  108.040000] hardirqs last  enabled at (0): [<  (null)>]   (null)
+> [  108.040000] hardirqs last disabled at (0): [<c001b768>] copy_process.part.2+0x2a4/0x12f4
+> [  108.040000] softirqs last  enabled at (0): [<c001b768>] copy_process.part.2+0x2a4/0x12f4
+> [  108.040000] softirqs last disabled at (0): [<  (null)>]   (null)
+> [  108.040000] CPU: 3 PID: 0 Comm: swapper/3 Tainted: G        W    3.14.0-rc2-00004-g0db95f4 #128
+> [  108.040000] [<c0014308>] (unwind_backtrace) from [<c0011690>] (show_stack+0x10/0x14)
+> [  108.040000] [<c0011690>] (show_stack) from [<c03ae7d0>] (dump_stack+0x6c/0xb8)
+> [  108.040000] [<c03ae7d0>] (dump_stack) from [<c00beed4>] (kmem_cache_alloc+0xd4/0x160)
+> [  108.040000] [<c00beed4>] (kmem_cache_alloc) from [<c0068174>] (request_threaded_irq+0x64/0x130)
+> [  108.040000] [<c0068174>] (request_threaded_irq) from [<c02efaf8>] (exynos4_local_timer_setup+0xd0/0x124)
+> [  108.040000] [<c02efaf8>] (exynos4_local_timer_setup) from [<c02efc34>] (exynos4_mct_cpu_notify+0x78/0xf0)
+> [  108.040000] [<c02efc34>] (exynos4_mct_cpu_notify) from [<c003d318>] (notifier_call_chain+0x44/0x84)
+> [  108.040000] [<c003d318>] (notifier_call_chain) from [<c001d61c>] (__cpu_notify+0x24/0x40)
+> [  108.040000] [<c001d61c>] (__cpu_notify) from [<c0013314>] (secondary_start_kernel+0xe4/0x134)
+> [  108.040000] [<c0013314>] (secondary_start_kernel) from [<40008624>] (0x40008624)
 >
-> It is an electrical interfacing parameter between MMC controller and the
-> device. The specified drive-strength here is used to configure the PMU
-> on the chip so it is really related to the the chip.
+> First patch fixes this problem by removing request_irq from exynos4_local_timer_setup
+> Second removes non-dt stuff.
 >
+> Tested on linux kernel v3.14-rc2.
 
-Aha, so I misunderstood the description. Anyway, if it's a 
-device-specific property, it should have vendor prefix ("brcm,").
-
->>> + - interrupt-parent : the phandle for the interrupt controller to
->>> which the
->>> +    device interrupt (HOST_WAKE) is connected.
->>> + - interrupts : interrupt specifier encoded according the interrupt
->>> controller
->>> +    specified by interrupt-parent property.
->>
->> I would also add a clock here, since the BCM43xx chips usually need a
->> 32k clock to operate (or at least the ones I used to work with did). It
->> can be optional, as not all systems can control this clock.
->>
->>> +
->>> +Example:
->>> +
->>> +mmc3: mmc@01c20000 {
->>> +    pinctrl-0 = <&mmc3_pins>;
->>> +    pinctrl-1 = <&wifi_host_wake>;
->>
->> WLAN_HOST_WAKE pin (aka the OOB interrupt) is specific to the WLAN chip,
->> so this should be rather configured in a pinctrl state of the WLAN chip
->> itself.
->
-> You mean that pinctrl-1 should move inside the "brcm,bcm43xx-fmac" node,
-> right?
-
-Yes.
-
-By the way, if not moved to device node, shouldn't it rather be just 
-another entry of pinctrl-0? Also isn't pinctrl-names property missing here?
-
->
->>> +    vmmc-supply = <&mmc3_supply>;
->>> +    bus-width = <4>;
->>> +
->>> +    bcm4335: bcm4335@0 {
->>
->> nit: Why @0, if there is no reg property under this node?
->
-> I am not fluent with devicetree specifications (yet) nor know all the
-> conventions.
-
-The "@" suffix is reserved for bus constructs, where the unit-address 
-value after "@" corresponds to first address in reg property of the 
-node. Here you could just simply use "bcm4335" or if you somehow manage 
-to have two such chips (which I don't think is likely to happen) then 
-you could use "bcm4335-1".
+It would be nice to say on which boards it has been tested. Let me check 
+this on our boards anyway.
 
 Best regards,
 Tomasz
