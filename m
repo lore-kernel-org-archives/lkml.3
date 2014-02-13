@@ -1,116 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaBMUv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:51:56 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49529 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaBMUvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:51:54 -0500
-Date: Thu, 13 Feb 2014 20:51:46 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140213205146.GS18016@ZenIV.linux.org.uk>
-References: <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
- <20140212040358.GA25327@redhat.com>
- <20140212042215.GN18016@ZenIV.linux.org.uk>
- <20140212054043.GB13997@dastard>
- <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
- <20140212113928.GO18016@ZenIV.linux.org.uk>
- <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
- <20140212211421.GP18016@ZenIV.linux.org.uk>
- <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com>
- <20140212214411.GQ18016@ZenIV.linux.org.uk>
+	id S1751824AbaBMU4F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:56:05 -0500
+Received: from smtp0.kfki.hu ([148.6.0.25]:51262 "EHLO smtp0.kfki.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252AbaBMU4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 15:56:03 -0500
+Date: Thu, 13 Feb 2014 21:55:58 +0100 (CET)
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+To: Florian Westphal <fw@strlen.de>
+cc: Ilia Mirkin <imirkin@alum.mit.edu>, Patrick McHardy <kaber@trash.net>,
+        Cong Wang <cwang@twopensource.com>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vitaly Lavrov <lve@guap.ru>
+Subject: Re: ip_set: protocol %u message -- useful?
+In-Reply-To: <20140213195908.GK25153@breakpoint.cc>
+Message-ID: <alpine.DEB.2.10.1402132155120.18671@blackhole.kfki.hu>
+References: <CAKb7UvhsLi2Sv4SWA2nVTgoFV8dzrY=3R1-SUk9D-aa0VdizSA@mail.gmail.com> <alpine.DEB.2.10.1402131117120.16734@blackhole.kfki.hu> <CAHA+R7MeEEfqz-7RhCUjsoWPx_BKHVXFV3Y32xjf0B1WwjNdRQ@mail.gmail.com> <20140213184254.GF14175@macbook.localnet>
+ <CAKb7UvjdPco0zrP9Ry4mPv40r-bnfNgKEfwcOvJb4JU-5XcTaw@mail.gmail.com> <20140213195908.GK25153@breakpoint.cc>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212214411.GQ18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 09:44:11PM +0000, Al Viro wrote:
+On Thu, 13 Feb 2014, Florian Westphal wrote:
 
-> I'll try to put something along those lines together, if you or Oleg don't
-> do it first.
+> Ilia Mirkin <imirkin@alum.mit.edu> wrote:
+> > > Maybe printing "using protocol version X" will make it appear less like
+> > > a debugging message referring to packet contents or something similar.
+> > 
+> > With pr_info it'll still appear in dmesg, and it'll still be "random
+> > non-sensical message appears over and over in dmesg" type of
+> > situation, to the vast majority of users. Do we need a print every
+> > time someone creates a new tcp connection too? I'm still not totally
+> > clear on the cause of this message getting printed, but I was seeing
+> > it a whole bunch in my configuration...
+> 
+> Yes, because it erronously got moved into the netns init function.
+> 
+> And thats what causes the spew.  Moving it back into module init
+> function should be enough.
 
-OK, having looked at that stuff...
+Florian has got right, that'd be the best.
 
-1) things become much more compact if we finish conversion to get_signal()
-first.  Callers of get_signal_to_deliver() have k_sigaction and siginfo in
-pair of local variables; switching to ksignal will be neutral wrt stack
-footprint (it just gathers those two in one struct) *and* we are getting
-rid of passing struct siginfo * around.  With that done, we can change
-struct ksignal ->info with zero impact on the code in arch/*, and conversion
-makes sense on its own.  In the mainline we have it done for alpha, arm,
-openrisc, sparc and x86.  I've just put together preliminary (and completely
-untested) patches for arm64, m68k and um; doing the rest won't take long, but
-they'll obviously need to be tested.  It's a fairly safe conversion;
-I'd expect the worst bugs to be typos.
-
-2) struct small_siginfo ought to go into linux/signal.h.  Contains signal
-number, si_code (usually 0), uid, pid and (often NULL) pointer to
-struct sigqueue.  Overall: 20 or 24 bytes.  In struct coredump_params we
-should replace ->siginfo with pointer to struct small_siginfo.  Ditto for
-task_struct ->last_siginfo.  In struct ksignal ->info becomes
-struct small_siginfo.
-
-copy_siginfo_to_user{,32}() gets switched to struct small_siginfo *, so does
-do_coredump(), ptrace_signal(), ptrace_stop(), ptrace_getsiginfo(),
-ptrace_setsiginfo(), collect_signal(), __dequeue_signal(), dequeue_signal(),
-signalfd_dequeue() and do_sigtimedwait().
-
-New primitive: assign_sigqueue(small_info, sigqueue).  Frees
-small_info->q and assigns a new value to it.
-
-When ptrace_setsiginfo() is given a non-plain siginfo (si_code != SI_USER,
-that is), it should a allocate struct sigqueue, copy the sucker there and
-give it to assign_sigqueue().  Plain ones just get uid/pid/signo copied
-and NULL passed to assign_sigqueue().
-
-code in ptrace_signal() under if (signr != info->si_signo) should
-start with assign_sigqueue(info, NULL).
-
-specific_send_sig_info() in ptrace_signal() is rather clumsy to handle; not
-sure what's the best way to deal with that.  In any case, ptrace_signal()
-deciding to return 0 should take care of info->q - either copy and free the
-original, or actually try to reuse the sucker.  Either way, info->q should
-become NULL.
-
-get_signal_to_deliver() should do assign_sigqueue(info, NULL) before
-the call of do_group_exit().
-
-arch_ptrace_stop_needed() can be left as-is; it's a macro and none of the
-instances look at the info argument at all.  The same goes for
-arch_ptrace_stop().
-
-signalfd_read() should do assign_sigqueue(&info, NULL) right after
-signalfd_copyinfo().
-
-rt_sigtimedwait(2) and its compat variant should do the same right after
-copy_siginfo_to_user{,32}().
-
-TP'ed stuff is a mess, as usual.  AFAICS, TP_STORE_SIGINFO() needs to
-be split into a variant taking siginfo (on trace_signal_generate side)
-and one taking small_siginfo (for trace_signal_deliver).
-
-get_signal() should do assign_sigqueue(&ksig->info, NULL) if it returns
-false and use task_work_add() to schedule info->q for freeing otherwise.
-
-
-Overall, aside of the need to complete arch/* conversion, the only unfinished
-part is this:
-        /* If the (new) signal is now blocked, requeue it.  */
-        if (sigismember(&current->blocked, signr)) {
-                specific_send_sig_info(signr, info, current);
-                signr = 0;
-        }
-in the end of ptrace_signal().  Sure, we can add a local struct siginfo
-in that if, fill it if needed and pass its address or &info->q->info
-to specific_send_sig_info(), but that feels kludgy...  Hell knows, I'll
-look a bit more into that.
+Best regards,
+Jozsef
+-
+E-mail  : kadlec@blackhole.kfki.hu, kadlecsik.jozsef@wigner.mta.hu
+PGP key : http://www.kfki.hu/~kadlec/pgp_public_key.txt
+Address : Wigner Research Centre for Physics, Hungarian Academy of Sciences
+          H-1525 Budapest 114, POB. 49, Hungary
