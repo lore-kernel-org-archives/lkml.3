@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892AbaBMKSC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:18:02 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:34660 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970AbaBMKR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:17:59 -0500
-Message-ID: <52FC9AFA.2010504@linux.vnet.ibm.com>
-Date: Thu, 13 Feb 2014 15:44:18 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753527AbaBMKV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:21:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33174 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440AbaBMKV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:21:57 -0500
+Message-ID: <52FC9CBD.5010702@suse.cz>
+Date: Thu, 13 Feb 2014 11:21:49 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Preeti Murthy <preeti.lkml@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        alex.shi@linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH V2 3/3] sched: Move idle_stamp up to the core
-References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org> <1391728237-4441-4-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pPPOE9xrH3AKc6sHAThPq43Ws_L_KuicRa5Ktr5nMBmtQ@mail.gmail.com> <52FA1270.9020806@linaro.org>
-In-Reply-To: <52FA1270.9020806@linaro.org>
+To: Emily Maier <emilymaier@mykolab.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH RFC] kernel build: enable use of password-protected signing
+ keys
+References: <52F8034B.8080303@mykolab.com> <52F8D94D.4040307@suse.cz> <52FBF8A8.1010304@mykolab.com>
+In-Reply-To: <52FBF8A8.1010304@mykolab.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021310-4790-0000-0000-00000CB5D854
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On 02/11/2014 05:37 PM, Daniel Lezcano wrote:
-> On 02/10/2014 11:04 AM, Preeti Murthy wrote:
->> Hi Daniel,
+On 2014-02-12 23:41, Emily Maier wrote:
+> On 02/10/2014 08:51 AM, Michal Marek wrote:
+>> On 9.2.2014 23:38, Emily Maier wrote:
+>>> Currently, the module signing script assumes that the private key is 
+>>> not password-protected. This patch makes it slightly more secure by 
+>>> allowing it to be passed in on the command line as "make 
+>>> modules_install MOD_PASSWORD=abc". It's vulnerable to snooping during 
+>>> the build of course, but so is an unprotected signing key.
 >>
->> On Fri, Feb 7, 2014 at 4:40 AM, Daniel Lezcano
->> <daniel.lezcano@linaro.org> wrote:
->>> The idle_balance modifies the idle_stamp field of the rq, making this
->>> information to be shared across core.c and fair.c. As we can know if the
->>> cpu is going to idle or not with the previous patch, let's
->>> encapsulate the
->>> idle_stamp information in core.c by moving it up to the caller. The
->>> idle_balance function returns true in case a balancing occured and
->>> the cpu
->>> won't be idle, false if no balance happened and the cpu is going idle.
->>>
->>> Cc: mingo@kernel.org
->>> Cc: alex.shi@linaro.org
->>> Cc: peterz@infradead.org
->>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->>> ---
->>>   kernel/sched/core.c  |   13 +++++++++++--
->>>   kernel/sched/fair.c  |   14 ++++++--------
->>>   kernel/sched/sched.h |    8 +-------
->>>   3 files changed, 18 insertions(+), 17 deletions(-)
->>>
->>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>> index 16b97dd..428ee4c 100644
->>> --- a/kernel/sched/core.c
->>> +++ b/kernel/sched/core.c
->>> @@ -2704,8 +2704,17 @@ need_resched:
->>>
->>>          pre_schedule(rq, prev);
->>>
->>> -       if (unlikely(!rq->nr_running))
->>> -               idle_balance(rq);
->>> +#ifdef CONFIG_SMP
->>> +       if (unlikely(!rq->nr_running)) {
->>> +               /*
->>> +                * We must set idle_stamp _before_ calling
->>> idle_balance(), such
->>> +                * that we measure the duration of idle_balance() as
->>> idle time.
->>
->> Should not this be "such that we *do not* measure the duration of
->> idle_balance()
->> as idle time?"
+>> The key's permissions can be set to 0600, while the make commandline is
+>> visible in ps.
 > 
-> Actually, the initial code was including the idle balance time
-> processing in the idle stamp. When I moved the idle stamp in core.c,
-> idle balance was no longer measured (an unwanted change). That has been
-> fixed and to prevent that to occur again, we added a comment.
-
-Oh sorry! Yes you are right.
-
-Thanks
-
-Regards
-Preeti U Murthy
+> Ok, I'll change it to that and look into other options as well. I think
+> there may be a way to pass it to OpenSSL off disk and the command line
+> entirely.
 > 
+> Would it be appropriate to add Kconfig options for this or try to
+> autodetect the password file?
 
+What some vendors do is that they have the modules signed by a signing
+machine that is separated from the build farm. So they typically unset
+MODULE_SIG_ALL and handle the signing outside kbuild. The other option
+is to have a wrapper for the openssl command, not sure if anybody is
+doing that.
+
+Michal
