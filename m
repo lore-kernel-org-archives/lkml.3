@@ -1,106 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaBMPAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:00:42 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1953 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246AbaBMPAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:00:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,838,1384329600"; 
-   d="scan'208";a="454916961"
-From: Jani Nikula <jani.nikula@intel.com>
-To: Luis Ortega <luiorpe1@upv.es>
-Cc: daniel.vetter@ffwll.ch, airlied@linux.ie, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [Regression 3.14-rc2] drm/i915: Brightness adjustment is broken in 945GM
-In-Reply-To: <20140213153458.GA724@Len.lan_dn>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <20140213153458.GA724@Len.lan_dn>
-User-Agent: Notmuch/0.17+61~gab0de040c7c1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 13 Feb 2014 17:04:23 +0200
-Message-ID: <87lhxfvytk.fsf@intel.com>
+	id S1751582AbaBMPFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:05:08 -0500
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:42112 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751185AbaBMPFG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 10:05:06 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Jason Wang <jasowang@redhat.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net,v3] hyperv: Fix the carrier status setting
+Thread-Topic: [PATCH net,v3] hyperv: Fix the carrier status setting
+Thread-Index: AQHPKE8RLdr//lHx80mo0wt5zxnQc5qzE0WAgAAxd7A=
+Date: Thu, 13 Feb 2014 15:04:45 +0000
+Message-ID: <900caa9031c345a6a21604ca7bb02174@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1392252867-21146-1-git-send-email-haiyangz@microsoft.com>
+ <52FC4147.7060803@redhat.com>
+In-Reply-To: <52FC4147.7060803@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(189002)(199002)(51704005)(13464003)(24454002)(164054003)(377454003)(479174003)(49866001)(86612001)(20776003)(6806004)(94946001)(69226001)(87936001)(23726002)(79102001)(87266001)(74876001)(44976005)(31966008)(19580395003)(85852003)(51856001)(47736001)(47776003)(63696002)(47976001)(50986001)(83072002)(74366001)(47446002)(19580405001)(74502001)(74662001)(4396001)(2656002)(59766001)(50466002)(77982001)(90146001)(95666001)(81686001)(46406003)(81816001)(81542001)(33646001)(66066001)(80022001)(93136001)(65816001)(56816005)(85306002)(54316002)(81342001)(93516002)(74706001)(80976001)(76482001)(95416001)(76786001)(83322001)(76796001)(56776001)(92566001)(46102001)(53806001)(94316002)(2201001)(54356001)(142933001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB595;H:hybrid.exchange.microsoft.com;CLIP:131.107.159.100;FPR:147E5A5E.BE004165.61E3ED4F.40B2BA61.20307;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0121F24F22
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014, Luis Ortega <luiorpe1@upv.es> wrote:
-> Hi, testing 3.14-rc2 I noticed I could not adjust the brightness of the
-> screen any longer. This problem is already present in 3.14-rc1. 3.13 works fine.
->
-> My hardware is a netbook with intel atom and a 945GM graphics card.
->
-> I bisected the problem down to the next commit:
-
-I dare say either your bisect went sour or you don't have 945GM. Please
-verify your steps.
-
-Please provide dmesg with drm.debug=0xe with 3.14-rc2.
-
-BR,
-Jani.
-
->
-> bc0bb9fd1c7810407ab810d204bbaecb255fddde is the first bad commit
-> commit bc0bb9fd1c7810407ab810d204bbaecb255fddde
-> Author: Jani Nikula <jani.nikula@intel.com>
-> Date:   Thu Nov 14 12:14:29 2013 +0200
->
->     drm/i915: remove QUIRK_NO_PCH_PWM_ENABLE
->     
->     The quirk was added as what I'd say was a stopgap measure in
->     
->     commit e85843bec6c2ea7c10ec61238396891cc2b753a9
->     Author: Kamal Mostafa <kamal@canonical.com>
->     Date:   Fri Jul 19 15:02:01 2013 -0700
->     
->         drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
->     
->     without really digging into what was going on.
->     
->     Also, as mentioned in the related bug [1], having the quirk regressed
->     some of the machines it was supposed to fix to begin with, and there
->     were patches posted to disable the quirk on such machines [2]!
->     
->     The fact is, we do need the BLM_PCH_PWM_ENABLE bit set to have
->     backlight. With the quirk, we've relied on BIOS to have set it, and our
->     save/restore code to retain it. With the full backlight setup at enable,
->     we have no place for things that rely on previous state.
->     
->     With the per platform hooks, we've also made a change in the PCH
->     platform enable order: setting the backlight duty cycle between CPU and
->     PCH PWM enable. Some experimenting and
->     
->     commit 770c12312ad617172b1a65b911d3e6564fc5aca8
->     Author: Takashi Iwai <tiwai@suse.de>
->     Date:   Sat Aug 11 08:56:42 2012 +0200
->     
->         drm/i915: Fix blank panel at reopening lid
->     
->     indicate that we can't set the backlight before enabling CPU PWM; the
->     value just won't stick. But AFAICT we should do it before enabling the
->     PCH PWM.
->     
->     Finally, any fallout we should fix properly, preferrably without quirks,
->     and absolutely without quirks that rely on existing state. With the per
->     platform hooks have much more flexibility to adjust the sequence as
->     required by platforms.
->     
->     [1] https://bugzilla.kernel.org/show_bug.cgi?id=47941
->     [2] http://lkml.kernel.org/r/1378229848-29113-1-git-send-email-kamal@canonical.com
->     
->     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
->     Reviewed-by: Imre Deak <imre.deak@intel.com>
->     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->
->
-> Additionally, when I had narrowed the problem to around 11 commits all the
-> resulting kernel I compiled made the screen blink and shake from left to right
-> non-stop. In the -rc kernels this doesn't happen. Thought it was worth
-> mentioning.
 
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+> -----Original Message-----
+> From: Jason Wang [mailto:jasowang@redhat.com]
+> Sent: Wednesday, February 12, 2014 10:52 PM
+> To: Haiyang Zhang; davem@davemloft.net; netdev@vger.kernel.org
+> Cc: KY Srinivasan; olaf@aepfle.de; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net,v3] hyperv: Fix the carrier status setting
+> 
+> On 02/13/2014 08:54 AM, Haiyang Zhang wrote:
+> > Without this patch, the "cat /sys/class/net/ethN/operstate" shows
+> > "unknown", and "ethtool ethN" shows "Link detected: yes", when VM
+> > boots up with or without vNIC connected.
+> >
+> > This patch fixed the problem.
+> >
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> > ---
+> >  drivers/net/hyperv/netvsc_drv.c |   53
+> ++++++++++++++++++++++++++++-----------
+> >  1 files changed, 38 insertions(+), 15 deletions(-)
+> >
+> > diff --git a/drivers/net/hyperv/netvsc_drv.c
+> > b/drivers/net/hyperv/netvsc_drv.c index 7756118..7141a19 100644
+> > --- a/drivers/net/hyperv/netvsc_drv.c
+> > +++ b/drivers/net/hyperv/netvsc_drv.c
+> > @@ -88,8 +88,12 @@ static int netvsc_open(struct net_device *net)  {
+> >  	struct net_device_context *net_device_ctx = netdev_priv(net);
+> >  	struct hv_device *device_obj = net_device_ctx->device_ctx;
+> > +	struct netvsc_device *nvdev;
+> > +	struct rndis_device *rdev;
+> >  	int ret = 0;
+> >
+> > +	netif_carrier_off(net);
+> > +
+> >  	/* Open up the device */
+> >  	ret = rndis_filter_open(device_obj);
+> >  	if (ret != 0) {
+> > @@ -99,6 +103,11 @@ static int netvsc_open(struct net_device *net)
+> >
+> >  	netif_start_queue(net);
+> >
+> > +	nvdev = hv_get_drvdata(device_obj);
+> > +	rdev = nvdev->extension;
+> > +	if (!rdev->link_state)
+> > +		netif_carrier_on(net);
+> > +
+> 
+> Maybe you can just schedule the work here and then you can drop the
+> rtnl_lock in netvsc_link_change() ?
+
+The rtnl_lock will still be necessary in the netvsc_link_change(), because 
+we want to prevent it getting wrong rdev pointer when netvsc_change_mtu
+is removing/adding rndis device.
+
+> > +
+> > +	if (notify)
+> > +		netdev_notify_peers(net);
+> >  }
+> >
+> 
+> Looks like this forces arp_notify here. Is it expected?
+
+Yes, this is expected. It's required after live migration.
+
+Thanks,
+- Haiyang
+
+
