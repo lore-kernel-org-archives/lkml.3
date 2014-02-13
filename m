@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaBMRDJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 12:03:09 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:57810 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751323AbaBMRDH (ORCPT
+	id S1752460AbaBMRFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 12:05:25 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:51760 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751987AbaBMRFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 12:03:07 -0500
-Message-ID: <1392310984.23598.15.camel@x220>
-Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_ADT7310" and friends
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Steven Miao <realmz6@gmail.com>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Feb 2014 18:03:04 +0100
-In-Reply-To: <52FCF2CD.9000008@roeck-us.net>
-References: <1364211831.1390.285.camel@x61.thuisdomein>
-		 <20130325152258.GA17467@roeck-us.net> <51507126.2040002@metafoo.de>
-		 <1392285474.30853.28.camel@x220> <1392287466.30853.48.camel@x220>
-	 <52FCF2CD.9000008@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	Thu, 13 Feb 2014 12:05:23 -0500
+Message-ID: <52FCFB51.5060105@hurleysoftware.com>
+Date: Thu, 13 Feb 2014 12:05:21 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: bjoern <lkml@call-home.ch>, linux-kernel@vger.kernel.org
+Subject: Re: IRQ nobody cared; Comm: swapper/2 Not tainted
+References: <20140211164233.6a94ecc0@ubuntu>
+In-Reply-To: <20140211164233.6a94ecc0@ubuntu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Feb 2014 17:03:04.0485 (UTC) FILETIME=[75B71550:01CF28DD]
-X-RcptDomain: vger.kernel.org
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-13 at 08:29 -0800, Guenter Roeck wrote:
-> On 02/13/2014 02:31 AM, Paul Bolle wrote:
-> > On Thu, 2014-02-13 at 10:57 +0100, Paul Bolle wrote:
-> >> This issue is still present in v3.14-rc2. Guenter's suggestion is the
-> >> easiest way out. Should I submit a trivial patch that just removes the
-> >> dead code depending on never defined CONFIG_ADT7310 and
-> >> CONFIG_ADT7310_MODULE?
-> >
-> 
-> My suggestion was to remove the ifdefs, not the code, and if I
-> understand the reply correctly that won't work because in that
-> case multiple devices would be registered with the SPI core
-> on the same SPI interface.
+Hi bjoern,
 
-Then I misinterpreted your suggestion. But removing the dead code
-remains the easiest way out, of course. (Note that the code has only
-been dead since v3.8, ie only a year now.)
+On 02/11/2014 10:42 AM, bjoern wrote:
+> Hi,
+>
+> I just got this dump on my system. It happens occasionally, maybe once
+> a week. Result is that my USB keyboard and mouse (both Logitech
+> wireless) are laggy, mouse jumps across the screen and keyboard input
+> lags behind and creates multiple same keystrokes although the key was
+> only hit once.
+>
+> Ubuntu x64 13.10, Ubuntu kernel 3.13.1 (issue has occured in past also
+> when using 3.10/3.11)
+>
+> [    6.161395] irq 16: nobody cared (try booting with the "irqpoll"
+> option)
 
-> > And that is probably also true for for CONFIG_ADT7410 and
-> > CONFIG_ADT7410_MODULE. See https://lkml.org/lkml/2013/5/13/497 (and my
-> > follow up to that message).
-> 
-> Both Jean and myself sent Reviewed-by/Acked-by feedback.
-> Not being the maintainers, that is pretty much all we can do.
->  From there it is really up to the maintainer to accept
-> or reject the patches.
+Are you using the i915 driver? There is a similar report [1] which
+apparently has been fixed and will make its way to rc3.
 
-Jean and you are included in (some of) the threads regarding a few
-blackfin patches I sent last year. I forgot why you two are. Anyhow,
-those patches were (mostly) ignored by the people working on blackfin.
-The maintainer appears to be more responsive now. So I figured it might
-be worthwhile to send reminders. Maybe I have more luck this time.
+If not, we'll go from there.
 
+Regards,
+Peter Hurley
 
-Paul Bolle
+[1] https://lkml.org/lkml/2014/2/11/705
+
+> [    6.161428] CPU: 2 PID: 0 Comm: swapper/2 Not tainted
+> 3.13.1-031301-generic #201401291035
+> [    6.161429] Hardware
+> name:                  /DH61AG, BIOS AGH6110H.86A.0106.2013.0509.1441
+> 05/09/2013
+> [    6.161431]  ffff880119548e9c ffff88011f303e48 ffffffff8173356d
+> 0000000000002652
+> [    6.161433]  ffff880119548e00 ffff88011f303e78 ffffffff810c461d
+> 0000001c2000af00
+> [    6.161435] ffff880119548e00 0000000000000010 0000000000000000
+> ffff88011f303ea8
+> [    6.161437] Call Trace:
+> [    6.161438]  <IRQ> [<ffffffff8173356d>] dump_stack+0x46/0x58
+> [    6.161446] [<ffffffff810c461d>] __report_bad_irq+0x3d/0xe0
+> [    6.161448] [<ffffffff810c4a4b>] note_interrupt+0x14b/0x1a0
+> [    6.161450] [<ffffffff810c2201>] handle_irq_event_percpu+0xb1/0x210
+> [    6.161453] [<ffffffff8101d089>] ? sched_clock+0x9/0x10
+> [    6.161454] [<ffffffff810c23a8>] handle_irq_event+0x48/0x70
+> [    6.161456] [<ffffffff810c568a>] handle_fasteoi_irq+0x5a/0x100
+> [    6.161460] [<ffffffff81016f32>] handle_irq+0x22/0x40
+> [    6.161463] [<ffffffff8174ad9a>] do_IRQ+0x5a/0xe0
+> [    6.161466] [<ffffffff8173ff6d>] common_interrupt+0x6d/0x6d
+> [    6.161467] <EOI>
+> [<ffffffff815db8e1>] ?cpuidle_enter_state+0x61/0xe0
+> [    6.161472] [<ffffffff815db8d7>] ? cpuidle_enter_state+0x57/0xe0
+> [    6.161474] [<ffffffff815dba20>] cpuidle_idle_call+0xc0/0x210
+> [    6.161477] [<ffffffff8101e4fe>] arch_cpu_idle+0xe/0x30
+> [    6.161481] [<ffffffff810c1598>] cpu_idle_loop+0x78/0x270
+> [    6.161485]
+> [<ffffffff810d6eb2>] ?clockevents_register_device+0xe2/0x140
+> [    6.161487] [<ffffffff810c17fb>] cpu_startup_entry+0x6b/0x70
+> [    6.161489] [<ffffffff810440e8>] start_secondary+0xc8/0xd0
+> [    6.161490] handlers:
+> [    6.161505] [<ffffffff81547a40>] usb_hcd_irq
+> [    6.161526] Disabling IRQ #16
+
 
