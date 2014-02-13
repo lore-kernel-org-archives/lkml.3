@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaBMPOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:14:35 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:42102 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaBMPOd (ORCPT
+	id S1751837AbaBMPQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:16:17 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:36152 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaBMPQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:14:33 -0500
+	Thu, 13 Feb 2014 10:16:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4SYvLAhH3WqGNCZBrxwd8RiwL-wH90tZP9Je1doDxvhXQ@mail.gmail.com>
+In-Reply-To: <CANq1E4RvnReiak20x2HPeZ6evYzDuVnLtbT9-WNeZR9yQbeHXg@mail.gmail.com>
 References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1392055139-19631-6-git-send-email-benjamin.tissoires@redhat.com>
-	<CANq1E4SYvLAhH3WqGNCZBrxwd8RiwL-wH90tZP9Je1doDxvhXQ@mail.gmail.com>
-Date: Thu, 13 Feb 2014 10:14:32 -0500
-Message-ID: <CAN+gG=HZJ9b7_kw1CGwmhMOpPq+cy8r5vKORs-VXHi69Gbb-+A@mail.gmail.com>
-Subject: Re: [PATCH 05/14] HID: i2c-hid: use generic .request() implementation
+	<1392055139-19631-13-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4RvnReiak20x2HPeZ6evYzDuVnLtbT9-WNeZR9yQbeHXg@mail.gmail.com>
+Date: Thu, 13 Feb 2014 10:16:13 -0500
+Message-ID: <CAN+gG=FU3gY4EBfHde5FfdXY2u+1PTZjM4Ws3KBLNg6PY7MC6Q@mail.gmail.com>
+Subject: Re: [PATCH 12/14] HID: hidraw: replace hid_output_raw_report() calls
+ by appropriates ones
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: David Herrmann <dh.herrmann@gmail.com>
 Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
@@ -26,86 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 5:30 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+On Wed, Feb 12, 2014 at 5:49 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
 > Hi
 >
 > On Mon, Feb 10, 2014 at 6:58 PM, Benjamin Tissoires
 > <benjamin.tissoires@redhat.com> wrote:
->> Having our own .request() implementation does not give anything,
->> so use the generic binding.
+>> Remove hid_output_raw_report() call as it is not a ll_driver callbacj,
+>> and switch to the hid_hw_* implementation. USB-HID used to fallback
+>> into SET_REPORT when there were no output interrupt endpoint,
+>> so emulating this if hid_hw_output_report() returns -ENOSYS.
 >>
 >> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 >> ---
->>  drivers/hid/i2c-hid/i2c-hid.c | 31 -------------------------------
->>  1 file changed, 31 deletions(-)
+>>  drivers/hid/hidraw.c | 22 +++++++++++++++++-----
+>>  1 file changed, 17 insertions(+), 5 deletions(-)
 >>
->> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
->> index 07a054a..925fb8d 100644
->> --- a/drivers/hid/i2c-hid/i2c-hid.c
->> +++ b/drivers/hid/i2c-hid/i2c-hid.c
->> @@ -632,36 +632,6 @@ static int i2c_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
->>         }
->>  }
+>> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+>> index f8708c9..704718b 100644
+>> --- a/drivers/hid/hidraw.c
+>> +++ b/drivers/hid/hidraw.c
+>> @@ -123,10 +123,8 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
 >>
->> -static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
->> -               int reqtype)
->> -{
->> -       struct i2c_client *client = hid->driver_data;
->> -       char *buf;
->> -       int ret;
->> -       int len = i2c_hid_get_report_length(rep) - 2;
->> -
->> -       buf = kzalloc(len, GFP_KERNEL);
+>>         dev = hidraw_table[minor]->hid;
+>>
+>> -       if (!dev->hid_output_raw_report) {
+>> -               ret = -ENODEV;
+>> -               goto out;
+>> -       }
+>> +       if (!dev->ll_driver->raw_request || !dev->ll_driver->output_report)
+>> +               return -ENODEV;
 >
-> Haven't you recently fixed this to use hid_alloc_buffer()? Anyhow,
+> You still have a "goto out;" above (not visible in the patch). The
+> error paths look quite ugly now. I'd prefer consistency here, so
+> either keep the jump or fix the error-path above, too. Otherwise looks
+> good.
 
-yes, it has been fixed. But Jiri carried it through a *-upstream
-branch, which is not merged into his for-next currently (or at the
-time I sent the patch). hopefully the merge will be easy, or I can
-wait for it to be in for-next before resending a smoother v2.
+ok, will use "goto out" in the v2 then.
 
 Cheers,
 Benjamin
 
-> patch obviously looks good:
 >
 > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 >
 > Thanks
 > David
 >
->> -       if (!buf)
->> -               return;
->> -
->> -       switch (reqtype) {
->> -       case HID_REQ_GET_REPORT:
->> -               ret = i2c_hid_get_raw_report(hid, rep->id, buf, len, rep->type);
->> -               if (ret < 0)
->> -                       dev_err(&client->dev, "%s: unable to get report: %d\n",
->> -                               __func__, ret);
->> -               else
->> -                       hid_input_report(hid, rep->type, buf, ret, 0);
->> -               break;
->> -       case HID_REQ_SET_REPORT:
->> -               hid_output_report(rep, buf);
->> -               i2c_hid_output_raw_report(hid, buf, len, rep->type, true);
->> -               break;
->> -       }
->> -
->> -       kfree(buf);
->> -}
->> -
->>  static int i2c_hid_parse(struct hid_device *hid)
->>  {
->>         struct i2c_client *client = hid->driver_data;
->> @@ -817,7 +787,6 @@ static struct hid_ll_driver i2c_hid_ll_driver = {
->>         .open = i2c_hid_open,
->>         .close = i2c_hid_close,
->>         .power = i2c_hid_power,
->> -       .request = i2c_hid_request,
->>         .output_report = i2c_hid_output_report,
->>         .raw_request = i2c_hid_raw_request,
->>  };
+>>
+>>         if (count > HID_MAX_BUFFER_SIZE) {
+>>                 hid_warn(dev, "pid %d passed too large report\n",
+>> @@ -153,7 +151,21 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
+>>                 goto out_free;
+>>         }
+>>
+>> -       ret = hid_output_raw_report(dev, buf, count, report_type);
+>> +       if (report_type == HID_OUTPUT_REPORT) {
+>> +               ret = hid_hw_output_report(dev, buf, count);
+>> +               /*
+>> +                * compatibility with old implementation of USB-HID and I2C-HID:
+>> +                * if the device does not support receiving output reports,
+>> +                * on an interrupt endpoint, then fallback to the SET_REPORT
+>> +                * HID command.
+>> +                */
+>> +               if (ret != -ENOSYS)
+>> +                       goto out_free;
+>> +       }
+>> +
+>> +       ret = hid_hw_raw_request(dev, buf[0], buf, count, report_type,
+>> +                               HID_REQ_SET_REPORT);
+>> +
+>>  out_free:
+>>         kfree(buf);
+>>  out:
 >> --
 >> 1.8.3.1
 >>
