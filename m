@@ -1,373 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaBMCRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 21:17:55 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51787 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaBMCRx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 21:17:53 -0500
-Message-ID: <52FC2B4F.6090201@codeaurora.org>
-Date: Wed, 12 Feb 2014 18:17:51 -0800
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv3 2/2] arm: Get rid of meminfo
-References: <1392153265-14439-1-git-send-email-lauraa@codeaurora.org> <1392153265-14439-3-git-send-email-lauraa@codeaurora.org> <52FB8E91.8030400@ti.com>
-In-Reply-To: <52FB8E91.8030400@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752134AbaBMCTb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 21:19:31 -0500
+Received: from ozlabs.org ([203.10.76.45]:35084 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462AbaBMCT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 21:19:29 -0500
+Date: Thu, 13 Feb 2014 13:19:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Johannes Berg <johannes.berg@intel.com>
+Subject: linux-next: build failure after merge of the wireless-next tree
+Message-Id: <20140213131923.4a0b79959e0b27399c021aa7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__13_Feb_2014_13_19_23_+1100_MEyXkd/Q2jO4U.GM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/12/2014 7:09 AM, Grygorii Strashko wrote:
-> Hi Laura,
->
-> On 02/11/2014 11:14 PM, Laura Abbott wrote:
->> memblock is now fully integrated into the kernel and is the prefered
->> method for tracking memory. Rather than reinvent the wheel with
->> meminfo, migrate to using memblock directly instead of meminfo as
->> an intermediate.
->>
->> Acked-by: Jason Cooper <jason@lakedaemon.net>
->> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
->> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
->> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
->> ---
->>    arch/arm/include/asm/mach/arch.h         |    4 +-
->>    arch/arm/include/asm/memblock.h          |    3 +-
->>    arch/arm/include/asm/setup.h             |   23 ------
->>    arch/arm/kernel/atags_parse.c            |    5 +-
->>    arch/arm/kernel/devtree.c                |    5 --
->>    arch/arm/kernel/setup.c                  |   30 ++------
->>    arch/arm/mach-clps711x/board-clep7312.c  |    7 +-
->>    arch/arm/mach-clps711x/board-edb7211.c   |   10 +--
->>    arch/arm/mach-clps711x/board-p720t.c     |    2 +-
->>    arch/arm/mach-footbridge/cats-hw.c       |    2 +-
->>    arch/arm/mach-footbridge/netwinder-hw.c  |    2 +-
->>    arch/arm/mach-msm/board-halibut.c        |    6 --
->>    arch/arm/mach-msm/board-mahimahi.c       |   13 +---
->>    arch/arm/mach-msm/board-msm7x30.c        |    3 +-
->>    arch/arm/mach-msm/board-sapphire.c       |   13 ++--
->>    arch/arm/mach-msm/board-trout.c          |    8 +--
->>    arch/arm/mach-orion5x/common.c           |    3 +-
->>    arch/arm/mach-orion5x/common.h           |    3 +-
->>    arch/arm/mach-pxa/cm-x300.c              |    3 +-
->>    arch/arm/mach-pxa/corgi.c                |   10 +--
->>    arch/arm/mach-pxa/eseries.c              |    9 +--
->>    arch/arm/mach-pxa/poodle.c               |    8 +--
->>    arch/arm/mach-pxa/spitz.c                |    8 +--
->>    arch/arm/mach-pxa/tosa.c                 |    8 +--
->>    arch/arm/mach-realview/core.c            |   11 +--
->>    arch/arm/mach-realview/core.h            |    3 +-
->>    arch/arm/mach-realview/realview_pb1176.c |    8 +--
->>    arch/arm/mach-realview/realview_pbx.c    |   17 ++---
->>    arch/arm/mach-s3c24xx/mach-smdk2413.c    |    8 +--
->>    arch/arm/mach-s3c24xx/mach-vstms.c       |    8 +--
->>    arch/arm/mach-sa1100/assabet.c           |    2 +-
->>    arch/arm/mm/init.c                       |   67 +++++++-----------
->>    arch/arm/mm/mmu.c                        |  115 +++++++++---------------------
->
-> The arch/arm/mm/nommu.c has to be updated too :)
->
+--Signature=_Thu__13_Feb_2014_13_19_23_+1100_MEyXkd/Q2jO4U.GM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sure does.
+Hi John,
 
-> [...]
->
-> I've tested your change on keystone (with some additional printouts in sanity_check_meminfo())
-> and got following results:
->
-> - without your change + HIGHMEM=ON
-> [    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
->
->   - without your change + HIGHMEM=OFF
-> [    0.000000] Truncating RAM at 80000000-bfffffff to -af7fffff (vmalloc region overlap).
-> [    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
->
-> - with your change + HIGHMEM=ON
-> [    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
->
-> - with your change + HIGHMEM=OFF
-> [    0.000000] Truncating RAM at 0x0000000080000000-0x00000000c0000000 to -0x0000000010800000
->                                                                            ^printout changed
-> [    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
->
-> Keystone mem defined as: from@0x80000000 size@0x40000000 (LPAE=OFF)
->
-> As result, i have few comments regarding sanity_check_meminfo() changes as I think there are
-> some issues &side effects changes at least in printouts - see below.
->
->>    	memblock_reserve(__pa(_sdata), _end - _sdata);
->> @@ -413,54 +397,53 @@ free_memmap(unsigned long start_pfn, unsigned long end_pfn)
->>    /*
->>     * The mem_map array can get very big.  Free the unused area of the memory map.
->>     */
->> -static void __init free_unused_memmap(struct meminfo *mi)
->> +static void __init free_unused_memmap(void)
->>    {
->> -	unsigned long bank_start, prev_bank_end = 0;
->> -	unsigned int i;
->> +	unsigned long start, prev_end = 0;
->> +	struct memblock_region *reg;
->>
->>    	/*
->>    	 * This relies on each bank being in address order.
->>    	 * The banks are sorted previously in bootmem_init().
->>    	 */
->> -	for_each_bank(i, mi) {
->> -		struct membank *bank = &mi->bank[i];
->> -
->> -		bank_start = bank_pfn_start(bank);
->> +	for_each_memblock(memory, reg) {
->> +		start = __phys_to_pfn(reg->base);
->
-> memblock_region_memory_base_pfn() can be used here.
->
+After merging the wireless-next tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Okay
+drivers/staging/rtl8821ae/rc.c:289:2: error: unknown field 'module' specifi=
+ed in initializer
+  .module =3D NULL,
+  ^
 
->>
->>    #ifdef CONFIG_SPARSEMEM
->>    		/*
->>    		 * Take care not to free memmap entries that don't exist
->>    		 * due to SPARSEMEM sections which aren't present.
->>    		 */
->> -		bank_start = min(bank_start,
->> -				 ALIGN(prev_bank_end, PAGES_PER_SECTION));
->> +		start = min(start,
->> +				 ALIGN(prev_end, PAGES_PER_SECTION));
->>    #else
->>    		/*
->>    		 * Align down here since the VM subsystem insists that the
->>    		 * memmap entries are valid from the bank start aligned to
->>    		 * MAX_ORDER_NR_PAGES.
->>    		 */
->> -		bank_start = round_down(bank_start, MAX_ORDER_NR_PAGES);
->> +		start = round_down(start, MAX_ORDER_NR_PAGES);
->>    #endif
->>    		/*
->>    		 * If we had a previous bank, and there is a space
->>    		 * between the current bank and the previous, free it.
->>    		 */
->> -		if (prev_bank_end && prev_bank_end < bank_start)
->> -			free_memmap(prev_bank_end, bank_start);
->> +		if (prev_end && prev_end < start)
->> +			free_memmap(prev_end, start);
->>
->>    		/*
->>    		 * Align up here since the VM subsystem insists that the
->>    		 * memmap entries are valid from the bank end aligned to
->>    		 * MAX_ORDER_NR_PAGES.
->>    		 */
->> -		prev_bank_end = ALIGN(bank_pfn_end(bank), MAX_ORDER_NR_PAGES);
->> +		prev_end = ALIGN(start + __phys_to_pfn(reg->size),
->
-> I think, start + __phys_to_pfn(reg->size) can be replaced by
-> memblock_region_memory_end_pfn().
->
+Caused by commit cc01f9b55fe7 ("mac80211: remove module handling from
+rate control ops") interacting with commit 3c05bedb5fef ("Staging:
+rtl8812ae: Add Realtek 8821 PCI WIFI driver") which entered Linus' tree
+before v3.14-rc1.
 
-Okay
+I added this merge fix patch and can carry it as necessary (John, if you
+back merge v3.14-rc1, you should include this patch in the merge commit):
 
->> +				 MAX_ORDER_NR_PAGES);
->>    	}
->>
->>    #ifdef CONFIG_SPARSEMEM
->> -	if (!IS_ALIGNED(prev_bank_end, PAGES_PER_SECTION))
->> -		free_memmap(prev_bank_end,
->> -			    ALIGN(prev_bank_end, PAGES_PER_SECTION));
->> +	if (!IS_ALIGNED(prev_end, PAGES_PER_SECTION))
->> +		free_memmap(prev_end,
->> +			    ALIGN(prev_end, PAGES_PER_SECTION));
->>    #endif
->>    }
->>
->> @@ -536,7 +519,7 @@ void __init mem_init(void)
->>    	set_max_mapnr(pfn_to_page(max_pfn) - mem_map);
->>
->>    	/* this will put all unused low memory onto the freelists */
->> -	free_unused_memmap(&meminfo);
->> +	free_unused_memmap();
->>    	free_all_bootmem();
->>
->>    #ifdef CONFIG_SA1111
->> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
->> index 4f08c13..23433ef 100644
->> --- a/arch/arm/mm/mmu.c
->> +++ b/arch/arm/mm/mmu.c
->> @@ -1046,74 +1046,44 @@ phys_addr_t arm_lowmem_limit __initdata = 0;
->>    void __init sanity_check_meminfo(void)
->>    {
->>    	phys_addr_t memblock_limit = 0;
->> -	int i, j, highmem = 0;
->> +	int highmem = 0;
->>    	phys_addr_t vmalloc_limit = __pa(vmalloc_min - 1) + 1;
->> +	struct memblock_region *reg;
->>
->> -	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
->> -		struct membank *bank = &meminfo.bank[j];
->> -		phys_addr_t size_limit;
->> -
->> -		*bank = meminfo.bank[i];
->> -		size_limit = bank->size;
->> +	for_each_memblock(memory, reg) {
->> +		phys_addr_t block_start = reg->base;
->> +		phys_addr_t block_end = reg->base + reg->size;
->> +		phys_addr_t size_limit = reg->size;
->>
->> -		if (bank->start >= vmalloc_limit)
->> +		if (reg->base >= vmalloc_limit)
->>    			highmem = 1;
->>    		else
->> -			size_limit = vmalloc_limit - bank->start;
->> +			size_limit = vmalloc_limit - reg->base;
->>
->> -		bank->highmem = highmem;
->>
->> -#ifdef CONFIG_HIGHMEM
->> -		/*
->> -		 * Split those memory banks which are partially overlapping
->> -		 * the vmalloc area greatly simplifying things later.
->> -		 */
->> -		if (!highmem && bank->size > size_limit) {
->> -			if (meminfo.nr_banks >= NR_BANKS) {
->> -				printk(KERN_CRIT "NR_BANKS too low, "
->> -						 "ignoring high memory\n");
->> -			} else {
->> -				memmove(bank + 1, bank,
->> -					(meminfo.nr_banks - i) * sizeof(*bank));
->> -				meminfo.nr_banks++;
->> -				i++;
->> -				bank[1].size -= size_limit;
->> -				bank[1].start = vmalloc_limit;
->> -				bank[1].highmem = highmem = 1;
->> -				j++;
->> +		if (!IS_ENABLED(CONFIG_HIGHMEM) || cache_is_vipt_aliasing()) {
->> +
->> +			if (highmem) {
->> +				pr_notice("Ignoring ram at %pa-%pa (!CONFIG_HIGHMEM)\n",
->> +					&block_start, &block_end);
->> +				memblock_remove(block_start, block_end);
->
-> The wrong size is used here, should be => memblock_remove(block_start, reg->size);
-> or => memblock_remove(block_start, size_limit);
->
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 13 Feb 2014 13:14:13 +1100
+Subject: [PATCH] Staging: rtl8812ae: remove modules field of rate_control_o=
+ps
 
-Yes, you are correct. I'm guessing I meant to do block_end-block_start 
-and missed the last part.
+This has been removed in further work.
 
->> +				continue;
->>    			}
->> -			bank->size = size_limit;
->> -		}
->> -#else
->> -		/*
->> -		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
->> -		 */
->> -		if (highmem) {
->> -			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
->> -			       "(!CONFIG_HIGHMEM).\n",
->> -			       (unsigned long long)bank->start,
->> -			       (unsigned long long)bank->start + bank->size - 1);
->> -			continue;
->> -		}
->>
->> -		/*
->> -		 * Check whether this memory bank would partially overlap
->> -		 * the vmalloc area.
->> -		 */
->> -		if (bank->size > size_limit) {
->> -			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
->> -			       "to -%.8llx (vmalloc region overlap).\n",
->> -			       (unsigned long long)bank->start,
->> -			       (unsigned long long)bank->start + bank->size - 1,
->> -			       (unsigned long long)bank->start + size_limit - 1);
->> -			bank->size = size_limit;
->> +			if (reg->size > size_limit) {
->> +				phys_addr_t overlap_size = reg->size - size_limit;
->> +
->> +				pr_notice("Truncating RAM at %pa-%pa to -%pa",
->> +					&block_start, &block_end, &overlap_size);
->
-> Pls, change it back to show new RAM limit instead of size.
-> pr_notice("Truncating RAM at %pa-%pa to -%pa",
-> 				&block_start, &block_end, &vmalloc_limit);
->
->
->> +				memblock_remove(vmalloc_limit, overlap_size);
->> +				block_end = vmalloc_limit;
->> +			}
->>    		}
->> -#endif
->> -		if (!bank->highmem) {
->> -			phys_addr_t bank_end = bank->start + bank->size;
->>
->> -			if (bank_end > arm_lowmem_limit)
->> -				arm_lowmem_limit = bank_end;
->> +		if (!highmem) {
->> +			if (block_end > arm_lowmem_limit)
->> +				arm_lowmem_limit = reg->base + size_limit;
->> +
->
-> if !highmem then size_limit will be calculated as vmalloc_limit - reg->base
-> which in turn can be greater than reg->size. So, arm_lowmem_limit can point on
-> non existent memory address.
->
-> Seems, it should be:
->    arm_lowmem_limit = block_end;
->
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/staging/rtl8821ae/rc.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Yes, I believe so. I will review it.
+diff --git a/drivers/staging/rtl8821ae/rc.c b/drivers/staging/rtl8821ae/rc.c
+index d387f13ea7dc..0cc32c60ddee 100644
+--- a/drivers/staging/rtl8821ae/rc.c
++++ b/drivers/staging/rtl8821ae/rc.c
+@@ -286,7 +286,6 @@ static void rtl_rate_free_sta(void *rtlpriv,
+ }
+=20
+ static struct rate_control_ops rtl_rate_ops =3D {
+-	.module =3D NULL,
+ 	.name =3D "rtl_rc",
+ 	.alloc =3D rtl_rate_alloc,
+ 	.free =3D rtl_rate_free,
+--=20
+1.9.rc1
 
->>
->>    			/*
->>    			 * Find the first non-section-aligned page, and point
->> @@ -1129,35 +1099,16 @@ void __init sanity_check_meminfo(void)
->>    			 * occurs before any free memory is mapped.
->>    			 */
->>    			if (!memblock_limit) {
->> -				if (!IS_ALIGNED(bank->start, SECTION_SIZE))
->> -					memblock_limit = bank->start;
->> -				else if (!IS_ALIGNED(bank_end, SECTION_SIZE))
->> -					memblock_limit = bank_end;
-> [...]
->
-> Thanks for your patience :)
->
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks for the review and debugging!
+--Signature=_Thu__13_Feb_2014_13_19_23_+1100_MEyXkd/Q2jO4U.GM
+Content-Type: application/pgp-signature
 
-> Regards,
-> -grygorii
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Thanks,
-Laura
+iQIcBAEBCAAGBQJS/CuvAAoJEMDTa8Ir7ZwVLS0QAIMxpGT3FT9j1dl/Le1g5Ieu
+6Qt/7NKTGyFuS9U10AlhU9AKZvUIRalgXbccBXnGdXr1FG5BNdP6H0Soqg5xCAah
+C5i/qq3bLt1Yq+1HDifKGjDtnMmrgbwyGzqjC1M1WvlxjRMvYs0HfVxpbXkOn+jb
+Ya4J+/5h5PwNMV0CS1kCDyuwaK1h7necdkZ22Wp6oH/htfu/fC2y7uAkXLdIMJD2
+F8uUMPEZNmQcXxM5NNdBULHcTr5ydB1RFp+bljwueBKx65/lkA0O2egxKLfANlTU
+p8Pk3eecjr3dgN0NRsGHDy+/noKzl3rqXk+wqfmOo+IDYLa8No+v6PDasCbWNOST
+xF/pVzcJVmsOIaR3d9Xy9zB0TK7HyCSifDgT0dsppqN5/N4cp133sAXXqcPjkbw2
+As5Ybg4HrC7yJe5jSdBZVRc6mD3iL7X5E5m50B8/Vbjg+sILnVmsasxK4jVYUMZn
+JvoXQcfsDnfbM38Bu6zcRa/bLP0vuLkquuJ5p5NePGfdMnJ7PBaCOpQ7OW7gBO03
+NsaPld/UvR+2+r/wNc12uQKrMhACGmBOIJORw0Klx0u1dM/Olhyobig7wVWP6HZV
+qYGBWrjt19jRWbvoj5oePFOT0gj59mMSSoYLKlWy8C3NJZy1Uf8pBZvsAPp/b90X
+j9iYFeoL6BLFns+8cVZO
+=mVXd
+-----END PGP SIGNATURE-----
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+--Signature=_Thu__13_Feb_2014_13_19_23_+1100_MEyXkd/Q2jO4U.GM--
