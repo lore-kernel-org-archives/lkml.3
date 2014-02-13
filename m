@@ -1,247 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaBMUtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:49:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55476 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaBMUtj (ORCPT
+	id S1751968AbaBMUv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:51:56 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49529 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491AbaBMUvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:49:39 -0500
-Date: Thu, 13 Feb 2014 21:16:18 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] sched: Add a new lockless wake-from-idle implementation
-Message-ID: <20140213201618.GD14089@laptop.programming.kicks-ass.net>
-References: <20140212201709.GB6835@laptop.programming.kicks-ass.net>
- <218b548b69479baa005af8a7b04a3abbea8ed6fa.1392252790.git.luto@amacapital.net>
- <20140213145016.GA15586@twins.programming.kicks-ass.net>
- <CALCETrWpDxt1xhBx=CWq-fwSBoCpbC_stoouY2mPX8u4u8XNhQ@mail.gmail.com>
+	Thu, 13 Feb 2014 15:51:54 -0500
+Date: Thu, 13 Feb 2014 20:51:46 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140213205146.GS18016@ZenIV.linux.org.uk>
+References: <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+ <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+ <20140212054043.GB13997@dastard>
+ <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+ <20140212113928.GO18016@ZenIV.linux.org.uk>
+ <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
+ <20140212211421.GP18016@ZenIV.linux.org.uk>
+ <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com>
+ <20140212214411.GQ18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrWpDxt1xhBx=CWq-fwSBoCpbC_stoouY2mPX8u4u8XNhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140212214411.GQ18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 09:07:10AM -0800, Andy Lutomirski wrote:
-> > I also don't really like how the polling state is an atomic; its a cpu
-> > local property.
-> 
-> Your patch also makes polling state be an atomic (albeit one that
-> isn't changed remotely).
+On Wed, Feb 12, 2014 at 09:44:11PM +0000, Al Viro wrote:
 
-Yah, sorry for that, changed the email (and code about) a number of
-times before posting :/
+> I'll try to put something along those lines together, if you or Oleg don't
+> do it first.
 
-> On the subject of major surgery, though: there are very few places in
-> the kernel where TIF_NEED_RESCHED gets set.  With something like my
-> patch applied, I think that there is no code at all that sets any
-> other task's TIF_NEED_RESCHED.  That suggests that all
-> set_tsk_need_resched callers could just call into the scheduler
-> directly. 
+OK, having looked at that stuff...
 
-One of the main callers would be the timer tick for local preemption;
-that's from interrupt context, can't call schedule() there, really needs
-to be the interrupt return path.
+1) things become much more compact if we finish conversion to get_signal()
+first.  Callers of get_signal_to_deliver() have k_sigaction and siginfo in
+pair of local variables; switching to ksignal will be neutral wrt stack
+footprint (it just gathers those two in one struct) *and* we are getting
+rid of passing struct siginfo * around.  With that done, we can change
+struct ksignal ->info with zero impact on the code in arch/*, and conversion
+makes sense on its own.  In the mainline we have it done for alpha, arm,
+openrisc, sparc and x86.  I've just put together preliminary (and completely
+untested) patches for arm64, m68k and um; doing the rest won't take long, but
+they'll obviously need to be tested.  It's a fairly safe conversion;
+I'd expect the worst bugs to be typos.
 
-> If so, the change could probably delete a whole lot of
-> assembly code, and every kernel exit would get faster.
+2) struct small_siginfo ought to go into linux/signal.h.  Contains signal
+number, si_code (usually 0), uid, pid and (often NULL) pointer to
+struct sigqueue.  Overall: 20 or 24 bytes.  In struct coredump_params we
+should replace ->siginfo with pointer to struct small_siginfo.  Ditto for
+task_struct ->last_siginfo.  In struct ksignal ->info becomes
+struct small_siginfo.
 
-We already need to load that word for all kinds of other things; like
-delivering signals, so testing the one bit in the return path is
-basically free.
+copy_siginfo_to_user{,32}() gets switched to struct small_siginfo *, so does
+do_coredump(), ptrace_signal(), ptrace_stop(), ptrace_getsiginfo(),
+ptrace_setsiginfo(), collect_signal(), __dequeue_signal(), dequeue_signal(),
+signalfd_dequeue() and do_sigtimedwait().
 
-Anyway; after all this mucking about I finally remembered Venki once
-attempted something similar:
+New primitive: assign_sigqueue(small_info, sigqueue).  Frees
+small_info->q and assigns a new value to it.
 
-  https://lkml.org/lkml/2012/2/6/357
+When ptrace_setsiginfo() is given a non-plain siginfo (si_code != SI_USER,
+that is), it should a allocate struct sigqueue, copy the sucker there and
+give it to assign_sigqueue().  Plain ones just get uid/pid/signo copied
+and NULL passed to assign_sigqueue().
 
-How about something like this?
+code in ptrace_signal() under if (signr != info->si_signo) should
+start with assign_sigqueue(info, NULL).
 
----
- arch/x86/include/asm/mwait.h | 33 ++++++++++++++++--------
- arch/x86/kernel/process.c    |  2 ++
- arch/x86/kernel/smp.c        | 61 ++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 83 insertions(+), 13 deletions(-)
+specific_send_sig_info() in ptrace_signal() is rather clumsy to handle; not
+sure what's the best way to deal with that.  In any case, ptrace_signal()
+deciding to return 0 should take care of info->q - either copy and free the
+original, or actually try to reuse the sucker.  Either way, info->q should
+become NULL.
 
-diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
-index 1da25a5f96f9..cb7bb8bb6617 100644
---- a/arch/x86/include/asm/mwait.h
-+++ b/arch/x86/include/asm/mwait.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_MWAIT_H
- #define _ASM_X86_MWAIT_H
- 
-+#include <linux/percpu.h>
- #include <linux/sched.h>
- 
- #define MWAIT_SUBSTATE_MASK		0xf
-@@ -15,6 +16,14 @@
- 
- #define MWAIT_ECX_INTERRUPT_BREAK	0x1
- 
-+#define MWAIT_IPI_ENABLED		0x01
-+#define MWAIT_IPI_RESCHED		0x02
-+#define MWAIT_IPI_SINGLE		0x04
-+
-+extern void mwait_intercept_handler(void);
-+
-+DECLARE_PER_CPU_ALIGNED(unsigned int, mwait_ipi);
-+
- static inline void __monitor(const void *eax, unsigned long ecx,
- 			     unsigned long edx)
- {
-@@ -42,18 +51,20 @@ static inline void __mwait(unsigned long eax, unsigned long ecx)
-  */
- static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
- {
--	if (!current_set_polling_and_test()) {
--		if (static_cpu_has(X86_FEATURE_CLFLUSH_MONITOR)) {
--			mb();
--			clflush((void *)&current_thread_info()->flags);
--			mb();
--		}
--
--		__monitor((void *)&current_thread_info()->flags, 0, 0);
--		if (!need_resched())
--			__mwait(eax, ecx);
-+	unsigned int *ptr = this_cpu_ptr(&mwait_ipi);
-+	unsigned int old = xchg(ptr, MWAIT_IPI_ENABLED);
-+
-+	WARN_ON_ONCE(old);
-+
-+	if (static_cpu_has(X86_FEATURE_CLFLUSH_MONITOR)) {
-+		mb();
-+		clflush((void *)ptr);
-+		mb();
- 	}
--	current_clr_polling();
-+
-+	__monitor((void *)ptr, 0, 0);
-+	if (!(*ptr & ~MWAIT_IPI_ENABLED))
-+		__mwait(eax, ecx);
- }
- 
- #endif /* _ASM_X86_MWAIT_H */
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 4505e2a950d8..00afb2b676b8 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -28,6 +28,7 @@
- #include <asm/fpu-internal.h>
- #include <asm/debugreg.h>
- #include <asm/nmi.h>
-+#include <asm/mwait.h>
- 
- /*
-  * per-CPU TSS segments. Threads are completely 'soft' on Linux,
-@@ -286,6 +287,7 @@ void arch_cpu_idle_enter(void)
- void arch_cpu_idle_exit(void)
- {
- 	__exit_idle();
-+	mwait_intercept_handler();
- }
- 
- void arch_cpu_idle_dead(void)
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 7c3a5a61f2e4..4b078a8d6b83 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -23,6 +23,8 @@
- #include <linux/interrupt.h>
- #include <linux/cpu.h>
- #include <linux/gfp.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
- 
- #include <asm/mtrr.h>
- #include <asm/tlbflush.h>
-@@ -31,6 +33,8 @@
- #include <asm/apic.h>
- #include <asm/nmi.h>
- #include <asm/trace/irq_vectors.h>
-+#include <asm/mwait.h>
-+
- /*
-  *	Some notes on x86 processor bugs affecting SMP operation:
-  *
-@@ -113,6 +117,56 @@
- static atomic_t stopping_cpu = ATOMIC_INIT(-1);
- static bool smp_no_nmi_ipi = false;
- 
-+DEFINE_PER_CPU_ALIGNED(unsigned int, mwait_ipi);
-+EXPORT_PER_CPU_SYMBOL_GPL(mwait_ipi);
-+
-+static bool mwait_intercept(int cpu, int ipi)
-+{
-+	u32 *ptr = &per_cpu(mwait_ipi, cpu);
-+	u32 val, new, old;
-+
-+	if (!static_cpu_has(X86_FEATURE_MWAIT))
-+		return false;
-+
-+	val = *ptr;
-+	if (!(val & MWAIT_IPI_ENABLED))
-+		return false;
-+
-+	for (;;) {
-+		new = val | ipi;
-+		old = cmpxchg(ptr, val, new);
-+		if (old == val)
-+			break;
-+		val = old;
-+	}
-+
-+	if (!(old & MWAIT_IPI_ENABLED))
-+		return false;
-+
-+	return true;
-+}
-+
-+void mwait_intercept_handler(void)
-+{
-+	unsigned int val, *ptr;
-+
-+	if (!static_cpu_has(X86_FEATURE_MWAIT))
-+		return;
-+
-+	ptr = this_cpu_ptr(&mwait_ipi);
-+	val = xchg(ptr, 0);
-+
-+	if (!(val & ~MWAIT_IPI_ENABLED))
-+		return;
-+
-+	local_irq_disable();
-+	if (val & MWAIT_IPI_RESCHED)
-+		scheduler_ipi();
-+	if (val & MWAIT_IPI_SINGLE)
-+		generic_smp_call_function_single_interrupt();
-+	local_irq_enable();
-+}
-+
- /*
-  * this function sends a 'reschedule' IPI to another CPU.
-  * it goes straight through and wastes no time serializing
-@@ -124,12 +178,15 @@ static void native_smp_send_reschedule(int cpu)
- 		WARN_ON(1);
- 		return;
- 	}
--	apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
-+
-+	if (!mwait_intercept(cpu, MWAIT_IPI_RESCHED))
-+		apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
- }
- 
- void native_send_call_func_single_ipi(int cpu)
- {
--	apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
-+	if (!mwait_intercept(cpu, MWAIT_IPI_SINGLE))
-+		apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
- }
- 
- void native_send_call_func_ipi(const struct cpumask *mask)
+get_signal_to_deliver() should do assign_sigqueue(info, NULL) before
+the call of do_group_exit().
+
+arch_ptrace_stop_needed() can be left as-is; it's a macro and none of the
+instances look at the info argument at all.  The same goes for
+arch_ptrace_stop().
+
+signalfd_read() should do assign_sigqueue(&info, NULL) right after
+signalfd_copyinfo().
+
+rt_sigtimedwait(2) and its compat variant should do the same right after
+copy_siginfo_to_user{,32}().
+
+TP'ed stuff is a mess, as usual.  AFAICS, TP_STORE_SIGINFO() needs to
+be split into a variant taking siginfo (on trace_signal_generate side)
+and one taking small_siginfo (for trace_signal_deliver).
+
+get_signal() should do assign_sigqueue(&ksig->info, NULL) if it returns
+false and use task_work_add() to schedule info->q for freeing otherwise.
+
+
+Overall, aside of the need to complete arch/* conversion, the only unfinished
+part is this:
+        /* If the (new) signal is now blocked, requeue it.  */
+        if (sigismember(&current->blocked, signr)) {
+                specific_send_sig_info(signr, info, current);
+                signr = 0;
+        }
+in the end of ptrace_signal().  Sure, we can add a local struct siginfo
+in that if, fill it if needed and pass its address or &info->q->info
+to specific_send_sig_info(), but that feels kludgy...  Hell knows, I'll
+look a bit more into that.
