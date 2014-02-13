@@ -1,41 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377AbaBMKsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:48:03 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:57538 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754346AbaBMKr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:47:59 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-3.tower-39.messagelabs.com!1392288350!13299030!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <cover.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Thu, 13 Feb 2014 10:45:48 +0000
-Subject: [PATCH 0/2] mfd: da9055: Add DT support & documentation for PMIC
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Rob Herring <robh+dt@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
+	id S1754470AbaBMKs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:48:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33726 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754428AbaBMKsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:48:25 -0500
+Date: Thu, 13 Feb 2014 11:48:23 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: jiel@marvell.com, joe@perches.com, tj@kernel.org, fweisbec@gmail.com,
+        davem@davemloft.net, keescook@chromium.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] printk: fix one circular lockdep warning about
+ console_lock
+Message-ID: <20140213104823.GC5160@quack.suse.cz>
+References: <1392101400-14550-1-git-send-email-jiel@marvell.com>
+ <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds DT support for the MFD core of the da9055 PMIC, and adds
-the accompanying DT binding documentation for the device.
+On Tue 11-02-14 13:19:27, Andrew Morton wrote:
+> On Tue, 11 Feb 2014 14:50:00 +0800 <jiel@marvell.com> wrote:
+> 
+> > From: Jane Li <jiel@marvell.com>
+> > 
+> > This patch tries to fix a warning about possible circular locking
+> > dependency.
+> > 
+> > If do in following sequence:
+> >     enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
+> > lockdep will show warning as following:
+> > 
+> > ======================================================
+> > [ INFO: possible circular locking dependency detected ]
+> > 3.10.0 #2 Tainted: G           O
+> > -------------------------------------------------------
+> > sh/1271 is trying to acquire lock:
+> > (console_lock){+.+.+.}, at: [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+> > but task is already holding lock:
+> > (cpu_hotplug.lock){+.+.+.}, at: [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+> > which lock already depends on the new lock.
+> > 
+> > the existing dependency chain (in reverse order) is:
+> > -> #2 (cpu_hotplug.lock){+.+.+.}:
+> > [<c017bb7c>] lock_acquire+0x98/0x12c
+> > [<c06f5014>] mutex_lock_nested+0x50/0x3d8
+> > [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+> > [<c06ebfac>] _cpu_up+0x24/0x154
+> > [<c06ec140>] cpu_up+0x64/0x84
+> > [<c0981834>] smp_init+0x9c/0xd4
+> > [<c0973880>] kernel_init_freeable+0x78/0x1c8
+> > [<c06e7f40>] kernel_init+0x8/0xe4
+> > [<c010eec8>] ret_from_fork+0x14/0x2c
+> > 
+> > -> #1 (cpu_add_remove_lock){+.+.+.}:
+> > [<c017bb7c>] lock_acquire+0x98/0x12c
+> > [<c06f5014>] mutex_lock_nested+0x50/0x3d8
+> > [<c012b758>] disable_nonboot_cpus+0x8/0xe8
+> > [<c016b83c>] suspend_devices_and_enter+0x214/0x448
+> > [<c016bc54>] pm_suspend+0x1e4/0x284
+> > [<c016bdcc>] try_to_suspend+0xa4/0xbc
+> > [<c0143848>] process_one_work+0x1c4/0x4fc
+> > [<c0143f80>] worker_thread+0x138/0x37c
+> > [<c014aaf8>] kthread+0xa4/0xb0
+> > [<c010eec8>] ret_from_fork+0x14/0x2c
+> > 
+> > -> #0 (console_lock){+.+.+.}:
+> > [<c017b5d0>] __lock_acquire+0x1b38/0x1b80
+> > [<c017bb7c>] lock_acquire+0x98/0x12c
+> > [<c01288c4>] console_lock+0x54/0x68
+> > [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+> > [<c01501d4>] notifier_call_chain+0x44/0x84
+> > [<c012b448>] __cpu_notify+0x2c/0x48
+> > [<c012b5b0>] cpu_notify_nofail+0x8/0x14
+> > [<c06e81bc>] _cpu_down+0xf4/0x258
+> > [<c06e8344>] cpu_down+0x24/0x40
+> > [<c06e921c>] store_online+0x30/0x74
+> > [<c03b7298>] dev_attr_store+0x18/0x24
+> > [<c025fc5c>] sysfs_write_file+0x16c/0x19c
+> > [<c0207a98>] vfs_write+0xb4/0x190
+> > [<c0207e58>] SyS_write+0x3c/0x70
+> > [<c010ee00>] ret_fast_syscall+0x0/0x48
+> > 
+> > Chain exists of:
+> >    console_lock --> cpu_add_remove_lock --> cpu_hotplug.lock
+> > 
+> > Possible unsafe locking scenario:
+> >        CPU0                    CPU1
+> >        ----                    ----
+> > lock(cpu_hotplug.lock);
+> >                                lock(cpu_add_remove_lock);
+> >                                lock(cpu_hotplug.lock);
+> > lock(console_lock);
+> >   *** DEADLOCK ***
+> 
+> These traces hurt my brain.
+> 
+> > There are three locks involved in two sequence:
+> > a) pm suspend:
+> > 	console_lock (@suspend_console())
+> > 	cpu_add_remove_lock (@disable_nonboot_cpus())
+> > 	cpu_hotplug.lock (@_cpu_down())
+> 
+> But but but.  suspend_console() releases console_sem again.  So the
+> sequence is actually
+> 
+>  	down(&console_sem) (@suspend_console())
+>  	up(&console_sem) (@suspend_console())
+>  	cpu_add_remove_lock (@disable_nonboot_cpus())
+>  	cpu_hotplug.lock (@_cpu_down())
+> 
+> So console_sem *doesn't* nest outside cpu_add_remove_lock and
+> cpu_hotplug.lock.
+  Exactly. My take would be that the lockdep annotation of console_sem is
+just missing
+  mutex_release(&console_lock_dep_map, 1, _RET_IP_);
+in suspend_console() and similar counterpart in resume_console(). We are
+doing the annotation by hand and apparently this got missed.
 
-Adam Thomson (2):
-  mfd: da9055: Add DT support for PMIC
-  mfd: da9055: Add DT binding documentation for PMIC
+...
+> > +void console_flush(void)
+> > +{
+> > +	if (console_trylock())
+> > +		console_unlock();
+> > +}
+> > +
+> > +/**
+> >   * console_cpu_notify - print deferred console messages after CPU hotplug
+> >   * @self: notifier struct
+> >   * @action: CPU hotplug event
+> > @@ -1911,8 +1925,7 @@ static int console_cpu_notify(struct notifier_block *self,
+> >  	case CPU_DEAD:
+> >  	case CPU_DOWN_FAILED:
+> >  	case CPU_UP_CANCELED:
+> > -		console_lock();
+> > -		console_unlock();
+> > +		console_flush();
+> >  	}
+> >  	return NOTIFY_OK;
+> 
+> Well, this is a bit hacky and makes the already-far-too-complex code
+> even more complex.  If it is indeed the case that the deadlock cannot
+> really occur then let's try to find a way of suppressing the lockdep
+> warning without making runtime changes.
+> 
+> What I'm struggling with is what *should* the ranking of these locks be?
+> From a conceptual high-level design standpoint, which is the
+> "innermost" lock?  I tend to think that it is console_lock, because
+> blocking CPU hotplug is a quite high-level operation.
+> 
+> But console_lock is such a kooky special-case in the way it is used to
+> control the printk corking that it is hard to take general rules and
+> apply them here.
+  Currently I think it should be pretty much the innermost lock for
+anything except for console driver special locks.
 
- Documentation/devicetree/bindings/mfd/da9055.txt |   73 ++++++++++++++++++++++
- drivers/mfd/da9055-i2c.c                         |    8 +++
- 2 files changed, 81 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/da9055.txt
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
