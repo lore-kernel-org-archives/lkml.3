@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbaBMRMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 12:12:20 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13034 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751572AbaBMRMS (ORCPT
+	id S1752447AbaBMRPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 12:15:05 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58309 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751638AbaBMRPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 12:12:18 -0500
-Date: Thu, 13 Feb 2014 17:12:11 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <Will.Deacon@arm.com>,
-        Steven Capper <steve.capper@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: mm: report both sections from PMD
-Message-ID: <20140213171211.GJ19841@arm.com>
-References: <20140212224638.GA4558@www.outflux.net>
+	Thu, 13 Feb 2014 12:15:03 -0500
+Message-ID: <52FCFD92.7040109@hurleysoftware.com>
+Date: Thu, 13 Feb 2014 12:14:58 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212224638.GA4558@www.outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        Dave Airlie <airlied@redhat.com>
+Subject: Re: Lenovo X240 (haswell) suspend-to-ram hangs on 3-14.0-rc2
+References: <CAAJw_ZvX2AfS8COiNdN9gi_1xJ4L_vL=ROCzcLL3u0h51kuX3Q@mail.gmail.com>
+In-Reply-To: <CAAJw_ZvX2AfS8COiNdN9gi_1xJ4L_vL=ROCzcLL3u0h51kuX3Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 10:46:38PM +0000, Kees Cook wrote:
-> diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
-> index 03243f7eeddf..fb3de59ee811 100644
-> --- a/arch/arm/include/asm/pgtable-3level.h
-> +++ b/arch/arm/include/asm/pgtable-3level.h
-> @@ -138,10 +138,6 @@
->  #define pud_none(pud)		(!pud_val(pud))
->  #define pud_bad(pud)		(!(pud_val(pud) & 2))
->  #define pud_present(pud)	(pud_val(pud))
-> -#define pmd_table(pmd)		((pmd_val(pmd) & PMD_TYPE_MASK) == \
-> -						 PMD_TYPE_TABLE)
-> -#define pmd_sect(pmd)		((pmd_val(pmd) & PMD_TYPE_MASK) == \
-> -						 PMD_TYPE_SECT)
->  #define pmd_large(pmd)		pmd_sect(pmd)
->  
->  #define pud_clear(pudp)			\
-> diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-> index 7d59b524f2af..934aa5b60c7c 100644
-> --- a/arch/arm/include/asm/pgtable.h
-> +++ b/arch/arm/include/asm/pgtable.h
-> @@ -183,6 +183,10 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
->  
->  #define pmd_none(pmd)		(!pmd_val(pmd))
->  #define pmd_present(pmd)	(pmd_val(pmd))
-> +#define pmd_table(pmd)		((pmd_val(pmd) & PMD_TYPE_MASK) == \
-> +						 PMD_TYPE_TABLE)
-> +#define pmd_sect(pmd)		((pmd_val(pmd) & PMD_TYPE_MASK) == \
-> +						 PMD_TYPE_SECT)
+[ +cc Takashi Iwai, Dave Airlie ]
 
-Do you still need to move these two if you only use pmd_large()? AFAICT,
-it is equivalent to pmd_sect().
+Hi Jeff,
 
->  static inline pte_t *pmd_page_vaddr(pmd_t pmd)
->  {
-> diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
-> index 2b342177f5de..32635b474832 100644
-> --- a/arch/arm/mm/dump.c
-> +++ b/arch/arm/mm/dump.c
-> @@ -260,8 +260,14 @@ static void walk_pmd(struct pg_state *st, pud_t *pud, unsigned long start)
->  
->  	for (i = 0; i < PTRS_PER_PMD; i++, pmd++) {
->  		addr = start + i * PMD_SIZE;
-> -		if (pmd_none(*pmd) || pmd_large(*pmd) || !pmd_present(*pmd))
-> +		if (pmd_none(*pmd) || pmd_large(*pmd) || !pmd_present(*pmd)) {
->  			note_page(st, addr, 3, pmd_val(*pmd));
-> +			if (SECTION_SIZE < PMD_SIZE &&
-> +			    pmd_sect(*pmd) && pmd_sect(pmd[1])) {
+On 02/13/2014 08:02 AM, Jeff Chua wrote:
+> Can't suspend to ram/disk on the Lenovo X240 with Intel i7-4600.
+>
+> kernel 3.14.0-rc2
+>
+> The same kernel works find on Lenovo X230 with Intel i7-3520M.
+>
+> Here's the trace ..
 
-I think the first patch was better with pmd[0] and pmd[1] treated
-independently if SECTION_SIZE < PMD_SIZE, only that it should have
-checked for pmd_sect(pmd[1]). I don't see anything in
-__map_init_section() that would prevent populating only the second pmd
-leaving the first one empty.
+Apparently there's no maintainer but I've cc'ed people who might
+have a clue about this.
 
--- 
-Catalin
+Regards,
+Peter Hurley
+
+> [<ffffffff81034ba6>] ? do_exit+0x852/0x89d
+> [<ffffffff8158e5d8>] ? prinfk+0x4f/0x54
+> [<iiffffff81005060>] ? oops_end+0x78/0x7d
+> [<ffffffff8158dc00>] ? no_context+0x1e6/0x1f5
+> [<ffffffff810274f8>] ? __do_page_fault+0x348/0x3c7
+> [<ffffffff8159376a>] ? __schedule+0x6Z3/0x775
+> [<ffffffff81596562>] ? page_fault+0x2Z/8x30
+> [<ffffffff814e76e4>] ? azx_enter_link_reset.isra.26+0x9/0x51
+> [<ffffffff814e68ac>] ? azx_clear_irq_pending+0x12/0x3e
+> [<ffffffff814e7821>1 ? azx_suspend+0xa1/0x105
+> [<ffffffff8128f543>] ? pci_pm_suspend+0x6e/0xee
+> [<ffffffff8128f4d5>] ? pci_pm_poweroff+0xb4/0xb4
+> [<ffffffff81333479>] ? dpm_run_callback.isra.8+0x24/8x52
+> [<ffffffff813335df>] ? __device_suspend+8x138/0x19b
+> [<ffffffff81333658>] ? async_suspend+0x16/0x7d
+> [<ffffffff8104d743>] ? async_run_entry_fn+0x55/0x10b
+> [<ffffffff81044abf>] ? process_one_work+0x1be/0x2ef
+> [<ffffffff8104503d>] ? worker_thread+0x1cb/0x2c4
+> [<ffffffff81044e72>] ? rescuer_thread+0x25d/0x25d
+> [<ffffffff81049a93>] ? kthread+0xc5/0xcd
+> [<ffffffff81040000>] ? SyS_setpriority+0x179/0x233
+> [<ffffffff810499ce>l ? kthread_freezable_should_stop+0x3b/0x3b
+> [<ffffffff8159697c>] ? rat_from_fork+0x7c/0xb0
+> [<ffffffff810499ce>l ? kthread_freezable_should_stop+0x3b/0x3b
+
