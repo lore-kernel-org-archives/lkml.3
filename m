@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaBMTrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:47:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22271 "EHLO mx1.redhat.com"
+	id S1752722AbaBMTra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:47:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1833 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386AbaBMTrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:47:20 -0500
-Date: Thu, 13 Feb 2014 14:47:13 -0500
-Message-Id: <201402131947.s1DJlDrE023042@gelk.kernelslacker.org>
+	id S1751386AbaBMTr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 14:47:26 -0500
+Date: Thu, 13 Feb 2014 14:47:18 -0500
+Message-Id: <201402131947.s1DJlIXY023048@gelk.kernelslacker.org>
 From: Dave Jones <davej@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org
-Subject: [PATCH 26/38] staging/bcm: move IOCTL_BCM_NVM_[READ|WRITE] cases out to their own function.
+Subject: [PATCH 27/38] staging/bcm: move IOCTL_BCM_FLASH2X_SECTION_READ case out to its own function.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,317 +22,214 @@ this a lot.
 
 Signed-off-by: Dave Jones <davej@fedoraproject.org>
 ---
- drivers/staging/bcm/Bcmchar.c | 290 ++++++++++++++++++++++--------------------
- 1 file changed, 149 insertions(+), 141 deletions(-)
+ drivers/staging/bcm/Bcmchar.c | 187 ++++++++++++++++++++++--------------------
+ 1 file changed, 97 insertions(+), 90 deletions(-)
 
 diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
-index a5d5c58b5a90..3564018f56d7 100644
+index 3564018f56d7..b0b14e31a394 100644
 --- a/drivers/staging/bcm/Bcmchar.c
 +++ b/drivers/staging/bcm/Bcmchar.c
-@@ -1286,6 +1286,152 @@ static int bcm_char_ioctl_set_debug(void __user *argp, struct bcm_mini_adapter *
+@@ -1432,6 +1432,100 @@ static int bcm_char_ioctl_nvm_rw(void __user *argp, struct bcm_mini_adapter *Ada
  	return STATUS_SUCCESS;
  }
  
-+static int bcm_char_ioctl_nvm_rw(void __user *argp, struct bcm_mini_adapter *Adapter, UINT cmd)
++static int bcm_char_ioctl_flash2x_section_read(void __user *argp, struct bcm_mini_adapter *Adapter)
 +{
-+	struct bcm_nvm_readwrite stNVMReadWrite;
-+	struct timeval tv0, tv1;
++	struct bcm_flash2x_readwrite sFlash2xRead = {0};
 +	struct bcm_ioctl_buffer IoBuffer;
-+	PUCHAR pReadData = NULL;
-+	ULONG ulDSDMagicNumInUsrBuff = 0;
++	PUCHAR pReadBuff = NULL;
++	UINT NOB = 0;
++	UINT BuffSize = 0;
++	UINT ReadBytes = 0;
++	UINT ReadOffset = 0;
 +	INT Status = STATUS_FAILURE;
++	void __user *OutPutBuff;
 +
-+	memset(&tv0, 0, sizeof(struct timeval));
-+	memset(&tv1, 0, sizeof(struct timeval));
-+	if ((Adapter->eNVMType == NVM_FLASH) && (Adapter->uiFlashLayoutMajorVersion == 0)) {
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "The Flash Control Section is Corrupted. Hence Rejection on NVM Read/Write\n");
-+		return -EFAULT;
++	if (IsFlash2x(Adapter) != TRUE)	{
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Flash Does not have 2.x map");
++		return -EINVAL;
 +	}
 +
-+	if (IsFlash2x(Adapter)) {
-+		if ((Adapter->eActiveDSD != DSD0) &&
-+			(Adapter->eActiveDSD != DSD1) &&
-+			(Adapter->eActiveDSD != DSD2)) {
-+
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "No DSD is active..hence NVM Command is blocked");
-+			return STATUS_FAILURE;
-+		}
-+	}
-+
-+	/* Copy Ioctl Buffer structure */
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_FLASH2X_SECTION_READ Called");
 +	if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
 +		return -EFAULT;
 +
-+	if (copy_from_user(&stNVMReadWrite,
-+				(IOCTL_BCM_NVM_READ == cmd) ? IoBuffer.OutputBuffer : IoBuffer.InputBuffer,
-+				sizeof(struct bcm_nvm_readwrite)))
++	/* Reading FLASH 2.x READ structure */
++	if (copy_from_user(&sFlash2xRead, IoBuffer.InputBuffer, sizeof(struct bcm_flash2x_readwrite)))
 +		return -EFAULT;
 +
-+	/*
-+	 * Deny the access if the offset crosses the cal area limit.
-+	 */
-+	if (stNVMReadWrite.uiNumBytes > Adapter->uiNVMDSDSize)
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.Section :%x", sFlash2xRead.Section);
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.offset :%x", sFlash2xRead.offset);
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.numOfBytes :%x", sFlash2xRead.numOfBytes);
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.bVerify :%x\n", sFlash2xRead.bVerify);
++
++	/* This was internal to driver for raw read. now it has ben exposed to user space app. */
++	if (validateFlash2xReadWrite(Adapter, &sFlash2xRead) == false)
 +		return STATUS_FAILURE;
 +
-+	if (stNVMReadWrite.uiOffset > Adapter->uiNVMDSDSize - stNVMReadWrite.uiNumBytes) {
-+		/* BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"Can't allow access beyond NVM Size: 0x%x 0x%x\n", stNVMReadWrite.uiOffset, stNVMReadWrite.uiNumBytes); */
-+		return STATUS_FAILURE;
++	NOB = sFlash2xRead.numOfBytes;
++	if (NOB > Adapter->uiSectorSize)
++		BuffSize = Adapter->uiSectorSize;
++	else
++		BuffSize = NOB;
++
++	ReadOffset = sFlash2xRead.offset;
++	OutPutBuff = IoBuffer.OutputBuffer;
++	pReadBuff = (PCHAR)kzalloc(BuffSize , GFP_KERNEL);
++
++	if (pReadBuff == NULL) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Memory allocation failed for Flash 2.x Read Structure");
++		return -ENOMEM;
++	}
++	down(&Adapter->NVMRdmWrmLock);
++
++	if ((Adapter->IdleMode == TRUE) ||
++		(Adapter->bShutStatus == TRUE) ||
++		(Adapter->bPreparingForLowPowerMode == TRUE)) {
++
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Device is in Idle/Shutdown Mode\n");
++		up(&Adapter->NVMRdmWrmLock);
++		kfree(pReadBuff);
++		return -EACCES;
 +	}
 +
-+	pReadData = memdup_user(stNVMReadWrite.pBuffer,
-+				stNVMReadWrite.uiNumBytes);
-+	if (IS_ERR(pReadData))
-+		return PTR_ERR(pReadData);
++	while (NOB) {
++		if (NOB > Adapter->uiSectorSize)
++			ReadBytes = Adapter->uiSectorSize;
++		else
++			ReadBytes = NOB;
 +
-+	do_gettimeofday(&tv0);
-+	if (IOCTL_BCM_NVM_READ == cmd) {
-+		down(&Adapter->NVMRdmWrmLock);
++		/* Reading the data from Flash 2.x */
++		Status = BcmFlash2xBulkRead(Adapter, (PUINT)pReadBuff, sFlash2xRead.Section, ReadOffset, ReadBytes);
++		if (Status) {
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Flash 2x read err with Status :%d", Status);
++			break;
++		}
 +
-+		if ((Adapter->IdleMode == TRUE) ||
-+			(Adapter->bShutStatus == TRUE) ||
-+			(Adapter->bPreparingForLowPowerMode == TRUE)) {
++		BCM_DEBUG_PRINT_BUFFER(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, pReadBuff, ReadBytes);
 +
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Device is in Idle/Shutdown Mode\n");
++		Status = copy_to_user(OutPutBuff, pReadBuff, ReadBytes);
++		if (Status) {
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Copy to use failed with status :%d", Status);
 +			up(&Adapter->NVMRdmWrmLock);
-+			kfree(pReadData);
-+			return -EACCES;
-+		}
-+
-+		Status = BeceemNVMRead(Adapter, (PUINT)pReadData, stNVMReadWrite.uiOffset, stNVMReadWrite.uiNumBytes);
-+		up(&Adapter->NVMRdmWrmLock);
-+
-+		if (Status != STATUS_SUCCESS) {
-+			kfree(pReadData);
-+			return Status;
-+		}
-+
-+		if (copy_to_user(stNVMReadWrite.pBuffer, pReadData, stNVMReadWrite.uiNumBytes)) {
-+			kfree(pReadData);
++			kfree(pReadBuff);
 +			return -EFAULT;
 +		}
-+	} else {
-+		down(&Adapter->NVMRdmWrmLock);
-+
-+		if ((Adapter->IdleMode == TRUE) ||
-+			(Adapter->bShutStatus == TRUE) ||
-+			(Adapter->bPreparingForLowPowerMode == TRUE)) {
-+
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Device is in Idle/Shutdown Mode\n");
-+			up(&Adapter->NVMRdmWrmLock);
-+			kfree(pReadData);
-+			return -EACCES;
-+		}
-+
-+		Adapter->bHeaderChangeAllowed = TRUE;
-+		if (IsFlash2x(Adapter)) {
-+			/*
-+			 *			New Requirement:-
-+			 *			DSD section updation will be allowed in two case:-
-+			 *			1.  if DSD sig is present in DSD header means dongle is ok and updation is fruitfull
-+			 *			2.  if point 1 failes then user buff should have DSD sig. this point ensures that if dongle is
-+			 *			      corrupted then user space program first modify the DSD header with valid DSD sig so
-+			 *			      that this as well as further write may be worthwhile.
-+			 *
-+			 *			 This restriction has been put assuming that if DSD sig is corrupted, DSD
-+			 *			 data won't be considered valid.
-+			 */
-+
-+			Status = BcmFlash2xCorruptSig(Adapter, Adapter->eActiveDSD);
-+			if (Status != STATUS_SUCCESS) {
-+				if (((stNVMReadWrite.uiOffset + stNVMReadWrite.uiNumBytes) != Adapter->uiNVMDSDSize) ||
-+					(stNVMReadWrite.uiNumBytes < SIGNATURE_SIZE)) {
-+
-+					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "DSD Sig is present neither in Flash nor User provided Input..");
-+					up(&Adapter->NVMRdmWrmLock);
-+					kfree(pReadData);
-+					return Status;
-+				}
-+
-+				ulDSDMagicNumInUsrBuff = ntohl(*(PUINT)(pReadData + stNVMReadWrite.uiNumBytes - SIGNATURE_SIZE));
-+				if (ulDSDMagicNumInUsrBuff != DSD_IMAGE_MAGIC_NUMBER) {
-+					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "DSD Sig is present neither in Flash nor User provided Input..");
-+					up(&Adapter->NVMRdmWrmLock);
-+					kfree(pReadData);
-+					return Status;
-+				}
-+			}
-+		}
-+
-+		Status = BeceemNVMWrite(Adapter, (PUINT)pReadData, stNVMReadWrite.uiOffset, stNVMReadWrite.uiNumBytes, stNVMReadWrite.bVerify);
-+		if (IsFlash2x(Adapter))
-+			BcmFlash2xWriteSig(Adapter, Adapter->eActiveDSD);
-+
-+		Adapter->bHeaderChangeAllowed = false;
-+
-+		up(&Adapter->NVMRdmWrmLock);
-+
-+		if (Status != STATUS_SUCCESS) {
-+			kfree(pReadData);
-+			return Status;
++		NOB = NOB - ReadBytes;
++		if (NOB) {
++			ReadOffset = ReadOffset + ReadBytes;
++			OutPutBuff = OutPutBuff + ReadBytes;
 +		}
 +	}
 +
-+	do_gettimeofday(&tv1);
-+	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, " timetaken by Write/read :%ld msec\n", (tv1.tv_sec - tv0.tv_sec)*1000 + (tv1.tv_usec - tv0.tv_usec)/1000);
-+
-+	kfree(pReadData);
-+	return STATUS_SUCCESS;
++	up(&Adapter->NVMRdmWrmLock);
++	kfree(pReadBuff);
++	return Status;
 +}
 +
  
  static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
  {
-@@ -1479,147 +1625,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+@@ -1629,96 +1723,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ 		Status = bcm_char_ioctl_nvm_rw(argp, Adapter, cmd);
  		return Status;
  
- 	case IOCTL_BCM_NVM_READ:
--	case IOCTL_BCM_NVM_WRITE: {
--		struct bcm_nvm_readwrite stNVMReadWrite;
--		PUCHAR pReadData = NULL;
--		ULONG ulDSDMagicNumInUsrBuff = 0;
--		struct timeval tv0, tv1;
--		memset(&tv0, 0, sizeof(struct timeval));
--		memset(&tv1, 0, sizeof(struct timeval));
--		if ((Adapter->eNVMType == NVM_FLASH) && (Adapter->uiFlashLayoutMajorVersion == 0)) {
--			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "The Flash Control Section is Corrupted. Hence Rejection on NVM Read/Write\n");
--			return -EFAULT;
+-	case IOCTL_BCM_FLASH2X_SECTION_READ: {
+-		struct bcm_flash2x_readwrite sFlash2xRead = {0};
+-		PUCHAR pReadBuff = NULL;
+-		UINT NOB = 0;
+-		UINT BuffSize = 0;
+-		UINT ReadBytes = 0;
+-		UINT ReadOffset = 0;
+-		void __user *OutPutBuff;
+-
+-		if (IsFlash2x(Adapter) != TRUE)	{
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Flash Does not have 2.x map");
+-			return -EINVAL;
 -		}
 -
--		if (IsFlash2x(Adapter)) {
--			if ((Adapter->eActiveDSD != DSD0) &&
--				(Adapter->eActiveDSD != DSD1) &&
--				(Adapter->eActiveDSD != DSD2)) {
--
--				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "No DSD is active..hence NVM Command is blocked");
--				return STATUS_FAILURE;
--			}
--		}
--
--		/* Copy Ioctl Buffer structure */
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_FLASH2X_SECTION_READ Called");
 -		if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
 -			return -EFAULT;
 -
--		if (copy_from_user(&stNVMReadWrite,
--					(IOCTL_BCM_NVM_READ == cmd) ? IoBuffer.OutputBuffer : IoBuffer.InputBuffer,
--					sizeof(struct bcm_nvm_readwrite)))
+-		/* Reading FLASH 2.x READ structure */
+-		if (copy_from_user(&sFlash2xRead, IoBuffer.InputBuffer, sizeof(struct bcm_flash2x_readwrite)))
 -			return -EFAULT;
 -
--		/*
--		 * Deny the access if the offset crosses the cal area limit.
--		 */
--		if (stNVMReadWrite.uiNumBytes > Adapter->uiNVMDSDSize)
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.Section :%x", sFlash2xRead.Section);
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.offset :%x", sFlash2xRead.offset);
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.numOfBytes :%x", sFlash2xRead.numOfBytes);
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\nsFlash2xRead.bVerify :%x\n", sFlash2xRead.bVerify);
+-
+-		/* This was internal to driver for raw read. now it has ben exposed to user space app. */
+-		if (validateFlash2xReadWrite(Adapter, &sFlash2xRead) == false)
 -			return STATUS_FAILURE;
 -
--		if (stNVMReadWrite.uiOffset > Adapter->uiNVMDSDSize - stNVMReadWrite.uiNumBytes) {
--			/* BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"Can't allow access beyond NVM Size: 0x%x 0x%x\n", stNVMReadWrite.uiOffset, stNVMReadWrite.uiNumBytes); */
--			return STATUS_FAILURE;
+-		NOB = sFlash2xRead.numOfBytes;
+-		if (NOB > Adapter->uiSectorSize)
+-			BuffSize = Adapter->uiSectorSize;
+-		else
+-			BuffSize = NOB;
+-
+-		ReadOffset = sFlash2xRead.offset;
+-		OutPutBuff = IoBuffer.OutputBuffer;
+-		pReadBuff = (PCHAR)kzalloc(BuffSize , GFP_KERNEL);
+-
+-		if (pReadBuff == NULL) {
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Memory allocation failed for Flash 2.x Read Structure");
+-			return -ENOMEM;
+-		}
+-		down(&Adapter->NVMRdmWrmLock);
+-
+-		if ((Adapter->IdleMode == TRUE) ||
+-			(Adapter->bShutStatus == TRUE) ||
+-			(Adapter->bPreparingForLowPowerMode == TRUE)) {
+-
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Device is in Idle/Shutdown Mode\n");
+-			up(&Adapter->NVMRdmWrmLock);
+-			kfree(pReadBuff);
+-			return -EACCES;
 -		}
 -
--		pReadData = memdup_user(stNVMReadWrite.pBuffer,
--					stNVMReadWrite.uiNumBytes);
--		if (IS_ERR(pReadData))
--			return PTR_ERR(pReadData);
+-		while (NOB) {
+-			if (NOB > Adapter->uiSectorSize)
+-				ReadBytes = Adapter->uiSectorSize;
+-			else
+-				ReadBytes = NOB;
 -
--		do_gettimeofday(&tv0);
--		if (IOCTL_BCM_NVM_READ == cmd) {
--			down(&Adapter->NVMRdmWrmLock);
+-			/* Reading the data from Flash 2.x */
+-			Status = BcmFlash2xBulkRead(Adapter, (PUINT)pReadBuff, sFlash2xRead.Section, ReadOffset, ReadBytes);
+-			if (Status) {
+-				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Flash 2x read err with Status :%d", Status);
+-				break;
+-			}
 -
--			if ((Adapter->IdleMode == TRUE) ||
--				(Adapter->bShutStatus == TRUE) ||
--				(Adapter->bPreparingForLowPowerMode == TRUE)) {
+-			BCM_DEBUG_PRINT_BUFFER(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, pReadBuff, ReadBytes);
 -
--				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Device is in Idle/Shutdown Mode\n");
+-			Status = copy_to_user(OutPutBuff, pReadBuff, ReadBytes);
+-			if (Status) {
+-				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Copy to use failed with status :%d", Status);
 -				up(&Adapter->NVMRdmWrmLock);
--				kfree(pReadData);
--				return -EACCES;
--			}
--
--			Status = BeceemNVMRead(Adapter, (PUINT)pReadData, stNVMReadWrite.uiOffset, stNVMReadWrite.uiNumBytes);
--			up(&Adapter->NVMRdmWrmLock);
--
--			if (Status != STATUS_SUCCESS) {
--				kfree(pReadData);
--				return Status;
--			}
--
--			if (copy_to_user(stNVMReadWrite.pBuffer, pReadData, stNVMReadWrite.uiNumBytes)) {
--				kfree(pReadData);
+-				kfree(pReadBuff);
 -				return -EFAULT;
 -			}
--		} else {
--			down(&Adapter->NVMRdmWrmLock);
--
--			if ((Adapter->IdleMode == TRUE) ||
--				(Adapter->bShutStatus == TRUE) ||
--				(Adapter->bPreparingForLowPowerMode == TRUE)) {
--
--				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Device is in Idle/Shutdown Mode\n");
--				up(&Adapter->NVMRdmWrmLock);
--				kfree(pReadData);
--				return -EACCES;
--			}
--
--			Adapter->bHeaderChangeAllowed = TRUE;
--			if (IsFlash2x(Adapter)) {
--				/*
--				 *			New Requirement:-
--				 *			DSD section updation will be allowed in two case:-
--				 *			1.  if DSD sig is present in DSD header means dongle is ok and updation is fruitfull
--				 *			2.  if point 1 failes then user buff should have DSD sig. this point ensures that if dongle is
--				 *			      corrupted then user space program first modify the DSD header with valid DSD sig so
--				 *			      that this as well as further write may be worthwhile.
--				 *
--				 *			 This restriction has been put assuming that if DSD sig is corrupted, DSD
--				 *			 data won't be considered valid.
--				 */
--
--				Status = BcmFlash2xCorruptSig(Adapter, Adapter->eActiveDSD);
--				if (Status != STATUS_SUCCESS) {
--					if (((stNVMReadWrite.uiOffset + stNVMReadWrite.uiNumBytes) != Adapter->uiNVMDSDSize) ||
--						(stNVMReadWrite.uiNumBytes < SIGNATURE_SIZE)) {
--
--						BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "DSD Sig is present neither in Flash nor User provided Input..");
--						up(&Adapter->NVMRdmWrmLock);
--						kfree(pReadData);
--						return Status;
--					}
--
--					ulDSDMagicNumInUsrBuff = ntohl(*(PUINT)(pReadData + stNVMReadWrite.uiNumBytes - SIGNATURE_SIZE));
--					if (ulDSDMagicNumInUsrBuff != DSD_IMAGE_MAGIC_NUMBER) {
--						BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "DSD Sig is present neither in Flash nor User provided Input..");
--						up(&Adapter->NVMRdmWrmLock);
--						kfree(pReadData);
--						return Status;
--					}
--				}
--			}
--
--			Status = BeceemNVMWrite(Adapter, (PUINT)pReadData, stNVMReadWrite.uiOffset, stNVMReadWrite.uiNumBytes, stNVMReadWrite.bVerify);
--			if (IsFlash2x(Adapter))
--				BcmFlash2xWriteSig(Adapter, Adapter->eActiveDSD);
--
--			Adapter->bHeaderChangeAllowed = false;
--
--			up(&Adapter->NVMRdmWrmLock);
--
--			if (Status != STATUS_SUCCESS) {
--				kfree(pReadData);
--				return Status;
+-			NOB = NOB - ReadBytes;
+-			if (NOB) {
+-				ReadOffset = ReadOffset + ReadBytes;
+-				OutPutBuff = OutPutBuff + ReadBytes;
 -			}
 -		}
 -
--		do_gettimeofday(&tv1);
--		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, " timetaken by Write/read :%ld msec\n", (tv1.tv_sec - tv0.tv_sec)*1000 + (tv1.tv_usec - tv0.tv_usec)/1000);
--
--		kfree(pReadData);
--		return STATUS_SUCCESS;
+-		up(&Adapter->NVMRdmWrmLock);
+-		kfree(pReadBuff);
 -	}
-+	case IOCTL_BCM_NVM_WRITE:
-+		Status = bcm_char_ioctl_nvm_rw(argp, Adapter, cmd);
+-	break;
++	case IOCTL_BCM_FLASH2X_SECTION_READ:
++		Status = bcm_char_ioctl_flash2x_section_read(argp, Adapter);
 +		return Status;
  
- 	case IOCTL_BCM_FLASH2X_SECTION_READ: {
- 		struct bcm_flash2x_readwrite sFlash2xRead = {0};
+ 	case IOCTL_BCM_FLASH2X_SECTION_WRITE: {
+ 		struct bcm_flash2x_readwrite sFlash2xWrite = {0};
 -- 
 1.8.5.3
 
