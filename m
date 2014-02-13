@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaBMBXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 20:23:53 -0500
-Received: from ozlabs.org ([203.10.76.45]:50886 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462AbaBMBXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 20:23:52 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Cc: linux-kbuild@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 17/17] lto, module: Warn about modules that are not fully LTOed
-In-Reply-To: <1391846481-31491-17-git-send-email-ak@linux.intel.com>
-References: <1391846481-31491-1-git-send-email-ak@linux.intel.com> <1391846481-31491-17-git-send-email-ak@linux.intel.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 12 Feb 2014 11:43:08 +1030
-Message-ID: <87wqh1f80r.fsf@rustcorp.com.au>
+	id S1752762AbaBMBZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 20:25:09 -0500
+Received: from longford.logfs.org ([213.229.74.203]:42815 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaBMBZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 20:25:08 -0500
+Date: Wed, 12 Feb 2014 20:25:48 -0500
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: David Miller <davem@davemloft.net>
+Cc: gregkh@linuxfoundation.org, mst@redhat.com, linux-kernel@vger.kernel.org,
+        jasowang@redhat.com, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        qinchuanyu@huawei.com, anatol.pomozov@gmail.com, nab@linux-iscsi.org
+Subject: Re: [PATCH net 1/3] kref: add kref_sub_return
+Message-ID: <20140213012548.GA20953@logfs.org>
+References: <1392222846-26699-1-git-send-email-mst@redhat.com>
+ <1392222846-26699-2-git-send-email-mst@redhat.com>
+ <20140212165630.GA22991@kroah.com>
+ <20140212.190637.328045386111912135.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140212.190637.328045386111912135.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <ak@linux.intel.com> writes:
-> When __gnu_lto_* is present that means that the module hasn't run with
-> LTO yet.
+On Wed, 12 February 2014 19:06:37 -0500, David Miller wrote:
+> 
+> It isn't being used to determine when to destroy things.
+> 
+> They use it to as a heuristic of when to trigger polling.
+> 
+> Each ubuf attached gets a kref to the higher level virtio_net buffer
+> holding object, they want to trigger polling when that reference drops
+> to 1 or lower.
+> 
+> Right now they are reading the atomic refcount directly, which
+> I think is much worse than this helper.
 
-In practice, this means they didn't build their kernel properly, right?
-It shouldn't break anything, but it seems really weird.  And how many
-times will the prink fire on a single module?
+I disagree.  Reading the refcount directly is leaving noone under any
+illusion that this might be a good idea.
 
-Seems like a job for pr_warn?
+Jörn
 
-Thanks,
-Rusty.
-
-> ---
->  kernel/module.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index b99e801..2052155 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -1949,8 +1949,11 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
->  		switch (sym[i].st_shndx) {
->  		case SHN_COMMON:
->  			/* Ignore common symbols */
-> -			if (!strncmp(name, "__gnu_lto", 9))
-> +			if (!strncmp(name, "__gnu_lto", 9)) {
-> +				printk("%s: module not link time optimized\n",
-> +				       mod->name);
->  				break;
-> +			}
->  
->  			/* We compiled with -fno-common.  These are not
->  			   supposed to happen.  */
-> -- 
-> 1.8.5.2
+--
+Victory in war is not repetitious.
+-- Sun Tzu
