@@ -1,270 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189AbaBMQsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 11:48:10 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:43047 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbaBMQsH (ORCPT
+	id S1752199AbaBMQx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 11:53:26 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:39168 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaBMQxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 11:48:07 -0500
-From: Emil Goode <emilgoode@gmail.com>
-To: Steve Glendinning <steve.glendinning@shawell.net>,
-        Oliver Neukum <oneukum@suse.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
-        Freddy Xin <freddy@asix.com.tw>, Eric Dumazet <edumazet@google.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Liu Junliang <liujunliang_ljl@163.com>,
-        Octavian Purdila <octavian.purdila@intel.com>
-Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] usbnet: remove generic hard_header_len check
-Date: Thu, 13 Feb 2014 17:50:19 +0100
-Message-Id: <1392310219-5719-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 13 Feb 2014 11:53:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <52FCEFEF.80707@roeck-us.net>
+References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
+	<20140213095817.GD32508@lee--X1>
+	<20140213111530.2a2b4982@endymion.delvare>
+	<CAOMwXhML8LvDCzmk1ZVT+7cARj9C3VtxERWBgOPM9vTc6qQXZQ@mail.gmail.com>
+	<CAOMwXhOv-as1W69wcSno49jEXsXWZZ7odnu8og-vgnDwRTJ4sA@mail.gmail.com>
+	<20140213113313.GL32508@lee--X1>
+	<CAOMwXhMNHqXnzR0YHF9rx710JbaL3YFn=3cLf_WdNkCx7hbZug@mail.gmail.com>
+	<52FCEFEF.80707@roeck-us.net>
+Date: Thu, 13 Feb 2014 16:53:24 +0000
+X-Google-Sender-Auth: uDEvETqgx7u-moTvAxJcxkZfy6Y
+Message-ID: <CAOMwXhPjHqAswA2MU22EuOWtN-86BQ9tCyKYjt1-SeLZGj6TQA@mail.gmail.com>
+Subject: Re: [lm-sensors] [RFC PATCH] hwmon: (max6650) Convert to be a
+ platform driver
+From: Laszlo Papp <lpapp@kde.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Lee Jones <lee.jones@linaro.org>, Jean Delvare <jdelvare@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a generic hard_header_len check from the usbnet
-module that is causing dropped packages under certain circumstances
-for devices that send rx packets that cross urb boundaries.
+On Thu, Feb 13, 2014 at 4:16 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 02/13/2014 04:27 AM, Laszlo Papp wrote:
+>>
+>> On Thu, Feb 13, 2014 at 11:33 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>>>>>>>>
+>>>>>>>> -static int max6650_probe(struct i2c_client *client,
+>>>>>>>> -                    const struct i2c_device_id *id);
+>>>>>>>> -static int max6650_init_client(struct i2c_client *client);
+>>>>>>>> -static int max6650_remove(struct i2c_client *client);
+>>>>>>>> +static int max6650_probe(struct platform_device *pdev);
+>>>>>>>> +static int max6650_init_client(struct platform_device *pdev);
+>>>>>>>> +static int max6650_remove(struct platform_device *pdev);
+>>>>>>>>   static struct max6650_data *max6650_update_device(struct device
+>>>>>>>> *dev);
+>>>>>>>
+>>>>>>>
+>>>>>>> It would be good to remove these forward declarations in the future.
+>>>>>>>
+>>>>>>> If no one volunteers I'll happily do it.
+>>>>>>
+>>>>>>
+>>>>>> Guenter just did:
+>>>>>>
+>>>>>>
+>>>>>> http://lists.lm-sensors.org/pipermail/lm-sensors/2014-February/041224.html
+>>>>>>
+>>>>>> Any change to the max6650 driver should go on top of his patch series
+>>>>>> to avoid conflicts:
+>>>>>>
+>>>>>>
+>>>>>> http://lists.lm-sensors.org/pipermail/lm-sensors/2014-February/041223.html
+>>>>>
+>>>>>
+>>>> As far as I can see, that patch set was not even tested, so how can it
+>>>> go in? I was told that any patch should be _runtime_ tested, too.
+>>>> Fwiw, I do not have time to test those personally, he would need to
+>>>> find someone else if that requirement really holds true.
+>>>>
+>>>> I would not really like to fix bugs appearing in that code to get my
+>>>> features in.
+>>>>
+>>>> Also, since my change has been around for 2-3 months now, I would
+>>>> really prefer not to be forced to rewrite it again from scratch.
+>>>> Surely, you can wait with those, more or less, cosmetic non-runtime
+>>>> tested changes?
+>>>>
+>>>> This would impose me a lot of additional work again, and I personally
+>>>> do not see the benefit of it. In my book at least, feature is over
+>>>> internal polishing.
+>>>
+>>>
+>>> Right, I've had enough. I'm removing your patch from the MFD tree.
+>>>
+>>> I've asked too many people to give you a second chance and asked you
+>>> privately to behave yourself and treat others with respect. So far I
+>>> haven't seen an ounce of self control or depomacy from you.
+>>>
+>>> This is how it's going to work from now on:
+>>>
+>>>   - You submit a patch
+>>>   - It gets reviewed                            <----\
+>>>   - You fix up the review comments as requested -----/
+>>>   - Non-compliance or arguments with the _experts_ results in:
+>>>      `$INTEREST > /dev/null || \
+>>>        grep "From: Laszio Papp" ~/.mail | xargs rm -rf`
+>>
+>>
+>> http://comments.gmane.org/gmane.linux.kernel/1645251
+>>
+>> Step 2 did not happen. I did not get any review for my change. I
+>> literally submitted that within a couple of hours after the request.
+>>
+>
+> If you had tested your patch on real or simulated hardware,
+> you might have noticed a crash whenever you accessed any
+> of the attributes. So you did not test your patch.
+>
+> Instead of trying to educate you how the conversion to the
+> new API works, I decided to help you out a bit and do
+> the conversion myself.
 
-One example is the AX88772B which occasionally send rx packets that
-cross urb boundaries where the remaining partial packet is sent with
-no hardware header. When the buffer with a partial packet is of less
-number of octets than the value of hard_header_len the buffer is
-discarded by the usbnet module.
+I am afraid that with this attitude and approach towards potential new
+contributors, you will put more and more work on you making it more
+difficult to get things done at large. "Educating" new people is a win
+in the long run, and this is a general practice out there before
+claiming that I am crazy (e.g. someone even told me in the kernel
+circles that is "rude").
 
-With AX88772B this can be reproduced by using ping with a packet
-size between 1965-1976.
+I am surprised that mentoring new people is considered bad idea in
+here. Since there is no guarantee you would not do it next time if I
+tried to put effort into contributing, I feel more comfortable to skip
+this project for now, and work where I know this cannot happen.
+Currently, I do not feel inclusive in this project due to this
+approach.
 
-The bug has been reported here:
+I do not even claim that you would be this to me intentionally, but it
+has happened either way.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=29082
+> I did some cleanup before, since
+> that made the actual feature patch easier for me to implement,
+> and I did some more cleanup afterwards just because I like
+> cleaning up code.
 
-This patch introduces the following changes:
-- Removes the generic hard_header_len check in the rx_complete
-  function in the usbnet module.
-- Introduces a ETH_HLEN check for skbs that are not cloned from
-  within a rx_fixup callback.
-- For safety a hard_header_len check is added to each rx_fixup
-  callback function that could be affected by this change.
-  These extra checks could possibly be removed by someone
-  who has the hardware to test.
-- Removes a call to dev_kfree_skb_any() and instead utilizes the
-  dev->done list to queue skbs for cleanup.
-
-The changes place full responsibility on the rx_fixup callback
-functions that clone skbs to only pass valid skbs to the
-usbnet_skb_return function.
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Reported-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
----
-v2: Added a comment in the changelog about the removal of a
-    call to dev_kfree_skb_any().
-
- drivers/net/usb/ax88179_178a.c |    4 ++++
- drivers/net/usb/gl620a.c       |    4 ++++
- drivers/net/usb/mcs7830.c      |    5 +++--
- drivers/net/usb/net1080.c      |    4 ++++
- drivers/net/usb/qmi_wwan.c     |    8 ++++----
- drivers/net/usb/rndis_host.c   |    4 ++++
- drivers/net/usb/smsc75xx.c     |    4 ++++
- drivers/net/usb/smsc95xx.c     |    4 ++++
- drivers/net/usb/sr9800.c       |    4 ++++
- drivers/net/usb/usbnet.c       |   25 ++++++++++---------------
- 10 files changed, 45 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
-index d6f64da..955df81 100644
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -1118,6 +1118,10 @@ static int ax88179_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	u16 hdr_off;
- 	u32 *pkt_hdr;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	skb_trim(skb, skb->len - 4);
- 	memcpy(&rx_hdr, skb_tail_pointer(skb), 4);
- 	le32_to_cpus(&rx_hdr);
-diff --git a/drivers/net/usb/gl620a.c b/drivers/net/usb/gl620a.c
-index e4a8a93..1cc24e6 100644
---- a/drivers/net/usb/gl620a.c
-+++ b/drivers/net/usb/gl620a.c
-@@ -84,6 +84,10 @@ static int genelink_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	u32			size;
- 	u32			count;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	header = (struct gl_header *) skb->data;
- 
- 	// get the packet count of the received skb
-diff --git a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
-index a305a7b..82d844a 100644
---- a/drivers/net/usb/mcs7830.c
-+++ b/drivers/net/usb/mcs7830.c
-@@ -526,8 +526,9 @@ static int mcs7830_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
- 	u8 status;
- 
--	if (skb->len == 0) {
--		dev_err(&dev->udev->dev, "unexpected empty rx frame\n");
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len) {
-+		dev_err(&dev->udev->dev, "unexpected tiny rx frame\n");
- 		return 0;
- 	}
- 
-diff --git a/drivers/net/usb/net1080.c b/drivers/net/usb/net1080.c
-index 0a85d92..4cbdb13 100644
---- a/drivers/net/usb/net1080.c
-+++ b/drivers/net/usb/net1080.c
-@@ -364,6 +364,10 @@ static int net1080_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	struct nc_trailer	*trailer;
- 	u16			hdr_len, packet_len;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	if (!(skb->len & 0x01)) {
- 		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
- 			   skb->len, dev->net->hard_header_len, dev->hard_mtu,
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index ff5c871..b2e2aee 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -80,10 +80,10 @@ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
- 	__be16 proto;
- 
--	/* usbnet rx_complete guarantees that skb->len is at least
--	 * hard_header_len, so we can inspect the dest address without
--	 * checking skb->len
--	 */
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	switch (skb->data[0] & 0xf0) {
- 	case 0x40:
- 		proto = htons(ETH_P_IP);
-diff --git a/drivers/net/usb/rndis_host.c b/drivers/net/usb/rndis_host.c
-index a48bc0f..524a47a 100644
---- a/drivers/net/usb/rndis_host.c
-+++ b/drivers/net/usb/rndis_host.c
-@@ -492,6 +492,10 @@ EXPORT_SYMBOL_GPL(rndis_unbind);
-  */
- int rndis_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	/* peripheral may have batched packets to us... */
- 	while (likely(skb->len)) {
- 		struct rndis_data_hdr	*hdr = (void *)skb->data;
-diff --git a/drivers/net/usb/smsc75xx.c b/drivers/net/usb/smsc75xx.c
-index f17b9e0..d9e7892 100644
---- a/drivers/net/usb/smsc75xx.c
-+++ b/drivers/net/usb/smsc75xx.c
-@@ -2106,6 +2106,10 @@ static void smsc75xx_rx_csum_offload(struct usbnet *dev, struct sk_buff *skb,
- 
- static int smsc75xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	while (skb->len > 0) {
- 		u32 rx_cmd_a, rx_cmd_b, align_count, size;
- 		struct sk_buff *ax_skb;
-diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-index 8dd54a0..424db65e 100644
---- a/drivers/net/usb/smsc95xx.c
-+++ b/drivers/net/usb/smsc95xx.c
-@@ -1723,6 +1723,10 @@ static void smsc95xx_rx_csum_offload(struct sk_buff *skb)
- 
- static int smsc95xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	while (skb->len > 0) {
- 		u32 header, align_count;
- 		struct sk_buff *ax_skb;
-diff --git a/drivers/net/usb/sr9800.c b/drivers/net/usb/sr9800.c
-index 4175eb9..575be80 100644
---- a/drivers/net/usb/sr9800.c
-+++ b/drivers/net/usb/sr9800.c
-@@ -63,6 +63,10 @@ static int sr_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- {
- 	int offset = 0;
- 
-+	/* This check is no longer done by usbnet */
-+	if (skb->len < dev->net->hard_header_len)
-+		return 0;
-+
- 	while (offset + sizeof(u32) < skb->len) {
- 		struct sk_buff *sr_skb;
- 		u16 size;
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index 4671da7..dd10d58 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -542,17 +542,19 @@ static inline void rx_process (struct usbnet *dev, struct sk_buff *skb)
- 	}
- 	// else network stack removes extra byte if we forced a short packet
- 
--	if (skb->len) {
--		/* all data was already cloned from skb inside the driver */
--		if (dev->driver_info->flags & FLAG_MULTI_PACKET)
--			dev_kfree_skb_any(skb);
--		else
--			usbnet_skb_return(dev, skb);
-+	/* all data was already cloned from skb inside the driver */
-+	if (dev->driver_info->flags & FLAG_MULTI_PACKET)
-+		goto done;
-+
-+	if (skb->len < ETH_HLEN) {
-+		dev->net->stats.rx_errors++;
-+		dev->net->stats.rx_length_errors++;
-+		netif_dbg(dev, rx_err, dev->net, "rx length %d\n", skb->len);
-+	} else {
-+		usbnet_skb_return(dev, skb);
- 		return;
- 	}
- 
--	netif_dbg(dev, rx_err, dev->net, "drop\n");
--	dev->net->stats.rx_errors++;
- done:
- 	skb_queue_tail(&dev->done, skb);
- }
-@@ -574,13 +576,6 @@ static void rx_complete (struct urb *urb)
- 	switch (urb_status) {
- 	/* success */
- 	case 0:
--		if (skb->len < dev->net->hard_header_len) {
--			state = rx_cleanup;
--			dev->net->stats.rx_errors++;
--			dev->net->stats.rx_length_errors++;
--			netif_dbg(dev, rx_err, dev->net,
--				  "rx length %d\n", skb->len);
--		}
- 		break;
- 
- 	/* stalls need manual reset. this is rare ... except that
--- 
-1.7.10.4
-
+IMO, it is not worth making the git history noisy with needless
+re-arranging like forward headers, but that is just my opinion. Please
+do not say, it is rude and not respectful. I definitely respect your
+opinion, I just do not agree with it, but that is fine, you are a
+maintainer so you get to decide, I guess. That being said, perhaps I
+missed something why such re-arranging outweighs the git history
+disadvantage.
