@@ -1,148 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908AbaBMNsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 08:48:01 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:55794 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040AbaBMNrp (ORCPT
+	id S1754050AbaBMNtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 08:49:45 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:20399 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084AbaBMNtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 08:47:45 -0500
-X-Auth-Info: gEDhNnH93umOryP30d7txNexi0oibr1Ic/xBpV9uZ78=
-From: Heiko Schocher <hs@denx.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Heiko Schocher <hs@denx.de>, Mugunthan V N <mugunthanvnm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sebastian Siewior <bigeasy@linutronix.de>,
-        Daniel Mack <zonque@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Markus Pargmann <mpa@pengutronix.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers: net: cpsw: fix buggy loop condition
-Date: Thu, 13 Feb 2014 14:47:27 +0100
-Message-Id: <1392299247-16917-1-git-send-email-hs@denx.de>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 13 Feb 2014 08:49:43 -0500
+X-AuditID: cbfec37d-b7ff46d000005528-d3-52fccd764346
+Message-id: <52FCCD6D.6020704@samsung.com>
+Date: Thu, 13 Feb 2014 06:49:33 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, mirq-linux@rere.qmqm.pl,
+        Chris Ball <chris@printf.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Shuah Khan <shuahkhan@gmail.com>, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [RFT][PATCH v3] mmc: change cb710-mmc platform power management to
+ use dev_pm_ops
+References: <1392240089-19489-1-git-send-email-shuah.kh@samsung.com>
+ <CAPDyKFoukY2PGNWimUbRqDr36eJ_+eBASJR4uac6nH4-kowmCQ@mail.gmail.com>
+In-reply-to: <CAPDyKFoukY2PGNWimUbRqDr36eJ_+eBASJR4uac6nH4-kowmCQ@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.9]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t9hX92ys3+CDD5+kLKYcHk7o8XlXXPY
+	LI7872e0+Nx7hNHi2/NTjBZnTl9itfj608Hi+NpwBw6PnbPusnvcubaHzePGq4VMHrPa9rF5
+	bLnazuLxeZNcAFsUl01Kak5mWWqRvl0CV8acM5tZCxpEKq49+c7SwPibv4uRk0NCwETi2KRW
+	VghbTOLCvfVsXYxcHEICyxgl/u38yAjh9DJJ/Dy3mAXC2cAo8floOzNIC6+AlsT1058YQWwW
+	AVWJZX/3g8XZBNQlPr/ewQ5iCwnISTQtWQ0WFxWIkHh1diILRK+gxI/J98BsEQENiT0Pz4Od
+	wSxwnkli4ScrEFtYIEGipxnmim5GiYt71gIVcXBwCgRL/FlSBFFvLbFy0jZGCFteYvOat8wQ
+	e5Ul/lw+xQTxmoLEh+P/mCcwisxCsnoWkvZZSNoXMDKvYhQrLU4uKE5KT60w0StOzC0uzUvX
+	S87P3cQIia3aHYz3v9ocYhTgYFTi4bVY9jtIiDWxrLgy9xCjBAezkghv+JE/QUK8KYmVValF
+	+fFFpTmpxYcYmTg4pRoYfQuY1h7ktQrWfdiY6Bmql37osHP5DJWI1/bx1RFOXffY1i9V2R9u
+	Hfe2XzVjqSL/tVkf+vlXP7q+P/jEkrl7/61l+n3VtqPQTMpAT/5Wt7o33wWulV+sDM+uqRL5
+	eesjs8ScNz0XPf4wXPi4gN/2Cn/HTy45x6/TNfpyLm37sNa1Yd2V/qy5SizFGYmGWsxFxYkA
+	vQW2JYsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit:
->From 0cd8f9cc0654c06adde353c6532114c5f53a18e8 Mon Sep 17 00:00:00 2001
-From: Mugunthan V N <mugunthanvnm@ti.com>
-Date: Thu, 23 Jan 2014 00:03:12 +0530
-Subject: [PATCH] drivers: net: cpsw: enable promiscuous mode support
+On 02/13/2014 02:47 AM, Ulf Hansson wrote:
+> On 12 February 2014 22:21, Shuah Khan <shuah.kh@samsung.com> wrote:
+>> Change cb710-mmc platform driver to register pm ops using dev_pm_ops instead
+>> of legacy pm_ops. The existing legacy suspend/resume routines are identical
+>> and simply clear IRQ mask in the device in case it got undefined during sleep
+>> state. Changed code to collapse suspend and resume into one .pm interface
+>> for suspend and resume which gets installed for suspend, freeze, poweroff,
+>> thaw, restore, and resume states using SIMPLE_DEV_PM_OPS().
+>>
+>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+>> ---
+>>
+>> patch v3: Addresses review comments on patch v2
+>>
+>>   drivers/mmc/host/cb710-mmc.c |   40 ++++++++++++++++------------------------
+>>   1 file changed, 16 insertions(+), 24 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/cb710-mmc.c b/drivers/mmc/host/cb710-mmc.c
+>> index 1087b4c..2dc7b2dc 100644
+>> --- a/drivers/mmc/host/cb710-mmc.c
+>> +++ b/drivers/mmc/host/cb710-mmc.c
+>> @@ -662,26 +662,6 @@ static const struct mmc_host_ops cb710_mmc_host = {
+>>          .get_cd = cb710_mmc_get_cd,
+>>   };
+>>
+>> -#ifdef CONFIG_PM
+>> -
+>> -static int cb710_mmc_suspend(struct platform_device *pdev, pm_message_t state)
+>> -{
+>> -       struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+>> -
+>> -       cb710_mmc_enable_irq(slot, 0, ~0);
+>> -       return 0;
+>> -}
+>> -
+>> -static int cb710_mmc_resume(struct platform_device *pdev)
+>> -{
+>> -       struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+>> -
+>> -       cb710_mmc_enable_irq(slot, 0, ~0);
+>> -       return 0;
+>> -}
+>> -
+>> -#endif /* CONFIG_PM */
+>> -
+>>   static int cb710_mmc_init(struct platform_device *pdev)
+>>   {
+>>          struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+>> @@ -762,14 +742,26 @@ static int cb710_mmc_exit(struct platform_device *pdev)
+>>          return 0;
+>>   }
+>>
+>> +#ifdef CONFIG_PM_SLEEP
+>> +static int cb710_mmc_suspend_resume(struct device *dev)
+>> +{
+>> +       struct cb710_slot *slot = cb710_pdev_to_slot(to_platform_device(dev));
+>> +
+>> +       cb710_mmc_enable_irq(slot, 0, ~0);
+>> +       return 0;
+>> +}
+>> +#else
+>> +#define cb710_mmc_suspend_resume NULL
+>
+> You don't need this. The macro will handle this for you.
+>
 
-Enable promiscuous mode support for CPSW.
+Without this compiles fail when CONFIG_PM_SLEEP is not defined.
 
-Introduced a crash on an am335x based board (similiar to am335x-evm).
-Reason is buggy end condition in for loop in cpsw_set_promiscious()
+-- Shuah
 
-for (i = 0; i <= priv->data.slaves; i++)
 
-should be
-
-for (i = 0; i < priv->data.slaves; i++)
-
-Fix this ...
-
-Signed-off-by: Heiko Schocher <hs@denx.de>
-Cc: Mugunthan V N <mugunthanvnm@ti.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Sebastian Siewior <bigeasy@linutronix.de>
-Cc: Daniel Mack <zonque@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Markus Pargmann <mpa@pengutronix.de>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-
----
-complete crash dump
-[    4.986544] Unable to handle kernel NULL pointer dereference at virtual address 00000120
-[    4.995056] pgd = c0004000
-[    4.997906] [00000120] *pgd=00000000
-[    5.001723] Internal error: Oops: 5 [#1] SMP ARM
-[    5.006560] Modules linked in:
-[    5.009773] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc1-01621-ga10cd7e-dirty #9
-[    5.018243] task: c607b540 ti: c607c000 task.ti: c607c000
-[    5.023914] PC is at cpsw_set_promiscious+0x1d8/0x2a4
-[    5.029204] LR is at cpsw_set_promiscious+0x1c0/0x2a4
-[    5.034494] pc : [<c0407c18>]    lr : [<c0407c00>]    psr: 60000113
-[    5.034494] sp : c607dd88  ip : c0984ab8  fp : c085c7cc
-[    5.046506] r10: 00000024  r9 : c64b31d8  r8 : 00000003
-[    5.051974] r7 : 00000000  r6 : c64ad800  r5 : c64b3080  r4 : 00000000
-[    5.058806] r3 : 00000003  r2 : c64b3190  r1 : 00000002  r0 : 00000000
-[    5.065641] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    5.073291] Control: 10c5387d  Table: 80004019  DAC: 00000017
-[    5.079303] Process swapper/0 (pid: 1, stack limit = 0xc607c248)
-[    5.085592] Stack: (0xc607dd88 to 0xc607e000)
-[    5.090158] dd80:                   c64ad800 c05ff710 00000000 00000000 00000000 00001002
-[    5.098722] dda0: 0000016b c0409c44 00000000 00000000 c64ad800 c05ff710 00000000 00000000
-[    5.107287] ddc0: 00000000 00001002 0000016b c04cd8cc c64ad964 c64ad800 c64ad82c c04cd920
-[    5.115850] dde0: 00001003 c64ad800 c05ff710 c04cd9f0 00000000 c64ad800 00001002 c64ad800
-[    5.124414] de00: 00001003 00000001 00001002 c04cdc58 c64ad800 00000128 00001002 c08fe840
-[    5.132979] de20: 00000000 c04cdd58 c64ad800 00000003 c085c7e0 c08fe840 c085c7cc c0847ce8
-[    5.141543] de40: 00000000 c058fbf4 c607b540 c5b17cd0 c5b131c8 00000000 12400000 c02a1558
-[    5.150105] de60: c5b17d0c 00000000 00000002 00000000 00000000 00000000 00000002 00000000
-[    5.158669] de80: c05185b4 c00873ac 00000002 00000000 00000000 c05185b4 00000000 c607c030
-[    5.167233] dea0: c607c008 60000113 c08f79c0 c0901610 00000007 c090bdc0 c090bdc0 c08459c8
-[    5.175798] dec0: c0901610 00000007 c090bdc0 c08615ac 00000007 c090bdc0 c090bdc0 c0847b58
-[    5.184362] dee0: 000000bd c607c030 00000000 c0008918 00000004 c08bfa30 c08bfa30 60000113
-[    5.192926] df00: c0089d00 00000000 c08bfa2c 00000000 00000000 c0590db0 00000002 c607c000
-[    5.201489] df20: c7eff36d c05dd514 000000bd c005df1c c07d1ed4 00000007 c7eff419 00000007
-[    5.210054] df40: 60000113 c08615ac 00000007 c090bdc0 c090bdc0 c080450c 000000bd c084d950
-[    5.218620] df60: c084d948 c0804c1c 00000007 00000007 c080450c dfdedeff fcdfffff c7dd9ec0
-[    5.227183] df80: c607c018 00000000 c058668c 00000000 00000000 00000000 00000000 00000000
-[    5.235747] dfa0: 00000000 c0586694 00000000 c000e548 00000000 00000000 00000000 00000000
-[    5.244310] dfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-[    5.252873] dfe0: 00000000 00000000 00000000 00000000 00000013 00000000 fffff6f7 7ffeefbf
-[    5.261448] [<c0407c18>] (cpsw_set_promiscious) from [<c0409c44>] (cpsw_ndo_set_rx_mode+0x20/0xf8)
-[    5.270841] [<c0409c44>] (cpsw_ndo_set_rx_mode) from [<c04cd8cc>] (__dev_set_rx_mode+0x5c/0x94)
-[    5.279952] [<c04cd8cc>] (__dev_set_rx_mode) from [<c04cd920>] (dev_set_rx_mode+0x1c/0x28)
-[    5.288609] [<c04cd920>] (dev_set_rx_mode) from [<c04cd9f0>] (__dev_open+0xc4/0x110)
-[    5.296720] [<c04cd9f0>] (__dev_open) from [<c04cdc58>] (__dev_change_flags+0x88/0x170)
-[    5.305102] [<c04cdc58>] (__dev_change_flags) from [<c04cdd58>] (dev_change_flags+0x18/0x48)
-[    5.313945] [<c04cdd58>] (dev_change_flags) from [<c0847ce8>] (ip_auto_config+0x190/0x110c)
-[    5.322697] [<c0847ce8>] (ip_auto_config) from [<c0008918>] (do_one_initcall+0xe8/0x148)
-[    5.331190] [<c0008918>] (do_one_initcall) from [<c0804c1c>] (kernel_init_freeable+0x104/0x1c8)
-[    5.340316] [<c0804c1c>] (kernel_init_freeable) from [<c0586694>] (kernel_init+0x8/0x118)
-[    5.348890] [<c0586694>] (kernel_init) from [<c000e548>] (ret_from_fork+0x14/0x2c)
-[    5.356821] Code: e0829009 e2888001 e5990018 e1a03008 (e5900120)
-[    5.363291] ---[ end trace ba29586f1d312ca3 ]---
-[    5.369343] Kernel panic - not syncing: Fatal exception in interrupt
-[    5.376005] drm_kms_helper: panic occurred, switching back to text console
----
- drivers/net/ethernet/ti/cpsw.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index bde63e3..34b4262 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -554,7 +554,7 @@ static void cpsw_set_promiscious(struct net_device *ndev, bool enable)
- 		 * common for both the interface as the interface shares
- 		 * the same hardware resource.
- 		 */
--		for (i = 0; i <= priv->data.slaves; i++)
-+		for (i = 0; i < priv->data.slaves; i++)
- 			if (priv->slaves[i].ndev->flags & IFF_PROMISC)
- 				flag = true;
- 
-@@ -578,7 +578,7 @@ static void cpsw_set_promiscious(struct net_device *ndev, bool enable)
- 			unsigned long timeout = jiffies + HZ;
- 
- 			/* Disable Learn for all ports */
--			for (i = 0; i <= priv->data.slaves; i++) {
-+			for (i = 0; i < priv->data.slaves; i++) {
- 				cpsw_ale_control_set(ale, i,
- 						     ALE_PORT_NOLEARN, 1);
- 				cpsw_ale_control_set(ale, i,
-@@ -606,7 +606,7 @@ static void cpsw_set_promiscious(struct net_device *ndev, bool enable)
- 			cpsw_ale_control_set(ale, 0, ALE_P0_UNI_FLOOD, 0);
- 
- 			/* Enable Learn for all ports */
--			for (i = 0; i <= priv->data.slaves; i++) {
-+			for (i = 0; i < priv->data.slaves; i++) {
- 				cpsw_ale_control_set(ale, i,
- 						     ALE_PORT_NOLEARN, 0);
- 				cpsw_ale_control_set(ale, i,
 -- 
-1.8.3.1
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
