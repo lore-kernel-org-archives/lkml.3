@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaBMPLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:11:19 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:37368 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaBMPLS (ORCPT
+	id S1751784AbaBMPOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:14:35 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:42102 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643AbaBMPOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:11:18 -0500
+	Thu, 13 Feb 2014 10:14:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4RvavkaPvz8vozUvgOs6fSmYNR=2=sn76aFFCbR5caaBA@mail.gmail.com>
-References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
-	<CANq1E4RvavkaPvz8vozUvgOs6fSmYNR=2=sn76aFFCbR5caaBA@mail.gmail.com>
-Date: Thu, 13 Feb 2014 10:11:16 -0500
-Message-ID: <CAN+gG=Gs94bQPNuW4rivEcGrySXkp2DNAVVt1PA1m2=FqR0AkQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] HID: spring cleanup v2
+In-Reply-To: <CANq1E4SYvLAhH3WqGNCZBrxwd8RiwL-wH90tZP9Je1doDxvhXQ@mail.gmail.com>
+References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1392055139-19631-6-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4SYvLAhH3WqGNCZBrxwd8RiwL-wH90tZP9Je1doDxvhXQ@mail.gmail.com>
+Date: Thu, 13 Feb 2014 10:14:32 -0500
+Message-ID: <CAN+gG=HZJ9b7_kw1CGwmhMOpPq+cy8r5vKORs-VXHi69Gbb-+A@mail.gmail.com>
+Subject: Re: [PATCH 05/14] HID: i2c-hid: use generic .request() implementation
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>
+To: David Herrmann <dh.herrmann@gmail.com>
 Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        Jiri Kosina <jkosina@suse.cz>,
         "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
@@ -26,82 +26,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-On Wed, Feb 12, 2014 at 5:13 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+On Wed, Feb 12, 2014 at 5:30 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
 > Hi
 >
-> On Wed, Feb 5, 2014 at 10:33 PM, Benjamin Tissoires
+> On Mon, Feb 10, 2014 at 6:58 PM, Benjamin Tissoires
 > <benjamin.tissoires@redhat.com> wrote:
->> Hi guys,
+>> Having our own .request() implementation does not give anything,
+>> so use the generic binding.
 >>
->> well, here comes the promised v2 of the ll_transport cleanup.
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>  drivers/hid/i2c-hid/i2c-hid.c | 31 -------------------------------
+>>  1 file changed, 31 deletions(-)
 >>
->> As I said, I removed patches which need some more work, and kept only the
->> trivial ones. I also added David's documentation, which gives us a net
->> difference of +210 lines of code :(
->> Let's say that we still have a net worth of -106 lines of actual code :)
+>> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+>> index 07a054a..925fb8d 100644
+>> --- a/drivers/hid/i2c-hid/i2c-hid.c
+>> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+>> @@ -632,36 +632,6 @@ static int i2c_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
+>>         }
+>>  }
 >>
->> Cheers,
->> Benjamin
->>
->> Changes since v1:
->> - removed uhid, i2c-hid patches
->> - removed the previous 11/11 (move hid_output_raw_report to hid_ll_driver)
->> - hid-logitech-dj: use hid_hw_raw_request instead of hid_output_report (2/9)
->> - add documentation - I removed the hid_input_event() doc (9/9)
->>
->> Benjamin Tissoires (9):
->>   HID: add inliners for ll_driver transport-layer callbacks
->>   HID: logitech-dj: remove hidinput_input_event
+>> -static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
+>> -               int reqtype)
+>> -{
+>> -       struct i2c_client *client = hid->driver_data;
+>> -       char *buf;
+>> -       int ret;
+>> -       int len = i2c_hid_get_report_length(rep) - 2;
+>> -
+>> -       buf = kzalloc(len, GFP_KERNEL);
 >
-> Apart from this logitech-dj patch, which I feel uncomfortable with
-> reviewing if I don't have the hardware, this series looks really good.
-> I think all patches already carry my r-b, otherwise feel free to add
-> them.
+> Haven't you recently fixed this to use hid_alloc_buffer()? Anyhow,
 
-Thanks a lot for the review!
-
-I tested the logitech one with a TK820 which has a LED on the
-capslock, and it's working fine. Still adding Nestor in the loop if he
-manages to find some time to review it.
-
-Nestor, could you have a look at 2/9
-(https://patchwork.kernel.org/patch/3591381/)?
+yes, it has been fixed. But Jiri carried it through a *-upstream
+branch, which is not merged into his for-next currently (or at the
+time I sent the patch). hopefully the merge will be easy, or I can
+wait for it to be in for-next before resending a smoother v2.
 
 Cheers,
 Benjamin
 
+> patch obviously looks good:
 >
-> Thanks a lot for the cleanup!
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+>
+> Thanks
 > David
 >
->>   HID: HIDp: remove hidp_hidinput_event
->>   HID: remove hidinput_input_event handler
->>   HID: HIDp: remove duplicated coded
->>   HID: usbhid: remove duplicated code
->>   HID: remove hid_get_raw_report in struct hid_device
->>   HID: introduce helper to access hid_output_raw_report()
->>   HID: Add HID transport driver documentation
->>
->>  Documentation/hid/hid-transport.txt | 316 ++++++++++++++++++++++++++++++++++++
->>  drivers/hid/hid-input.c             |  12 +-
->>  drivers/hid/hid-lg.c                |   6 +-
->>  drivers/hid/hid-logitech-dj.c       | 106 +++++-------
->>  drivers/hid/hid-magicmouse.c        |   2 +-
->>  drivers/hid/hid-sony.c              |   9 +-
->>  drivers/hid/hid-thingm.c            |   4 +-
->>  drivers/hid/hid-wacom.c             |  16 +-
->>  drivers/hid/hid-wiimote-core.c      |   2 +-
->>  drivers/hid/hidraw.c                |   9 +-
->>  drivers/hid/i2c-hid/i2c-hid.c       |   1 -
->>  drivers/hid/uhid.c                  |   1 -
->>  drivers/hid/usbhid/hid-core.c       |  65 ++------
->>  include/linux/hid.h                 |  68 +++++++-
->>  net/bluetooth/hidp/core.c           | 115 ++-----------
->>  15 files changed, 471 insertions(+), 261 deletions(-)
->>  create mode 100644 Documentation/hid/hid-transport.txt
->>
+>> -       if (!buf)
+>> -               return;
+>> -
+>> -       switch (reqtype) {
+>> -       case HID_REQ_GET_REPORT:
+>> -               ret = i2c_hid_get_raw_report(hid, rep->id, buf, len, rep->type);
+>> -               if (ret < 0)
+>> -                       dev_err(&client->dev, "%s: unable to get report: %d\n",
+>> -                               __func__, ret);
+>> -               else
+>> -                       hid_input_report(hid, rep->type, buf, ret, 0);
+>> -               break;
+>> -       case HID_REQ_SET_REPORT:
+>> -               hid_output_report(rep, buf);
+>> -               i2c_hid_output_raw_report(hid, buf, len, rep->type, true);
+>> -               break;
+>> -       }
+>> -
+>> -       kfree(buf);
+>> -}
+>> -
+>>  static int i2c_hid_parse(struct hid_device *hid)
+>>  {
+>>         struct i2c_client *client = hid->driver_data;
+>> @@ -817,7 +787,6 @@ static struct hid_ll_driver i2c_hid_ll_driver = {
+>>         .open = i2c_hid_open,
+>>         .close = i2c_hid_close,
+>>         .power = i2c_hid_power,
+>> -       .request = i2c_hid_request,
+>>         .output_report = i2c_hid_output_report,
+>>         .raw_request = i2c_hid_raw_request,
+>>  };
 >> --
 >> 1.8.3.1
 >>
