@@ -1,164 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaBMB3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 20:29:37 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:45577 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394AbaBMB26 (ORCPT
+	id S1753243AbaBMB3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 20:29:55 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:37419 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaBMB3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 20:28:58 -0500
-X-AuditID: 85900ec0-cff26b9000001514-0a-52fc1fd81d19
-Subject: [PATCH -tip RESEND 1/2] ftrace: Make saved_cmdlines use seq_read
-To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Date: Thu, 13 Feb 2014 10:28:55 +0900
-Message-ID: <20140213012855.15283.94188.stgit@yunodevel>
-In-Reply-To: <20140213012852.15283.50473.stgit@yunodevel>
-References: <20140213012852.15283.50473.stgit@yunodevel>
-User-Agent: StGit/0.16
+	Wed, 12 Feb 2014 20:29:53 -0500
+Date: Wed, 12 Feb 2014 17:29:09 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] memcg: barriers to see memcgs as fully initialized
+In-Reply-To: <alpine.LSU.2.11.1402121717420.5917@eggly.anvils>
+Message-ID: <alpine.LSU.2.11.1402121727050.5917@eggly.anvils>
+References: <alpine.LSU.2.11.1402121717420.5917@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current tracing_saved_cmdlines_read() implementation is naive;
-simply allocate a big buffer, construct output data on the
-buffer for each read operation, and then copy a portion of
-the buffer to the user space buffer.  This can cause a couple of
-issues such as a slow memory allocation, high cpu usage, and a
-corruption of the output data.
+Commit d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully
+initialized") is not bad, but Greg Thelen asks "Are barriers needed?"
 
-To address these issues, make saved_cmdlines use seq_read.
+Yes, I'm afraid so: this makes it a little heavier than the original,
+but there's no point in guaranteeing that mem_cgroup_iter() returns only
+fully initialized memcgs, if we don't guarantee that the initialization
+is visible.
 
-Signed-off-by: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org
+If we move online_css()'s setting CSS_ONLINE after rcu_assign_pointer()
+(I don't see why not), we can reasonably rely on the smp_wmb() in that.
+But I can't find a pre-existing barrier at the mem_cgroup_iter() end,
+so add an smp_rmb() where __mem_cgroup_iter_next() returns non-NULL.
+
+Fixes: d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully initialized")
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org # 3.12+
 ---
- kernel/trace/trace.c |   89 ++++++++++++++++++++++++++++++--------------------
- 1 file changed, 54 insertions(+), 35 deletions(-)
+I'd have been happier not to have to add this patch: maybe you can see
+a better placement, or a way we can avoid this altogether.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 6a9212d..f930f4d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3676,55 +3676,74 @@ static const struct file_operations tracing_readme_fops = {
- 	.llseek		= generic_file_llseek,
- };
- 
--static ssize_t
--tracing_saved_cmdlines_read(struct file *file, char __user *ubuf,
--				size_t cnt, loff_t *ppos)
-+static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
- {
--	char *buf_comm;
--	char *file_buf;
--	char *buf;
--	int len = 0;
--	int pid;
--	int i;
-+	unsigned int *ptr = v;
- 
--	file_buf = kmalloc(SAVED_CMDLINES*(16+TASK_COMM_LEN), GFP_KERNEL);
--	if (!file_buf)
--		return -ENOMEM;
-+	if (*pos || m->count)
-+		ptr++;
- 
--	buf_comm = kmalloc(TASK_COMM_LEN, GFP_KERNEL);
--	if (!buf_comm) {
--		kfree(file_buf);
--		return -ENOMEM;
--	}
-+	(*pos)++;
-+
-+	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
-+		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
-+			continue;
- 
--	buf = file_buf;
-+		return ptr;
-+	}
- 
--	for (i = 0; i < SAVED_CMDLINES; i++) {
--		int r;
-+	return NULL;
-+}
- 
--		pid = map_cmdline_to_pid[i];
--		if (pid == -1 || pid == NO_CMDLINE_MAP)
--			continue;
-+static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
-+{
-+	void *v;
-+	loff_t l = 0;
- 
--		trace_find_cmdline(pid, buf_comm);
--		r = sprintf(buf, "%d %s\n", pid, buf_comm);
--		buf += r;
--		len += r;
-+	v = &map_cmdline_to_pid[0];
-+	while (l <= *pos) {
-+		v = saved_cmdlines_next(m, v, &l);
-+		if (!v)
-+			return NULL;
+ kernel/cgroup.c |    8 +++++++-
+ mm/memcontrol.c |   11 +++++++++--
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+--- 3.14-rc2+/kernel/cgroup.c	2014-02-02 18:49:07.737302111 -0800
++++ linux/kernel/cgroup.c	2014-02-12 11:59:52.804041895 -0800
+@@ -4063,9 +4063,15 @@ static int online_css(struct cgroup_subs
+ 	if (ss->css_online)
+ 		ret = ss->css_online(css);
+ 	if (!ret) {
+-		css->flags |= CSS_ONLINE;
+ 		css->cgroup->nr_css++;
+ 		rcu_assign_pointer(css->cgroup->subsys[ss->subsys_id], css);
++		/*
++		 * Set CSS_ONLINE after rcu_assign_pointer(), so that its
++		 * smp_wmb() will guarantee that those seeing CSS_ONLINE
++		 * can see the initialization done in ss->css_online() - if
++		 * they provide an smp_rmb(), as in __mem_cgroup_iter_next().
++		 */
++		css->flags |= CSS_ONLINE;
  	}
- 
--	len = simple_read_from_buffer(ubuf, cnt, ppos,
--				      file_buf, len);
-+	return v;
-+}
- 
--	kfree(file_buf);
--	kfree(buf_comm);
-+static void saved_cmdlines_stop(struct seq_file *m, void *v)
-+{
-+}
- 
--	return len;
-+static int saved_cmdlines_show(struct seq_file *m, void *v)
-+{
-+	char buf[TASK_COMM_LEN];
-+	unsigned int *pid = v;
-+
-+	trace_find_cmdline(*pid, buf);
-+	seq_printf(m, "%d %s\n", *pid, buf);
-+	return 0;
-+}
-+
-+static const struct seq_operations tracing_saved_cmdlines_seq_ops = {
-+	.start		= saved_cmdlines_start,
-+	.next		= saved_cmdlines_next,
-+	.stop		= saved_cmdlines_stop,
-+	.show		= saved_cmdlines_show,
-+};
-+
-+static int tracing_saved_cmdlines_open(struct inode *inode, struct file *filp)
-+{
-+	if (tracing_disabled)
-+		return -ENODEV;
-+
-+	return seq_open(filp, &tracing_saved_cmdlines_seq_ops);
+ 	return ret;
  }
- 
- static const struct file_operations tracing_saved_cmdlines_fops = {
--    .open       = tracing_open_generic,
--    .read       = tracing_saved_cmdlines_read,
--    .llseek	= generic_file_llseek,
-+	.open		= tracing_saved_cmdlines_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
- };
- 
- static ssize_t
-
+--- 3.14-rc2+/mm/memcontrol.c	2014-02-12 11:55:02.836035004 -0800
++++ linux/mm/memcontrol.c	2014-02-12 11:59:52.804041895 -0800
+@@ -1128,9 +1128,16 @@ skip_node:
+ 	 */
+ 	if (next_css) {
+ 		if ((next_css == &root->css) ||
+-		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css)))
++		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))) {
++			/*
++			 * Ensure that all memcg initialization, done before
++			 * CSS_ONLINE was set, will be visible to our caller.
++			 * This matches the smp_wmb() in online_css()'s
++			 * rcu_assign_pointer(), before it set CSS_ONLINE.
++			 */
++			smp_rmb();
+ 			return mem_cgroup_from_css(next_css);
+-
++		}
+ 		prev_css = next_css;
+ 		goto skip_node;
+ 	}
