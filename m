@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaBMXaW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:30:22 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:59665 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751923AbaBMXaS (ORCPT
+	id S1752819AbaBMXcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:32:41 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:51405 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547AbaBMXcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:30:18 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/1qbQhMxbS1MSZ6ynLn4BU
-Date: Thu, 13 Feb 2014 15:30:00 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Russell King <linux@arm.linux.org.uk>, Richard Weinberger <richard@nod.at>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP2+: Remove legacy macros for zoom platforms
-Message-ID: <20140213233000.GT28216@atomide.com>
-References: <1392198352.23759.10.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392198352.23759.10.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Feb 2014 18:32:39 -0500
+Date: Thu, 13 Feb 2014 18:32:37 -0500 (EST)
+Message-Id: <20140213.183237.1108958546198981160.davem@davemloft.net>
+To: liujunliang_ljl@163.com
+Cc: thierry.reding@gmail.com, horms@verge.net.au, joe@perches.com,
+        romieu@fr.zoreil.com, gregkh@linuxfoundation.org,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sunhecheng@vip.126.com
+Subject: Re: [PATCH] Fix Default to 'y' for SR9800 Device Driver, setting
+ to 'n'
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1392265339-14841-1-git-send-email-liujunliang_ljl@163.com>
+References: <1392265339-14841-1-git-send-email-liujunliang_ljl@163.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Feb 2014 15:32:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Bolle <pebolle@tiscali.nl> [140212 01:48]:
-> Commit 97411608fd5f ("ARM: OMAP2+: Remove legacy support for zoom
-> platforms") removed the Kconfig symbols MACH_OMAP_ZOOM2 and
-> MACH_OMAP_ZOOM3. Remove the last usage of the related macros too.
+From: liujunliang_ljl@163.com
+Date: Thu, 13 Feb 2014 12:22:19 +0800
+
+> From: Liu Junliang <liujunliang_ljl@163.com>
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested, but should have zero impact.
+> 
+> Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
 
-Thanks applying into omap-for-v3.14/fixes.
-
-Tony
+I think it's more canonical to specify no default at all.
