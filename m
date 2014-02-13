@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679AbaBMRrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 12:47:00 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:38001 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaBMRq4 (ORCPT
+	id S1752708AbaBMRrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 12:47:06 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:33941 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaBMRrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 12:46:56 -0500
+	Thu, 13 Feb 2014 12:47:02 -0500
 From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 To: Minchan Kim <minchan@kernel.org>
 Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
         linux-kernel@vger.kernel.org,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCHv5 1/4] zram: introduce compressing backend abstraction
-Date: Thu, 13 Feb 2014 20:43:19 +0300
-Message-Id: <1392313402-5728-2-git-send-email-sergey.senozhatsky@gmail.com>
+Subject: [PATCHv5 3/4] zram: zcomp support multi compressing streams
+Date: Thu, 13 Feb 2014 20:43:21 +0300
+Message-Id: <1392313402-5728-4-git-send-email-sergey.senozhatsky@gmail.com>
 X-Mailer: git-send-email 1.9.0.rc3.260.g4cf525c
 In-Reply-To: <1392313402-5728-1-git-send-email-sergey.senozhatsky@gmail.com>
 References: <1392313402-5728-1-git-send-email-sergey.senozhatsky@gmail.com>
@@ -22,356 +22,204 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ZRAM performs direct LZO compression algorithm calls, making it the one and
-only option. Introduce compressing backend abstraction zcomp in order to
-support multiple compression algorithms with the following set of operations:
-        .create
-        .destroy
-        .compress
-        .decompress
+1) Extend zcomp zcomp_create() with `num_strm' parameter.
+`num_strm' limits the number of zcomp_strm structs in compression
+backend's idle list (max_comp_streams). thus, it's possible to
+have up to max_comp_streams parallel compress operations.
 
-Schematically zram write() usually contains the following steps:
-0) preparation (decompression of partioal IO, etc.)
-1) lock buffer_lock mutex (protects meta compress buffers)
-2) compress (using meta compress buffers)
-3) alloc and map zs_pool object
-4) copy compressed data (from meta compress buffers) to object allocated by 3)
-5) free previous pool page, assign a new one
-6) unlock buffer_lock mutex
+2) Introduce zram device attribute max_comp_streams to show and
+store current device's zcomp max number of zcomp streams (num_strm).
 
-As we can see, compressing buffers must remain untouched from 1) to 4),
-because, otherwise, concurrent write() can overwrite data. At the same
-time, zram_meta must be aware of a) specific compression algorithm
-memory requirements and b) necessary locking to protect compression
-buffers. Besides, zram holds buffer_lock almost through the whole write()
-function, making parallel compression impossible. To remove requirement
-a) new struct zcomp_strm introduced, which contain a compress/decompress
-`buffer' and compression algorithm `private' part. While struct zcomp
-implements zcomp_strm stream handling and locking by means of get() and put()
-semantics and removes requirement b) from zram meta. zcomp ->create() and
-->destroy(), respectively, allocate and deallocate algorithm specific
-zcomp_strm `private' part.
+Usage example:
+        echo 4 > /sys/block/zram0/max_comp_streams
 
-Every zcomp has a list of idle zcomp_strm structs, spinlock to protect idle
-list and wait queue, making it possible to perform parallel compressions.
-Each time zram issues a zcomp_strm_get() call, the following set of operations
-performed:
-- spin lock strm_lock
-- if idle list is not empty, remove zcomp_strm from idle list, spin
-  unlock and return zcomp stream pointer to caller
-- if idle list is empty, current adds itself to wait queue. it will be
-  awaken by zcomp_strm_put() caller.
+set max_comp_streams to 4
 
-zcomp_strm_put():
-- spin lock strm_lock
-- add zcomp stream to idle list
-- spin unlock, wake up sleeper
+        cat /sys/block/zram0/max_comp_streams
 
-In other words, zcomp_strm_get() turns caller into exclusive user of a stream
-and zcomp_strm_put() makes a particular zcomp stream available.
+show current max_comp_streams (default value is 1).
 
-Usage examples.
+iozone -t 3 -R -r 16K -s 60M -I +Z
+(write tests. ext4, lzo, each test performed on newly created
+ zram0 device)
 
-To initialize compressing backend:
-	comp = zcomp_create(NAME) /* NAME e.g. "lzo" */
+        test        max_comp_streams 1    max_comp_streams 3
+-------------------------------------------------------------
+"  Initial write "      549804.75      |       703499.52
+"        Rewrite "      531435.43      |      1486276.59
+" Mixed workload "     1085846.34      |      1237846.88
+"   Random write "      549573.95      |      1375186.91
+"         Pwrite "      515619.08      |       729404.86
+"         Fwrite "     1443161.84      |      1469171.97
 
-which initialises compressing backend if requested algorithm is supported.
-
-Compress:
-	zstrm = zcomp_strm_get(comp)
-	zcomp_compress(comp, zstrm, src, &dst_len)
-	[..] /* copy compressed data */
-	zcomp_strm_put(comp, zstrm)
-
-Decompress:
-	zcomp_decompress(comp, src, src_len, dst);
-
-Free compessing backend and its zcomp stream:
-	zcomp_destroy(comp)
+        test        max_comp_streams 1    max_comp_streams 3
+-------------------------------------------------------------
+"  Initial write "      571307.19      |       719940.72
+"        Rewrite "      534797.36      |      1475686.41
+" Mixed workload "     1588736.53      |      1662039.41
+"   Random write "      563608.17      |      1373689.31
+"         Pwrite "      586889.88      |       717255.91
+"         Fwrite "     1479426.94      |      1482781.22
 
 Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 ---
- drivers/block/zram/zcomp.c     | 151 +++++++++++++++++++++++++++++++++++++++++
- drivers/block/zram/zcomp.h     |  56 +++++++++++++++
- drivers/block/zram/zcomp_lzo.c |  48 +++++++++++++
- 3 files changed, 255 insertions(+)
- create mode 100644 drivers/block/zram/zcomp.c
- create mode 100644 drivers/block/zram/zcomp.h
- create mode 100644 drivers/block/zram/zcomp_lzo.c
+ drivers/block/zram/zcomp.c    | 15 +++++++++------
+ drivers/block/zram/zcomp.h    |  2 +-
+ drivers/block/zram/zram_drv.c | 42 +++++++++++++++++++++++++++++++++++++++++-
+ drivers/block/zram/zram_drv.h |  2 +-
+ 4 files changed, 52 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-new file mode 100644
-index 0000000..3af25b6
---- /dev/null
+index 3af25b6..a032f49 100644
+--- a/drivers/block/zram/zcomp.c
 +++ b/drivers/block/zram/zcomp.c
-@@ -0,0 +1,151 @@
-+/*
-+ * Copyright (C) 2014 Sergey Senozhatsky.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/slab.h>
-+#include <linux/wait.h>
-+#include <linux/sched.h>
-+
-+#include "zcomp.h"
-+
-+extern struct zcomp_backend zcomp_lzo;
-+
-+static void zcomp_strm_free(struct zcomp *comp, struct zcomp_strm *zstrm)
-+{
-+	comp->backend->destroy(zstrm->private);
-+	free_pages((unsigned long)zstrm->buffer, 1);
-+	kfree(zstrm);
-+}
-+
-+/*
-+ * allocate new zcomp_strm structure with ->private initialized by
-+ * backend, return NULL on error
-+ */
-+static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
-+{
-+	struct zcomp_strm *zstrm = kmalloc(sizeof(*zstrm), GFP_KERNEL);
-+	if (!zstrm)
-+		return NULL;
-+
-+	INIT_LIST_HEAD(&zstrm->list);
-+	zstrm->private = comp->backend->create();
-+	/*
-+	 * allocate 2 pages. 1 for compressed data, plus 1 extra for the
-+	 * case when compressed size is larger than the original one
-+	 */
-+	zstrm->buffer = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-+	if (!zstrm->private || !zstrm->buffer) {
-+		zcomp_strm_free(comp, zstrm);
-+		zstrm = NULL;
-+	}
-+	return zstrm;
-+}
-+
-+/*
-+ * get existing idle zcomp_strm or wait until other process release
-+ * (zcomp_strm_put()) one for us
-+ */
-+struct zcomp_strm *zcomp_strm_get(struct zcomp *comp)
-+{
-+	struct zcomp_strm *zstrm;
-+
-+	while (1) {
-+		spin_lock(&comp->strm_lock);
-+		if (list_empty(&comp->idle_strm)) {
-+			spin_unlock(&comp->strm_lock);
-+			wait_event(comp->strm_wait,
-+					!list_empty(&comp->idle_strm));
-+			continue;
+@@ -122,11 +122,12 @@ static struct zcomp_backend *find_backend(const char *compress)
+  * if requested algorithm is not supported or in case
+  * of init error
+  */
+-struct zcomp *zcomp_create(const char *compress)
++struct zcomp *zcomp_create(const char *compress, int num_strm)
+ {
+ 	struct zcomp *comp;
+ 	struct zcomp_backend *backend;
+ 	struct zcomp_strm *zstrm;
++	int i;
+ 
+ 	backend = find_backend(compress);
+ 	if (!backend)
+@@ -141,11 +142,13 @@ struct zcomp *zcomp_create(const char *compress)
+ 	INIT_LIST_HEAD(&comp->idle_strm);
+ 	init_waitqueue_head(&comp->strm_wait);
+ 
+-	zstrm = zcomp_strm_alloc(comp);
+-	if (!zstrm) {
+-		zcomp_destroy(comp);
+-		return NULL;
++	for (i = 0; i < num_strm; i++) {
++		zstrm = zcomp_strm_alloc(comp);
++		if (!zstrm) {
++			zcomp_destroy(comp);
++			return NULL;
 +		}
-+
-+		zstrm = list_entry(comp->idle_strm.next,
-+				struct zcomp_strm, list);
-+		list_del(&zstrm->list);
-+		spin_unlock(&comp->strm_lock);
-+		break;
-+	}
-+	return zstrm;
-+}
-+
-+/* add zcomp_strm back to idle list and wake up waiter (if any) */
-+void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm)
-+{
-+	spin_lock(&comp->strm_lock);
-+	list_add(&zstrm->list, &comp->idle_strm);
-+	spin_unlock(&comp->strm_lock);
-+
-+	wake_up(&comp->strm_wait);
-+}
-+
-+int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
-+		const unsigned char *src, size_t *dst_len)
-+{
-+	return comp->backend->compress(src, zstrm->buffer, dst_len,
-+			zstrm->private);
-+}
-+
-+int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
-+		size_t src_len, unsigned char *dst)
-+{
-+	return comp->backend->decompress(src, src_len, dst);
-+}
-+
-+void zcomp_destroy(struct zcomp *comp)
-+{
-+	struct zcomp_strm *zstrm;
-+	while (!list_empty(&comp->idle_strm)) {
-+		zstrm = list_entry(comp->idle_strm.next,
-+				struct zcomp_strm, list);
-+		list_del(&zstrm->list);
-+		zcomp_strm_free(comp, zstrm);
-+	}
-+	kfree(comp);
-+}
-+
-+static struct zcomp_backend *find_backend(const char *compress)
-+{
-+	if (sysfs_streq(compress, "lzo"))
-+		return &zcomp_lzo;
-+	return NULL;
-+}
-+
-+/*
-+ * search available compressors for requested algorithm.
-+ * allocate new zcomp and initialize it. return NULL
-+ * if requested algorithm is not supported or in case
-+ * of init error
-+ */
-+struct zcomp *zcomp_create(const char *compress)
-+{
-+	struct zcomp *comp;
-+	struct zcomp_backend *backend;
-+	struct zcomp_strm *zstrm;
-+
-+	backend = find_backend(compress);
-+	if (!backend)
-+		return NULL;
-+
-+	comp = kmalloc(sizeof(struct zcomp), GFP_KERNEL);
-+	if (!comp)
-+		return NULL;
-+
-+	comp->backend = backend;
-+	spin_lock_init(&comp->strm_lock);
-+	INIT_LIST_HEAD(&comp->idle_strm);
-+	init_waitqueue_head(&comp->strm_wait);
-+
-+	zstrm = zcomp_strm_alloc(comp);
-+	if (!zstrm) {
-+		zcomp_destroy(comp);
-+		return NULL;
-+	}
-+	list_add(&zstrm->list, &comp->idle_strm);
-+	return comp;
-+}
++		list_add(&zstrm->list, &comp->idle_strm);
+ 	}
+-	list_add(&zstrm->list, &comp->idle_strm);
+ 	return comp;
+ }
 diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
-new file mode 100644
-index 0000000..7e05d20
---- /dev/null
+index 7e05d20..52899de 100644
+--- a/drivers/block/zram/zcomp.h
 +++ b/drivers/block/zram/zcomp.h
-@@ -0,0 +1,56 @@
-+/*
-+ * Copyright (C) 2014 Sergey Senozhatsky.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#ifndef _ZCOMP_H_
-+#define _ZCOMP_H_
-+
-+#include <linux/spinlock.h>
-+
-+struct zcomp_strm {
-+	void *buffer;     /* compression/decompression buffer */
-+	void *private;      /* algorithm private memory */
-+	struct list_head list;
-+};
-+
-+/* static compression backend */
-+struct zcomp_backend {
-+	int (*compress)(const unsigned char *src, unsigned char *dst,
-+			size_t *dst_len, void *private);
-+
-+	int (*decompress)(const unsigned char *src, size_t src_len,
-+			unsigned char *dst);
-+
-+	void * (*create)(void);
-+	void (*destroy)(void *private);
-+
-+	const char *name;
-+};
-+
-+/* dynamic per-device compression frontend */
-+struct zcomp {
-+	/* protect strm list */
-+	spinlock_t strm_lock;
-+	/* list of available strms */
-+	struct list_head idle_strm;
-+	wait_queue_head_t strm_wait;
-+	struct zcomp_backend *backend;
-+};
-+
-+struct zcomp *zcomp_create(const char *comp);
-+void zcomp_destroy(struct zcomp *comp);
-+
-+struct zcomp_strm *zcomp_strm_get(struct zcomp *comp);
-+void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm);
-+
-+int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
-+		const unsigned char *src, size_t *dst_len);
-+
-+int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
-+		size_t src_len, unsigned char *dst);
-+#endif /* _ZCOMP_H_ */
-diff --git a/drivers/block/zram/zcomp_lzo.c b/drivers/block/zram/zcomp_lzo.c
-new file mode 100644
-index 0000000..39106a7
---- /dev/null
-+++ b/drivers/block/zram/zcomp_lzo.c
-@@ -0,0 +1,48 @@
-+/*
-+ * Copyright (C) 2014 Sergey Senozhatsky.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/lzo.h>
-+
-+#include "zcomp.h"
-+
-+static void * lzo_create(void)
+@@ -42,7 +42,7 @@ struct zcomp {
+ 	struct zcomp_backend *backend;
+ };
+ 
+-struct zcomp *zcomp_create(const char *comp);
++struct zcomp *zcomp_create(const char *comp, int num_strm);
+ void zcomp_destroy(struct zcomp *comp);
+ 
+ struct zcomp_strm *zcomp_strm_get(struct zcomp *comp);
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 200c12a..93c5d29 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -107,6 +107,41 @@ static ssize_t mem_used_total_show(struct device *dev,
+ 	return sprintf(buf, "%llu\n", val);
+ }
+ 
++static ssize_t max_comp_streams_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
 +{
-+	return kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
++	long val;
++	struct zram *zram = dev_to_zram(dev);
++
++	down_read(&zram->init_lock);
++	val = zram->max_comp_streams;
++	up_read(&zram->init_lock);
++
++	return sprintf(buf, "%ld\n", val);
 +}
 +
-+static void lzo_destroy(void *private)
++static ssize_t max_comp_streams_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t len)
 +{
-+	kfree(private);
++	long num;
++	struct zram *zram = dev_to_zram(dev);
++
++	if (kstrtol(buf, 0, &num))
++		return -EINVAL;
++	if (num < 1)
++		return -EINVAL;
++	down_write(&zram->init_lock);
++	if (init_done(zram)) {
++		up_write(&zram->init_lock);
++		pr_info("Can't set max_comp_streams for initialized device\n");
++		return -EBUSY;
++	}
++	zram->max_comp_streams = num;
++	up_write(&zram->init_lock);
++
++	return len;
 +}
 +
-+static int lzo_compress(const unsigned char *src, unsigned char *dst,
-+		size_t *dst_len, void *private)
-+{
-+	int ret = lzo1x_1_compress(src, PAGE_SIZE, dst, dst_len, private);
-+	return ret == LZO_E_OK ? 0 : ret;
-+}
-+
-+static int lzo_decompress(const unsigned char *src, size_t src_len,
-+		unsigned char *dst)
-+{
-+	size_t dst_len = PAGE_SIZE;
-+	int ret = lzo1x_decompress_safe(src, src_len, dst, &dst_len);
-+	return ret == LZO_E_OK ? 0 : ret;
-+}
-+
-+extern struct zcomp_backend zcomp_lzo;
-+struct zcomp_backend zcomp_lzo = {
-+	.compress = lzo_compress,
-+	.decompress = lzo_decompress,
-+	.create = lzo_create,
-+	.destroy = lzo_destroy,
-+	.name = "lzo",
-+};
+ /* flag operations needs meta->tb_lock */
+ static int zram_test_flag(struct zram_meta *meta, u32 index,
+ 			enum zram_pageflags flag)
+@@ -503,6 +538,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 
+ 	zcomp_destroy(zram->comp);
+ 	zram->comp = NULL;
++	zram->max_comp_streams = 1;
+ 
+ 	zram_meta_free(zram->meta);
+ 	zram->meta = NULL;
+@@ -532,7 +568,7 @@ static ssize_t disksize_store(struct device *dev,
+ 		return -EBUSY;
+ 	}
+ 
+-	zram->comp = zcomp_create(default_compressor);
++	zram->comp = zcomp_create(default_compressor, zram->max_comp_streams);
+ 	if (!zram->comp) {
+ 		up_write(&zram->init_lock);
+ 		pr_info("Cannot initialise compressing backend\n");
+@@ -695,6 +731,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+ static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+ static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
++static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
++		max_comp_streams_show, max_comp_streams_store);
+ 
+ ZRAM_ATTR_RO(num_reads);
+ ZRAM_ATTR_RO(num_writes);
+@@ -719,6 +757,7 @@ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_orig_data_size.attr,
+ 	&dev_attr_compr_data_size.attr,
+ 	&dev_attr_mem_used_total.attr,
++	&dev_attr_max_comp_streams.attr,
+ 	NULL,
+ };
+ 
+@@ -782,6 +821,7 @@ static int create_device(struct zram *zram, int device_id)
+ 
+ 	zram->meta = NULL;
+ 	zram->comp = NULL;
++	zram->max_comp_streams = 1;
+ 	return 0;
+ 
+ out_free_disk:
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index 45e04f7..8dccb22 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -99,7 +99,7 @@ struct zram {
+ 	 * we can store in a disk.
+ 	 */
+ 	u64 disksize;	/* bytes */
+-
++	long max_comp_streams;
+ 	struct zram_stats stats;
+ };
+ #endif
 -- 
 1.9.0.rc3.260.g4cf525c
 
