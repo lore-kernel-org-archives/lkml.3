@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753AbaBMOfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 09:35:44 -0500
-Received: from 213083164162.static.sonofon.dk ([213.83.164.162]:47755 "EHLO
+	id S1751998AbaBMOhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 09:37:10 -0500
+Received: from 213083164162.static.sonofon.dk ([213.83.164.162]:49824 "EHLO
 	HORWDSPRD01.spectralink.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751578AbaBMOfl (ORCPT
+	by vger.kernel.org with ESMTP id S1750861AbaBMOhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 09:35:41 -0500
+	Thu, 13 Feb 2014 09:37:06 -0500
 From: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
 	<stefan.sorensen@spectralink.com>
 To: richardcochran@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
@@ -15,15 +15,15 @@ To: richardcochran@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
 Cc: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
 	<stefan.sorensen@spectralink.com>
 Subject: [PATCH v3 3/3] net:phy:dp83640: Get pin and master/slave configuration from DT
-Date: Thu, 13 Feb 2014 15:35:25 +0100
-Message-Id: <1392302129-24947-4-git-send-email-stefan.sorensen@spectralink.com>
+Date: Thu, 13 Feb 2014 15:35:29 +0100
+Message-Id: <1392302129-24947-8-git-send-email-stefan.sorensen@spectralink.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392302129-24947-1-git-send-email-stefan.sorensen@spectralink.com>
 References: <1392302129-24947-1-git-send-email-stefan.sorensen@spectralink.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 13 Feb 2014 14:35:39.0860 (UTC) FILETIME=[DDE86940:01CF28C8]
+X-OriginalArrivalTime: 13 Feb 2014 14:37:04.0296 (UTC) FILETIME=[103C5280:01CF28C9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
