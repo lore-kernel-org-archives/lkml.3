@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaBMHaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 02:30:46 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55329 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246AbaBMHap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 02:30:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,837,1384329600"; 
-   d="scan'208";a="454718467"
-From: jun.zhang@intel.com
-To: ming.lei@canonical.com, gregkh@linuxfoundation.org, jun.zhang@intel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v3] firmware: give a protection when map page failed
-Date: Thu, 13 Feb 2014 15:18:47 +0800
-Message-Id: <1392275927-7132-1-git-send-email-jun.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752670AbaBMHcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 02:32:14 -0500
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:6770
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751417AbaBMHcN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 02:32:13 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "tiwai@suse.de" <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [alsa-devel] [PATCH v2 1/3] ASoC: binding: add tdm-slot.txt
+Thread-Topic: [alsa-devel] [PATCH v2 1/3] ASoC: binding: add tdm-slot.txt
+Thread-Index: AQHPJ886eVFKbCp270GIE9eQNPH9P5qxWYEAgAAc+ICAAUkhIA==
+Date: Thu, 13 Feb 2014 07:32:10 +0000
+Message-ID: <2eae2c076b7540448be19e9c91a58ee0@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1392191112-27028-1-git-send-email-Li.Xiubo@freescale.com>
+ <1392191112-27028-2-git-send-email-Li.Xiubo@freescale.com>
+ <52FB3E5C.8040701@metafoo.de> <20140212111033.GD28112@sirena.org.uk>
+In-Reply-To: <20140212111033.GD28112@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.215]
+x-forefront-prvs: 0121F24F22
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(164054003)(199002)(189002)(53806001)(54316002)(56776001)(63696002)(85306002)(79102001)(51856001)(74366001)(76482001)(54356001)(74876001)(69226001)(74706001)(87936001)(80976001)(77982001)(59766001)(66066001)(80022001)(65816001)(33646001)(83322001)(76576001)(74502001)(74662001)(90146001)(76786001)(76796001)(31966008)(85852003)(81342001)(83072002)(92566001)(81686001)(81816001)(56816005)(81542001)(4396001)(49866001)(50986001)(47976001)(87266001)(47736001)(46102001)(95666001)(94946001)(94316002)(47446002)(93516002)(86362001)(93136001)(74316001)(2656002)(95416001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.215;FPR:E472C52E.2F391319.81FCB1B3.4EE5E168.2028F;InfoNoRecordsA:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: zhang jun <jun.zhang@intel.com>
+> > The current internal API for TDM is very poor, I don't think we want
+> > to expose that 1 to 1 to the devicetree. Since this means we'd have
+> > to support that forever. The first thing is that the semantics of
+> > snd_soc_dai_set_tdm_slot() are very unclear. E.g. some drivers use a
+> > zero bit for a active slot, some drivers use a 1 bit for a active
+> 
+> Yes, and if we do end up using masks we need to nail down what's going
+> on in the DT.
+>
 
->From the following oops log, we find firmware buffer is null, which caused by memory alloc failed.
-so, we need give a protection and return a error value.
-[ 7341.474236] [drm:do_intel_finish_page_flip] *ERROR* invalid or inactive unpin_work!
-[ 7341.494464] atomisp-css2400b0_v21 0000:00:03.0: unhandled css stored event: 0x20
-[ 7341.503627] vmap allocation for size 208896 failed: use vmalloc=<size> to increase size.<=================== map failed
-[ 7341.507135] [drm:do_intel_finish_page_flip] *ERROR* invalid or inactive unpin_work!
-[ 7341.503848] BUG: unable to handle kernel NULL pointer dereference at   (null)
-[ 7341.520394] IP: [<c18f5c1b>] sst_load_all_modules_elf+0x1bb/0x850
-[ 7341.527216] *pdpt = 0000000030dfe001 *pde = 0000000000000000
-[ 7341.533640] Oops: 0000 [#1] PREEMPT SMP
-[ 7341.540360] [drm:do_intel_finish_page_flip] *ERROR* invalid or inactive unpin_work!
-[ 7341.538037] Modules linked in: atomisp_css2400b0_v21 lm3554 ov2722 imx1x5 atmel_mxt_ts vxd392 videobuf_vmalloc videobuf_core lm_dump(O) bcm_bt_lpm hdmi_audio bcm4334x(O)
-[ 7341.563531] CPU: 1 PID: 525 Comm: mediaserver Tainted: G        W  O 3.10.20-262518-ga83c053 #1
-[ 7341.573253] task: f0994ec0 ti: f09f0000 task.ti: f09f0000
-[ 7341.579284] EIP: 0060:[<c18f5c1b>] EFLAGS: 00010246 CPU: 1
-[ 7341.585415] EIP is at sst_load_all_modules_elf+0x1bb/0x850
-[ 7341.591541] EAX: 00000000 EBX: e3595ba0 ECX: 00000000 EDX: 00031c1c
-[ 7341.598541] ESI: e04a0000 EDI: 00000000 EBP: f09f1d80 ESP: f09f1cf4
-[ 7341.605542]  DS: 007b ES: 007b FS: 00d8 GS: 003b SS: 0068
-[ 7341.611573] CR0: 80050033 CR2: 00000000 CR3: 30db4000 CR4: 001007f0
-[ 7341.618573] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[ 7341.625575] DR6: ffff0ff0 DR7: 00000400
-[ 7341.629856] Stack:
-[ 7341.632097]  f09f1d57 00000019 c1d656d7 c1d658d3 c1d56409 00000f28 c1d64af9 18000103
-[ 7341.640766]  01000001 00080000 c1f910a0 f326f4c8 00000034 f326f520 00000002 e04a02bc
-[ 7341.649465]  00000001 f326e014 c1f910b0 e04a0000 c0080100 00031c1c e3595ba0 c0080100
-[ 7341.658149] Call Trace:
-[ 7341.660888]  [<c18f6308>] sst_post_download_byt+0x58/0xb0
-[ 7341.666925]  [<c18f4fbc>] sst_load_fw+0xdc/0x510
-[ 7341.672086]  [<c1a7b2c0>] ? __mutex_lock_slowpath+0x250/0x370
-[ 7341.678507]  [<c1a80e05>] ? sub_preempt_count+0x55/0xe0
-[ 7341.684346]  [<c18f1294>] sst_download_fw+0x14/0x60
-[ 7341.689796]  [<c1a7b403>] ? mutex_lock+0x23/0x30
-[ 7341.694954]  [<c18f191c>] intel_sst_check_device+0x6c/0x120
-[ 7341.701181]  [<c18f1d08>] sst_set_generic_params+0x1b8/0x4a0
-[ 7341.707504]  [<c1a80e05>] ? sub_preempt_count+0x55/0xe0
-[ 7341.713341]  [<c1a80e05>] ? sub_preempt_count+0x55/0xe0
-[ 7341.719178]  [<c1a7b2c0>] ? __mutex_lock_slowpath+0x250/0x370
-[ 7341.725600]  [<c1320d84>] ? __kmalloc_track_caller+0xe4/0x1d0
-[ 7341.732022]  [<c18e35f5>] sst_set_mixer_param+0x25/0x40
-[ 7341.737859]  [<c18e3853>] lpe_mixer_ihf_set+0xb3/0x160
-[ 7341.743602]  [<c1855b99>] snd_ctl_ioctl+0xa89/0xb40
-[ 7341.749052]  [<c1331e65>] ? path_openat+0xa5/0x3d0
-[ 7341.754409]  [<c1447857>] ? avc_has_perm_flags+0xc7/0x170
-[ 7341.760441]  [<c1855110>] ? snd_ctl_elem_add_user+0x540/0x540
-[ 7341.766862]  [<c1334047>] do_vfs_ioctl+0x77/0x5e0
-[ 7341.772117]  [<c144842a>] ? inode_has_perm.isra.42.constprop.79+0x3a/0x50
-[ 7341.779705]  [<c14490a0>] ? file_has_perm+0xa0/0xb0
-[ 7341.785155]  [<c14493b8>] ? selinux_file_ioctl+0x48/0xe0
-[ 7341.791090]  [<c1334628>] SyS_ioctl+0x78/0x90
-[ 7341.795958]  [<c1a7dde8>] syscall_call+0x7/0xb
-[ 7341.800925]  [<c1a70000>] ? mm_fault_error+0x13c/0x198
+Yes, certainly.
 
-Signed-off-by: zhang jun <jun.zhang@intel.com>
----
- drivers/base/firmware_class.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+> > slot. The second thing is that we are not able to specify which
+> > channel should be mapped to which slot. You can merely specify
+> > from/to which slots the CODEC should read/write and then it is up to
+> > the driver to guess which channel should go to which slot. In my
+> > opinion a binding that allows to specify a explicit mapping of which
+> > channel goes to which slot would be much better.
+> 
+> It'd certainly be good to be able to do that, though having a default
+> would make life easier.
+> 
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 8a97ddf..e5808eb 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -649,7 +649,9 @@ static ssize_t firmware_loading_store(struct device *dev,
- 			 * see the mapped 'buf->data' once the loading
- 			 * is completed.
- 			 * */
--			fw_map_pages_buf(fw_buf);
-+			if (fw_map_pages_buf(fw_buf))
-+				dev_err(dev, "%s: map pages failed\n",
-+					__func__);
- 			list_del_init(&fw_buf->pending_list);
- 			complete_all(&fw_buf->completion);
- 			break;
-@@ -908,6 +910,8 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
- 	wait_for_completion(&buf->completion);
- 
- 	cancel_delayed_work_sync(&fw_priv->timeout_work);
-+	if (!buf->data)
-+		retval = -ENOMEM;
- 
- 	device_remove_file(f_dev, &dev_attr_loading);
- err_del_bin_attr:
--- 
-1.7.9.5
+@Lars, @Mark,
 
+Yes, then will that means that we can just end up parsing masks from DT
+and the masks will be generated by the driver specified
+dai->driver->ops->of_xlate_tdm_slot_mask(slots, &tx_mask, &rx_mask)
+callback or one default
+snd_soc_of_xlate_tdm_slot_mask(slots, &tx_mask, &rx_mask), and the
+'slots' is the number of the slot parsed from the DT node ?
+
+Or other better ways ?
+
+
+Thanks,
+
+--
+Best Regards,
+Xiubo
+
+
+
+
+
+> > Also those are four different settings. In my opinion they should
+> > not be expressed in one property, but rather in four. E.g.
+> > specifying a tx_mask for a rx only device does not make much sense.
+> 
+> That makes sense.
