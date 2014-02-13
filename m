@@ -1,95 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaBMFYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 00:24:31 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:41307 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaBMFY3 (ORCPT
+	id S1752586AbaBMF2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 00:28:07 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:57063 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831AbaBMF2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 00:24:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140212180223.GA23630@e106331-lin.cambridge.arm.com>
-References: <1389266554-23463-1-git-send-email-sachin.kamat@linaro.org>
-	<1389266554-23463-2-git-send-email-sachin.kamat@linaro.org>
-	<20140212180223.GA23630@e106331-lin.cambridge.arm.com>
-Date: Thu, 13 Feb 2014 10:54:28 +0530
-Message-ID: <CAK9yfHzm5Z8Ajn2GQsjLeLxKeP+AuGXCBxsTX=1h7fOASqwekg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] regulator: Add support for S2MPA01 regulator
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "sbkim73@samsung.com" <sbkim73@samsung.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Feb 2014 00:28:04 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Andrew Duggan <aduggan@synaptics.com>,
+        Vincent Huang <vincent.huang@tw.synaptics.com>,
+        Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 01/11] Input: synaptics-rmi4 - do not kfree() managed memory in F01
+Date: Wed, 12 Feb 2014 21:27:47 -0800
+Message-Id: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 February 2014 23:32, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Thu, Jan 09, 2014 at 11:22:33AM +0000, Sachin Kamat wrote:
->> Add support for S2MPA01 voltage and current regulator.
->>
->> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
->> ---
->> * Addressed comments from Mark Brown
->>  - Used module_platform_driver instead of subsys init call
->> ---
->>  drivers/regulator/Kconfig   |    7 +
->>  drivers/regulator/Makefile  |    1 +
->>  drivers/regulator/s2mpa01.c |  482 +++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 490 insertions(+)
->>  create mode 100644 drivers/regulator/s2mpa01.c
->
-> [...]
->
->> +static int s2mpa01_pmic_probe(struct platform_device *pdev)
->> +{
->> +       struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
->> +       struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
->> +       struct of_regulator_match rdata[S2MPA01_REGULATOR_MAX];
->> +       struct device_node *reg_np = NULL;
->> +       struct regulator_config config = { };
->> +       struct s2mpa01_info *s2mpa01;
->> +       int i, ret;
->> +
->> +       s2mpa01 = devm_kzalloc(&pdev->dev, sizeof(*s2mpa01), GFP_KERNEL);
->> +       if (!s2mpa01)
->> +               return -ENOMEM;
->> +
->> +       for (i = 0; i < S2MPA01_REGULATOR_CNT; i++)
->> +               rdata[i].name = regulators[i].name;
->> +
->> +       if (iodev->dev->of_node) {
->> +               reg_np = of_find_node_by_name(iodev->dev->of_node,
->> +                                                       "regulators");
->
-> This walks the allnodes list, and can thus walk outside of the parent
-> node.
->
-> Use of_get_child_by_name instead.
+Data that is allocated with devm_kzalloc() should not be freed with
+kfree(). In fact, we should rely on the fact that memory is managed and let
+devres core free it for us.
 
-OK.
+Reported-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/rmi4/rmi_f01.c | 23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
->
->> +                       if (!reg_np) {
->> +                               dev_err(&pdev->dev,
->> +                                       "could not find regulators sub-node\n");
->> +                               return -EINVAL;
->> +                       }
->> +
->> +               of_regulator_match(&pdev->dev, reg_np, rdata,
->> +                                               S2MPA01_REGULATOR_MAX);
->
-> Is a reference to reg_np held beyond this? Do you need an
-> of_node_put(reg_np)?
-
-Yes, you are right.
-
-Thanks for the review.
-
+diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
+index 381ad60..92b90d1 100644
+--- a/drivers/input/rmi4/rmi_f01.c
++++ b/drivers/input/rmi4/rmi_f01.c
+@@ -272,7 +272,7 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+ 	if (error < 0) {
+ 		dev_err(&fn->dev,
+ 			"Failed to read F01 control interrupt enable register.\n");
+-		goto error_exit;
++		return error;
+ 	}
+ 
+ 	ctrl_base_addr += data->num_of_irq_regs;
+@@ -307,14 +307,14 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+ 					data->device_control.doze_interval);
+ 			if (error < 0) {
+ 				dev_err(&fn->dev, "Failed to configure F01 doze interval register.\n");
+-				goto error_exit;
++				return error;
+ 			}
+ 		} else {
+ 			error = rmi_read(rmi_dev, data->doze_interval_addr,
+ 					&data->device_control.doze_interval);
+ 			if (error < 0) {
+ 				dev_err(&fn->dev, "Failed to read F01 doze interval register.\n");
+-				goto error_exit;
++				return error;
+ 			}
+ 		}
+ 
+@@ -328,14 +328,14 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+ 					data->device_control.wakeup_threshold);
+ 			if (error < 0) {
+ 				dev_err(&fn->dev, "Failed to configure F01 wakeup threshold register.\n");
+-				goto error_exit;
++				return error;
+ 			}
+ 		} else {
+ 			error = rmi_read(rmi_dev, data->wakeup_threshold_addr,
+ 					&data->device_control.wakeup_threshold);
+ 			if (error < 0) {
+ 				dev_err(&fn->dev, "Failed to read F01 wakeup threshold register.\n");
+-				goto error_exit;
++				return error;
+ 			}
+ 		}
+ 	}
+@@ -351,14 +351,14 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+ 					data->device_control.doze_holdoff);
+ 			if (error < 0) {
+ 				dev_err(&fn->dev, "Failed to configure F01 doze holdoff register.\n");
+-				goto error_exit;
++				return error;
+ 			}
+ 		} else {
+ 			error = rmi_read(rmi_dev, data->doze_holdoff_addr,
+ 					&data->device_control.doze_holdoff);
+ 			if (error < 0) {
+ 				dev_err(&fn->dev, "Failed to read F01 doze holdoff register.\n");
+-				goto error_exit;
++				return error;
+ 			}
+ 		}
+ 	}
+@@ -367,22 +367,17 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+ 		&data->device_status, sizeof(data->device_status));
+ 	if (error < 0) {
+ 		dev_err(&fn->dev, "Failed to read device status.\n");
+-		goto error_exit;
++		return error;
+ 	}
+ 
+ 	if (RMI_F01_STATUS_UNCONFIGURED(data->device_status)) {
+ 		dev_err(&fn->dev,
+ 			"Device was reset during configuration process, status: %#02x!\n",
+ 			RMI_F01_STATUS_CODE(data->device_status));
+-		error = -EINVAL;
+-		goto error_exit;
++		return -EINVAL;
+ 	}
+ 
+ 	return 0;
+-
+- error_exit:
+-	kfree(data);
+-	return error;
+ }
+ 
+ static int rmi_f01_config(struct rmi_function *fn)
 -- 
-With warm regards,
-Sachin
+1.8.5.3
+
