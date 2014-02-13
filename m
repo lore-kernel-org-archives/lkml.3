@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaBMAZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 19:25:44 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:33388 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbaBMAZm (ORCPT
+	id S1752697AbaBMA27 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 19:28:59 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:63856 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381AbaBMA25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 19:25:42 -0500
-Date: Wed, 12 Feb 2014 19:25:38 -0500
+	Wed, 12 Feb 2014 19:28:57 -0500
+Date: Wed, 12 Feb 2014 19:28:53 -0500
 From: Tejun Heo <tj@kernel.org>
 To: Hugh Dickins <hughd@google.com>
 Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
@@ -19,24 +19,24 @@ Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
         Markus Blank-Burian <burian@muenster.de>,
         Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] memcg: reparent charges of children before
- processing parent
-Message-ID: <20140213002538.GB2916@htj.dyndns.org>
-References: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
+Subject: Re: [PATCH 2/2] cgroup: bring back kill_cnt to order css destruction
+Message-ID: <20140213002853.GC2916@htj.dyndns.org>
+References: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils>
+ <20140207164321.GE6963@cmpxchg.org>
+ <alpine.LSU.2.11.1402121417230.5029@eggly.anvils>
+ <alpine.LSU.2.11.1402121504150.5029@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1402121504150.5029@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello, Hugh.
 
-On Wed, Feb 12, 2014 at 03:03:31PM -0800, Hugh Dickins wrote:
-> From: Filipe Brandenburger <filbranden@google.com>
-> 
+On Wed, Feb 12, 2014 at 03:06:26PM -0800, Hugh Dickins wrote:
 > Sometimes the cleanup after memcg hierarchy testing gets stuck in
 > mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
 > 
@@ -50,34 +50,30 @@ On Wed, Feb 12, 2014 at 03:03:31PM -0800, Hugh Dickins wrote:
 > is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
 > stage on the way can mess up the order before reaching the workqueue.
 > 
-> Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
-> all its children (and grandchildren, in the correct order) to have their
-> charges reparented first.
+> Instead bring back v3.11's css kill_cnt, repurposing it to make sure
+> that offline_css() is not called for parent before it has been called
+> for all children.
 > 
 > Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
-> Signed-off-by: Filipe Brandenburger <filbranden@google.com>
 > Signed-off-by: Hugh Dickins <hughd@google.com>
+> Reviewed-by: Filipe Brandenburger <filbranden@google.com>
 > Cc: stable@vger.kernel.org # v3.10+ (but will need extra care)
 > ---
-> Or, you may prefer my alternative cgroup.c approach in 2/2:
-> there's no need for both.  Please note that neither of these patches
-> attempts to handle the unlikely case of racy charges made to child
-> after its offline, but parent's offline coming before child's free:
-> mem_cgroup_css_free()'s backstop call to mem_cgroup_reparent_charges()
-> cannot help in that case, with or without these patches.  Fixing that
-> would have to be a separate effort - Michal's?
+> This is an alternative to Filipe's 1/2: there's no need for both,
+> but each has its merits.  I prefer Filipe's, which is much easier to
+> understand: this one made more sense in v3.11, when it was just a matter
+> of extending the use of css_kill_cnt; but might be preferred if offlining
+> children before parent is thought to be a good idea generally.
 
-I've changed my mind several times now but I think it'd be a better
-idea to stick to this patch, at least for now.  This one is easier for
--stable backport and it looks like the requirements for ordering
-->css_offline() might go away depending on how reparenting changes
-work out.
+Not that your implementation is bad or anything but the patch itself
+somehow makes me cringe a bit.  It's probably just because it has to
+add to the already overly complicated offline path.  Guaranteeing
+strict offline ordering might be a good idea but at least for the
+immediate bug fix, I agree that the memcg specific fix seems better
+suited.  Let's apply that one and reconsider this one if it turns out
+we do need strict offline reordering.
 
- Reviewed-by: Tejun Heo <tj@kernel.org>
-
-Michal, Johannes, can you guys please ack this one if you guys agree?
-
-Thanks.
+Thanks a lot!
 
 -- 
 tejun
