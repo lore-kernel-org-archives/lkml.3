@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaBMD3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 22:29:39 -0500
-Received: from nm26-vm5.bullet.mail.gq1.yahoo.com ([98.136.216.132]:23079 "EHLO
-	nm26-vm5.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751252AbaBMD3i (ORCPT
+	id S1751847AbaBMDfG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 22:35:06 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:33548 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaBMDfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 22:29:38 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=gcom1024; d=yahoo.com;
-	b=Xsz47dmVevOUNWLa1cSaKvrj1ehEYmZD61W7Gaef4qRv2jFnkZLaukvsQKq+ab1Hp3kMObDUsY+d2J+sr+aTJTMovw5qJKw0czyWCZWKIZzyKu9s4cDaWEn4aow1dOjEb+DnsThw3lIF5SeFK91W+3wYcOWLv/Xb9WZYOXjO0GI=;
-X-Yahoo-Newman-Id: 189589.39753.bm@smtp223.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: flxtNzsVM1mRnNb9lTSCospAge4HWebA_3bbokRdJfMDgFK
- um4CpEJ.BJgs.f0RBztS_CRxZOWhEX1iQEp6gX2Q3SPdo5PzkHhVrBTu7qmV
- pluuJzxANj9zpVocqgRrRBAmWMEIOe62oXwfkMJVhf83u6UYXjKdyeUQvTvY
- BHJ3pL5G1Sdds56zCnyu_uV1MmpFQTKxagLzn5cBNftV7ETWNnrpaRQfcZys
- bXT2.k3Ws_xbWXOk01F7CY04sI8TOMym1q28T46Fijqkrxuhp.g8Cr1GMq.v
- rGaaWxmY6TRpAKI38z4AJvZbZKdCnzHajG0QKTQjiWMgysreDQ22rYr6_J3P
- r4lHrCBISIbovWpjGq8bCQGcfy3r56ZW4WpOguRI29A31uN0sqfIC3He_YsH
- SBMo.T4Swd6fEdMZxFVpveAdKZD1Agn.EzFi9IljwdEF0dGif.USDDyE_qSR
- Nk_NAHoXDpirXpM_Pu_dver5BzRndRfeQ4ehEHwlFu7aJJ8dV.dm51brk9kM
- WguNT8vsmBbhrfd9CYjfVF00ooPf_lKMt_yl_60PIo8mgkngA
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [63.250.193.228])
-        by smtp223.mail.gq1.yahoo.com with SMTP; 13 Feb 2014 03:29:37 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH] Staging: comedi: clean up conditional statement in addi_apci_3xxx.c
-Date: Wed, 12 Feb 2014 21:29:27 -0600
-Message-Id: <1392262167-4073-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.5.3
+	Wed, 12 Feb 2014 22:35:02 -0500
+Message-ID: <52FC3D5B.7000808@linux.vnet.ibm.com>
+Date: Thu, 13 Feb 2014 11:34:51 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Push down pre_schedule() and idle_balance
+ ()
+References: <tip-a8k6vvaebtn64nie345kx1je@git.kernel.org> <52FB1411.1040305@linux.vnet.ibm.com> <20140212102251.GD3545@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140212102251.GD3545@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021303-1618-0000-0000-0000056F6664
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this if-else conditional statement, if (chan < 16), but
-(data[0] == INSN_CONFIG_DIO_QUERY), the function does not return early,
-but the else-branch does not get executed either.  As a result, mask
-would be used uninitialized in the next line.  What we want here is if
-(chan < 16) and (data[0] != INSN_CONFIG_DIO_QUERY), return an error, but
-in every other case, initialize mask and then proceed.  Found by a static
-checker.
+On 02/12/2014 06:22 PM, Peter Zijlstra wrote:
+[snip]
+> 
+> Yes I think there might be a problem here because of how we re-arranged
+> things. Let me brew of pot of tea and try to actually wake up.
+> 
+> I suspect we might be good if we clear the need_resched flags before
+> calling pick_next_task. Then any RT/DL task that gets moved here will
+> set need resched, and we'll retry the pick_next_task loop.
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
----
- drivers/staging/comedi/drivers/addi_apci_3xxx.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+That sounds better, some thing like this?
 
-diff --git a/drivers/staging/comedi/drivers/addi_apci_3xxx.c b/drivers/staging/comedi/drivers/addi_apci_3xxx.c
-index ceadf8e..04c5153 100644
---- a/drivers/staging/comedi/drivers/addi_apci_3xxx.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_3xxx.c
-@@ -688,13 +688,11 @@ static int apci3xxx_dio_insn_config(struct comedi_device *dev,
- 	 * Port 1 (channels 8-15) are always outputs
- 	 * Port 2 (channels 16-23) are programmable i/o
- 	 */
--	if (chan < 16) {
--		if (data[0] != INSN_CONFIG_DIO_QUERY)
--			return -EINVAL;
--	} else {
--		/* changing any channel in port 2 changes the entire port */
--		mask = 0xff0000;
--	}
-+	if ((chan < 16) && (data[0] != INSN_CONFIG_DIO_QUERY))
-+		return -EINVAL;
-+
-+	/* changing any channel in port 2 changes the entire port */
-+	mask = 0xff0000;
+
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index fb9764f..56a2e1f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2688,8 +2688,8 @@ need_resched:
+ 	if (prev->on_rq || rq->skip_clock_update < 0)
+ 		update_rq_clock(rq);
  
- 	ret = comedi_dio_insn_config(dev, s, insn, data, mask);
- 	if (ret)
--- 
-1.8.5.3
+-	next = pick_next_task(rq, prev);
+ 	clear_tsk_need_resched(prev);
++	next = pick_next_task(rq, prev);
+ 	clear_preempt_need_resched();
+ 	rq->skip_clock_update = 0;
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 235cfa7..48a9500 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4784,7 +4784,18 @@ idle:
+ 	rq->idle_stamp = rq_clock(rq);
+ 	if (idle_balance(rq)) { /* drops rq->lock */
+ 		rq->idle_stamp = 0;
+-		goto again;
++		/*
++		 * Before we start to pick one of the pulled fair entities, take
++		 * care if some RT/DL tasks has been enqueued during the time
++		 * we release rq-lock inside idle_balance().
++		 *
++		 * In such cases, since clear_tsk_need_resched() was done
++		 * already, need_resched() will imply the request to sched-in
++		 * the enqueued RT/DL tasks, so don't 'goto again' to make sure
++		 * the priority.
++		 */
++		if (rq->nr_running == rq->cfs.h_nr_running || !need_resched())
++			goto again;
+
+
+
+I like tea BTW, drink every day :)
+
+Regards,
+Michael Wang
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
