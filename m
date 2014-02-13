@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaBMTLv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:11:51 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:55511 "EHLO
-	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaBMTLt (ORCPT
+	id S1751745AbaBMTPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:15:17 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:33216 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaBMTPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:11:49 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Thu, 13 Feb 2014 10:59:09 -0800
-Message-ID: <52FD18F3.6010707@synaptics.com>
-Date: Thu, 13 Feb 2014 11:11:47 -0800
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 13 Feb 2014 14:15:14 -0500
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Andrew Duggan <aduggan@synaptics.com>,
-        Vincent Huang <vincent.huang@tw.synaptics.com>,
-        Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/11] Input: synaptics-rmi4 - remove unused rmi_f01_remove()
-References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com> <1392269277-16391-2-git-send-email-dmitry.torokhov@gmail.com>
-In-Reply-To: <1392269277-16391-2-git-send-email-dmitry.torokhov@gmail.com>
-X-Originating-IP: [10.3.20.103]
-X-Brightmail-Tracker: AAAAAQAAAWE=
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1392137610-27842-2-git-send-email-pawel.moll@arm.com>
+References: <1392137610-27842-1-git-send-email-pawel.moll@arm.com>
+	<1392137610-27842-2-git-send-email-pawel.moll@arm.com>
+Date: Thu, 13 Feb 2014 13:15:13 -0600
+Message-ID: <CAL_JsqJQy7ob87=wPOLxn3X0fTrt2QhAEJ2nPTAmCMZqNZp+sw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] driver core & of: Mark of_nodes of added device as populated
+From: Rob Herring <robherring2@gmail.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, "arm@kernel.org" <arm@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
-> It is an empty stub and is not needed.
+On Tue, Feb 11, 2014 at 10:53 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> In "Device Tree powered" systems, platform devices are usually
+> massively populated with of_platform_populate() call, executed
+> at some level of initcalls, either by generic architecture
+> or by platform-specific code.
 >
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
-Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
-
+> There are situations though where certain devices must be
+> created (and bound with drivers) before all the others.
+> This presents small challenge in DT-driven systems, as
+> devices explicitly created in early code would be created
+> again by of_platform_populate().
+>
+> This patch tries to solve that issue in a generic way,
+> adding a "populated" flag which is set in the device_node
+> structure when a device is being created in the core.
+> Later, of_platform_populate() skips such nodes (and
+> its children) in a similar way to the non-available ones.
+>
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 > ---
->   drivers/input/rmi4/rmi_f01.c | 6 ------
->   1 file changed, 6 deletions(-)
->
-> diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
-> index 92b90d1..897d8ac 100644
-> --- a/drivers/input/rmi4/rmi_f01.c
-> +++ b/drivers/input/rmi4/rmi_f01.c
-> @@ -451,11 +451,6 @@ static int rmi_f01_probe(struct rmi_function *fn)
->   	return 0;
->   }
->
-> -static void rmi_f01_remove(struct rmi_function *fn)
-> -{
-> -	/* Placeholder for now. */
-> -}
-> -
->   #ifdef CONFIG_PM_SLEEP
->   static int rmi_f01_suspend(struct device *dev)
->   {
-> @@ -554,7 +549,6 @@ static struct rmi_function_handler rmi_f01_handler = {
->   	},
->   	.func		= 0x01,
->   	.probe		= rmi_f01_probe,
-> -	.remove		= rmi_f01_remove,
->   	.config		= rmi_f01_config,
->   	.attention	= rmi_f01_attention,
->   };
->
+>  drivers/base/core.c       |  4 ++++
+>  drivers/of/device.c       | 16 ++++++++++++++++
+>  drivers/of/platform.c     |  6 ++++--
+>  include/linux/of.h        |  6 ++++++
+>  include/linux/of_device.h | 11 +++++++++++
+>  5 files changed, 41 insertions(+), 2 deletions(-)
 
+Go read Grant's and my comments from your last posting.
 
--- 
-
-Christopher Heiny
-Senior Staff Firmware Engineer
-Synaptics Incorporated
+Rob
