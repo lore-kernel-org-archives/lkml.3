@@ -1,114 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaBMSWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:22:48 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:56471 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680AbaBMSWq (ORCPT
+	id S1752811AbaBMSZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:25:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51092 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994AbaBMSZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:22:46 -0500
+	Thu, 13 Feb 2014 13:25:34 -0500
+Date: Thu, 13 Feb 2014 19:25:22 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: Another preempt folding issue?
+Message-ID: <20140213182522.GB14089@laptop.programming.kicks-ass.net>
+References: <52FA6D4B.7020709@canonical.com>
+ <20140211194553.GZ9987@twins.programming.kicks-ass.net>
+ <52FB2EC8.4080602@canonical.com>
+ <20140212103713.GE3545@laptop.programming.kicks-ass.net>
+ <20140212104017.GA5121@pd.tnic>
+ <52FB5669.7090506@canonical.com>
+ <20140212115412.GW27965@twins.programming.kicks-ass.net>
+ <52FCFA23.4060701@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <CAP=VYLrGdsJawCU3u5VZN192TptCOKZp-hO9cR7PtuspZui4uA@mail.gmail.com>
-References: <20140213131923.4a0b79959e0b27399c021aa7@canb.auug.org.au> <CAP=VYLrGdsJawCU3u5VZN192TptCOKZp-hO9cR7PtuspZui4uA@mail.gmail.com>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Thu, 13 Feb 2014 13:22:15 -0500
-X-Google-Sender-Auth: GA7lCGzAwfc3Y1J0kG8QpeVzsdQ
-Message-ID: <CAP=VYLpa7yOZb4bgT6jNkLaEmDVHpKkwm07x8--URvUFEb+E2Q@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the wireless-next tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52FCFA23.4060701@canonical.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 12:31 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On Wed, Feb 12, 2014 at 9:19 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi John,
->>
->> After merging the wireless-next tree, today's linux-next build (x86_64
->> allmodconfig) failed like this:
->>
->> drivers/staging/rtl8821ae/rc.c:289:2: error: unknown field 'module' specified in initializer
->>   .module = NULL,
->>   ^
->>
->> Caused by commit cc01f9b55fe7 ("mac80211: remove module handling from
->> rate control ops") interacting with commit 3c05bedb5fef ("Staging:
->> rtl8812ae: Add Realtek 8821 PCI WIFI driver") which entered Linus' tree
->> before v3.14-rc1.
->
-> It seems this new driver has multiple issues; I'm seeing this on sparc32
-> allmodconfig builds.
->
-> In file included from drivers/staging/rtl8821ae/btcoexist/halbt_precomp.h:31:0,
->                  from drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c:14:
-> drivers/staging/rtl8821ae/btcoexist/../pci.h:290:15: error: expected
-> '=', ',', ';', 'asm' or '__attribute__' before 'rtl_pci_probe'
-> make[3]: *** [drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.o] Error 1
-> make[3]: *** Waiting for unfinished jobs....
->
-> It looks like a mangled version check which is allowing it to try and use
-> __devinit on the rtl_pci_probe function, but of course __devinit is gone.
->
-> Ideally all that version check stuff should be gutted.
+On Thu, Feb 13, 2014 at 06:00:19PM +0100, Stefan Bader wrote:
+> On 12.02.2014 12:54, Peter Zijlstra wrote:
+> > On Wed, Feb 12, 2014 at 12:09:29PM +0100, Stefan Bader wrote:
+> >> Something else here I run a kernel with CONFIG_PREEMPT not set and NR_CPUS
+> >> limited to 8 (for the 32bit kernel). So the default apic driver is used. Since
+> >> default_send_IPI_mask_logical is only used from there, I assume the trace you
+> >> got does the same. Maybe something there is wrong which would explain why we
+> >> only see it on 32bit hosts.
+> > 
+> > Can you try with a different APIC driver to test this?
+> > 
+> I don't think I can. And I think the statement about this only be used for 32bit
+> could be wrong. I got mislead to think so because those are only defined in
+> probe_32 but the 64bit counterpart isn't containing much aside that.
+> 
+> Anyway, I played around with tracing a bit more. So with this change:
+> 
+>                 if (need_resched()) {
+>                         srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+>                         if (need_resched() != should_resched()) {
+> +                               trace_printk("need(%i) != should(%i)\n",
+> +                                       need_resched(), should_resched());
+> +                               trace_printk("exit_reason=%u\n",
+> +                                       vcpu->run->exit_reason);
+> +                                trace_printk("preempt_count=%lx\n",
+> +                                        __this_cpu_read_4(__preempt_count));
+> +                                tracing_stop();
+> +                                printk(KERN_ERR "Stopped tracing, due to
+> inconsistent state.\n");
+>                         }
+>  +                      schedule();
+>  -                      cond_reschedule();
+>                         vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+>                 }
+> 
+> I get the following (weird) output:
+> 
+>             Xorg-1078  [001] d...    71.270251: native_smp_send_reschedule
+> <-resched_task
+>             Xorg-1078  [001] d...    71.270251: default_send_IPI_mask_logical
+> <-native_smp_send_reschedule
+>       bamfdaemon-2318  [001] d...    71.270465: resched_task <-check_preempt_wakeup
+>       bamfdaemon-2318  [001] d...    71.270539: resched_task <-check_preempt_wakeup
+>           compiz-2365  [001] d...    71.270689: resched_task <-check_preempt_wakeup
+>           compiz-2365  [001] d...    71.270827: resched_task <-check_preempt_wakeup
+>           compiz-2365  [001] d...    71.270940: resched_task <-check_preempt_wakeup
+>  qemu-system-x86-2679  [000] dn..    71.270999: smp_reschedule_interrupt
+> <-reschedule_interrupt
+>  qemu-system-x86-2679  [000] dn..    71.270999: scheduler_ipi
+> <-smp_reschedule_interrupt
+>  qemu-system-x86-2679  [000] .N..    71.271001: kvm_arch_vcpu_ioctl_run: need(1)
+> != should(0)
+>  qemu-system-x86-2679  [000] .N..    71.271002: kvm_arch_vcpu_ioctl_run:
+> exit_reason=2
+>  qemu-system-x86-2679  [000] .N..    71.271003: kvm_arch_vcpu_ioctl_run:
+> preempt_count=0
+> 
+> So am I reading this right, that the interrupt did get delivered to cpu#0 while
+> the thread info already had the resched flag set. So this really should have
+> cleared the bit in preempt_count. But while the trace info shows 'N' for some
+> reason should_reschedule returns false but at the same time reading the preempt
+> count manually shows it 0?
 
-While it still should be gutted, I tracked down the source of the version
-skew.  If a person is bisecting and if you go back to pre-UAPI days,
-you will create an include/linux/version.h  -- then if you checkout a
-post-UAPI kernel, and run "make distclean" it won't delete that file.
-So you get a situation like this:
+So the assembly merges the first and second should_resched(), so its
+possible that load got before the interrupt().
 
-$ grep -R LINUX_VERSION_CODE include/
-include/generated/uapi/linux/version.h:#define LINUX_VERSION_CODE 200192
-include/linux/version.h:#define LINUX_VERSION_CODE 132646
+The 3rd preempt_count load gets re-issued and so that would show the
+'true' value again.
 
-Note the presence of a v2.6.38 version.  And it will be sourced/used,
-hence the fail above.  We might want to unconditionally clobber the
-old file in new kernels to avoid this trap, since it is subtle.
+If you want to force a reload after the condition; put in a barrier().
 
-Paul.
---
+In any case; this looks like a false-positive. Please try again until
+you get one where the interrupt doesn't happen and we stay in 'n' state.
 
->
-> Paul.
-> --
->
->>
->> I added this merge fix patch and can carry it as necessary (John, if you
->> back merge v3.14-rc1, you should include this patch in the merge commit):
->>
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Thu, 13 Feb 2014 13:14:13 +1100
->> Subject: [PATCH] Staging: rtl8812ae: remove modules field of rate_control_ops
->>
->> This has been removed in further work.
->>
->> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> ---
->>  drivers/staging/rtl8821ae/rc.c | 1 -
->>  1 file changed, 1 deletion(-)
->>
->> diff --git a/drivers/staging/rtl8821ae/rc.c b/drivers/staging/rtl8821ae/rc.c
->> index d387f13ea7dc..0cc32c60ddee 100644
->> --- a/drivers/staging/rtl8821ae/rc.c
->> +++ b/drivers/staging/rtl8821ae/rc.c
->> @@ -286,7 +286,6 @@ static void rtl_rate_free_sta(void *rtlpriv,
->>  }
->>
->>  static struct rate_control_ops rtl_rate_ops = {
->> -       .module = NULL,
->>         .name = "rtl_rc",
->>         .alloc = rtl_rate_alloc,
->>         .free = rtl_rate_free,
->> --
->> 1.9.rc1
->>
->> --
->> Cheers,
->> Stephen Rothwell                    sfr@canb.auug.org.au
