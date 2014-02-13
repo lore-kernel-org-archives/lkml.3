@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaBMXm0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:42:26 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51503 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaBMXmY (ORCPT
+	id S1752026AbaBMXz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:55:28 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37727 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469AbaBMXz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:42:24 -0500
-Date: Thu, 13 Feb 2014 18:42:21 -0500 (EST)
-Message-Id: <20140213.184221.1712626655601756449.davem@davemloft.net>
-To: sergei.shtylyov@cogentembedded.com
-Cc: liujunliang_ljl@163.com, thierry.reding@gmail.com, horms@verge.net.au,
-        joe@perches.com, romieu@fr.zoreil.com, gregkh@linuxfoundation.org,
-        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sunhecheng@vip.126.com
-Subject: Re: [PATCH] Fix Default to 'y' for SR9800 Device Driver, setting
- to 'n'
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <52FD6579.5070104@cogentembedded.com>
-References: <1392265339-14841-1-git-send-email-liujunliang_ljl@163.com>
-	<20140213.183237.1108958546198981160.davem@davemloft.net>
-	<52FD6579.5070104@cogentembedded.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Feb 2014 15:42:23 -0800 (PST)
+	Thu, 13 Feb 2014 18:55:27 -0500
+Date: Fri, 14 Feb 2014 00:55:27 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, John Kacur <jkacur@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12.9-rt13: BUG: soft lockup
+In-Reply-To: <52FD4D89.2000207@localhost>
+Message-ID: <alpine.DEB.2.02.1402140053000.21991@ionos.tec.linutronix.de>
+References: <52FBF2F1.8040504@localhost> <alpine.DEB.2.02.1402132324230.21991@ionos.tec.linutronix.de> <52FD4D89.2000207@localhost>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Date: Fri, 14 Feb 2014 03:38:17 +0300
+On Thu, 13 Feb 2014, Fernando Lopez-Lezcano wrote:
 
-> Hello.
+> On 02/13/2014 02:25 PM, Thomas Gleixner wrote:
+> > On Wed, 12 Feb 2014, Fernando Lopez-Lezcano wrote:
+> > > [771508.546449] RIP: 0010:[<ffffffff810dc60a>]  [<ffffffff810dc60a>]
+> > > smp_call_function_many+0x2ca/0x330
+> > 
+> > Can you decode the exact location inside of smp_call_function_many via
+> > addr2line please ?
 > 
-> On 02/14/2014 02:32 AM, David Miller wrote:
+> Hope this is useful (adding 0x2ce/0x330 as offsets does not make any
+> difference, don't know if it should)...
 > 
->>> From: Liu Junliang <liujunliang_ljl@163.com>
+> # grep smp_call_function /var/log/messages|tail -1
+> Feb 12 14:18:21 cmn27 kernel: [771840.224419] RIP: 0010:[<ffffffff810dc60e>]
+> [<ffffffff810dc60e>] smp_call_function_many+0x2ce/0x330
+> # addr2line -e
+> /usr/lib/debug/lib/modules/3.12.10-300.rt15.1.fc20.ccrma.x86_64+rt/vmlinux
+> ffffffff810dc60e
+> /usr/src/debug/kernel-3.12.fc20.ccrma/linux-3.12.10-300.rt15.1.fc20.ccrma.x86_64/kernel/rtmutex.c:1295
 > 
->>> Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
-> 
->> I think it's more canonical to specify no default at all.
-> 
->    That's what he did, no?
 
-Indeed, my bad, patch applied, thanks!
+I can't see how the kernel decoder thinks it's smp_call_function_many
+but addr2line looks at rtmutex.c
+
+That doesn't make any sense at all. Version mismatch?
+
+Thanks,
+
+	tglx
