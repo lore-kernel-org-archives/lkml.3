@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314AbaBMLDW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 06:03:22 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:37715 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaBMLDU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 06:03:20 -0500
-Date: Thu, 13 Feb 2014 11:03:14 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.torgue@st.com" <alexandre.torgue@st.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the
- MiPHY365x
-Message-ID: <20140213110314.GH32508@lee--X1>
-References: <1392220985-28189-1-git-send-email-lee.jones@linaro.org>
- <20140212164019.GE25957@e106331-lin.cambridge.arm.com>
+	id S1754448AbaBMLDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 06:03:46 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:10607 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440AbaBMLDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 06:03:44 -0500
+Message-ID: <52FCA6AA.5060202@imgtec.com>
+Date: Thu, 13 Feb 2014 11:04:10 +0000
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140212164019.GE25957@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <linux-kernel@vger.kernel.org>
+CC: Michal Marek <mmarek@suse.cz>, <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] Makefile: Unset stack-protector gcc flag if it is not
+ supported
+References: <1391793327-9578-1-git-send-email-markos.chandras@imgtec.com>
+In-Reply-To: <1391793327-9578-1-git-send-email-markos.chandras@imgtec.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.47]
+X-SEF-Processed: 7_3_0_01192__2014_02_13_11_03_44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-> > devices. It has 2 ports which it can use for either; both SATA, both
-> > PCIe or one of each in any configuration.
-> > 
-> > Cc: devicetree@vger.kernel.org
-> > Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  .../devicetree/bindings/phy/phy-miphy365x.txt      | 43 ++++++++++++++++++++++
-> >  1 file changed, 43 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> > new file mode 100644
-> > index 0000000..fdfa7ca
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> > @@ -0,0 +1,43 @@
-> > +STMicroelectronics STi MIPHY365x PHY binding
-> > +============================================
-> > +
-> > +This binding describes a miphy device that is used to control PHY hardware
-> > +for SATA and PCIe.
-> > +
-> > +Required properties:
-> > +- compatible: Should be "st,miphy365x-phy"
-> > +- #phy-cells: Should be 2 (See example)
-> 
-> The first example has #phy-cells = <1>.
+On 02/07/2014 05:15 PM, Markos Chandras wrote:
+> In case the compiler does not support the stack-protector option,
+> unset the flag to avoid build failures. Printing a warning is enough
+> to let the user know that this flag will not be used.
+> Fixes the following build problem when using a toolchain which does
+> not support the -fstack-protector-strong flag:
+>
+> Makefile:614: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG:
+> -fstack-protector-strong not supported by compiler
+> mips-linux-gnu-gcc: error: unrecognized command line option
+> '-fstack-protector-strong'
+> scripts/Makefile.build:308: recipe for target 'scripts/mod/empty.o' failed
+> make[2]: *** [scripts/mod/empty.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
+> scripts/Makefile.build:455: recipe for target 'scripts/mod' failed
+>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: linux-kbuild@vger.kernel.org
+> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+> ---
+>   Makefile | 2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/Makefile b/Makefile
+> index 606ef7c..63a5333 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -607,12 +607,14 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
+>     ifeq ($(call cc-option, $(stackp-flag)),)
+>       $(warning Cannot use CONFIG_CC_STACKPROTECTOR: \
+>   	      -fstack-protector not supported by compiler))
+> +    stackp-flag :=
+>     endif
+>   else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
+>     stackp-flag := -fstack-protector-strong
+>     ifeq ($(call cc-option, $(stackp-flag)),)
+>       $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
+>   	      -fstack-protector-strong not supported by compiler)
+> +    stackp-flag :=
+>     endif
+>   else
+>     # Force off for distro compilers that enable stack protector by default.
+>
+Hi,
 
-Right, will fix. Should be 2.
-
-> What do the cells mean? What are the expected values?
-
-http://www.spinics.net/lists/arm-kernel/msg307209.html
-
-> > +- reg:	      Address and length of the register set for the device
-> > +- reg-names:  The names of the register addresses corresponding to the
-> > +	      registers filled in "reg".
-> 
-> Whenever there is a ${PROP}-names property, there should be a list of
-> explicit values, and a description of how it relates to ${PROP}. Without
-> that it's a bit useless.
-> 
-> Please provide an explicit list of expected names here.
-> 
-> I assume here what you want is something like:
-> 
-> - reg: a list of address + length pairs, one for each entry in reg-names
-> - reg-names: should contain:
->   * "sata0" for the sata0 control registers...
->   * "sata1" ...
->   * "pcie0" ...
->   * "pcie1" ...
-
-Can do.
-
-> > +- st,syscfg : Should be a phandle of the syscfg node.
-> 
-> What's this used for?
-
-It's used to gain access to the system configuration
-registers. Specifically in this case the bits to choose between PCI or
-SATA mode.
+ping?
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+markos
+
