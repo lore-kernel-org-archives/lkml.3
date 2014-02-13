@@ -1,118 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaBMURw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:17:52 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:38287 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaBMURu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:17:50 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bruce Fields <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi\@suse.cz" <mszeredi@suse.cz>
-References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
-	<19258.1392306854@warthog.procyon.org.uk>
-	<20140213162534.GB4026@tucsk.piliscsaba.szeredi.hu>
-	<20106.1392309770@warthog.procyon.org.uk>
-	<CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com>
-	<CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com>
-	<16729.1392318161@warthog.procyon.org.uk>
-	<CA+55aFyT9_XSFQwv82Qwv5US7QMOvW8RhbsxOa8B2mm3MChWLA@mail.gmail.com>
-Date: Thu, 13 Feb 2014 12:17:37 -0800
-In-Reply-To: <CA+55aFyT9_XSFQwv82Qwv5US7QMOvW8RhbsxOa8B2mm3MChWLA@mail.gmail.com>
-	(Linus Torvalds's message of "Thu, 13 Feb 2014 11:32:31 -0800")
-Message-ID: <87r47622e6.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751992AbaBMUYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:24:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6289 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751652AbaBMUYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 15:24:08 -0500
+Message-ID: <52FD2908.8000009@redhat.com>
+Date: Thu, 13 Feb 2014 21:20:24 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/fHmvfQ6Djz74WK4yiyIaxHKt9AgpA4W8=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3787]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 00/13] cross rename v4
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
+References: <1391649046-4383-1-git-send-email-ast@plumgrid.com> <52F3670D.5090608@redhat.com> <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
+In-Reply-To: <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On 02/07/2014 02:20 AM, Alexei Starovoitov wrote:
+...
+> Hi Daniel,
 
-> On Thu, Feb 13, 2014 at 11:02 AM, David Howells <dhowells@redhat.com> wrote:
->>
->> Whilst that does seem reasonable, what about all the other software that
->> iterates over a directory?  Some of that is surely not going to know about
->> DT_WHT.
+Thanks for your answer and sorry for the late reply.
+
+> Thank you for taking a look. Good questions. I had the same concerns.
+> Old BPF was carefully extended in specific places.
+> End result may look big at first glance, but every extension has specific
+> reason behind it. I tried to explain the reasoning in Documentation/bpf_jit.txt
 >
-> So?
+> I'm planning to write an on-the-fly converter from old BPF to BPF64
+> when BPF64 manages to demonstrate that it is equally safe.
+> It is straight forward to convert. Encoding is very similar.
+> Core concepts are the same.
+> Try diff include/uapi/linux/filter.h include/linux/bpf.h
+> to see how much is reused.
 >
-> Remeber: whiteout entries do not exist "normally". No normal apps
-> should care or see them, since the whole and only point of them is
-> when they are part of a union mount (in which case they are not
-> visible).
+> I believe that old BPF outlived itself and BPF64 should
+> replace it in all current use cases plus a lot more.
+> It just cannot happen at once.
+> BPF64 can come in. bpf32->bpf64 converter functioning.
+> JIT from bpf64->aarch64 and may be sparc64 needs to be in place.
+> Then old bpf can fade away.
+
+Do you see a possibility to integrate your work step by step? That is,
+to first integrate the interpreter part only; meaning, to detect "old"
+BPF programs e.g. coming from SO_ATTACH_FILTER et al and run them in
+compatibility mode while extended BPF is fully integrated and replaces
+the old engine in net/core/filter.c. Maybe, "old" programs can be
+transformed transparently to the new representation and then would be
+good to execute in eBPF. If possible, in such a way that in the first
+step JIT compilers won't need any upgrades. Once that is resolved,
+JIT compilers could successively migrate, arch by arch, to compile the
+new code? And last but not least the existing tools as well for handling
+eBPF. I think, if possible, that would be great. Also, I unfortunately
+haven't looked into your code too deeply yet due to time constraints,
+but I'm wondering e.g. for accessing some skb fields we currently use
+the "hack" to "overload" load instructions with negative arguments. Do
+we have a sort of "meta" instruction that is extendible in eBPF to avoid
+such things in future?
+
+>> First of all, I think it's very interesting work ! I'm just a bit concerned
+>> that this _huge_ patchset with 64 bit BPF, or however we call it, will line
 >
-> So the "how do you see whiteouts" is really only about the raw
-> filesystem mount when *not* in the normal place.
+> Huge?
+> kernel is only 2k
+> the rest is 6k of userspace LLVM backend where most of it is llvm's
+> boilerplate code. GCC backend for BPF is 3k.
+> The goal is to have both GCC and LLVM backends to be upstreamed
+> when kernel pieces are agreed upon.
+> For comparison existing tools/net/bpf* is 2.5k
+> but here with 6k we get optimizing compiler from C and assembler.
 >
-> IOW, it's not like these guys are going to show up in users home
-> directories etc. It's more like a special device node than a file - we
-> need to care about some basic system management interfaces, not about
-> "random apps". So "coreutils" is the primary user, although I guess a
-> few IT people would prefer for things like Nautilus etc random file
-> managers to be able to show them nicely too. But if they show up as an
-> icon with a question mark on them or whatever, that's really not a big
-> deal either.
+>> up in one row next to the BPF code we currently have and next to new
+>> nftables
+>> engine and we will end up with three such engines which do quite similar
+>> things and are all exposed to user space thus they need to be maintained
+>> _forever_, adding up legacy even more. What would be the long-term future
+>> use
+>> cases where the 64 bit engine comes into place compared to the current BPF
+>> engine? What are the concrete killer features? I didn't went through your
 >
-> Sure, maybe they'll look odd in some graphical file chooser *if*
-> somebody makes them show up, but I think creation of a whiteout - if
-> we allow it at all outside of the union mount itself - should be a
-> root-only thing (the same way mknod is) so quite frankly, it falls
-> under "filesystem corruption makes my directory listings look odd -
-> cry me a river".
+> killer features vs old bpf are:
+> - zero-cost function calls
+> - 32-bit vs 64-bit
+> - optimizing compiler that can compile C into BPF64
 >
-> (I do think we should allow creation - but for root only - for
-> management and testing purposes, but I really think it's a secondary
-> issue, and I do think we should literally use "mknod()" - either with
-> a new S_IFWHT or even just making use of existing S_IFCHR just so you
-> could use the user-space "mknod" to create it with some magic
-> major/minor combination.
+> Why call kernel function from BPF?
+> So that BPF instruction set has to be extended only once and JITs are
+> written only once.
+> Over the years many extensions crept into old BPF as 'negative offsets'.
+> but JITs don't support all of them and assume bpf input as 'skb' only.
+> seccomp is using old bpf, but, because of these limitations, cannot use JIT.
+> BPF64 allows seccomp to be JITed, since bpf input is generalized
+> as 'struct bpf_context'.
+> New 'negative offset' extension for old bpf would mean implementing it in
+> JITs of all architectures? Painful, but doable. We can do better.
+>
+> Fixed instruction set that allows zero-overhead calls into kernel functions
+> is much more flexible and extendable in a clean way.
+> Take a look at kernel/trace/bpf_trace_callbacks.c
+> It is a customization of generic BPF64 core for 'tracing filters'.
+> The set of functions for networking and definition of 'bpf_context'
+> will be different.
+> So BPF64 for tracing need X extensions, BPF64 for networking needs Y
+> extensions, but core framework stays the same and JIT stays the same.
+>
+> How to do zero-overhead call?
+> Map BPF registers to native registers one to one
+> and have compatible calling convention between BPF and native.
+> Then BPF asm code:
+> mov R1, 1
+> mov R2, 2
+> call foo
+> will be JITed into x86-64:
+> mov rdi, 1
+> mov rsi, 2
+> call foo
+> That makes BPF64 calls into kernel as fast as possible.
+> Especially for networking we don't want overhead of FFI mechanisms.
+>
+> That's why A and X regs and lack of callee-saved regs make old BPF
+> impractical to support generic function calls.
+>
+> BPF64 defines R1-R5 as function arguments and R6-R9 as
+> callee-saved, so kernel can natively call into JIT-ed BPF and back
+> with no extra argument shuffling.
+> gcc/llvm backends know that R6-R9 will be preserved while BPF is
+> calling into kernel functions and can make proper optimizations.
+> R6-R9 map to rbx-r15 on x86-64. On aarch64 we have
+> even more freedom of mapping.
+>
+>> code
+>> in detail, but although we might/could have _some_ performance benefits but
+>> at
+>> the _huge_ cost of adding complexity. The current BPF I find okay to debug
+>> and
+>> to follow, but how would be debug'ability of 64 bit programs end up, as you
+>> mention, it becomes "unbearably complex"?
+>
+> "unbearably complex" was the reference to x86 static analyzer :)
+> It's difficult to reconstruct and verify control and data flow of x86 asm code.
+> Binary compilers do that (like transmeta and others), but that's not suitable
+> for kernel.
+>
+> Both old bpf asm and bpf64 asm code I find equivalent in readability.
+>
+> clang dropmon.c ...|llc -filetype=asm
+> will produce the following bpf64 asm code:
+>          mov     r6, r1
+>          ldd     r1, 8(r6)
+>          std     -8(r10), r1
+>          mov     r7, 0
+>          mov     r3, r10
+>          addi    r3, -8
+>          mov     r1, r6
+>          mov     r2, r7
+>          call    bpf_table_lookup
+>          jeqi    r0, 0 goto .LBB0_2
+>
+> which corresponds to C:
+> void dropmon(struct bpf_context *ctx)
+> {       void *loc;
+>          uint64_t *drop_cnt;
+>          loc = (void *)ctx->arg2;
+>          drop_cnt = bpf_table_lookup(ctx, 0, &loc);
+>          if (drop_cnt) ...
+>
+> I think restricted C is easier to program and debug.
+> Which is another killer feature of bpf64.
+>
+> Interesting use case would be if some kernel subsystem
+> decides to generate BPF64 insns on the fly and JIT them.
+> Sort of self-modifieable kernel code.
+> It's certainly easier to generate BPF64 binary with macroses
+> from linux/bpf.h instead of x86 binary...
+> I may be dreaming here :)
+>
+>> Did you instead consider to
+>> replace
+>> the current BPF engine instead, and add a sort of built-in compatibility
+>> mode for current BPF programs? I think that this would be the way better
+>> option to go with instead of adding a new engine next to the other. For
+>> maintainability, trying to replace the old one might be harder to do on the
+>> short term but better to maintain on the long run for everyone, no?
+>
+> Exactly. I think on-the-fly converter from bpf32->bpf64 is this built-in
+> compatibility layer. I completely agree that replacing bpf32 is hard
+> short term, since it will raise too many concerns about
+> stability/safety, but long term it's a way to go.
 
-I see two interesting questions.
+Yes, I agree.
 
-- How do I backup and restore my top layer of my union mount/filesystem?
-- How do I use union mounts without in a container?
+> I'm open to all suggestions on how to make it more generic, useful,
+> faster.
+>
+> Thank you for feedback.
 
-Backup and restore argues that mknod be able to create these things, and
-unlink be able to remove them.  rename shrug.
+Thank you, must have been really fun to implement this. :)
 
-I expect whiteouts on a filesystem will all belong to some inode with
-i_nlink == 0, and likely is not even represented on disk.
-
-Using union mounts in a container effectively boils down to letting
-non-root users create these things, so unless applications handle these
-very badly I don't know why we should restrict their creation to
-root.  Quotas restrict the size of directories and the number of inodes
-you can have, and the number of directory blocks you can have, which
-handles everything except applications that misbehave in the face of the
-unknown.
-
-Eric
+> Regards,
+> Alexei
+>
