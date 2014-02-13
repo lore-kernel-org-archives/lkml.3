@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaBMX3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:29:08 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57137 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751738AbaBMX3C (ORCPT
+	id S1752638AbaBMX3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:29:24 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33950 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107AbaBMX3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:29:02 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+dKx9M2jzJjU94hJVbD7XU
-Date: Thu, 13 Feb 2014 15:28:43 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP2+: Remove MACH_NOKIA_N800
-Message-ID: <20140213232842.GS28216@atomide.com>
-References: <1391958088.25424.17.camel@x220>
- <20140209195021.GE573@drone.musicnaut.iki.fi>
+	Thu, 13 Feb 2014 18:29:20 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <52FD54F0.8050006@jp.fujitsu.com>
+Date: Fri, 14 Feb 2014 08:27:44 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140209195021.GE573@drone.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daeseok Youn <daeseok.youn@gmail.com>
+CC: <akpm@linux-foundation.org>, <toshi.kani@hp.com>, <rientjes@google.com>,
+        <gong.chen@linux.intel.com>, <haokexin@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/resource.c: fix sparse non static symbol warning
+References: <2767883.6dX08SOjIi@daeseok-laptop.cloud.net>
+In-Reply-To: <2767883.6dX08SOjIi@daeseok-laptop.cloud.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Aaro Koskinen <aaro.koskinen@iki.fi> [140209 11:53]:
-> Hi,
-> 
-> On Sun, Feb 09, 2014 at 04:01:28PM +0100, Paul Bolle wrote:
-> > The last caller of machine_is_nokia_n800() was removed in commit
-> > 5a87cde490e1 ("ARM: OMAP2+: Remove legacy booting support for n8x0").
-> > That means that the Kconfig symbol MACH_NOKIA_N800 is now unused. It can
-> > safely be removed.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> 
-> Acked-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+(2014/02/13 11:02), Daeseok Youn wrote:
+>  From f8e0752ac80e56bcbfe197a5820692d199822b52 Mon Sep 17 00:00:00 2001
+> From: Daeseok Youn <daeseok.youn@gmail.com>
+> Date: Thu, 13 Feb 2014 10:11:39 +0900
+> Subject: [PATCH] kernel/resource.c: fix sparse non static symbol warning
+>
+> kernel/resource.c:518:5: warning:
+>   symbol 'reallocate_resource' was not declared. Should it be static?
+>
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
 
-Thanks applying into omap-for-v3.14/fixes.
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Tony
+Thanks,
+Yasuaki Ishimatsu
+
+
+>   kernel/resource.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index 3f285dc..b2979c6 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -515,7 +515,7 @@ static int find_resource(struct resource *root, struct resource *new,
+>    * @newsize: new size of the resource descriptor
+>    * @constraint: the size and alignment constraints to be met.
+>    */
+> -int reallocate_resource(struct resource *root, struct resource *old,
+> +static int reallocate_resource(struct resource *root, struct resource *old,
+>   			resource_size_t newsize,
+>   			struct resource_constraint  *constraint)
+>   {
+>
+
+
