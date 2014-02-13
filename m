@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaBMTsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:48:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42103 "EHLO mx1.redhat.com"
+	id S1753000AbaBMTsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:48:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33537 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920AbaBMTsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:48:21 -0500
-Date: Thu, 13 Feb 2014 14:48:14 -0500
-Message-Id: <201402131948.s1DJmEHR023519@gelk.kernelslacker.org>
+	id S1752897AbaBMTsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 14:48:16 -0500
+Date: Thu, 13 Feb 2014 14:48:09 -0500
+Message-Id: <201402131948.s1DJm9fF023513@gelk.kernelslacker.org>
 From: Dave Jones <davej@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org
-Subject: [PATCH 38/38] staging/bcm: move IOCTL_BCM_TIME_SINCE_NET_ENTRY case out to its own function.
+Subject: [PATCH 37/38] staging/bcm: move IOCTL_BCM_GET_DEVICE_DRIVER_INFO case out to its own function.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,33 +22,38 @@ this a lot.
 
 Signed-off-by: Dave Jones <davej@fedoraproject.org>
 ---
- drivers/staging/bcm/Bcmchar.c | 42 ++++++++++++++++++++++++------------------
- 1 file changed, 24 insertions(+), 18 deletions(-)
+ drivers/staging/bcm/Bcmchar.c | 51 ++++++++++++++++++++++++-------------------
+ 1 file changed, 29 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
-index 74360ee45c2b..fdebc3bba0b5 100644
+index 2cfdbeeff14a..74360ee45c2b 100644
 --- a/drivers/staging/bcm/Bcmchar.c
 +++ b/drivers/staging/bcm/Bcmchar.c
-@@ -2029,6 +2029,27 @@ static int bcm_char_ioctl_get_device_driver_info(void __user *argp, struct bcm_m
- 	return STATUS_SUCCESS;
+@@ -2003,6 +2003,32 @@ static int bcm_char_ioctl_cntrlmsg_mask(void __user *argp, struct bcm_mini_adapt
+ 	return Status;
  }
  
-+static int bcm_char_ioctl_time_since_net_entry(void __user *argp, struct bcm_mini_adapter *Adapter)
++static int bcm_char_ioctl_get_device_driver_info(void __user *argp, struct bcm_mini_adapter *Adapter)
 +{
-+	struct bcm_time_elapsed stTimeElapsedSinceNetEntry = {0};
++	struct bcm_driver_info DevInfo;
 +	struct bcm_ioctl_buffer IoBuffer;
 +
-+	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_TIME_SINCE_NET_ENTRY called");
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
++
++	memset(&DevInfo, 0, sizeof(DevInfo));
++	DevInfo.MaxRDMBufferSize = BUFFER_4K;
++	DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
++	DevInfo.u32RxAlignmentCorrection = 0;
++	DevInfo.u32NVMType = Adapter->eNVMType;
++	DevInfo.u32InterfaceType = BCM_USB;
 +
 +	if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
 +		return -EFAULT;
 +
-+	if (IoBuffer.OutputLength < sizeof(struct bcm_time_elapsed))
++	if (IoBuffer.OutputLength < sizeof(DevInfo))
 +		return -EINVAL;
 +
-+	stTimeElapsedSinceNetEntry.ul64TimeElapsedSinceNetEntry = get_seconds() - Adapter->liTimeSinceLastNetEntry;
-+
-+	if (copy_to_user(IoBuffer.OutputBuffer, &stTimeElapsedSinceNetEntry, sizeof(struct bcm_time_elapsed)))
++	if (copy_to_user(IoBuffer.OutputBuffer, &DevInfo, sizeof(DevInfo)))
 +		return -EFAULT;
 +
 +	return STATUS_SUCCESS;
@@ -57,41 +62,38 @@ index 74360ee45c2b..fdebc3bba0b5 100644
  
  static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
  {
-@@ -2036,7 +2057,6 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
- 	void __user *argp = (void __user *)arg;
- 	struct bcm_mini_adapter *Adapter = pTarang->Adapter;
- 	INT Status = STATUS_FAILURE;
--	struct bcm_ioctl_buffer IoBuffer;
- 
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL,
- 			"Parameters Passed to control IOCTL cmd=0x%X arg=0x%lX",
-@@ -2273,23 +2293,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
- 		Status = bcm_char_ioctl_get_device_driver_info(argp, Adapter);
+@@ -2243,28 +2269,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ 		Status = bcm_char_ioctl_cntrlmsg_mask(argp, Adapter, pTarang);
  		return Status;
  
--	case IOCTL_BCM_TIME_SINCE_NET_ENTRY: {
--		struct bcm_time_elapsed stTimeElapsedSinceNetEntry = {0};
+-	case IOCTL_BCM_GET_DEVICE_DRIVER_INFO: {
+-		struct bcm_driver_info DevInfo;
 -
--		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_TIME_SINCE_NET_ENTRY called");
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
+-
+-		memset(&DevInfo, 0, sizeof(DevInfo));
+-		DevInfo.MaxRDMBufferSize = BUFFER_4K;
+-		DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
+-		DevInfo.u32RxAlignmentCorrection = 0;
+-		DevInfo.u32NVMType = Adapter->eNVMType;
+-		DevInfo.u32InterfaceType = BCM_USB;
 -
 -		if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
 -			return -EFAULT;
 -
--		if (IoBuffer.OutputLength < sizeof(struct bcm_time_elapsed))
+-		if (IoBuffer.OutputLength < sizeof(DevInfo))
 -			return -EINVAL;
 -
--		stTimeElapsedSinceNetEntry.ul64TimeElapsedSinceNetEntry = get_seconds() - Adapter->liTimeSinceLastNetEntry;
--
--		if (copy_to_user(IoBuffer.OutputBuffer, &stTimeElapsedSinceNetEntry, sizeof(struct bcm_time_elapsed)))
+-		if (copy_to_user(IoBuffer.OutputBuffer, &DevInfo, sizeof(DevInfo)))
 -			return -EFAULT;
 -	}
 -	break;
-+	case IOCTL_BCM_TIME_SINCE_NET_ENTRY:
-+		Status = bcm_char_ioctl_time_since_net_entry(argp, Adapter);
++	case IOCTL_BCM_GET_DEVICE_DRIVER_INFO:
++		Status = bcm_char_ioctl_get_device_driver_info(argp, Adapter);
 +		return Status;
  
- 	case IOCTL_CLOSE_NOTIFICATION:
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_CLOSE_NOTIFICATION");
+ 	case IOCTL_BCM_TIME_SINCE_NET_ENTRY: {
+ 		struct bcm_time_elapsed stTimeElapsedSinceNetEntry = {0};
 -- 
 1.8.5.3
 
