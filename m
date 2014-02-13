@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986AbaBMJQa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:16:30 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:54737 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaBMJOs (ORCPT
+	id S1753832AbaBMJOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:14:46 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:54968 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690AbaBMJOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:14:48 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-ab-52fc8cf68bab
+	Thu, 13 Feb 2014 04:14:34 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-d3-52fc8cf2d336
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
@@ -16,261 +16,386 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Subject: [PATCH v2 14/14] rtc: s5m: Add support for S2MPS14 RTC
-Date: Thu, 13 Feb 2014 10:14:07 +0100
-Message-id: <1392282847-25444-15-git-send-email-k.kozlowski@samsung.com>
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Subject: [PATCH v2 09/14] regulator: s2mps11: Add support for S2MPS14 regulators
+Date: Thu, 13 Feb 2014 10:14:02 +0100
+Message-id: <1392282847-25444-10-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
 References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4Zd1vPX+CDFZNZ7VYcvEqu8XGGetZ
-	LV6/MLQ42/SG3eL+16OMFpd3zWGzmHF+H5PF2iN32S32d3YwWpzuZrW4uOILkwO3x56JJ9k8
-	7lzbw+Yx72SgR9+WVYwe0+f9ZPL4vEkugC2KyyYlNSezLLVI3y6BK+P6vFa2gpcWFY9P9LA1
-	MH7X7WLk5JAQMJFYN/MnM4QtJnHh3nq2LkYuDiGBpYwSP1e+Y4dw+pgkrp+fxgJSxSZgLLF5
-	+RKwKhGBzYwSi79fZQVxmAV6mCSutc8FqxIWsJf4MHsrI4jNIqAqsXPJBrAdvAIeEieefQOK
-	cwDtU5CYM8kGJMwJFP734zdYiZCAu0TP4lnsExh5FzAyrGIUTS1NLihOSs811CtOzC0uzUvX
-	S87P3cQICcIvOxgXH7M6xCjAwajEw2ux7HeQEGtiWXFl7iFGCQ5mJRFeGYk/QUK8KYmVValF
-	+fFFpTmpxYcYmTg4pRoYee6es5o7JXIfI9fXgOtrHrQUsfna+k9b0CY0yT7mnmhsZYFTxYqO
-	LQ7yh2t137arPLH5vqjToUFO97LHGauwzR+CRTd/9or+mfDt/WvDkzvPbJjx2tO632vaRtH1
-	5RZiO08ybOHg7ItxXZ3x703Qo/ezHWKMkm9y5dptrji5IOJf4T6nzs0zlViKMxINtZiLihMB
-	c73KpSACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4Zd1PPX+CDBZP5LXYOGM9q8XUh0/Y
+	LF6/MLQ42/SG3eL+16OMFt+udDBZXN41h81ixvl9TBZrj9xltzjdzWpxccUXJgduj52z7rJ7
+	bFrVyeZx59oeNo95JwM9+rasYvT4vEkugC2KyyYlNSezLLVI3y6BK+PYDs+CC0kVq/9/YW9g
+	PBTUxcjJISFgIrG29QkrhC0mceHeerYuRi4OIYGljBJHr81nhHD6mCQ2LX7LDFLFJmAssXn5
+	ErAqEYHNjBKLv19lBXGYBXqZJFas2MnUxcjBISwQIPH/GB9IA4uAqsS/VefZQWxeAQ+J+UcP
+	soKUSAgoSMyZZAMS5gQK//vxG2y+kIC7RM/iWewTGHkXMDKsYhRNLU0uKE5KzzXSK07MLS7N
+	S9dLzs/dxAgJwK87GJceszrEKMDBqMTD+2Dx7yAh1sSy4srcQ4wSHMxKIrwyEn+ChHhTEiur
+	Uovy44tKc1KLDzEycXBKNTDmal6s0H32ao2zgt9h182/1/7k1Ls7dfue9qMtCiv4k7RZz/xQ
+	u9NhN7NKKsdQ48EE84vblygXT75V86At5njT7u1md7Ka+D0zjRnzlzIenlAZctba2CJNaff+
+	W2V8q1fqVb55sF/r92qTMja/YjbzvztV782Ivn1BpiVtT94+0VVFMmry0ziUWIozEg21mIuK
+	EwHn1LlhHgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for S2MPS14 to the rtc-s5m driver. Differences in S2MPS14
-(in comparison to S5M8767):
- - Layout of registers;
- - Lack of century support for time and alarms (7 registers used for
-   storing time/alarm);
- - Two buffer control registers: WUDR and RUDR;
- - No register for enabling writing time;
- - RTC interrupts are reported in main PMIC I2C device;
-
-This patch also adds missing mfd_cell for RTC in the MFD core driver.
+Add support for S2MPS14 PMIC regulators to s2mps11 driver. The S2MPS14
+has fewer BUCK-s and LDO-s than S2MPS11. It also does not support
+controlling the BUCK ramp delay.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
 ---
- drivers/rtc/rtc-s5m.c |   89 +++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 78 insertions(+), 11 deletions(-)
+ drivers/regulator/s2mps11.c |  252 ++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 191 insertions(+), 61 deletions(-)
 
-diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
-index 6a1290f8709a..6e4faffe4b5b 100644
---- a/drivers/rtc/rtc-s5m.c
-+++ b/drivers/rtc/rtc-s5m.c
-@@ -17,16 +17,14 @@
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 246b25d58c2b..f56ac6f776ae 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -1,13 +1,18 @@
+ /*
+  * s2mps11.c
+  *
+- * Copyright (c) 2012 Samsung Electronics Co., Ltd
++ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd
+  *              http://www.samsung.com
+  *
+- *  This program is free software; you can redistribute  it and/or modify it
+- *  under  the terms of  the GNU General  Public License as published by the
+- *  Free Software Foundation;  either version 2 of the  License, or (at your
+- *  option) any later version.
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
+  *
+  */
  
- #include <linux/module.h>
- #include <linux/i2c.h>
--#include <linux/slab.h>
- #include <linux/bcd.h>
--#include <linux/bitops.h>
- #include <linux/regmap.h>
- #include <linux/rtc.h>
--#include <linux/delay.h>
- #include <linux/platform_device.h>
+@@ -24,6 +29,7 @@
+ #include <linux/regulator/of_regulator.h>
  #include <linux/mfd/samsung/core.h>
- #include <linux/mfd/samsung/irq.h>
- #include <linux/mfd/samsung/rtc.h>
+ #include <linux/mfd/samsung/s2mps11.h>
 +#include <linux/mfd/samsung/s2mps14.h>
  
- /*
-  * Maximum number of retries for checking changes in UDR field
-@@ -74,6 +72,21 @@ static const struct s5m_rtc_reg_config s5m_rtc_regs = {
- 	.rtc_udr_mask		= S5M_RTC_UDR_MASK,
+ struct s2mps11_info {
+ 	struct regulator_dev **rdev;
+@@ -235,7 +241,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.set_ramp_delay		= s2mps11_set_ramp_delay,
  };
  
-+/*
-+ * Register map for S2MPS14.
-+ * It may be also suitable for S2MPS11 but this was not tested.
-+ */
-+static const struct s5m_rtc_reg_config s2mps_rtc_regs = {
-+	.regs_count		= 7,
-+	.time			= S2MPS_RTC_SEC,
-+	.ctrl			= S2MPS_RTC_CTRL,
-+	.alarm0			= S2MPS_ALARM0_SEC,
-+	.alarm1			= S2MPS_ALARM1_SEC,
-+	.smpl_wtsr		= S2MPS_WTSR_SMPL_CNTL,
-+	.rtc_udr_update		= S2MPS_RTC_UDR_CON,
-+	.rtc_udr_mask		= S2MPS_RTC_WUDR_MASK,
+-#define regulator_desc_ldo1(num)	{		\
++#define regulator_desc_s2mps11_ldo1(num)	{		\
+ 	.name		= "LDO"#num,			\
+ 	.id		= S2MPS11_LDO##num,		\
+ 	.ops		= &s2mps11_ldo_ops,		\
+@@ -249,7 +255,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
+ 	.enable_mask	= S2MPS11_ENABLE_MASK		\
+ }
+-#define regulator_desc_ldo2(num)	{		\
++#define regulator_desc_s2mps11_ldo2(num) {		\
+ 	.name		= "LDO"#num,			\
+ 	.id		= S2MPS11_LDO##num,		\
+ 	.ops		= &s2mps11_ldo_ops,		\
+@@ -264,7 +270,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK		\
+ }
+ 
+-#define regulator_desc_buck1_4(num)	{			\
++#define regulator_desc_s2mps11_buck1_4(num) {			\
+ 	.name		= "BUCK"#num,				\
+ 	.id		= S2MPS11_BUCK##num,			\
+ 	.ops		= &s2mps11_buck_ops,			\
+@@ -280,7 +286,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
+ 
+-#define regulator_desc_buck5	{				\
++#define regulator_desc_s2mps11_buck5 {				\
+ 	.name		= "BUCK5",				\
+ 	.id		= S2MPS11_BUCK5,			\
+ 	.ops		= &s2mps11_buck_ops,			\
+@@ -296,7 +302,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
+ 
+-#define regulator_desc_buck6_8(num)	{			\
++#define regulator_desc_s2mps11_buck6_8(num) {			\
+ 	.name		= "BUCK"#num,				\
+ 	.id		= S2MPS11_BUCK##num,			\
+ 	.ops		= &s2mps11_buck_ops,			\
+@@ -312,7 +318,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
+ 
+-#define regulator_desc_buck9	{				\
++#define regulator_desc_s2mps11_buck9 {				\
+ 	.name		= "BUCK9",				\
+ 	.id		= S2MPS11_BUCK9,			\
+ 	.ops		= &s2mps11_buck_ops,			\
+@@ -328,7 +334,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
+ 
+-#define regulator_desc_buck10	{				\
++#define regulator_desc_s2mps11_buck10 {				\
+ 	.name		= "BUCK10",				\
+ 	.id		= S2MPS11_BUCK10,			\
+ 	.ops		= &s2mps11_buck_ops,			\
+@@ -345,54 +351,173 @@ static struct regulator_ops s2mps11_buck_ops = {
+ }
+ 
+ static const struct regulator_desc s2mps11_regulators[] __initconst = {
+-	regulator_desc_ldo2(1),
+-	regulator_desc_ldo1(2),
+-	regulator_desc_ldo1(3),
+-	regulator_desc_ldo1(4),
+-	regulator_desc_ldo1(5),
+-	regulator_desc_ldo2(6),
+-	regulator_desc_ldo1(7),
+-	regulator_desc_ldo1(8),
+-	regulator_desc_ldo1(9),
+-	regulator_desc_ldo1(10),
+-	regulator_desc_ldo2(11),
+-	regulator_desc_ldo1(12),
+-	regulator_desc_ldo1(13),
+-	regulator_desc_ldo1(14),
+-	regulator_desc_ldo1(15),
+-	regulator_desc_ldo1(16),
+-	regulator_desc_ldo1(17),
+-	regulator_desc_ldo1(18),
+-	regulator_desc_ldo1(19),
+-	regulator_desc_ldo1(20),
+-	regulator_desc_ldo1(21),
+-	regulator_desc_ldo2(22),
+-	regulator_desc_ldo2(23),
+-	regulator_desc_ldo1(24),
+-	regulator_desc_ldo1(25),
+-	regulator_desc_ldo1(26),
+-	regulator_desc_ldo2(27),
+-	regulator_desc_ldo1(28),
+-	regulator_desc_ldo1(29),
+-	regulator_desc_ldo1(30),
+-	regulator_desc_ldo1(31),
+-	regulator_desc_ldo1(32),
+-	regulator_desc_ldo1(33),
+-	regulator_desc_ldo1(34),
+-	regulator_desc_ldo1(35),
+-	regulator_desc_ldo1(36),
+-	regulator_desc_ldo1(37),
+-	regulator_desc_ldo1(38),
+-	regulator_desc_buck1_4(1),
+-	regulator_desc_buck1_4(2),
+-	regulator_desc_buck1_4(3),
+-	regulator_desc_buck1_4(4),
+-	regulator_desc_buck5,
+-	regulator_desc_buck6_8(6),
+-	regulator_desc_buck6_8(7),
+-	regulator_desc_buck6_8(8),
+-	regulator_desc_buck9,
+-	regulator_desc_buck10,
++	regulator_desc_s2mps11_ldo2(1),
++	regulator_desc_s2mps11_ldo1(2),
++	regulator_desc_s2mps11_ldo1(3),
++	regulator_desc_s2mps11_ldo1(4),
++	regulator_desc_s2mps11_ldo1(5),
++	regulator_desc_s2mps11_ldo2(6),
++	regulator_desc_s2mps11_ldo1(7),
++	regulator_desc_s2mps11_ldo1(8),
++	regulator_desc_s2mps11_ldo1(9),
++	regulator_desc_s2mps11_ldo1(10),
++	regulator_desc_s2mps11_ldo2(11),
++	regulator_desc_s2mps11_ldo1(12),
++	regulator_desc_s2mps11_ldo1(13),
++	regulator_desc_s2mps11_ldo1(14),
++	regulator_desc_s2mps11_ldo1(15),
++	regulator_desc_s2mps11_ldo1(16),
++	regulator_desc_s2mps11_ldo1(17),
++	regulator_desc_s2mps11_ldo1(18),
++	regulator_desc_s2mps11_ldo1(19),
++	regulator_desc_s2mps11_ldo1(20),
++	regulator_desc_s2mps11_ldo1(21),
++	regulator_desc_s2mps11_ldo2(22),
++	regulator_desc_s2mps11_ldo2(23),
++	regulator_desc_s2mps11_ldo1(24),
++	regulator_desc_s2mps11_ldo1(25),
++	regulator_desc_s2mps11_ldo1(26),
++	regulator_desc_s2mps11_ldo2(27),
++	regulator_desc_s2mps11_ldo1(28),
++	regulator_desc_s2mps11_ldo1(29),
++	regulator_desc_s2mps11_ldo1(30),
++	regulator_desc_s2mps11_ldo1(31),
++	regulator_desc_s2mps11_ldo1(32),
++	regulator_desc_s2mps11_ldo1(33),
++	regulator_desc_s2mps11_ldo1(34),
++	regulator_desc_s2mps11_ldo1(35),
++	regulator_desc_s2mps11_ldo1(36),
++	regulator_desc_s2mps11_ldo1(37),
++	regulator_desc_s2mps11_ldo1(38),
++	regulator_desc_s2mps11_buck1_4(1),
++	regulator_desc_s2mps11_buck1_4(2),
++	regulator_desc_s2mps11_buck1_4(3),
++	regulator_desc_s2mps11_buck1_4(4),
++	regulator_desc_s2mps11_buck5,
++	regulator_desc_s2mps11_buck6_8(6),
++	regulator_desc_s2mps11_buck6_8(7),
++	regulator_desc_s2mps11_buck6_8(8),
++	regulator_desc_s2mps11_buck9,
++	regulator_desc_s2mps11_buck10,
 +};
 +
- struct s5m_rtc_info {
- 	struct device *dev;
- 	struct sec_pmic_dev *s5m87xx;
-@@ -163,6 +176,11 @@ static inline int s5m_check_peding_alarm_interrupt(struct s5m_rtc_info *info,
- 		ret = regmap_read(info->regmap, S5M_RTC_STATUS, &val);
- 		val &= S5M_ALARM0_STATUS;
- 		break;
-+	case S2MPS14X:
-+		ret = regmap_read(info->s5m87xx->regmap_pmic, S2MPS14_REG_ST2,
-+				&val);
-+		val &= S2MPS_ALARM0_STATUS;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -188,8 +206,9 @@ static inline int s5m8767_rtc_set_time_reg(struct s5m_rtc_info *info)
- 		return ret;
- 	}
- 
--	data |= S5M_RTC_TIME_EN_MASK;
- 	data |= info->regs->rtc_udr_mask;
-+	if (info->device_type == S5M8763X || info->device_type == S5M8767X)
-+		data |= S5M_RTC_TIME_EN_MASK;
- 
- 	ret = regmap_write(info->regmap, info->regs->rtc_udr_update, data);
- 	if (ret < 0) {
-@@ -214,8 +233,18 @@ static inline int s5m8767_rtc_set_alarm_reg(struct s5m_rtc_info *info)
- 		return ret;
- 	}
- 
--	data &= ~S5M_RTC_TIME_EN_MASK;
- 	data |= info->regs->rtc_udr_mask;
-+	switch (info->device_type) {
-+	case S5M8763X:
-+	case S5M8767X:
-+		data &= ~S5M_RTC_TIME_EN_MASK;
-+		break;
-+	case S2MPS14X:
-+		data |= S2MPS_RTC_RUDR_MASK;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
- 
- 	ret = regmap_write(info->regmap, info->regs->rtc_udr_update, data);
- 	if (ret < 0) {
-@@ -267,6 +296,17 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 	u8 data[info->regs->regs_count];
- 	int ret;
- 
-+	if (info->device_type == S2MPS14X) {
-+		ret = regmap_update_bits(info->regmap,
-+				info->regs->rtc_udr_update,
-+				S2MPS_RTC_RUDR_MASK, S2MPS_RTC_RUDR_MASK);
-+		if (ret) {
-+			dev_err(dev,
-+				"Failed to prepare registers for time reading: %d\n",
-+				ret);
-+			return ret;
-+		}
-+	}
- 	ret = regmap_bulk_read(info->regmap, info->regs->time, data,
- 			info->regs->regs_count);
- 	if (ret < 0)
-@@ -278,6 +318,7 @@ static int s5m_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 		break;
- 
- 	case S5M8767X:
-+	case S2MPS14X:
- 		s5m8767_data_to_tm(data, tm, info->rtc_24hr_mode);
- 		break;
- 
-@@ -303,6 +344,7 @@ static int s5m_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 		s5m8763_tm_to_data(tm, data);
- 		break;
- 	case S5M8767X:
-+	case S2MPS14X:
- 		ret = s5m8767_tm_to_data(tm, data);
- 		break;
- 	default:
-@@ -349,6 +391,7 @@ static int s5m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
- 		break;
- 
- 	case S5M8767X:
-+	case S2MPS14X:
- 		s5m8767_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
- 		alrm->enabled = 0;
- 		for (i = 0; i < info->regs->regs_count; i++) {
-@@ -396,6 +439,7 @@ static int s5m_rtc_stop_alarm(struct s5m_rtc_info *info)
- 		break;
- 
- 	case S5M8767X:
-+	case S2MPS14X:
- 		for (i = 0; i < info->regs->regs_count; i++)
- 			data[i] &= ~ALARM_ENABLE_MASK;
- 
-@@ -439,6 +483,7 @@ static int s5m_rtc_start_alarm(struct s5m_rtc_info *info)
- 		break;
- 
- 	case S5M8767X:
-+	case S2MPS14X:
- 		data[RTC_SEC] |= ALARM_ENABLE_MASK;
- 		data[RTC_MIN] |= ALARM_ENABLE_MASK;
- 		data[RTC_HOUR] |= ALARM_ENABLE_MASK;
-@@ -477,6 +522,7 @@ static int s5m_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
- 		break;
- 
- 	case S5M8767X:
-+	case S2MPS14X:
- 		s5m8767_tm_to_data(&alrm->time, data);
- 		break;
- 
-@@ -563,12 +609,26 @@ static int s5m8767_rtc_init_reg(struct s5m_rtc_info *info)
- 	u8 data[2];
- 	int ret;
- 
--	/* Set RTC control register : Binary mode, 24hour mode */
--	data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
--	data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
-+	switch (info->device_type) {
-+	case S5M8763X:
-+	case S5M8767X:
-+		/* Set RTC control register : Binary mode, 24hour mode */
-+		data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
-+		data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++static struct regulator_ops s2mps14_reg_ops = {
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++};
 +
-+		ret = regmap_raw_write(info->regmap, S5M_ALARM0_CONF, data, 2);
-+		break;
++#define regulator_desc_s2mps14_ldo1(num) {		\
++	.name		= "LDO"#num,			\
++	.id		= S2MPS14_LDO##num,		\
++	.ops		= &s2mps14_reg_ops,		\
++	.type		= REGULATOR_VOLTAGE,		\
++	.owner		= THIS_MODULE,			\
++	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
++	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
++	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
++	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
++	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
++	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
++	.enable_mask	= S2MPS14_ENABLE_MASK		\
++}
++#define regulator_desc_s2mps14_ldo2(num) {		\
++	.name		= "LDO"#num,			\
++	.id		= S2MPS14_LDO##num,		\
++	.ops		= &s2mps14_reg_ops,		\
++	.type		= REGULATOR_VOLTAGE,		\
++	.owner		= THIS_MODULE,			\
++	.min_uV		= S2MPS14_LDO_MIN_1800MV,	\
++	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
++	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
++	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
++	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
++	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
++	.enable_mask	= S2MPS14_ENABLE_MASK		\
++}
++#define regulator_desc_s2mps14_ldo3(num) {		\
++	.name		= "LDO"#num,			\
++	.id		= S2MPS14_LDO##num,		\
++	.ops		= &s2mps14_reg_ops,		\
++	.type		= REGULATOR_VOLTAGE,		\
++	.owner		= THIS_MODULE,			\
++	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
++	.uV_step	= S2MPS14_LDO_STEP_12_5MV,	\
++	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
++	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
++	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
++	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
++	.enable_mask	= S2MPS14_ENABLE_MASK		\
++}
++#define regulator_desc_s2mps14_buck1235(num) {			\
++	.name		= "BUCK"#num,				\
++	.id		= S2MPS14_BUCK##num,			\
++	.ops		= &s2mps14_reg_ops,			\
++	.type		= REGULATOR_VOLTAGE,			\
++	.owner		= THIS_MODULE,				\
++	.min_uV		= S2MPS14_BUCK1235_MIN_600MV,		\
++	.uV_step	= S2MPS14_BUCK1235_STEP_6_25MV,		\
++	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
++	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
++	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
++	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
++	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
++	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
++	.enable_mask	= S2MPS14_ENABLE_MASK			\
++}
++#define regulator_desc_s2mps14_buck4(num) {			\
++	.name		= "BUCK"#num,				\
++	.id		= S2MPS14_BUCK##num,			\
++	.ops		= &s2mps14_reg_ops,			\
++	.type		= REGULATOR_VOLTAGE,			\
++	.owner		= THIS_MODULE,				\
++	.min_uV		= S2MPS14_BUCK4_MIN_1400MV,		\
++	.uV_step	= S2MPS14_BUCK4_STEP_12_5MV,		\
++	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
++	.linear_min_sel = S2MPS14_BUCK4_START_SEL,		\
++	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
++	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
++	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
++	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
++	.enable_mask	= S2MPS14_ENABLE_MASK			\
++}
 +
-+	case S2MPS14X:
-+		data[0] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
-+		ret = regmap_write(info->regmap, info->regs->ctrl, data[0]);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
- 
- 	info->rtc_24hr_mode = 1;
--	ret = regmap_raw_write(info->regmap, S5M_ALARM0_CONF, data, 2);
- 	if (ret < 0) {
- 		dev_err(info->dev, "%s: fail to write controlm reg(%d)\n",
- 			__func__, ret);
-@@ -613,6 +673,12 @@ static int s5m_rtc_probe(struct platform_device *pdev)
- 		info->regs = &s5m_rtc_regs;
- 		break;
- 
-+	case S2MPS14X:
-+		info->irq = regmap_irq_get_virq(s5m87xx->irq_data,
-+				S2MPS14_IRQ_RTCA0);
-+		info->regs = &s2mps_rtc_regs;
-+		break;
-+
- 	default:
- 		ret = -EINVAL;
- 		dev_err(&pdev->dev, "Unsupported device type: %d\n", ret);
-@@ -697,7 +763,8 @@ static int s5m_rtc_suspend(struct device *dev)
- static SIMPLE_DEV_PM_OPS(s5m_rtc_pm_ops, s5m_rtc_suspend, s5m_rtc_resume);
- 
- static const struct platform_device_id s5m_rtc_id[] = {
--	{ "s5m-rtc", 0 },
-+	{ "s5m-rtc",		S5M8767X },
-+	{ "s2mps14-rtc",	S2MPS14X },
++static const struct regulator_desc s2mps14_regulators[] __initconst = {
++	regulator_desc_s2mps14_ldo3(1),
++	regulator_desc_s2mps14_ldo3(2),
++	regulator_desc_s2mps14_ldo1(3),
++	regulator_desc_s2mps14_ldo1(4),
++	regulator_desc_s2mps14_ldo3(5),
++	regulator_desc_s2mps14_ldo3(6),
++	regulator_desc_s2mps14_ldo1(7),
++	regulator_desc_s2mps14_ldo2(8),
++	regulator_desc_s2mps14_ldo3(9),
++	regulator_desc_s2mps14_ldo3(10),
++	regulator_desc_s2mps14_ldo1(11),
++	regulator_desc_s2mps14_ldo2(12),
++	regulator_desc_s2mps14_ldo2(13),
++	regulator_desc_s2mps14_ldo2(14),
++	regulator_desc_s2mps14_ldo2(15),
++	regulator_desc_s2mps14_ldo2(16),
++	regulator_desc_s2mps14_ldo2(17),
++	regulator_desc_s2mps14_ldo2(18),
++	regulator_desc_s2mps14_ldo1(19),
++	regulator_desc_s2mps14_ldo1(20),
++	regulator_desc_s2mps14_ldo1(21),
++	regulator_desc_s2mps14_ldo3(22),
++	regulator_desc_s2mps14_ldo1(23),
++	regulator_desc_s2mps14_ldo2(24),
++	regulator_desc_s2mps14_ldo2(25),
++	regulator_desc_s2mps14_buck1235(1),
++	regulator_desc_s2mps14_buck1235(2),
++	regulator_desc_s2mps14_buck1235(3),
++	regulator_desc_s2mps14_buck4(4),
++	regulator_desc_s2mps14_buck1235(5),
  };
  
- static struct platform_driver s5m_rtc_driver = {
-@@ -715,6 +782,6 @@ module_platform_driver(s5m_rtc_driver);
+ /*
+@@ -415,6 +540,10 @@ s2mps11_pmic_init_regulators_desc(struct platform_device *pdev,
+ 		rdev_num = ARRAY_SIZE(s2mps11_regulators);
+ 		regulators_init = s2mps11_regulators;
+ 		break;
++	case S2MPS14X:
++		rdev_num = ARRAY_SIZE(s2mps14_regulators);
++		regulators_init = s2mps14_regulators;
++		break;
+ 	default:
+ 		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
+ 		return -EINVAL;
+@@ -516,6 +645,7 @@ common_reg:
+ 
+ static const struct platform_device_id s2mps11_pmic_id[] = {
+ 	{ "s2mps11-pmic", S2MPS11X},
++	{ "s2mps14-pmic", S2MPS14X},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
+@@ -543,5 +673,5 @@ module_exit(s2mps11_pmic_exit);
  
  /* Module information */
  MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
--MODULE_DESCRIPTION("Samsung S5M RTC driver");
-+MODULE_DESCRIPTION("Samsung S5M/S2MPS14 RTC driver");
+-MODULE_DESCRIPTION("SAMSUNG S2MPS11 Regulator Driver");
++MODULE_DESCRIPTION("SAMSUNG S2MPS11/S2MPS14 Regulator Driver");
  MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:s5m-rtc");
 -- 
 1.7.9.5
 
