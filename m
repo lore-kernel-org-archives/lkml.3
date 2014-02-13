@@ -1,179 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaBMKAZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:00:25 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:61958 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaBMKAV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:00:21 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: gregkh@linuxfoundation.org, grant.likely@linaro.org, robh+dt@kernel.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        gregory.clement@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH] dt: platform driver: Fill the resources before probe and defer if needed
-Date: Thu, 13 Feb 2014 10:57:09 +0100
-Message-Id: <1392285429-9325-1-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.8.5.3
+	id S1754041AbaBMKB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:01:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36724 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752503AbaBMKB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:01:26 -0500
+Message-ID: <52FC97E9.2080808@redhat.com>
+Date: Thu, 13 Feb 2014 18:01:13 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+CC: kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [virtio-dev] [PATCH net v2] vhost: fix a theoretical race in
+ device cleanup
+References: <1392284540-2031-1-git-send-email-mst@redhat.com>
+In-Reply-To: <1392284540-2031-1-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of this patch is to allow drivers to be probed even if at the time of
-the DT parsing some of their ressources are not available yet.
+On 02/13/2014 05:45 PM, Michael S. Tsirkin wrote:
+> vhost_zerocopy_callback accesses VQ right after it drops a ubuf
+> reference.  In theory, this could race with device removal which waits
+> on the ubuf kref, and crash on use after free.
+>
+> Do all accesses within rcu read side critical section, and synchronize
+> on release.
+>
+> Since callbacks are always invoked from bh, synchronize_rcu_bh seems
+> enough and will help release complete a bit faster.
+>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>
+> This is was previously posted as part of patch
+> series, but it's an independent fix really.
+> Theoretical race so not needed for stable I think.
+>
+> changes from v1:
+> 	fixed typo in commit log
+>
+>  drivers/vhost/net.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+>
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index b12176f..f1be80d 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -308,6 +308,8 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>  	struct vhost_virtqueue *vq = ubufs->vq;
+>  	int cnt;
+>  
+> +	rcu_read_lock_bh();
+> +
+>  	/* set len to mark this desc buffers done DMA */
+>  	vq->heads[ubuf->desc].len = success ?
+>  		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+> @@ -322,6 +324,8 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>  	 */
+>  	if (cnt <= 1 || !(cnt % 16))
+>  		vhost_poll_queue(&vq->poll);
+> +
+> +	rcu_read_unlock_bh();
+>  }
+>  
+>  /* Expects to be always run from workqueue - which acts as
+> @@ -804,6 +808,8 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+>  		fput(tx_sock->file);
+>  	if (rx_sock)
+>  		fput(rx_sock->file);
+> +	/* Make sure no callbacks are outstanding */
+> +	synchronize_rcu_bh();
+>  	/* We do an extra flush before freeing memory,
+>  	 * since jobs can re-queue themselves. */
+>  	vhost_net_flush(n);
 
-In the current situation, the resource of a platform device are filled from the
-DT at the time the device is created (of_device_alloc()). The drawbackof this
-is that a device sitting close to the top of the DT (ahb for example) but
-depending on ressources that are initialized later (IRQ domain dynamically
-created for example)  will fail to probe because the ressources don't exist
-at this time.
-
-This patch fills the resource structure only before the device is probed and
-will defer the probe if the resource are not available yet.
-
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- drivers/base/platform.c     |  6 ++++
- drivers/of/platform.c       | 71 +++++++++++++++++++++++++++++----------------
- include/linux/of_platform.h | 10 +++++++
- 3 files changed, 62 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index bc78848..8e37d8b 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -481,6 +481,12 @@ static int platform_drv_probe(struct device *_dev)
- 	struct platform_device *dev = to_platform_device(_dev);
- 	int ret;
- 
-+	if (_dev->of_node) {
-+		ret = of_platform_device_populate_resources(dev);
-+		if (ret < 0)
-+			return drv->prevent_deferred_probe ? ret : -EPROBE_DEFER;
-+	}
-+
- 	if (ACPI_HANDLE(_dev))
- 		acpi_dev_pm_attach(_dev, true);
- 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 404d1da..64a8eb8 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -141,36 +141,11 @@ struct platform_device *of_device_alloc(struct device_node *np,
- 				  struct device *parent)
- {
- 	struct platform_device *dev;
--	int rc, i, num_reg = 0, num_irq;
--	struct resource *res, temp_res;
- 
- 	dev = platform_device_alloc("", -1);
- 	if (!dev)
- 		return NULL;
- 
--	/* count the io and irq resources */
--	if (of_can_translate_address(np))
--		while (of_address_to_resource(np, num_reg, &temp_res) == 0)
--			num_reg++;
--	num_irq = of_irq_count(np);
--
--	/* Populate the resource table */
--	if (num_irq || num_reg) {
--		res = kzalloc(sizeof(*res) * (num_irq + num_reg), GFP_KERNEL);
--		if (!res) {
--			platform_device_put(dev);
--			return NULL;
--		}
--
--		dev->num_resources = num_reg + num_irq;
--		dev->resource = res;
--		for (i = 0; i < num_reg; i++, res++) {
--			rc = of_address_to_resource(np, i, res);
--			WARN_ON(rc);
--		}
--		WARN_ON(of_irq_to_resource_table(np, res, num_irq) != num_irq);
--	}
--
- 	dev->dev.of_node = of_node_get(np);
- #if defined(CONFIG_MICROBLAZE)
- 	dev->dev.dma_mask = &dev->archdata.dma_mask;
-@@ -233,6 +208,52 @@ static struct platform_device *of_platform_device_create_pdata(
- 	return dev;
- }
- 
-+int of_platform_device_populate_resources(struct platform_device *dev)
-+{
-+	struct device_node *np;
-+	int rc = 0, i, nreg = 0, nirq;
-+
-+	np = dev->dev.of_node;
-+
-+	/* count the io and irq resources */
-+	if (of_can_translate_address(np)) {
-+		struct resource temp_res;
-+		while (of_address_to_resource(np, nreg, &temp_res) == 0)
-+			nreg++;
-+	}
-+	nirq = of_irq_count(np);
-+
-+	/* Populate the resource table */
-+	if (nirq || nreg) {
-+		struct resource *res;
-+
-+		res = krealloc(dev->resource, sizeof(*res) * (nirq + nreg),
-+			       GFP_KERNEL);
-+		if (!res) {
-+			kfree(dev->resource);
-+			dev->resource = NULL;
-+			return -ENOMEM;
-+		}
-+		memset(res, 0, sizeof(*res) * (nirq + nreg));
-+		dev->resource = res;
-+		dev->num_resources = nreg + nirq;
-+
-+		for (i = 0; i < nreg; i++, res++) {
-+			rc = of_address_to_resource(np, i, res);
-+			WARN_ON(rc);
-+			if (rc)
-+				break;
-+		}
-+
-+		if (!rc && of_irq_to_resource_table(np, res, nirq) != nirq) {
-+			rc = -ENOENT;
-+			WARN_ON(rc);
-+		}
-+	}
-+	return rc;
-+}
-+EXPORT_SYMBOL(of_platform_device_populate_resources);
-+
- /**
-  * of_platform_device_create - Alloc, initialize and register an of_device
-  * @np: pointer to node to create device for
-diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
-index 05cb4a9..315e1e3 100644
---- a/include/linux/of_platform.h
-+++ b/include/linux/of_platform.h
-@@ -53,6 +53,16 @@ struct of_dev_auxdata {
- 
- extern const struct of_device_id of_default_bus_match_table[];
- 
-+/* Populate the resource for a platform device */
-+#ifdef CONFIG_OF
-+int of_platform_device_populate_resources(struct platform_device *dev);
-+#else
-+static inline int of_platform_device_populate_resources(
-+	struct platform_device *)
-+{
-+	return -ENOSYS;
-+}
-+#endif
- /* Platform drivers register/unregister */
- extern struct platform_device *of_device_alloc(struct device_node *np,
- 					 const char *bus_id,
--- 
-1.8.5.3
-
+Acked-by: Jason Wang <jasowang@redhat.com>
