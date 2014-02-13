@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaBMOFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 09:05:31 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:64096 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaBMOF3 (ORCPT
+	id S1751667AbaBMOJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 09:09:24 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:50932 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaBMOJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 09:05:29 -0500
-Date: Thu, 13 Feb 2014 15:05:25 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
- workqueue
-Message-ID: <20140213140523.GB14383@localhost.localdomain>
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
- <52F8A51F.4090909@cn.fujitsu.com>
- <20140210184729.GL4250@linux.vnet.ibm.com>
- <20140212182336.GD5496@localhost.localdomain>
- <20140212190241.GD4250@linux.vnet.ibm.com>
- <20140212192354.GC26809@htj.dyndns.org>
- <20140212195922.GE4250@linux.vnet.ibm.com>
- <20140212230454.GA14383@localhost.localdomain>
- <20140213003311.GJ4250@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140213003311.GJ4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Feb 2014 09:09:19 -0500
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Cc: Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH V2 15/17] i2c: nomadik: Convert to late and early system PM callbacks
+Date: Thu, 13 Feb 2014 15:09:05 +0100
+Message-Id: <1392300547-23365-4-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392300547-23365-1-git-send-email-ulf.hansson@linaro.org>
+References: <1392300547-23365-1-git-send-email-ulf.hansson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 04:33:11PM -0800, Paul E. McKenney wrote:
-> 
-> Fair point!  I wordsmithed it into the following.  Seem reasonable?
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> Documentation/kernel-per-CPU-kthreads.txt: Workqueue affinity
-> 
-> This commit documents the ability to apply CPU affinity to WQ_SYSFS
-> workqueues, thus offloading them from the desired worker CPUs.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Reviewed-by: Tejun Heo <tj@kernel.org>
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> 
-> diff --git a/Documentation/kernel-per-CPU-kthreads.txt b/Documentation/kernel-per-CPU-kthreads.txt
-> index 827104fb9364..f3cd299fcc41 100644
-> --- a/Documentation/kernel-per-CPU-kthreads.txt
-> +++ b/Documentation/kernel-per-CPU-kthreads.txt
-> @@ -162,7 +162,18 @@ Purpose: Execute workqueue requests
->  To reduce its OS jitter, do any of the following:
->  1.	Run your workload at a real-time priority, which will allow
->  	preempting the kworker daemons.
-> -2.	Do any of the following needed to avoid jitter that your
-> +2.	A given workqueue can be made visible in the sysfs filesystem
-> +	by passing the WQ_SYSFS to that workqueue's alloc_workqueue().
-> +	Such a workqueue can be confined to a given subset of the
-> +	CPUs using the /sys/devices/virtual/workqueue/*/cpumask sysfs
-> +	files.	The set of WQ_SYSFS workqueues can be displayed using
-> +	"ls sys/devices/virtual/workqueue".  That said, the workqueues
-> +	maintainer would like to caution people against indiscriminately
-> +	sprinkling WQ_SYSFS across all the workqueues.	The reason for
-> +	caution is that it is easy to add WQ_SYSFS, but because sysfs is
-> +	part of the formal user/kernel API, it can be nearly impossible
-> +	to remove it, even if its addition was a mistake.
-> +3.	Do any of the following needed to avoid jitter that your
->  	application cannot tolerate:
->  	a.	Build your kernel with CONFIG_SLUB=y rather than
->  		CONFIG_SLAB=y, thus avoiding the slab allocator's periodic
-> 
+At system suspend_late, runtime PM has been disabled by the PM core
+which means we can safely operate on these resources. Consequentially
+we no longer have to wait until the noirq phase of the system suspend.
 
-Perfect!!
+Cc: Alessandro Rubini <rubini@unipv.it>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+
+Changes in v2:
+	Rebased on top of latest i2c-nomadik branch.
+
+---
+ drivers/i2c/busses/i2c-nomadik.c |   18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index 01b78df..80b0fd3 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -882,9 +882,8 @@ static irqreturn_t i2c_irq_handler(int irq, void *arg)
+ 	return IRQ_HANDLED;
+ }
+ 
+-
+-#ifdef CONFIG_PM
+-static int nmk_i2c_suspend(struct device *dev)
++#ifdef CONFIG_PM_SLEEP
++static int nmk_i2c_suspend_late(struct device *dev)
+ {
+ 	struct amba_device *adev = to_amba_device(dev);
+ 	struct nmk_i2c_dev *nmk_i2c = amba_get_drvdata(adev);
+@@ -897,7 +896,7 @@ static int nmk_i2c_suspend(struct device *dev)
+ 	return 0;
+ }
+ 
+-static int nmk_i2c_resume(struct device *dev)
++static int nmk_i2c_resume_early(struct device *dev)
+ {
+ 	/* First go to the default state */
+ 	pinctrl_pm_select_default_state(dev);
+@@ -906,9 +905,6 @@ static int nmk_i2c_resume(struct device *dev)
+ 
+ 	return 0;
+ }
+-#else
+-#define nmk_i2c_suspend	NULL
+-#define nmk_i2c_resume	NULL
+ #endif
+ 
+ #if CONFIG_PM
+@@ -946,14 +942,8 @@ static int nmk_i2c_runtime_resume(struct device *dev)
+ }
+ #endif
+ 
+-/*
+- * We use noirq so that we suspend late and resume before the wakeup interrupt
+- * to ensure that we do the !pm_runtime_suspended() check in resume before
+- * there has been a regular pm runtime resume (via pm_runtime_get_sync()).
+- */
+ static const struct dev_pm_ops nmk_i2c_pm = {
+-	.suspend_noirq	= nmk_i2c_suspend,
+-	.resume_noirq	= nmk_i2c_resume,
++	SET_LATE_SYSTEM_SLEEP_PM_OPS(nmk_i2c_suspend_late, nmk_i2c_resume_early)
+ 	SET_PM_RUNTIME_PM_OPS(nmk_i2c_runtime_suspend,
+ 			nmk_i2c_runtime_resume,
+ 			NULL)
+-- 
+1.7.9.5
+
