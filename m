@@ -1,42 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaBMPgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:36:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13839 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414AbaBMPgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:36:50 -0500
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
-	<20140211072738.GA24232@gmail.com>
-	<20140211234534.6bc34e57@gandalf.local.home>
-	<1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
-	<20140213102817.4bfd5eac@gandalf.local.home>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Thu, 13 Feb 2014 10:36:35 -0500
-In-Reply-To: <20140213102817.4bfd5eac@gandalf.local.home> (Steven Rostedt's message of "Thu, 13 Feb 2014 10:28:17 -0500")
-Message-ID: <y0mlhxfnhx8.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
+	id S1751820AbaBMPjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:39:05 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:51277 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbaBMPjD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 10:39:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CANq1E4QvC936A_r6GPgO_gikpXGrD6UwBdBEcwUBwtjxW9iw6Q@mail.gmail.com>
+References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1392055139-19631-8-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4QvC936A_r6GPgO_gikpXGrD6UwBdBEcwUBwtjxW9iw6Q@mail.gmail.com>
+Date: Thu, 13 Feb 2014 10:38:59 -0500
+Message-ID: <CAN+gG=GFOMJ_ud3p=pzyBcpnuWJn8rhtJLXHR5kfadfWL0v+Og@mail.gmail.com>
+Subject: Re: [PATCH 07/14] HID: input: hid-input remove hid_output_raw_report call
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 12, 2014 at 5:35 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Mon, Feb 10, 2014 at 6:58 PM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> hid_output_raw_report() is not a ll_driver callback and should not be used.
+>> To keep the same code path than before, we are forced to play with the
+>> different hid_hw_* calls: if the usb or i2c device does not support
+>> direct output reports, then we will rely on the SET_REPORT HID call.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>  drivers/hid/hid-input.c | 10 +++++++---
+>>  1 file changed, 7 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+>> index eb00a5b..6b7bdca 100644
+>> --- a/drivers/hid/hid-input.c
+>> +++ b/drivers/hid/hid-input.c
+>> @@ -1153,7 +1153,7 @@ static void hidinput_led_worker(struct work_struct *work)
+>>                                               led_work);
+>>         struct hid_field *field;
+>>         struct hid_report *report;
+>> -       int len;
+>> +       int len, ret;
+>>         __u8 *buf;
+>>
+>>         field = hidinput_get_led_field(hid);
+>> @@ -1187,7 +1187,10 @@ static void hidinput_led_worker(struct work_struct *work)
+>>
+>>         hid_output_report(report, buf);
+>>         /* synchronous output report */
+>> -       hid_output_raw_report(hid, buf, len, HID_OUTPUT_REPORT);
+>> +       ret = hid_hw_output_report(hid, buf, len);
+>> +       if (ret == -ENOSYS)
+>> +               hid_hw_raw_request(hid, buf[0], buf, len, HID_OUTPUT_REPORT,
+>> +                               HID_REQ_SET_REPORT);
+>
+> Does HID core always set the report-id in buf[0]? Even if none are
+> used? I know the incoming data may lack the report-id, but I always
+> thought we do the same for outgoing if it's implicit?
 
-rostedt wrote:
+oh, yes, you are right. The HID spec says: "The meaning of the request
+fields for the Set_Report request is the same as for the Get_Report
+request, however the data direction is reversed and the Report Data is
+sent from host to device. "
 
-> [...]
-> Oh! You are saying that if the kernel only *supports* signed modules,
-> and you load a module that is not signed, it will taint the kernel?
+So this is wrong... We should use (report->id) instead of buf[0].
 
-Yes: this is the default for several distros.
+Will fix in v2.
 
-- FChE
+>
+> I also already see devices with broken OUTPUT_REPORTs.. I guess at
+> some point we have to introduce a quirk-flag to choose between both
+> calls. But lets wait for that to happen, maybe we're lucky.
+>
+>>         kfree(buf);
+>>  }
+>>
+>> @@ -1266,7 +1269,8 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
+>>         }
+>>
+>>         input_set_drvdata(input_dev, hid);
+>> -       if (hid->ll_driver->request || hid->hid_output_raw_report)
+>> +       if (hid->ll_driver->request || hid->ll_driver->output_report ||
+>> +           hid->ll_driver->raw_request)
+>
+> Isn't raw_request mandatory? So we could remove that whole if() thing here.
+
+Currently, it's not (see hid_hw_raw_request). However, all the
+upstream hid transport drivers implement it.
+
+We can make it mandatory, but we should check it while adding the
+device in hid_add_device.
+
+will do for v2 too.
+
+Cheers,
+Benjamin
+
+>
+> Thanks
+> David
+>
+>>                 input_dev->event = hidinput_input_event;
+>>         input_dev->open = hidinput_open;
+>>         input_dev->close = hidinput_close;
+>> --
+>> 1.8.3.1
+>>
