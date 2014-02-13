@@ -1,64 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723AbaBMLBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 06:01:23 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:55255 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbaBMLBV (ORCPT
+	id S1754189AbaBMLCT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 06:02:19 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:52710 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032AbaBMLCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 06:01:21 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-ff-52fca5ffea70
-Message-id: <52FCA5FC.80504@samsung.com>
-Date: Thu, 13 Feb 2014 12:01:16 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [PATCH v2 4/6] ARM: firmware: add prepare_idle() operation
-References: <1391747706-1847-1-git-send-email-acourbot@nvidia.com>
- <1391747706-1847-5-git-send-email-acourbot@nvidia.com>
-In-reply-to: <1391747706-1847-5-git-send-email-acourbot@nvidia.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xa7r/l/4JMpi/WMri+8NTrBbnXj1i
-	sdj0+BqrxeVdc9gsOr/MYrO4fZnX4tT1z2wWrw62sVj83DWPxYHTo6W5h81j56y77B6bl9R7
-	XDnRxOrR2/yOzePzJjmPjXNDA9ijuGxSUnMyy1KL9O0SuDJ657axFlxirXj44h5jA+Mhli5G
-	Tg4JAROJU6uPMELYYhIX7q1n62Lk4hASWMoocfTvXlYI5zOjxKHWHcwgVbwCGhLfl94F62YR
-	UJWY2veTFcRmE1CT+NzwiA3EFhWIkPg7bz0jRL2gxI/J98DqRQRWM0p8fh8GMpRZYAajROev
-	Q0wgCWEBd4mFPX/BGoQEqiV2PuoEG8op4CxxcFsTWA2zgLXEyknbGCFseYnNa94yT2AUmIVk
-	xywkZbOQlC1gZF7FKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERILX3YwLj5mdYhRgINRiYfX
-	YtnvICHWxLLiytxDjBIczEoivDISf4KEeFMSK6tSi/Lji0pzUosPMTJxcEo1MK5jMwtIipOL
-	Nr4y/U3XNk8O//4HPyfncT/QcpC+L2HRsV14T2p/WciJw0fN4zZ/2f3IQFxm5cRLe3aWH12y
-	3OjcoV2nPzNs/3Ba1GT2qcNT/wT5ZRbaSjQfer/W0INJM587w7/547ngutrU+W+0ypUXNLxJ
-	zEpZpXc3dcKvzXPnLJFgNRT/d1mJpTgj0VCLuag4EQC3WPUMYwIAAA==
+	Thu, 13 Feb 2014 06:02:17 -0500
+Message-ID: <52FCA4EA.3090205@linux.vnet.ibm.com>
+Date: Thu, 13 Feb 2014 16:26:42 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: ego@linux.vnet.ibm.com, "paulus@samba.org" <paulus@samba.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "walken@google.com" <walken@google.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of callback
+ registration functions
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com> <1392081980.5612.123.camel@misato.fc.hp.com> <52F9ED11.5010800@linux.vnet.ibm.com> <1392136436.5612.131.camel@misato.fc.hp.com> <20140211171805.GA3932@in.ibm.com> <1392140115.5612.135.camel@misato.fc.hp.com> <52FA77EA.7050105@linux.vnet.ibm.com> <1392151870.5612.159.camel@misato.fc.hp.com> <52FB1244.2060609@linux.vnet.ibm.com>
+In-Reply-To: <52FB1244.2060609@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021311-5816-0000-0000-00000C3FEE81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
-
-On 07.02.2014 05:35, Alexandre Courbot wrote:
-> Some firmwares do not put the CPU into idle mode themselves, but still
-> need to be informed that the CPU is about to enter idle mode before this
-> happens. Add a prepare_idle() operation to the firmware_ops structure to
-> handle such cases.
+On 02/12/2014 11:48 AM, Srivatsa S. Bhat wrote:
+> On 02/12/2014 02:21 AM, Toshi Kani wrote:
+>> On Wed, 2014-02-12 at 00:50 +0530, Srivatsa S. Bhat wrote:
+>>> On 02/11/2014 11:05 PM, Toshi Kani wrote:
+>>  :
+>>>> How about this?  foo_cpu_notifier returns NOP when foo_notifier_ready is
+>>>> false.
+>>>>
+>>>>         register_cpu_notifier(&foobar_cpu_notifier);
+>>>>
+>>>>         get_online_cpus();
+>>>>
+>>>>         for_each_online_cpu(cpu)
+>>>>                 init_cpu(cpu);
+>>>>
+>>>> 	foo_notifier_ready = true;
+>>>>
+>>>>         put_online_cpus();
+>>>>
+>>>
+>>> Nah, that looks a lot like some quick-n-dirty hack ;-(
+>>> It would also amount to burdening the various subsystems to add weird-looking
+>>> pieces of code such as this in their callbacks:
+>>>
+>>> 	if (!foo_notifier_ready)
+>>> 		return NOTIFY_OK;
+>>>
+>>> This only makes it all the more evident that the callback registration APIs
+>>> exposed by the CPU hotplug core is poorly designed.
+>>>
+>>> What we need instead, is an elegant, well-defined and easy-to-use set of
+>>> interfaces/APIs exposed by the core CPU hotplug code to the various
+>>> subsystems. I don't think we should worry so much about the fact that
+>>> we can't use the familiar get/put_online_cpus() in this type of callback
+>>> registration scenario. We can introduce a sane set of APIs that work
+>>> well in such situations and use them consistently.
+>>
+>>> For example, something like the code snippet shown below looks pretty
+>>> neat to me:
+>>>
+>>> 	cpu_notifier_register_begin();
+>>>
+>>> 	for_each_online_cpu(cpu)
+>>> 		init_cpu(cpu);
+>>>
+>>> 	register_cpu_notifier(&foobar_cpu_notifier);
+>>>
+>>> 	cpu_notifier_register_done();
+>>>
+>>> What do you think?
+>>
+>> I agree that it is cleaner for the callers as long as people understand
+>> how to use them.  Can you document them properly so that they know when
+>> they need to use them instead of the familiar get/put_online_cpus()?
+>>
+> 
+> Sure.. I had updated the documentation with the semantics introduced in
+> this patchset, in patch 2:
+> 
+> http://thread.gmane.org/gmane.linux.kernel/1641638/focus=1641695
+> 
+> Similarly I'll keep the docs updated with these new APIs in v2 as well.
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->   arch/arm/include/asm/firmware.h | 4 ++++
->   1 file changed, 4 insertions(+)
 
-I wonder if .do_idle() couldn't simply return an appropriate error code 
-to let the upper layer know that it should proceed with normal CPU idle 
-activation, while still letting the firmware know that the CPU is going 
-to idle.
+For now, however, let us not add the new rw-semaphore to the CPU hotplug
+core yet. Its very unlikely that we'll see any performance issue immediately,
+due to serialized initialization of cpu hotplug notifiers, since early boot
+is mostly sequential anyway.
 
-Best regards,
-Tomasz
+Some time in the future, if we start hitting bottlenecks in the cpu hotplug
+notifier registration phase (perhaps when we implement parallel CPU boot-up
+infrastructure), then we can directly use the rw-semaphore solution, since
+we have already worked it out. Besides, like Gautham said, we might want
+to be more careful and have a very good justification before adding more
+locks to the CPU hotplug core code. So we'll add the new rw-sempahore if
+and when it becomes necessary.
+
+I'll post the v2 with the earlier design itself, by adding the new symbols
+cpu_notifier_register_begin/done() (to enhance the readability) and map
+them to cpu_maps_update_begin/done().
+
+Thank you!
+
+Regards,
+Srivatsa S. Bhat
+
