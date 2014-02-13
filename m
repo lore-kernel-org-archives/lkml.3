@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbaBMVmv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:42:51 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:13509 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840AbaBMVms (ORCPT
+	id S1752043AbaBMVmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:42:31 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:44181 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854AbaBMVl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:42:48 -0500
-X-IronPort-AV: E=Sophos;i="4.95,840,1384329600"; 
-   d="scan'208";a="14566915"
-Message-ID: <52FD3C50.6010209@broadcom.com>
-Date: Thu, 13 Feb 2014 22:42:40 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 13 Feb 2014 16:41:58 -0500
+Date: Thu, 13 Feb 2014 16:41:46 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH 48/73] drivers/ata: delete non-required instances of
+ include <linux/init.h>
+Message-ID: <20140213214146.GI17608@htj.dyndns.org>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+ <1390339396-3479-49-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, "Frank Ch. Eigler" <fche@redhat.com>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>	<20140211072738.GA24232@gmail.com>	<20140211234534.6bc34e57@gandalf.local.home>	<1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>	<20140213102817.4bfd5eac@gandalf.local.home>	<y0mlhxfnhx8.fsf@fche.csb> <20140213104429.478b56e8@gandalf.local.home>
-In-Reply-To: <20140213104429.478b56e8@gandalf.local.home>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390339396-3479-49-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 04:44 PM, Steven Rostedt wrote:
-> On Thu, 13 Feb 2014 10:36:35 -0500
-> fche@redhat.com (Frank Ch. Eigler) wrote:
+On Tue, Jan 21, 2014 at 04:22:51PM -0500, Paul Gortmaker wrote:
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
 > 
->>
->> rostedt wrote:
->>
->>> [...]
->>> Oh! You are saying that if the kernel only *supports* signed modules,
->>> and you load a module that is not signed, it will taint the kernel?
->>
->> Yes: this is the default for several distros.
->>
-> 
-> Rusty, Ingo,
-> 
-> This looks like a bug to me, as it can affect even in-tree kernel
-> modules. If you have a kernel that supports signed modules, and you
-> modify a module, recompile it, apply it, since it is no longer signed,
-> then it sounds like we just tainted it. Worse yet, we just disabled any
-> tracepoints on that module, which means it is even harder to debug that
-> module (if that's the reason you recompiled it in the first place).
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: linux-ide@vger.kernel.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-When I stumbled upon this issue a while ago on Fedora 19 I built my
-kernel rpm packages which generates a signature key (.priv and .x509),
-which I kept safe with the kernel headers. When building recompiling
-modules I refer to it with MODSECKEY and MODPUBKEY, ie.
+Applied to libata/for-3.15.
 
-$ make MODSECKEY=bla MODPUBKEY=duh \
-	M=drivers/net/wireless/brcm80211  modules
+Thanks.
 
-Or sign it manually using the sign-file perl script:
-
-mod_sign_cmd = perl $(srctree)/scripts/sign-file \
-	$(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
-
-Of course I could disable signed modules while building a new kernel,
-but I was in it for the ride (I had better ones) ;-)
-
-Gr. AvS
-
-> -- Steve
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+-- 
+tejun
