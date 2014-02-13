@@ -1,75 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaBMKmg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:42:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33556 "EHLO mx2.suse.de"
+	id S1754011AbaBMKpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:45:42 -0500
+Received: from isrv.corpit.ru ([86.62.121.231]:56772 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751970AbaBMKmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:42:35 -0500
-Date: Thu, 13 Feb 2014 10:42:31 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: swap: Use swapfiles in priority order
-Message-ID: <20140213104231.GX6732@suse.de>
+	id S1752367AbaBMKpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:45:40 -0500
+Message-ID: <52FCA253.3030703@msgid.tls.msk.ru>
+Date: Thu, 13 Feb 2014 14:45:39 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-390@vm.marist.edu,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [ANNOUNCE] s390 31 bit kernel support removal
+References: <20140212092935.GA14964@osiris>
+In-Reply-To: <20140212092935.GA14964@osiris>
+X-Enigmail-Version: 1.5.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the swapon documentation
+12.02.2014 13:29, Heiko Carstens wrote:
+> We want to remove s390 31 bit kernel support with Linux kernel 3.16.
 
-	Swap  pages  are  allocated  from  areas  in priority order,
-	highest priority first.  For areas with different priorities, a
-	higher-priority area is exhausted before using a lower-priority area.
+Maybe you can send a patch for Documentation/feature-removal-schedule.txt
+about this now?
 
-A user reported that the reality is different. When multiple swap files
-are enabled and a memory consumer started, the swap files are consumed in
-pairs after the highest priority file is exhausted. Early in the lifetime
-of the test, swapfile consumptions looks like
+Thanks,
 
-Filename                                Type            Size    Used    Priority
-/testswap1                              file            100004  100004  8
-/testswap2                              file            100004  23764   7
-/testswap3                              file            100004  23764   6
-/testswap4                              file            100004  0       5
-/testswap5                              file            100004  0       4
-/testswap6                              file            100004  0       3
-/testswap7                              file            100004  0       2
-/testswap8                              file            100004  0       1
-
-This patch fixes the swap_list search in get_swap_page to use the swap files
-in the correct order. When applied the swap file consumptions looks like
-
-Filename				Type		Size	Used	Priority
-/testswap1                              file		100004	100004	8
-/testswap2                              file		100004	100004	7
-/testswap3                              file		100004	29372	6
-/testswap4                              file		100004	0	5
-/testswap5                              file		100004	0	4
-/testswap6                              file		100004	0	3
-/testswap7                              file		100004	0	2
-/testswap8                              file		100004	0	1
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/swapfile.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 4a7f7e6..6d0ac2b 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -651,7 +651,7 @@ swp_entry_t get_swap_page(void)
- 		goto noswap;
- 	atomic_long_dec(&nr_swap_pages);
- 
--	for (type = swap_list.next; type >= 0 && wrapped < 2; type = next) {
-+	for (type = swap_list.head; type >= 0 && wrapped < 2; type = next) {
- 		hp_index = atomic_xchg(&highest_priority_index, -1);
- 		/*
- 		 * highest_priority_index records current highest priority swap
+/mjt
