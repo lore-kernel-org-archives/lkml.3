@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaBMGvH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 01:51:07 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:61480 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175AbaBMGvB (ORCPT
+	id S1753258AbaBMGvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 01:51:18 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:48707 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaBMGvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 01:51:01 -0500
+	Thu, 13 Feb 2014 01:51:13 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
         swarren@wwwdotorg.org, kgene.kim@samsung.com, jinchoi@broadcom.com,
         tianyu.lan@intel.com, sebastian.capella@linaro.org,
         jhbird.choi@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V5 3/7] cpufreq: call driver's suspend/resume for each policy
-Date: Thu, 13 Feb 2014 12:20:18 +0530
-Message-Id: <de4feac78b9a20fa3f2b7472c690336b2fc567ce.1392273723.git.viresh.kumar@linaro.org>
+Subject: [PATCH V5 5/7] cpufreq: exynos: Use cpufreq_generic_suspend()
+Date: Thu, 13 Feb 2014 12:20:20 +0530
+Message-Id: <677ff70e67a69b772d63395ca1373d9749c56197.1392273723.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1392273722.git.viresh.kumar@linaro.org>
 References: <cover.1392273722.git.viresh.kumar@linaro.org>
@@ -26,192 +26,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Earlier cpufreq suspend/resume callbacks into drivers were getting called only
-for the boot CPU, as by the time callbacks were called non-boot CPUs were
-already removed. Because we might still need driver specific actions on
-suspend/resume, its better to use earlier infrastructure from the early
-suspend/late resume calls.
+Currently we have implemented PM notifiers to disable/enable ->target() routines
+functionality during suspend/resume.
 
-In effect, we call suspend/resume for each policy. The resume part also takes
-care of synchronising frequency for boot CPU, which might turn out be different
-than what cpufreq core believes.
+Now we have support present in cpufreq core, lets use it.
 
-Hence, the earlier syscore infrastructure is getting removed now.
-
-Tested-by: Lan Tianyu <tianyu.lan@intel.com>
-Tested-by: Nishanth Menon <nm@ti.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/cpufreq.c | 112 +++++++++++++---------------------------------
- 1 file changed, 32 insertions(+), 80 deletions(-)
+ drivers/cpufreq/exynos-cpufreq.c | 96 +++-------------------------------------
+ 1 file changed, 7 insertions(+), 89 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index cb23858..87a4b96 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -27,7 +27,6 @@
- #include <linux/mutex.h>
+diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+index fcd2914..307f02e 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -16,7 +16,6 @@
  #include <linux/slab.h>
- #include <linux/suspend.h>
--#include <linux/syscore_ops.h>
- #include <linux/tick.h>
- #include <trace/events/power.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/cpufreq.h>
+-#include <linux/suspend.h>
+ #include <linux/platform_device.h>
  
-@@ -1580,6 +1579,14 @@ static struct subsys_interface cpufreq_interface = {
- 	.remove_dev	= cpufreq_remove_dev,
- };
+ #include <plat/cpu.h>
+@@ -24,12 +23,8 @@
+ #include "exynos-cpufreq.h"
  
-+/**
-+ * cpufreq_suspend() - Suspend CPUFreq governors
-+ *
-+ * Called during system wide Suspend/Hibernate cycles for suspending governors
-+ * as some platforms can't change frequency after this point in suspend cycle.
-+ * Because some of the devices (like: i2c, regulators, etc) they use for
-+ * changing frequency are suspended quickly after this point.
-+ */
- void cpufreq_suspend(void)
- {
- 	struct cpufreq_policy *policy;
-@@ -1589,14 +1596,25 @@ void cpufreq_suspend(void)
- 
- 	pr_debug("%s: Suspending Governors\n", __func__);
- 
--	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
-+	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
- 		if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
- 			pr_err("%s: Failed to stop governor for policy: %p\n",
- 				__func__, policy);
-+		else if (cpufreq_driver->suspend
-+		    && cpufreq_driver->suspend(policy))
-+			pr_err("%s: Failed to suspend driver: %p\n", __func__,
-+				policy);
-+	}
- 
- 	cpufreq_suspended = true;
- }
- 
-+/**
-+ * cpufreq_resume() - Resume CPUFreq governors
-+ *
-+ * Called during system wide Suspend/Hibernate cycle for resuming governors that
-+ * are suspended with cpufreq_suspend().
-+ */
- void cpufreq_resume(void)
- {
- 	struct cpufreq_policy *policy;
-@@ -1608,91 +1626,26 @@ void cpufreq_resume(void)
- 
- 	cpufreq_suspended = false;
- 
--	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
-+	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
- 		if (__cpufreq_governor(policy, CPUFREQ_GOV_START)
- 		    || __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))
- 			pr_err("%s: Failed to start governor for policy: %p\n",
- 				__func__, policy);
--}
+ static struct exynos_dvfs_info *exynos_info;
 -
--/**
-- * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
-- *
-- * This function is only executed for the boot processor.  The other CPUs
-- * have been put offline by means of CPU hotplug.
-- */
--static int cpufreq_bp_suspend(void)
--{
+ static struct regulator *arm_regulator;
+-
+ static unsigned int locking_frequency;
+-static bool frequency_locked;
+-static DEFINE_MUTEX(cpufreq_lock);
+ 
+ static int exynos_cpufreq_get_index(unsigned int freq)
+ {
+@@ -134,83 +129,13 @@ out:
+ 
+ static int exynos_target(struct cpufreq_policy *policy, unsigned int index)
+ {
+-	struct cpufreq_frequency_table *freq_table = exynos_info->freq_table;
 -	int ret = 0;
 -
--	int cpu = smp_processor_id();
--	struct cpufreq_policy *policy;
+-	mutex_lock(&cpufreq_lock);
 -
--	pr_debug("suspending cpu %u\n", cpu);
+-	if (frequency_locked)
+-		goto out;
 -
--	/* If there's no policy for the boot CPU, we have nothing to do. */
--	policy = cpufreq_cpu_get(cpu);
--	if (!policy)
--		return 0;
+-	ret = exynos_cpufreq_scale(freq_table[index].frequency);
 -
--	if (cpufreq_driver->suspend) {
--		ret = cpufreq_driver->suspend(policy);
--		if (ret)
--			printk(KERN_ERR "cpufreq: suspend failed in ->suspend "
--					"step on CPU %u\n", policy->cpu);
--	}
+-out:
+-	mutex_unlock(&cpufreq_lock);
 -
--	cpufreq_cpu_put(policy);
 -	return ret;
 -}
 -
--/**
-- * cpufreq_bp_resume - Restore proper frequency handling of the boot CPU.
-- *
-- *	1.) resume CPUfreq hardware support (cpufreq_driver->resume())
-- *	2.) schedule call cpufreq_update_policy() ASAP as interrupts are
-- *	    restored. It will verify that the current freq is in sync with
-- *	    what we believe it to be. This is a bit later than when it
-- *	    should be, but nonethteless it's better than calling
-- *	    cpufreq_driver->get() here which might re-enable interrupts...
-- *
-- * This function is only executed for the boot CPU.  The other CPUs have not
-- * been turned on yet.
-- */
--static void cpufreq_bp_resume(void)
+-#ifdef CONFIG_PM
+-static int exynos_cpufreq_suspend(struct cpufreq_policy *policy)
 -{
--	int ret = 0;
-+		else if (cpufreq_driver->resume
-+		    && cpufreq_driver->resume(policy))
-+			pr_err("%s: Failed to resume driver: %p\n", __func__,
-+				policy);
- 
--	int cpu = smp_processor_id();
--	struct cpufreq_policy *policy;
+-	return 0;
+-}
 -
--	pr_debug("resuming cpu %u\n", cpu);
+-static int exynos_cpufreq_resume(struct cpufreq_policy *policy)
+-{
+-	return 0;
+-}
+-#endif
 -
--	/* If there's no policy for the boot CPU, we have nothing to do. */
--	policy = cpufreq_cpu_get(cpu);
--	if (!policy)
--		return;
+-/**
+- * exynos_cpufreq_pm_notifier - block CPUFREQ's activities in suspend-resume
+- *			context
+- * @notifier
+- * @pm_event
+- * @v
+- *
+- * While frequency_locked == true, target() ignores every frequency but
+- * locking_frequency. The locking_frequency value is the initial frequency,
+- * which is set by the bootloader. In order to eliminate possible
+- * inconsistency in clock values, we save and restore frequencies during
+- * suspend and resume and block CPUFREQ activities. Note that the standard
+- * suspend/resume cannot be used as they are too deep (syscore_ops) for
+- * regulator actions.
+- */
+-static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
+-				       unsigned long pm_event, void *v)
+-{
+-	int ret;
 -
--	if (cpufreq_driver->resume) {
--		ret = cpufreq_driver->resume(policy);
--		if (ret) {
--			printk(KERN_ERR "cpufreq: resume failed in ->resume "
--					"step on CPU %u\n", policy->cpu);
--			goto fail;
--		}
-+		/*
-+		 * schedule call cpufreq_update_policy() for boot CPU, i.e. last
-+		 * policy in list. It will verify that the current freq is in
-+		 * sync with what we believe it to be.
-+		 */
-+		if (list_is_last(&policy->policy_list, &cpufreq_policy_list))
-+			schedule_work(&policy->update);
- 	}
+-	switch (pm_event) {
+-	case PM_SUSPEND_PREPARE:
+-		mutex_lock(&cpufreq_lock);
+-		frequency_locked = true;
+-		mutex_unlock(&cpufreq_lock);
 -
--	schedule_work(&policy->update);
+-		ret = exynos_cpufreq_scale(locking_frequency);
+-		if (ret < 0)
+-			return NOTIFY_BAD;
 -
--fail:
--	cpufreq_cpu_put(policy);
+-		break;
+-
+-	case PM_POST_SUSPEND:
+-		mutex_lock(&cpufreq_lock);
+-		frequency_locked = false;
+-		mutex_unlock(&cpufreq_lock);
+-		break;
+-	}
+-
+-	return NOTIFY_OK;
++	return exynos_cpufreq_scale(exynos_info->freq_table[index].frequency);
  }
  
--static struct syscore_ops cpufreq_syscore_ops = {
--	.suspend	= cpufreq_bp_suspend,
--	.resume		= cpufreq_bp_resume,
+-static struct notifier_block exynos_cpufreq_nb = {
+-	.notifier_call = exynos_cpufreq_pm_notifier,
 -};
 -
- /**
-  *	cpufreq_get_current_driver - return current driver's name
-  *
-@@ -2458,7 +2411,6 @@ static int __init cpufreq_core_init(void)
- 
- 	cpufreq_global_kobject = kobject_create();
- 	BUG_ON(!cpufreq_global_kobject);
--	register_syscore_ops(&cpufreq_syscore_ops);
- 
- 	return 0;
+ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	policy->clk = exynos_info->cpu_clk;
++	policy->suspend_freq = locking_frequency;
+ 	return cpufreq_generic_init(policy, exynos_info->freq_table, 100000);
  }
+ 
+@@ -227,8 +152,7 @@ static struct cpufreq_driver exynos_driver = {
+ 	.boost_supported = true,
+ #endif
+ #ifdef CONFIG_PM
+-	.suspend	= exynos_cpufreq_suspend,
+-	.resume		= exynos_cpufreq_resume,
++	.suspend	= cpufreq_generic_suspend,
+ #endif
+ };
+ 
+@@ -263,19 +187,13 @@ static int exynos_cpufreq_probe(struct platform_device *pdev)
+ 		goto err_vdd_arm;
+ 	}
+ 
++	/* Done here as we want to capture boot frequency */
+ 	locking_frequency = clk_get_rate(exynos_info->cpu_clk) / 1000;
+ 
+-	register_pm_notifier(&exynos_cpufreq_nb);
+-
+-	if (cpufreq_register_driver(&exynos_driver)) {
+-		pr_err("%s: failed to register cpufreq driver\n", __func__);
+-		goto err_cpufreq;
+-	}
+-
+-	return 0;
+-err_cpufreq:
+-	unregister_pm_notifier(&exynos_cpufreq_nb);
++	if (!cpufreq_register_driver(&exynos_driver))
++		return 0;
+ 
++	pr_err("%s: failed to register cpufreq driver\n", __func__);
+ 	regulator_put(arm_regulator);
+ err_vdd_arm:
+ 	kfree(exynos_info);
 -- 
 1.7.12.rc2.18.g61b472e
 
