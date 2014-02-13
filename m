@@ -1,216 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbaBMM5Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 07:57:25 -0500
-Received: from mout.web.de ([212.227.15.14]:58050 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477AbaBMM5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 07:57:16 -0500
-From: Martin Walch <walch.martin@web.de>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 1/2] kconfig: completely remove expr_eliminate_dups2() and related code
-Date: Thu, 13 Feb 2014 13:57:13 +0100
-Message-ID: <4074365.1YlsYGzSFT@tacticalops>
-User-Agent: KMail/4.12.2 (Linux/3.10.7-gentoo-r1-gnu; KDE/4.12.2; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="UTF-8"
-X-Provags-ID: V03:K0:iPVYZp8dFFKXlILQj6uwrs9eMyxxldkQG+eP9IhWC2WdO4vZ3y9
- P2N5ERgmkZFh9Vo36p/3iaxRZ0IN6P3NZM+aMn9UWhuoenXYy7/7WVLOVZOFtNxsvqlqov9
- 3XJftvZDicmrikTAgcHrggbDke8KQftYHmavV3OKndIZczfW6pvngG8Kj62Utzmlc43VTh5
- Pv1uj+rO27TNfm5pyQC1g==
+	id S1754687AbaBMNA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 08:00:58 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:10199 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaBMNA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 08:00:56 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-30-52fcc206c2b2
+Message-id: <1392296452.14541.7.camel@AMDC1943>
+Subject: Re: [PATCH v2 11/14] regulator: s2mps11: Add opmode for S2MPS14
+ regulators
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Date: Thu, 13 Feb 2014 14:00:52 +0100
+In-reply-to: <20140213124320.GB3403@lee--X1>
+References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
+ <1392282847-25444-12-git-send-email-k.kozlowski@samsung.com>
+ <20140213124320.GB3403@lee--X1>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t/xK7psh/4EGbTM4bLYOGM9q8XUh0/Y
+	LK5/ec5qcbbpDbvF/a9HGS2+Xelgsri8aw6bxYzz+5gs1h65y25xupvV4uKKL0wO3B47Z91l
+	99i0qpPN4861PWwe804GevRtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfGg8c9bAUPhCoudK5i
+	bWD8xNfFyMkhIWAi8eVUNzuELSZx4d56ti5GLg4hgaWMEttuNzNDOJ8ZJdpmzGMBqeIV0Jf4
+	8+wGmC0sECpxad0PMJtNwFhi8/IlQN0cHCICKhLn3piD9DILTGaWODznKyNIDYuAqkT/r6Vg
+	NZwCOhJLz4SAhIUEVjBKTN8pDWIzC6hLTJq3iBniICWJ3e2d7BBxeYnNa94yQ5wgKPFj8j2W
+	CYwCs5C0zEJSNgtJ2QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYITHxZQfj4mNWhxgF
+	OBiVeHgtlv0OEmJNLCuuzD3EKMHBrCTC27jtT5AQb0piZVVqUX58UWlOavEhRiYOTqkGxmQb
+	2SsvdDTeTTjzu3KqbsJxRa1zaaeNLqw5+47/V+UK3XezutIl92+ZsaovP9Ljlt+UtzcPaWyd
+	da7pI0e4hdmaqnNCBefYom8y7TFN7z94/qApbwbPCm3+y+pzp9QfXeiRlhNzTOl14CqTTZsE
+	V/qH/J679ce5/lWy+VOdPgXsWeNznKFqdqESS3FGoqEWc1FxIgCp8jMdZwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Walch <walch.martin@web.de>
-Date: Thu, 13 Feb 2014 02:13:01 +0100
-Subject: [PATCH 1/2] kconfig: completely remove expr_eliminate_dups2() and related code
 
-this removes expr_eliminate_dups2(), expr_extract_eq_and(), expr_extract_eq_or(), and expr_extract_eq() from scripts/kconfig/expr.[ch]
 
-As the comments in the code state, expr_eliminate_dups2 applies these two transformations:
-(FOO || BAR) && (!FOO && !BAR) -> n
-(FOO && BAR) || (!FOO || !BAR) -> y
-At first glance, this may look like a good idea. On second thought, one should verify all possible values for FOO and BAR, finally leading to the assignment
+On Thu, 2014-02-13 at 12:43 +0000, Lee Jones wrote:
+> > S2MPS11/S2MPS14 regulators support different modes of operation:
+> >  - Always off;
+> >  - On/Off controlled by pin/GPIO (PWREN/LDOEN/EMMCEN);
+> >  - Always on;
+> > This is very similar to S5M8767 regulator driver which also supports
+> > opmodes (although S5M8767 have also low-power mode).
+> > 
+> > This patch adds parsing the operation mode from DTS by reading a
+> > "op_mode" property from regulator child node.
+> > 
+> > The op_mode is then used for enabling the S2MPS14 regulators.
+> > On S2MPS11 the DTS "op_mode" property is parsed but not used for
+> > enabling, as this was not tested.
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> > Cc: Mark Brown <broonie@kernel.org>
+> > Cc: Liam Girdwood <lgirdwood@gmail.com>
+> > ---
+> >  drivers/regulator/s2mps11.c         |   97 ++++++++++++++++++++++++++++++++++-
+> >  include/linux/mfd/samsung/s2mps14.h |   19 +++++++
+> >  2 files changed, 115 insertions(+), 1 deletion(-)
+> 
+> <snip>
+> 
+> > +++ b/include/linux/mfd/samsung/s2mps14.h
+> > @@ -149,4 +149,23 @@ enum s2mps14_regulators {
+> >  #define S2MPS14_LDO_N_VOLTAGES		(S2MPS14_LDO_VSEL_MASK + 1)
+> >  #define S2MPS14_BUCK_N_VOLTAGES		(S2MPS14_BUCK_VSEL_MASK + 1)
+> >  
+> > +#define S2MPS14_ENCTRL_SHIFT		6
+> > +#define S2MPS14_ENCTRL_MASK		(0x3 << S2MPS14_ENCTRL_SHIFT)
+> > +
+> > +/*
+> > + * Values of regulator operation modes match device tree bindings.
+> > + */
+> > +enum s2mps14_regulator_opmode {
+> > +	S2MPS14_REGULATOR_OPMODE_OFF		= 0,
+> > +	S2MPS14_REGULATOR_OPMODE_ON		= 1,
+> > +	/*
+> > +	 * Reserved for compatibility with S5M8767 where this
+> > +	 * is a low power mode.
+> > +	 */
+> > +	S2MPS14_REGULATOR_OPMODE_RESERVED	= 2,
+> > +	S2MPS14_REGULATOR_OPMODE_SUSPEND	= 3,
+> 
+> You don't need to number these like this. If you want to force the
+> numbering to start at '0' initialise the top value, then the rest
+> should be sequential.
 
-FOO << 1
-BAR << 1
+Yes, I know. I wanted to emphasize the relationship to opmode entries in
+DTS (to prevent adding new enum value somewhere between them). The code
+somehow self-documents that the enum should only be extended, not
+modified.
 
-which yields for both expressions the interpretation 1 (syntactically this corresponds to an m) when applying the evaluation rules from
-Documentation/kbuild/kconfig-language.txt:
+Best regards,
+Krzysztof
 
-(FOO || BAR) && (!FOO && !BAR)
--> min(max(1, 1), min(2-1, 2-1)) = min(1, 1) = 1
-
-(FOO && BAR) || (!FOO || !BAR)
--> max(min(1, 1), max(2-1, 2-1)) = max(1, 1) = 1
-
-As n always evaluates to 0 and y to 2, this means that the transformation does not preserve semantics, which I guess is not intended here.
-In particular, the expression m && !m expands to (m && MODULES) && !(m && MODULES), then to (m && MODULES) && (!m || !MODULES), and finally in
-expr_eliminate_dups2 to n. I therefore think it is a bug which should be fixed.
-
-This patch should fix the problem by just removing the corresponding code. Nothing should break: a quick check did not yield any expression in the
-mainline kernel that the (bad) transformation currently applies to. Also, as far as I understand the code, expr_eliminate_dups2 does not do anything
-except those two transformations that are to be removed.
-
-As a positive side effect, this reduces code size in expr.c by roughly 10% and slightly improves startup time for all configuration frontends.
-
-Signed-off-by: Martin Walch <walch.martin@web.de>
----
- scripts/kconfig/expr.c | 108 -------------------------------------------------
- scripts/kconfig/expr.h |   3 --
- 2 files changed, 111 deletions(-)
-
-diff --git a/scripts/kconfig/expr.c b/scripts/kconfig/expr.c
-index d662652..4aa171b 100644
---- a/scripts/kconfig/expr.c
-+++ b/scripts/kconfig/expr.c
-@@ -553,62 +553,6 @@ static void expr_eliminate_dups1(enum expr_type type, struct expr **ep1, struct
- #undef e2
- }
- 
--static void expr_eliminate_dups2(enum expr_type type, struct expr **ep1, struct expr **ep2)
--{
--#define e1 (*ep1)
--#define e2 (*ep2)
--	struct expr *tmp, *tmp1, *tmp2;
--
--	if (e1->type == type) {
--		expr_eliminate_dups2(type, &e1->left.expr, &e2);
--		expr_eliminate_dups2(type, &e1->right.expr, &e2);
--		return;
--	}
--	if (e2->type == type) {
--		expr_eliminate_dups2(type, &e1, &e2->left.expr);
--		expr_eliminate_dups2(type, &e1, &e2->right.expr);
--	}
--	if (e1 == e2)
--		return;
--
--	switch (e1->type) {
--	case E_OR:
--		expr_eliminate_dups2(e1->type, &e1, &e1);
--		// (FOO || BAR) && (!FOO && !BAR) -> n
--		tmp1 = expr_transform(expr_alloc_one(E_NOT, expr_copy(e1)));
--		tmp2 = expr_copy(e2);
--		tmp = expr_extract_eq_and(&tmp1, &tmp2);
--		if (expr_is_yes(tmp1)) {
--			expr_free(e1);
--			e1 = expr_alloc_symbol(&symbol_no);
--			trans_count++;
--		}
--		expr_free(tmp2);
--		expr_free(tmp1);
--		expr_free(tmp);
--		break;
--	case E_AND:
--		expr_eliminate_dups2(e1->type, &e1, &e1);
--		// (FOO && BAR) || (!FOO || !BAR) -> y
--		tmp1 = expr_transform(expr_alloc_one(E_NOT, expr_copy(e1)));
--		tmp2 = expr_copy(e2);
--		tmp = expr_extract_eq_or(&tmp1, &tmp2);
--		if (expr_is_no(tmp1)) {
--			expr_free(e1);
--			e1 = expr_alloc_symbol(&symbol_yes);
--			trans_count++;
--		}
--		expr_free(tmp2);
--		expr_free(tmp1);
--		expr_free(tmp);
--		break;
--	default:
--		;
--	}
--#undef e1
--#undef e2
--}
--
- struct expr *expr_eliminate_dups(struct expr *e)
- {
- 	int oldcount;
-@@ -621,7 +565,6 @@ struct expr *expr_eliminate_dups(struct expr *e)
- 		switch (e->type) {
- 		case E_OR: case E_AND:
- 			expr_eliminate_dups1(e->type, &e, &e);
--			expr_eliminate_dups2(e->type, &e, &e);
- 		default:
- 			;
- 		}
-@@ -823,57 +766,6 @@ bool expr_depends_symbol(struct expr *dep, struct symbol *sym)
-  	return false;
- }
- 
--struct expr *expr_extract_eq_and(struct expr **ep1, struct expr **ep2)
--{
--	struct expr *tmp = NULL;
--	expr_extract_eq(E_AND, &tmp, ep1, ep2);
--	if (tmp) {
--		*ep1 = expr_eliminate_yn(*ep1);
--		*ep2 = expr_eliminate_yn(*ep2);
--	}
--	return tmp;
--}
--
--struct expr *expr_extract_eq_or(struct expr **ep1, struct expr **ep2)
--{
--	struct expr *tmp = NULL;
--	expr_extract_eq(E_OR, &tmp, ep1, ep2);
--	if (tmp) {
--		*ep1 = expr_eliminate_yn(*ep1);
--		*ep2 = expr_eliminate_yn(*ep2);
--	}
--	return tmp;
--}
--
--void expr_extract_eq(enum expr_type type, struct expr **ep, struct expr **ep1, struct expr **ep2)
--{
--#define e1 (*ep1)
--#define e2 (*ep2)
--	if (e1->type == type) {
--		expr_extract_eq(type, ep, &e1->left.expr, &e2);
--		expr_extract_eq(type, ep, &e1->right.expr, &e2);
--		return;
--	}
--	if (e2->type == type) {
--		expr_extract_eq(type, ep, ep1, &e2->left.expr);
--		expr_extract_eq(type, ep, ep1, &e2->right.expr);
--		return;
--	}
--	if (expr_eq(e1, e2)) {
--		*ep = *ep ? expr_alloc_two(type, *ep, e1) : e1;
--		expr_free(e2);
--		if (type == E_AND) {
--			e1 = expr_alloc_symbol(&symbol_yes);
--			e2 = expr_alloc_symbol(&symbol_yes);
--		} else if (type == E_OR) {
--			e1 = expr_alloc_symbol(&symbol_no);
--			e2 = expr_alloc_symbol(&symbol_no);
--		}
--	}
--#undef e1
--#undef e2
--}
--
- struct expr *expr_trans_compare(struct expr *e, enum expr_type type, struct symbol *sym)
- {
- 	struct expr *e1, *e2;
-diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
-index ba663e1..fb9e470 100644
---- a/scripts/kconfig/expr.h
-+++ b/scripts/kconfig/expr.h
-@@ -211,9 +211,6 @@ struct expr *expr_eliminate_dups(struct expr *e);
- struct expr *expr_transform(struct expr *e);
- int expr_contains_symbol(struct expr *dep, struct symbol *sym);
- bool expr_depends_symbol(struct expr *dep, struct symbol *sym);
--struct expr *expr_extract_eq_and(struct expr **ep1, struct expr **ep2);
--struct expr *expr_extract_eq_or(struct expr **ep1, struct expr **ep2);
--void expr_extract_eq(enum expr_type type, struct expr **ep, struct expr **ep1, struct expr **ep2);
- struct expr *expr_trans_compare(struct expr *e, enum expr_type type, struct symbol *sym);
- struct expr *expr_simplify_unmet_dep(struct expr *e1, struct expr *e2);
- 
--- 
-1.8.3.2
-
+> 
+> > +	S2MPS14_REGULATOR_OPMODE_MAX,
+> > +};
+> > +
+> >  #endif /*  __LINUX_MFD_S2MPS14_H */
+> 
 
