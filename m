@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaBMVHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:07:22 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51127 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaBMVHN (ORCPT
+	id S1752006AbaBMVKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:10:05 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43406 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516AbaBMVKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:07:13 -0500
-Date: Thu, 13 Feb 2014 16:07:09 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] memcg: barriers to see memcgs as fully initialized
-Message-ID: <20140213210709.GE17608@htj.dyndns.org>
-References: <alpine.LSU.2.11.1402121717420.5917@eggly.anvils>
- <alpine.LSU.2.11.1402121727050.5917@eggly.anvils>
+	Thu, 13 Feb 2014 16:10:03 -0500
+Date: Thu, 13 Feb 2014 21:09:56 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140213210956.GE28112@sirena.org.uk>
+References: <9348920.79Ktlcbcai@phil>
+ <20140213190322.GA28112@sirena.org.uk>
+ <1528469.iBzMKAUgWB@phil>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="klLku2wdS+WFztDq"
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402121727050.5917@eggly.anvils>
+In-Reply-To: <1528469.iBzMKAUgWB@phil>
+X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: gpio-regulator: fix forgotten gpios-states
+ reading
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Hugh.
 
-On Wed, Feb 12, 2014 at 05:29:09PM -0800, Hugh Dickins wrote:
-> Commit d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully
-> initialized") is not bad, but Greg Thelen asks "Are barriers needed?"
-> 
-> Yes, I'm afraid so: this makes it a little heavier than the original,
-> but there's no point in guaranteeing that mem_cgroup_iter() returns only
-> fully initialized memcgs, if we don't guarantee that the initialization
-> is visible.
-> 
-> If we move online_css()'s setting CSS_ONLINE after rcu_assign_pointer()
-> (I don't see why not), we can reasonably rely on the smp_wmb() in that.
-> But I can't find a pre-existing barrier at the mem_cgroup_iter() end,
-> so add an smp_rmb() where __mem_cgroup_iter_next() returns non-NULL.
+--klLku2wdS+WFztDq
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmmm.... so, CSS_ONLINE was never meant to be used outside cgroup
-proper.  The only guarantee that the css iterators make is that a css
-which has finished its ->css_online() will be included in the
-iteration, which implies that css's which haven't finished
-->css_online() or already went past ->css_offline() may be included in
-the iteration.  In fact, it's impossible to achieve the guarantee
-without such implications if we want to avoid synchronizing everything
-using common locking, which we apparently can't do across different
-controllers.
+On Thu, Feb 13, 2014 at 08:17:54PM +0100, Heiko St=FCbner wrote:
 
-The expectation is that if a controller needs to distinguish fully
-online css's, it will perform its own synchronization among its
-online, offline and iterations, which can usually be achieved through
-per-css synchronization. There is asymmetry here due to the way
-css_tryget() behaves.  Unfortuantely, I don't think it can be expanded
-to become symmetrical for online testing without adding, say,
-->css_post_online() callback.
+> So I would argue for removing this commit again in favor of my v2 sent 16=
+:34.
 
-So, the only thing that memcg can depend on while iterating is that it
-will include all css's which finished ->css_online() and if memcg
-wants to filter out the ones which haven't yet, it should do its own
-marking in ->css_online() rather than depending on what cgroup core
-does with the flags.  That way, locking rules are a lot more evident
-in each subsystem and we don't end up depending on cgroup internal
-details which aren't immediately obvious.
+Yes, that's fine - it hasn't arrived here yet though and I wanted to get
+a proper fix in.
 
-Thanks.
+--klLku2wdS+WFztDq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-tejun
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS/TShAAoJELSic+t+oim9r+UP/iDA1OyaALQfIqsbaq6ah1uf
+4FXWYlZR9pA8ax2tn1P9hqdy8Cx/mcwCB/LtOX8v4y/MG7HHGaBNPLPFqWJG58JS
+oBRxecBq1i81EY6VifMJ4aigoQI+Fmq5fYMRoce2zETE+pvgXFffJMyG0vOvu6kw
+/BREneDq+vrsEU9JrKgp9Rj2NTxlksdB0g76XWq9fJwc4yZBH19wa+dx4x16l21r
+Ji3VleaSEFWNZbTJJlcH59OBJEjEB4D+sN12VAkiEWaDd09n9RMN0PcDld3mmnsd
+jpHaKl8/Q6yAzzAUO0tZO8pbivtartRhn1OBGb+JVAU7OLss28uvB1O09TWkUWUx
+rirwnMyDyeJ8O/Hlj+GNDCeHx0MZn52A3fR2/MaslllCGNbrz/K08TFTnxuQJqYK
+xTYtPjD3NNFN7dxmMCI1KPpmvuCNvfCOUvZYUedvcaIjiy+xisGuz2VR+Ympn6vR
+8MZgPiGYu7YNnSBi9VmcJGteV2jLGKMeQHdmFAPqWIxhrcqszyBUZJnB22s75aaN
+1OFLkoBrjT1TO8MgRmySfG9+2nj60cAzC0Mf99WeohpCMHNVwvF2khPewbOdryQ8
+Eo4NMI7TqcBaIwcp9BkhinkK5N5bOaj/sOlc15w7eV2c7o3qD0OqEtpbNCd6VQeY
+i+2oNXRNtJ/C6M5jYpeS
+=/dZk
+-----END PGP SIGNATURE-----
+
+--klLku2wdS+WFztDq--
