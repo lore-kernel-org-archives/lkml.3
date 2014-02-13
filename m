@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbaBMHOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 02:14:40 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:22364 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaBMHOj (ORCPT
+	id S1753242AbaBMHOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 02:14:45 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:39456 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaBMHOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 02:14:39 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-e1-52fc70de5ac9
-From: Weijie Yang <weijie.yang@samsung.com>
-To: gregkh@linuxfoundation.org
-Cc: anton.vorontsov@linaro.org, rientjes@google.com,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        weijie.yang.kh@gmail.com
-Subject: [PATCH] staging: android: lowmemorykiller: set TIF_MEMDIE before send
- kill sig
-Date: Thu, 13 Feb 2014 15:13:44 +0800
-Message-id: <000001cf288b$41699f40$c43cddc0$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8oiyGNCzvygZRKQjKNigmNj8zlvw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t9jAd17BX+CDA7cZ7e42HqbxaJ58Xo2
-	i8u75rBZtC3ZyGTx5MR/FgdWj52z7rJ7LNhU6nHn2h42j/1z17B7fN4kF8AaxWWTkpqTWZZa
-	pG+XwJUx9/1U5oKVHBUTpm5iaWD8xdbFyMkhIWAisfTxNihbTOLCvfVANheHkMAiRokXE46z
-	QDh/GCWOLWhmAaliE9CWuNu/kRXEFhGQk3hy+w8ziM0sUCexc+1SsEnCApES29fPBbI5OFgE
-	VCVOfI4ECfMK2En8PP2KDcIWlPgx+R4LSAmzgLrElCm5EFPkJTavecsMEpYACj/6qwuxSE9i
-	y8xmVogScYmNR26xTGAUmIVk0CyEQbOQDJqFpGMBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k
-	/NxNjOAAfya9g3FVg8UhRgEORiUe3geLfwcJsSaWFVfmHmKU4GBWEuGVkfgTJMSbklhZlVqU
-	H19UmpNafIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoFxztamituKGdNebezwu5Fs
-	8WiqXXh+mUjH3It7Pt1cc2zO0s2r/M7tbXBbybo8frOMWZbBS+fo7tLo3WaC1ZdSGGSCHtyI
-	X757bnraab65u8S21y/4fdlD8F/5hzZpEYvleT4SE9ZUqR84XFI95fy0mZ8n/xVy/2GVyX7h
-	wNozLw/nibbxKOrOVWIpzkg01GIuKk4EANg7h31sAgAA
+	Thu, 13 Feb 2014 02:14:42 -0500
+Message-ID: <52FC70D8.5060107@linaro.org>
+Date: Thu, 13 Feb 2014 15:14:32 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, peterz@infradead.org,
+        mingo@kernel.org
+CC: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH V2 1/3] sched: Remove cpu parameter for idle_balance()
+References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org> <1391728237-4441-2-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1391728237-4441-2-git-send-email-daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set TIF_MEMDIE tsk_thread flag before send kill signal to the
-selected thread. This is to fit a usual code sequence and avoid
-potential race issue.
+On 02/07/2014 07:10 AM, Daniel Lezcano wrote:
+> The cpu parameter passed to idle_balance is not needed as it could
+> be retrieved from the struct rq.
+> 
+> Cc: alex.shi@linaro.org
+> Cc: peterz@infradead.org
+> Cc: mingo@kernel.org
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
----
- drivers/staging/android/lowmemorykiller.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
- mode change 100644 => 100755 drivers/staging/android/lowmemorykiller.c
+Reviewed-by: Alex Shi <alex.shi@linaro.org>
+> ---
+>  kernel/sched/core.c  |    2 +-
+>  kernel/sched/fair.c  |    3 ++-
+>  kernel/sched/sched.h |    4 ++--
+>  3 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 210a12a..16b97dd 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2705,7 +2705,7 @@ need_resched:
+>  	pre_schedule(rq, prev);
+>  
+>  	if (unlikely(!rq->nr_running))
+> -		idle_balance(cpu, rq);
+> +		idle_balance(rq);
+>  
+>  	put_prev_task(rq, prev);
+>  	next = pick_next_task(rq);
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 4caa803..428bc9d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -6531,12 +6531,13 @@ out:
+>   * idle_balance is called by schedule() if this_cpu is about to become
+>   * idle. Attempts to pull tasks from other CPUs.
+>   */
+> -void idle_balance(int this_cpu, struct rq *this_rq)
+> +void idle_balance(struct rq *this_rq)
+>  {
+>  	struct sched_domain *sd;
+>  	int pulled_task = 0;
+>  	unsigned long next_balance = jiffies + HZ;
+>  	u64 curr_cost = 0;
+> +	int this_cpu = this_rq->cpu;
+>  
+>  	this_rq->idle_stamp = rq_clock(this_rq);
+>  
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index c2119fd..1436219 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -1176,14 +1176,14 @@ extern const struct sched_class idle_sched_class;
+>  extern void update_group_power(struct sched_domain *sd, int cpu);
+>  
+>  extern void trigger_load_balance(struct rq *rq);
+> -extern void idle_balance(int this_cpu, struct rq *this_rq);
+> +extern void idle_balance(struct rq *this_rq);
+>  
+>  extern void idle_enter_fair(struct rq *this_rq);
+>  extern void idle_exit_fair(struct rq *this_rq);
+>  
+>  #else	/* CONFIG_SMP */
+>  
+> -static inline void idle_balance(int cpu, struct rq *rq)
+> +static inline void idle_balance(struct rq *rq)
+>  {
+>  }
+>  
+> 
 
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-old mode 100644
-new mode 100755
-index 6f094b3..4bcf00a
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -159,8 +159,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
- 			     selected->pid, selected->comm,
- 			     selected_oom_score_adj, selected_tasksize);
- 		lowmem_deathpending_timeout = jiffies + HZ;
--		send_sig(SIGKILL, selected, 0);
- 		set_tsk_thread_flag(selected, TIF_MEMDIE);
-+		send_sig(SIGKILL, selected, 0);
- 		rem += selected_tasksize;
- 	}
- 
+
 -- 
-1.7.10.4
-
-
+Thanks
+    Alex
