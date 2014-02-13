@@ -1,159 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698AbaBMJHO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:07:14 -0500
-Received: from canardo.mork.no ([148.122.252.1]:57215 "EHLO canardo.mork.no"
+	id S1753523AbaBMJKY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:10:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:1328 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753453AbaBMJHE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:07:04 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: Steve Glendinning <steve.glendinning@shawell.net>,
-        Oliver Neukum <oneukum@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Freddy Xin <freddy@asix.com.tw>, Eric Dumazet <edumazet@google.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Liu Junliang <liujunliang_ljl@163.com>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usbnet: remove generic hard_header_len check
-Organization: m
-References: <1392249836-27151-1-git-send-email-emilgoode@gmail.com>
-Date: Thu, 13 Feb 2014 10:05:39 +0100
-In-Reply-To: <1392249836-27151-1-git-send-email-emilgoode@gmail.com> (Emil
-	Goode's message of "Thu, 13 Feb 2014 01:03:56 +0100")
-Message-ID: <87fvnn4c2k.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
+	id S1753254AbaBMJKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 04:10:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,837,1384329600"; 
+   d="scan'208";a="482718095"
+Message-ID: <52FC8C01.1040002@intel.com>
+Date: Thu, 13 Feb 2014 17:10:25 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] drm/i915/opregion: work around buggy firmware that provides
+ 8+ output devices
+References: <52FAE504.8020001@intel.com> <20140212103156.GC5298@nuc-i3427.alporthouse.com>
+In-Reply-To: <20140212103156.GC5298@nuc-i3427.alporthouse.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emil Goode <emilgoode@gmail.com> writes:
+On 02/12/2014 06:31 PM, Chris Wilson wrote:
+> On Wed, Feb 12, 2014 at 11:05:40AM +0800, Aaron Lu wrote:
+>> The ACPI table on ASUS UX302LA has more than 8 output devices under the
+>> graphics controller device node. The problem is, the real active output
+>> device, the LCD panel, is listed the last. The result is, the LCD's
+>> device id doesn't get recorded in the active device list CADL array and
+>> when the _DCS control method for the LCD device is executed, it returns
+>> 0x1d, meaning it is not active. This affects the hotkey delivery ASL
+>> code that will not deliver a notification if the output device is not
+>> active on backlight hotkey press.
+>>
+>> I don't see a clean way to solve this problem since the operation region
+>> spec doesn't allow more than 8 output devices so we have no way of
+>> storing all these output devices. The fact that output devices that have
+>> _BCM control method usually means they have a higher possibility of being
+>> used than those who don't made me choose a simple way to work around
+>> the buggy firmware by replacing the last entry in CADL array with the one
+>> that has _BCM control method. There is no specific reason why the last
+>> entry is picked instead of others.
+> 
+> Another possibility is that the connector list is in rough priority
+> order so might be useful for sorting the CADL array.
+> 
+> Since the CADL should only be a list of currently active devices, we
+> could just bite the bullet and repopulate it correctly after every
+> setcrtc.
 
-> This patch removes a generic hard_header_len check from the usbnet
-> module that is causing dropped packages under certain circumstances
-> for devices that send rx packets that cross urb boundaries.
->
-> One example is the AX88772B which occasionally send rx packets that
-> cross urb boundaries where the remaining partial packet is sent with
-> no hardware header. When the buffer with a partial packet is of less
-> number of octets than the value of hard_header_len the buffer is
-> discarded by the usbnet module.
->
-> With AX88772B this can be reproduced by using ping with a packet
-> size between 1965-1976.
->
-> The bug has been reported here:
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=29082
->
-> This patch introduces the following changes:
-> - Removes the generic hard_header_len check in the rx_complete
->   function in the usbnet module.
-> - Introduces a ETH_HLEN check for skbs that are not cloned from
->   within a rx_fixup callback.
-> - For safety a hard_header_len check is added to each rx_fixup
->   callback function that could be affected by this change.
->   These extra checks could possibly be removed by someone
->   who has the hardware to test.
->
-> The changes place full responsibility on the rx_fixup callback
-> functions that clone skbs to only pass valid skbs to the
-> usbnet_skb_return function.
->
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> Reported-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Thanks for the suggestion. As a first step, does the following un-tested
+patch look OK?
+
+diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+index acde2945eb8a..afdd7d84fb32 100644
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -220,11 +220,11 @@ struct opregion_asle {
+ #define SWSCI_SBCB_POST_VBE_PM		SWSCI_FUNCTION_CODE(SWSCI_SBCB, 19)
+ #define SWSCI_SBCB_ENABLE_DISABLE_AUDIO	SWSCI_FUNCTION_CODE(SWSCI_SBCB, 21)
+ 
+-#define ACPI_OTHER_OUTPUT (0<<8)
+-#define ACPI_VGA_OUTPUT (1<<8)
+-#define ACPI_TV_OUTPUT (2<<8)
+-#define ACPI_DIGITAL_OUTPUT (3<<8)
+-#define ACPI_LVDS_OUTPUT (4<<8)
++#define ACPI_OTHER_OUTPUT 0
++#define ACPI_VGA_OUTPUT 1
++#define ACPI_TV_OUTPUT 2
++#define ACPI_DIGITAL_OUTPUT 3
++#define ACPI_LVDS_OUTPUT 4
+ 
+ #define MAX_DSLP	1500
+ 
+@@ -616,6 +616,7 @@ static void intel_didl_outputs(struct drm_device *dev)
+ 	acpi_status status;
+ 	u32 temp;
+ 	int i = 0;
++	int index[5] = {0};
+ 
+ 	handle = ACPI_HANDLE(&dev->pdev->dev);
+ 	if (!handle || acpi_bus_get_device(handle, &acpi_dev))
+@@ -693,8 +694,8 @@ blind_set:
+ 			break;
+ 		}
+ 		temp = ioread32(&opregion->acpi->didl[i]);
+-		iowrite32(temp | (1<<31) | output_type | i,
+-			  &opregion->acpi->didl[i]);
++		iowrite32(temp | (1<<31) | (output_type << 8) |
++			  index[output_type]++, &opregion->acpi->didl[i]);
+ 		i++;
+ 	}
+ 	goto end;
+@@ -705,18 +706,44 @@ static void intel_setup_cadls(struct drm_device *dev)
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_opregion *opregion = &dev_priv->opregion;
+ 	int i = 0;
++	int index[5] = {0};
+ 	u32 disp_id;
++	struct drm_connector *connector;
++
++	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
++		int output_type = ACPI_OTHER_OUTPUT;
+ 
+-	/* Initialize the CADL field by duplicating the DIDL values.
+-	 * Technically, this is not always correct as display outputs may exist,
+-	 * but not active. This initialization is necessary for some Clevo
+-	 * laptops that check this field before processing the brightness and
+-	 * display switching hotkeys. Just like DIDL, CADL is NULL-terminated if
+-	 * there are less than eight devices. */
+-	do {
+-		disp_id = ioread32(&opregion->acpi->didl[i]);
++		switch (connector->connector_type) {
++		case DRM_MODE_CONNECTOR_VGA:
++		case DRM_MODE_CONNECTOR_DVIA:
++			output_type = ACPI_VGA_OUTPUT;
++			break;
++		case DRM_MODE_CONNECTOR_Composite:
++		case DRM_MODE_CONNECTOR_SVIDEO:
++		case DRM_MODE_CONNECTOR_Component:
++		case DRM_MODE_CONNECTOR_9PinDIN:
++			output_type = ACPI_TV_OUTPUT;
++			break;
++		case DRM_MODE_CONNECTOR_DVII:
++		case DRM_MODE_CONNECTOR_DVID:
++		case DRM_MODE_CONNECTOR_DisplayPort:
++		case DRM_MODE_CONNECTOR_HDMIA:
++		case DRM_MODE_CONNECTOR_HDMIB:
++			output_type = ACPI_DIGITAL_OUTPUT;
++			break;
++		case DRM_MODE_CONNECTOR_eDP:
++		case DRM_MODE_CONNECTOR_LVDS:
++			output_type = ACPI_LVDS_OUTPUT;
++			break;
++		}
++		disp_id = (opregion->acpi->didl[0] & (1 << 31)) |
++			  (output_type << 8) | index[output_type]++;
+ 		iowrite32(disp_id, &opregion->acpi->cadl[i]);
+-	} while (++i < 8 && disp_id != 0);
++		i++;
++	}
++
++	if (i < 8)
++		iowrite32(0, &opregion->acpi->cadl[i]);
+ }
+ 
+ void intel_opregion_init(struct drm_device *dev)
 
 
-Great work!  Looks good to me.
-
-Just a couple of questions:
-
-> diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-> index ff5c871..b2e2aee 100644
-> --- a/drivers/net/usb/qmi_wwan.c
-> +++ b/drivers/net/usb/qmi_wwan.c
-> @@ -80,10 +80,10 @@ static int qmi_wwan_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
->  {
->  	__be16 proto;
->  
-> -	/* usbnet rx_complete guarantees that skb->len is at least
-> -	 * hard_header_len, so we can inspect the dest address without
-> -	 * checking skb->len
-> -	 */
-> +	/* This check is no longer done by usbnet */
-> +	if (skb->len < dev->net->hard_header_len)
-> +		return 0;
-> +
->  	switch (skb->data[0] & 0xf0) {
->  	case 0x40:
->  		proto = htons(ETH_P_IP);
-> diff --git a/drivers/net/usb/rndis_host.c b/drivers/net/usb/rndis_host.c
-> index a48bc0f..524a47a 100644
-> --- a/drivers/net/usb/rndis_host.c
-> +++ b/drivers/net/usb/rndis_host.c
-> @@ -492,6 +492,10 @@ EXPORT_SYMBOL_GPL(rndis_unbind);
->   */
->  int rndis_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
->  {
-> +	/* This check is no longer done by usbnet */
-> +	if (skb->len < dev->net->hard_header_len)
-> +		return 0;
-> +
-
-Wouldn't it be better to test against ETH_HLEN, since that is a constant
-and "obviously correct" in this case?
-
-
-> diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-> index 4671da7..dd10d58 100644
-> --- a/drivers/net/usb/usbnet.c
-> +++ b/drivers/net/usb/usbnet.c
-> @@ -542,17 +542,19 @@ static inline void rx_process (struct usbnet *dev, struct sk_buff *skb)
->  	}
->  	// else network stack removes extra byte if we forced a short packet
->  
-> -	if (skb->len) {
-> -		/* all data was already cloned from skb inside the driver */
-> -		if (dev->driver_info->flags & FLAG_MULTI_PACKET)
-> -			dev_kfree_skb_any(skb);
-> -		else
-> -			usbnet_skb_return(dev, skb);
-> +	/* all data was already cloned from skb inside the driver */
-> +	if (dev->driver_info->flags & FLAG_MULTI_PACKET)
-> +		goto done;
-> +
-> +	if (skb->len < ETH_HLEN) {
-> +		dev->net->stats.rx_errors++;
-> +		dev->net->stats.rx_length_errors++;
-> +		netif_dbg(dev, rx_err, dev->net, "rx length %d\n", skb->len);
-> +	} else {
-> +		usbnet_skb_return(dev, skb);
->  		return;
->  	}
->  
-> -	netif_dbg(dev, rx_err, dev->net, "drop\n");
-> -	dev->net->stats.rx_errors++;
->  done:
->  	skb_queue_tail(&dev->done, skb);
->  }
-
-
-At first glance I wondered where the dev_kfree_skb_any(skb) went.  But
-then I realized that you leave that to the common rx_cleanup path, using
-the dev->done queue.  Is that right?  If so, then I guess it could use a
-bit of explaining in the commit message?
-
-If I'm wrong, then I'm still looking for the explanation of where the
-dev_kfree_skb_any went :-)
-
-
-
-Bjørn
+Thanks,
+Aaron
