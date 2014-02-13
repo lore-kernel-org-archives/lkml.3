@@ -1,48 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaBMB53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 20:57:29 -0500
-Received: from [216.32.180.30] ([216.32.180.30]:20678 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751320AbaBMB51 (ORCPT
+	id S1752368AbaBMCBf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 21:01:35 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39029 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaBMCBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 20:57:27 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275bh8275dh1de097h186068hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 13 Feb 2014 09:56:19 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Robin Gong <b38343@freescale.com>
-CC: <broonie@kernel.org>, <s.hauer@pengutronix.de>,
-        <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <shijie.huang@freescale.com>
-Subject: Re: [PATCH V1] spi: imx: add dma support for ecspi
-Message-ID: <20140213015617.GA950@S2101-09.ap.freescale.net>
-References: <1392199379-6742-1-git-send-email-b38343@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1392199379-6742-1-git-send-email-b38343@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Wed, 12 Feb 2014 21:01:33 -0500
+Content-Type: multipart/signed; boundary="Apple-Mail=_AED3833F-1086-41BA-BE7C-FCE997FDB864"; protocol="application/pgp-signature"; micalg=pgp-sha1
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH v4 0/3] ext4: increase mbcache scalability
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <52FA80DB.2000504@hp.com>
+Date: Wed, 12 Feb 2014 19:01:17 -0700
+Cc: Andi Kleen <andi@firstfloor.org>, T Makphaibulchoke <tmac@hp.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "aswin@hp.com" <aswin@hp.com>
+Message-Id: <1C3FB797-A411-4528-B38D-5E0533353724@dilger.ca>
+References: <1377186876-57291-1-git-send-email-tmac@hp.com> <1390588288-66930-1-git-send-email-tmac@hp.com> <87fvodcb65.fsf@tassilo.jf.intel.com> <DBA818DD-1C87-4B98-8475-8BB8F00F7DA4@dilger.ca> <52FA80DB.2000504@hp.com>
+To: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 06:02:59PM +0800, Robin Gong wrote:
-> Add basical dma support for ecspi. Validate on i.MX6qsabresd board.
-> 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
 
-Robin,
+--Apple-Mail=_AED3833F-1086-41BA-BE7C-FCE997FDB864
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=iso-8859-1
 
-Are you aware of the submission [1] from Frank Li?  You may want to
-coordinate the effort with him.
 
-Shawn
+On Feb 11, 2014, at 12:58 PM, Thavatchai Makphaibulchoke =
+<thavatchai.makpahibulchoke@hp.com> wrote:
+> On 01/24/2014 11:09 PM, Andreas Dilger wrote:
+>> I think the ext4 block groups are locked with the blockgroup_lock =
+that has about the same number of locks as the number of cores, with a =
+max of 128, IIRC.  See blockgroup_lock.h.=20
+>>=20
+>> While there is some chance of contention, it is also unlikely that =
+all of the cores are locking this area at the same time. =20
+>>=20
+>> Cheers, Andreas
+>>=20
+>=20
+> Andreas, looks like your assumption is correct.  On all 3 systems, 80, =
+60 and 20 cores, I got almost identical aim7 results using either a =
+smaller dedicated lock array or the block group lock.  I'm inclined to =
+go with using the block group lock as it does not incur any extra space.
+>=20
+> One problem is that, with the current implementation mbcache has no =
+knowledge of the super block, including its block group lock, of the =
+filesystem.  In my implementation I have to change the first argument of =
+mb_cache_create() from char * to struct super_block * to be able to =
+access the super block's block group lock.
 
-[1] http://thread.gmane.org/gmane.linux.ports.arm.kernel/291722
+Note that you don't have to use the ext4_sb_info->s_blockgroup_lock.
+You can allocate and use a separate struct blockgroup_lock for mbcache
+instead of allocating a spinlock array (and essentially reimplementing
+the bgl_lock_*() code).  While it isn't a huge amount of duplication,
+that code is already tuned for different SMP core configurations and
+there is no reason NOT to use struct blockgroup_lock.
 
+> This works with my proposed change to allocate an mb_cache for each =
+mounted ext4 filesystem.  This would also require the same change, =
+allocating an mb_cache for each mounted filesystem, to both ext2 and =
+ext3, which would increase the scope of the patch.  The other =
+alternative, allocating a new smaller spinlock array, would not require =
+any change to either ext2 and ext3.
+>=20
+> I'm working on resubmitting my patches using the block group locks and =
+extending the changes to also include both ext2 and ext3.  With this =
+approach, not only that no addition space for dedicated new spinlock =
+array is required, the e_bdev member of struct mb_cache_entry could also =
+be removed, reducing the space required for each mb_cache_entry.
+>=20
+> Please let me know if you have any concern or suggestion.
+
+I'm not against re-using the s_blockgroup_lock in the superblock, since
+the chance of contention on this lock between threads is very small, as
+there are normally 4x the number of spinlocks as cores.
+
+You might consider starting with a dedicated struct blockgroup_lock in
+the mbcache code, then move to use the in-superblock struct in a later
+patch.  That would allow you to push and land the mbcache and ext4 =
+patches
+independently of the ext2 and ext3 patches (if they are big).  If the
+ext2 and ext3 patches are relatively small then this extra complexity
+in the patches may not be needed.
+
+Cheers, Andreas
+
+
+
+
+
+
+--Apple-Mail=_AED3833F-1086-41BA-BE7C-FCE997FDB864
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIVAwUBUvwnbnKl2rkXzB/gAQIclQ/9GbLAfmadFvkX0BTRh3DT71fcuf+RTE9P
+pNysFzwPWuZcufchZBIh2M3VxRl2ZeiADlGTVva1Qzg2pPB49+m8VRQOI2JQ7GOv
+vtEbL8SneO1P+3mK2elxRKN4o8L5dqYsfcipOL+XoE4E+YOJgJ5FsEACg0i9oai1
+nwYato5jddHbqD3t4+tUjNHHKbKVp8ZHihojLfYndHEJvxaPtQfSQqdKIFNPfjYk
+3TLpol93+Wq/X4ClWNBt75YZmgq+j1zm8w84YKBuq3WJWfdz7t3AOronogeX8p/p
+Nyl3F1ABRtyFPZT1Pui6Dp+uf5gryWrsgHqY5+1bpFAfXl7+zGjPuDtSSJi5/+vV
+ewk/cuTWb71KvLnsDQzfPCgG+5Du9G6CjsBCpjcjjmagqeuTGUtiwxAXJ3N4scK6
++ByBJ3RWw0Jaklh3Vxtf8KSZB6Bjj4P3v3auG39eZu0xQlMm+xYpGditogECuwod
+cCla0uDAq7QDfke+nxbVkHWg/cxnlYpout3J6lZVRrI++KbtEaI1CQJRGod5u4dh
+W3RnH6bplET1nsLyMoszKOpqMZ3D74+7XZ/Z+PVuiVipIZoK/5WKPBPUrvHOMhEx
+8smt1vncYnKkUfT7YIhVfEQ/8y+WZBpPmwEDuk+lSkQoWb+TJ2g0O+qIY/BqF+3C
+REX1gWLRLsY=
+=KMDK
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_AED3833F-1086-41BA-BE7C-FCE997FDB864--
