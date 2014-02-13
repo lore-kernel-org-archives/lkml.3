@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaBMHcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 02:32:14 -0500
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:6770
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751417AbaBMHcN convert rfc822-to-8bit (ORCPT
+	id S1752078AbaBMHlt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 02:41:49 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:46782 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444AbaBMHlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 02:32:13 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCH v2 1/3] ASoC: binding: add tdm-slot.txt
-Thread-Topic: [alsa-devel] [PATCH v2 1/3] ASoC: binding: add tdm-slot.txt
-Thread-Index: AQHPJ886eVFKbCp270GIE9eQNPH9P5qxWYEAgAAc+ICAAUkhIA==
-Date: Thu, 13 Feb 2014 07:32:10 +0000
-Message-ID: <2eae2c076b7540448be19e9c91a58ee0@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1392191112-27028-1-git-send-email-Li.Xiubo@freescale.com>
- <1392191112-27028-2-git-send-email-Li.Xiubo@freescale.com>
- <52FB3E5C.8040701@metafoo.de> <20140212111033.GD28112@sirena.org.uk>
-In-Reply-To: <20140212111033.GD28112@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.215]
-x-forefront-prvs: 0121F24F22
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(164054003)(199002)(189002)(53806001)(54316002)(56776001)(63696002)(85306002)(79102001)(51856001)(74366001)(76482001)(54356001)(74876001)(69226001)(74706001)(87936001)(80976001)(77982001)(59766001)(66066001)(80022001)(65816001)(33646001)(83322001)(76576001)(74502001)(74662001)(90146001)(76786001)(76796001)(31966008)(85852003)(81342001)(83072002)(92566001)(81686001)(81816001)(56816005)(81542001)(4396001)(49866001)(50986001)(47976001)(87266001)(47736001)(46102001)(95666001)(94946001)(94316002)(47446002)(93516002)(86362001)(93136001)(74316001)(2656002)(95416001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.215;FPR:E472C52E.2F391319.81FCB1B3.4EE5E168.2028F;InfoNoRecordsA:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Feb 2014 02:41:46 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1392059868-8782-1-git-send-email-arend@broadcom.com>
+References: <1392059868-8782-1-git-send-email-arend@broadcom.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 13 Feb 2014 15:41:25 +0800
+X-Google-Sender-Auth: iq6jEr-lp8H0_0GLg6e5qdXRZPU
+Message-ID: <CAGb2v66ib=6NK1OpYct_5Cs6V-89PNHpk69J++e6ph85etF6sw@mail.gmail.com>
+Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Rob Herring <robh+dt@kernel.org>, devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The current internal API for TDM is very poor, I don't think we want
-> > to expose that 1 to 1 to the devicetree. Since this means we'd have
-> > to support that forever. The first thing is that the semantics of
-> > snd_soc_dai_set_tdm_slot() are very unclear. E.g. some drivers use a
-> > zero bit for a active slot, some drivers use a 1 bit for a active
-> 
-> Yes, and if we do end up using masks we need to nail down what's going
-> on in the DT.
+On Tue, Feb 11, 2014 at 3:17 AM, Arend van Spriel <arend@broadcom.com> wrote:
+> The Broadcom bcm43xx sdio devices are fullmac devices that may be
+> integrated in ARM platforms. Currently, the brcmfmac driver for
+> these devices support use of platform data. This patch specifies
+> the bindings that allow this platform data to be expressed in the
+> devicetree.
 >
+> Cc: Chen-Yu Tsai <wens@csie.org>
+> Cc: Tomasz Figa <tomasz.figa@gmail.com>
+> Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
+> Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+> Signed-off-by: Arend van Spriel <arend@broadcom.com>
+> ---
+> This devicetree binding proposal is intended for platforms with
+> Broadcom wireless device in MMC sdio slot. These devices may
+> have their own interrupt and power line. Also the SDIO drive
+> strength is often hardware dependent and expressed in this
+> binding.
 
-Yes, certainly.
+Hi,
 
-> > slot. The second thing is that we are not able to specify which
-> > channel should be mapped to which slot. You can merely specify
-> > from/to which slots the CODEC should read/write and then it is up to
-> > the driver to guess which channel should go to which slot. In my
-> > opinion a binding that allows to specify a explicit mapping of which
-> > channel goes to which slot would be much better.
-> 
-> It'd certainly be good to be able to do that, though having a default
-> would make life easier.
-> 
+I believe the interrupts and drive-strength properties are Ok.
+However, letting the platform driver power up the wifi chip does
+not guarantee proper ordering, does it? I mean, what if the MMC
+bus was probed before the (non-removable) chip was switched on?
 
-@Lars, @Mark,
-
-Yes, then will that means that we can just end up parsing masks from DT
-and the masks will be generated by the driver specified
-dai->driver->ops->of_xlate_tdm_slot_mask(slots, &tx_mask, &rx_mask)
-callback or one default
-snd_soc_of_xlate_tdm_slot_mask(slots, &tx_mask, &rx_mask), and the
-'slots' is the number of the slot parsed from the DT node ?
-
-Or other better ways ?
+Being able to tie that to the mmc controller would be better IMO.
+I think this was discussed in Olof's "mmc: add support for
+power-on sequencing through DT" thread.
 
 
-Thanks,
+Thanks!
+ChenYu
 
---
-Best Regards,
-Xiubo
-
-
-
-
-
-> > Also those are four different settings. In my opinion they should
-> > not be expressed in one property, but rather in four. E.g.
-> > specifying a tx_mask for a rx only device does not make much sense.
-> 
-> That makes sense.
+>
+> Not sure if this should go in staging or not. Feel free to
+> comment on this proposal.
+>
+> Regards,
+> Arend
