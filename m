@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950AbaBMKXA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:23:00 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:62626 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753791AbaBMKW5 (ORCPT
+	id S1753718AbaBMK0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:26:33 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41172 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbaBMK0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:22:57 -0500
-Message-ID: <1392286975.30853.44.camel@x220>
-Subject: Re: [PATCH] Blackfin: bf537: use "CONFIG_SND_SOC_AD193X"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Steven Miao <realmz6@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Feb 2014 11:22:55 +0100
-In-Reply-To: <1365153646.1830.58.camel@x61.thuisdomein>
-References: <1365153646.1830.58.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Feb 2014 10:22:56.0569 (UTC) FILETIME=[8FE1D290:01CF28A5]
-X-RcptDomain: vger.kernel.org
+	Thu, 13 Feb 2014 05:26:31 -0500
+Date: Thu, 13 Feb 2014 10:26:21 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
+Message-ID: <20140213102621.GO28112@sirena.org.uk>
+References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
+ <20140212175018.GJ28112@sirena.org.uk>
+ <20140213082311.GA32508@lee--X1>
+ <CAOMwXhPsQPvPn+kmBXyGq3WqsGhxTR2w1YjTzNbTyrEyxVHWxQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B7kmwdlU7aE/dafw"
+Content-Disposition: inline
+In-Reply-To: <CAOMwXhPsQPvPn+kmBXyGq3WqsGhxTR2w1YjTzNbTyrEyxVHWxQ@mail.gmail.com>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Replaced previous maintainer and list with current maintainer and
-list.]
 
-On Fri, 2013-04-05 at 11:20 +0200, Paul Bolle wrote:
-> Commit 57084ede395bb3c9da7905701d34a3b7d33c9356 ("blackfin: bf537:
-> stamp: update board file for 193x") changed two references to
-> CONFIG_SND_BF5XX_SOC_AD193X (and CONFIG_SND_BF5XX_SOC_AD193X_MODULE).
-> One was changed to CONFIG_SND_SOC_AD193X_SPI, the other to
-> CONFIG_SND_SOC_AD193X_I2C. The commit explanation doesn't elaborate on
-> the reason for these changes nor on the reason to drop module support.
-> 
-> Anyhow, neither of these two new Kconfig macros is valid. It was
-> probably intended to use CONFIG_SND_SOC_AD193X here. So let's use that.
-> And let's also reenable module support by using the IS_ENABLED() macro.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+--B7kmwdlU7aE/dafw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-And this issue is also still present in v3.14-rc2. Jean and Guenter
-replied, but preferred not to get involved with this messy "stamp" file.
-Can someone please actually look at this patch? 
+On Thu, Feb 13, 2014 at 09:14:11AM +0000, Laszlo Papp wrote:
+> On Thu, Feb 13, 2014 at 8:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > Laszlo,
+> >
+> >> > +const struct regmap_config max665x_regmap_config = {
+> >> > +   .reg_bits = 5,
+> >> > +};
 
-> 0) Untested. Please note that I fail to see the point of commit
-> 57084ede395bb3c9da7905701d34a3b7d33c9356, which was added in v3.4, even
-> if I assume it wanted to use CONFIG_SND_SOC_AD193X. Perhaps I'm missing
-> something obvious. Anyhow, review is appreciated.
-> 
-> 1) Added Jean and Guenter because they seem to take in interest in
-> Blackfin's stamp files.
-> 
->  arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-> index e6fdc2a..94a193e 100644
-> --- a/arch/blackfin/mach-bf537/boards/stamp.c
-> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
-> @@ -975,7 +975,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
->  	},
->  #endif
->  
-> -#ifdef CONFIG_SND_SOC_AD193X_SPI
-> +#if IS_ENABLED(CONFIG_SND_SOC_AD193X)
->  	{
->  		.modalias = "ad193x",
->  		.max_speed_hz = 3125000,     /* max spi clock (SCK) speed in HZ */
-> @@ -2176,7 +2176,7 @@ static unsigned long adt7316_i2c_data[2] = {
->  #endif
->  
->  static struct i2c_board_info __initdata bfin_i2c_board_info[] = {
-> -#ifdef CONFIG_SND_SOC_AD193X_I2C
-> +#if IS_ENABLED(CONFIG_SND_SOC_AD193X)
->  	{
->  		I2C_BOARD_INFO("ad1937", 0x04),
->  	},
+> >> This would normally be static too, and I'd *really* expect to see a
+> >> val_bits set here.  I'm a bit surprised this works without one.
 
+> > Mark (privately) mentioned to me that this patch can't possibly work
+> > given the current Regmap configuration.
 
-Paul Bolle
+> Strange because I have tested the change, although not for days and
+> weeks. What exactly cannot possible work?
 
+The fact that it's using 5 bit registers should cause it to be rejected
+when trying to initialise as the regmap code doesn't support 5 bit
+registers, and I'd not expect us to have selected sensible value
+formatting code either.
+
+--B7kmwdlU7aE/dafw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS/J3KAAoJELSic+t+oim9RVwP/RPPvAPEUkk4uEc6UFmyC/xG
+3lIT3mvySvrVTY7ysVEbaqKtKS4wuN4i7Bl3uAAGJx39398p/Kt0K8UwGo64WMJd
+MlHVg146xRSw6pcdwzlnAxNRJpoiz1ehmB5HkTEK6LYPXjkmKkngOYWLd4w1CeVa
+5avFaJFgRurCfyl2QlAFxSwJGm2k7wdNdubFKxEGEe5LQKyR+q+e/kwCmA1wDzTJ
+yzwCXUN8niEQZE2bjnFXhdUTvKcXHE/jHPetU/Uk30sF46ZsH/u5+tuvK+e9N87M
+A2tly7yfKA4aczQoDVARlU14SN0E+Wq09B4+jRY28jTlA2NfqgfYO76+0iuAdr+C
+h4A3gemZcCe0vU9C1JTFfakXQ0++UNgWTZw2OFnPQyWPPVcZ1qvzO4UJRPaFz96u
+R1r1Pu6f5QReN0lzkIZwrQmQcr1flHi8RAFI2qJNP1bslT8+/6J0mdIKTt3djQGW
+oCazTs7cpqED0daKcK9BJVrbY80oqIgc6dtvL/HTz9NZWI9NidWel3dojXxZqBDt
+vduraGoq+IFBGytIJjeUzhhOMgBzPV1KWIfZd36CSc4R6NIqz3pb3ZAEUooBRHqO
+9WBTfJd6EtuGQinbKSjcJpdXPwb9QosBcffIbZmbQlYaYMA/7EeTHwOStb4Iizjf
+is4tZR0/MkVNPKMIo4RX
+=EHZE
+-----END PGP SIGNATURE-----
+
+--B7kmwdlU7aE/dafw--
