@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625AbaBMELw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 23:11:52 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:34386 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaBMELu (ORCPT
+	id S1752738AbaBMEMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 23:12:25 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:53187 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635AbaBMEMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 23:11:50 -0500
+	Wed, 12 Feb 2014 23:12:22 -0500
+From: Patrick Palka <patrick@parcs.ath.cx>
+To: linux-kernel@vger.kernel.org
+Cc: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        joe@perches.com, Patrick Palka <patrick@parcs.ath.cx>
+Subject: [PATCH] ext4: address a benign compiler warning
+Date: Wed, 12 Feb 2014 23:12:04 -0500
+Message-Id: <1392264724-10542-1-git-send-email-patrick@parcs.ath.cx>
+X-Mailer: git-send-email 1.9.0.rc3
+In-Reply-To: <CA+C-WL9ARNvOqeA4n5Abnja+99O4F1VdMDUPjuRCcXiVsMTc7A@mail.gmail.com>
+References: <CA+C-WL9ARNvOqeA4n5Abnja+99O4F1VdMDUPjuRCcXiVsMTc7A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKbGBLgs9t4HPD4duBt=vPaw0WfxLv5qr6pNupHsPTFaV5m+dQ@mail.gmail.com>
-References: <20131012171007.GA17167@gmail.com>
-	<CAKbGBLgs9t4HPD4duBt=vPaw0WfxLv5qr6pNupHsPTFaV5m+dQ@mail.gmail.com>
-Date: Wed, 12 Feb 2014 20:11:49 -0800
-X-Google-Sender-Auth: tyz2X4K_t_iX4I7OPMlpLb8pp_c
-Message-ID: <CA+55aFys_VK+q3LMRzEM-AKU-=fM_tgiDdLm2AO=jVfH7OvrHQ@mail.gmail.com>
-Subject: Re: [GIT PULL] compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Noonan <steven@uplinklabs.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jakub Jelinek <jakub@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 7:09 PM, Steven Noonan <steven@uplinklabs.net> wrote:
->
-> If I change the GCC_VERSION check for the asm_volatile_goto quirk to
-> include 4.8.2, then KVM guests are properly cleaned up.
+When !defined(CONFIG_EXT4_DEBUG), mb_debug() should be defined as a
+no_printk() statement instead of an empty statement in order to suppress
+the following compiler warning:
 
-Ok, I guess that means we should just make the quirk unconditional.
+fs/ext4/mballoc.c: In function ‘ext4_mb_cleanup_pa’:
+fs/ext4/mballoc.c:2659:47: warning: suggest braces around empty body in an ‘if’ statement [-Wempty-body]
+   mb_debug(1, "mballoc: %u PAs left\n", count);
 
-Ingo, do you want to do that or should I?
+Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
+---
+ fs/ext4/mballoc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> So is there some other 'asm goto' bug we haven't yet fully uncovered
-> and reported to GCC upstream?
+diff --git a/fs/ext4/mballoc.h b/fs/ext4/mballoc.h
+index 08481ee..9347328 100644
+--- a/fs/ext4/mballoc.h
++++ b/fs/ext4/mballoc.h
+@@ -48,7 +48,7 @@ extern ushort ext4_mballoc_debug;
+ 		}							\
+ 	} while (0)
+ #else
+-#define mb_debug(n, fmt, a...)
++#define mb_debug(n, fmt, a...)		no_printk(fmt, ## a)
+ #endif
+ 
+ #define EXT4_MB_HISTORY_ALLOC		1	/* allocation */
+-- 
+1.9.0.rc3
 
-Not to my knowledge. But I'm sure Jakub&co would love to have a test-case.
-
-Sadly, gcc has that really annoying habit of making small changes
-create *huge* changes in label numbers etc, and that's definitely the
-case with the extra empty asm - it's basically impossible to compare
-the generated asm with and without the workaround, because all the
-label numbers change.
-
-I have no idea how gcc people debug things like this, when the output
-is so unstable.
-
-Jakub, any suggestions to how Steven might be able to pinpoint where
-the code generation problem lies?
-
-                Linus
