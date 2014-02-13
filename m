@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaBMJOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:14:46 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:54968 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690AbaBMJOe (ORCPT
+	id S1754020AbaBMJRH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:17:07 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:54737 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486AbaBMJOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:14:34 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-d3-52fc8cf2d336
+	Thu, 13 Feb 2014 04:14:45 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-d9-52fc8cf40e36
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
@@ -16,386 +16,121 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Subject: [PATCH v2 09/14] regulator: s2mps11: Add support for S2MPS14 regulators
-Date: Thu, 13 Feb 2014 10:14:02 +0100
-Message-id: <1392282847-25444-10-git-send-email-k.kozlowski@samsung.com>
+        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v2 12/14] Documentation: mfd/regulator: s2mps11: Document the
+ "op_mode" bindings
+Date: Thu, 13 Feb 2014 10:14:05 +0100
+Message-id: <1392282847-25444-13-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
 References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4Zd1PPX+CDBZP5LXYOGM9q8XUh0/Y
-	LF6/MLQ42/SG3eL+16OMFt+udDBZXN41h81ixvl9TBZrj9xltzjdzWpxccUXJgduj52z7rJ7
-	bFrVyeZx59oeNo95JwM9+rasYvT4vEkugC2KyyYlNSezLLVI3y6BK+PYDs+CC0kVq/9/YW9g
-	PBTUxcjJISFgIrG29QkrhC0mceHeerYuRi4OIYGljBJHr81nhHD6mCQ2LX7LDFLFJmAssXn5
-	ErAqEYHNjBKLv19lBXGYBXqZJFas2MnUxcjBISwQIPH/GB9IA4uAqsS/VefZQWxeAQ+J+UcP
-	soKUSAgoSMyZZAMS5gQK//vxG2y+kIC7RM/iWewTGHkXMDKsYhRNLU0uKE5KzzXSK07MLS7N
-	S9dLzs/dxAgJwK87GJceszrEKMDBqMTD+2Dx7yAh1sSy4srcQ4wSHMxKIrwyEn+ChHhTEiur
-	Uovy44tKc1KLDzEycXBKNTDmal6s0H32ao2zgt9h182/1/7k1Ls7dfue9qMtCiv4k7RZz/xQ
-	u9NhN7NKKsdQ48EE84vblygXT75V86At5njT7u1md7Ka+D0zjRnzlzIenlAZctba2CJNaff+
-	W2V8q1fqVb55sF/r92qTMja/YjbzvztV782Ivn1BpiVtT94+0VVFMmry0ziUWIozEg21mIuK
-	EwHn1LlhHgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t/xy7pfev4EGfz5JmexccZ6VoupD5+w
+	WVz/8pzVYv6Rc6wW/W8Wslqce7WS0eL1C0OLs01v2C3ufz3KaPHtSgeTxeVdc9gsZpzfx2Sx
+	9shddoul1y8yWUyYvpbFonXvEXaL092sFhdXfGGyWD/jNYuDsMeaeWsYPS739TJ57Jx1l91j
+	5fIvbB6bVnWyedy5tofNY97JQI++LasYPT5vkgvgjOKySUnNySxLLdK3S+DK2HO7m6ngrVjF
+	7PNdjA2M+4W6GDk5JARMJK48XcoMYYtJXLi3nq2LkYtDSGApo8SUe0egnD4miUmN01hAqtgE
+	jCU2L18ClhAR2Mwosfj7VVYQh1lgE4vE3FV32UCqhAWSJM5v3A1kc3CwCKhK3F2ZDhLmFfCQ
+	2Lt6LztIWEJAQWLOJBuQMCdQ+N+P32BXCAm4S/QsnsU+gZF3ASPDKkbR1NLkguKk9FwjveLE
+	3OLSvHS95PzcTYyQgP+6g3HpMatDjAIcjEo8vA8W/w4SYk0sK67MPcQowcGsJMIrI/EnSIg3
+	JbGyKrUoP76oNCe1+BAjEwenVAPj5ODLt4zrD8clzPknPNv2arH0+z2bJ//nlFrL5LfPSaa1
+	6/PfTd3LnXn84q+wKoad/2MbKfeu6Hv6iacm0+wFI6b6X8tdEpNkrfxjzu+fa/YreGlq3tzz
+	4cPUFftf7eFNzV6/fc+k17G9h36smr6wazXneq6V/qF/3evcbabODjhUlXX6s6BrhRJLcUai
+	oRZzUXEiAFl71g1WAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for S2MPS14 PMIC regulators to s2mps11 driver. The S2MPS14
-has fewer BUCK-s and LDO-s than S2MPS11. It also does not support
-controlling the BUCK ramp delay.
+Document the "op_mode" properties parsed from DTS by s2mps11 driver.
+
+S2MPS11/S2MPS14 regulators support different modes of operation:
+ - Always off;
+ - On/Off controlled by pin/GPIO (PWREN/LDOEN/EMMCEN);
+ - Always on;
+
+This is very similar to S5M8767 regulator driver which also supports
+opmodes (although S5M8767 have also low-power mode).
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Cc: Mark Brown <broonie@kernel.org>
 Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: devicetree@vger.kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
 ---
- drivers/regulator/s2mps11.c |  252 ++++++++++++++++++++++++++++++++-----------
- 1 file changed, 191 insertions(+), 61 deletions(-)
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   46 +++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index 246b25d58c2b..f56ac6f776ae 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -1,13 +1,18 @@
- /*
-  * s2mps11.c
-  *
-- * Copyright (c) 2012 Samsung Electronics Co., Ltd
-+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd
-  *              http://www.samsung.com
-  *
-- *  This program is free software; you can redistribute  it and/or modify it
-- *  under  the terms of  the GNU General  Public License as published by the
-- *  Free Software Foundation;  either version 2 of the  License, or (at your
-- *  option) any later version.
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-  *
-  */
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index f69bec294f02..ffad6bfe2ebf 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -54,6 +54,15 @@ BUCK[3, 4], and BUCK[7, 8, 10]
+ The regulator constraints inside the regulator nodes use the standard regulator
+ bindings which are documented elsewhere.
  
-@@ -24,6 +29,7 @@
- #include <linux/regulator/of_regulator.h>
- #include <linux/mfd/samsung/core.h>
- #include <linux/mfd/samsung/s2mps11.h>
-+#include <linux/mfd/samsung/s2mps14.h>
- 
- struct s2mps11_info {
- 	struct regulator_dev **rdev;
-@@ -235,7 +241,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.set_ramp_delay		= s2mps11_set_ramp_delay,
- };
- 
--#define regulator_desc_ldo1(num)	{		\
-+#define regulator_desc_s2mps11_ldo1(num)	{		\
- 	.name		= "LDO"#num,			\
- 	.id		= S2MPS11_LDO##num,		\
- 	.ops		= &s2mps11_ldo_ops,		\
-@@ -249,7 +255,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_reg	= S2MPS11_REG_L1CTRL + num - 1,	\
- 	.enable_mask	= S2MPS11_ENABLE_MASK		\
- }
--#define regulator_desc_ldo2(num)	{		\
-+#define regulator_desc_s2mps11_ldo2(num) {		\
- 	.name		= "LDO"#num,			\
- 	.id		= S2MPS11_LDO##num,		\
- 	.ops		= &s2mps11_ldo_ops,		\
-@@ -264,7 +270,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK		\
- }
- 
--#define regulator_desc_buck1_4(num)	{			\
-+#define regulator_desc_s2mps11_buck1_4(num) {			\
- 	.name		= "BUCK"#num,				\
- 	.id		= S2MPS11_BUCK##num,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -280,7 +286,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
- 
--#define regulator_desc_buck5	{				\
-+#define regulator_desc_s2mps11_buck5 {				\
- 	.name		= "BUCK5",				\
- 	.id		= S2MPS11_BUCK5,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -296,7 +302,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
- 
--#define regulator_desc_buck6_8(num)	{			\
-+#define regulator_desc_s2mps11_buck6_8(num) {			\
- 	.name		= "BUCK"#num,				\
- 	.id		= S2MPS11_BUCK##num,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -312,7 +318,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
- 
--#define regulator_desc_buck9	{				\
-+#define regulator_desc_s2mps11_buck9 {				\
- 	.name		= "BUCK9",				\
- 	.id		= S2MPS11_BUCK9,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -328,7 +334,7 @@ static struct regulator_ops s2mps11_buck_ops = {
- 	.enable_mask	= S2MPS11_ENABLE_MASK			\
- }
- 
--#define regulator_desc_buck10	{				\
-+#define regulator_desc_s2mps11_buck10 {				\
- 	.name		= "BUCK10",				\
- 	.id		= S2MPS11_BUCK10,			\
- 	.ops		= &s2mps11_buck_ops,			\
-@@ -345,54 +351,173 @@ static struct regulator_ops s2mps11_buck_ops = {
- }
- 
- static const struct regulator_desc s2mps11_regulators[] __initconst = {
--	regulator_desc_ldo2(1),
--	regulator_desc_ldo1(2),
--	regulator_desc_ldo1(3),
--	regulator_desc_ldo1(4),
--	regulator_desc_ldo1(5),
--	regulator_desc_ldo2(6),
--	regulator_desc_ldo1(7),
--	regulator_desc_ldo1(8),
--	regulator_desc_ldo1(9),
--	regulator_desc_ldo1(10),
--	regulator_desc_ldo2(11),
--	regulator_desc_ldo1(12),
--	regulator_desc_ldo1(13),
--	regulator_desc_ldo1(14),
--	regulator_desc_ldo1(15),
--	regulator_desc_ldo1(16),
--	regulator_desc_ldo1(17),
--	regulator_desc_ldo1(18),
--	regulator_desc_ldo1(19),
--	regulator_desc_ldo1(20),
--	regulator_desc_ldo1(21),
--	regulator_desc_ldo2(22),
--	regulator_desc_ldo2(23),
--	regulator_desc_ldo1(24),
--	regulator_desc_ldo1(25),
--	regulator_desc_ldo1(26),
--	regulator_desc_ldo2(27),
--	regulator_desc_ldo1(28),
--	regulator_desc_ldo1(29),
--	regulator_desc_ldo1(30),
--	regulator_desc_ldo1(31),
--	regulator_desc_ldo1(32),
--	regulator_desc_ldo1(33),
--	regulator_desc_ldo1(34),
--	regulator_desc_ldo1(35),
--	regulator_desc_ldo1(36),
--	regulator_desc_ldo1(37),
--	regulator_desc_ldo1(38),
--	regulator_desc_buck1_4(1),
--	regulator_desc_buck1_4(2),
--	regulator_desc_buck1_4(3),
--	regulator_desc_buck1_4(4),
--	regulator_desc_buck5,
--	regulator_desc_buck6_8(6),
--	regulator_desc_buck6_8(7),
--	regulator_desc_buck6_8(8),
--	regulator_desc_buck9,
--	regulator_desc_buck10,
-+	regulator_desc_s2mps11_ldo2(1),
-+	regulator_desc_s2mps11_ldo1(2),
-+	regulator_desc_s2mps11_ldo1(3),
-+	regulator_desc_s2mps11_ldo1(4),
-+	regulator_desc_s2mps11_ldo1(5),
-+	regulator_desc_s2mps11_ldo2(6),
-+	regulator_desc_s2mps11_ldo1(7),
-+	regulator_desc_s2mps11_ldo1(8),
-+	regulator_desc_s2mps11_ldo1(9),
-+	regulator_desc_s2mps11_ldo1(10),
-+	regulator_desc_s2mps11_ldo2(11),
-+	regulator_desc_s2mps11_ldo1(12),
-+	regulator_desc_s2mps11_ldo1(13),
-+	regulator_desc_s2mps11_ldo1(14),
-+	regulator_desc_s2mps11_ldo1(15),
-+	regulator_desc_s2mps11_ldo1(16),
-+	regulator_desc_s2mps11_ldo1(17),
-+	regulator_desc_s2mps11_ldo1(18),
-+	regulator_desc_s2mps11_ldo1(19),
-+	regulator_desc_s2mps11_ldo1(20),
-+	regulator_desc_s2mps11_ldo1(21),
-+	regulator_desc_s2mps11_ldo2(22),
-+	regulator_desc_s2mps11_ldo2(23),
-+	regulator_desc_s2mps11_ldo1(24),
-+	regulator_desc_s2mps11_ldo1(25),
-+	regulator_desc_s2mps11_ldo1(26),
-+	regulator_desc_s2mps11_ldo2(27),
-+	regulator_desc_s2mps11_ldo1(28),
-+	regulator_desc_s2mps11_ldo1(29),
-+	regulator_desc_s2mps11_ldo1(30),
-+	regulator_desc_s2mps11_ldo1(31),
-+	regulator_desc_s2mps11_ldo1(32),
-+	regulator_desc_s2mps11_ldo1(33),
-+	regulator_desc_s2mps11_ldo1(34),
-+	regulator_desc_s2mps11_ldo1(35),
-+	regulator_desc_s2mps11_ldo1(36),
-+	regulator_desc_s2mps11_ldo1(37),
-+	regulator_desc_s2mps11_ldo1(38),
-+	regulator_desc_s2mps11_buck1_4(1),
-+	regulator_desc_s2mps11_buck1_4(2),
-+	regulator_desc_s2mps11_buck1_4(3),
-+	regulator_desc_s2mps11_buck1_4(4),
-+	regulator_desc_s2mps11_buck5,
-+	regulator_desc_s2mps11_buck6_8(6),
-+	regulator_desc_s2mps11_buck6_8(7),
-+	regulator_desc_s2mps11_buck6_8(8),
-+	regulator_desc_s2mps11_buck9,
-+	regulator_desc_s2mps11_buck10,
-+};
++On S2MPS14 chipset the driver additionally supports "op_mode" properties for
++each regulator.
++ - op_mode: describes the different operating modes of the regulators with
++	power mode change in SOC. The different possible values are,
++		0 - always off mode
++		1 - on in normal mode
++		3 - suspend mode
++		(NOTE: value of 2 is reserved)
 +
-+static struct regulator_ops s2mps14_reg_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+};
+ The following are the names of the regulators that the s2mps11 pmic block
+ supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
+ as per the datasheet of s2mps11.
+@@ -112,3 +121,40 @@ Example:
+ 			};
+ 		};
+ 	};
 +
-+#define regulator_desc_s2mps14_ldo1(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPS14_LDO##num,		\
-+	.ops		= &s2mps14_reg_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
-+	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
-+	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mps14_ldo2(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPS14_LDO##num,		\
-+	.ops		= &s2mps14_reg_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPS14_LDO_MIN_1800MV,	\
-+	.uV_step	= S2MPS14_LDO_STEP_25MV,	\
-+	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mps14_ldo3(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPS14_LDO##num,		\
-+	.ops		= &s2mps14_reg_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPS14_LDO_MIN_800MV,	\
-+	.uV_step	= S2MPS14_LDO_STEP_12_5MV,	\
-+	.n_voltages	= S2MPS14_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.vsel_mask	= S2MPS14_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPS14_REG_L1CTRL + num - 1,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mps14_buck1235(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPS14_BUCK##num,			\
-+	.ops		= &s2mps14_reg_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPS14_BUCK1235_MIN_600MV,		\
-+	.uV_step	= S2MPS14_BUCK1235_STEP_6_25MV,		\
-+	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
-+	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
-+	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK			\
-+}
-+#define regulator_desc_s2mps14_buck4(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPS14_BUCK##num,			\
-+	.ops		= &s2mps14_reg_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPS14_BUCK4_MIN_1400MV,		\
-+	.uV_step	= S2MPS14_BUCK4_STEP_12_5MV,		\
-+	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPS14_BUCK4_START_SEL,		\
-+	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
-+	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPS14_REG_B1CTRL1 + (num - 1) * 2,	\
-+	.enable_mask	= S2MPS14_ENABLE_MASK			\
-+}
++	s2mps14_pmic@66 {
++		compatible = "samsung,s2mps14-pmic";
++		reg = <0x66>;
 +
-+static const struct regulator_desc s2mps14_regulators[] __initconst = {
-+	regulator_desc_s2mps14_ldo3(1),
-+	regulator_desc_s2mps14_ldo3(2),
-+	regulator_desc_s2mps14_ldo1(3),
-+	regulator_desc_s2mps14_ldo1(4),
-+	regulator_desc_s2mps14_ldo3(5),
-+	regulator_desc_s2mps14_ldo3(6),
-+	regulator_desc_s2mps14_ldo1(7),
-+	regulator_desc_s2mps14_ldo2(8),
-+	regulator_desc_s2mps14_ldo3(9),
-+	regulator_desc_s2mps14_ldo3(10),
-+	regulator_desc_s2mps14_ldo1(11),
-+	regulator_desc_s2mps14_ldo2(12),
-+	regulator_desc_s2mps14_ldo2(13),
-+	regulator_desc_s2mps14_ldo2(14),
-+	regulator_desc_s2mps14_ldo2(15),
-+	regulator_desc_s2mps14_ldo2(16),
-+	regulator_desc_s2mps14_ldo2(17),
-+	regulator_desc_s2mps14_ldo2(18),
-+	regulator_desc_s2mps14_ldo1(19),
-+	regulator_desc_s2mps14_ldo1(20),
-+	regulator_desc_s2mps14_ldo1(21),
-+	regulator_desc_s2mps14_ldo3(22),
-+	regulator_desc_s2mps14_ldo1(23),
-+	regulator_desc_s2mps14_ldo2(24),
-+	regulator_desc_s2mps14_ldo2(25),
-+	regulator_desc_s2mps14_buck1235(1),
-+	regulator_desc_s2mps14_buck1235(2),
-+	regulator_desc_s2mps14_buck1235(3),
-+	regulator_desc_s2mps14_buck4(4),
-+	regulator_desc_s2mps14_buck1235(5),
- };
- 
- /*
-@@ -415,6 +540,10 @@ s2mps11_pmic_init_regulators_desc(struct platform_device *pdev,
- 		rdev_num = ARRAY_SIZE(s2mps11_regulators);
- 		regulators_init = s2mps11_regulators;
- 		break;
-+	case S2MPS14X:
-+		rdev_num = ARRAY_SIZE(s2mps14_regulators);
-+		regulators_init = s2mps14_regulators;
-+		break;
- 	default:
- 		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
- 		return -EINVAL;
-@@ -516,6 +645,7 @@ common_reg:
- 
- static const struct platform_device_id s2mps11_pmic_id[] = {
- 	{ "s2mps11-pmic", S2MPS11X},
-+	{ "s2mps14-pmic", S2MPS14X},
- 	{ },
- };
- MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
-@@ -543,5 +673,5 @@ module_exit(s2mps11_pmic_exit);
- 
- /* Module information */
- MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
--MODULE_DESCRIPTION("SAMSUNG S2MPS11 Regulator Driver");
-+MODULE_DESCRIPTION("SAMSUNG S2MPS11/S2MPS14 Regulator Driver");
- MODULE_LICENSE("GPL");
++		s2m_osc: clocks {
++			compatible = "samsung,s2mps14-clk";
++			#clock-cells = 1;
++			clock-output-names = "xx", "", "zz";
++		};
++
++		regulators {
++			ldo1_reg: LDO1 {
++				regulator-name = "VAP_ALIVE_1.0V";
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <1000000>;
++				regulator-always-on;
++				op_mode = <1>; /* Normal Mode */
++			};
++
++			ldo2_reg: LDO2 {
++				regulator-name = "VAP_M1_1.2V";
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <1200000>;
++				regulator-always-on;
++				op_mode = <1>; /* Normal Mode */
++			};
++
++			buck1_reg: BUCK1 {
++				regulator-name = "VAP_MIF_1.0V";
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <1000000>;
++				regulator-always-on;
++				op_mode = <3>; /* Standby Mode */
++			};
++		};
++	};
 -- 
 1.7.9.5
 
