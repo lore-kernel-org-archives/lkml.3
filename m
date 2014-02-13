@@ -1,171 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaBMUtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:49:17 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16147 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751277AbaBMUtO (ORCPT
+	id S1751987AbaBMUtk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:49:40 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55476 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917AbaBMUtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:49:14 -0500
-Date: Thu, 13 Feb 2014 15:45:07 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
-Message-ID: <20140213154507.4040fb06@gandalf.local.home>
-In-Reply-To: <2127052721.24380.1392306090965.JavaMail.zimbra@efficios.com>
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
-	<20140211072738.GA24232@gmail.com>
-	<20140211234534.6bc34e57@gandalf.local.home>
-	<1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
-	<20140213102817.4bfd5eac@gandalf.local.home>
-	<2127052721.24380.1392306090965.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 13 Feb 2014 15:49:39 -0500
+Date: Thu, 13 Feb 2014 21:16:18 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] sched: Add a new lockless wake-from-idle implementation
+Message-ID: <20140213201618.GD14089@laptop.programming.kicks-ass.net>
+References: <20140212201709.GB6835@laptop.programming.kicks-ass.net>
+ <218b548b69479baa005af8a7b04a3abbea8ed6fa.1392252790.git.luto@amacapital.net>
+ <20140213145016.GA15586@twins.programming.kicks-ass.net>
+ <CALCETrWpDxt1xhBx=CWq-fwSBoCpbC_stoouY2mPX8u4u8XNhQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWpDxt1xhBx=CWq-fwSBoCpbC_stoouY2mPX8u4u8XNhQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014 15:41:30 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+On Thu, Feb 13, 2014 at 09:07:10AM -0800, Andy Lutomirski wrote:
+> > I also don't really like how the polling state is an atomic; its a cpu
+> > local property.
+> 
+> Your patch also makes polling state be an atomic (albeit one that
+> isn't changed remotely).
 
+Yah, sorry for that, changed the email (and code about) a number of
+times before posting :/
 
-> Yes, exactly, presuming that by "supporting" you mean CONFIG_MODULE_SIG=y.
-> Loading an unsigned module then taints the kernel, and taints the module
-> with TAINT_FORCED_MODULE even though "modprobe --force" was never used.
+> On the subject of major surgery, though: there are very few places in
+> the kernel where TIF_NEED_RESCHED gets set.  With something like my
+> patch applied, I think that there is no code at all that sets any
+> other task's TIF_NEED_RESCHED.  That suggests that all
+> set_tsk_need_resched callers could just call into the scheduler
+> directly. 
 
-OK, this IS a major bug and needs to be fixed. This explains a couple
-of reports I received about tracepoints not working, and I never
-figured out why. Basically, they even did this:
+One of the main callers would be the timer tick for local preemption;
+that's from interrupt context, can't call schedule() there, really needs
+to be the interrupt return path.
 
+> If so, the change could probably delete a whole lot of
+> assembly code, and every kernel exit would get faster.
 
-	trace_printk("before tracepoint\n");
-	trace_some_trace_point();
-	trace_printk("after tracepoint\n");
+We already need to load that word for all kinds of other things; like
+delivering signals, so testing the one bit in the return path is
+basically free.
 
-Enabled the tracepoint (it shows up as enabled and working in the
-tools, but not the trace), but in the trace they would get:
+Anyway; after all this mucking about I finally remembered Venki once
+attempted something similar:
 
-	before tracepoint
-	after tracepoint
+  https://lkml.org/lkml/2012/2/6/357
 
-and never get the actual tracepoint. But as they were debugging
-something else, it was just thought that this was their bug. But it
-baffled me to why that tracepoint wasn't working even though nothing in
-the dmesg had any errors about tracepoints.
+How about something like this?
 
-Well, this now explains it. If you compile a kernel with the following
-options:
+---
+ arch/x86/include/asm/mwait.h | 33 ++++++++++++++++--------
+ arch/x86/kernel/process.c    |  2 ++
+ arch/x86/kernel/smp.c        | 61 ++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 83 insertions(+), 13 deletions(-)
 
-CONFIG_MODULE_SIG=y
-# CONFIG_MODULE_SIG_FORCE is not set
-# CONFIG_MODULE_SIG_ALL is not set
-
-You now just disabled (silently) all tracepoints in modules. WITH NO
-FREAKING ERROR MESSAGE!!!
-
-The tracepoints will show up in /sys/kernel/debug/tracing/events, they
-will show up in perf list, you can enable them in either perf or the
-debugfs, but they will never actually be executed. You will just get
-silence even though everything appeared to be working just fine.
-
-I tested this out. I was not able to get any tracepoints in modules
-working with the above config options.
-
-There's two bugs here. One, the lack of MODULE_SIG_ALL, will
-make all modules non signed during the build process. That means that
-all modules when loaded will be tainted as FORCED. As Mathieu stated,
-you do not need the --force flag here, it just needs to see that the
-kernel supports signatures but the module is not signed. In this case,
-it just calls add_taint_module(), tainting the module with
-FORCED_MODULE. You get a message like this:
-
- sunrpc: module verification failed: signature and/or required key missing - tainting kernel
-
-
-Now when this module adds its tracepoint, since it is marked with a
-FORCE_MODULE taint flag, the tracepoint code just ignores it and does
-not do any processing at all.
-
-Worse yet, the tracepoint code never gives any feedback if a tracepoint
-was enabled or not. That is, if a tracepoint was never initialized when
-the module was loaded, the tracepoint will still report success at
-time of enabling, that it was registered (and tracing) even though it is
-not.
-
-At the end of this email, I added a patch that fixes that. But I have to
-concur that Mathieu did find a bug. There is no reason to disable
-tracepoints in modules if someone simply has the above configs enabled
-(and disabled)!
-
-Below is the patch that warns if the tracepoint is not enabled for
-whatever reason.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 29f2654..b85f68f 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -62,6 +62,7 @@ struct tracepoint_entry {
- 	struct hlist_node hlist;
- 	struct tracepoint_func *funcs;
- 	int refcount;	/* Number of times armed. 0 if disarmed. */
-+	int enabled;	/* Tracepoint enabled */
- 	char name[0];
- };
+diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
+index 1da25a5f96f9..cb7bb8bb6617 100644
+--- a/arch/x86/include/asm/mwait.h
++++ b/arch/x86/include/asm/mwait.h
+@@ -1,6 +1,7 @@
+ #ifndef _ASM_X86_MWAIT_H
+ #define _ASM_X86_MWAIT_H
  
-@@ -237,6 +238,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
- 	memcpy(&e->name[0], name, name_len);
- 	e->funcs = NULL;
- 	e->refcount = 0;
-+	e->enabled = 0;
- 	hlist_add_head(&e->hlist, head);
- 	return e;
- }
-@@ -316,6 +318,7 @@ static void tracepoint_update_probe_range(struct tracepoint * const *begin,
- 		if (mark_entry) {
- 			set_tracepoint(&mark_entry, *iter,
- 					!!mark_entry->refcount);
-+			mark_entry->enabled = !!mark_entry->refcount;
- 		} else {
- 			disable_tracepoint(*iter);
- 		}
-@@ -380,6 +383,8 @@ tracepoint_add_probe(const char *name, void *probe, void *data)
- int tracepoint_probe_register(const char *name, void *probe, void *data)
++#include <linux/percpu.h>
+ #include <linux/sched.h>
+ 
+ #define MWAIT_SUBSTATE_MASK		0xf
+@@ -15,6 +16,14 @@
+ 
+ #define MWAIT_ECX_INTERRUPT_BREAK	0x1
+ 
++#define MWAIT_IPI_ENABLED		0x01
++#define MWAIT_IPI_RESCHED		0x02
++#define MWAIT_IPI_SINGLE		0x04
++
++extern void mwait_intercept_handler(void);
++
++DECLARE_PER_CPU_ALIGNED(unsigned int, mwait_ipi);
++
+ static inline void __monitor(const void *eax, unsigned long ecx,
+ 			     unsigned long edx)
  {
- 	struct tracepoint_func *old;
-+	struct tracepoint_entry *entry;
-+	int ret = 0;
- 
- 	mutex_lock(&tracepoints_mutex);
- 	old = tracepoint_add_probe(name, probe, data);
-@@ -388,9 +393,15 @@ int tracepoint_probe_register(const char *name, void *probe, void *data)
- 		return PTR_ERR(old);
+@@ -42,18 +51,20 @@ static inline void __mwait(unsigned long eax, unsigned long ecx)
+  */
+ static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
+ {
+-	if (!current_set_polling_and_test()) {
+-		if (static_cpu_has(X86_FEATURE_CLFLUSH_MONITOR)) {
+-			mb();
+-			clflush((void *)&current_thread_info()->flags);
+-			mb();
+-		}
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		if (!need_resched())
+-			__mwait(eax, ecx);
++	unsigned int *ptr = this_cpu_ptr(&mwait_ipi);
++	unsigned int old = xchg(ptr, MWAIT_IPI_ENABLED);
++
++	WARN_ON_ONCE(old);
++
++	if (static_cpu_has(X86_FEATURE_CLFLUSH_MONITOR)) {
++		mb();
++		clflush((void *)ptr);
++		mb();
  	}
- 	tracepoint_update_probes();		/* may update entry */
-+	entry = get_tracepoint(name);
-+	/* Make sure the entry was enabled */
-+	if (!entry || !entry->enabled) {
-+		tracepoint_entry_remove_probe(entry, probe, data);
-+		ret = -ENODEV;
-+	}
- 	mutex_unlock(&tracepoints_mutex);
- 	release_probes(old);
--	return 0;
-+	return ret;
+-	current_clr_polling();
++
++	__monitor((void *)ptr, 0, 0);
++	if (!(*ptr & ~MWAIT_IPI_ENABLED))
++		__mwait(eax, ecx);
  }
- EXPORT_SYMBOL_GPL(tracepoint_probe_register);
  
+ #endif /* _ASM_X86_MWAIT_H */
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 4505e2a950d8..00afb2b676b8 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -28,6 +28,7 @@
+ #include <asm/fpu-internal.h>
+ #include <asm/debugreg.h>
+ #include <asm/nmi.h>
++#include <asm/mwait.h>
+ 
+ /*
+  * per-CPU TSS segments. Threads are completely 'soft' on Linux,
+@@ -286,6 +287,7 @@ void arch_cpu_idle_enter(void)
+ void arch_cpu_idle_exit(void)
+ {
+ 	__exit_idle();
++	mwait_intercept_handler();
+ }
+ 
+ void arch_cpu_idle_dead(void)
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 7c3a5a61f2e4..4b078a8d6b83 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -23,6 +23,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <linux/sched.h>
++#include <linux/smp.h>
+ 
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -31,6 +33,8 @@
+ #include <asm/apic.h>
+ #include <asm/nmi.h>
+ #include <asm/trace/irq_vectors.h>
++#include <asm/mwait.h>
++
+ /*
+  *	Some notes on x86 processor bugs affecting SMP operation:
+  *
+@@ -113,6 +117,56 @@
+ static atomic_t stopping_cpu = ATOMIC_INIT(-1);
+ static bool smp_no_nmi_ipi = false;
+ 
++DEFINE_PER_CPU_ALIGNED(unsigned int, mwait_ipi);
++EXPORT_PER_CPU_SYMBOL_GPL(mwait_ipi);
++
++static bool mwait_intercept(int cpu, int ipi)
++{
++	u32 *ptr = &per_cpu(mwait_ipi, cpu);
++	u32 val, new, old;
++
++	if (!static_cpu_has(X86_FEATURE_MWAIT))
++		return false;
++
++	val = *ptr;
++	if (!(val & MWAIT_IPI_ENABLED))
++		return false;
++
++	for (;;) {
++		new = val | ipi;
++		old = cmpxchg(ptr, val, new);
++		if (old == val)
++			break;
++		val = old;
++	}
++
++	if (!(old & MWAIT_IPI_ENABLED))
++		return false;
++
++	return true;
++}
++
++void mwait_intercept_handler(void)
++{
++	unsigned int val, *ptr;
++
++	if (!static_cpu_has(X86_FEATURE_MWAIT))
++		return;
++
++	ptr = this_cpu_ptr(&mwait_ipi);
++	val = xchg(ptr, 0);
++
++	if (!(val & ~MWAIT_IPI_ENABLED))
++		return;
++
++	local_irq_disable();
++	if (val & MWAIT_IPI_RESCHED)
++		scheduler_ipi();
++	if (val & MWAIT_IPI_SINGLE)
++		generic_smp_call_function_single_interrupt();
++	local_irq_enable();
++}
++
+ /*
+  * this function sends a 'reschedule' IPI to another CPU.
+  * it goes straight through and wastes no time serializing
+@@ -124,12 +178,15 @@ static void native_smp_send_reschedule(int cpu)
+ 		WARN_ON(1);
+ 		return;
+ 	}
+-	apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
++
++	if (!mwait_intercept(cpu, MWAIT_IPI_RESCHED))
++		apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
+ }
+ 
+ void native_send_call_func_single_ipi(int cpu)
+ {
+-	apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
++	if (!mwait_intercept(cpu, MWAIT_IPI_SINGLE))
++		apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
+ }
+ 
+ void native_send_call_func_ipi(const struct cpumask *mask)
