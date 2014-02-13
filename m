@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355AbaBMAYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 19:24:05 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:36244 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaBMAYC (ORCPT
+	id S1752628AbaBMAZo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 19:25:44 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:33388 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaBMAZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 19:24:02 -0500
-Date: Wed, 12 Feb 2014 16:23:55 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140213002355.GI4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140207042051.GL4250@linux.vnet.ibm.com>
- <20140207074405.GM5002@laptop.programming.kicks-ass.net>
- <20140207165028.GO4250@linux.vnet.ibm.com>
- <20140207165548.GR5976@mudshark.cambridge.arm.com>
- <20140207180216.GP4250@linux.vnet.ibm.com>
- <1391992071.18779.99.camel@triegel.csb>
- <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
- <1392183564.18779.2187.camel@triegel.csb>
- <20140212180739.GB4250@linux.vnet.ibm.com>
- <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	Wed, 12 Feb 2014 19:25:42 -0500
+Date: Wed, 12 Feb 2014 19:25:38 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Filipe Brandenburger <filbranden@google.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Markus Blank-Burian <burian@muenster.de>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/2] memcg: reparent charges of children before
+ processing parent
+Message-ID: <20140213002538.GB2916@htj.dyndns.org>
+References: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+In-Reply-To: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021300-0928-0000-0000-0000068C8469
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 12:22:53PM -0800, Linus Torvalds wrote:
-> On Wed, Feb 12, 2014 at 10:07 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > Us Linux-kernel hackers will often need to use volatile semantics in
-> > combination with C11 atomics in most cases.  The C11 atomics do cover
-> > some of the reasons we currently use ACCESS_ONCE(), but not all of them --
-> > in particular, it allows load/store merging.
+Hello,
+
+On Wed, Feb 12, 2014 at 03:03:31PM -0800, Hugh Dickins wrote:
+> From: Filipe Brandenburger <filbranden@google.com>
 > 
-> I really disagree with the "will need to use volatile".
+> Sometimes the cleanup after memcg hierarchy testing gets stuck in
+> mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
 > 
-> We should never need to use volatile (outside of whatever MMIO we do
-> using C) if C11 defines atomics correctly.
+> There may turn out to be several causes, but a major cause is this: the
+> workitem to offline parent can get run before workitem to offline child;
+> parent's mem_cgroup_reparent_charges() circles around waiting for the
+> child's pages to be reparented to its lrus, but it's holding cgroup_mutex
+> which prevents the child from reaching its mem_cgroup_reparent_charges().
 > 
-> Allowing load/store merging is *fine*. All sane CPU's do that anyway -
-> it's called a cache - and there's no actual reason to think that
-> "ACCESS_ONCE()" has to mean our current "volatile".
+> Further testing showed that an ordered workqueue for cgroup_destroy_wq
+> is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
+> stage on the way can mess up the order before reaching the workqueue.
 > 
-> Now, it's possible that the C standards simply get atomics _wrong_, so
-> that they create visible semantics that are different from what a CPU
-> cache already does, but that's a plain bug in the standard if so.
+> Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
+> all its children (and grandchildren, in the correct order) to have their
+> charges reparented first.
 > 
-> But merging loads and stores is fine. And I *guarantee* it is fine,
-> exactly because CPU's already do it, so claiming that the compiler
-> couldn't do it is just insanity.
+> Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
+> Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: stable@vger.kernel.org # v3.10+ (but will need extra care)
+> ---
+> Or, you may prefer my alternative cgroup.c approach in 2/2:
+> there's no need for both.  Please note that neither of these patches
+> attempts to handle the unlikely case of racy charges made to child
+> after its offline, but parent's offline coming before child's free:
+> mem_cgroup_css_free()'s backstop call to mem_cgroup_reparent_charges()
+> cannot help in that case, with or without these patches.  Fixing that
+> would have to be a separate effort - Michal's?
 
-Agreed, both CPUs and compilers can merge loads and stores.  But CPUs
-normally get their stores pushed through the store buffer in reasonable
-time, and CPUs also use things like invalidations to ensure that a
-store is seen in reasonable time by readers.  Compilers don't always
-have these two properties, so we do need to be more careful of load
-and store merging by compilers.
+I've changed my mind several times now but I think it'd be a better
+idea to stick to this patch, at least for now.  This one is easier for
+-stable backport and it looks like the requirements for ordering
+->css_offline() might go away depending on how reparenting changes
+work out.
 
-> Now, there are things that are *not* fine, like speculative stores
-> that could be visible to other threads. Those are *bugs* (either in
-> the compiler or in the standard), and anybody who claims otherwise is
-> not worth discussing with.
+ Reviewed-by: Tejun Heo <tj@kernel.org>
 
-And as near as I can tell, volatile semantics are required in C11 to
-avoid speculative stores.  I might be wrong about this, and hope that
-I am wrong.  But I am currently not seeing it in the current standard.
-(Though I expect that most compilers would avoid speculating stores,
-especially in the near term.
+Michal, Johannes, can you guys please ack this one if you guys agree?
 
-> But I really really disagree with the "we might have to use
-> 'volatile'". Because if we *ever* have to use 'volatile' with the
-> standard C atomic types, then we're just better off ignoring the
-> atomic types entirely, because they are obviously broken shit - and
-> we're better off doing it ourselves the way we have forever.
-> 
-> Seriously. This is not even hyperbole. It really is as simple as that.
+Thanks.
 
-Agreed, if we are talking about replacing ACCESS_ONCE() with C11
-relaxed atomics any time soon.  But someone porting Linux to a
-new CPU architecture might use a carefully chosen subset of C11
-atomics to implement some of the Linux atomic operations, especially
-non-value-returning atomics such as atomic_inc().
-
-							Thanx, Paul
-
+-- 
+tejun
