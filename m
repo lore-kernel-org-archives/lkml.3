@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaBMKDW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:03:22 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:18566
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751744AbaBMKDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:03:19 -0500
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VPS4(z3197rz98dI9371I936eI148cI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275dh1de097h186068hz2dh109h2a8h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Paul Bolle <pebolle@tiscali.nl>, Steven Miao <realmz6@gmail.com>
-CC: Richard Weinberger <richard@nod.at>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>,
-        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open 
-	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
-	<linux-kernel@vger.kernel.org>
-Subject: RE: blackfin: Kconfig symbol VIDEO_MT9M114?
-Thread-Topic: blackfin: Kconfig symbol VIDEO_MT9M114?
-Thread-Index: AQHPJ9v3+hYtWqHlukeho8e+vnryFZqzOBYAgAAIaoD//7TkkA==
-Date: Thu, 13 Feb 2014 10:01:50 +0000
-Message-ID: <B168F8A49F4BCF4C84FD23DA5F6363EE61150705@NWD2MBX7.ad.analog.com>
-References: <1392200311.23759.27.camel@x220>
-	 <CAMk6uBk+jPpDOwN6C+xkuhWB1b3EGxb205-JhnK2JZhZMvVn2w@mail.gmail.com>
- <1392283815.30853.11.camel@x220>
-In-Reply-To: <1392283815.30853.11.camel@x220>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.99.24.87]
-Content-Type: text/plain; charset="utf-8"
+	id S1753872AbaBMKGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:06:03 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57412 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaBMKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:06:00 -0500
+Message-ID: <52FC98FF.20800@ti.com>
+Date: Thu, 13 Feb 2014 12:05:51 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Christoph Fritz <chf.fritz@googlemail.com>, Tero Kristo <t-kristo@ti.com>
+CC: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: OMAP: clock DT conversion issues with omap36xx
+References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>	 <52F10C3D.7000507@ti.com> <1391767923.4937.110.camel@mars> <52FB748E.6050007@ti.com> <52FC8A78.1050500@ti.com>
+In-Reply-To: <52FC8A78.1050500@ti.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="bs9L4nDHBH4XlFILvQE0ow5G1Qe1q3FRg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1DA3TSE026291
 
-Hi Paul,
+--bs9L4nDHBH4XlFILvQE0ow5G1Qe1q3FRg
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I will send out a patch to remove it.
+On 13/02/14 11:03, Tomi Valkeinen wrote:
+> On 12/02/14 15:18, Tomi Valkeinen wrote:
+>=20
+>> However, I hacked together the patch below, which "fixes" the issue fo=
+r
+>> 96m and dss fclk. It sets the clock parents so that the x2 clocks are
+>> skipped, and makes the x2 clock nodes compatible with "unused", making=
 
-Regards,
+>> them effectively disappear. I only verified dss fclk, so Christoph, ca=
+n
+>> you verify the 96m clock?
+>=20
+> Aaand the hack patch I sent is crap... We can't skip the x2 clock path,=
 
-Sonic
+> as the dpll4_mNx2_ck clock nodes handle enable/disable bit, which is
+> present on 3630 also.
+>=20
+> I think the best and simplest way to fix this is by setting the
+> multiplier in the dpll4_mNx2_mul_ck nodes to 1. I don't know why I
+> didn't think of it yesterday.
+>=20
+> I have a bunch of other patches needed to get the clocks right, so I'll=
 
->-----Original Message-----
->From: Paul Bolle [mailto:pebolle@tiscali.nl]
->Sent: Thursday, February 13, 2014 5:30 PM
->To: Steven Miao
->Cc: Zhang, Sonic; Richard Weinberger; adi-buildroot-devel@lists.sourceforge.net;
->open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
->list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list
->Subject: Re: blackfin: Kconfig symbol VIDEO_MT9M114?
->
->Hi Steven,
->
->On Thu, 2014-02-13 at 17:00 +0800, Steven Miao wrote:
->> VIDEO_MT9M114 is from patch "Aptina mt9m114 HD digital image sensor
->> driver", but unfortunately this patch hasn't been accepted yet.
->> https://patchwork.linuxtv.org/patch/16308/
->> This Kconfig symbol should be removed until the mt9m114 driver is
->> accepted by mainline.
->
->Thanks for looking into this.
->
->It's easy for me to submit a trivial patch to remove the one line depending on these
->Kconfig macros. But it seems that line should be added to the queue for that driver at
->the same time, otherwise we risk losing it. So it's safer if you or the people working on
->that driver coordinate that, isn't it?
->
->
->Paul Bolle
->
+> send a series separately a bit later today.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+I just sent the "OMAP: OMAP3 DSS related clock patches" series to l-o
+and arm lists, which hopefully solves issues discussed in this thread.
+
+ Tomi
+
+
+
+--bs9L4nDHBH4XlFILvQE0ow5G1Qe1q3FRg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS/Jj/AAoJEPo9qoy8lh71AOwP/2QDs4IUVMucXwp5LhpYz+J6
+OxLPL/GiR7UZRjml2fc6A0wvAyRqZkZ1xyJx68/xWcCq3hYlYpOFB4me5BtUkwT2
+C2h4sYmBmUWZT2TDYKmzfvg+c6mGTXZeg0yzJV95krvGka+j2n9xw7wWlTfdENb4
+F5CLRnvSEGSLknuceMfJoFtAtpmjgBoyrACfDezIGY0ys3c+guTt/yPBx7t3q97N
+m7IHrYV4Hr2uXjZ15ta7Pa7waFaPeepCxrHFbeXZsMsVGOBFPgqMFR8g6Sf5Wob7
+bVTdWval8szz7lut0YOJIGqjMkDlHvcXa4VjBLNVAGE6uFZx3khRZChPBiC13mmQ
+7XbT0JjlI2GdoWMgGWdMV6Kzz2GDAlv8up/RSC36uFfgMsUxaawj20q3h59V9uCn
+3eqAz19OqVJcl1l6MlPgAXSpyxylUU3R9uNJF/GSTslpOmxswEw3IRwZHLEJQA7Z
+2DtgBzjXOmFqRlPpuwIE89H2xx9PCcC9+i6JMYgU9vWMDl+B33ELiPEVpmSQ1IuC
+1KQGi8t2kCFphJQEvwS7H3WVdpbonEFXvGo90o3TiIzYcP4o+UEPtCPU0S6vfomG
+VckILBwTXQIGoSnqCWd7WRcFQEywRQMKlBrUiTGnDUidHD53VUy7DXetc3EDXilk
+0WrW14tsupMyQPA32IOL
+=Kogz
+-----END PGP SIGNATURE-----
+
+--bs9L4nDHBH4XlFILvQE0ow5G1Qe1q3FRg--
