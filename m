@@ -1,120 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaBMWlp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:41:45 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:65457 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752307AbaBMWln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:41:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=MEWfLKcb2Io8tDh9LywT7gATkefJnk5pgCuFmwSntxyo9lr8bUrz7rvT
-	BZ0F6Ugs9a6ybXvRUVNoJdqezd2bxjxrJpE+uG/3SbWYD3YW0QnhA5GAndj6vo2b
-	ey/vLXpoQ6UIRV2P4bWxOxHbje/zThfGjFoU7dtEOeJnPEpH/8I=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.5.5
-Date: Thu, 13 Feb 2014 14:41:39 -0800
-Message-ID: <xmqqob2ak53w.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1752516AbaBMWm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:42:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749AbaBMWmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 17:42:25 -0500
+Date: Thu, 13 Feb 2014 17:41:49 -0500
+From: Dave Jones <davej@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
+        akpm <akpm@linux-foundation.org>, rdunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH 1/1] sys_sysfs: Add CONFIG_SYSFS_SYSCALL
+Message-ID: <20140213224149.GA5783@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
+	akpm <akpm@linux-foundation.org>, rdunlap <rdunlap@infradead.org>
+References: <20140213220942.ff2ebaeff3876b7136fa4b10@skynet.be>
+ <20140213223141.GA1232@redhat.com>
+ <20140213223832.GA14535@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 01A290F6-9500-11E3-9840-1B26802839F8-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <20140213223832.GA14535@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.5.5 is now available at
-the usual places.  Hopefully this will be the last update to the
-1.8.5.x series.
+On Thu, Feb 13, 2014 at 02:38:32PM -0800, Greg KH wrote:
+ > On Thu, Feb 13, 2014 at 05:31:41PM -0500, Dave Jones wrote:
+ > > On Thu, Feb 13, 2014 at 10:09:42PM +0800, Fabian Frederick wrote:
+ > >  > sys_sysfs is an obsolete system call no longer supported by libc ...
+ > >  > -This patch adds a default CONFIG_SYSFS_SYSCALL=y
+ > >  > -Option can be turned off in expert mode.
+ > >  > -cond_syscall added to kernel/sys_ni.c
+ > >  > 
+ > >  > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+ > >  > ---
+ > >  >  fs/filesystems.c |  2 ++
+ > >  >  init/Kconfig     | 10 ++++++++++
+ > >  >  kernel/sys_ni.c  |  1 +
+ > >  >  3 files changed, 13 insertions(+)
+ > > 
+ > > did anyone ever ship userspace that actually used that syscall ?
+ > > Some ancient version of udev that probably doesn't work on a modern kernel anyway maybe ?
+ > 
+ > sys_sysfs doesn't have anything to do with /sys/ and udev in any way
+ > that I know of, it's a much older thing, a sysv syscall that can return
+ > the index, name, or max index of a filesystem.
+ > 
+ > And yes, I got confused by it all the time when creating sysfs :)
 
-The release tarballs are found at:
+ah, Now I realise I've also made this mistake before. Tricky.
 
-    http://code.google.com/p/git-core/downloads/list
+I wonder if anything does still use it though..
+*goes to grep all of Fedora source*
 
-and their SHA-1 checksums are:
-
-7bb4ea883b1f8f6f7f927035f85e8e27b57e0194  git-1.8.5.5.tar.gz
-39dd7979c8757d2dc4bc3aaa82741ba93557d566  git-htmldocs-1.8.5.5.tar.gz
-a4a2aef1440d4751f37c65359da57c9bd51a7beb  git-manpages-1.8.5.5.tar.gz
-
-The following public repositories all have a copy of the v1.8.5.5
-tag and the maint branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
-release tarballs.
-
-Git v1.8.5.5 Release Notes
-==========================
-
-Fixes since v1.8.5.4
---------------------
-
- * The pathspec matching code, while comparing two trees (e.g. "git
-   diff A B -- path1 path2") was too aggressive and failed to match
-   some paths when multiple pathspecs were involved.
-
- * "git repack --max-pack-size=8g" stopped being parsed correctly when
-   the command was reimplemented in C.
-
- * A recent update to "git send-email" broke platforms where
-   /etc/ssl/certs/ directory exists but cannot be used as SSL_ca_path
-   (e.g. Fedora rawhide).
-
- * A handful of bugs around interpreting $branch@{upstream} notation
-   and its lookalike, when $branch part has interesting characters,
-   e.g. "@", and ":", have been fixed.
-
- * "git clone" would fail to clone from a repository that has a ref
-   directly under "refs/", e.g. "refs/stash", because different
-   validation paths do different things on such a refname.  Loosen the
-   client side's validation to allow such a ref.
-
- * "git log --left-right A...B" lost the "leftness" of commits
-   reachable from A when A is a tag as a side effect of a recent
-   bugfix.  This is a regression in 1.8.4.x series.
-
- * "git merge-base --octopus" used to leave cleaning up suboptimal
-   result to the caller, but now it does the clean-up itself.
-
- * "git mv A B/", when B does not exist as a directory, should error
-   out, but it didn't.
-
-Also contains typofixes, documentation updates and trivial code clean-ups.
-
-----------------------------------------------------------------
-
-Changes since v1.8.5.4 are as follows:
-
-Andy Spencer (1):
-      tree_entry_interesting: match against all pathspecs
-
-Jeff King (9):
-      fetch-pack: do not filter out one-level refs
-      interpret_branch_name: factor out upstream handling
-      interpret_branch_name: rename "cp" variable to "at"
-      interpret_branch_name: always respect "namelen" parameter
-      interpret_branch_name: avoid @{upstream} past colon
-      interpret_branch_name: find all possible @-marks
-      repack: fix typo in max-pack-size option
-      repack: make parsed string options const-correct
-      repack: propagate pack-objects options as strings
-
-Junio C Hamano (5):
-      merge-base: separate "--independent" codepath into its own helper
-      merge-base --octopus: reduce the result from get_octopus_merge_bases()
-      revision: mark contents of an uninteresting tree uninteresting
-      revision: propagate flag bits from tags to pointees
-      Git 1.8.5.5
-
-Ruben Kerkhof (1):
-      send-email: /etc/ssl/certs/ directory may not be usable as ca_path
+	Dave
 
