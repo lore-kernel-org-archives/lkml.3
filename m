@@ -1,236 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaBMILM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 03:11:12 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:43621 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054AbaBMILL (ORCPT
+	id S1752546AbaBMISo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 03:18:44 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:37919 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaBMISl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 03:11:11 -0500
-Message-ID: <52FC7E0E.2010503@atmel.com>
-Date: Thu, 13 Feb 2014 09:10:54 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        boris brezillon <b.brezillon@overkiz.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 3/8] at91: dt: Add at91sam9261 dt SoC support
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>	<1392199607-27452-4-git-send-email-jjhiblot@traphandler.com>	<20140212172844.GE11498@piout.net> <CACh+v5MgYB+L6vpektjAE1yTH=dvjnyP1CjJeA7vG_yOyxFkgg@mail.gmail.com>
-In-Reply-To: <CACh+v5MgYB+L6vpektjAE1yTH=dvjnyP1CjJeA7vG_yOyxFkgg@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Thu, 13 Feb 2014 03:18:41 -0500
+X-AuditID: cbfee68d-b7fcd6d00000315b-da-52fc7fdfb2e0
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Liviu Dudau'" <Liviu.Dudau@arm.com>,
+        "'Tanmay Inamdar'" <tinamdar@apm.com>
+Cc: "'Arnd Bergmann'" <arnd@arndb.de>, devicetree@vger.kernel.org,
+        "'linaro-kernel'" <linaro-kernel@lists.linaro.org>,
+        "'linux-pci'" <linux-pci@vger.kernel.org>,
+        "'Will Deacon'" <Will.Deacon@arm.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Catalin Marinas'" <Catalin.Marinas@arm.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'LAKML'" <linux-arm-kernel@lists.infradead.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com>
+ <1391452428-22917-2-git-send-email-Liviu.Dudau@arm.com>
+ <7398333.9L5KlyFggU@wuerfel>
+ <CACoXjckKRQfR3CbC1JpgbhOumED+OqiMh1_Y73-h6q=ByMNanw@mail.gmail.com>
+ <20140206101814.GA4993@e106497-lin.cambridge.arm.com>
+ <000201cf2893$0f5e3710$2e1aa530$%han@samsung.com>
+In-reply-to: <000201cf2893$0f5e3710$2e1aa530$%han@samsung.com>
+Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from
+ device tree
+Date: Thu, 13 Feb 2014 17:18:39 +0900
+Message-id: <000401cf2894$333a3fc0$99aebf40$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8jJMZQcXw+jDDtSgu1a5WFP4+T7AFbBBDgAADBUmA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+Zke79+j9BBgt+W1n8nXSM3WJJU4bF
+	+2U9jBbzj5xjtbi88BKrxftDz5gtNj2+BuTumsNmcXbecTaLA0vbWSyef/rEYvHy4wkWBx6P
+	j+s/MXqsmbeG0eP3r0mMHgs2lXpsXlLvcfvfY2aPvi2rGD0+b5IL4IjisklJzcksSy3St0vg
+	ymh+fJml4Kt4xbOzexgbGCcIdzFyckgImEjs3jqLGcIWk7hwbz1bFyMXh5DAMkaJr+fns8AU
+	HXrbwgqRWMQoMWP6BUYI5xejxJYJHxlBqtgE1CS+fDnMDmKLCPhIXHz7EmwUs8AcZomj3RuZ
+	ITrOM0n8mbaaDaSKU8BO4kTrPLBuYYFoiQX/j4LtYxFQlXi89hJYnFfAVuLe/NlMELagxI/J
+	94BqOICmqktMmZILEmYWkJfYvOYtM0hYAij86K8uxA1WEg8fvmGCKBGR2PfiHdjREgJLOSRm
+	Pr/ICrFKQOLb5EMsEL2yEpsOQINCUuLgihssExglZiFZPAth8Swki2ch2bCAkWUVo2hqQXJB
+	cVJ6kaFecWJucWleul5yfu4mRkgi6N3BePuA9SHGZKDtE5mlRJPzgYkkryTe0NjMyMLUxNTY
+	yNzSjDRhJXHepIdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYJ8/xu5Oy/KSK47dkm71r
+	JsmL3jwmcOKZHMtv/Yr6rzfPfvS1vr0heZl7ePvhOU+kC/zWXlp//0n5T7ura42C7KPivz/6
+	+0yq8h3HQ5Z/eraBCfvyVjDLT9muZPLhs2z96dXcmRG1m7S5OTYLXWyqrQ+aXmzUbO296Udh
+	vPDtWaldXQtzvl66oMRSnJFoqMVcVJwIADf80u8aAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCKsWRmVeSWpSXmKPExsVy+t9jAd379X+CDPZeMLX4O+kYu8WSpgyL
+	98t6GC3mHznHanF54SVWi/eHnjFbbHp8DcjdNYfN4uy842wWB5a2s1g8//SJxeLlxxMsDjwe
+	H9d/YvRYM28No8fvX5MYPRZsKvXYvKTe4/a/x8wefVtWMXp83iQXwBHVwGiTkZqYklqkkJqX
+	nJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA3SskkJZYk4pUCggsbhYSd8O
+	04TQEDddC5jGCF3fkCC4HiMDNJCwjjGj+fFlloKv4hXPzu5hbGCcINzFyMkhIWAicehtCyuE
+	LSZx4d56ti5GLg4hgUWMEjOmX2CEcH4xSmyZ8JERpIpNQE3iy5fD7CC2iICPxMW3L8E6mAXm
+	MEsc7d7IDNFxnkniz7TVbCBVnAJ2Eida54F1CwtESyz4f5QFxGYRUJV4vPYSWJxXwFbi3vzZ
+	TBC2oMSPyfeAajiApqpLTJmSCxJmFpCX2LzmLTNIWAIo/OivLsQNVhIPH75hgigRkdj34h3j
+	BEahWUgGzUIYNAvJoFlIOhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4zz6R2MK5s
+	sDjEKMDBqMTD+2Dx7yAh1sSy4srcQ4wSHMxKIrwyEn+ChHhTEiurUovy44tKc1KLDzEmA705
+	kVlKNDkfmALzSuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoFR
+	c9feVde4DgncuRyld2TLWZ2vR33sej5VX5758Hvv+6ALN5m88gWkfFVOz/Ced+8O3+IwjdSA
+	7xderZXxK01dWrfF7KJbQ0nNwmpxiY+Ze0LY1E8zM3A4Pdtctuy4+7evHZ1n9Zau+7Di2I82
+	a9c9vnuYYqdwNT6oLPTpCqq/6iY17ejH9fGiSizFGYmGWsxFxYkAdWkG13cDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 20:47, Jean-Jacques Hiblot :
-> Hi Alexandre,
+On 
+
+> -----Original Message-----
+> From: Jingoo Han [mailto:jg1.han@samsung.com]
+> Sent: Thursday, February 13, 2014 5:10 PM
+> To: 'Liviu Dudau'; 'Tanmay Inamdar'
+> Cc: 'Arnd Bergmann'; devicetree@vger.kernel.org; 'linaro-kernel'; 'linux-pci'; 'Will Deacon'; 'LKML';
+> 'Catalin Marinas'; 'Bjorn Helgaas'; 'LAKML'; 'Jingoo Han'
+> Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from device tree
 > 
-> 2014-02-12 18:28 GMT+01:00 Alexandre Belloni
-> <alexandre.belloni@free-electrons.com>:
->> Hi,
->>
->> On 12/02/2014 at 11:06:42 +0100, Jean-Jacques Hiblot wrote :
->>> This patch adds support for the Device Tree on a sam9261-based platform
->>>
->>> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
->>> ---
->>>  arch/arm/boot/dts/at91sam9261.dtsi | 740 +++++++++++++++++++++++++++++++++++++
->>>  arch/arm/mach-at91/at91sam9261.c   |  17 +
->>>  2 files changed, 757 insertions(+)
->>>  create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
->>
->> [...]
->>
->>> +
->>> +             apb {
->>> +                     compatible = "simple-bus";
->>> +                     #address-cells = <1>;
->>> +                     #size-cells = <1>;
->>> +                     ranges;
->>> +
->>> +                     tcb0: timer@fffa0000 {
->>> +                             compatible = "atmel,at91rm9200-tcb";
->>> +                             reg = <0xfffa0000 0x100>;
->>> +                             interrupts = < 17 IRQ_TYPE_LEVEL_HIGH 0
->>> +                                     18 IRQ_TYPE_LEVEL_HIGH 0
->>> +                                     19 IRQ_TYPE_LEVEL_HIGH 0
->>> +                                     >;
->>> +                             clocks = <&tc0_clk>, <&tc1_clk>, <&tc2_clk>;
->>> +                             clock-names = "t0_clk", "t1_clk", "t2_clk";
->>> +                     };
->>> +
->>> +                     usb1: gadget@fffa4000 {
->>> +                             compatible = "atmel,at91rm9200-udc";
->>> +                             reg = <0xfffa4000 0x4000>;
->>> +                             interrupts = <10 IRQ_TYPE_LEVEL_HIGH 2>;
->>> +                             clocks = <&usb>, <&udc_clk>, <&udpck>;
->>> +                             clock-names = "usb_clk", "udc_clk", "udpck";
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     mmc0: mmc@fffa8000 {
->>> +                             compatible = "atmel,hsmci";
->>> +                             reg = <0xfffa8000 0x600>;
->>> +                             interrupts = <9 IRQ_TYPE_LEVEL_HIGH 0>;
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_mmc0_clk>, <&pinctrl_mmc0_slot0_cmd_dat0>, <&pinctrl_mmc0_slot0_dat1_3>;
->>> +                             #address-cells = <1>;
->>> +                             #size-cells = <0>;
->>> +                             clocks = <&mci0_clk>;
->>> +                             clock-names = "mci_clk";
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     i2c0: i2c@fffac000 {
->>> +                             compatible = "atmel,at91sam9261-i2c";
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_i2c_twi>;
->>> +                             reg = <0xfffac000 0x100>;
->>> +                             interrupts = <11 IRQ_TYPE_LEVEL_HIGH 6>;
->>> +                             #address-cells = <1>;
->>> +                             #size-cells = <0>;
->>> +                             clocks = <&twi0_clk>;
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     usart0: serial@fffb0000 {
->>> +                             compatible = "atmel,at91sam9260-usart";
->>> +                             reg = <0xfffb0000 0x200>;
->>> +                             interrupts = <6 IRQ_TYPE_LEVEL_HIGH 5>;
->>> +                             atmel,use-dma-rx;
->>> +                             atmel,use-dma-tx;
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_usart0>;
->>> +                             clocks = <&usart0_clk>;
->>> +                             clock-names = "usart";
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     usart1: serial@fffb4000 {
->>> +                             compatible = "atmel,at91sam9260-usart";
->>> +                             reg = <0xfffb4000 0x200>;
->>> +                             interrupts = <7 IRQ_TYPE_LEVEL_HIGH 5>;
->>> +                             atmel,use-dma-rx;
->>> +                             atmel,use-dma-tx;
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_usart1>;
->>> +                             clocks = <&usart1_clk>;
->>> +                             clock-names = "usart";
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     usart2: serial@fffb8000{
->>> +                             compatible = "atmel,at91sam9260-usart";
->>> +                             reg = <0xfffb8000 0x200>;
->>> +                             interrupts = <8 IRQ_TYPE_LEVEL_HIGH 5>;
->>> +                             atmel,use-dma-rx;
->>> +                             atmel,use-dma-tx;
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_usart2>;
->>> +                             clocks = <&usart2_clk>;
->>> +                             clock-names = "usart";
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     ssc0: ssc@fffbc000 {
->>> +                             compatible = "atmel,at91rm9200-ssc";
->>> +                             reg = <0xfffbc000 0x4000>;
->>> +                             interrupts = <14 IRQ_TYPE_LEVEL_HIGH 5>;
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     ssc1: ssc@fffc0000 {
->>> +                             compatible = "atmel,at91rm9200-ssc";
->>> +                             reg = <0xfffc0000 0x4000>;
->>> +                             interrupts = <15 IRQ_TYPE_LEVEL_HIGH 5>;
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_ssc1_tx &pinctrl_ssc1_rx>;
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     spi0: spi@fffc8000 {
->>> +                             #address-cells = <1>;
->>> +                             #size-cells = <0>;
->>> +                             compatible = "atmel,at91rm9200-spi";
->>> +                             reg = <0xfffc8000 0x200>;
->>> +                             cs-gpios = <0>, <0>, <0>, <0>;
->>> +                             interrupts = <12 IRQ_TYPE_LEVEL_HIGH 3>;
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_spi0>;
->>> +                             clocks = <&spi0_clk>;
->>> +                             clock-names = "spi_clk";
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     spi1: spi@fffcc000 {
->>> +                             #address-cells = <1>;
->>> +                             #size-cells = <0>;
->>> +                             compatible = "atmel,at91rm9200-spi";
->>> +                             reg = <0xfffcc000 0x200>;
->>> +                             interrupts = <13 IRQ_TYPE_LEVEL_HIGH 3>;
->>> +                             pinctrl-names = "default";
->>> +                             pinctrl-0 = <&pinctrl_spi1>;
->>> +                             clocks = <&spi1_clk>;
->>> +                             clock-names = "spi_clk";
->>> +                             status = "disabled";
->>> +                     };
->>> +
->>> +                     ramc: ramc@ffffea00 {
->>> +                             compatible = "atmel,at91sam9260-sdramc";
->>> +                             reg = <0xffffea00 0x200>;
->>> +                     };
->>> +
->>
->> You probably copied/pasted it but according to the block diagram, the
->> sdram controller is not under the apb.
-> You're right I copied/pasted :o) But the addresses of the registers
-> look like typical APB addresses.
-> AFAIK all the registers of this SOC are accessed through the APB
-> (except for OHCI and LCDC)
-
-Yes, that is the point: if the register bank appears as an APB address,
-I place it on the APB bus.
-The other master interfaces (on AHB) are the ones that the IP uses, not
-us from the CPU point of view...
-
-So I think that Jean-Jacques DT is okay concerning this.
-
-> So probably the real question here is what is the sense of the bus
-> hierarchy in cases where a controller is connected to several buses
-> (APB for registers, AHB/matrix for other purpose) ?
-> As I don't have any idea on how to handle this, I choose to copy/paste.
+> On Thursday, February 06, 2014 7:18 PM, Liviu Dudau wrote:
+> > On Wed, Feb 05, 2014 at 10:26:27PM +0000, Tanmay Inamdar wrote:
+> > > Hello Liviu,
+> > >
+> > > I did not get the first email of this particular patch on any of
+> > > subscribed mailing lists (don't know why), hence replying here.
+> >
+> > Strange, it shows in the MARC and GMANE archive for linux-pci, probably
+> > a hickup on your receiving side?
+> >
+> > >
+> > > +struct pci_host_bridge *
+> > > +pci_host_bridge_of_init(struct device *parent, int busno, struct pci_ops *ops,
+> > > + void *host_data, struct list_head *resources)
+> > > +{
+> > > + struct pci_bus *root_bus;
+> > > + struct pci_host_bridge *bridge;
+> > > +
+> > > + /* first parse the host bridge bus ranges */
+> > > + if (pci_host_bridge_of_get_ranges(parent->of_node, resources))
+> > > + return NULL;
+> > > +
+> > > + /* then create the root bus */
+> > > + root_bus = pci_create_root_bus(parent, busno, ops, host_data, resources);
+> > > + if (!root_bus)
+> > > + return NULL;
+> > > +
+> > > + bridge = to_pci_host_bridge(root_bus->bridge);
+> > > +
+> > > + return bridge;
+> > > +}
+> > >
+> > > You are keeping the domain_nr inside pci_host_bridge structure. In
+> > > above API, domain_nr is required in 'pci_find_bus' function called
+> > > from 'pci_create_root_bus'. Since the bridge is allocated after
+> > > creating root bus, 'pci_find_bus' always gets domain_nr as 0. This
+> > > will cause problem for scanning multiple domains.
+> >
+> > Good catch. I was switching between creating a pci_controller in arch/arm64 and
+> > adding the needed bits in pci_host_bridge. After internal review I've decided to
+> > add the domain_nr to pci_host_bridge, but forgot to update the code everywhere.
 > 
->>
->>> +                     matrix: matrix@ffffee00 {
->>> +                             compatible = "atmel,at91sam9261-bus-matrix";
->>> +                             reg = <0xffffee00 0x200>;
->>> +                     };
->>> +
->>
->> Same here, the apb is actually under the bus matrix.
->>
->> I don't know whether it can be represented another way though.
->>
->>
->> --
->> Alexandre Belloni, Free Electrons
->> Embedded Linux, Kernel and Android engineering
->> http://free-electrons.com
+> Hi Liviu Dudau,
 > 
+> One more thing,
+> I am reviewing and compiling your patch.
+> Would you consider adding 'struct pci_sys_data' and 'struct hw_pci'?
 > 
+> Currently, 4 PCIe Host drivers (pci-mvebu.c, pci-tegra.c,
+> pci-rcar-gen2.c, pcie-designware.c) are using 'struct pci_sys_data'
+> and 'struct hw_pci' in their drivers. Without this, it makes build
+> errors.
+> 
+> In arm32, 'struct pci_sys_data' and 'struct hw_pci' is defined
+> in "arch/arm/include/asm/mach/pci.h".
+> 
+> Tanmay Inamdar,
+> Your 'APM X-Gene PCIe' patch also needs 'struct pci_sys_data' and
+> 'struct hw_pci'. With Liviu Dudau's patch, it will make build
+> errors. Would you check this?
+
+I mean the patch '[PATCH] arm64: Add architecture support for PCI'.
+With this patch, it makes build errors in PCIe Host drivers such as
+pcie-designware.c.
+
+Best regards,
+Jingoo Han
 
 
--- 
-Nicolas Ferre
