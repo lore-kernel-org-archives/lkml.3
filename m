@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaBMVmf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:42:35 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:36473 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902AbaBMVmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:42:22 -0500
-Date: Thu, 13 Feb 2014 13:42:11 -0800
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-Message-ID: <20140213214211.GC12409@linux.vnet.ibm.com>
-References: <alpine.DEB.2.02.1402061557210.5061@chino.kir.corp.google.com>
- <52F4B8A4.70405@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402071239301.4212@chino.kir.corp.google.com>
- <52F88C16.70204@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
- <52F8C556.6090006@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
- <52FC6F2A.30905@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
- <20140213130643.0cf5fb083056cdd159d1aac4@linux-foundation.org>
+	id S1752260AbaBMVmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:42:51 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:13509 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaBMVms (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 16:42:48 -0500
+X-IronPort-AV: E=Sophos;i="4.95,840,1384329600"; 
+   d="scan'208";a="14566915"
+Message-ID: <52FD3C50.6010209@broadcom.com>
+Date: Thu, 13 Feb 2014 22:42:40 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140213130643.0cf5fb083056cdd159d1aac4@linux-foundation.org>
-X-Operating-System: Linux 3.11.0-15-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021321-5806-0000-0000-000024216401
+To: Steven Rostedt <rostedt@goodmis.org>, "Frank Ch. Eigler" <fche@redhat.com>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>	<20140211072738.GA24232@gmail.com>	<20140211234534.6bc34e57@gandalf.local.home>	<1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>	<20140213102817.4bfd5eac@gandalf.local.home>	<y0mlhxfnhx8.fsf@fche.csb> <20140213104429.478b56e8@gandalf.local.home>
+In-Reply-To: <20140213104429.478b56e8@gandalf.local.home>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.02.2014 [13:06:43 -0800], Andrew Morton wrote:
-> On Thu, 13 Feb 2014 00:05:31 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
+On 02/13/2014 04:44 PM, Steven Rostedt wrote:
+> On Thu, 13 Feb 2014 10:36:35 -0500
+> fche@redhat.com (Frank Ch. Eigler) wrote:
 > 
-> > On Thu, 13 Feb 2014, Raghavendra K T wrote:
-> > 
-> > > I was able to test (1) implementation on the system where readahead problem
-> > > occurred. Unfortunately it did not help.
-> > > 
-> > > Reason seem to be that CONFIG_HAVE_MEMORYLESS_NODES dependency of
-> > > numa_mem_id(). The PPC machine I am facing problem has topology like
-> > > this:
-> > > 
-> > > numactl -H
-> > > ---------
-> > > available: 2 nodes (0-1)
-> > > node 0 cpus: 0 1 2 3 4 5 6 7 12 13 14 15 16 17 18 19 20 21 22 23 24 25
-> > > ...
-> > > node 0 size: 0 MB
-> > > node 0 free: 0 MB
-> > > node 1 cpus: 8 9 10 11 32 33 34 35 ...
-> > > node 1 size: 8071 MB
-> > > node 1 free: 2479 MB
-> > > node distances:
-> > > node   0   1
-> > >   0:  10  20
-> > >   1:  20  10
-> > > 
-> > > So it seems numa_mem_id() does not help for all the configs..
-> > > Am I missing something ?
-> > > 
-> > 
-> > You need the patch from http://marc.info/?l=linux-mm&m=139093411119013 
-> > first.
+>>
+>> rostedt wrote:
+>>
+>>> [...]
+>>> Oh! You are saying that if the kernel only *supports* signed modules,
+>>> and you load a module that is not signed, it will taint the kernel?
+>>
+>> Yes: this is the default for several distros.
+>>
 > 
-> That (un-signed-off) powerpc patch appears to be moribund.  What's up?
+> Rusty, Ingo,
+> 
+> This looks like a bug to me, as it can affect even in-tree kernel
+> modules. If you have a kernel that supports signed modules, and you
+> modify a module, recompile it, apply it, since it is no longer signed,
+> then it sounds like we just tainted it. Worse yet, we just disabled any
+> tracepoints on that module, which means it is even harder to debug that
+> module (if that's the reason you recompiled it in the first place).
 
-Gah, thanks for catching that Andrew, not sure what went wrong. I've
-appended my S-o-b. I've asked Ben to take a look, but I think he's still
-catching up on his queue after travelling.
+When I stumbled upon this issue a while ago on Fedora 19 I built my
+kernel rpm packages which generates a signature key (.priv and .x509),
+which I kept safe with the kernel headers. When building recompiling
+modules I refer to it with MODSECKEY and MODPUBKEY, ie.
 
--Nish
+$ make MODSECKEY=bla MODPUBKEY=duh \
+	M=drivers/net/wireless/brcm80211  modules
+
+Or sign it manually using the sign-file perl script:
+
+mod_sign_cmd = perl $(srctree)/scripts/sign-file \
+	$(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
+
+Of course I could disable signed modules while building a new kernel,
+but I was in it for the ride (I had better ones) ;-)
+
+Gr. AvS
+
+> -- Steve
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
