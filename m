@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaBMSnX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:43:23 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:62215 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070AbaBMSnT (ORCPT
+	id S1751282AbaBMS40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:56:26 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:63634 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaBMS4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:43:19 -0500
-Message-ID: <52FD1243.9040706@gmail.com>
-Date: Thu, 13 Feb 2014 20:43:15 +0200
-From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 13 Feb 2014 13:56:24 -0500
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pavel Machek <pavel@ucw.cz>, Sebastian Reichel <sre@ring0.de>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [BISECTED] ssh - Received disconnect from x.x.x.x: 2: Bad packet
- length 3149594624
-References: <52FD08D1.3030405@gmail.com> <20140213182105.GN13576@mudshark.cambridge.arm.com>
-In-Reply-To: <20140213182105.GN13576@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com>
+References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+	<19258.1392306854@warthog.procyon.org.uk>
+	<20140213162534.GB4026@tucsk.piliscsaba.szeredi.hu>
+	<20106.1392309770@warthog.procyon.org.uk>
+	<CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com>
+	<CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com>
+Date: Thu, 13 Feb 2014 19:56:23 +0100
+Message-ID: <CAJfpegvjwHW5=BhvnbTYrnD6SxZwVyNj0tQGciXo_TzYKLANPQ@mail.gmail.com>
+Subject: Re: [PATCH 00/13] cross rename v4
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bruce Fields <bfields@fieldses.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 13.02.2014 20:21, Will Deacon wrote:
+On Thu, Feb 13, 2014 at 7:29 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Feb 13, 2014 at 9:28 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>>>
+>>> I would suggest that whiteouts appear as otherwise negative dentries and that
+>>> they don't appear in getdents().
+>>
+>> I'd argue that this is an administration nightmare.  E.g. what if the
+>> a backup needs to be made of the rw layer?
 >
-> That's certainly unexpected. The n900 has (iirc) a Cortex-A8, which as an
-> ARMv7 core, can perform unaligned accesses to normal, cacheable memory in
-> hardware.
+> The major issue is user space support.
 >
+> So what do others that support this do?  Looking at the gitweb for
+> ls.c in coreutils, we find:
+>
+> http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/ls.c
+>
+>     # ifdef DT_WHT
+>                     case DT_WHT:  type = whiteout;          break;
+>     # endif
+>
+> so that's presumably what we should use.
 
-Yep, Cortex-A8 and it has no problem to do unaligned memory accesses 
-AFAIK. I suspect it is a driver issue, not CPU.
+Fair enough, that allows the thing to be listed, at least.
 
-> Can you provide your .config and/or any information about your network chip
-> please? There's a chance that the driver is doing something odd.
+What about creation?  A new syscall?
 
-The chip is TI wl1251, you can find the config file here(actually this 
-is the tree I am using to boot 3.14-rc1 on N900) - 
-https://gitorious.org/linux-n900/freemangordons-linux-n900/source/1434dbd7fbc5ec257b6cd6c547689b79177d1937:arch/arm/configs/rx51_defconfig
+Removal?  unlink(2)?
+
+Should stat(2) succeed with a new filetype?
 
 Thanks,
-Ivo
+Miklos
