@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaBMXIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:08:13 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51135 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806AbaBMXIJ (ORCPT
+	id S1752505AbaBMXIc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:08:32 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54148 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428AbaBMXI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:08:09 -0500
-Date: Thu, 13 Feb 2014 18:08:06 -0500 (EST)
-Message-Id: <20140213.180806.1440448228867354144.davem@davemloft.net>
-To: michal.simek@xilinx.com
-Cc: netdev@vger.kernel.org, sthokal@xilinx.com, monstr@monstr.eu,
-        anirudh@xilinx.com, John.Linn@xilinx.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] net: axienet: Fix compilation warnings
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <9be652e995e74663de1df69e6ea101225cb670a2.1392275432.git.michal.simek@xilinx.com>
-References: <cover.1392275432.git.michal.simek@xilinx.com>
-	<cover.1392275432.git.michal.simek@xilinx.com>
-	<9be652e995e74663de1df69e6ea101225cb670a2.1392275432.git.michal.simek@xilinx.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Feb 2014 15:08:09 -0800 (PST)
+	Thu, 13 Feb 2014 18:08:29 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19W+Sx9tlTqNfo1lSwdNXqV
+Date: Thu, 13 Feb 2014 15:08:06 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Marek Belisko <marek@goldelico.com>
+Cc: bcousson@baylibre.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        neilb@suse.de, hns@goldelico.com
+Subject: Re: [PATCH 1/9] ARM: dts: omap3-gta04: Fix 'aux' gpio key flags.
+Message-ID: <20140213230805.GJ28216@atomide.com>
+References: <1390685343-11663-1-git-send-email-marek@goldelico.com>
+ <1390685343-11663-2-git-send-email-marek@goldelico.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390685343-11663-2-git-send-email-marek@goldelico.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Simek <michal.simek@xilinx.com>
-Date: Thu, 13 Feb 2014 08:10:43 +0100
-
-> Warning log:
-> xilinx_axienet_main.c: In function 'axienet_start_xmit_done':
-> xilinx_axienet_main.c:617:16: warning: operation on 'lp->tx_bd_ci' may be undefined [-Wsequence-point]
-> xilinx_axienet_main.c: In function 'axienet_start_xmit':
-> xilinx_axienet_main.c:703:18: warning: operation on 'lp->tx_bd_tail' may be undefined [-Wsequence-point]
-> xilinx_axienet_main.c:719:17: warning: operation on 'lp->tx_bd_tail' may be undefined [-Wsequence-point]
-> xilinx_axienet_main.c: In function 'axienet_recv':
-> xilinx_axienet_main.c:792:16: warning: operation on 'lp->rx_bd_ci' may be undefined [-Wsequence-point]
-> xilinx_axienet_main.c: In function 'axienet_of_probe':
-> xilinx_axienet_main.c:1501:21: warning: unused variable 'rc' [-Wunused-variable]
+* Marek Belisko <marek@goldelico.com> [140125 13:31]:
+> From: NeilBrown <neilb@suse.de>
 > 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> It should be ACTIVE_HIGH.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  arch/arm/boot/dts/omap3-gta04.dts | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
+> index b9b55c9..9d37184 100644
+> --- a/arch/arm/boot/dts/omap3-gta04.dts
+> +++ b/arch/arm/boot/dts/omap3-gta04.dts
+> @@ -32,7 +32,7 @@
+>  		aux-button {
+>  			label = "aux";
+>  			linux,code = <169>;
+> -			gpios = <&gpio1 7 GPIO_ACTIVE_LOW>;
+> +			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+>  			gpio-key,wakeup;
+>  		};
+>  	};
 
-Applied.
+Picking this one into omap-for-v3.14/fixes thanks.
+
+Tony
