@@ -1,77 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaBMNDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 08:03:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754632AbaBMNDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 08:03:06 -0500
-Date: Thu, 13 Feb 2014 14:02:28 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Don Zickus <dzickus@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Joe Mario <jmario@redhat.com>,
-        Richard Fowles <fowles@inreach.com>
-Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
- contention on NUMA systems
-Message-ID: <20140213130228.GB2908@krava.brq.redhat.com>
-References: <CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
- <20140211071401.GG27965@twins.programming.kicks-ass.net>
- <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
- <20140211105217.GS9987@twins.programming.kicks-ass.net>
- <CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
- <20140211110242.GU9987@twins.programming.kicks-ass.net>
- <CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
- <CABPqkBSbBqOtvstKwQWD7jM8nn3XEdq0OXMjW8Z8oCF17uRYPw@mail.gmail.com>
- <20140211111421.GN27965@twins.programming.kicks-ass.net>
- <20140211115013.GE28757@ghostprotocols.net>
+	id S1754710AbaBMNDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 08:03:12 -0500
+Received: from webmail.ilhasolteira.sp.gov.br ([189.108.142.7]:44220 "EHLO
+	webmail.ilhasolteira.sp.gov.br" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754632AbaBMNDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 08:03:10 -0500
+X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 08:03:09 EST
+Date: Thu, 13 Feb 2014 10:44:44 -0200 (BRST)
+From: YUNG KYU KIM <angelica.ribeiro@ilhasolteira.sp.gov.br>
+Message-ID: <14091707.4365.1392295484465.JavaMail.root@webmail.ilhasolteira.sp.gov.br>
+Subject: Foreign Business Director Needed!!!
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211115013.GE28757@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.69.1]
+X-Mailer: Zimbra 6.0.4_GA_2038.RHEL5 (zclient/6.0.4_GA_2038.RHEL5)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 08:50:13AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Feb 11, 2014 at 12:14:21PM +0100, Peter Zijlstra escreveu:
-> > On Tue, Feb 11, 2014 at 12:08:56PM +0100, Stephane Eranian wrote:
-> > > Assuming you can decode and get the info about the base registers used,
-> > > you'd have to do this for each arch with load/store sampling capabilities.
-> > > this is painful compared to getting the portable info from dwarf directly.
->  
-> > But its useful now, as compared to whenever GCC gets around to
-> > implementing more dwarves and that GCC getting used widely enough to
-> > actually rely on it.
->  
-> > All you need for the decode is a disassembler, and every arch should
-> > already have multiple of those. Should be easy to reuse one, right?
-> 
-> Yeah, I never got around to actually try to implement this, but my
-> feeling was that all the bits and pieces were there already:
-> 
-> 1) the precise IP for the instruction, that disassembled would tell
-> which registers were being operated on, or memory that we would "reverse
-> map" to a register
-> 
-> 2) DWARF expression locations that allows us to go from registers to a
-> variable/parameter and thus to a type
-> 
-> 3) PERF_SAMPLE_REGS_USER (from a quick look, why do we have "USER" in
-> it? Jiri?)
+Hello,
 
-well, it was meant for store user registers only
-to assists user DWARF unwind
 
-we can add PERF_SAMPLE_REGS_KERNEL
+The Project is about the exportation of 100,000 barrels of Light CrudeOil daily out from Iraq to Turkey through my client's company in Iraq
+at the rate of $92.00 a barrel. This amount to $9,200,000 daily. I ask for your support as a foreigner to handle this business project with my
+client and you are not expected to invest in Iraq
 
-> 
-> 4) libunwind have register maps for various arches, so probably
-> something there could be reused here as well (Jiri?)
+If yes, let me know and we will discuss this project proper.
 
-not sure what you mean by 'something' here.. but yep,
-libunwind does have register maps for various arches
+Kim.
 
-jirka
+Contact my private email :   2936410069@qq.com
