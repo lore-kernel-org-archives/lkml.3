@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736AbaBMJn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:43:59 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:35140 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970AbaBMJnz (ORCPT
+	id S1752641AbaBMJqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:46:10 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:51326 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751440AbaBMJqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:43:55 -0500
-Date: Thu, 13 Feb 2014 10:43:52 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Noonan <steven@uplinklabs.net>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jakub Jelinek <jakub@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] compiler/gcc4: Add quirk for 'asm goto'
- miscompilation bug
-Message-ID: <20140213094352.GA6782@gmail.com>
-References: <20131012171007.GA17167@gmail.com>
- <CAKbGBLgs9t4HPD4duBt=vPaw0WfxLv5qr6pNupHsPTFaV5m+dQ@mail.gmail.com>
- <CA+55aFys_VK+q3LMRzEM-AKU-=fM_tgiDdLm2AO=jVfH7OvrHQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFys_VK+q3LMRzEM-AKU-=fM_tgiDdLm2AO=jVfH7OvrHQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Feb 2014 04:46:08 -0500
+Message-ID: <1392284765.30853.21.camel@x220>
+Subject: Re: [uclinux-dist-devel] [PATCH] blackfin: bf60x: fix typo
+ "CONFIG_PM_BFIN_WAKE_PA15_POL"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Steven Miao <realmz6@gmail.com>
+Cc: adi-buildroot-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Thu, 13 Feb 2014 10:46:05 +0100
+In-Reply-To: <CAMk6uBmNHb0t1zetK8+gkKMOj7843cRsz_f1m5zP4dPncuKwoA@mail.gmail.com>
+References: <1363736001.1390.53.camel@x61.thuisdomein>
+	 <CAMk6uBmNHb0t1zetK8+gkKMOj7843cRsz_f1m5zP4dPncuKwoA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Feb 2014 09:46:06.0362 (UTC) FILETIME=[6A7EFFA0:01CF28A0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Added current lists.]
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Wed, 2013-03-20 at 13:26 +0800, Steven Miao wrote:
+> good catch, thanks
 
-> On Wed, Feb 12, 2014 at 7:09 PM, Steven Noonan <steven@uplinklabs.net> wrote:
-> >
-> > If I change the GCC_VERSION check for the asm_volatile_goto quirk to
-> > include 4.8.2, then KVM guests are properly cleaned up.
-> 
-> Ok, I guess that means we should just make the quirk unconditional.
-> 
-> Ingo, do you want to do that or should I?
+This typo is still present in v3.14-rc2. Was my patch perhaps lost?
 
-Yeah, will pick up Steven's patch later today unless you beat me at 
-it. If you pick it up yourself:
+> On Wed, Mar 20, 2013 at 7:33 AM, Paul Bolle <pebolle@tiscali.nl>
+> wrote:
+>         Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>         ---
+>         Obvious, isn't it? Introduced in v3.5, through commit
+>         0fbd88ca20a68a633b565e1f5ba18ca64afb0c78 ("blackfin: bf60x:
+>         add wakeup source select"). Untested.
+>         
+>          arch/blackfin/mach-bf609/pm.c | 2 +-
+>          1 file changed, 1 insertion(+), 1 deletion(-)
+>         
+>         diff --git a/arch/blackfin/mach-bf609/pm.c
+>         b/arch/blackfin/mach-bf609/pm.c
+>         index ad505d9..0cdd695 100644
+>         --- a/arch/blackfin/mach-bf609/pm.c
+>         +++ b/arch/blackfin/mach-bf609/pm.c
+>         @@ -210,7 +210,7 @@ void bf609_cpu_pm_enter(suspend_state_t
+>         state)
+>         
+>          #ifdef CONFIG_PM_BFIN_WAKE_PB15
+>                 wakeup |= PB15WE;
+>         -# if CONFIG_PM_BFIN_WAKE_PA15_POL
+>         +# if CONFIG_PM_BFIN_WAKE_PB15_POL
+>                 wakeup_pol |= PB15WE;
+>          # endif
+>          #endif
+>         --
+>         1.7.11.7
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
 
-Thanks,
+Paul Bolle
 
-	Ingo
