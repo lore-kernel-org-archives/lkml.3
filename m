@@ -1,161 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaBMRKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 12:10:55 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:36606 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaBMRKx (ORCPT
+	id S1752546AbaBMRMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 12:12:20 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13034 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751572AbaBMRMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 12:10:53 -0500
-Message-ID: <52FCFC97.8050200@gmail.com>
-Date: Thu, 13 Feb 2014 18:10:47 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 00/13] pinctrl: mvebu: restructure resource allocation
-References: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com> <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140213172620.76e760ba@skate> <52FCF59E.3090100@gmail.com> <20140213175914.205803a6@skate>
-In-Reply-To: <20140213175914.205803a6@skate>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Feb 2014 12:12:18 -0500
+Date: Thu, 13 Feb 2014 17:12:11 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <Will.Deacon@arm.com>,
+        Steven Capper <steve.capper@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: mm: report both sections from PMD
+Message-ID: <20140213171211.GJ19841@arm.com>
+References: <20140212224638.GA4558@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212224638.GA4558@www.outflux.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/14 17:59, Thomas Petazzoni wrote:
-> On Thu, 13 Feb 2014 17:41:02 +0100, Sebastian Hesselbarth wrote:
->>> Thanks again for working on this! I have boot tested this successfully
->>> on an Armada XP platform, and it seems to behave normally, the debugfs
->>> pinctrl contents make sense.
->>
->> I guess this is a Tested-by ?
->
-> Yes. My tests were admittedly fairly light, but I believe good enough :)
+On Wed, Feb 12, 2014 at 10:46:38PM +0000, Kees Cook wrote:
+> diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
+> index 03243f7eeddf..fb3de59ee811 100644
+> --- a/arch/arm/include/asm/pgtable-3level.h
+> +++ b/arch/arm/include/asm/pgtable-3level.h
+> @@ -138,10 +138,6 @@
+>  #define pud_none(pud)		(!pud_val(pud))
+>  #define pud_bad(pud)		(!(pud_val(pud) & 2))
+>  #define pud_present(pud)	(pud_val(pud))
+> -#define pmd_table(pmd)		((pmd_val(pmd) & PMD_TYPE_MASK) == \
+> -						 PMD_TYPE_TABLE)
+> -#define pmd_sect(pmd)		((pmd_val(pmd) & PMD_TYPE_MASK) == \
+> -						 PMD_TYPE_SECT)
+>  #define pmd_large(pmd)		pmd_sect(pmd)
+>  
+>  #define pud_clear(pudp)			\
+> diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+> index 7d59b524f2af..934aa5b60c7c 100644
+> --- a/arch/arm/include/asm/pgtable.h
+> +++ b/arch/arm/include/asm/pgtable.h
+> @@ -183,6 +183,10 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+>  
+>  #define pmd_none(pmd)		(!pmd_val(pmd))
+>  #define pmd_present(pmd)	(pmd_val(pmd))
+> +#define pmd_table(pmd)		((pmd_val(pmd) & PMD_TYPE_MASK) == \
+> +						 PMD_TYPE_TABLE)
+> +#define pmd_sect(pmd)		((pmd_val(pmd) & PMD_TYPE_MASK) == \
+> +						 PMD_TYPE_SECT)
 
-Ok.
+Do you still need to move these two if you only use pmd_large()? AFAICT,
+it is equivalent to pmd_sect().
 
->>> I am not sure what you mean here in terms of the ordering for the
->>> patches. I'm attaching several patches, and the first three patches
->>> adapt your patch series to also cover 375 and 38x, assuming the pinctrl
->>> support for 375 and 38x is merged before your patch series.
->>
->> Right. If 375/38x pinctrl goes in first (what I expect), I'd have to add
->> corresponding patches. You already sent them, I'll pick them up.
->
-> Ok, cool. Hopefully we can sort out the merging of those two patch
-> series for 3.15 with Linus Walleij.
+>  static inline pte_t *pmd_page_vaddr(pmd_t pmd)
+>  {
+> diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
+> index 2b342177f5de..32635b474832 100644
+> --- a/arch/arm/mm/dump.c
+> +++ b/arch/arm/mm/dump.c
+> @@ -260,8 +260,14 @@ static void walk_pmd(struct pg_state *st, pud_t *pud, unsigned long start)
+>  
+>  	for (i = 0; i < PTRS_PER_PMD; i++, pmd++) {
+>  		addr = start + i * PMD_SIZE;
+> -		if (pmd_none(*pmd) || pmd_large(*pmd) || !pmd_present(*pmd))
+> +		if (pmd_none(*pmd) || pmd_large(*pmd) || !pmd_present(*pmd)) {
+>  			note_page(st, addr, 3, pmd_val(*pmd));
+> +			if (SECTION_SIZE < PMD_SIZE &&
+> +			    pmd_sect(*pmd) && pmd_sect(pmd[1])) {
 
-That is the plan - or rather get his Acked-by as we are lucky to have
-pinctrl/mvebu and touching nothing else.
+I think the first patch was better with pmd[0] and pmd[1] treated
+independently if SECTION_SIZE < PMD_SIZE, only that it should have
+checked for pmd_sect(pmd[1]). I don't see anything in
+__map_init_section() that would prevent populating only the second pmd
+leaving the first one empty.
 
->>> I must say I dislike quite a bit this unnamed mpp controls mechanism.
->>> Why isn't the name statically defined in the source code by the
->>> MPP_MODE macro, which already takes as first argument the pin number?
->>
->> Honestly, the unnamed mpp control thing is a bit odd. But if you tell
->> me how to create ~60 statically defined one pin groups out of a
->> single-line macro, we can change that easily.
->>
->> Back when that unnamed mpp control thing was invented, I must have been
->> to lazy to write e.g.
->>
->> MPP_FUNC_CTRL(0, 0, "mpp0", armada_xp_mpp_ctrl),
->> MPP_FUNC_CTRL(1, 1, "mpp1", armada_xp_mpp_ctrl),
->> MPP_FUNC_CTRL(2, 2, "mpp2", armada_xp_mpp_ctrl),
->> ...
->> MPP_FUNC_CTRL(66, 66, "mpp66", armada_xp_mpp_ctrl),
->>
->> instead of
->>
->> MPP_FUNC_CTRL(0, 66, NULL, armada_xp_mpp_ctrl),
->>
->> and generate the 66 names dynamically.
->
-> Right. But what I meant is that we already have a place where we have
-> one macro call for each pin: when defining the MPP modes. So I was
-> thinking of simplifying the whole stuff by "merging" the notion of MPP
-> control with the notion of MPP mode. This way, when you do:
->
-> 	MPP_MODE(0,
-> 		   MPP_FUNCTION(...),
-> 		   MPP_FUNCTION(...)),
-> 	MPP_MODE(1,
-> 		   MPP_FUNCTION(...),
-> 		   MPP_FUNCTION(...)),
-> 	MPP_MODE(2,
-> 		   MPP_FUNCTION(...),
-> 		   MPP_FUNCTION(...)),
-> [...]
-> 	MPP_MODE(65,
-> 		   MPP_FUNCTION(...),
-> 		   MPP_FUNCTION(...)),
->
-> You can take this opportunity to generate:
->
-> 	{ "mpp0", ... },
-> 	{ "mpp1", ... },
-> 	{ "mpp2", ... },
-> 	...
-> 	{ "mpp65", ... },
-
-Ah, ok, I see. Yes that should be doable. We should definitely consider
-this for later, i.e. leave it now as is and rework later.
-
->>> This is definitely good, but I'm wondering why the core cannot provide
->>> helper functions for the generic case where we have 4 bits per pin in
->>> contiguous registers. This would avoid duplicating the helper function
->>> six times (you have four in your patch series, and we'll need two more
->>> for A375 and A38x).
->>
->> I thought about it too, but we would need a soc specific callback
->> anyway as you'll have to pass the base address somehow (and that is now
->> known by soc specific stub only). My quick rule of thumb was that the
->> amount of code replication would be almost the same.
->
-> In pinctrl-mvebu.h, we could have:
->
-> static inline int default_mpp_ctrl_get(void __iomem *base, unsigned int pid, unsigned long *config)
-> {
->          unsigned off = (pid / MVEBU_MPPS_PER_REG) * MVEBU_MPP_BITS;
->          unsigned shift = (pid % MVEBU_MPPS_PER_REG) * MVEBU_MPP_BITS;
->
->          *config = (readl(base + off) >> shift) & MVEBU_MPP_MASK;
->
->          return 0;
-> }
->
-> static inline int default_mpp_ctrl_set(void __iomem *base, unsigned int pid, unsigned long config)
-> {
->          unsigned off = (pid / MVEBU_MPPS_PER_REG) * MVEBU_MPP_BITS;
->          unsigned shift = (pid % MVEBU_MPPS_PER_REG) * MVEBU_MPP_BITS;
->          unsigned long reg;
->
->          reg = readl(base + off) & ~(MVEBU_MPP_MASK << shift);
->          writel(reg | (config << shift), base + off);
->
->          return 0;
-> }
->
-> which would slightly reduce the per-SoC code to:
->
-> static int armada_370_mpp_ctrl_get(unsigned pid, unsigned long *config)
-> {
-> 	return default_mpp_ctrl_get(mpp_base, pid, config);
-> }
->
-> static int armada_370_mpp_ctrl_set(unsigned pid, unsigned long config)
-> {
-> 	return default_mpp_ctrl_set(mpp_base, pid, config);
-> }
->
-> but we admittedly cannot completely remove the per-SoC function, since
-> the mpp_base is now only known to each per-SoC driver.
-
-I guess I'll squash the above in for v4.. doesn't look that bad.
-
-Sebastian
-
+-- 
+Catalin
