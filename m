@@ -1,56 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaBML6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 06:58:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34909 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752875AbaBML6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 06:58:17 -0500
-Date: Thu, 13 Feb 2014 12:58:12 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Laszlo Papp <lpapp@kde.org>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [RFC PATCH] hwmon: (max6650) Convert to be a 
- platform driver
-Message-ID: <20140213125812.7ce5d0c9@endymion.delvare>
-In-Reply-To: <20140213111607.GK32508@lee--X1>
-References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
-	<20140213095817.GD32508@lee--X1>
-	<20140213111530.2a2b4982@endymion.delvare>
-	<20140213111607.GK32508@lee--X1>
-Organization: Suse Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1754545AbaBML73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 06:59:29 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:53462 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284AbaBML71 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 06:59:27 -0500
+Date: Thu, 13 Feb 2014 06:59:23 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.15] cgroup: more cleanups
+Message-ID: <20140213115923.GA29795@mtj.dyndns.org>
+References: <1391953964-22088-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391953964-22088-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
-On Thu, 13 Feb 2014 11:16:07 +0000, Lee Jones wrote:
-> On Thu, 13 Feb 2014, Jean Delvare wrote:
-> > Guenter just did:
-> > 
-> > http://lists.lm-sensors.org/pipermail/lm-sensors/2014-February/041224.html
+On Sun, Feb 09, 2014 at 08:52:28AM -0500, Tejun Heo wrote:
+> Hello,
 > 
-> Nice, FWIW:
->   Acked-by: Lee Jones <lee.jones@linaro.org>  
-> 
-> > Any change to the max6650 driver should go on top of his patch series
-> > to avoid conflicts:
-> > 
-> > http://lists.lm-sensors.org/pipermail/lm-sensors/2014-February/041223.html
-> 
-> Do you have a tree Laszlo can rebase on top of?
+> This series contains assorted cleanups which also prepare for the
+> planned migration taskset handling update.
 
-Now that the patches have my Reviewed-by and your Acked-by, I believe
-Guenter will add them shortly to:
-
-http://git.kernel.org/cgit/linux/kernel/git/groeck/linux-staging.git/log/?h=hwmon-staging
+Applied to cgroup/for-3.15.  Thanks.
 
 -- 
-Jean Delvare
-Suse L3 Support
+tejun
