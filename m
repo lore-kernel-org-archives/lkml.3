@@ -1,38 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaBMDCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 22:02:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6972 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619AbaBMDC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 22:02:27 -0500
-Message-ID: <52FC35B5.6000900@redhat.com>
-Date: Thu, 13 Feb 2014 11:02:13 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: rusty@rustcorp.com.au, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>
-Subject: Re: [PATCH net] virtio-net: alloc big buffers also when guest can
- receive UFO
-References: <1392183808-16789-1-git-send-email-jasowang@redhat.com> <20140212115901.GC23006@redhat.com>
-In-Reply-To: <20140212115901.GC23006@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752847AbaBMDCo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 22:02:44 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:61582 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619AbaBMDCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 22:02:41 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-pci@vger.kernel.org
+Cc: horms@verge.net.au, linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        valentine.barshak@cogentembedded.com, ben.dooks@codethink.co.uk,
+        geert@linux-m68k.org, bhelgaas@google.com,
+        Magnus Damm <magnus.damm@gmail.com>
+Date: Thu, 13 Feb 2014 12:03:53 +0900
+Message-Id: <20140213030353.10398.71544.sendpatchset@w520>
+In-Reply-To: <20140213030302.10398.37322.sendpatchset@w520>
+References: <20140213030302.10398.37322.sendpatchset@w520>
+Subject: [PATCH v2 05/08] PCI: rcar: Break out window size handling
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 07:59 PM, Michael S. Tsirkin wrote:
-> On Wed, Feb 12, 2014 at 01:43:28PM +0800, Jason Wang wrote:
->> > We should alloc big buffers also when guest can receive UFO
->> > pakcets. Otherwise the big packets will be truncated when mergeable rx
->> > buffer is disabled.
-> Not truncated, they will be dropped.
->
+From: Magnus Damm <damm@opensource.se>
 
-Why dropped? We enable the ufo on tap0 if VIRTIO_NET_F_GUEST_UFO is
-negotiated. So skb was queued on the receive queue. But since the
-receive buffer is small, it will be truncated during tun_put_user().
+Break out the hard coded window size code to allow
+dynamic setup. The window size is still left at 1GiB
+but with this patch changing window size is easy for
+testing.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
+
+Changes since V1:
+ - Updated to fit on top of patches from Ben Dooks
+
+ drivers/pci/host/pci-rcar-gen2.c |   31 ++++++++++++++++++++++++++++---
+ 1 file changed, 28 insertions(+), 3 deletions(-)
+
+--- 0007/drivers/pci/host/pci-rcar-gen2.c
++++ work/drivers/pci/host/pci-rcar-gen2.c	2014-02-13 10:16:48.000000000 +0900
+@@ -18,6 +18,7 @@
+ #include <linux/pci.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
++#include <linux/sizes.h>
+ #include <linux/slab.h>
+ 
+ /* AHB-PCI Bridge PCI communication registers */
+@@ -98,6 +99,7 @@ struct rcar_pci_priv {
+ 	struct resource mem_res;
+ 	struct resource *cfg_res;
+ 	int irq;
++	unsigned long window_size;
+ };
+ 
+ /* PCI configuration space operations */
+@@ -241,10 +243,31 @@ static int __init rcar_pci_setup(int nr,
+ 	iowrite32(val, reg + RCAR_USBCTR_REG);
+ 	udelay(4);
+ 
+-	/* De-assert reset and set PCIAHB window1 size to 1GB */
++	/* De-assert reset and reset PCIAHB window1 size */
+ 	val &= ~(RCAR_USBCTR_PCIAHB_WIN1_MASK | RCAR_USBCTR_PCICLK_MASK |
+ 		 RCAR_USBCTR_USBH_RST | RCAR_USBCTR_PLL_RST);
+-	iowrite32(val | RCAR_USBCTR_PCIAHB_WIN1_1G, reg + RCAR_USBCTR_REG);
++
++	/* Setup PCIAHB window1 size */
++	switch (priv->window_size) {
++	case SZ_2G:
++		val |= RCAR_USBCTR_PCIAHB_WIN1_2G;
++		break;
++	case SZ_1G:
++		val |= RCAR_USBCTR_PCIAHB_WIN1_1G;
++		break;
++	case SZ_512M:
++		val |= RCAR_USBCTR_PCIAHB_WIN1_512M;
++		break;
++	default:
++		pr_warn("unknown window size %ld - defaulting to 256M\n",
++			priv->window_size);
++		priv->window_size = SZ_256M;
++		/* fall-through */
++	case SZ_256M:
++		val |= RCAR_USBCTR_PCIAHB_WIN1_256M;
++		break;
++	}
++	iowrite32(val, reg + RCAR_USBCTR_REG);
+ 
+ 	/* Configure AHB master and slave modes */
+ 	iowrite32(RCAR_AHB_BUS_MODE, reg + RCAR_AHB_BUS_CTR_REG);
+@@ -255,7 +278,7 @@ static int __init rcar_pci_setup(int nr,
+ 	       RCAR_PCI_ARBITER_PCIBP_MODE;
+ 	iowrite32(val, reg + RCAR_PCI_ARBITER_CTR_REG);
+ 
+-	/* PCI-AHB mapping: 0x40000000-0x80000000 */
++	/* PCI-AHB mapping: 0x40000000 base */
+ 	iowrite32(0x40000000 | RCAR_PCIAHB_PREFETCH16,
+ 		  reg + RCAR_PCIAHB_WIN1_CTR_REG);
+ 
+@@ -341,6 +364,8 @@ static int rcar_pci_probe(struct platfor
+ 		return priv->irq;
+ 	}
+ 
++	priv->window_size = SZ_1G;
++
+ 	hw_private[0] = priv;
+ 	memset(&hw, 0, sizeof(hw));
+ 	hw.nr_controllers = ARRAY_SIZE(hw_private);
