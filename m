@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaBMJqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:46:10 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:51326 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751440AbaBMJqI (ORCPT
+	id S1753576AbaBMJsF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:48:05 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:45540 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989AbaBMJsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:46:08 -0500
-Message-ID: <1392284765.30853.21.camel@x220>
-Subject: Re: [uclinux-dist-devel] [PATCH] blackfin: bf60x: fix typo
- "CONFIG_PM_BFIN_WAKE_PA15_POL"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Steven Miao <realmz6@gmail.com>
-Cc: adi-buildroot-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Thu, 13 Feb 2014 10:46:05 +0100
-In-Reply-To: <CAMk6uBmNHb0t1zetK8+gkKMOj7843cRsz_f1m5zP4dPncuKwoA@mail.gmail.com>
-References: <1363736001.1390.53.camel@x61.thuisdomein>
-	 <CAMk6uBmNHb0t1zetK8+gkKMOj7843cRsz_f1m5zP4dPncuKwoA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Feb 2014 09:46:06.0362 (UTC) FILETIME=[6A7EFFA0:01CF28A0]
-X-RcptDomain: vger.kernel.org
+	Thu, 13 Feb 2014 04:48:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392240089-19489-1-git-send-email-shuah.kh@samsung.com>
+References: <1392240089-19489-1-git-send-email-shuah.kh@samsung.com>
+Date: Thu, 13 Feb 2014 10:47:59 +0100
+Message-ID: <CAPDyKFoukY2PGNWimUbRqDr36eJ_+eBASJR4uac6nH4-kowmCQ@mail.gmail.com>
+Subject: Re: [RFT][PATCH v3] mmc: change cb710-mmc platform power management
+ to use dev_pm_ops
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, mirq-linux@rere.qmqm.pl,
+        Chris Ball <chris@printf.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Shuah Khan <shuahkhan@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added current lists.]
+On 12 February 2014 22:21, Shuah Khan <shuah.kh@samsung.com> wrote:
+> Change cb710-mmc platform driver to register pm ops using dev_pm_ops instead
+> of legacy pm_ops. The existing legacy suspend/resume routines are identical
+> and simply clear IRQ mask in the device in case it got undefined during sleep
+> state. Changed code to collapse suspend and resume into one .pm interface
+> for suspend and resume which gets installed for suspend, freeze, poweroff,
+> thaw, restore, and resume states using SIMPLE_DEV_PM_OPS().
+>
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> ---
+>
+> patch v3: Addresses review comments on patch v2
+>
+>  drivers/mmc/host/cb710-mmc.c |   40 ++++++++++++++++------------------------
+>  1 file changed, 16 insertions(+), 24 deletions(-)
+>
+> diff --git a/drivers/mmc/host/cb710-mmc.c b/drivers/mmc/host/cb710-mmc.c
+> index 1087b4c..2dc7b2dc 100644
+> --- a/drivers/mmc/host/cb710-mmc.c
+> +++ b/drivers/mmc/host/cb710-mmc.c
+> @@ -662,26 +662,6 @@ static const struct mmc_host_ops cb710_mmc_host = {
+>         .get_cd = cb710_mmc_get_cd,
+>  };
+>
+> -#ifdef CONFIG_PM
+> -
+> -static int cb710_mmc_suspend(struct platform_device *pdev, pm_message_t state)
+> -{
+> -       struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+> -
+> -       cb710_mmc_enable_irq(slot, 0, ~0);
+> -       return 0;
+> -}
+> -
+> -static int cb710_mmc_resume(struct platform_device *pdev)
+> -{
+> -       struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+> -
+> -       cb710_mmc_enable_irq(slot, 0, ~0);
+> -       return 0;
+> -}
+> -
+> -#endif /* CONFIG_PM */
+> -
+>  static int cb710_mmc_init(struct platform_device *pdev)
+>  {
+>         struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+> @@ -762,14 +742,26 @@ static int cb710_mmc_exit(struct platform_device *pdev)
+>         return 0;
+>  }
+>
+> +#ifdef CONFIG_PM_SLEEP
+> +static int cb710_mmc_suspend_resume(struct device *dev)
+> +{
+> +       struct cb710_slot *slot = cb710_pdev_to_slot(to_platform_device(dev));
+> +
+> +       cb710_mmc_enable_irq(slot, 0, ~0);
+> +       return 0;
+> +}
+> +#else
+> +#define cb710_mmc_suspend_resume NULL
 
-On Wed, 2013-03-20 at 13:26 +0800, Steven Miao wrote:
-> good catch, thanks
+You don't need this. The macro will handle this for you.
 
-This typo is still present in v3.14-rc2. Was my patch perhaps lost?
+Kind regards
+Ulf Hansson
 
-> On Wed, Mar 20, 2013 at 7:33 AM, Paul Bolle <pebolle@tiscali.nl>
-> wrote:
->         Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->         ---
->         Obvious, isn't it? Introduced in v3.5, through commit
->         0fbd88ca20a68a633b565e1f5ba18ca64afb0c78 ("blackfin: bf60x:
->         add wakeup source select"). Untested.
->         
->          arch/blackfin/mach-bf609/pm.c | 2 +-
->          1 file changed, 1 insertion(+), 1 deletion(-)
->         
->         diff --git a/arch/blackfin/mach-bf609/pm.c
->         b/arch/blackfin/mach-bf609/pm.c
->         index ad505d9..0cdd695 100644
->         --- a/arch/blackfin/mach-bf609/pm.c
->         +++ b/arch/blackfin/mach-bf609/pm.c
->         @@ -210,7 +210,7 @@ void bf609_cpu_pm_enter(suspend_state_t
->         state)
->         
->          #ifdef CONFIG_PM_BFIN_WAKE_PB15
->                 wakeup |= PB15WE;
->         -# if CONFIG_PM_BFIN_WAKE_PA15_POL
->         +# if CONFIG_PM_BFIN_WAKE_PB15_POL
->                 wakeup_pol |= PB15WE;
->          # endif
->          #endif
->         --
->         1.7.11.7
-
-
-Paul Bolle
-
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(cb710_mmc_dev_pm_ops, cb710_mmc_suspend_resume,
+> +                        cb710_mmc_suspend_resume);
+> +
+>  static struct platform_driver cb710_mmc_driver = {
+>         .driver.name = "cb710-mmc",
+>         .probe = cb710_mmc_init,
+>         .remove = cb710_mmc_exit,
+> -#ifdef CONFIG_PM
+> -       .suspend = cb710_mmc_suspend,
+> -       .resume = cb710_mmc_resume,
+> -#endif
+> +       .driver.pm = &cb710_mmc_dev_pm_ops,
+>  };
+>
+>  module_platform_driver(cb710_mmc_driver);
+> --
+> 1.7.10.4
+>
