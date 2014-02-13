@@ -1,110 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaBMCcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 21:32:35 -0500
-Received: from mga11.intel.com ([192.55.52.93]:18762 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071AbaBMCcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 21:32:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,836,1384329600"; 
-   d="scan'208";a="480637561"
-Message-ID: <52FC2EB5.3010805@linux.intel.com>
-Date: Thu, 13 Feb 2014 10:32:21 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, "H. Peter Anvin" <hpa@zytor.com>
-CC: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [Patch v1] ACPI, x86: fix bug in associating hot-added CPUs with
- corresponding NUMA node
-References: <1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com> <4676819.HL23G4Egmr@vostro.rjw.lan> <52F4A4B9.2060006@linux.intel.com> <1440384.cOMzyfyUzg@vostro.rjw.lan>
-In-Reply-To: <1440384.cOMzyfyUzg@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751590AbaBMClJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 21:41:09 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:21472 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaBMClH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 21:41:07 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-6c-52fc30c17fb7
+From: Weijie Yang <weijie.yang@samsung.com>
+To: "'Mel Gorman'" <mgorman@suse.de>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, riel@redhat.com,
+        "'Minchan Kim'" <minchan@kernel.org>, weijie.yang.kh@gmail.com,
+        "'Linux-MM'" <linux-mm@kvack.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] mm/vmscan: restore sc->gfp_mask after promoting it to
+ __GFP_HIGHMEM
+Date: Thu, 13 Feb 2014 10:39:58 +0800
+Message-id: <000001cf2865$0aa2c0c0$1fe84240$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8oZOL3M2IMgqo9SBOvycqIFQ+XkA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t9jQd2DBn+CDNYdlrSYs34Nm8XlXXPY
+	LO6t+c9qMfndM0aLZV/fs1v8vbKexeLJif8sDuweO2fdZffYtKqTzWPTp0nsHidm/GbxeL/v
+	KpvH5tPVHp83yQWwR3HZpKTmZJalFunbJXBl9JyLKHjCU3FxeX4D4yquLkZODgkBE4n+z6+Y
+	IWwxiQv31rN1MXJxCAlMZ5RonzmfEcL5wyjxetpBNpAqNgFtibv9G1lBbBEBJYnTf76CdTAL
+	XGKUeHS+gxEkISwQJfHx9iOwIhYBVYmtmz8ygdi8AnYSGyZAxHkFBCV+TL7H0sXIAdSsLjFl
+	Si5ImFlAXmLzmrfMIGEJoPCjv7oQq/Qkuh+8Z4MoEZfYeOQWywRGgVlIBs1CGDQLyaBZSDoW
+	MLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOhGdSOxhXNlgcYhTgYFTi4X2w+HeQEGti
+	WXFl7iFGCQ5mJRFeGYk/QUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphak
+	FsFkmTg4pRoY1yxzr3kqJV6yR6neQXwJU4iI+XY+nutPfq9vkZ6zM35OBc+KE6955189a1B1
+	5nvVHibbqXPcvzoZKs+XDGAun3Gr/Mt27dctjcr3/QX032Xe+b3vf8F7Ll4Oz9z9rqmGS4NX
+	8GyK0Fd4dak2TcRujuVnzalHqtJDhbdxVp6Z+JrfdGvqOgsFJZbijERDLeai4kQA8aH7uIAC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping...
+We promote sc->gfp_mask to __GFP_HIGHMEM to forcibly scan highmem if
+there are too many buffer_heads pinning highmem. see: cc715d99e5
 
-On 2014/2/7 20:03, Rafael J. Wysocki wrote:
-> On Friday, February 07, 2014 05:17:45 PM Jiang Liu wrote:
->>
->> On 2014/2/5 8:14, Rafael J. Wysocki wrote:
->>> On Monday, January 20, 2014 10:31:54 AM Jiang Liu wrote:
->>>> Current ACPI cpu hotplug driver fails to associate hot-added CPUs with
->>>> corresponding NUMA node when doing socket online. The code path to
->>>> associate CPU with NUMA node is as below:
->>>> acpi_processor_add()
->>>>     ->acpi_processor_get_info()
->>>> 	->acpi_processor_hotadd_init()
->>>> 	    ->acpi_map_lsapic()
->>>> 		->_acpi_map_lsapic()
->>>> 		    ->acpi_map_cpu2node()
->>>> cpu_subsys_online()
->>>>     ->try_online_node()
->>>> 	->node_set_online()
->>>>
->>>> When doing socket online, a new NUMA node is introduced in addition to
->>>> hot-added CPU and memory device. And the new NUMA node is marked as
->>>> online when onlining hot-added CPUs through sysfs interface
->>>> /sys/devices/system/cpu/cpuxx/online.
->>>>
->>>> On the other hand, acpi_map_cpu2node() will only build the CPU to node
->>>> map if corresponding NUMA node is already online, so it always fails
->>>> to associate hot-added CPUs with corresponding NUMA node because the
->>>> NUMA node is still in offline state.
->>>>
->>>> For the fix, we could safely remove the "node_online(node)" check in
->>>> function acpi_map_cpu2node() because it's only called for hot-added CPUs
->>>> by acpi_processor_hotadd_init().
->>>>
->>>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->>>
->>> I wonder what the status here is?  Did this patch go anywhere?
->> Hi Rafael,
->> 	It's still in review stage, hasn't been accepted by any
->> maintainer yet.
-> 
-> OK
-> 
-> Peter, are you fine with the patch below?
-> 
-> Rafael
-> 
-> 
->>>
->>>> ---
->>>>  arch/x86/kernel/acpi/boot.c |    8 ++++----
->>>>  1 file changed, 4 insertions(+), 4 deletions(-)
->>>>
->>>> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
->>>> index 6c0b43b..7625de9 100644
->>>> --- a/arch/x86/kernel/acpi/boot.c
->>>> +++ b/arch/x86/kernel/acpi/boot.c
->>>> @@ -614,10 +614,10 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
->>>>  	int nid;
->>>>  
->>>>  	nid = acpi_get_node(handle);
->>>> -	if (nid == -1 || !node_online(nid))
->>>> -		return;
->>>> -	set_apicid_to_node(physid, nid);
->>>> -	numa_set_node(cpu, nid);
->>>> +	if (nid != -1) {
->>>> +		set_apicid_to_node(physid, nid);
->>>> +		numa_set_node(cpu, nid);
->>>> +	}
->>>>  #endif
->>>>  }
->>>>  
->>>>
->>>
-> 
+This patch restores sc->gfp_mask to its caller original value after
+finishing the scan job, to avoid the impact on other invocations from
+its upper caller, such as vmpressure_prio(), shrink_slab().
+
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+---
+ mm/vmscan.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+ mode change 100644 => 100755 mm/vmscan.c
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+old mode 100644
+new mode 100755
+index a9c74b4..35879f0
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2298,14 +2298,17 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+ 	bool aborted_reclaim = false;
++	bool promoted_mask = false;
+ 
+ 	/*
+ 	 * If the number of buffer_heads in the machine exceeds the maximum
+ 	 * allowed level, force direct reclaim to scan the highmem zone as
+ 	 * highmem pages could be pinning lowmem pages storing buffer_heads
+ 	 */
+-	if (buffer_heads_over_limit)
++	if (buffer_heads_over_limit) {
++		promoted_mask = !(sc->gfp_mask & __GFP_HIGHMEM);
+ 		sc->gfp_mask |= __GFP_HIGHMEM;
++	}
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2354,6 +2357,9 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 		shrink_zone(zone, sc);
+ 	}
+ 
++	if (promoted_mask)
++		sc->gfp_mask &= ~__GFP_HIGHMEM;
++
+ 	return aborted_reclaim;
+ }
+ 
+-- 
+1.7.10.4
+
+
