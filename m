@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792AbaBMKbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:31:14 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:64317 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751823AbaBMKbM (ORCPT
+	id S1754066AbaBMKbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:31:18 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:51954 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751823AbaBMKbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:31:12 -0500
-Message-ID: <1392287466.30853.48.camel@x220>
-Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_ADT7310" and friends
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Guenter Roeck <linux@roeck-us.net>, Steven Miao <realmz6@gmail.com>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Feb 2014 11:31:06 +0100
-In-Reply-To: <1392285474.30853.28.camel@x220>
-References: <1364211831.1390.285.camel@x61.thuisdomein>
-	 <20130325152258.GA17467@roeck-us.net> <51507126.2040002@metafoo.de>
-	 <1392285474.30853.28.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Feb 2014 10:31:12.0042 (UTC) FILETIME=[B73500A0:01CF28A6]
-X-RcptDomain: vger.kernel.org
+	Thu, 13 Feb 2014 05:31:15 -0500
+Date: Thu, 13 Feb 2014 10:31:09 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+Subject: Re: [PATCH] x86: fix two sparse warnings in early boot string
+ handling
+Message-ID: <20140213103109.GB20717@console-pimps.org>
+References: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com>
+ <alpine.DEB.2.02.1402111425430.32020@chino.kir.corp.google.com>
+ <20140212020010.GB21033@windriver.com>
+ <alpine.DEB.2.02.1402111821510.13509@chino.kir.corp.google.com>
+ <52FB8BEB.5020506@windriver.com>
+ <52FB9807.40706@windriver.com>
+ <alpine.DEB.2.02.1402121357450.27082@chino.kir.corp.google.com>
+ <52FBF5DD.3030407@windriver.com>
+ <alpine.DEB.2.02.1402121508430.20539@chino.kir.corp.google.com>
+ <52FC0439.7020508@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52FC0439.7020508@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-13 at 10:57 +0100, Paul Bolle wrote:
-> This issue is still present in v3.14-rc2. Guenter's suggestion is the
-> easiest way out. Should I submit a trivial patch that just removes the
-> dead code depending on never defined CONFIG_ADT7310 and
-> CONFIG_ADT7310_MODULE?
+On Wed, 12 Feb, at 03:31:05PM, H. Peter Anvin wrote:
+> 
+> The real answer IMO ought to be that since arch/x86/boot/string.c is now
+> used separately from boot.h (eboot.c which includes efi-stub-helper.c
+> does *not* include boot.h) we may have to move those string functions
+> into a separate header file.
+> 
+> Matt, do you have any opinions here?
+ 
+This makes sense to me. Perhaps arch/x86/boot/lib/string.c which would
+be useable by both arch/x86/boot/*.c and arch/x86/boot/compressed/*.c?
 
-And that is probably also true for for CONFIG_ADT7410 and
-CONFIG_ADT7410_MODULE. See https://lkml.org/lkml/2013/5/13/497 (and my
-follow up to that message).
-
-
-Paul Bolle
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
