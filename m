@@ -1,66 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaBMPKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:10:18 -0500
-Received: from mail.efficios.com ([78.47.125.74]:37242 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414AbaBMPKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:10:16 -0500
-Date: Thu, 13 Feb 2014 15:10:14 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140211234534.6bc34e57@gandalf.local.home>
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com> <20140211072738.GA24232@gmail.com> <20140211234534.6bc34e57@gandalf.local.home>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
+	id S1751881AbaBMPLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:11:19 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:37368 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaBMPLS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 10:11:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-Thread-Index: Gx2hQKXgCVDx7Vmc35zxYj8zAgkLlA==
+In-Reply-To: <CANq1E4RvavkaPvz8vozUvgOs6fSmYNR=2=sn76aFFCbR5caaBA@mail.gmail.com>
+References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4RvavkaPvz8vozUvgOs6fSmYNR=2=sn76aFFCbR5caaBA@mail.gmail.com>
+Date: Thu, 13 Feb 2014 10:11:16 -0500
+Message-ID: <CAN+gG=Gs94bQPNuW4rivEcGrySXkp2DNAVVt1PA1m2=FqR0AkQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] HID: spring cleanup v2
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Ingo Molnar" <mingo@kernel.org>
-> Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, linux-kernel@vger.kernel.org, "Ingo Molnar"
-> <mingo@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>, "Rusty Russell" <rusty@rustcorp.com.au>, "David Howells"
-> <dhowells@redhat.com>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-> Sent: Tuesday, February 11, 2014 11:45:34 PM
-> Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-> 
-> 
-[...]
-> But if the kernel expects to have signed modules, and you force a
-> module to be loaded that is not signed, then you still get that
-> "forced" module taint, which is the same one as loading a module from
-> an older kernel into a newer kernel. It's a different problem, and I
-> can see having a different taint flag be more informative to kernel
-> developers in general. I would welcome that change with or without
-> letting tracepoints be set for that module.
+Hi David,
 
-There is one important inaccuracy in your explanation above: a
-kernel supporting signed modules, but not enforcing "sig_force",
-can load unsigned modules with a simple modprobe or insmod, without
-any "--force" argument. Therefore, tainting the module as
-"TAINT_FORCED_MODULE" is misleading.
+On Wed, Feb 12, 2014 at 5:13 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Wed, Feb 5, 2014 at 10:33 PM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> Hi guys,
+>>
+>> well, here comes the promised v2 of the ll_transport cleanup.
+>>
+>> As I said, I removed patches which need some more work, and kept only the
+>> trivial ones. I also added David's documentation, which gives us a net
+>> difference of +210 lines of code :(
+>> Let's say that we still have a net worth of -106 lines of actual code :)
+>>
+>> Cheers,
+>> Benjamin
+>>
+>> Changes since v1:
+>> - removed uhid, i2c-hid patches
+>> - removed the previous 11/11 (move hid_output_raw_report to hid_ll_driver)
+>> - hid-logitech-dj: use hid_hw_raw_request instead of hid_output_report (2/9)
+>> - add documentation - I removed the hid_input_event() doc (9/9)
+>>
+>> Benjamin Tissoires (9):
+>>   HID: add inliners for ll_driver transport-layer callbacks
+>>   HID: logitech-dj: remove hidinput_input_event
+>
+> Apart from this logitech-dj patch, which I feel uncomfortable with
+> reviewing if I don't have the hardware, this series looks really good.
+> I think all patches already carry my r-b, otherwise feel free to add
+> them.
 
-Thanks,
+Thanks a lot for the review!
 
-Mathieu
+I tested the logitech one with a TK820 which has a LED on the
+capslock, and it's working fine. Still adding Nestor in the loop if he
+manages to find some time to review it.
 
+Nestor, could you have a look at 2/9
+(https://patchwork.kernel.org/patch/3591381/)?
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Cheers,
+Benjamin
+
+>
+> Thanks a lot for the cleanup!
+> David
+>
+>>   HID: HIDp: remove hidp_hidinput_event
+>>   HID: remove hidinput_input_event handler
+>>   HID: HIDp: remove duplicated coded
+>>   HID: usbhid: remove duplicated code
+>>   HID: remove hid_get_raw_report in struct hid_device
+>>   HID: introduce helper to access hid_output_raw_report()
+>>   HID: Add HID transport driver documentation
+>>
+>>  Documentation/hid/hid-transport.txt | 316 ++++++++++++++++++++++++++++++++++++
+>>  drivers/hid/hid-input.c             |  12 +-
+>>  drivers/hid/hid-lg.c                |   6 +-
+>>  drivers/hid/hid-logitech-dj.c       | 106 +++++-------
+>>  drivers/hid/hid-magicmouse.c        |   2 +-
+>>  drivers/hid/hid-sony.c              |   9 +-
+>>  drivers/hid/hid-thingm.c            |   4 +-
+>>  drivers/hid/hid-wacom.c             |  16 +-
+>>  drivers/hid/hid-wiimote-core.c      |   2 +-
+>>  drivers/hid/hidraw.c                |   9 +-
+>>  drivers/hid/i2c-hid/i2c-hid.c       |   1 -
+>>  drivers/hid/uhid.c                  |   1 -
+>>  drivers/hid/usbhid/hid-core.c       |  65 ++------
+>>  include/linux/hid.h                 |  68 +++++++-
+>>  net/bluetooth/hidp/core.c           | 115 ++-----------
+>>  15 files changed, 471 insertions(+), 261 deletions(-)
+>>  create mode 100644 Documentation/hid/hid-transport.txt
+>>
+>> --
+>> 1.8.3.1
+>>
