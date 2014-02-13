@@ -1,43 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaBMTkY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:40:24 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35281 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750975AbaBMTkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:40:23 -0500
-Date: Thu, 13 Feb 2014 19:40:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH] drm/i2c: tda998x: fix memory leak in case of i2c error
-Message-ID: <20140213194009.GD30257@n2100.arm.linux.org.uk>
-References: <20140213083316.38D7D822BD@smtp6-g21.free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140213083316.38D7D822BD@smtp6-g21.free.fr>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751615AbaBMTpX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:45:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014AbaBMTpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 14:45:21 -0500
+Date: Thu, 13 Feb 2014 14:45:16 -0500
+Message-Id: <201402131945.s1DJjGHw022495@gelk.kernelslacker.org>
+From: Dave Jones <davej@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org
+Subject: [PATCH 03/38] staging/bcm: move IOCTL_BCM_EEPROM_REGISTER_READ case out to its own function.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 09:13:34AM +0100, Jean-Francois Moine wrote:
-> When the creation of the second i2c client was failing, the private
-> buffer was not freed.
-> 
-> This bug was introduced by the commit 6ae668cc19e8
-> 'drm/i2c: tda998x: check the CEC device creation'
-> 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+bcm_char_ioctl is one of the longest non-generated functions in the kernel,
+at 1906 lines.  Splitting it up into multiple functions should simplify
+this a lot.
 
-Since David got there first with his patch, which is identical to yours,
-I'll take his description, and take this as an acked-by for it.
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+---
+ drivers/staging/bcm/Bcmchar.c | 127 ++++++++++++++++++++++--------------------
+ 1 file changed, 68 insertions(+), 59 deletions(-)
 
+diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
+index 8779ed6b3099..fcb19eaad244 100644
+--- a/drivers/staging/bcm/Bcmchar.c
++++ b/drivers/staging/bcm/Bcmchar.c
+@@ -244,6 +244,71 @@ static int bcm_char_ioctl_reg_write_private(void __user *argp, struct bcm_mini_a
+ 	return Status;
+ }
+ 
++static int bcm_char_ioctl_eeprom_reg_read(void __user *argp, struct bcm_mini_adapter *Adapter)
++{
++	struct bcm_rdm_buffer sRdmBuffer = {0};
++	struct bcm_ioctl_buffer IoBuffer;
++	PCHAR temp_buff = NULL;
++	UINT uiTempVar = 0;
++	INT Status;
++	int bytes;
++
++	if ((Adapter->IdleMode == TRUE) ||
++		(Adapter->bShutStatus == TRUE) ||
++		(Adapter->bPreparingForLowPowerMode == TRUE)) {
++
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
++				"Device in Idle Mode, Blocking Rdms\n");
++		return -EACCES;
++	}
++
++	/* Copy Ioctl Buffer structure */
++	if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
++		return -EFAULT;
++
++	if (IoBuffer.InputLength > sizeof(sRdmBuffer))
++		return -EINVAL;
++
++	if (copy_from_user(&sRdmBuffer, IoBuffer.InputBuffer, IoBuffer.InputLength))
++		return -EFAULT;
++
++	if (IoBuffer.OutputLength > USHRT_MAX ||
++		IoBuffer.OutputLength == 0) {
++		return -EINVAL;
++	}
++
++	temp_buff = kmalloc(IoBuffer.OutputLength, GFP_KERNEL);
++	if (!temp_buff)
++		return STATUS_FAILURE;
++
++	if ((((ULONG)sRdmBuffer.Register & 0x0F000000) != 0x0F000000) ||
++		((ULONG)sRdmBuffer.Register & 0x3)) {
++
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
++				"RDM Done On invalid Address : %x Access Denied.\n",
++				(int)sRdmBuffer.Register);
++
++		kfree(temp_buff);
++		return -EINVAL;
++	}
++
++	uiTempVar = sRdmBuffer.Register & EEPROM_REJECT_MASK;
++	bytes = rdmaltWithLock(Adapter, (UINT)sRdmBuffer.Register,
++			       (PUINT)temp_buff, IoBuffer.OutputLength);
++
++	if (bytes > 0) {
++		Status = STATUS_SUCCESS;
++		if (copy_to_user(IoBuffer.OutputBuffer, temp_buff, bytes)) {
++			kfree(temp_buff);
++			return -EFAULT;
++		}
++	} else {
++		Status = bytes;
++	}
++
++	kfree(temp_buff);
++	return Status;
++}
+ 
+ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ {
+@@ -305,66 +370,10 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ 		return Status;
+ 
+ 	case IOCTL_BCM_REGISTER_READ:
+-	case IOCTL_BCM_EEPROM_REGISTER_READ: {
+-		struct bcm_rdm_buffer sRdmBuffer = {0};
+-		PCHAR temp_buff = NULL;
+-		UINT uiTempVar = 0;
+-		if ((Adapter->IdleMode == TRUE) ||
+-			(Adapter->bShutStatus == TRUE) ||
+-			(Adapter->bPreparingForLowPowerMode == TRUE)) {
+-
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
+-					"Device in Idle Mode, Blocking Rdms\n");
+-			return -EACCES;
+-		}
+-
+-		/* Copy Ioctl Buffer structure */
+-		if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
+-			return -EFAULT;
+-
+-		if (IoBuffer.InputLength > sizeof(sRdmBuffer))
+-			return -EINVAL;
+-
+-		if (copy_from_user(&sRdmBuffer, IoBuffer.InputBuffer, IoBuffer.InputLength))
+-			return -EFAULT;
+-
+-		if (IoBuffer.OutputLength > USHRT_MAX ||
+-			IoBuffer.OutputLength == 0) {
+-			return -EINVAL;
+-		}
+-
+-		temp_buff = kmalloc(IoBuffer.OutputLength, GFP_KERNEL);
+-		if (!temp_buff)
+-			return STATUS_FAILURE;
+-
+-		if ((((ULONG)sRdmBuffer.Register & 0x0F000000) != 0x0F000000) ||
+-			((ULONG)sRdmBuffer.Register & 0x3)) {
+-
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
+-					"RDM Done On invalid Address : %x Access Denied.\n",
+-					(int)sRdmBuffer.Register);
+-
+-			kfree(temp_buff);
+-			return -EINVAL;
+-		}
+-
+-		uiTempVar = sRdmBuffer.Register & EEPROM_REJECT_MASK;
+-		bytes = rdmaltWithLock(Adapter, (UINT)sRdmBuffer.Register,
+-				       (PUINT)temp_buff, IoBuffer.OutputLength);
+-
+-		if (bytes > 0) {
+-			Status = STATUS_SUCCESS;
+-			if (copy_to_user(IoBuffer.OutputBuffer, temp_buff, bytes)) {
+-				kfree(temp_buff);
+-				return -EFAULT;
+-			}
+-		} else {
+-			Status = bytes;
+-		}
++	case IOCTL_BCM_EEPROM_REGISTER_READ:
++		Status = bcm_char_ioctl_eeprom_reg_read(argp, Adapter);
++		return Status;
+ 
+-		kfree(temp_buff);
+-		break;
+-	}
+ 	case IOCTL_BCM_REGISTER_WRITE:
+ 	case IOCTL_BCM_EEPROM_REGISTER_WRITE: {
+ 		struct bcm_wrm_buffer sWrmBuffer = {0};
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+1.8.5.3
+
