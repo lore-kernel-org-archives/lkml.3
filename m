@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaBMTsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:48:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33537 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897AbaBMTsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752896AbaBMTsQ (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 Feb 2014 14:48:16 -0500
-Date: Thu, 13 Feb 2014 14:48:09 -0500
-Message-Id: <201402131948.s1DJm9fF023513@gelk.kernelslacker.org>
+Received: from mx1.redhat.com ([209.132.183.28]:21259 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751565AbaBMTsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 14:48:12 -0500
+Date: Thu, 13 Feb 2014 14:48:04 -0500
+Message-Id: <201402131948.s1DJm4fS023507@gelk.kernelslacker.org>
 From: Dave Jones <davej@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org
-Subject: [PATCH 37/38] staging/bcm: move IOCTL_BCM_GET_DEVICE_DRIVER_INFO case out to its own function.
+Subject: [PATCH 36/38] staging/bcm: move IOCTL_BCM_CNTRLMSG_MASK case out to its own function.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,78 +22,81 @@ this a lot.
 
 Signed-off-by: Dave Jones <davej@fedoraproject.org>
 ---
- drivers/staging/bcm/Bcmchar.c | 51 ++++++++++++++++++++++++-------------------
- 1 file changed, 29 insertions(+), 22 deletions(-)
+ drivers/staging/bcm/Bcmchar.c | 54 ++++++++++++++++++++++++-------------------
+ 1 file changed, 30 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
-index 2cfdbeeff14a..74360ee45c2b 100644
+index 0dc1c88c4576..2cfdbeeff14a 100644
 --- a/drivers/staging/bcm/Bcmchar.c
 +++ b/drivers/staging/bcm/Bcmchar.c
-@@ -2003,6 +2003,32 @@ static int bcm_char_ioctl_cntrlmsg_mask(void __user *argp, struct bcm_mini_adapt
+@@ -1976,6 +1976,33 @@ static int bcm_char_ioctl_nvm_raw_read(void __user *argp, struct bcm_mini_adapte
  	return Status;
  }
  
-+static int bcm_char_ioctl_get_device_driver_info(void __user *argp, struct bcm_mini_adapter *Adapter)
++static int bcm_char_ioctl_cntrlmsg_mask(void __user *argp, struct bcm_mini_adapter *Adapter, struct bcm_tarang_data *pTarang)
 +{
-+	struct bcm_driver_info DevInfo;
 +	struct bcm_ioctl_buffer IoBuffer;
++	INT Status = STATUS_FAILURE;
++	ULONG RxCntrlMsgBitMask = 0;
 +
-+	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
-+
-+	memset(&DevInfo, 0, sizeof(DevInfo));
-+	DevInfo.MaxRDMBufferSize = BUFFER_4K;
-+	DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
-+	DevInfo.u32RxAlignmentCorrection = 0;
-+	DevInfo.u32NVMType = Adapter->eNVMType;
-+	DevInfo.u32InterfaceType = BCM_USB;
-+
-+	if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
++	/* Copy Ioctl Buffer structure */
++	Status = copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer));
++	if (Status) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "copy of Ioctl buffer is failed from user space");
 +		return -EFAULT;
++	}
 +
-+	if (IoBuffer.OutputLength < sizeof(DevInfo))
++	if (IoBuffer.InputLength != sizeof(unsigned long))
 +		return -EINVAL;
 +
-+	if (copy_to_user(IoBuffer.OutputBuffer, &DevInfo, sizeof(DevInfo)))
++	Status = copy_from_user(&RxCntrlMsgBitMask, IoBuffer.InputBuffer, IoBuffer.InputLength);
++	if (Status) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "copy of control bit mask failed from user space");
 +		return -EFAULT;
++	}
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\n Got user defined cntrl msg bit mask :%lx", RxCntrlMsgBitMask);
++	pTarang->RxCntrlMsgBitMask = RxCntrlMsgBitMask;
 +
-+	return STATUS_SUCCESS;
++	return Status;
 +}
 +
  
  static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
  {
-@@ -2243,28 +2269,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
- 		Status = bcm_char_ioctl_cntrlmsg_mask(argp, Adapter, pTarang);
+@@ -2212,30 +2239,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ 		Status = bcm_char_ioctl_nvm_raw_read(argp, Adapter);
  		return Status;
  
--	case IOCTL_BCM_GET_DEVICE_DRIVER_INFO: {
--		struct bcm_driver_info DevInfo;
+-	case IOCTL_BCM_CNTRLMSG_MASK: {
+-		ULONG RxCntrlMsgBitMask = 0;
 -
--		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
--
--		memset(&DevInfo, 0, sizeof(DevInfo));
--		DevInfo.MaxRDMBufferSize = BUFFER_4K;
--		DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
--		DevInfo.u32RxAlignmentCorrection = 0;
--		DevInfo.u32NVMType = Adapter->eNVMType;
--		DevInfo.u32InterfaceType = BCM_USB;
--
--		if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
+-		/* Copy Ioctl Buffer structure */
+-		Status = copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer));
+-		if (Status) {
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "copy of Ioctl buffer is failed from user space");
 -			return -EFAULT;
+-		}
 -
--		if (IoBuffer.OutputLength < sizeof(DevInfo))
--			return -EINVAL;
+-		if (IoBuffer.InputLength != sizeof(unsigned long)) {
+-			Status = -EINVAL;
+-			break;
+-		}
 -
--		if (copy_to_user(IoBuffer.OutputBuffer, &DevInfo, sizeof(DevInfo)))
+-		Status = copy_from_user(&RxCntrlMsgBitMask, IoBuffer.InputBuffer, IoBuffer.InputLength);
+-		if (Status) {
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "copy of control bit mask failed from user space");
 -			return -EFAULT;
+-		}
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "\n Got user defined cntrl msg bit mask :%lx", RxCntrlMsgBitMask);
+-		pTarang->RxCntrlMsgBitMask = RxCntrlMsgBitMask;
 -	}
 -	break;
-+	case IOCTL_BCM_GET_DEVICE_DRIVER_INFO:
-+		Status = bcm_char_ioctl_get_device_driver_info(argp, Adapter);
++	case IOCTL_BCM_CNTRLMSG_MASK:
++		Status = bcm_char_ioctl_cntrlmsg_mask(argp, Adapter, pTarang);
 +		return Status;
  
- 	case IOCTL_BCM_TIME_SINCE_NET_ENTRY: {
- 		struct bcm_time_elapsed stTimeElapsedSinceNetEntry = {0};
+ 	case IOCTL_BCM_GET_DEVICE_DRIVER_INFO: {
+ 		struct bcm_driver_info DevInfo;
 -- 
 1.8.5.3
 
