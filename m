@@ -1,129 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaBMCBf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 21:01:35 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39029 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaBMCBd (ORCPT
+	id S1752731AbaBMCCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 21:02:08 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:11369 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614AbaBMCCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 21:01:33 -0500
-Content-Type: multipart/signed; boundary="Apple-Mail=_AED3833F-1086-41BA-BE7C-FCE997FDB864"; protocol="application/pgp-signature"; micalg=pgp-sha1
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH v4 0/3] ext4: increase mbcache scalability
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <52FA80DB.2000504@hp.com>
-Date: Wed, 12 Feb 2014 19:01:17 -0700
-Cc: Andi Kleen <andi@firstfloor.org>, T Makphaibulchoke <tmac@hp.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	Wed, 12 Feb 2014 21:02:05 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 12 Feb 2014 17:59:29 -0800
+Message-ID: <52FC2798.8030901@nvidia.com>
+Date: Thu, 13 Feb 2014 11:02:00 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Emil Velikov <emil.l.velikov@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+CC: "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "aswin@hp.com" <aswin@hp.com>
-Message-Id: <1C3FB797-A411-4528-B38D-5E0533353724@dilger.ca>
-References: <1377186876-57291-1-git-send-email-tmac@hp.com> <1390588288-66930-1-git-send-email-tmac@hp.com> <87fvodcb65.fsf@tassilo.jf.intel.com> <DBA818DD-1C87-4B98-8475-8BB8F00F7DA4@dilger.ca> <52FA80DB.2000504@hp.com>
-To: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-X-Mailer: Apple Mail (2.1827)
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [Nouveau] [PATCH v2] drm/nouveau: support for platform devices
+References: <CAAVeFuJaD1C7yPRGm3+hByLDuSiBhftehcbwFfrbLaYsAwRcZQ@mail.gmail.com> <1392183495-11481-1-git-send-email-acourbot@nvidia.com> <52FB82AC.1010405@gmail.com>
+In-Reply-To: <52FB82AC.1010405@gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Emil,
 
---Apple-Mail=_AED3833F-1086-41BA-BE7C-FCE997FDB864
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=iso-8859-1
+On 02/12/2014 11:18 PM, Emil Velikov wrote:
+> On 12/02/14 05:38, Alexandre Courbot wrote:
+>> Upcoming mobile Kepler GPUs (such as GK20A) use the platform bus instead
+>> of PCI to which Nouveau is tightly dependent. This patch allows Nouveau
+>> to handle platform devices by:
+>>
+>> - abstracting PCI-dependent functions that were typically used for
+>>    resource querying and page mapping,
+>> - introducing a nv_device_is_pci() function that allows to make
+>>    PCI-dependent code conditional,
+>> - providing a nouveau_drm_platform_probe() function that takes a GPU
+>>    platform device to be probed.
+>>
+>> Core code as well as engine/subdev drivers are updated wherever possible
+>> to make use of these functions. Some older drivers are too dependent on
+>> PCI to be properly updated, but all newer code on which future chips may
+>> depend should at least be runnable with platform devices.
+>>
+> Hi Alexandre
+>
+> I've tried really hard to find something wrong with this patch but it
+> seems that you have it polished very nicely.
 
+Great!
 
-On Feb 11, 2014, at 12:58 PM, Thavatchai Makphaibulchoke =
-<thavatchai.makpahibulchoke@hp.com> wrote:
-> On 01/24/2014 11:09 PM, Andreas Dilger wrote:
->> I think the ext4 block groups are locked with the blockgroup_lock =
-that has about the same number of locks as the number of cores, with a =
-max of 128, IIRC.  See blockgroup_lock.h.=20
->>=20
->> While there is some chance of contention, it is also unlikely that =
-all of the cores are locking this area at the same time. =20
->>=20
->> Cheers, Andreas
->>=20
->=20
-> Andreas, looks like your assumption is correct.  On all 3 systems, 80, =
-60 and 20 cores, I got almost identical aim7 results using either a =
-smaller dedicated lock array or the block group lock.  I'm inclined to =
-go with using the block group lock as it does not incur any extra space.
->=20
-> One problem is that, with the current implementation mbcache has no =
-knowledge of the super block, including its block group lock, of the =
-filesystem.  In my implementation I have to change the first argument of =
-mb_cache_create() from char * to struct super_block * to be able to =
-access the super block's block group lock.
+> There is one quite minor nit in-line, but I'm not fussed either way.
+>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> ---
+>> Changes since v1:
+>> - Refactored nouveau_device_create_() to take an additional bus type
+>>    argument instead of having two versions of it that duplicate code.
+>> - Fixed a typo when substituting pci_resource_* with nv_device_resource_*
+>> - Check whether devices are PCI in relevant functions instead of
+>>    nouveau_drm_load().
+>>
+>>   drivers/gpu/drm/nouveau/core/engine/device/base.c  | 83 ++++++++++++++++++++--
+>>   drivers/gpu/drm/nouveau/core/engine/falcon.c       |  6 +-
+>>   drivers/gpu/drm/nouveau/core/engine/fifo/base.c    |  2 +-
+>>   drivers/gpu/drm/nouveau/core/engine/graph/nv20.c   |  2 +-
+>>   drivers/gpu/drm/nouveau/core/engine/graph/nv40.c   |  2 +-
+>>   drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c   |  4 +-
+>>   drivers/gpu/drm/nouveau/core/engine/xtensa.c       |  2 +-
+>>   drivers/gpu/drm/nouveau/core/include/core/device.h | 30 ++++++++
+>>   .../gpu/drm/nouveau/core/include/engine/device.h   | 17 +++--
+>>   drivers/gpu/drm/nouveau/core/include/subdev/mc.h   |  1 +
+>>   drivers/gpu/drm/nouveau/core/os.h                  |  1 +
+>>   drivers/gpu/drm/nouveau/core/subdev/bar/base.c     |  4 +-
+>>   drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c     |  4 +-
+>>   drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c     | 15 ++--
+>>   .../gpu/drm/nouveau/core/subdev/devinit/fbmem.h    |  8 ++-
+>>   drivers/gpu/drm/nouveau/core/subdev/devinit/nv04.c |  2 +-
+>>   drivers/gpu/drm/nouveau/core/subdev/devinit/nv05.c |  2 +-
+>>   drivers/gpu/drm/nouveau/core/subdev/devinit/nv10.c |  2 +-
+>>   drivers/gpu/drm/nouveau/core/subdev/devinit/nv20.c |  2 +-
+>>   drivers/gpu/drm/nouveau/core/subdev/fb/nv50.c      |  9 +--
+>>   drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c      |  9 +--
+>>   drivers/gpu/drm/nouveau/core/subdev/i2c/base.c     |  2 +-
+>>   drivers/gpu/drm/nouveau/core/subdev/instmem/nv40.c |  7 +-
+>>   drivers/gpu/drm/nouveau/core/subdev/mc/base.c      | 39 ++++++----
+>>   drivers/gpu/drm/nouveau/core/subdev/mxm/base.c     |  2 +-
+>>   drivers/gpu/drm/nouveau/nouveau_abi16.c            | 13 +++-
+>>   drivers/gpu/drm/nouveau/nouveau_agp.c              |  2 +-
+>>   drivers/gpu/drm/nouveau/nouveau_bios.c             |  4 ++
+>>   drivers/gpu/drm/nouveau/nouveau_bo.c               | 22 +++---
+>>   drivers/gpu/drm/nouveau/nouveau_chan.c             |  2 +-
+>>   drivers/gpu/drm/nouveau/nouveau_display.c          |  3 +-
+>>   drivers/gpu/drm/nouveau/nouveau_drm.c              | 59 ++++++++++++---
+>>   drivers/gpu/drm/nouveau/nouveau_sysfs.c            |  8 ++-
+>>   drivers/gpu/drm/nouveau/nouveau_ttm.c              | 31 ++++----
+>>   drivers/gpu/drm/nouveau/nouveau_vga.c              |  5 ++
+>>   35 files changed, 297 insertions(+), 109 deletions(-)
+>>
+> [snip]
+>> diff --git a/drivers/gpu/drm/nouveau/core/subdev/mc/base.c b/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
+>> index b4b9943773bc..572190c8363b 100644
+>> --- a/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
+>> +++ b/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
+>> @@ -93,8 +93,8 @@ _nouveau_mc_dtor(struct nouveau_object *object)
+>>   {
+>>   	struct nouveau_device *device = nv_device(object);
+>>   	struct nouveau_mc *pmc = (void *)object;
+>> -	free_irq(device->pdev->irq, pmc);
+>> -	if (pmc->use_msi)
+>> +	free_irq(pmc->irq, pmc);
+>> +	if (nv_device_is_pci(device) && pmc->use_msi)
+> You should be able to keep the conditional as is.
+>
+>>   		pci_disable_msi(device->pdev);
+>>   	nouveau_subdev_destroy(&pmc->base);
+>>   }
+>> @@ -114,22 +114,25 @@ nouveau_mc_create_(struct nouveau_object *parent, struct nouveau_object *engine,
+>>   	if (ret)
+>>   		return ret;
+>>
+>> -	switch (device->pdev->device & 0x0ff0) {
+>> -	case 0x00f0:
+>> -	case 0x02e0:
+>> -		/* BR02? NFI how these would be handled yet exactly */
+>> -		break;
+>> -	default:
+>> -		switch (device->chipset) {
+>> -		case 0xaa: break; /* reported broken, nv also disable it */
+>> -		default:
+>> -			pmc->use_msi = true;
+>> +	if (nv_device_is_pci(device))
+>> +		switch (device->pdev->device & 0x0ff0) {
+>> +		case 0x00f0:
+>> +		case 0x02e0:
+>> +			/* BR02? NFI how these would be handled yet exactly */
+>>   			break;
+>> +		default:
+>> +			switch (device->chipset) {
+>> +			case 0xaa:
+>> +				/* reported broken, nv also disable it */
+>> +				break;
+>> +			default:
+>> +				pmc->use_msi = true;
+>> +				break;
+>>   		}
+>>   	}
+>>
+>>   	pmc->use_msi = nouveau_boolopt(device->cfgopt, "NvMSI", pmc->use_msi);
+> As you explicitly disable msi on platform devices you can move the
+> option parsing within the if (nv_device_is_pci()) block.
 
-Note that you don't have to use the ext4_sb_info->s_blockgroup_lock.
-You can allocate and use a separate struct blockgroup_lock for mbcache
-instead of allocating a spinlock array (and essentially reimplementing
-the bgl_lock_*() code).  While it isn't a huge amount of duplication,
-that code is already tuned for different SMP core configurations and
-there is no reason NOT to use struct blockgroup_lock.
+Yes, that's correct. Actually I think it would also make sense to move 
+the next paragraph under the "if (nv_device_is_pci())" block as well, 
+since it also deals with MSI.
 
-> This works with my proposed change to allocate an mb_cache for each =
-mounted ext4 filesystem.  This would also require the same change, =
-allocating an mb_cache for each mounted filesystem, to both ext2 and =
-ext3, which would increase the scope of the patch.  The other =
-alternative, allocating a new smaller spinlock array, would not require =
-any change to either ext2 and ext3.
->=20
-> I'm working on resubmitting my patches using the block group locks and =
-extending the changes to also include both ext2 and ext3.  With this =
-approach, not only that no addition space for dedicated new spinlock =
-array is required, the e_bdev member of struct mb_cache_entry could also =
-be removed, reducing the space required for each mb_cache_entry.
->=20
-> Please let me know if you have any concern or suggestion.
+>
+> This way you can drop the change in the following conditional and the
+> similar one in _nouveau_mc_dtor.
+>
+>> -	if (pmc->use_msi && oclass->msi_rearm) {
+>> +	if (nv_device_is_pci(device) && pmc->use_msi && oclass->msi_rearm) {
 
-I'm not against re-using the s_blockgroup_lock in the superblock, since
-the chance of contention on this lock between threads is very small, as
-there are normally 4x the number of spinlocks as cores.
+Will do that, rebase and post a v3.
 
-You might consider starting with a dedicated struct blockgroup_lock in
-the mbcache code, then move to use the in-superblock struct in a later
-patch.  That would allow you to push and land the mbcache and ext4 =
-patches
-independently of the ext2 and ext3 patches (if they are big).  If the
-ext2 and ext3 patches are relatively small then this extra complexity
-in the patches may not be needed.
+>
+>
+> Many thanks, and again, welcome to nouveau :-)
 
-Cheers, Andreas
+Thanks for the review and the welcome! :)
 
+Alex.
 
-
-
-
-
---Apple-Mail=_AED3833F-1086-41BA-BE7C-FCE997FDB864
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename=signature.asc
-Content-Type: application/pgp-signature;
-	name=signature.asc
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIVAwUBUvwnbnKl2rkXzB/gAQIclQ/9GbLAfmadFvkX0BTRh3DT71fcuf+RTE9P
-pNysFzwPWuZcufchZBIh2M3VxRl2ZeiADlGTVva1Qzg2pPB49+m8VRQOI2JQ7GOv
-vtEbL8SneO1P+3mK2elxRKN4o8L5dqYsfcipOL+XoE4E+YOJgJ5FsEACg0i9oai1
-nwYato5jddHbqD3t4+tUjNHHKbKVp8ZHihojLfYndHEJvxaPtQfSQqdKIFNPfjYk
-3TLpol93+Wq/X4ClWNBt75YZmgq+j1zm8w84YKBuq3WJWfdz7t3AOronogeX8p/p
-Nyl3F1ABRtyFPZT1Pui6Dp+uf5gryWrsgHqY5+1bpFAfXl7+zGjPuDtSSJi5/+vV
-ewk/cuTWb71KvLnsDQzfPCgG+5Du9G6CjsBCpjcjjmagqeuTGUtiwxAXJ3N4scK6
-+ByBJ3RWw0Jaklh3Vxtf8KSZB6Bjj4P3v3auG39eZu0xQlMm+xYpGditogECuwod
-cCla0uDAq7QDfke+nxbVkHWg/cxnlYpout3J6lZVRrI++KbtEaI1CQJRGod5u4dh
-W3RnH6bplET1nsLyMoszKOpqMZ3D74+7XZ/Z+PVuiVipIZoK/5WKPBPUrvHOMhEx
-8smt1vncYnKkUfT7YIhVfEQ/8y+WZBpPmwEDuk+lSkQoWb+TJ2g0O+qIY/BqF+3C
-REX1gWLRLsY=
-=KMDK
------END PGP SIGNATURE-----
-
---Apple-Mail=_AED3833F-1086-41BA-BE7C-FCE997FDB864--
