@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaBMNlA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 08:41:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753261AbaBMNk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 08:40:59 -0500
-References: <8738jr5t3e.fsf@redhat.com> <20140210175246.GB2887@console-pimps.org> <87mwhy8iaj.fsf@redhat.com> <20140211131640.GD2887@console-pimps.org> <87lhxh69u0.fsf@redhat.com> <20140211141846.GA1725@console-pimps.org> <1392221703.5612.164.camel@misato.fc.hp.com> <20140213105547.GC20717@console-pimps.org>
-User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Toshi Kani <toshi.kani@hp.com>, Madper Xie <cxie@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [BUG] can't boot up: unable to handle kernel paging request at ffffffffff340003
-In-reply-to: <20140213105547.GC20717@console-pimps.org>
-Date: Thu, 13 Feb 2014 21:40:36 +0800
-Message-ID: <87k3czdtbf.fsf@redhat.com>
+	id S1753423AbaBMNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 08:44:09 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:48417 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaBMNoG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 08:44:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140213115552.GU20378@tucnak.redhat.com>
+References: <1392274867-15236-1-git-send-email-steven@uplinklabs.net>
+	<tip-a9f180345f5378ac87d80ed0bea55ba421d83859@git.kernel.org>
+	<20140213115552.GU20378@tucnak.redhat.com>
+Date: Thu, 13 Feb 2014 05:44:02 -0800
+Message-ID: <CAKbGBLiZfkFus26K3W14GahA0bi9As+qFoKPiU7JKBAfDKORuA@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] compiler/gcc4: Make quirk for asm_volatile_goto(
+ ) unconditional
+From: Steven Noonan <steven@uplinklabs.net>
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, peterz@infradead.org,
+        stable@vger.kernel.org, rostedt@goodmis.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It's the current Arch Linux GCC package:
 
-matt@console-pimps.org writes:
+$ gcc -v
+Using built-in specs.
+COLLECT_GCC=/usr/bin/gcc
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-unknown-linux-gnu/4.8.2/lto-wrapper
+Target: x86_64-unknown-linux-gnu
+Configured with: /build/gcc/src/gcc-4.8-20140206/configure
+--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/lib
+--mandir=/usr/share/man --infodir=/usr/share/info
+--with-bugurl=https://bugs.archlinux.org/
+ --enable-languages=c,c++,ada,fortran,go,lto,objc,obj-c++
+--enable-shared --enable-threads=posix --with-system-zlib
+--enable-__cxa_atexit --disable-libunwind-exceptions
+--enable-clocale=gnu --disable-libstdcxx-pch --disable-libssp
+--enable-gnu-unique-object --enable-linker-build-id
+--enable-cloog-backend=isl --disable-cloog-version-check --enable-lto
+--enable-plugin --enable-install-libiberty
+--with-linker-hash-style=gnu --disable-multilib --disable-werror
+--enable-checking=release
+Thread model: posix
+gcc version 4.8.2 20140206 (prerelease) (GCC)
 
-> On Wed, 12 Feb, at 09:15:03AM, Toshi Kani wrote:
->> 
->> Hi Matt,
->> 
->> Yes, I agree that the table size should be 0x38.  However, ACPI spec
->> states that bit0 of status indicates if the boot image graphic is valid.
->> This bit is set to 0 (invalid) on the system.  Can you check this bit
->> and return when invalid? 
->
-> Madper, could you try out this patch?
->
-Thanks Matt. This patch fix the panic. And ioremap warning disappeared
-after apply your patch.
-> ---
->
-> diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
-> index 4df9591eadad..f15103dff4b4 100644
-> --- a/arch/x86/platform/efi/efi-bgrt.c
-> +++ b/arch/x86/platform/efi/efi-bgrt.c
-> @@ -42,7 +42,7 @@ void __init efi_bgrt_init(void)
->  
->  	if (bgrt_tab->header.length < sizeof(*bgrt_tab))
->  		return;
-> -	if (bgrt_tab->version != 1)
-> +	if (bgrt_tab->version != 1 || bgrt_tab->status != 1)
->  		return;
->  	if (bgrt_tab->image_type != 0 || !bgrt_tab->image_address)
->  		return;
+https://projects.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/gcc&id=53e7ca8e616ebf6530f5dc43e86381dff92f136c
 
--- 
-Madper
+(Resending this message because gmail keeps defaulting to HTML email
+and vger.kernel.org keeps rejecting those... Thanks Google.)
+
+On Thu, Feb 13, 2014 at 3:55 AM, Jakub Jelinek <jakub@redhat.com> wrote:
+> On Thu, Feb 13, 2014 at 03:37:08AM -0800, tip-bot for Steven Noonan wrote:
+>> Commit-ID:  a9f180345f5378ac87d80ed0bea55ba421d83859
+>> Gitweb:     http://git.kernel.org/tip/a9f180345f5378ac87d80ed0bea55ba421d83859
+>> Author:     Steven Noonan <steven@uplinklabs.net>
+>> AuthorDate: Wed, 12 Feb 2014 23:01:07 -0800
+>> Committer:  Ingo Molnar <mingo@kernel.org>
+>> CommitDate: Thu, 13 Feb 2014 12:34:05 +0100
+>>
+>> compiler/gcc4: Make quirk for asm_volatile_goto() unconditional
+>>
+>> I started noticing problems with KVM guest destruction on Linux
+>> 3.12+, where guest memory wasn't being cleaned up. I bisected it
+>> down to the commit introducing the new 'asm goto'-based atomics,
+>> and found this quirk was later applied to those.
+>>
+>> Unfortunately, even with GCC 4.8.2 (which ostensibly fixed the
+>> known 'asm goto' bug) I am still getting some kind of
+>> miscompilation. If I enable the asm_volatile_goto quirk for my
+>> compiler, KVM guests are destroyed correctly and the memory is
+>> cleaned up.
+>
+> BTW, which exact 4.8.2 were you using?
+> The last known asm goto bug has been fixed on October, 10th, 2013:
+> http://gcc.gnu.org/PR58670
+> so before the October, 16th, 2013 4.8.2 release.  But already since
+> May 31th, 2013 the tip of the 4.8 GCC branch has been announcing itself
+> as 4.8.2 prerelease.  While some distribution versions of GCC announce
+> themselves as the new version only starting from the release date,
+> i.e. snapshots in between 4.8.1 release and 4.8.2 release announce
+> themselves as 4.8.1, in other distributions or upstream it announces itself
+> as 4.8.2.  So, if you are using the latter and a snapshot in between May
+> 31th, 2013 and October, 10th, 2013, then you could see gcc patchlevel 2,
+> yet have a gcc with that bug unfixed.
+> So, if the kernel doesn't use a runtime test/configure test to check for
+> this issue, but instead just relies on the patchlevel version, the only
+> safe way would be to look for GCC >= 4.9 or GCC 4.8 with patchlevel > 2
+> rather than > 1.
+>
+>         Jakub
