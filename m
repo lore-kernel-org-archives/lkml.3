@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585AbaBMMbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 07:31:16 -0500
-Received: from mx1.bahnhof.se ([213.80.101.11]:8479 "EHLO mx1.bahnhof.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754429AbaBMMbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 07:31:15 -0500
-X-Greylist: delayed 1229 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 07:31:14 EST
-X-Spam-Score: 0.056
-Message-ID: <52FCB63E.1080601@shipmail.org>
-Date: Thu, 13 Feb 2014 13:10:38 +0100
-From: Thomas Hellstrom <thomas@shipmail.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754655AbaBMMe5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 07:34:57 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:44820 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910AbaBMMey (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 07:34:54 -0500
+Message-ID: <52FCBBEA.70300@codethink.co.uk>
+Date: Thu, 13 Feb 2014 12:34:50 +0000
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        airlied@linux.ie
-Subject: Re: [PATCH] drm/ttm: Fix memory leak in ttm_agp_backend.c
-References: <1392212785-23150-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1392212785-23150-1-git-send-email-standby24x7@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Magnus Damm <magnus.damm@gmail.com>
+CC: linux-pci@vger.kernel.org, horms@verge.net.au, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, valentine.barshak@cogentembedded.com,
+        geert@linux-m68k.org, bhelgaas@google.com
+Subject: Re: [PATCH 00/08] PCI: rcar: Recent driver patches from Ben Dooks
+ and me
+References: <20140213030302.10398.37322.sendpatchset@w520>
+In-Reply-To: <20140213030302.10398.37322.sendpatchset@w520>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-BitDefender-Scanner: Mail not scanned due to license constraints
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 02:46 PM, Masanari Iida wrote:
-> This patch fix a memory leak found by cppcheck.
-> [drivers/gpu/drm/ttm/ttm_agp_backend.c:129]:
-> (error) Memory leak: agp_be
+On 13/02/14 03:03, Magnus Damm wrote:
+> PCI: rcar: Recent driver patches from Ben Dooks and me
 >
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  drivers/gpu/drm/ttm/ttm_agp_backend.c | 1 +
->  1 file changed, 1 insertion(+)
+> [PATCH 01/08] PCI: rcar: check platform_get_irq() return code
+> [PATCH v2 02/08] PCI: rcar: add error interrupt handling
+> [PATCH 03/08] PCI: rcar: fix bridge logic configuration accesses
+> [PATCH v2 04/08] PCI: rcar: Register each instance independently
+> [PATCH v2 05/08] PCI: rcar: Break out window size handling
+> [PATCH v2 06/08] PCI: rcar: Add DMABOUNCE support
+> [PATCH 07/08] PCI: rcar: Enable BOUNCE in case of HIGHMEM
+> [PATCH 08/08] PCI: rcar: Make the Kconfig dependencies more generic
 >
-> diff --git a/drivers/gpu/drm/ttm/ttm_agp_backend.c b/drivers/gpu/drm/ttm/ttm_agp_backend.c
-> index 3302f99..764be36 100644
-> --- a/drivers/gpu/drm/ttm/ttm_agp_backend.c
-> +++ b/drivers/gpu/drm/ttm/ttm_agp_backend.c
-> @@ -126,6 +126,7 @@ struct ttm_tt *ttm_agp_tt_create(struct ttm_bo_device *bdev,
->  	agp_be->ttm.func = &ttm_agp_func;
->  
->  	if (ttm_tt_init(&agp_be->ttm, bdev, size, page_flags, dummy_read_page)) {
-> +		kfree(agp_be);
->  		return NULL;
->  	}
->  
+> These patches update the pci-rcar-gen2.c driver with patches from
+> Ben Dooks and me. The first 3 are written by Ben (thanks!) and are
+> included here to show what I would like to have merged and what I
+> rebased my patches on. The following 4 are updated versions of
+>
+> [PATCH 00/04] PCI: rcar: Driver model and physical address space update
+>
+> The final patch is a new one that fixes up the Kconfig dependencies.
 
-Thanks, I'll include in the next ttm-fixes pull request.
+Thanks. Is there any chance of getting this driver device-tree
+enabled too?
 
-/Thomas
-
-
-
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
