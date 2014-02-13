@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaBMVdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:33:41 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:49763 "EHLO gloria.sntech.de"
+	id S1751938AbaBMVf0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:35:26 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39883 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209AbaBMVdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:33:35 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Subject: [PATCH v2 RESEND] regulator: gpio-regulator: fix forgotten gpios-states reading
-Date: Thu, 13 Feb 2014 22:32:41 +0100
-Message-ID: <1902047.iQ5LV1fbbb@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140213210956.GE28112@sirena.org.uk>
-References: <9348920.79Ktlcbcai@phil> <1528469.iBzMKAUgWB@phil> <20140213210956.GE28112@sirena.org.uk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751199AbaBMVfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 16:35:24 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-edac <linux-edac@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH] MAINTAINERS: Add Mauro and me as interim patch collectors
+Date: Thu, 13 Feb 2014 22:35:16 +0100
+Message-Id: <1392327316-15789-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.5.2.192.g7794a68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stuebner <heiko.stuebner@bqreaders.com>
+From: Borislav Petkov <bp@suse.de>
 
-Commit 934624d6e9f0 ("regulator: gpio-regulator: do not open-code counting
-and access of dt array elements") forgot to convert the recently added
-gpios-states property using the same pattern.
+We're more or less collecting EDAC patches already anyway so let's hold
+it down so that get_maintainer sees it too.
 
-Convert this instance to use the of-helpers too, resolving the build error.
-
-Signed-off-by: Heiko Stuebner <heiko.stuebner@bqreaders.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
-Looks like I missed the dev_warn addition from 2014-02-11 in v1.
-Patch applies against topic/gpio.
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
 
- drivers/regulator/gpio-regulator.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index 9fd5561..989b23b 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -171,13 +171,14 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 	if (!config->gpios)
- 		return ERR_PTR(-ENOMEM);
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fee5e94b0d5e..5cded4b19918 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3082,6 +3082,8 @@ F:	fs/ecryptfs/
  
--	prop = of_find_property(np, "gpios-states", NULL);
--	if (prop) {
--		proplen = prop->length / sizeof(int);
--		if (proplen != config->nr_gpios) {
--			dev_warn(dev, "gpios <-> gpios-states mismatch\n");
--			prop = NULL;
--		}
-+	proplen = of_property_count_u32_elems(np, "gpios-states");
-+	/* optional property */
-+	if (proplen < 0)
-+		proplen = 0;
-+
-+	if (proplen > 0 && proplen != config->nr_gpios) {
-+		dev_warn(dev, "gpios <-> gpios-states mismatch\n");
-+		proplen = 0;
- 	}
- 
- 	for (i = 0; i < config->nr_gpios; i++) {
-@@ -185,8 +186,11 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 		if (gpio < 0)
- 			break;
- 		config->gpios[i].gpio = gpio;
--		if (prop && be32_to_cpup((int *)prop->value + i))
--			config->gpios[i].flags = GPIOF_OUT_INIT_HIGH;
-+		if (proplen > 0) {
-+			of_property_read_u32_index(np, "gpios-states", i, &ret);
-+			if (ret)
-+				config->gpios[i].flags = GPIOF_OUT_INIT_HIGH;
-+		}
- 	}
- 
- 	/* Fetch states. */
+ EDAC-CORE
+ M:	Doug Thompson <dougthompson@xmission.com>
++M:	Borislav Petkov <bp@alien8.de>
++M:	Mauro Carvalho Chehab <m.chehab@samsung.com>
+ L:	linux-edac@vger.kernel.org
+ W:	bluesmoke.sourceforge.net
+ S:	Supported
 -- 
-1.7.10.4
-
+1.8.5.2.192.g7794a68
 
