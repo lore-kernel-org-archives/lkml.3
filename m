@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718AbaBMK0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:26:33 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41172 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaBMK0b (ORCPT
+	id S1753878AbaBMK3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:29:14 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:10065 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440AbaBMK3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:26:31 -0500
-Date: Thu, 13 Feb 2014 10:26:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-Message-ID: <20140213102621.GO28112@sirena.org.uk>
-References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
- <20140212175018.GJ28112@sirena.org.uk>
- <20140213082311.GA32508@lee--X1>
- <CAOMwXhPsQPvPn+kmBXyGq3WqsGhxTR2w1YjTzNbTyrEyxVHWxQ@mail.gmail.com>
+	Thu, 13 Feb 2014 05:29:12 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,7347"; a="13883341"
+X-IronPort-AV: E=Sophos;i="4.95,838,1384329600"; 
+   d="scan'208";a="27130663"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <ath10k@lists.infradead.org>
+Subject: Re: [PATCH 1/3] ath10k: Get rid of superfluous call to pci_disable_msi()
+References: <cover.1389904166.git.agordeev@redhat.com>
+	<ad5cc6d6bdf4c8f5ce4681ec27674d07fbda089e.1389904167.git.agordeev@redhat.com>
+	<20140130134819.GA31909@dhcp-26-207.brq.redhat.com>
+	<87y51qohjn.fsf@kamboji.qca.qualcomm.com>
+	<20140204190935.GA1430@dhcp-26-207.brq.redhat.com>
+	<8761oum0l3.fsf@kamboji.qca.qualcomm.com>
+	<20140205085047.GA27820@dhcp-26-207.brq.redhat.com>
+	<871tzilz1u.fsf@kamboji.qca.qualcomm.com>
+	<20140212003143.GD21057@google.com>
+	<20140212133816.GB3147@dhcp-26-207.brq.redhat.com>
+	<CAErSpo6c_EPc5c8aaTeD9=eXWw4OowcKhWHG6YZgTOkZRMtZHQ@mail.gmail.com>
+	<87ppmsauij.fsf@kamboji.qca.qualcomm.com>
+	<CAErSpo47k8WuHded1TnHoRedHHLe-Sk7kKsXcR4XjKmQPb0Ggg@mail.gmail.com>
+Date: Thu, 13 Feb 2014 12:29:04 +0200
+In-Reply-To: <CAErSpo47k8WuHded1TnHoRedHHLe-Sk7kKsXcR4XjKmQPb0Ggg@mail.gmail.com>
+	(Bjorn Helgaas's message of "Wed, 12 Feb 2014 14:40:26 -0700")
+Message-ID: <87mwhv9uha.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B7kmwdlU7aE/dafw"
-Content-Disposition: inline
-In-Reply-To: <CAOMwXhPsQPvPn+kmBXyGq3WqsGhxTR2w1YjTzNbTyrEyxVHWxQ@mail.gmail.com>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bjorn Helgaas <bhelgaas@google.com> writes:
 
---B7kmwdlU7aE/dafw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Wed, Feb 12, 2014 at 2:30 PM, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
+>> Bjorn Helgaas <bhelgaas@google.com> writes:
+>>
+>>>> Well, as this series is small I thought it could quickly go thru your
+>>>> tree. But since ipr had conflicts, there is no point routing all patches
+>>>> altogether, so up to you guys. The wil6210 patch is already in your pci/msi
+>>>> branch though.
+>>>
+>>> It's in pci/msi, but that's not in my -next branch yet, so I can
+>>> easily drop it.  Do drivers/net/wireless patches normally follow a
+>>> different path than the other drivers/net patches?  The wil6210 and
+>>> ath10k patches look just like the others in the 34-patch series (bnx2,
+>>> bnx2x, tg3, bna, cxgb3, etc.), so I thought it would make more sense
+>>> to include them there.
+>>
+>> ath10k patches normally go through my ath.git tree to Linville and then
+>> to David Miller. To avoid conflicts I would prefer to take ath10k
+>> patches to my tree whenever possible.
+>
+> OK, I won't do anything with ath10k (I haven't applied it anywhere).
 
-On Thu, Feb 13, 2014 at 09:14:11AM +0000, Laszlo Papp wrote:
-> On Thu, Feb 13, 2014 at 8:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > Laszlo,
-> >
-> >> > +const struct regmap_config max665x_regmap_config = {
-> >> > +   .reg_bits = 5,
-> >> > +};
+I have now taken the ath10k patches to my pending branch, will apply
+them soon.
 
-> >> This would normally be static too, and I'd *really* expect to see a
-> >> val_bits set here.  I'm a bit surprised this works without one.
-
-> > Mark (privately) mentioned to me that this patch can't possibly work
-> > given the current Regmap configuration.
-
-> Strange because I have tested the change, although not for days and
-> weeks. What exactly cannot possible work?
-
-The fact that it's using 5 bit registers should cause it to be rejected
-when trying to initialise as the regmap code doesn't support 5 bit
-registers, and I'd not expect us to have selected sensible value
-formatting code either.
-
---B7kmwdlU7aE/dafw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS/J3KAAoJELSic+t+oim9RVwP/RPPvAPEUkk4uEc6UFmyC/xG
-3lIT3mvySvrVTY7ysVEbaqKtKS4wuN4i7Bl3uAAGJx39398p/Kt0K8UwGo64WMJd
-MlHVg146xRSw6pcdwzlnAxNRJpoiz1ehmB5HkTEK6LYPXjkmKkngOYWLd4w1CeVa
-5avFaJFgRurCfyl2QlAFxSwJGm2k7wdNdubFKxEGEe5LQKyR+q+e/kwCmA1wDzTJ
-yzwCXUN8niEQZE2bjnFXhdUTvKcXHE/jHPetU/Uk30sF46ZsH/u5+tuvK+e9N87M
-A2tly7yfKA4aczQoDVARlU14SN0E+Wq09B4+jRY28jTlA2NfqgfYO76+0iuAdr+C
-h4A3gemZcCe0vU9C1JTFfakXQ0++UNgWTZw2OFnPQyWPPVcZ1qvzO4UJRPaFz96u
-R1r1Pu6f5QReN0lzkIZwrQmQcr1flHi8RAFI2qJNP1bslT8+/6J0mdIKTt3djQGW
-oCazTs7cpqED0daKcK9BJVrbY80oqIgc6dtvL/HTz9NZWI9NidWel3dojXxZqBDt
-vduraGoq+IFBGytIJjeUzhhOMgBzPV1KWIfZd36CSc4R6NIqz3pb3ZAEUooBRHqO
-9WBTfJd6EtuGQinbKSjcJpdXPwb9QosBcffIbZmbQlYaYMA/7EeTHwOStb4Iizjf
-is4tZR0/MkVNPKMIo4RX
-=EHZE
------END PGP SIGNATURE-----
-
---B7kmwdlU7aE/dafw--
+-- 
+Kalle Valo
