@@ -1,97 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaBMShz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:37:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34245 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbaBMShy (ORCPT
+	id S1753086AbaBMSiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:38:46 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:52437 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752172AbaBMSip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:37:54 -0500
-Date: Thu, 13 Feb 2014 10:39:12 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Adam Borowski <kilobyte@angband.pl>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vt: detect and ignore OSC codes.
-Message-ID: <20140213183912.GA18522@kroah.com>
-References: <1389766864-22673-1-git-send-email-kilobyte@angband.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389766864-22673-1-git-send-email-kilobyte@angband.pl>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 13 Feb 2014 13:38:45 -0500
+Date: Thu, 13 Feb 2014 19:38:42 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 00/13] pinctrl: mvebu: restructure resource
+ allocation
+Message-ID: <20140213193842.395994e5@skate>
+In-Reply-To: <52FCFC97.8050200@gmail.com>
+References: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20140213172620.76e760ba@skate>
+	<52FCF59E.3090100@gmail.com>
+	<20140213175914.205803a6@skate>
+	<52FCFC97.8050200@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 07:21:04AM +0100, Adam Borowski wrote:
-> These can be used to send commands consisting of an arbitrary string to the
-> terminal, most often used to set a terminal's window title or to redefine
-> the colour palette.  Our console doesn't use OSC, unlike everything else,
-> which can lead to junk being displayed if a process sends such a code
-> unconditionally.
+Dear Sebastian Hesselbarth,
+
+On Thu, 13 Feb 2014 18:10:47 +0100, Sebastian Hesselbarth wrote:
+> >>> I am not sure what you mean here in terms of the ordering for the
+> >>> patches. I'm attaching several patches, and the first three patches
+> >>> adapt your patch series to also cover 375 and 38x, assuming the pinctrl
+> >>> support for 375 and 38x is merged before your patch series.
+> >>
+> >> Right. If 375/38x pinctrl goes in first (what I expect), I'd have to add
+> >> corresponding patches. You already sent them, I'll pick them up.
+> >
+> > Ok, cool. Hopefully we can sort out the merging of those two patch
+> > series for 3.15 with Linus Walleij.
 > 
-> Not following Ecma-48, this commit recognizes 7-bit forms (ESC ] ... 0x07,
-> ESC ] .. ESC \) but not 8-bit (0x9D ... 0x9C).
+> That is the plan - or rather get his Acked-by as we are lucky to have
+> pinctrl/mvebu and touching nothing else.
+
+Right.
+
+> > You can take this opportunity to generate:
+> >
+> > 	{ "mpp0", ... },
+> > 	{ "mpp1", ... },
+> > 	{ "mpp2", ... },
+> > 	...
+> > 	{ "mpp65", ... },
 > 
-> Signed-off-by: Adam Borowski <kilobyte@angband.pl>
+> Ah, ok, I see. Yes that should be doable. We should definitely consider
+> this for later, i.e. leave it now as is and rework later.
 
-Where is this documented?
+Sure, as I said, I don't think we should do all the possible
+improvements right now. Your patch series is already large enough :-)
+
+That being said, I haven't looked very closely at the Dove pinctrl
+driver, and this is the one that does the most funky things, with those
+cases where multiple pins are muxed with a single register control.
 
 
-> ---
->  drivers/tty/vt/vt.c | 14 +++++++++++---
->  1 file changed, 11 insertions(+), 3 deletions(-)
+> > static int armada_370_mpp_ctrl_get(unsigned pid, unsigned long *config)
+> > {
+> > 	return default_mpp_ctrl_get(mpp_base, pid, config);
+> > }
+> >
+> > static int armada_370_mpp_ctrl_set(unsigned pid, unsigned long config)
+> > {
+> > 	return default_mpp_ctrl_set(mpp_base, pid, config);
+> > }
+> >
+> > but we admittedly cannot completely remove the per-SoC function, since
+> > the mpp_base is now only known to each per-SoC driver.
 > 
-> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-> index 61b1137..0377c52 100644
-> --- a/drivers/tty/vt/vt.c
-> +++ b/drivers/tty/vt/vt.c
-> @@ -1590,7 +1590,7 @@ static void restore_cur(struct vc_data *vc)
->  
->  enum { ESnormal, ESesc, ESsquare, ESgetpars, ESgotpars, ESfunckey,
->  	EShash, ESsetG0, ESsetG1, ESpercent, ESignore, ESnonstd,
-> -	ESpalette };
-> +	ESpalette, ESosc };
->  
->  /* console_lock is held (except via vc_init()) */
->  static void reset_terminal(struct vc_data *vc, int do_clear)
-> @@ -1650,11 +1650,15 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
->  	 *  Control characters can be used in the _middle_
->  	 *  of an escape sequence.
->  	 */
-> +	if (vc->vc_state == ESosc && c>=8 && c<=13) /* ... except for OSC */
-> +		return;
->  	switch (c) {
->  	case 0:
->  		return;
->  	case 7:
-> -		if (vc->vc_bell_duration)
-> +		if (vc->vc_state == ESosc)
-> +			vc->vc_state = ESnormal;
-> +		else if (vc->vc_bell_duration)
->  			kd_mksound(vc->vc_bell_pitch, vc->vc_bell_duration);
->  		return;
->  	case 8:
-> @@ -1765,7 +1769,9 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
->  		} else if (c=='R') {   /* reset palette */
->  			reset_palette(vc);
->  			vc->vc_state = ESnormal;
-> -		} else
-> +		} else if (c>='0' && c<='9')
-> +			vc->vc_state = ESosc;
-> +		else
->  			vc->vc_state = ESnormal;
->  		return;
->  	case ESpalette:
-> @@ -2023,6 +2029,8 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
->  		return;
->  	default:
->  		vc->vc_state = ESnormal;
-> +	case ESosc:
-> +		return;
+> I guess I'll squash the above in for v4.. doesn't look that bad.
 
-Why below the default: case?
+Cool, thanks!
 
-thanks,
-
-greg k-h
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
