@@ -1,130 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758AbaBMPYN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:24:13 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:54721 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337AbaBMPYL (ORCPT
+	id S1751938AbaBMP0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:26:04 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:48740 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751480AbaBMP0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:24:11 -0500
-Date: Thu, 13 Feb 2014 17:24:23 +0100
-From: Luis Ortega <luiorpe1@upv.es>
-To: Jani Nikula <jani.nikula@intel.com>
-Cc: daniel.vetter@ffwll.ch, airlied@linux.ie, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [Regression 3.14-rc2] drm/i915: Brightness adjustment is broken
- in 945GM
-Message-ID: <20140213162422.GA765@Len.lan_dn>
-References: <20140213153458.GA724@Len.lan_dn>
- <87lhxfvytk.fsf@intel.com>
+	Thu, 13 Feb 2014 10:26:01 -0500
+Date: Thu, 13 Feb 2014 10:25:52 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [RFC - beta][PATCH] tracing: Introduce TRACE_MARKER() no
+ argument trace event
+Message-ID: <20140213102552.2b292484@gandalf.local.home>
+In-Reply-To: <20140213142640.GD14383@localhost.localdomain>
+References: <20140207112357.35552998@gandalf.local.home>
+	<20140213142640.GD14383@localhost.localdomain>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <87lhxfvytk.fsf@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I dare say either your bisect went sour or you don't have 945GM. Please
-> verify your steps.
+On Thu, 13 Feb 2014 15:26:42 +0100
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Well, what can I say? I was careful when testing and the last kernel I compiled
-shows the problem. I can replay the bisection if needed but if I have to start
-all over again it's gonna take some time. I'm compiling in the netbook and took
-me day and a half to finish the process.
-
-In all honesty, along the way I met commit messages that I thought were more
-probable to introduce this regression. (backlight related)
-
-Also, here's the output of lspci:
-00:00.0 Host bridge: Intel Corporation Mobile 945GSE Express Memory Controller Hub (rev 03)
-00:02.0 VGA compatible controller: Intel Corporation Mobile 945GSE Express Integrated Graphics Controller (rev 03)
-00:02.1 Display controller: Intel Corporation Mobile 945GM/GMS/GME, 943/940GML Express Integrated Graphics Controller (rev 03)
-
-> Please provide dmesg with drm.debug=0xe with 3.14-rc2.
-
-Care to explain a bit more before I recompile 3.14-rc2? Do I need to
-enable some particular debug option? How do I proceed for drm.debug=0xe?
-
-
-Luis
-> On Thu, Feb 13, 2014 at 05:04:23PM +0200, Jani Nikula wrote:
-> On Thu, 13 Feb 2014, Luis Ortega <luiorpe1@upv.es> wrote:
-> > Hi, testing 3.14-rc2 I noticed I could not adjust the brightness of the
-> > screen any longer. This problem is already present in 3.14-rc1. 3.13 works fine.
-> >
-> > My hardware is a netbook with intel atom and a 945GM graphics card.
-> >
-> > I bisected the problem down to the next commit:
+> > Is this worth doing?
 > 
-> I dare say either your bisect went sour or you don't have 945GM. Please
-> verify your steps.
+> It sounds worth yeah. I've run into this situation multiple times where I had
+
+Is it?
+
+> to pass 0 instead of nothing on a tracepoint.
+
+What tracepoints?
+
+The problem I have with a tracepoint that does not pass any information
+what's so ever, is that it can be too tempting to use. Tracepoints do
+not have zero overhead when not used, but a negligible one. Too many
+tracepoints add up, and their foot print can start to be noticed.
+
+Point being, why have a tracepoint if you are not recording any data?
+Just do a function trace, or add a kprobe. That's easy enough.
+
+But that said, see below.
+
 > 
-> Please provide dmesg with drm.debug=0xe with 3.14-rc2.
-> 
-> BR,
-> Jani.
-> 
-> >
-> > bc0bb9fd1c7810407ab810d204bbaecb255fddde is the first bad commit
-> > commit bc0bb9fd1c7810407ab810d204bbaecb255fddde
-> > Author: Jani Nikula <jani.nikula@intel.com>
-> > Date:   Thu Nov 14 12:14:29 2013 +0200
-> >
-> >     drm/i915: remove QUIRK_NO_PCH_PWM_ENABLE
-> >     
-> >     The quirk was added as what I'd say was a stopgap measure in
-> >     
-> >     commit e85843bec6c2ea7c10ec61238396891cc2b753a9
-> >     Author: Kamal Mostafa <kamal@canonical.com>
-> >     Date:   Fri Jul 19 15:02:01 2013 -0700
-> >     
-> >         drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
-> >     
-> >     without really digging into what was going on.
-> >     
-> >     Also, as mentioned in the related bug [1], having the quirk regressed
-> >     some of the machines it was supposed to fix to begin with, and there
-> >     were patches posted to disable the quirk on such machines [2]!
-> >     
-> >     The fact is, we do need the BLM_PCH_PWM_ENABLE bit set to have
-> >     backlight. With the quirk, we've relied on BIOS to have set it, and our
-> >     save/restore code to retain it. With the full backlight setup at enable,
-> >     we have no place for things that rely on previous state.
-> >     
-> >     With the per platform hooks, we've also made a change in the PCH
-> >     platform enable order: setting the backlight duty cycle between CPU and
-> >     PCH PWM enable. Some experimenting and
-> >     
-> >     commit 770c12312ad617172b1a65b911d3e6564fc5aca8
-> >     Author: Takashi Iwai <tiwai@suse.de>
-> >     Date:   Sat Aug 11 08:56:42 2012 +0200
-> >     
-> >         drm/i915: Fix blank panel at reopening lid
-> >     
-> >     indicate that we can't set the backlight before enabling CPU PWM; the
-> >     value just won't stick. But AFAICT we should do it before enabling the
-> >     PCH PWM.
-> >     
-> >     Finally, any fallout we should fix properly, preferrably without quirks,
-> >     and absolutely without quirks that rely on existing state. With the per
-> >     platform hooks have much more flexibility to adjust the sequence as
-> >     required by platforms.
-> >     
-> >     [1] https://bugzilla.kernel.org/show_bug.cgi?id=47941
-> >     [2] http://lkml.kernel.org/r/1378229848-29113-1-git-send-email-kamal@canonical.com
-> >     
-> >     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-> >     Reviewed-by: Imre Deak <imre.deak@intel.com>
-> >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> >
-> >
-> > Additionally, when I had narrowed the problem to around 11 commits all the
-> > resulting kernel I compiled made the screen blink and shake from left to right
-> > non-stop. In the -rc kernels this doesn't happen. Thought it was worth
-> > mentioning.
-> 
-> 
-> -- 
-> Jani Nikula, Intel Open Source Technology Center
+> Now about the name, why not TRACE_EVENT_EMPTY?
+
+Because that's an ugly name ;-)
+
+Also a bit misleading, because it sounds like the there's no items
+attached or something. It is too close to "list_empty()". My original
+name was TRACE_EVENT_NOARGS(), which could work too.
+
+Now another possible solution is to just introduce a trace_marker()
+function that you could place anywhere. And then they could show up in
+trace/events/markers/file-func-line/
+
+We could do something like:
+
+struct trace_marker {
+	char *file;
+	char *func;
+	int line;
+	struct static_key key;
+};
+
+#define trace_marker() __trace_marker(__FILE__,__func__, __LINE__)
+static inline void __trace_marker(const char *file,
+				const char *func, int line)
+{
+	static struct trace_marker marker
+		__attribute__((section("__trace_marker"))) = {
+		.file = file,
+		.func = func,
+		.line = line
+	};
+
+	if (static_key_false(&marker.key))
+		trace_marker_call(&marker);
+}
+
+As marker would be a static value, gcc should hard code the first
+parameter to it and make the call. Basically something like:
+
+	mov $0x<marker-address>, %rdi
+	call trace_marker_call
+
+If we really want to be efficient, we could extend jump labels for each
+arch, and remove the call completely.
+
+	asm goto ("1:"
+		  ".byte NOP\n"
+		  ".pushsection __trace_marker_struct\n"
+		  "2:.quad 1b\n"
+		  ".quad %file\n"
+		  ".quad %func\n'
+		  ".word %line\n"
+		  ".popsection\n"
+		  ".pushsection __trace_marker_ptrs\n"
+		  ".quad 2b\n"
+		  ".popsection\n"
+		 : : file, func, line);
+
+[ OK, I didn't follow the true format for asm syntax, but that's
+because I'm just trying to relay an idea, not actually make working
+code ]
+
+Then the only thing that would be inserted in the code is a nop. We
+could then replace that nop with a call to a trampoline (similar to
+mcount) that can call a C function with the address that it came from
+so that the function could do a look up to find the matching marker to
+trace.
+
+OK, this is probably a bit too much, but it is feasible. Most likely
+not worth the pain.
+
+-- Steve
+
