@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaBMXee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:34:34 -0500
-Received: from trent.utfs.org ([94.185.90.103]:44313 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006AbaBMXed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:34:33 -0500
-Date: Thu, 13 Feb 2014 15:34:19 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Dave Chinner <david@fromorbit.com>
-cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com, linux-mm@kvack.org
-Subject: Re: 3.14.0-rc2: WARNING: at mm/slub.c:1007
-In-Reply-To: <20140213222602.GK13997@dastard>
-Message-ID: <alpine.DEB.2.19.4.1402131531290.6233@trent.utfs.org>
-References: <alpine.DEB.2.19.4.1402131144390.6233@trent.utfs.org> <20140213222602.GK13997@dastard>
-User-Agent: Alpine 2.19.4 (DEB 40 2013-11-18)
+	id S1752833AbaBMXlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:41:03 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59482 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752660AbaBMXlB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 18:41:01 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "Zheng, Lv" <lv.zheng@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH 2/2] ACPICA: acpidump: Remove translation protection on integer types.
+Date: Fri, 14 Feb 2014 00:55:42 +0100
+Message-ID: <3736900.Ik2hhBZqKa@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31DC88AC@ORSMSX106.amr.corp.intel.com>
+References: <cover.1392086457.git.lv.zheng@intel.com> <1AE640813FDE7649BE1B193DEA596E88024B004C@SHSMSX101.ccr.corp.intel.com> <3908561D78D1C84285E8C5FCA982C28F31DC88AC@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Feb 2014 at 09:26, Dave Chinner wrote:
-> > after upgrading from 3.13-rc8 to 3.14.0-rc2 on this PowerPC G4 machine, 
-> > the WARNING below was printed.
-> > 
-> > Shortly after, a lockdep warning appeared (possibly related to my 
-> > post to the XFS list yesterday[0]).
+On Thursday, February 13, 2014 11:34:45 PM Luck, Tony wrote:
+> >    All definitions are equal except ACPI_UINT64_MAX for CONFIG_IA64.  It
+> >    is changed from sizeof(unsigned long) to sizeof(unsigned long long).
+> >    By investigation, 64bit Linux kernel build is LP64 compliant, i.e.,
+> >    sizeof(long) and (pointer) are 64.  As sizeof(unsigned long) equals to
+> >    sizeof(unsigned long long) on IA64 platform where CONFIG_64BIT cannot be
+> >    disabled, this change actually will not affect the value of
+> >    ACPI_UINT64_MAX on IA64 platforms.
 > 
-> Unlikely.
+> This all looks correct to me - it really shouldn't make any difference
+> to ia64 whether we use "long" or "long long" ... both are 8-byte entities.
+> The compiler would complain in some places if you mixed & matched
+> incorrectly (e.g. printk("val = %ld\n", val); will give a warning if val has
+> been switched from "long" to "long long" and the format would need
+> to change to "%lld").  But it looks like nothing like that happens as a
+> result of this patch. All my ia64 configs build with no new warnings.
+> 
+> Boots OK too.
 
-OK, so the "possible irq lock inversion dependency detected" is a lockdep 
-regression, as you explained in the xfs-list thread. What about the 
-"RECLAIM_FS-safe -> RECLAIM_FS-unsafe lock order detected" warning - I 
-haven't seen it again though, only once with 3.14.0-rc2.
+Great, thanks for the confirmation!
 
-Christian.
--- 
-BOFH excuse #108:
+I'm going to queue this up for 3.15.
 
-The air conditioning water supply pipe ruptured over the machine room
+Rafael
+
