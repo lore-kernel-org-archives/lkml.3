@@ -1,119 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaBMP1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:27:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39724 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999AbaBMP1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:27:46 -0500
-Date: Thu, 13 Feb 2014 16:27:45 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Filipe Brandenburger <filbranden@google.com>,
-        Li Zefan <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Markus Blank-Burian <burian@muenster.de>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] memcg: reparent charges of children before
- processing parent
-Message-ID: <20140213152745.GE11986@dhcp22.suse.cz>
-References: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
+	id S1752056AbaBMP2U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:28:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:56587 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751735AbaBMP2T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 10:28:19 -0500
+Date: Thu, 13 Feb 2014 10:28:17 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
+ TAINT_UNSIGNED_MODULE
+Message-ID: <20140213102817.4bfd5eac@gandalf.local.home>
+In-Reply-To: <1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
+References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
+	<20140211072738.GA24232@gmail.com>
+	<20140211234534.6bc34e57@gandalf.local.home>
+	<1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402121500070.5029@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-02-14 15:03:31, Hugh Dickins wrote:
-> From: Filipe Brandenburger <filbranden@google.com>
+On Thu, 13 Feb 2014 15:10:14 +0000 (UTC)
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+
+> ----- Original Message -----
+> > From: "Steven Rostedt" <rostedt@goodmis.org>
+> > To: "Ingo Molnar" <mingo@kernel.org>
+> > Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, linux-kernel@vger.kernel.org, "Ingo Molnar"
+> > <mingo@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>, "Rusty Russell" <rusty@rustcorp.com.au>, "David Howells"
+> > <dhowells@redhat.com>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+> > Sent: Tuesday, February 11, 2014 11:45:34 PM
+> > Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+> > 
+> > 
+> [...]
+> > But if the kernel expects to have signed modules, and you force a
+> > module to be loaded that is not signed, then you still get that
+> > "forced" module taint, which is the same one as loading a module from
+> > an older kernel into a newer kernel. It's a different problem, and I
+> > can see having a different taint flag be more informative to kernel
+> > developers in general. I would welcome that change with or without
+> > letting tracepoints be set for that module.
 > 
-> Sometimes the cleanup after memcg hierarchy testing gets stuck in
-> mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
+> There is one important inaccuracy in your explanation above: a
+> kernel supporting signed modules, but not enforcing "sig_force",
+> can load unsigned modules with a simple modprobe or insmod, without
+> any "--force" argument. Therefore, tainting the module as
+> "TAINT_FORCED_MODULE" is misleading.
 > 
-> There may turn out to be several causes, but a major cause is this: the
-> workitem to offline parent can get run before workitem to offline child;
-> parent's mem_cgroup_reparent_charges() circles around waiting for the
-> child's pages to be reparented to its lrus, but it's holding cgroup_mutex
-> which prevents the child from reaching its mem_cgroup_reparent_charges().
-> 
-> Further testing showed that an ordered workqueue for cgroup_destroy_wq
-> is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
-> stage on the way can mess up the order before reaching the workqueue.
 
-This whole code path is so complicated by different types of delayed
-work that I am not wondering that we have missed that :/
+Oh! You are saying that if the kernel only *supports* signed modules,
+and you load a module that is not signed, it will taint the kernel?
 
-> Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
-> all its children (and grandchildren, in the correct order) to have their
-> charges reparented first.
 
-That is basically what I was suggesting
-http://marc.info/?l=linux-mm&m=139178386407184&w=2 as #1 option. I
-cannot say I would like it and I think that reparenting LRUs in
-css_offline and then reparent the remaining charges from css_free is a
-better solution but let's keep this for later.
-
-> Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
-> Signed-off-by: Filipe Brandenburger <filbranden@google.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: stable@vger.kernel.org # v3.10+ (but will need extra care)
-
-OK, I guess we should go with this one because it describes both the
-problem in memcg offlining and requirements from the cgroup core so the
-later approach can build on top of it.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
-> Or, you may prefer my alternative cgroup.c approach in 2/2:
-> there's no need for both.  Please note that neither of these patches
-> attempts to handle the unlikely case of racy charges made to child
-> after its offline, but parent's offline coming before child's free:
-> mem_cgroup_css_free()'s backstop call to mem_cgroup_reparent_charges()
-> cannot help in that case, with or without these patches.  Fixing that
-> would have to be a separate effort - Michal's?
-
-I plan to implement the LRU care for css_offline and charge drain for
-css_free later on but I have quite some work on my plate currently so I
-cannot promis it will be done right now. I hope to have it soon though.
-
->  mm/memcontrol.c |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
-> 
-> --- 3.14-rc2/mm/memcontrol.c	2014-02-02 18:49:07.897302115 -0800
-> +++ linux/mm/memcontrol.c	2014-02-11 17:48:07.604582963 -0800
-> @@ -6595,6 +6595,7 @@ static void mem_cgroup_css_offline(struc
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
->  	struct mem_cgroup_event *event, *tmp;
-> +	struct cgroup_subsys_state *iter;
->  
->  	/*
->  	 * Unregister events and notify userspace.
-> @@ -6611,7 +6612,14 @@ static void mem_cgroup_css_offline(struc
->  	kmem_cgroup_css_offline(memcg);
->  
->  	mem_cgroup_invalidate_reclaim_iterators(memcg);
-> -	mem_cgroup_reparent_charges(memcg);
-> +
-> +	/*
-> +	 * This requires that offlining is serialized.  Right now that is
-> +	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-> +	 */
-> +	css_for_each_descendant_post(iter, css)
-> +		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
-> +
->  	mem_cgroup_destroy_all_caches(memcg);
->  	vmpressure_cleanup(&memcg->vmpressure);
->  }
-
--- 
-Michal Hocko
-SUSE Labs
+-- Steve
