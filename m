@@ -1,143 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaBMGRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 01:17:22 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:62000 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456AbaBMGRU (ORCPT
+	id S1752396AbaBMGUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 01:20:43 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:37146 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaBMGUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 01:17:20 -0500
+	Thu, 13 Feb 2014 01:20:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140212181043.GB23630@e106331-lin.cambridge.arm.com>
-References: <1389266554-23463-1-git-send-email-sachin.kamat@linaro.org>
-	<1389266554-23463-3-git-send-email-sachin.kamat@linaro.org>
-	<20140212181043.GB23630@e106331-lin.cambridge.arm.com>
-Date: Thu, 13 Feb 2014 11:47:19 +0530
-Message-ID: <CAK9yfHyrKR27Z=S4ZuS5ZuJKjiVxFQXe4=izXyJMRs8c+-PuMg@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] Documentation: mfd: Add binding document for S2MPA01
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "sbkim73@samsung.com" <sbkim73@samsung.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>
+In-Reply-To: <alpine.DEB.2.02.1402121828020.28897@chino.kir.corp.google.com>
+References: <2767883.6dX08SOjIi@daeseok-laptop.cloud.net>
+	<alpine.DEB.2.02.1402121828020.28897@chino.kir.corp.google.com>
+Date: Thu, 13 Feb 2014 15:20:40 +0900
+Message-ID: <CAHb8M2As39jpGh=EtS9PHrpZVLEgh9Uxuhf+Y03+0P2s4H4iNg@mail.gmail.com>
+Subject: Re: [PATCH] kernel/resource.c: fix sparse non static symbol warning
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, toshi.kani@hp.com,
+        isimatu.yasuaki@jp.fujitsu.com, gong.chen@linux.intel.com,
+        Kevin Hao <haokexin@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+OK. If I send a patch like this again, ChangeLog is written as you comment.
 
-On 12 February 2014 23:40, Mark Rutland <mark.rutland@arm.com> wrote:
-> Hi Sachin,
+Thanks.
+Daeseok Youn.
+
+
+2014-02-13 11:28 GMT+09:00 David Rientjes <rientjes@google.com>:
+> On Thu, 13 Feb 2014, Daeseok Youn wrote:
 >
-> Apologies for the delay on this.
-
-No problem :). Thank you for your review. Please see my comments inline.
-
->
-> On Thu, Jan 09, 2014 at 11:22:34AM +0000, Sachin Kamat wrote:
->> Added initial binding documentation for S2MPA01 MFD.
+>> From f8e0752ac80e56bcbfe197a5820692d199822b52 Mon Sep 17 00:00:00 2001
+>> From: Daeseok Youn <daeseok.youn@gmail.com>
+>> Date: Thu, 13 Feb 2014 10:11:39 +0900
+>> Subject: [PATCH] kernel/resource.c: fix sparse non static symbol warning
 >>
->> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
->> ---
->> * Re-organised as suggested by Mark Rutland.
->> ---
->>  Documentation/devicetree/bindings/mfd/s2mpa01.txt |   86 +++++++++++++++++++++
->>  1 file changed, 86 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
+>> kernel/resource.c:518:5: warning:
+>>  symbol 'reallocate_resource' was not declared. Should it be static?
 >>
->> diff --git a/Documentation/devicetree/bindings/mfd/s2mpa01.txt b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
->> new file mode 100644
->> index 000000000000..70879b92b24b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
->> @@ -0,0 +1,86 @@
->> +
->> +* Samsung S2MPA01 Voltage and Current Regulator
->> +
->> +The Samsung S2MPA01 is a multi-function device which includes high
->> +efficiency buck converters including Dual-Phase buck converter, various LDOs,
->> +and an RTC. It is interfaced to the host controller using an I2C interface.
->> +Each sub-block is addressed by the host system using different I2C slave
->> +addresses.
->> +
->> +Required properties:
->> +- compatible: Should be "samsung,s2mpa01-pmic".
->> +- reg: Specifies the I2C slave address of the PMIC block. It should be 0x66.
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 >
-> Is the slave address not per-instance in I2C? If not why must is be 0x66?
-
-Mark Brown already replied to this. Thanks Mark.
-
+> Changelog would be better if it said it's only referenced in file scope so
+> it can be marked static.
 >
->> +
->> +Optional properties:
->> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
->> +  the interrupts from s2mpa01 are delivered to.
->> +- interrupts: Interrupt specifier for interrupt source (connected to SoC).
->
-> The part in brackets can go. Assuming this is a single interrupt:
-
-OK.
-
->
-> - interrupts: An interrupt-specifier for the sole interrupt generated by
->   the device.
->
-> If the interrupt has a name it would be nice to mention that. If there
-> are more than one you should describe them.
->
->> +
->> +Optional nodes:
->> +- regulators: The regulators of s2mpa01 that have to be instantiated should be
->> +  included in a sub-node named 'regulators'. Regulator nodes and constraints
->> +  included in this sub-node use the standard regulator bindings which are
->> +  documented elsewhere.
->> +
->> +Properties for BUCK regulator nodes:
->> + regulator-ramp-delay for BUCKs = [6250/12500(default)/25000/50000] uV/us
->
-> This could be made easier to read:
->
-> - regulator-ramp-delay: ramp delay in uV/us. May be 6250, 12500
->   (default), 250000, or 50000. May be 0 for disabling the ramp delay on
->   BUCK{1,2,3,4}.
-
-Yes. Will update.
-
->
->> +
->> + BUCK[1/2/3/4] supports disabling ramp delay on hardware, so explictly
->> + regulator-ramp-delay = <0> can be used for them to disable ramp delay.
->> + In the absence of the regulator-ramp-delay property, the default ramp
->> + delay will be used.
->
-> Can be folded into the above, as in my example.
-
-Right.
-
->
->> +
->> +  NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
->> +  for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
->
-> Missing '=' before <value>?
-
-Yes. Thanks for pointing out.
-
->
->> +  Grouping of BUCKs sharing ramp rate setting is as follow : BUCK[1, 6],
->> +  BUCK[2, 4], and BUCK[8, 9, 10]
->
-> The following BUCKs share ramp settings:
-> * 1 and 6
-> * 2 and 4
-> * 8, 9, and 10
-
-OK.
--- 
-With warm regards,
-Sachin
+> Acked-by: David Rientjes <rientjes@google.com>
