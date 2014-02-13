@@ -1,111 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaBMEYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 23:24:39 -0500
-Received: from m12-15.163.com ([220.181.12.15]:43649 "EHLO m12-15.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427AbaBMEYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 23:24:37 -0500
-Date: Thu, 13 Feb 2014 12:23:44 +0800
-From: "liujunliang_ljl" <liujunliang_ljl@163.com>
-To: "Thierry Reding" <thierry.reding@gmail.com>
-Cc: "davem" <davem@davemloft.net>, "horms" <horms@verge.net.au>,
-        "joe" <joe@perches.com>, "romieu" <romieu@fr.zoreil.com>,
-        "gregkh" <gregkh@linuxfoundation.org>,
-        "netdev" <netdev@vger.kernel.org>,
-        "linux-usb" <linux-usb@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "sunhecheng" <sunhecheng@vip.126.com>
-References: <1392010419-5217-1-git-send-email-liujunliang_ljl@163.com>
-Subject: Re: Re: [PATCH] USB2NET : SR9800 : One chip USB2.0 USB2NET SR9800 DeviceDriver Support
-Message-ID: <201402131223440786692@163.com>
-X-mailer: Foxmail 6, 15, 201, 22 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="gb2312"
-X-CM-TRANSID: D8CowEBZW23MSPxSvQ7uAg--.492S2
-X-Coremail-Antispam: 1Uf129KBjvJXoWxCF1rKFW5Cr1kWw1rXr4kXrb_yoW5Xr4fpw
-	42yrW3Cr47tr13t34fJw18ZFy5AFs7tr98Kry3uasYvFW5ury5tw1j9Fy0gr17JrZ5Ca4j
-	vFsI9a47Wa15WwUanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07j4oGdUUUUU=
-X-Originating-IP: [113.110.151.25]
-X-CM-SenderInfo: xolxy3pqolt0hjboyzi6rwjhhfrp/xtbB0w4xX1EAI4TYIAAAs9
+	id S1752718AbaBME2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 23:28:16 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:34296 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaBME2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 23:28:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAB=NE6WFDWW1faoCYJP9zh6rPPvET+dbHxjHnGkYXtRx6z2LOQ@mail.gmail.com>
+References: <1392071391-13215-1-git-send-email-mcgrof@do-not-panic.com>
+ <1392071391-13215-3-git-send-email-mcgrof@do-not-panic.com>
+ <1392108205.22033.16.camel@dagon.hellion.org.uk> <CAB=NE6Vu=khpj_3J7r-u8DFkhyC-RgLikNFtOU-WO7te_4HMCw@mail.gmail.com>
+ <1392203708.13563.50.camel@kazak.uk.xensource.com> <CAB=NE6WFDWW1faoCYJP9zh6rPPvET+dbHxjHnGkYXtRx6z2LOQ@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 12 Feb 2014 20:27:52 -0800
+X-Google-Sender-Auth: 3VvDl6nH5h4CY1rXr7wLXWdIixw
+Message-ID: <CAB=NE6Vf4KHyMGiGZuuvZ8uWhw51UXbhHPt5RxqZaJbLHOU71w@mail.gmail.com>
+Subject: Re: [RFC 2/2] xen-netback: disable multicast and use a random hw MAC address
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        xen-devel@lists.xenproject.org, Paul Durrant <Paul.Durrant@citrix.com>,
+        Wei Liu <wei.liu2@citrix.com>, kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1D4OhmO024812
 
-Dear Thierry :
+On Wed, Feb 12, 2014 at 2:05 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> We have to be careful for sure, I'll try to test all cases including
+> kvm, but architecturally as I see it so far these things are simply
+> exchanging over data through their respective backend channels, I know
+> ipv6 interfaces are unused and I'm going to dig further to see why at
+> least one ipv4 interfaces is needed. I cannot fathom why either of
+> these interfaces would be required. I'll do a bit more digging.
+>
+> The TAP interface requirements may be different, I haven't yet dug into that.
 
-			For this driver, we can set it as 'n', and There is no rule of thumb as to which should default to y.
+I have a test patch that now works that restricts xen-netback from
+getting any IPv4 and IPv6 addresses, and disables multicast. With this
+set in place the xen-frontend still gets IPv4 and IPv6 addresses and
+Multicast still works. This was tested under a shared physical
+environment, I'll have to test NAT next, and also see if we can enable
+this as an option for KVM for their TAP 'backend' interfaces.
 
-			Thanks for your advice.
-
-			Thanks again.
-		
-
-
-2014-02-13 
-
-
-
-liujunliang_ljl 
-
-
-                                                                               
-∑¢º˛»À£∫ Thierry Reding 
-∑¢ÀÕ ±º‰£∫ 2014-02-12  18:12:52 
- ’º˛»À£∫ liujunliang_ljl 
-≥≠ÀÕ£∫ davem; horms; joe; romieu; gregkh; netdev; linux-usb; linux-kernel; sunhecheng 
-÷˜Ã‚£∫ Re: [PATCH] USB2NET : SR9800 : One chip USB2.0 USB2NET SR9800 DeviceDriver Support 
- 
-On Mon, Feb 10, 2014 at 01:33:39PM +0800, liujunliang_ljl@163.com wrote:
-> From: Liu Junliang <liujunliang_ljl@163.com>
-> 
-> 
-> Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
-> ---
->  drivers/net/usb/Kconfig  |   16 +
->  drivers/net/usb/Makefile |    1 +
->  drivers/net/usb/sr9800.c |  873 ++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/net/usb/sr9800.h |  202 +++++++++++
->  4 files changed, 1092 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/net/usb/sr9800.c
->  create mode 100644 drivers/net/usb/sr9800.h
-> 
-> diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
-> index 47b0f73..2551bf6 100644
-> --- a/drivers/net/usb/Kconfig
-> +++ b/drivers/net/usb/Kconfig
-> @@ -291,6 +291,22 @@ config USB_NET_SR9700
->     This option adds support for CoreChip-sz SR9700 based USB 1.1
->     10/100 Ethernet adapters.
->  
-> +config USB_NET_SR9800
-> + tristate "CoreChip-sz SR9800 based USB 2.0 10/100 ethernet devices"
-> + depends on USB_USBNET
-> + select CRC32
-> + default y
-Why is this selected by default? I can see that some of the other USB
-network drivers are also selected by default, but not all of them. Is
-there some rule of thumb as to which should default to y and which
-shouldn't?
-Thierry
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-iQIcBAEBAgAGBQJS+0kdAAoJEN0jrNd/PrOhXvwQAJIW4vgv0NkyQVo5jSvzeLY4
-9PFCrtd6N1n+O7P99x38JCCD9lWtfdin1EZfj+UicCanup2WzpyBWHeBhdSN4oZA
-/+C+TgEIuX0+Be11IXeUOGMP9a3k/12HY3oHuz7BA2JjcK6PnfMxaEC7iGGJSjgz
-q4Goa5kSqjvNgbP8h5bQPTNtMnRdsSytI7PMJbl4t1ho0V7H3pSo9zD7rxaPhmtE
-v/18VQawGcY83Hr0B0Q18XAnNXaQMLZTvdhVfDUxB5VKT4Xhcri0m4adbAzMI9kR
-K9CEChkDn68y13drJVILKqUjW+4LMQHAsQV07yl98Sqk7LYOedL9mQOnIL0crjWa
-OAmLHwLv0ED25W1Hv3UdeSpBdIkO9cD0PCa7vHQnv7lpTlkaDyYelKLQ2D+GXrCw
-1L/341ak9QEGiCU1TiOHDblnsN+OtCt0Pt+hijLHFl4TQKw3QIUoZLa4bQuDPM8M
-juTSV63HRjiDlNGvtjBezlR9GFu5w3SJuNSNsFkZ7ADJwjz9On9JaDwH/Ad7AqmZ
-ylE+zzbIpOWjyNToMH2dattpeVZkIfGkS02y6PcIx51EGMw5B8l6qKLB9YpkJpwR
-7rhMYjpLKIn/6rRGlwmZKYnWYl7p/FdI0yOnVbtMYx406ivUNc+kgvmx5l1mXhT7
-b8gKKYYA0pMEMXjgnkK1
-=3y7X
------END PGP SIGNATURE-----
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+  Luis
