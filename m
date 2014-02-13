@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaBMQSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 11:18:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40571 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaBMQSg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 11:18:36 -0500
-Date: Thu, 13 Feb 2014 08:18:24 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-af0c23df96fbc16089e8eda4b94b7d69b845f81e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, fengguang.wu@intel.com, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, fengguang.wu@intel.com
-In-Reply-To: <20140213124550.GA30497@localhost>
-References: <20140213124550.GA30497@localhost>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, smap: smap_violation()
-  is bogus if CONFIG_X86_SMAP is off
-Git-Commit-ID: af0c23df96fbc16089e8eda4b94b7d69b845f81e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 13 Feb 2014 08:18:30 -0800 (PST)
+	id S1751935AbaBMQWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 11:22:41 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:44709 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751775AbaBMQWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 11:22:39 -0500
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-spi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATH v2 0/2] spi: Add Qualcomm QUP SPI controller support
+Date: Thu, 13 Feb 2014 18:21:12 +0200
+Message-Id: <1392308472-30136-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  af0c23df96fbc16089e8eda4b94b7d69b845f81e
-Gitweb:     http://git.kernel.org/tip/af0c23df96fbc16089e8eda4b94b7d69b845f81e
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 13 Feb 2014 07:46:04 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 13 Feb 2014 08:08:58 -0800
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
+Hi, 
 
-If CONFIG_X86_SMAP is disabled, smap_violation() tests for conditions
-which are incorrect (as the AC flag doesn't matter), causing spurious
-faults.
+Following two patches are adding initial support for SPI controller
+available in Qualcomm SoC's.
 
-The dynamic disabling of SMAP (nosmap on the command line) is fine
-because it disables X86_FEATURE_SMAP, therefore causing the
-static_cpu_has() to return false.
+Controller initialization is based on spi_qsd driver available in
+CAF repository. 
 
-Found by Fengguang Wu's test system.
+Controller supports SPI_CPOL | SPI_CPHA | SPI_CS_HIGH | SPI_LOOP modes, 
+up to 4 CS's and from 4 to 32 bits per word. SPI_LOOP mode is limited 
+to input FIFO buffer size.
 
-[ v2: use IS_ENABLED() instead of #ifdef ]
+Currently driver support only PIO mode, I am hopping to add also DMA
+mode support with dmaengine patches developed by Andy.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org> # v3.7+
----
- arch/x86/mm/fault.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 9d591c8..824b445 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1087,7 +1087,7 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	if (unlikely(error_code & PF_RSVD))
- 		pgtable_bad(regs, error_code, address);
+Changes since first version:
+ - Replace master::transfer_one_message with master::transfer_one and
+   master::set_cs.   
+ - Use full controller version for compatible string
+   "qcom,spi-qup-v2.1.1" and "qcom,spi-qup-v2.2.1". 
+ - Ensure that controller internal state is changed only if it is in
+   valid state.  
+ - Ensure that resources shared between interrupt and thread context
+   are properly protected.
+ - Use controller auto clock gating for run time power management, 
+   instead full clock stop. This should have the same net result, right?
+ - Simplify a bit read and write FIFO routines.
+ - Several useless print messages removed.
  
--	if (static_cpu_has(X86_FEATURE_SMAP)) {
-+	if (IS_ENABLED(CONFIG_X86_SMAP) && static_cpu_has(X86_FEATURE_SMAP)) {
- 		if (unlikely(smap_violation(error_code, regs))) {
- 			bad_area_nosemaphore(regs, error_code, address);
- 			return;
+Ivan T. Ivanov (2):
+  spi: qup: Add device tree bindings information
+  spi: Add Qualcomm QUP SPI controller support
+
+ .../devicetree/bindings/spi/qcom,spi-qup.txt       |   85 ++
+ drivers/spi/Kconfig                                |   13 +
+ drivers/spi/Makefile                               |    1 +
+ drivers/spi/spi-qup.c                              |  837 ++++++++++++++++++++
+ 4 files changed, 936 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
+ create mode 100644 drivers/spi/spi-qup.c
+
+-- 
+1.7.9.5
+
