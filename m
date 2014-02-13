@@ -1,145 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaBMSmw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:42:52 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:33725 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108AbaBMSmv (ORCPT
+	id S1751660AbaBMSnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:43:01 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35238 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751108AbaBMSm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:42:51 -0500
-Date: Thu, 13 Feb 2014 19:42:47 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [RFC - beta][PATCH] tracing: Introduce TRACE_MARKER() no
- argument trace event
-Message-ID: <20140213184245.GE14383@localhost.localdomain>
-References: <20140207112357.35552998@gandalf.local.home>
- <20140213142640.GD14383@localhost.localdomain>
- <20140213102552.2b292484@gandalf.local.home>
+	Thu, 13 Feb 2014 13:42:58 -0500
+Date: Thu, 13 Feb 2014 18:42:49 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
+Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
+	device probe
+Message-ID: <20140213184249.GC30257@n2100.arm.linux.org.uk>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org> <1390208555-27770-3-git-send-email-tushar.behera@linaro.org> <20140120100415.GX15937@n2100.arm.linux.org.uk> <20140213181216.GB24155@kroah.com> <20140213181559.GB30257@n2100.arm.linux.org.uk> <20140213182701.GA32578@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140213102552.2b292484@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140213182701.GA32578@kroah.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 10:25:52AM -0500, Steven Rostedt wrote:
-> On Thu, 13 Feb 2014 15:26:42 +0100
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > > Is this worth doing?
+On Thu, Feb 13, 2014 at 10:27:01AM -0800, Greg KH wrote:
+> On Thu, Feb 13, 2014 at 06:15:59PM +0000, Russell King - ARM Linux wrote:
+> > On Thu, Feb 13, 2014 at 10:12:16AM -0800, Greg KH wrote:
+> > > On Mon, Jan 20, 2014 at 10:04:15AM +0000, Russell King - ARM Linux wrote:
+> > > > On Mon, Jan 20, 2014 at 02:32:35PM +0530, Tushar Behera wrote:
+> > > > > uart_register_driver call binds the driver to a specific device
+> > > > > node through tty_register_driver call. This should typically happen
+> > > > > during device probe call.
+> > > > > 
+> > > > > In a multiplatform scenario, it is possible that multiple serial
+> > > > > drivers are part of the kernel. Currently the driver registration fails
+> > > > > if multiple serial drivers with same default major/minor numbers are
+> > > > > included in the kernel.
+> > > > > 
+> > > > > A typical case is observed with amba-pl011 and samsung-uart drivers.
+> > > > 
+> > > > NAK.  There should not be any other driver using amba-pl011's device numbers.
+> > > 
+> > > I agree, but there is.  And because of that, moving the registration to
+> > > the probe call fixes the issue with building a kernel with all of the
+> > > drivers built into them, so I'm going to take both of these patches, as
+> > > it does solve that problem, while still allowing the device number
+> > > collision to happen.
 > > 
-> > It sounds worth yeah. I've run into this situation multiple times where I had
+> > So what happens when two _devices_ are probed by this driver at the same
+> > time?
 > 
-> Is it?
+> The bus that the driver is on will not allow that to happen, I thought
+> we went through this before...
 > 
-> > to pass 0 instead of nothing on a tracepoint.
-> 
-> What tracepoints?
+> And yes, devices on different busses could cause problems, but is that
+> the case here for these devices?  At first glance, I don't think that
+> can happen for these drivers.
 
-The context tracking ones. Yeah TBH that sole user doesn't justify the feature :)
+We went through this before, and I stated the paths, and no one disagreed
+with that.
 
-> 
-> The problem I have with a tracepoint that does not pass any information
-> what's so ever, is that it can be too tempting to use. Tracepoints do
-> not have zero overhead when not used, but a negligible one. Too many
-> tracepoints add up, and their foot print can start to be noticed.
+It /is/ racy.
 
-Yeah, that maybe overused. I don't know, actually the problem hasn't arised
-much.
- 
-> Point being, why have a tracepoint if you are not recording any data?
-> Just do a function trace, or add a kprobe. That's easy enough.
-
-Yeah but it's still easier to use static tracepoints. Especially when you
-need to ask somebody to report some traces.
-
-One of the point of static tracepoints is also to propose some key events
-to the user. It matters when we do all-events wide tracing for example.
-
-> 
-> But that said, see below.
-> 
-> > 
-> > Now about the name, why not TRACE_EVENT_EMPTY?
-> 
-> Because that's an ugly name ;-)
-> 
-> Also a bit misleading, because it sounds like the there's no items
-> attached or something. It is too close to "list_empty()". My original
-> name was TRACE_EVENT_NOARGS(), which could work too.
-> 
-> Now another possible solution is to just introduce a trace_marker()
-> function that you could place anywhere. And then they could show up in
-> trace/events/markers/file-func-line/
-> 
-> We could do something like:
-> 
-> struct trace_marker {
-> 	char *file;
-> 	char *func;
-> 	int line;
-> 	struct static_key key;
-> };
-> 
-> #define trace_marker() __trace_marker(__FILE__,__func__, __LINE__)
-> static inline void __trace_marker(const char *file,
-> 				const char *func, int line)
-> {
-> 	static struct trace_marker marker
-> 		__attribute__((section("__trace_marker"))) = {
-> 		.file = file,
-> 		.func = func,
-> 		.line = line
-> 	};
-> 
-> 	if (static_key_false(&marker.key))
-> 		trace_marker_call(&marker);
-> }
-> 
-> As marker would be a static value, gcc should hard code the first
-> parameter to it and make the call. Basically something like:
-> 
-> 	mov $0x<marker-address>, %rdi
-> 	call trace_marker_call
-> 
-> If we really want to be efficient, we could extend jump labels for each
-> arch, and remove the call completely.
-> 
-> 	asm goto ("1:"
-> 		  ".byte NOP\n"
-> 		  ".pushsection __trace_marker_struct\n"
-> 		  "2:.quad 1b\n"
-> 		  ".quad %file\n"
-> 		  ".quad %func\n'
-> 		  ".word %line\n"
-> 		  ".popsection\n"
-> 		  ".pushsection __trace_marker_ptrs\n"
-> 		  ".quad 2b\n"
-> 		  ".popsection\n"
-> 		 : : file, func, line);
-> 
-> [ OK, I didn't follow the true format for asm syntax, but that's
-> because I'm just trying to relay an idea, not actually make working
-> code ]
-> 
-> Then the only thing that would be inserted in the code is a nop. We
-> could then replace that nop with a call to a trampoline (similar to
-> mcount) that can call a C function with the address that it came from
-> so that the function could do a look up to find the matching marker to
-> trace.
-> 
-> OK, this is probably a bit too much, but it is feasible. Most likely
-> not worth the pain.
-
-Anyway yeah, given the complication and the fact there are very few actual users, lets forget that feature.
-
-Thanks.
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
