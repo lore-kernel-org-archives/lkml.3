@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340AbaBMF3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 00:29:45 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:50980 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbaBMF2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752767AbaBMF2K (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 Feb 2014 00:28:10 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:48402 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518AbaBMF2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 00:28:07 -0500
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Christopher Heiny <cheiny@synaptics.com>
 Cc: Andrew Duggan <aduggan@synaptics.com>,
@@ -18,9 +18,9 @@ Cc: Andrew Duggan <aduggan@synaptics.com>,
         Courtney Cavin <courtney.cavin@sonymobile.com>,
         Linux Input <linux-input@vger.kernel.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 07/11] Input: synaptics-rmi4 - rename instances of f01_data from data to f01
-Date: Wed, 12 Feb 2014 21:27:53 -0800
-Message-Id: <1392269277-16391-7-git-send-email-dmitry.torokhov@gmail.com>
+Subject: [PATCH 04/11] Input: synaptics-rmi4 - fix LTS handling in F01
+Date: Wed, 12 Feb 2014 21:27:50 -0800
+Message-Id: <1392269277-16391-4-git-send-email-dmitry.torokhov@gmail.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com>
 References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com>
@@ -28,318 +28,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have too many "data"s: f01_data, driver_data, pdata, etc. Let's
-untangle it a bit.
+From: Christopher Heiny <cheiny@synaptics.com>
 
+Both F01_RMI_Ctrl2 and F01_RMI_Ctrl3 (doze_interval and wakeup_threshold)
+are controlled by the has_adjustable_doze bit.
+
+Signed-off-by: Christopher Heiny<cheiny@synaptics.com>
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/input/rmi4/rmi_f01.c | 135 ++++++++++++++++++++++---------------------
- 1 file changed, 68 insertions(+), 67 deletions(-)
+ drivers/input/rmi4/rmi_f01.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
-index 1e49ab4..1219e0c 100644
+index 976aba3..30e0b50 100644
 --- a/drivers/input/rmi4/rmi_f01.c
 +++ b/drivers/input/rmi4/rmi_f01.c
-@@ -208,7 +208,7 @@ static int rmi_f01_initialize(struct rmi_function *fn)
- 	u16 ctrl_base_addr;
- 	struct rmi_device *rmi_dev = fn->rmi_dev;
- 	struct rmi_driver_data *driver_data = dev_get_drvdata(&rmi_dev->dev);
--	struct f01_data *data = fn->data;
-+	struct f01_data *f01 = fn->data;
- 	struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
- 	u8 device_status;
- 
-@@ -218,8 +218,8 @@ static int rmi_f01_initialize(struct rmi_function *fn)
- 	 */
- 	ctrl_base_addr = fn->fd.control_base_addr;
- 	error = rmi_read_block(rmi_dev, fn->fd.control_base_addr,
--			&data->device_control.ctrl0,
--			sizeof(data->device_control.ctrl0));
-+			&f01->device_control.ctrl0,
-+			sizeof(f01->device_control.ctrl0));
- 	if (error < 0) {
- 		dev_err(&fn->dev, "Failed to read F01 control.\n");
- 		return error;
-@@ -228,10 +228,10 @@ static int rmi_f01_initialize(struct rmi_function *fn)
- 	case RMI_F01_NOSLEEP_DEFAULT:
- 		break;
- 	case RMI_F01_NOSLEEP_OFF:
--		data->device_control.ctrl0 &= ~RMI_F01_CRTL0_NOSLEEP_BIT;
-+		f01->device_control.ctrl0 &= ~RMI_F01_CRTL0_NOSLEEP_BIT;
- 		break;
- 	case RMI_F01_NOSLEEP_ON:
--		data->device_control.ctrl0 |= RMI_F01_CRTL0_NOSLEEP_BIT;
-+		f01->device_control.ctrl0 |= RMI_F01_CRTL0_NOSLEEP_BIT;
- 		break;
- 	}
- 
-@@ -240,38 +240,38 @@ static int rmi_f01_initialize(struct rmi_function *fn)
- 	 * reboot without power cycle.  If so, clear it so the sensor
- 	 * is certain to function.
- 	 */
--	if ((data->device_control.ctrl0 & RMI_F01_CTRL0_SLEEP_MODE_MASK) !=
-+	if ((f01->device_control.ctrl0 & RMI_F01_CTRL0_SLEEP_MODE_MASK) !=
- 			RMI_SLEEP_MODE_NORMAL) {
- 		dev_warn(&fn->dev,
- 			 "WARNING: Non-zero sleep mode found. Clearing...\n");
--		data->device_control.ctrl0 &= ~RMI_F01_CTRL0_SLEEP_MODE_MASK;
-+		f01->device_control.ctrl0 &= ~RMI_F01_CTRL0_SLEEP_MODE_MASK;
- 	}
- 
--	data->device_control.ctrl0 |= RMI_F01_CRTL0_CONFIGURED_BIT;
-+	f01->device_control.ctrl0 |= RMI_F01_CRTL0_CONFIGURED_BIT;
- 
- 	error = rmi_write_block(rmi_dev, fn->fd.control_base_addr,
--				&data->device_control.ctrl0,
--				sizeof(data->device_control.ctrl0));
-+				&f01->device_control.ctrl0,
-+				sizeof(f01->device_control.ctrl0));
- 	if (error < 0) {
- 		dev_err(&fn->dev, "Failed to write F01 control.\n");
- 		return error;
- 	}
- 
--	data->irq_count = driver_data->irq_count;
--	data->num_of_irq_regs = driver_data->num_of_irq_regs;
-+	f01->irq_count = driver_data->irq_count;
-+	f01->num_of_irq_regs = driver_data->num_of_irq_regs;
- 	ctrl_base_addr += sizeof(u8);
- 
--	data->interrupt_enable_addr = ctrl_base_addr;
-+	f01->interrupt_enable_addr = ctrl_base_addr;
- 	error = rmi_read_block(rmi_dev, ctrl_base_addr,
--				data->device_control.interrupt_enable,
--				sizeof(u8) * (data->num_of_irq_regs));
-+				f01->device_control.interrupt_enable,
-+				sizeof(u8) * (f01->num_of_irq_regs));
- 	if (error < 0) {
- 		dev_err(&fn->dev,
- 			"Failed to read F01 control interrupt enable register.\n");
- 		return error;
- 	}
- 
--	ctrl_base_addr += data->num_of_irq_regs;
-+	ctrl_base_addr += f01->num_of_irq_regs;
- 
- 	/* dummy read in order to clear irqs */
- 	error = rmi_read(rmi_dev, fn->fd.data_base_addr + 1, &temp);
-@@ -281,42 +281,42 @@ static int rmi_f01_initialize(struct rmi_function *fn)
- 	}
- 
- 	error = rmi_f01_read_properties(rmi_dev, fn->fd.query_base_addr,
--					&data->properties);
-+					&f01->properties);
- 	if (error < 0) {
- 		dev_err(&fn->dev, "Failed to read F01 properties.\n");
- 		return error;
- 	}
- 	dev_info(&fn->dev, "found RMI device, manufacturer: %s, product: %s\n",
--		 data->properties.manufacturer_id == 1 ?
-+		 f01->properties.manufacturer_id == 1 ?
- 							"Synaptics" : "unknown",
--		 data->properties.product_id);
-+		 f01->properties.product_id);
- 
- 	/* read control register */
--	if (data->properties.has_adjustable_doze) {
--		data->doze_interval_addr = ctrl_base_addr;
-+	if (f01->properties.has_adjustable_doze) {
-+		f01->doze_interval_addr = ctrl_base_addr;
- 		ctrl_base_addr++;
- 
- 		if (pdata->power_management.doze_interval) {
--			data->device_control.doze_interval =
-+			f01->device_control.doze_interval =
- 				pdata->power_management.doze_interval;
- 		} else {
--			error = rmi_read(rmi_dev, data->doze_interval_addr,
--					&data->device_control.doze_interval);
-+			error = rmi_read(rmi_dev, f01->doze_interval_addr,
-+					 &f01->device_control.doze_interval);
- 			if (error < 0) {
- 				dev_err(&fn->dev, "Failed to read F01 doze interval register.\n");
- 				return error;
- 			}
- 		}
- 
--		data->wakeup_threshold_addr = ctrl_base_addr;
-+		f01->wakeup_threshold_addr = ctrl_base_addr;
- 		ctrl_base_addr++;
- 
- 		if (pdata->power_management.wakeup_threshold) {
--			data->device_control.wakeup_threshold =
-+			f01->device_control.wakeup_threshold =
- 				pdata->power_management.wakeup_threshold;
- 		} else {
--			error = rmi_read(rmi_dev, data->wakeup_threshold_addr,
--					&data->device_control.wakeup_threshold);
-+			error = rmi_read(rmi_dev, f01->wakeup_threshold_addr,
-+					 &f01->device_control.wakeup_threshold);
- 			if (error < 0) {
- 				dev_err(&fn->dev, "Failed to read F01 wakeup threshold register.\n");
- 				return error;
-@@ -324,19 +324,19 @@ static int rmi_f01_initialize(struct rmi_function *fn)
+@@ -328,6 +328,9 @@ static int rmi_f01_initialize(struct rmi_function *fn)
  		}
  	}
  
--	if (data->properties.has_lts)
-+	if (f01->properties.has_lts)
++	if (data->properties.has_lts)
++		ctrl_base_addr++;
++
+ 	if (data->properties.has_adjustable_doze_holdoff) {
+ 		data->doze_holdoff_addr = ctrl_base_addr;
  		ctrl_base_addr++;
- 
--	if (data->properties.has_adjustable_doze_holdoff) {
--		data->doze_holdoff_addr = ctrl_base_addr;
-+	if (f01->properties.has_adjustable_doze_holdoff) {
-+		f01->doze_holdoff_addr = ctrl_base_addr;
- 		ctrl_base_addr++;
- 
- 		if (pdata->power_management.doze_holdoff) {
--			data->device_control.doze_holdoff =
-+			f01->device_control.doze_holdoff =
- 				pdata->power_management.doze_holdoff;
- 		} else {
--			error = rmi_read(rmi_dev, data->doze_holdoff_addr,
--					&data->device_control.doze_holdoff);
-+			error = rmi_read(rmi_dev, f01->doze_holdoff_addr,
-+					 &f01->device_control.doze_holdoff);
- 			if (error < 0) {
- 				dev_err(&fn->dev, "Failed to read F01 doze holdoff register.\n");
- 				return error;
-@@ -363,28 +363,28 @@ static int rmi_f01_initialize(struct rmi_function *fn)
- 
- static int rmi_f01_config(struct rmi_function *fn)
- {
--	struct f01_data *data = fn->data;
-+	struct f01_data *f01 = fn->data;
- 	int retval;
- 
- 	retval = rmi_write_block(fn->rmi_dev, fn->fd.control_base_addr,
--				 &data->device_control.ctrl0,
--				 sizeof(data->device_control.ctrl0));
-+				 &f01->device_control.ctrl0,
-+				 sizeof(f01->device_control.ctrl0));
- 	if (retval < 0) {
- 		dev_err(&fn->dev, "Failed to write device_control.reg.\n");
- 		return retval;
- 	}
- 
--	retval = rmi_write_block(fn->rmi_dev, data->interrupt_enable_addr,
--				 data->device_control.interrupt_enable,
--				 sizeof(u8) * data->num_of_irq_regs);
--
-+	retval = rmi_write_block(fn->rmi_dev, f01->interrupt_enable_addr,
-+				 f01->device_control.interrupt_enable,
-+				 sizeof(u8) * f01->num_of_irq_regs);
- 	if (retval < 0) {
+@@ -383,7 +386,7 @@ static int rmi_f01_config(struct rmi_function *fn)
  		dev_err(&fn->dev, "Failed to write interrupt enable.\n");
  		return retval;
  	}
--	if (data->properties.has_adjustable_doze) {
--		retval = rmi_write_block(fn->rmi_dev, data->doze_interval_addr,
--					 &data->device_control.doze_interval,
-+
-+	if (f01->properties.has_adjustable_doze) {
-+		retval = rmi_write_block(fn->rmi_dev, f01->doze_interval_addr,
-+					 &f01->device_control.doze_interval,
+-	if (data->properties.has_lts) {
++	if (data->properties.has_adjustable_doze) {
+ 		retval = rmi_write_block(fn->rmi_dev, data->doze_interval_addr,
+ 					 &data->device_control.doze_interval,
  					 sizeof(u8));
- 		if (retval < 0) {
+@@ -391,9 +394,7 @@ static int rmi_f01_config(struct rmi_function *fn)
  			dev_err(&fn->dev, "Failed to write doze interval.\n");
-@@ -392,8 +392,8 @@ static int rmi_f01_config(struct rmi_function *fn)
- 		}
- 
- 		retval = rmi_write_block(fn->rmi_dev,
--					 data->wakeup_threshold_addr,
--					 &data->device_control.wakeup_threshold,
-+					 f01->wakeup_threshold_addr,
-+					 &f01->device_control.wakeup_threshold,
- 					 sizeof(u8));
- 		if (retval < 0) {
- 			dev_err(&fn->dev, "Failed to write wakeup threshold.\n");
-@@ -401,15 +401,16 @@ static int rmi_f01_config(struct rmi_function *fn)
- 		}
- 	}
- 
--	if (data->properties.has_adjustable_doze_holdoff) {
--		retval = rmi_write_block(fn->rmi_dev, data->doze_holdoff_addr,
--					 &data->device_control.doze_holdoff,
-+	if (f01->properties.has_adjustable_doze_holdoff) {
-+		retval = rmi_write_block(fn->rmi_dev, f01->doze_holdoff_addr,
-+					 &f01->device_control.doze_holdoff,
- 					 sizeof(u8));
- 		if (retval < 0) {
- 			dev_err(&fn->dev, "Failed to write doze holdoff.\n");
  			return retval;
  		}
- 	}
-+
- 	return 0;
- }
+-	}
  
-@@ -435,28 +436,28 @@ static int rmi_f01_suspend(struct device *dev)
- {
- 	struct rmi_function *fn = to_rmi_function(dev);
- 	struct rmi_device *rmi_dev = fn->rmi_dev;
--	struct f01_data *data = fn->data;
-+	struct f01_data *f01 = fn->data;
- 	int error;
- 
--	data->old_nosleep = data->device_control.ctrl0 &
-+	f01->old_nosleep = f01->device_control.ctrl0 &
- 					RMI_F01_CRTL0_NOSLEEP_BIT;
--	data->device_control.ctrl0 &= ~RMI_F01_CRTL0_NOSLEEP_BIT;
-+	f01->device_control.ctrl0 &= ~RMI_F01_CRTL0_NOSLEEP_BIT;
- 
--	data->device_control.ctrl0 &= ~RMI_F01_CTRL0_SLEEP_MODE_MASK;
--	data->device_control.ctrl0 |= RMI_SLEEP_MODE_SENSOR_SLEEP;
-+	f01->device_control.ctrl0 &= ~RMI_F01_CTRL0_SLEEP_MODE_MASK;
-+	f01->device_control.ctrl0 |= RMI_SLEEP_MODE_SENSOR_SLEEP;
- 
- 	error = rmi_write_block(rmi_dev,
- 				fn->fd.control_base_addr,
--				&data->device_control.ctrl0,
--				sizeof(data->device_control.ctrl0));
-+				&f01->device_control.ctrl0,
-+				sizeof(f01->device_control.ctrl0));
- 	if (error < 0) {
- 		dev_err(&fn->dev, "Failed to write sleep mode. Code: %d.\n",
- 			error);
--		if (data->old_nosleep)
--			data->device_control.ctrl0 |=
-+		if (f01->old_nosleep)
-+			f01->device_control.ctrl0 |=
- 					RMI_F01_CRTL0_NOSLEEP_BIT;
--		data->device_control.ctrl0 &= ~RMI_F01_CTRL0_SLEEP_MODE_MASK;
--		data->device_control.ctrl0 |= RMI_SLEEP_MODE_NORMAL;
-+		f01->device_control.ctrl0 &= ~RMI_F01_CTRL0_SLEEP_MODE_MASK;
-+		f01->device_control.ctrl0 |= RMI_SLEEP_MODE_NORMAL;
- 		return error;
- 	}
- 
-@@ -467,18 +468,18 @@ static int rmi_f01_resume(struct device *dev)
- {
- 	struct rmi_function *fn = to_rmi_function(dev);
- 	struct rmi_device *rmi_dev = fn->rmi_dev;
--	struct f01_data *data = fn->data;
-+	struct f01_data *f01 = fn->data;
- 	int error;
- 
--	if (data->old_nosleep)
--		data->device_control.ctrl0 |= RMI_F01_CRTL0_NOSLEEP_BIT;
-+	if (f01->old_nosleep)
-+		f01->device_control.ctrl0 |= RMI_F01_CRTL0_NOSLEEP_BIT;
- 
--	data->device_control.ctrl0 &= ~RMI_F01_CTRL0_SLEEP_MODE_MASK;
--	data->device_control.ctrl0 |= RMI_SLEEP_MODE_NORMAL;
-+	f01->device_control.ctrl0 &= ~RMI_F01_CTRL0_SLEEP_MODE_MASK;
-+	f01->device_control.ctrl0 |= RMI_SLEEP_MODE_NORMAL;
- 
- 	error = rmi_write_block(rmi_dev, fn->fd.control_base_addr,
--				&data->device_control.ctrl0,
--				sizeof(data->device_control.ctrl0));
-+				&f01->device_control.ctrl0,
-+				sizeof(f01->device_control.ctrl0));
- 	if (error < 0) {
- 		dev_err(&fn->dev,
- 			"Failed to restore normal operation. Code: %d.\n",
+-	if (data->properties.has_adjustable_doze) {
+ 		retval = rmi_write_block(fn->rmi_dev,
+ 					 data->wakeup_threshold_addr,
+ 					 &data->device_control.wakeup_threshold,
 -- 
 1.8.5.3
 
