@@ -1,72 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaBMWlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:41:10 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:48779 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaBMWlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:41:07 -0500
-Date: Thu, 13 Feb 2014 14:41:04 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-In-Reply-To: <52FC98A6.1000701@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
-References: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140206145105.27dec37b16f24e4ac5fd90ce@linux-foundation.org> <alpine.DEB.2.02.1402061456290.31828@chino.kir.corp.google.com> <20140206152219.45c2039e5092c8ea1c31fd38@linux-foundation.org>
- <alpine.DEB.2.02.1402061537180.3441@chino.kir.corp.google.com> <alpine.DEB.2.02.1402061557210.5061@chino.kir.corp.google.com> <52F4B8A4.70405@linux.vnet.ibm.com> <alpine.DEB.2.02.1402071239301.4212@chino.kir.corp.google.com> <52F88C16.70204@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com> <52F8C556.6090006@linux.vnet.ibm.com> <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com> <52FC6F2A.30905@linux.vnet.ibm.com> <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
- <52FC98A6.1000701@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752410AbaBMWlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:41:45 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:65457 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752307AbaBMWln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 17:41:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=MEWfLKcb2Io8tDh9LywT7gATkefJnk5pgCuFmwSntxyo9lr8bUrz7rvT
+	BZ0F6Ugs9a6ybXvRUVNoJdqezd2bxjxrJpE+uG/3SbWYD3YW0QnhA5GAndj6vo2b
+	ey/vLXpoQ6UIRV2P4bWxOxHbje/zThfGjFoU7dtEOeJnPEpH/8I=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.5.5
+Date: Thu, 13 Feb 2014 14:41:39 -0800
+Message-ID: <xmqqob2ak53w.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 01A290F6-9500-11E3-9840-1B26802839F8-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014, Raghavendra K T wrote:
+The latest maintenance release Git v1.8.5.5 is now available at
+the usual places.  Hopefully this will be the last update to the
+1.8.5.x series.
 
-> Thanks David, unfortunately even after applying that patch, I do not see
-> the improvement.
-> 
-> Interestingly numa_mem_id() seem to still return the value of a
-> memoryless node.
-> May be  per cpu _numa_mem_ values are not set properly. Need to dig out ....
-> 
+The release tarballs are found at:
 
-I believe ppc will be relying on __build_all_zonelists() to set 
-numa_mem_id() to be the proper node, and that relies on the ordering of 
-the zonelist built for the memoryless node.  It would be very strange if 
-local_memory_node() is returning a memoryless node because it is the first 
-zone for node_zonelist(GFP_KERNEL) (why would a memoryless node be on the 
-zonelist at all?).
+    http://code.google.com/p/git-core/downloads/list
 
-I think the real problem is that build_all_zonelists() is only called at 
-init when the boot cpu is online so it's only setting numa_mem_id() 
-properly for the boot cpu.  Does it return a node with memory if you 
-toggle /proc/sys/vm/numa_zonelist_order?  Do
+and their SHA-1 checksums are:
 
-	echo node > /proc/sys/vm/numa_zonelist_order
-	echo zone > /proc/sys/vm/numa_zonelist_order
-	echo default > /proc/sys/vm/numa_zonelist_order
+7bb4ea883b1f8f6f7f927035f85e8e27b57e0194  git-1.8.5.5.tar.gz
+39dd7979c8757d2dc4bc3aaa82741ba93557d566  git-htmldocs-1.8.5.5.tar.gz
+a4a2aef1440d4751f37c65359da57c9bd51a7beb  git-manpages-1.8.5.5.tar.gz
 
-and check if it returns the proper value at either point.  This will force 
-build_all_zonelists() and numa_mem_id() to point to the proper node since 
-all cpus are now online.
+The following public repositories all have a copy of the v1.8.5.5
+tag and the maint branch that the tag points at:
 
-So the prerequisite for CONFIG_HAVE_MEMORYLESS_NODES is that there is an 
-arch-specific set_numa_mem() that makes this mapping correct like ia64 
-does.  If that's the case, then it's (1) completely undocumented and (2) 
-Nishanth's patch is incomplete because anything that adds 
-CONFIG_HAVE_MEMORYLESS_NODES needs to do the proper set_numa_mem() for it 
-to be any different than numa_node_id().
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
+release tarballs.
+
+Git v1.8.5.5 Release Notes
+==========================
+
+Fixes since v1.8.5.4
+--------------------
+
+ * The pathspec matching code, while comparing two trees (e.g. "git
+   diff A B -- path1 path2") was too aggressive and failed to match
+   some paths when multiple pathspecs were involved.
+
+ * "git repack --max-pack-size=8g" stopped being parsed correctly when
+   the command was reimplemented in C.
+
+ * A recent update to "git send-email" broke platforms where
+   /etc/ssl/certs/ directory exists but cannot be used as SSL_ca_path
+   (e.g. Fedora rawhide).
+
+ * A handful of bugs around interpreting $branch@{upstream} notation
+   and its lookalike, when $branch part has interesting characters,
+   e.g. "@", and ":", have been fixed.
+
+ * "git clone" would fail to clone from a repository that has a ref
+   directly under "refs/", e.g. "refs/stash", because different
+   validation paths do different things on such a refname.  Loosen the
+   client side's validation to allow such a ref.
+
+ * "git log --left-right A...B" lost the "leftness" of commits
+   reachable from A when A is a tag as a side effect of a recent
+   bugfix.  This is a regression in 1.8.4.x series.
+
+ * "git merge-base --octopus" used to leave cleaning up suboptimal
+   result to the caller, but now it does the clean-up itself.
+
+ * "git mv A B/", when B does not exist as a directory, should error
+   out, but it didn't.
+
+Also contains typofixes, documentation updates and trivial code clean-ups.
+
+----------------------------------------------------------------
+
+Changes since v1.8.5.4 are as follows:
+
+Andy Spencer (1):
+      tree_entry_interesting: match against all pathspecs
+
+Jeff King (9):
+      fetch-pack: do not filter out one-level refs
+      interpret_branch_name: factor out upstream handling
+      interpret_branch_name: rename "cp" variable to "at"
+      interpret_branch_name: always respect "namelen" parameter
+      interpret_branch_name: avoid @{upstream} past colon
+      interpret_branch_name: find all possible @-marks
+      repack: fix typo in max-pack-size option
+      repack: make parsed string options const-correct
+      repack: propagate pack-objects options as strings
+
+Junio C Hamano (5):
+      merge-base: separate "--independent" codepath into its own helper
+      merge-base --octopus: reduce the result from get_octopus_merge_bases()
+      revision: mark contents of an uninteresting tree uninteresting
+      revision: propagate flag bits from tags to pointees
+      Git 1.8.5.5
+
+Ruben Kerkhof (1):
+      send-email: /etc/ssl/certs/ directory may not be usable as ca_path
+
