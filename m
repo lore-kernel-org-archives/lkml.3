@@ -1,312 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaBMUcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:32:07 -0500
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:58144 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaBMUcE (ORCPT
+	id S1752156AbaBMUfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:35:48 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:35739 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBMUfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:32:04 -0500
-Subject: mmotm 2014-02-13-12-31 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Thu, 13 Feb 2014 12:32:02 -0800
-Message-Id: <20140213203202.C10EC5A42D8@corp2gmr1-2.hot.corp.google.com>
+	Thu, 13 Feb 2014 15:35:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140213201618.GD14089@laptop.programming.kicks-ass.net>
+References: <20140212201709.GB6835@laptop.programming.kicks-ass.net>
+ <218b548b69479baa005af8a7b04a3abbea8ed6fa.1392252790.git.luto@amacapital.net>
+ <20140213145016.GA15586@twins.programming.kicks-ass.net> <CALCETrWpDxt1xhBx=CWq-fwSBoCpbC_stoouY2mPX8u4u8XNhQ@mail.gmail.com>
+ <20140213201618.GD14089@laptop.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Feb 2014 12:35:25 -0800
+Message-ID: <CALCETrXgrrStOesqWzgUfYp+qf-FZHRDi-y6oG0s0_TmPE5MTA@mail.gmail.com>
+Subject: Re: [RFC] sched: Add a new lockless wake-from-idle implementation
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2014-02-13-12-31 has been uploaded to
+On Thu, Feb 13, 2014 at 12:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Feb 13, 2014 at 09:07:10AM -0800, Andy Lutomirski wrote:
+>> > I also don't really like how the polling state is an atomic; its a cpu
+>> > local property.
+>>
+>> Your patch also makes polling state be an atomic (albeit one that
+>> isn't changed remotely).
+>
+> Yah, sorry for that, changed the email (and code about) a number of
+> times before posting :/
+>
+>> On the subject of major surgery, though: there are very few places in
+>> the kernel where TIF_NEED_RESCHED gets set.  With something like my
+>> patch applied, I think that there is no code at all that sets any
+>> other task's TIF_NEED_RESCHED.  That suggests that all
+>> set_tsk_need_resched callers could just call into the scheduler
+>> directly.
+>
+> One of the main callers would be the timer tick for local preemption;
+> that's from interrupt context, can't call schedule() there, really needs
+> to be the interrupt return path.
+>
+>> If so, the change could probably delete a whole lot of
+>> assembly code, and every kernel exit would get faster.
+>
+> We already need to load that word for all kinds of other things; like
+> delivering signals, so testing the one bit in the return path is
+> basically free.
+>
+> Anyway; after all this mucking about I finally remembered Venki once
+> attempted something similar:
+>
+>   https://lkml.org/lkml/2012/2/6/357
+>
+> How about something like this?
 
-   http://www.ozlabs.org/~akpm/mmotm/
+This looks remarkably similar to my version, except that it's just for
+mwait.  Hmm.
 
-mmotm-readme.txt says
+My updated patch is currently completely broken.  I'll fix it up and
+send it out for comparison.
 
-README for mm-of-the-moment:
+--Andy
 
-http://www.ozlabs.org/~akpm/mmotm/
+>
+> ---
+>  arch/x86/include/asm/mwait.h | 33 ++++++++++++++++--------
+>  arch/x86/kernel/process.c    |  2 ++
+>  arch/x86/kernel/smp.c        | 61 ++++++++++++++++++++++++++++++++++++++++++--
+>  3 files changed, 83 insertions(+), 13 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
+> index 1da25a5f96f9..cb7bb8bb6617 100644
+> --- a/arch/x86/include/asm/mwait.h
+> +++ b/arch/x86/include/asm/mwait.h
+> @@ -1,6 +1,7 @@
+>  #ifndef _ASM_X86_MWAIT_H
+>  #define _ASM_X86_MWAIT_H
+>
+> +#include <linux/percpu.h>
+>  #include <linux/sched.h>
+>
+>  #define MWAIT_SUBSTATE_MASK            0xf
+> @@ -15,6 +16,14 @@
+>
+>  #define MWAIT_ECX_INTERRUPT_BREAK      0x1
+>
+> +#define MWAIT_IPI_ENABLED              0x01
+> +#define MWAIT_IPI_RESCHED              0x02
+> +#define MWAIT_IPI_SINGLE               0x04
+> +
+> +extern void mwait_intercept_handler(void);
+> +
+> +DECLARE_PER_CPU_ALIGNED(unsigned int, mwait_ipi);
+> +
+>  static inline void __monitor(const void *eax, unsigned long ecx,
+>                              unsigned long edx)
+>  {
+> @@ -42,18 +51,20 @@ static inline void __mwait(unsigned long eax, unsigned long ecx)
+>   */
+>  static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
+>  {
+> -       if (!current_set_polling_and_test()) {
+> -               if (static_cpu_has(X86_FEATURE_CLFLUSH_MONITOR)) {
+> -                       mb();
+> -                       clflush((void *)&current_thread_info()->flags);
+> -                       mb();
+> -               }
+> -
+> -               __monitor((void *)&current_thread_info()->flags, 0, 0);
+> -               if (!need_resched())
+> -                       __mwait(eax, ecx);
+> +       unsigned int *ptr = this_cpu_ptr(&mwait_ipi);
+> +       unsigned int old = xchg(ptr, MWAIT_IPI_ENABLED);
+> +
+> +       WARN_ON_ONCE(old);
+> +
+> +       if (static_cpu_has(X86_FEATURE_CLFLUSH_MONITOR)) {
+> +               mb();
+> +               clflush((void *)ptr);
+> +               mb();
+>         }
+> -       current_clr_polling();
+> +
+> +       __monitor((void *)ptr, 0, 0);
+> +       if (!(*ptr & ~MWAIT_IPI_ENABLED))
+> +               __mwait(eax, ecx);
+>  }
+>
+>  #endif /* _ASM_X86_MWAIT_H */
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index 4505e2a950d8..00afb2b676b8 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -28,6 +28,7 @@
+>  #include <asm/fpu-internal.h>
+>  #include <asm/debugreg.h>
+>  #include <asm/nmi.h>
+> +#include <asm/mwait.h>
+>
+>  /*
+>   * per-CPU TSS segments. Threads are completely 'soft' on Linux,
+> @@ -286,6 +287,7 @@ void arch_cpu_idle_enter(void)
+>  void arch_cpu_idle_exit(void)
+>  {
+>         __exit_idle();
+> +       mwait_intercept_handler();
+>  }
+>
+>  void arch_cpu_idle_dead(void)
+> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+> index 7c3a5a61f2e4..4b078a8d6b83 100644
+> --- a/arch/x86/kernel/smp.c
+> +++ b/arch/x86/kernel/smp.c
+> @@ -23,6 +23,8 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/cpu.h>
+>  #include <linux/gfp.h>
+> +#include <linux/sched.h>
+> +#include <linux/smp.h>
+>
+>  #include <asm/mtrr.h>
+>  #include <asm/tlbflush.h>
+> @@ -31,6 +33,8 @@
+>  #include <asm/apic.h>
+>  #include <asm/nmi.h>
+>  #include <asm/trace/irq_vectors.h>
+> +#include <asm/mwait.h>
+> +
+>  /*
+>   *     Some notes on x86 processor bugs affecting SMP operation:
+>   *
+> @@ -113,6 +117,56 @@
+>  static atomic_t stopping_cpu = ATOMIC_INIT(-1);
+>  static bool smp_no_nmi_ipi = false;
+>
+> +DEFINE_PER_CPU_ALIGNED(unsigned int, mwait_ipi);
+> +EXPORT_PER_CPU_SYMBOL_GPL(mwait_ipi);
+> +
+> +static bool mwait_intercept(int cpu, int ipi)
+> +{
+> +       u32 *ptr = &per_cpu(mwait_ipi, cpu);
+> +       u32 val, new, old;
+> +
+> +       if (!static_cpu_has(X86_FEATURE_MWAIT))
+> +               return false;
+> +
+> +       val = *ptr;
+> +       if (!(val & MWAIT_IPI_ENABLED))
+> +               return false;
+> +
+> +       for (;;) {
+> +               new = val | ipi;
+> +               old = cmpxchg(ptr, val, new);
+> +               if (old == val)
+> +                       break;
+> +               val = old;
+> +       }
+> +
+> +       if (!(old & MWAIT_IPI_ENABLED))
+> +               return false;
+> +
+> +       return true;
+> +}
+> +
+> +void mwait_intercept_handler(void)
+> +{
+> +       unsigned int val, *ptr;
+> +
+> +       if (!static_cpu_has(X86_FEATURE_MWAIT))
+> +               return;
+> +
+> +       ptr = this_cpu_ptr(&mwait_ipi);
+> +       val = xchg(ptr, 0);
+> +
+> +       if (!(val & ~MWAIT_IPI_ENABLED))
+> +               return;
+> +
+> +       local_irq_disable();
+> +       if (val & MWAIT_IPI_RESCHED)
+> +               scheduler_ipi();
+> +       if (val & MWAIT_IPI_SINGLE)
+> +               generic_smp_call_function_single_interrupt();
+> +       local_irq_enable();
+> +}
+> +
+>  /*
+>   * this function sends a 'reschedule' IPI to another CPU.
+>   * it goes straight through and wastes no time serializing
+> @@ -124,12 +178,15 @@ static void native_smp_send_reschedule(int cpu)
+>                 WARN_ON(1);
+>                 return;
+>         }
+> -       apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
+> +
+> +       if (!mwait_intercept(cpu, MWAIT_IPI_RESCHED))
+> +               apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
+>  }
+>
+>  void native_send_call_func_single_ipi(int cpu)
+>  {
+> -       apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
+> +       if (!mwait_intercept(cpu, MWAIT_IPI_SINGLE))
+> +               apic->send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_SINGLE_VECTOR);
+>  }
+>
+>  void native_send_call_func_ipi(const struct cpumask *mask)
 
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
-
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
-
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
-
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
-
-A git tree which contains the memory management portion of this tree is
-maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-by Michal Hocko.  It contains the patches which are between the
-"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-file, http://www.ozlabs.org/~akpm/mmotm/series.
 
 
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
-
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-
-To develop on top of mmotm git:
-
-  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
-
-To rebase a branch with older patches to a new mmotm release:
-
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
-
-
-
-
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
-
-A git copy of this tree is available at
-
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
-
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
-
-
-This mmotm tree contains the following patches against 3.14-rc2:
-(patches marked "*" will be included in linux-next)
-
-  origin.patch
-  arch-alpha-kernel-systblss-remove-debug-check.patch
-  i-need-old-gcc.patch
-* mm-page_alloc-make-first_page-visible-before-pagetail.patch
-* mm-hwpoison-release-page-on-pagehwpoison-in-__do_fault.patch
-* drivers-iommu-omap-iommu-debugc-fix-decimal-permissions.patch
-* drivers-fmc-fmc-write-eepromc-fix-decimal-permissions.patch
-* mm-thp-fix-infinite-loop-on-memcg-oom.patch
-* memcg-change-oom_info_lock-to-mutex.patch
-* ipcmqueue-remove-limits-for-the-amount-of-system-wide-queues.patch
-* arm-mm-fix-the-memblock-allocation-for-lpae-machines.patch
-* kthread-ensure-locality-of-task_struct-allocations.patch
-* arm-use-generic-fixmaph.patch
-* fs-cifs-cifsfsc-add-__init-to-cifs_init_inodecache.patch
-* fanotify-remove-useless-bypass_perm-check.patch
-* fanotify-use-fanotify-event-structure-for-permission-response-processing.patch
-* fanotify-remove-useless-test-from-event-initialization.patch
-* fanotify-convert-access_mutex-to-spinlock.patch
-* fanotify-reorganize-loop-in-fanotify_read.patch
-* fanotify-move-unrelated-handling-from-copy_event_to_user.patch
-* sched_clock-document-4mhz-vs-1mhz-decision.patch
-* input-route-kbd-leds-through-the-generic-leds-layer.patch
-* jffs2-unlock-f-sem-on-error-in-jffs2_new_inode.patch
-* jffs2-fix-unbalanced-locking.patch
-* jffs2-avoid-soft-lockup-in-jffs2_reserve_space_gc.patch
-* jffs2-remove-wait-queue-after-schedule.patch
-* fs-udf-superc-add-__init-to-init_inodecache.patch
-* drivers-net-irda-donauboe-convert-to-module_pci_driver.patch
-* net-core-rtnetlinkc-copy-paste-error-in-rtnl_bridge_notify.patch
-* ocfs2-fix-null-pointer-dereference-when-access-dlm_state-before-launching-dlm-thread.patch
-* ocfs2-o2net-incorrect-to-terminate-accepting-connections-loop-upon-rejecting-an-invalid-one.patch
-* ocfs2-fix-a-tiny-race-when-running-dirop_fileop_racer.patch
-* ocfs2-o2net-o2net_listen_data_ready-should-do-nothing-if-socket-state-is-not-tcp_listen.patch
-* ocfs2-should-call-ocfs2_journal_access_di-before-ocfs2_delete_entry-in-ocfs2_orphan_del.patch
-* ocfs2-llseek-requires-ocfs2-inode-lock-for-the-file-in-seek_end.patch
-* drivers-scsi-megaraid-megaraid_mmc-missing-bounds-check-in-mimd_to_kioc.patch
-* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
-* kernel-watchdogc-touch_nmi_watchdog-should-only-touch-local-cpu-not-every-one.patch
-* watchdog-trigger-all-cpu-backtrace-when-locked-up-and-going-to-panic.patch
-* mm-slab-slub-use-page-list-consistently-instead-of-page-lru.patch
-  mm.patch
-* mm-vmscan-respect-numa-policy-mask-when-shrinking-slab-on-direct-reclaim.patch
-* mm-vmscan-move-call-to-shrink_slab-to-shrink_zones.patch
-* mm-vmscan-remove-shrink_control-arg-from-do_try_to_free_pages.patch
-* mm-compaction-ignore-pageblock-skip-when-manually-invoking-compaction.patch
-* mm-optimize-put_mems_allowed-usage.patch
-* mm-hugetlb-unify-region-structure-handling.patch
-* mm-hugetlb-improve-cleanup-resv_map-parameters.patch
-* mm-hugetlb-fix-race-in-region-tracking.patch
-* mm-hugetlb-remove-resv_map_put.patch
-* mm-hugetlb-use-vma_resv_map-map-types.patch
-* mm-hugetlb-improve-page-fault-scalability.patch
-* mm-hugetlb-improve-page-fault-scalability-fix.patch
-* mm-vmscan-shrink_slab-rename-max_pass-freeable.patch
-* zram-drop-init_done-struct-zram-member.patch
-* zram-do-not-pass-rw-argument-to-__zram_make_request.patch
-* zram-remove-good-and-bad-compress-stats.patch
-* zram-use-atomic64_t-for-all-zram-stats.patch
-* zram-remove-zram-stats-code-duplication.patch
-* zram-report-failed-read-and-write-stats.patch
-* zram-drop-not-used-table-count-member.patch
-* zram-move-zram-size-warning-to-documentation.patch
-* zram-document-failed_reads-failed_writes-stats.patch
-* mm-vmstat-fix-up-zone-state-accounting.patch
-* mm-vmstat-fix-up-zone-state-accounting-fix.patch
-* fs-cachefiles-use-add_to_page_cache_lru.patch
-* lib-radix-tree-radix_tree_delete_item.patch
-* mm-shmem-save-one-radix-tree-lookup-when-truncating-swapped-pages.patch
-* mm-filemap-move-radix-tree-hole-searching-here.patch
-* mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees.patch
-* mm-fs-store-shadow-entries-in-page-cache.patch
-* mm-thrash-detection-based-file-cache-sizing.patch
-* lib-radix_tree-tree-node-interface.patch
-* mm-keep-page-cache-radix-tree-nodes-in-check.patch
-* mm-keep-page-cache-radix-tree-nodes-in-check-fix.patch
-* mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix.patch
-* mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix-fix.patch
-* mm-hugetlb-mark-some-bootstrap-functions-as-__init.patch
-* mm-compaction-avoid-isolating-pinned-pages.patch
-* mm-compactionc-mark-function-as-static.patch
-* mm-memoryc-mark-functions-as-static.patch
-* mm-mmapc-mark-function-as-static.patch
-* mm-process_vm_accessc-mark-function-as-static.patch
-* mm-page_cgroupc-mark-functions-as-static.patch
-* mm-nobootmemc-mark-function-as-static.patch
-* include-linux-mmh-remove-ifdef-condition.patch
-* mm-readaheadc-fix-readahead-fail-for-no-local-memory-and-limit-readahead-pages.patch
-* pagewalk-update-page-table-walker-core.patch
-* pagewalk-add-walk_page_vma.patch
-* smaps-redefine-callback-functions-for-page-table-walker.patch
-* clear_refs-redefine-callback-functions-for-page-table-walker.patch
-* pagemap-redefine-callback-functions-for-page-table-walker.patch
-* numa_maps-redefine-callback-functions-for-page-table-walker.patch
-* memcg-redefine-callback-functions-for-page-table-walker.patch
-* madvise-redefine-callback-functions-for-page-table-walker.patch
-* arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
-* pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
-* mempolicy-apply-page-table-walker-on-queue_pages_range.patch
-* mm-rename-__do_fault-do_fault.patch
-* mm-do_fault-extract-to-call-vm_ops-do_fault-to-separate-function.patch
-* mm-introduce-do_read_fault.patch
-* mm-introduce-do_cow_fault.patch
-* mm-introduce-do_shared_fault-and-drop-do_fault.patch
-* mm-consolidate-code-to-call-vm_ops-page_mkwrite.patch
-* mm-consolidate-code-to-setup-pte.patch
-* mm-thp-drop-do_huge_pmd_wp_zero_page_fallback.patch
-* mm-remove-read_cache_page_async.patch
-* drop_caches-add-some-documentation-and-info-message.patch
-* mm-zswap-fix-trivial-typo-and-arrange-indentation.patch
-* mm-zswap-update-zsmalloc-in-comment-to-zbud.patch
-* include-linux-syscallsh-add-sys32_quotactl-prototype.patch
-* include-linux-syscallsh-add-sys32_quotactl-prototype-fix.patch
-* kernel-used-macros-from-compilerh-instead-of-__attribute__.patch
-* asm-systemh-clean-asm-systemh-from-docs.patch
-* asm-systemh-sparc-sparc_cpu_model-isnt-in-asm-systemh-any-more.patch
-* asm-systemh-um-arch_align_stack-moved-to-asm-exech.patch
-* asm-systemh-arm-delete-asm-systemh.patch
-* kernel-audit-fix-non-modular-users-of-module_init-in-core-code.patch
-* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
-* vsprintf-remove-%n-handling.patch
-* lib-vsprintf-add-%pt-format-specifier.patch
-* maintainers-add-backlight-co-maintainers.patch
-* backlight-update-bd-state-fb_blank-properties-when-necessary.patch
-* backlight-update-backlight-status-when-necessary.patch
-* backlight-aat2870-remove-unnecessary-oom-messages.patch
-* backlight-adp8860-remove-unnecessary-oom-messages.patch
-* backlight-adp8870-remove-unnecessary-oom-messages.patch
-* backlight-corgi_lcd-remove-unnecessary-oom-messages.patch
-* backlight-hx8357-remove-unnecessary-oom-messages.patch
-* backlight-ili922x-remove-unnecessary-oom-messages.patch
-* backlight-ili9320-remove-unnecessary-oom-messages.patch
-* backlight-l4f00242t03-remove-unnecessary-oom-messages.patch
-* backlight-lm3533_bl-remove-unnecessary-oom-messages.patch
-* backlight-lms283gf05-remove-unnecessary-oom-messages.patch
-* backlight-platform_lcd-remove-unnecessary-oom-messages.patch
-* backlight-tps65217_bl-remove-unnecessary-oom-messages.patch
-* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
-* lib-devresc-fix-some-sparse-warnings.patch
-* mm-utilc-add-kstrimdup.patch
-* lib-add-crc64-ecma-module.patch
-* checkpatch-add-test-for-long-udelay.patch
-* checkpatch-dont-warn-on-some-function-pointer-return-styles.patch
-* checkpatch-add-checks-for-constant-non-octal-permissions.patch
-* checkpatch-warn-on-uses-of-__constant_foo-functions.patch
-* fs-efs-superc-add-__init-to-init_inodecache.patch
-* binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
-* init-do_mountsc-fix-comment-error.patch
-* ncpfs-add-pr_fmt-and-convert-printks-to-pr_level.patch
-* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg.patch
-* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix.patch
-* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix-fix.patch
-* ncpfs-convert-pprintk-to-ncp_vdbg.patch
-* ncpfs-remove-now-unused-printk-macro.patch
-* ncpfs-inode-fix-mismatch-printk-formats-and-arguments.patch
-* rtc-rtc-imxdi-check-the-return-value-from-clk_prepare_enable.patch
-* rtc-rtc-at32ap700x-remove-unnecessary-oom-messages.patch
-* rtc-rtc-davinci-remove-unnecessary-oom-messages.patch
-* rtc-rtc-ds1390-remove-unnecessary-oom-messages.patch
-* rtc-rtc-moxart-remove-unnecessary-oom-messages.patch
-* rtc-rtc-nuc900-remove-unnecessary-oom-messages.patch
-* rtc-rtc-pm8xxx-remove-unnecessary-oom-messages.patch
-* rtc-rtc-rx8025-remove-unnecessary-oom-messages.patch
-* rtc-rtc-sirfsoc-remove-unnecessary-oom-messages.patch
-* rtc-rtc-lpc32xx-remove-unnecessary-oom-messages.patch
-* rtc-rtc-spear-remove-unnecessary-oom-messages.patch
-* rtc-rtc-coh901331-use-devm_ioremap_resource.patch
-* rtc-rtc-davinci-use-devm_ioremap_resource.patch
-* rtc-rtc-vt8500-use-devm_ioremap_resource.patch
-* rtc-rtc-jz4740-use-devm_ioremap_resource.patch
-* drivers-rtc-rtc-isl12057c-remove-duplicate-include.patch
-* drivers-rtc-rtc-da9052c-remove-redundant-private-structure-field.patch
-* fs-minix-inodec-add-__init-to-init_inodecache.patch
-* nilfs2-update-maintainers-file-entries.patch
-* nilfs2-add-struct-nilfs_suinfo_update-and-flags.patch
-* nilfs2-add-nilfs_sufile_set_suinfo-to-update-segment-usage.patch
-* nilfs2-add-nilfs_sufile_set_suinfo-to-update-segment-usage-fix.patch
-* nilfs2-implementation-of-nilfs_ioctl_set_suinfo-ioctl.patch
-* nilfs2-implementation-of-nilfs_ioctl_set_suinfo-ioctl-fix.patch
-* hfsplus-add-hfsx-subfolder-count-support.patch
-* fs-ufs-superc-add-__init-to-init_inodecache.patch
-* fs-ufs-remove-unused-ufs_super_block_first-pointer.patch
-* fs-ufs-remove-unused-ufs_super_block_second-pointer.patch
-* fs-ufs-remove-unused-ufs_super_block_third-pointer.patch
-* ufs-sb-mutex-merge-mutex_destroy.patch
-* fs-reiserfs-move-prototype-declaration-to-header-file.patch
-* fat-add-i_disksize-to-represent-uninitialized-size.patch
-* fat-add-fat_fallocate-operation.patch
-* fat-zero-out-seek-range-on-_fat_get_block.patch
-* fat-fallback-to-buffered-write-in-case-of-fallocated-region-on-direct-io.patch
-* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region.patch
-* fat-update-the-limitation-for-fat-fallocate.patch
-* cpusets-allocate-heap-only-when-required.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-fix.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-checkpatch-fixes.patch
-* include-linux-crash_dumph-add-vmcore_cleanup-prototype.patch
-* include-linux-crash_dumph-add-vmcore_cleanup-prototype-fix.patch
-* fs-adfs-superc-add-__init-to-init_inodecache.patch
-* kernel-panicc-display-reason-at-end-pr_emerg.patch
-* kernel-panicc-display-reason-at-end-pr_emerg-fix.patch
-* pps-add-non-blocking-option-to-pps_fetch-ioctl.patch
-* drivers-misc-sgi-gru-grukdumpc-cleanup-gru_dump_context-a-little.patch
-  linux-next.patch
-  linux-next-git-rejects.patch
-* drivers-spi-spic-fix-max-warning.patch
-* w1-call-put_device-if-device_register-fails.patch
-* arm-move-arm_dma_limit-to-setup_dma_zone.patch
-* mm-add-strictlimit-knob-v2.patch
-  debugging-keep-track-of-page-owners.patch
-  make-sure-nobodys-leaking-resources.patch
-  journal_add_journal_head-debug.patch
-  releasing-resources-with-children.patch
-  make-frame_pointer-default=y.patch
-  kernel-forkc-export-kernel_thread-to-modules.patch
-  mutex-subsystem-synchro-test-module.patch
-  slab-leaks3-default-y.patch
-  put_bh-debug.patch
-  add-debugging-aid-for-memory-initialisation-problems.patch
-  workaround-for-a-pci-restoring-bug.patch
-  single_open-seq_release-leak-diagnostics.patch
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
