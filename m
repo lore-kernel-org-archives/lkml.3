@@ -1,63 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaBMGLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 01:11:45 -0500
-Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:47975 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750892AbaBMGLn (ORCPT
+	id S1752167AbaBMGRW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 01:17:22 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:62000 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaBMGRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 01:11:43 -0500
+	Thu, 13 Feb 2014 01:17:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140212210446.GF11498@piout.net>
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
-	<1392199607-27452-4-git-send-email-jjhiblot@traphandler.com>
-	<20140212210446.GF11498@piout.net>
-Date: Thu, 13 Feb 2014 07:11:38 +0100
-Message-ID: <CACh+v5O0fJAvT0Ze9RkcVgLQ22Lod+m1ACj0K=GLLA=9r5tVvg@mail.gmail.com>
-Subject: Re: [PATCH v4 3/8] at91: dt: Add at91sam9261 dt SoC support
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        boris brezillon <b.brezillon@overkiz.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20140212181043.GB23630@e106331-lin.cambridge.arm.com>
+References: <1389266554-23463-1-git-send-email-sachin.kamat@linaro.org>
+	<1389266554-23463-3-git-send-email-sachin.kamat@linaro.org>
+	<20140212181043.GB23630@e106331-lin.cambridge.arm.com>
+Date: Thu, 13 Feb 2014 11:47:19 +0530
+Message-ID: <CAK9yfHyrKR27Z=S4ZuS5ZuJKjiVxFQXe4=izXyJMRs8c+-PuMg@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] Documentation: mfd: Add binding document for S2MPA01
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "sbkim73@samsung.com" <sbkim73@samsung.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-X-Ovh-Tracer-Id: 7066992240636352536
-X-Ovh-Remote: 209.85.160.49 (mail-pb0-f49.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-12 22:04 GMT+01:00 Alexandre Belloni
-<alexandre.belloni@free-electrons.com>:
-> Sorry, one more comment on that patch:
+Hi Mark,
+
+On 12 February 2014 23:40, Mark Rutland <mark.rutland@arm.com> wrote:
+> Hi Sachin,
 >
-> On 12/02/2014 at 11:06:42 +0100, Jean-Jacques Hiblot wrote :
->> +                     pinctrl@fffff400 {
->> +                             #address-cells = <1>;
->> +                             #size-cells = <1>;
->> +                             compatible = "atmel,at91rm9200-pinctrl", "simple-bus";
->> +                             ranges = <0xfffff400 0xfffff400 0xa00>;
+> Apologies for the delay on this.
+
+No problem :). Thank you for your review. Please see my comments inline.
+
+>
+> On Thu, Jan 09, 2014 at 11:22:34AM +0000, Sachin Kamat wrote:
+>> Added initial binding documentation for S2MPA01 MFD.
+>>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> ---
+>> * Re-organised as suggested by Mark Rutland.
+>> ---
+>>  Documentation/devicetree/bindings/mfd/s2mpa01.txt |   86 +++++++++++++++++++++
+>>  1 file changed, 86 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/mfd/s2mpa01.txt b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
+>> new file mode 100644
+>> index 000000000000..70879b92b24b
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
+>> @@ -0,0 +1,86 @@
 >> +
-> I believe you got the range wrong, shouldn't it be:
->                                 ranges = <0xfffff400 0xfffff400 0x600>;
+>> +* Samsung S2MPA01 Voltage and Current Regulator
+>> +
+>> +The Samsung S2MPA01 is a multi-function device which includes high
+>> +efficiency buck converters including Dual-Phase buck converter, various LDOs,
+>> +and an RTC. It is interfaced to the host controller using an I2C interface.
+>> +Each sub-block is addressed by the host system using different I2C slave
+>> +addresses.
+>> +
+>> +Required properties:
+>> +- compatible: Should be "samsung,s2mpa01-pmic".
+>> +- reg: Specifies the I2C slave address of the PMIC block. It should be 0x66.
 >
-Yes you're right.
-Thanks for the review
+> Is the slave address not per-instance in I2C? If not why must is be 0x66?
+
+Mark Brown already replied to this. Thanks Mark.
+
 >
-> --
-> Alexandre Belloni, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
+>> +
+>> +Optional properties:
+>> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
+>> +  the interrupts from s2mpa01 are delivered to.
+>> +- interrupts: Interrupt specifier for interrupt source (connected to SoC).
+>
+> The part in brackets can go. Assuming this is a single interrupt:
+
+OK.
+
+>
+> - interrupts: An interrupt-specifier for the sole interrupt generated by
+>   the device.
+>
+> If the interrupt has a name it would be nice to mention that. If there
+> are more than one you should describe them.
+>
+>> +
+>> +Optional nodes:
+>> +- regulators: The regulators of s2mpa01 that have to be instantiated should be
+>> +  included in a sub-node named 'regulators'. Regulator nodes and constraints
+>> +  included in this sub-node use the standard regulator bindings which are
+>> +  documented elsewhere.
+>> +
+>> +Properties for BUCK regulator nodes:
+>> + regulator-ramp-delay for BUCKs = [6250/12500(default)/25000/50000] uV/us
+>
+> This could be made easier to read:
+>
+> - regulator-ramp-delay: ramp delay in uV/us. May be 6250, 12500
+>   (default), 250000, or 50000. May be 0 for disabling the ramp delay on
+>   BUCK{1,2,3,4}.
+
+Yes. Will update.
+
+>
+>> +
+>> + BUCK[1/2/3/4] supports disabling ramp delay on hardware, so explictly
+>> + regulator-ramp-delay = <0> can be used for them to disable ramp delay.
+>> + In the absence of the regulator-ramp-delay property, the default ramp
+>> + delay will be used.
+>
+> Can be folded into the above, as in my example.
+
+Right.
+
+>
+>> +
+>> +  NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
+>> +  for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
+>
+> Missing '=' before <value>?
+
+Yes. Thanks for pointing out.
+
+>
+>> +  Grouping of BUCKs sharing ramp rate setting is as follow : BUCK[1, 6],
+>> +  BUCK[2, 4], and BUCK[8, 9, 10]
+>
+> The following BUCKs share ramp settings:
+> * 1 and 6
+> * 2 and 4
+> * 8, 9, and 10
+
+OK.
+-- 
+With warm regards,
+Sachin
