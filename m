@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaBMVGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:06:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36130 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932AbaBMVGo (ORCPT
+	id S1751973AbaBMVHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:07:22 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:51127 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881AbaBMVHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:06:44 -0500
-Date: Thu, 13 Feb 2014 13:06:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-Message-Id: <20140213130643.0cf5fb083056cdd159d1aac4@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
-References: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-	<20140206145105.27dec37b16f24e4ac5fd90ce@linux-foundation.org>
-	<alpine.DEB.2.02.1402061456290.31828@chino.kir.corp.google.com>
-	<20140206152219.45c2039e5092c8ea1c31fd38@linux-foundation.org>
-	<alpine.DEB.2.02.1402061537180.3441@chino.kir.corp.google.com>
-	<alpine.DEB.2.02.1402061557210.5061@chino.kir.corp.google.com>
-	<52F4B8A4.70405@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402071239301.4212@chino.kir.corp.google.com>
-	<52F88C16.70204@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
-	<52F8C556.6090006@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
-	<52FC6F2A.30905@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Feb 2014 16:07:13 -0500
+Date: Thu, 13 Feb 2014 16:07:09 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] memcg: barriers to see memcgs as fully initialized
+Message-ID: <20140213210709.GE17608@htj.dyndns.org>
+References: <alpine.LSU.2.11.1402121717420.5917@eggly.anvils>
+ <alpine.LSU.2.11.1402121727050.5917@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1402121727050.5917@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014 00:05:31 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
+Hello, Hugh.
 
-> On Thu, 13 Feb 2014, Raghavendra K T wrote:
+On Wed, Feb 12, 2014 at 05:29:09PM -0800, Hugh Dickins wrote:
+> Commit d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully
+> initialized") is not bad, but Greg Thelen asks "Are barriers needed?"
 > 
-> > I was able to test (1) implementation on the system where readahead problem
-> > occurred. Unfortunately it did not help.
-> > 
-> > Reason seem to be that CONFIG_HAVE_MEMORYLESS_NODES dependency of
-> > numa_mem_id(). The PPC machine I am facing problem has topology like
-> > this:
-> > 
-> > numactl -H
-> > ---------
-> > available: 2 nodes (0-1)
-> > node 0 cpus: 0 1 2 3 4 5 6 7 12 13 14 15 16 17 18 19 20 21 22 23 24 25
-> > ...
-> > node 0 size: 0 MB
-> > node 0 free: 0 MB
-> > node 1 cpus: 8 9 10 11 32 33 34 35 ...
-> > node 1 size: 8071 MB
-> > node 1 free: 2479 MB
-> > node distances:
-> > node   0   1
-> >   0:  10  20
-> >   1:  20  10
-> > 
-> > So it seems numa_mem_id() does not help for all the configs..
-> > Am I missing something ?
-> > 
+> Yes, I'm afraid so: this makes it a little heavier than the original,
+> but there's no point in guaranteeing that mem_cgroup_iter() returns only
+> fully initialized memcgs, if we don't guarantee that the initialization
+> is visible.
 > 
-> You need the patch from http://marc.info/?l=linux-mm&m=139093411119013 
-> first.
+> If we move online_css()'s setting CSS_ONLINE after rcu_assign_pointer()
+> (I don't see why not), we can reasonably rely on the smp_wmb() in that.
+> But I can't find a pre-existing barrier at the mem_cgroup_iter() end,
+> so add an smp_rmb() where __mem_cgroup_iter_next() returns non-NULL.
 
-That (un-signed-off) powerpc patch appears to be moribund.  What's up?
+Hmmm.... so, CSS_ONLINE was never meant to be used outside cgroup
+proper.  The only guarantee that the css iterators make is that a css
+which has finished its ->css_online() will be included in the
+iteration, which implies that css's which haven't finished
+->css_online() or already went past ->css_offline() may be included in
+the iteration.  In fact, it's impossible to achieve the guarantee
+without such implications if we want to avoid synchronizing everything
+using common locking, which we apparently can't do across different
+controllers.
+
+The expectation is that if a controller needs to distinguish fully
+online css's, it will perform its own synchronization among its
+online, offline and iterations, which can usually be achieved through
+per-css synchronization. There is asymmetry here due to the way
+css_tryget() behaves.  Unfortuantely, I don't think it can be expanded
+to become symmetrical for online testing without adding, say,
+->css_post_online() callback.
+
+So, the only thing that memcg can depend on while iterating is that it
+will include all css's which finished ->css_online() and if memcg
+wants to filter out the ones which haven't yet, it should do its own
+marking in ->css_online() rather than depending on what cgroup core
+does with the flags.  That way, locking rules are a lot more evident
+in each subsystem and we don't end up depending on cgroup internal
+details which aren't immediately obvious.
+
+Thanks.
+
+-- 
+tejun
