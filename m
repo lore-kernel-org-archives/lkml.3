@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaBMCC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 21:02:28 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:7316 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbaBMCC1 (ORCPT
+	id S1752933AbaBMCDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 21:03:08 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:51288 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaBMCDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 21:02:27 -0500
-Message-ID: <52FC2797.90502@huawei.com>
-Date: Thu, 13 Feb 2014 10:01:59 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 12 Feb 2014 21:03:07 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: akpm@linux-foundation.org
+Cc: toshi.kani@hp.com, isimatu.yasuaki@jp.fujitsu.com, rientjes@google.com,
+        gong.chen@linux.intel.com, haokexin@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kernel/resource.c: fix sparse non static symbol warning
+Date: Thu, 13 Feb 2014 11:02:59 +0900
+Message-ID: <2767883.6dX08SOjIi@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET cgroup/for-3.15] cgroup: more cleanups
-References: <1391953964-22088-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1391953964-22088-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/9 21:52, Tejun Heo wrote:
-> Hello,
-> 
-> This series contains assorted cleanups which also prepare for the
-> planned migration taskset handling update.
-> 
-> This patchset contains the following sixteen patches.
-> 
->  0001-cgroup-disallow-xattr-release_agent-and-name-if-sane.patch
->  0002-cgroup-drop-CGRP_ROOT_SUBSYS_BOUND.patch
->  0003-cgroup-enable-task_cg_lists-on-the-first-cgroup-moun.patch
->  0004-cgroup-relocate-cgroup_enable_task_cg_lists.patch
->  0005-cgroup-implement-cgroup_has_tasks-and-unexport-cgrou.patch
->  0006-cgroup-reimplement-cgroup_transfer_tasks-without-usi.patch
->  0007-cgroup-make-css_set_lock-a-rwsem-and-rename-it-to-cs.patch
->  0008-cpuset-use-css_task_iter_start-next-end-instead-of-c.patch
->  0009-cgroup-remove-css_scan_tasks.patch
->  0010-cgroup-separate-out-put_css_set_locked-and-remove-pu.patch
->  0011-cgroup-move-css_set_rwsem-locking-outside-of-cgroup_.patch
->  0012-cgroup-drop-skip_css-from-cgroup_taskset_for_each.patch
->  0013-cpuset-don-t-use-cgroup_taskset_cur_css.patch
->  0014-cgroup-remove-cgroup_taskset_cur_css-and-cgroup_task.patch
->  0015-cgroup-cosmetic-updates-to-cgroup_attach_task.patch
->  0016-cgroup-unexport-functions.patch
-> 
-> The notables ones are
-> 
->  0003-0004 move task_cg_list enabling to the first mount instead of
->  the first css task iteration.
-> 
->  0005-0009 make css_set_lock a rwsem so that css_task_iter allows
->  blocking during iteration and removes css_scan_tasks().
-> 
->  0010-0015 clean up migration path to prepare for the planned
->  migration taskset handling update.
-> 
+>From f8e0752ac80e56bcbfe197a5820692d199822b52 Mon Sep 17 00:00:00 2001
+From: Daeseok Youn <daeseok.youn@gmail.com>
+Date: Thu, 13 Feb 2014 10:11:39 +0900
+Subject: [PATCH] kernel/resource.c: fix sparse non static symbol warning
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+kernel/resource.c:518:5: warning:
+ symbol 'reallocate_resource' was not declared. Should it be static?
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ kernel/resource.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 3f285dc..b2979c6 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -515,7 +515,7 @@ static int find_resource(struct resource *root, struct resource *new,
+  * @newsize: new size of the resource descriptor
+  * @constraint: the size and alignment constraints to be met.
+  */
+-int reallocate_resource(struct resource *root, struct resource *old,
++static int reallocate_resource(struct resource *root, struct resource *old,
+ 			resource_size_t newsize,
+ 			struct resource_constraint  *constraint)
+ {
+-- 
+1.7.9.5
+
 
