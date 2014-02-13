@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaBMSAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:00:22 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:38147 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994AbaBMSAU (ORCPT
+	id S1752625AbaBMSBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:01:11 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:51912 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232AbaBMSBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:00:20 -0500
-Message-ID: <52FD06E8.9000209@linux.vnet.ibm.com>
-Date: Thu, 13 Feb 2014 23:24:48 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 13 Feb 2014 13:01:09 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Toshi Kani <toshi.kani@hp.com>, paulus@samba.org, rusty@rustcorp.com.au,
-        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
-        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of	callback
- registration functions
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com> <1392081980.5612.123.camel@misato.fc.hp.com> <52F9ED11.5010800@linux.vnet.ibm.com> <20140211171553.GA26036@redhat.com> <52FA7539.4030907@linux.vnet.ibm.com> <20140213174452.GB14455@redhat.com>
-In-Reply-To: <20140213174452.GB14455@redhat.com>
+In-Reply-To: <52FD07AF.1030604@panasas.com>
+References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
+	<008a7e048e6eee2d773e092660183f21d52e4874.1391949868.git.rashika.kheria@gmail.com>
+	<52FD07AF.1030604@panasas.com>
+Date: Thu, 13 Feb 2014 23:31:08 +0530
+Message-ID: <CAMpEsFHiGFaA2t6yMT7VCyRq93wYv8uOqhg6W=xAYvGtztjr=w@mail.gmail.com>
+Subject: Re: [PATCH 05/21] fs: Mark function as static in exofs/super.c
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Benny Halevy <bhalevy@tonian.com>, osd-dev@open-osd.org,
+        Josh Triplett <josh@joshtriplett.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021318-5564-0000-0000-00000C01A86D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 11:14 PM, Oleg Nesterov wrote:
-> On 02/12, Srivatsa S. Bhat wrote:
+On Thu, Feb 13, 2014 at 11:28 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+> On 02/09/2014 03:01 PM, Rashika Kheria wrote:
+>> Mark function as static in exofs/super.c because it is not used outside
+>> this file.
 >>
->> On 02/11/2014 10:45 PM, Oleg Nesterov wrote:
->>>
->>> I am a bit confused... If we do this, why we can't simply turn
->>> cpu_add_remove_lock into rw_semaphore?
-> 
-> [...snip...]
-> 
->> 	cpu_notifier_register_begin();                |  Run in parallel
->>                                                       |  with similar phases
->> 	for_each_online_cpu(cpu)                      |  from other subsystems.
->> 		init_cpu(cpu);                        |
+>> This also eliminates the following warning in exofs/super.c:
+>> fs/exofs/super.c:546:5: warning: no previous prototype for '__alloc_dev_table' [-Wmissing-prototypes]
 >>
->> 	/* Updates the cpu notifier chain. */
->> 	register_cpu_notifier(&foobar_cpu_notifier); ||| -- Must run serially
-> 
-> Ah indeed, we can't use a single lock, thanks. Perhaps we can simply
-> add a spinlock_t which only protects cpu_chain though, but I am not
-> sure and currently this is off-topic anyway.
+>> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>
+> Hi Rashika
+>
+> Thanks for the fixes.
+>
+> Do you need me to push it to Linus through my tree or do you need an:
+> ACK-by: Boaz Harrosh <bharrosh@panasas.com>
+>
+> [Same for [PATCH 06/21] fs: Mark functions as static in exofs/ore_raid.c ]
+>
+> Thanks again
+> Boaz
 >
 
-The problem with that would be that the chain invocations (during CPU hotplug)
-would have to take the spinlock (to prevent running concurrently with chain
-updaters). But unfortunately CPU hotplug notifier callbacks can sleep, so we
-can't hold spinlocks while invoking them.
+Hi Boaz,
 
-Regards,
-Srivatsa S. Bhat
+It would be nice if you could push it to Linus through you tree.
 
+Thanks,
+Rashika Kheria
+
+>> ---
+>>  fs/exofs/super.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/exofs/super.c b/fs/exofs/super.c
+>> index 9d97633..57f59a2 100644
+>> --- a/fs/exofs/super.c
+>> +++ b/fs/exofs/super.c
+>> @@ -543,8 +543,8 @@ static int exofs_devs_2_odi(struct exofs_dt_device_info *dt_dev,
+>>       return !(odi->systemid_len || odi->osdname_len);
+>>  }
+>>
+>> -int __alloc_dev_table(struct exofs_sb_info *sbi, unsigned numdevs,
+>> -                   struct exofs_dev **peds)
+>> +static int __alloc_dev_table(struct exofs_sb_info *sbi, unsigned numdevs,
+>> +                          struct exofs_dev **peds)
+>>  {
+>>       struct __alloc_ore_devs_and_exofs_devs {
+>>               /* Twice bigger table: See exofs_init_comps() and comment at
+>>
+>
+
+
+
+-- 
+Rashika Kheria
+B.Tech CSE
+IIIT Hyderabad
