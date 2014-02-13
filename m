@@ -1,114 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaBMDAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 22:00:35 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:44443 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417AbaBMDAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 22:00:33 -0500
-X-IronPort-AV: E=Sophos;i="4.95,836,1384272000"; 
-   d="scan'208";a="9517750"
-Message-ID: <52FC35CA.4040009@cn.fujitsu.com>
-Date: Thu, 13 Feb 2014 11:02:34 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: jjherne@linux.vnet.ibm.com
-CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: Subject: Warning in workqueue.c
-References: <52F4F01C.1070800@linux.vnet.ibm.com> <20140207165113.GD3304@htj.dyndns.org> <52F51E10.8050208@linux.vnet.ibm.com> <20140207193604.GA8833@htj.dyndns.org> <52F8F0FB.3080206@linux.vnet.ibm.com> <20140210231742.GK25350@mtj.dyndns.org> <52FB90C6.4010701@linux.vnet.ibm.com>
-In-Reply-To: <52FB90C6.4010701@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/13 10:58:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/13 10:58:15,
-	Serialize complete at 2014/02/13 10:58:15
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1752111AbaBMDBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 22:01:52 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:52038 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaBMDBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 22:01:50 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-pci@vger.kernel.org
+Cc: horms@verge.net.au, linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        valentine.barshak@cogentembedded.com, ben.dooks@codethink.co.uk,
+        geert@linux-m68k.org, bhelgaas@google.com,
+        Magnus Damm <magnus.damm@gmail.com>
+Date: Thu, 13 Feb 2014 12:03:02 +0900
+Message-Id: <20140213030302.10398.37322.sendpatchset@w520>
+Subject: [PATCH 00/08] PCI: rcar: Recent driver patches from Ben Dooks and me
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 11:18 PM, Jason J. Herne wrote:
-> On 02/10/2014 06:17 PM, Tejun Heo wrote:
->> Hello,
->>
->> On Mon, Feb 10, 2014 at 10:32:11AM -0500, Jason J. Herne wrote:
->>> [  950.778485] XXX: worker->flags=0x1 pool->flags=0x0 cpu=6
->>> pool->cpu=2 rescue_wq=          (null)
->>> [  950.778488] XXX: last_unbind=-7 last_rebind=0
->>> last_rebound_clear=0 nr_exected_after_rebound_clear=0
->>> [  950.778492] XXX: cpus_allowed=2
->>> [  950.778495] XXX: cpus_allowed_after_rebinding=2
->>
->> So, everything looks kosher from workqueue side.  Weird.  cpus_allowed
->> is properly set and everything.  The worker just isn't running on the
->> cpu it's supposed to be on.  Can you please try the following?
-> 
-> 
-> Thanks for the fast responses. Here is the output from the last patch:
+PCI: rcar: Recent driver patches from Ben Dooks and me
 
-I can't hit the bug. Could you give me more information to help me to reproduce the bug?
-I think we need to use "git-bisect" to address the suspicious patch.
+[PATCH 01/08] PCI: rcar: check platform_get_irq() return code
+[PATCH v2 02/08] PCI: rcar: add error interrupt handling
+[PATCH 03/08] PCI: rcar: fix bridge logic configuration accesses
+[PATCH v2 04/08] PCI: rcar: Register each instance independently
+[PATCH v2 05/08] PCI: rcar: Break out window size handling
+[PATCH v2 06/08] PCI: rcar: Add DMABOUNCE support
+[PATCH 07/08] PCI: rcar: Enable BOUNCE in case of HIGHMEM
+[PATCH 08/08] PCI: rcar: Make the Kconfig dependencies more generic
 
-Thanks,
-Lai
+These patches update the pci-rcar-gen2.c driver with patches from
+Ben Dooks and me. The first 3 are written by Ben (thanks!) and are
+included here to show what I would like to have merged and what I
+rebased my patches on. The following 4 are updated versions of
 
-> 
-> 
-> [34437.173991] WARNING: at kernel/workqueue.c:2156
-> [34437.173993] Modules linked in: ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack xt_CHECKSUM iptable_mangle bridge stp llc ip6table_filter ip6_tables ebtable_nat ebtables iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi qeth_l2 tape_3590 tape tape_class vhost_net tun vhost macvtap macvlan lcs dasd_eckd_mod dasd_mod qeth ccwgroup zfcp scsi_transport_fc scsi_tgt qdio dm_multipath [last unloaded: kvm]
-> [34437.174030] CPU: 2 PID: 12 Comm: kworker/1:0 Not tainted 3.14.0-rc1 #1
-> [34437.174034] task: 00000000f7c9e4c0 ti: 00000000f7cbc000 task.ti: 00000000f7cbc000
-> [34437.174046] Krnl PSW : 0404c00180000000 000000000015b406 (process_one_work+0x61a/0x640)
-> [34437.174051]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:3 CC:0 PM:0 EA:3
-> Krnl GPRS: 000000007c325b00 0000000000bc2a52 00000000f7f52780 0000000000000001
-> [34437.174057]            0000000000000000 0000000000000002 0000000000000001 0000000000bc2a4e
-> [34437.174061]            0000000000000000 0000000084a13500 0000000084a0f000 0000000084a0f018
-> [34437.174065]            00000000f7f52780 0000000000735d18 00000000f7cbfdd0 00000000f7cbfd58
-> [34437.174085] Krnl Code: 000000000015b3fa: 92013000        mvi    0(%r3),1
->            000000000015b3fe: a7f4ff31        brc    15,15b260
->           #000000000015b402: a7f40001        brc    15,15b404
->           >000000000015b406: 92011000        mvi    0(%r1),1
->            000000000015b40a: a7f4fe84        brc    15,15b112
->            000000000015b40e: 41102018        la    %r1,24(%r2)
->            000000000015b412: e31020180020    cg    %r1,24(%r2)
->            000000000015b418: a784ff59        brc    8,15b2ca
-> [34437.174115] Call Trace:
-> [34437.174118] ([<000000000015b0e0>] process_one_work+0x2f4/0x640)
-> [34437.174122]  [<000000000015ba0e>] worker_thread+0x19a/0x3c0
-> [34437.174126]  [<0000000000164842>] kthread+0x10e/0x128
-> [34437.174132]  [<0000000000728e56>] kernel_thread_starter+0x6/0xc
-> [34437.174136]  [<0000000000728e50>] kernel_thread_starter+0x0/0xc
-> [34437.174138] Last Breaking-Event-Address:
-> [34437.174141]  [<000000000015b402>] process_one_work+0x616/0x640
-> [34437.174144] ---[ end trace 52d8ee96597a2415 ]---
-> [34437.174148] XXX: worker->flags=0x1 pool->flags=0x0 cpu=2 pool->cpu=1(1) rescue_wq=          (null)
-> [34437.174152] XXX: last_unbind=-34 last_rebind=0 last_rebound_clear=0 nr_exected_after_rebound_clear=0
-> [34437.174156] XXX: cpus_allowed=1
-> [34437.174158] XXX: cpus_allowed_after_rebinding=1
-> [34437.174161] BUG: scheduling while atomic: kworker/1:0/12/0x00000002
-> [34437.174164] Modules linked in: ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack xt_CHECKSUM iptable_mangle bridge stp llc ip6table_filter ip6_tables ebtable_nat ebtables iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi qeth_l2 tape_3590 tape tape_class vhost_net tun vhost macvtap macvlan lcs dasd_eckd_mod dasd_mod qeth ccwgroup zfcp scsi_transport_fc scsi_tgt qdio dm_multipath [last unloaded: kvm]
-> [34437.174194] CPU: 2 PID: 12 Comm: kworker/1:0 Tainted: G        W 3.14.0-rc1 #1
-> [34437.174197]        00000000f7cbfb80 00000000f7cbfb90 0000000000000002 0000000000000000
->        00000000f7cbfc20 00000000f7cbfb98 00000000f7cbfb98 0000000000115f6a
->        0000000000000003 0000000000c4da00 000000000000000a 000000000000000a
->        00000000f7cbfbe0 00000000f7cbfb80 0000000000000000 0000000000000000
->        0000000000000000 0000000000115f6a 00000000f7cbfb80 00000000f7cbfbd0
-> [34437.174273] Call Trace:
-> [34437.174279] ([<0000000000115e5c>] show_trace+0x100/0x148)
-> [34437.174282]  [<0000000000115f18>] show_stack+0x74/0xf4
-> [34437.174288]  [<0000000000720a9c>] dump_stack+0x88/0xb8
-> [34437.174291]  [<000000000071aa40>] __schedule_bug+0x78/0x90
-> [34437.174295]  [<00000000007237e4>] __schedule+0xb8c/0xbac
-> [34437.174299]  [<000000000015b21e>] process_one_work+0x432/0x640
-> [34437.174302]  [<000000000015ba0e>] worker_thread+0x19a/0x3c0
-> [34437.174306]  [<0000000000164842>] kthread+0x10e/0x128
-> [34437.174309]  [<0000000000728e56>] kernel_thread_starter+0x6/0xc
-> [34437.174313]  [<0000000000728e50>] kernel_thread_starter+0x0/0xc
-> [34437.174317] XXX: after schedule(), cpu=2
-> 
-> 
-> 
-> 
+[PATCH 00/04] PCI: rcar: Driver model and physical address space update
 
+The final patch is a new one that fixes up the Kconfig dependencies.
+
+Patch 1-3:
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+
+Patch 4-8:
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
+
+ Written against renesas.git tag renesas-devel-v3.14-rc1-20140207
+
+ drivers/pci/host/Kconfig         |    5 
+ drivers/pci/host/pci-rcar-gen2.c |  445 ++++++++++++++++++++++++++++++++------
+ 2 files changed, 385 insertions(+), 65 deletions(-)
