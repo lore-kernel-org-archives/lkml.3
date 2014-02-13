@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaBMHqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 02:46:40 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:41881 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783AbaBMHqj (ORCPT
+	id S1753159AbaBMHrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 02:47:15 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:51485 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519AbaBMHrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 02:46:39 -0500
-Message-ID: <52FC7858.3070000@linaro.org>
-Date: Thu, 13 Feb 2014 15:46:32 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 13 Feb 2014 02:47:13 -0500
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>, peterz@infradead.org,
-        mingo@kernel.org
-CC: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH V2 2/3] sched: Fix race in idle_balance()
-References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org> <1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <CAKx2Y1kyfxzaWnFhSx-EkeCWKi+tn6e1YHCkbt4RtYmBskZHTQ@mail.gmail.com>
+References: <CAKx2Y1kyfxzaWnFhSx-EkeCWKi+tn6e1YHCkbt4RtYmBskZHTQ@mail.gmail.com>
+Date: Thu, 13 Feb 2014 02:47:13 -0500
+X-Google-Sender-Auth: alrl6EJcnylMymz8OKXvGIduyes
+Message-ID: <CAKb7UviSXdXGpAkPJPzYbSPk=8mExO7CE-jcFBZiJsT6EDe8Jg@mail.gmail.com>
+Subject: Re: nouveau init unknown opcode error, when CONFIG_DRM_NOUVEAU=y
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Kui Zhang <kuizhang@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 07:10 AM, Daniel Lezcano wrote:
-> The scheduler main function 'schedule()' checks if there are no more tasks
-> on the runqueue. Then it checks if a task should be pulled in the current
-> runqueue in idle_balance() assuming it will go to idle otherwise.
-> 
-> But the idle_balance() releases the rq->lock in order to lookup in the sched
-> domains and takes the lock again right after. That opens a window where
-> another cpu may put a task in our runqueue, so we won't go to idle but
-> we have filled the idle_stamp, thinking we will.
-> 
-> This patch closes the window by checking if the runqueue has been modified
-> but without pulling a task after taking the lock again, so we won't go to idle
-> right after in the __schedule() function.
-> 
-> Cc: alex.shi@linaro.org
-> Cc: peterz@infradead.org
-> Cc: mingo@kernel.org
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/sched/fair.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 428bc9d..5ebc681 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6589,6 +6589,13 @@ void idle_balance(struct rq *this_rq)
->  
->  	raw_spin_lock(&this_rq->lock);
->  
-> +	/*
-> +	 * While browsing the domains, we released the rq lock.
-> +	 * A task could have be enqueued in the meantime
-> +	 */
+On Thu, Feb 13, 2014 at 2:15 AM, Kui Zhang <kuizhang@gmail.com> wrote:
+> Hello,
+>
+> When CONFIG_DRM_NOUVEAU=y, I get following error. Blank screen after initrd.
+>
+> This was in the dmesg.
+>
+> [    0.282559] [drm] hdmi device  not found 1 0 1
+> [    0.282688] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x046800a3
+> [    0.282693] nouveau  [  DEVICE][0000:01:00.0] Chipset: G72 (NV46)
+> [    0.282696] nouveau  [  DEVICE][0000:01:00.0] Family : NV40
+> [    0.284293] nouveau  [   VBIOS][0000:01:00.0] checking PRAMIN for image...
+> [    0.366261] nouveau  [   VBIOS][0000:01:00.0] ... checksum invalid
+> [    0.366266] nouveau  [   VBIOS][0000:01:00.0] checking PROM for image...
+> [    0.366279] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    0.366283] nouveau  [   VBIOS][0000:01:00.0] checking ACPI for image...
+> [    0.366286] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    0.366290] nouveau  [   VBIOS][0000:01:00.0] checking PCIROM for image...
+> [    0.366454] nouveau  [   VBIOS][0000:01:00.0] ... appears to be valid
+> [    0.366462] nouveau  [   VBIOS][0000:01:00.0] using image from PCIROM
+> [    0.366603] nouveau  [   VBIOS][0000:01:00.0] BIT signature found
+> [    0.366609] nouveau  [   VBIOS][0000:01:00.0] version 05.72.22.41.19
+> [    0.367101] nouveau E[   VBIOS][0000:01:00.0] 0xe008[ ]: unknown opcode 0xc0
+> [    0.367107] nouveau E[ DEVINIT][0000:01:00.0] init failed, -22
+> [    0.367112] nouveau E[     DRM] failed to create 0x80000080, -22
+> [    0.367833] nouveau: probe of 0000:01:00.0 failed with error -22
+>
+>
+> When CONFIG_DRM_NOUVEAU=m. Everything appears to work as expected.
+>
+> [    0.796974] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x046800a3
+> [    0.796980] nouveau  [  DEVICE][0000:01:00.0] Chipset: G72 (NV46)
+> [    0.796985] nouveau  [  DEVICE][0000:01:00.0] Family : NV40
+> [    0.799366] nouveau  [   VBIOS][0000:01:00.0] source: PRAMIN
+> [    0.887657] nouveau  [   VBIOS][0000:01:00.0] ... checksum invalid
+> [    0.887838] nouveau  [   VBIOS][0000:01:00.0] BIT signature found
+> [    0.887844] nouveau  [   VBIOS][0000:01:00.0] version 05.72.22.41.19
 
-Mind to move the following line up to here?
+You appear to have a module parameter set for nouveau,
+config=NvBios=PRAMIN, probably in your modprobe.conf or similar file.
+If you append nouveau.config=NvBios=PRAMIN to your kernel cmdline, it
+should work similarly.
 
-        if (curr_cost > this_rq->max_idle_balance_cost)
-                this_rq->max_idle_balance_cost = curr_cost;
-
-> +	if (this_rq->nr_running && !pulled_task)
-> +		return;
-> +
->  	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
->  		/*
->  		 * We are going idle. next_balance may be set based on
-> 
-
-
-
-
--- 
-Thanks
-    Alex
+  -ilia
