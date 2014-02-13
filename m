@@ -1,152 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbaBMISo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 03:18:44 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:37919 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaBMISl (ORCPT
+	id S1753115AbaBMITy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 03:19:54 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:65126 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaBMITx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 03:18:41 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-da-52fc7fdfb2e0
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Liviu Dudau'" <Liviu.Dudau@arm.com>,
-        "'Tanmay Inamdar'" <tinamdar@apm.com>
-Cc: "'Arnd Bergmann'" <arnd@arndb.de>, devicetree@vger.kernel.org,
-        "'linaro-kernel'" <linaro-kernel@lists.linaro.org>,
-        "'linux-pci'" <linux-pci@vger.kernel.org>,
-        "'Will Deacon'" <Will.Deacon@arm.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Catalin Marinas'" <Catalin.Marinas@arm.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'LAKML'" <linux-arm-kernel@lists.infradead.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com>
- <1391452428-22917-2-git-send-email-Liviu.Dudau@arm.com>
- <7398333.9L5KlyFggU@wuerfel>
- <CACoXjckKRQfR3CbC1JpgbhOumED+OqiMh1_Y73-h6q=ByMNanw@mail.gmail.com>
- <20140206101814.GA4993@e106497-lin.cambridge.arm.com>
- <000201cf2893$0f5e3710$2e1aa530$%han@samsung.com>
-In-reply-to: <000201cf2893$0f5e3710$2e1aa530$%han@samsung.com>
-Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from
- device tree
-Date: Thu, 13 Feb 2014 17:18:39 +0900
-Message-id: <000401cf2894$333a3fc0$99aebf40$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8jJMZQcXw+jDDtSgu1a5WFP4+T7AFbBBDgAADBUmA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+Zke79+j9BBgt+W1n8nXSM3WJJU4bF
-	+2U9jBbzj5xjtbi88BKrxftDz5gtNj2+BuTumsNmcXbecTaLA0vbWSyef/rEYvHy4wkWBx6P
-	j+s/MXqsmbeG0eP3r0mMHgs2lXpsXlLvcfvfY2aPvi2rGD0+b5IL4IjisklJzcksSy3St0vg
-	ymh+fJml4Kt4xbOzexgbGCcIdzFyckgImEjs3jqLGcIWk7hwbz1bFyMXh5DAMkaJr+fns8AU
-	HXrbwgqRWMQoMWP6BUYI5xejxJYJHxlBqtgE1CS+fDnMDmKLCPhIXHz7EmwUs8AcZomj3RuZ
-	ITrOM0n8mbaaDaSKU8BO4kTrPLBuYYFoiQX/j4LtYxFQlXi89hJYnFfAVuLe/NlMELagxI/J
-	94BqOICmqktMmZILEmYWkJfYvOYtM0hYAij86K8uxA1WEg8fvmGCKBGR2PfiHdjREgJLOSRm
-	Pr/ICrFKQOLb5EMsEL2yEpsOQINCUuLgihssExglZiFZPAth8Swki2ch2bCAkWUVo2hqQXJB
-	cVJ6kaFecWJucWleul5yfu4mRkgi6N3BePuA9SHGZKDtE5mlRJPzgYkkryTe0NjMyMLUxNTY
-	yNzSjDRhJXHepIdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYJ8/xu5Oy/KSK47dkm71r
-	JsmL3jwmcOKZHMtv/Yr6rzfPfvS1vr0heZl7ePvhOU+kC/zWXlp//0n5T7ura42C7KPivz/6
-	+0yq8h3HQ5Z/eraBCfvyVjDLT9muZPLhs2z96dXcmRG1m7S5OTYLXWyqrQ+aXmzUbO296Udh
-	vPDtWaldXQtzvl66oMRSnJFoqMVcVJwIADf80u8aAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCKsWRmVeSWpSXmKPExsVy+t9jAd379X+CDPZeMLX4O+kYu8WSpgyL
-	98t6GC3mHznHanF54SVWi/eHnjFbbHp8DcjdNYfN4uy842wWB5a2s1g8//SJxeLlxxMsDjwe
-	H9d/YvRYM28No8fvX5MYPRZsKvXYvKTe4/a/x8wefVtWMXp83iQXwBHVwGiTkZqYklqkkJqX
-	nJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA3SskkJZYk4pUCggsbhYSd8O
-	04TQEDddC5jGCF3fkCC4HiMDNJCwjjGj+fFlloKv4hXPzu5hbGCcINzFyMkhIWAicehtCyuE
-	LSZx4d56ti5GLg4hgUWMEjOmX2CEcH4xSmyZ8JERpIpNQE3iy5fD7CC2iICPxMW3L8E6mAXm
-	MEsc7d7IDNFxnkniz7TVbCBVnAJ2Eida54F1CwtESyz4f5QFxGYRUJV4vPYSWJxXwFbi3vzZ
-	TBC2oMSPyfeAajiApqpLTJmSCxJmFpCX2LzmLTNIWAIo/OivLsQNVhIPH75hgigRkdj34h3j
-	BEahWUgGzUIYNAvJoFlIOhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4zz6R2MK5s
-	sDjEKMDBqMTD+2Dx7yAh1sSy4srcQ4wSHMxKIrwyEn+ChHhTEiurUovy44tKc1KLDzEmA705
-	kVlKNDkfmALzSuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoFR
-	c9feVde4DgncuRyld2TLWZ2vR33sej5VX5758Hvv+6ALN5m88gWkfFVOz/Ced+8O3+IwjdSA
-	7xderZXxK01dWrfF7KJbQ0nNwmpxiY+Ze0LY1E8zM3A4Pdtctuy4+7evHZ1n9Zau+7Di2I82
-	a9c9vnuYYqdwNT6oLPTpCqq/6iY17ejH9fGiSizFGYmGWsxFxYkAdWkG13cDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 13 Feb 2014 03:19:53 -0500
+X-AuditID: 9c93017d-b7c89ae000006ae1-fe-52fc8026f644
+From: Namhyung Kim <namhyung@kernel.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Michael Ellerman <michaele@au1.ibm.com>
+Subject: Re: [PATCH 06/35] perf hists: Leave symbol addr hist bucket auto alloc to symbol layer
+References: <1387566550-3524-1-git-send-email-acme@infradead.org>
+	<1387566550-3524-7-git-send-email-acme@infradead.org>
+	<20140212182316.44a10ca6@kryten>
+	<20140212141837.GB7116@ghostprotocols.net>
+	<20140213015017.12393bd4@kryten> <20140213040913.1c59cc45@kryten>
+Date: Thu, 13 Feb 2014 17:19:50 +0900
+In-Reply-To: <20140213040913.1c59cc45@kryten> (Anton Blanchard's message of
+	"Thu, 13 Feb 2014 04:09:13 +1100")
+Message-ID: <87fvnnzaop.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 
+Hi Anton,
 
-> -----Original Message-----
-> From: Jingoo Han [mailto:jg1.han@samsung.com]
-> Sent: Thursday, February 13, 2014 5:10 PM
-> To: 'Liviu Dudau'; 'Tanmay Inamdar'
-> Cc: 'Arnd Bergmann'; devicetree@vger.kernel.org; 'linaro-kernel'; 'linux-pci'; 'Will Deacon'; 'LKML';
-> 'Catalin Marinas'; 'Bjorn Helgaas'; 'LAKML'; 'Jingoo Han'
-> Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from device tree
-> 
-> On Thursday, February 06, 2014 7:18 PM, Liviu Dudau wrote:
-> > On Wed, Feb 05, 2014 at 10:26:27PM +0000, Tanmay Inamdar wrote:
-> > > Hello Liviu,
-> > >
-> > > I did not get the first email of this particular patch on any of
-> > > subscribed mailing lists (don't know why), hence replying here.
-> >
-> > Strange, it shows in the MARC and GMANE archive for linux-pci, probably
-> > a hickup on your receiving side?
-> >
-> > >
-> > > +struct pci_host_bridge *
-> > > +pci_host_bridge_of_init(struct device *parent, int busno, struct pci_ops *ops,
-> > > + void *host_data, struct list_head *resources)
-> > > +{
-> > > + struct pci_bus *root_bus;
-> > > + struct pci_host_bridge *bridge;
-> > > +
-> > > + /* first parse the host bridge bus ranges */
-> > > + if (pci_host_bridge_of_get_ranges(parent->of_node, resources))
-> > > + return NULL;
-> > > +
-> > > + /* then create the root bus */
-> > > + root_bus = pci_create_root_bus(parent, busno, ops, host_data, resources);
-> > > + if (!root_bus)
-> > > + return NULL;
-> > > +
-> > > + bridge = to_pci_host_bridge(root_bus->bridge);
-> > > +
-> > > + return bridge;
-> > > +}
-> > >
-> > > You are keeping the domain_nr inside pci_host_bridge structure. In
-> > > above API, domain_nr is required in 'pci_find_bus' function called
-> > > from 'pci_create_root_bus'. Since the bridge is allocated after
-> > > creating root bus, 'pci_find_bus' always gets domain_nr as 0. This
-> > > will cause problem for scanning multiple domains.
-> >
-> > Good catch. I was switching between creating a pci_controller in arch/arm64 and
-> > adding the needed bits in pci_host_bridge. After internal review I've decided to
-> > add the domain_nr to pci_host_bridge, but forgot to update the code everywhere.
-> 
-> Hi Liviu Dudau,
-> 
-> One more thing,
-> I am reviewing and compiling your patch.
-> Would you consider adding 'struct pci_sys_data' and 'struct hw_pci'?
-> 
-> Currently, 4 PCIe Host drivers (pci-mvebu.c, pci-tegra.c,
-> pci-rcar-gen2.c, pcie-designware.c) are using 'struct pci_sys_data'
-> and 'struct hw_pci' in their drivers. Without this, it makes build
-> errors.
-> 
-> In arm32, 'struct pci_sys_data' and 'struct hw_pci' is defined
-> in "arch/arm/include/asm/mach/pci.h".
-> 
-> Tanmay Inamdar,
-> Your 'APM X-Gene PCIe' patch also needs 'struct pci_sys_data' and
-> 'struct hw_pci'. With Liviu Dudau's patch, it will make build
-> errors. Would you check this?
+On Thu, 13 Feb 2014 04:09:13 +1100, Anton Blanchard wrote:
+> Hi,
+>
+>> > Can you try the following patch?
+>> > 
+>> > It should fix another problem, i.e. we were allocating, but
+>> > annotation would fail in the !TUI case, as it would return at
+>> > symbol__inc_addr_samples when use_browser != 1, now it will allocate
+>> > and mark the right bucket.
+>> > 
+>> > I'll have this in perf/urgent and will do the optimization of not
+>> > allocating those buckets in the report case when not doing
+>> > integrated annotation, i.e. report --stdio doesn't provide a way to
+>> > go to the annotation --stdio, so no point on allocating the
+>> > buckets. Just on 'annotate --stdio' we should allocate it, etc.
+>> 
+>> This fixes the issue, thanks!
+>
+> After some more testing, perf report can SEGV with this patch:
 
-I mean the patch '[PATCH] arm64: Add architecture support for PCI'.
-With this patch, it makes build errors in PCIe Host drivers such as
-pcie-designware.c.
-
-Best regards,
-Jingoo Han
+I think we need to separate the check for annotate and report.  The
+check was for the report case only and annotate always needs to increate
+sample info.  Does patch below fix your problem?
 
 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d882b6f96411..bab762bdeb0d 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -75,6 +75,11 @@ static int report__config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
+ }
+ 
++static bool report_needs_annotate(void)
++{
++	return use_browser == 1 && sort__has_sym;
++}
++
+ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
+ 				      struct perf_sample *sample, struct perf_evsel *evsel)
+ {
+@@ -110,14 +115,16 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+ 	if (!he)
+ 		return -ENOMEM;
+ 
+-	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+-	if (err)
+-		goto out;
++	if (report_needs_annotate()) {
++		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++		if (err)
++			goto out;
+ 
+-	mx = he->mem_info;
+-	err = addr_map_symbol__inc_samples(&mx->daddr, evsel->idx);
+-	if (err)
+-		goto out;
++		mx = he->mem_info;
++		err = addr_map_symbol__inc_samples(&mx->daddr, evsel->idx);
++		if (err)
++			goto out;
++	}
+ 
+ 	evsel->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+@@ -159,14 +166,18 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+ 		he = __hists__add_entry(&evsel->hists, al, parent, &bi[i], NULL,
+ 					1, 1, 0);
+ 		if (he) {
+-			bx = he->branch_info;
+-			err = addr_map_symbol__inc_samples(&bx->from, evsel->idx);
+-			if (err)
+-				goto out;
+-
+-			err = addr_map_symbol__inc_samples(&bx->to, evsel->idx);
+-			if (err)
+-				goto out;
++			if (report_needs_annotate()) {
++				bx = he->branch_info;
++				err = addr_map_symbol__inc_samples(&bx->from,
++								   evsel->idx);
++				if (err)
++					goto out;
++
++				err = addr_map_symbol__inc_samples(&bx->to,
++								   evsel->idx);
++				if (err)
++					goto out;
++			}
+ 
+ 			evsel->hists.stats.total_period += 1;
+ 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+@@ -199,7 +210,9 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
+ 	if (err)
+ 		goto out;
+ 
+-	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++	if (report_needs_annotate())
++		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++
+ 	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ out:
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 469eb679fb9d..6fcada625c86 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -489,7 +489,7 @@ static int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+ {
+ 	struct annotation *notes;
+ 
+-	if (sym == NULL || use_browser != 1 || !sort__has_sym)
++	if (sym == NULL)
+ 		return 0;
+ 
+ 	notes = symbol__annotation(sym);
