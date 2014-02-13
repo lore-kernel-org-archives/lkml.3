@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaBMWhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:37:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36884 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaBMWhO (ORCPT
+	id S1752026AbaBMWjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:39:46 -0500
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:43748 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbaBMWjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:37:14 -0500
-Date: Thu, 13 Feb 2014 14:38:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dave Jones <davej@redhat.com>, Fabian Frederick <fabf@skynet.be>,
-        linux-kernel@vger.kernel.org, akpm <akpm@linux-foundation.org>,
-        rdunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH 1/1] sys_sysfs: Add CONFIG_SYSFS_SYSCALL
-Message-ID: <20140213223832.GA14535@kroah.com>
-References: <20140213220942.ff2ebaeff3876b7136fa4b10@skynet.be>
- <20140213223141.GA1232@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140213223141.GA1232@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 13 Feb 2014 17:39:45 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
+Cc: Doug Anderson <dianders@chromium.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] hwmon: (ntc_thermistor): Avoid overflow
+Date: Thu, 13 Feb 2014 14:39:34 -0800
+Message-Id: <1392331174-12271-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.0.rc1.175.g0b1dcb5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 05:31:41PM -0500, Dave Jones wrote:
-> On Thu, Feb 13, 2014 at 10:09:42PM +0800, Fabian Frederick wrote:
->  > sys_sysfs is an obsolete system call no longer supported by libc ...
->  > -This patch adds a default CONFIG_SYSFS_SYSCALL=y
->  > -Option can be turned off in expert mode.
->  > -cond_syscall added to kernel/sys_ni.c
->  > 
->  > Signed-off-by: Fabian Frederick <fabf@skynet.be>
->  > ---
->  >  fs/filesystems.c |  2 ++
->  >  init/Kconfig     | 10 ++++++++++
->  >  kernel/sys_ni.c  |  1 +
->  >  3 files changed, 13 insertions(+)
-> 
-> did anyone ever ship userspace that actually used that syscall ?
-> Some ancient version of udev that probably doesn't work on a modern kernel anyway maybe ?
+The ntc thermistor code was doing math whose temporary result might
+have overflowed 32-bits.  We need some casts in there to make it safe.
 
-sys_sysfs doesn't have anything to do with /sys/ and udev in any way
-that I know of, it's a much older thing, a sysv syscall that can return
-the index, name, or max index of a filesystem.
+In one example I found:
+- pullup_uV: 1800000
+- result of iio_read_channel_raw: 3226
+- 1800000 * 3226 => 0x15a1cbc80
 
-And yes, I got confused by it all the time when creating sysfs :)
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/hwmon/ntc_thermistor.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-thanks,
+diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
+index 8c23203..8a17f01 100644
+--- a/drivers/hwmon/ntc_thermistor.c
++++ b/drivers/hwmon/ntc_thermistor.c
+@@ -145,7 +145,7 @@ struct ntc_data {
+ static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
+ {
+ 	struct iio_channel *channel = pdata->chan;
+-	unsigned int result;
++	s64 result;
+ 	int val, ret;
+ 
+ 	ret = iio_read_channel_raw(channel, &val);
+@@ -155,10 +155,10 @@ static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
+ 	}
+ 
+ 	/* unit: mV */
+-	result = pdata->pullup_uv * val;
++	result = pdata->pullup_uv * (s64) val;
+ 	result >>= 12;
+ 
+-	return result;
++	return (int)result;
+ }
+ 
+ static const struct of_device_id ntc_match[] = {
+-- 
+1.9.0.rc1.175.g0b1dcb5
 
-greg k-h
