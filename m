@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaBMRal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 12:30:41 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:10988 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397AbaBMRaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 12:30:39 -0500
-Message-ID: <52FD0131.9040304@imgtec.com>
-Date: Thu, 13 Feb 2014 17:30:25 +0000
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752579AbaBMRbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 12:31:46 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:33508 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbaBMRbo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 12:31:44 -0500
 MIME-Version: 1.0
-To: <linux-mips@linux-mips.org>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] samples/seccomp/Makefile: Do not build tests if cross-compiling
- for MIPS
-References: <1392312460-24902-1-git-send-email-markos.chandras@imgtec.com>
-In-Reply-To: <1392312460-24902-1-git-send-email-markos.chandras@imgtec.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.47]
-X-SEF-Processed: 7_3_0_01192__2014_02_13_17_30_38
+In-Reply-To: <20140213131923.4a0b79959e0b27399c021aa7@canb.auug.org.au>
+References: <20140213131923.4a0b79959e0b27399c021aa7@canb.auug.org.au>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 13 Feb 2014 12:31:13 -0500
+X-Google-Sender-Auth: P_Jf26pbSJtK9udOVdKmWNboh7M
+Message-ID: <CAP=VYLrGdsJawCU3u5VZN192TptCOKZp-hO9cR7PtuspZui4uA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the wireless-next tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 05:27 PM, Markos Chandras wrote:
-> The Makefile is designed to use the host toolchain so it may be
-> unsafe to build the tests if the kernel has been configured and built
-> for another architecture. This fixes a build problem when the kernel has
-> been configured and built for the MIPS architecture but the host is
-> not MIPS (cross-compiled). The MIPS syscalls are only defined
-> if one of the following is true:
+On Wed, Feb 12, 2014 at 9:19 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi John,
 >
-> 1) _MIPS_SIM == _MIPS_SIM_ABI64
-> 2) _MIPS_SIM == _MIPS_SIM_ABI32
-> 3) _MIPS_SIM == _MIPS_SIM_NABI32
+> After merging the wireless-next tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 >
-> Of course, none of these make sense on a non-MIPS toolchain and the
-> following build problem occurs when building on a non-MIPS host.
+> drivers/staging/rtl8821ae/rc.c:289:2: error: unknown field 'module' specified in initializer
+>   .module = NULL,
+>   ^
 >
-> linux/usr/include/linux/kexec.h:50:
-> userspace cannot reference function or variable defined in the kernel
-> samples/seccomp/bpf-direct.c: In function ‘emulator’:
-> samples/seccomp/bpf-direct.c:76:17: error:
-> ‘__NR_write’ undeclared (first use in this function)
+> Caused by commit cc01f9b55fe7 ("mac80211: remove module handling from
+> rate control ops") interacting with commit 3c05bedb5fef ("Staging:
+> rtl8812ae: Add Realtek 8821 PCI WIFI driver") which entered Linus' tree
+> before v3.14-rc1.
+
+It seems this new driver has multiple issues; I'm seeing this on sparc32
+allmodconfig builds.
+
+In file included from drivers/staging/rtl8821ae/btcoexist/halbt_precomp.h:31:0,
+                 from drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c:14:
+drivers/staging/rtl8821ae/btcoexist/../pci.h:290:15: error: expected
+'=', ',', ';', 'asm' or '__attribute__' before 'rtl_pci_probe'
+make[3]: *** [drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.o] Error 1
+make[3]: *** Waiting for unfinished jobs....
+
+It looks like a mangled version check which is allowing it to try and use
+__devinit on the rtl_pci_probe function, but of course __devinit is gone.
+
+Ideally all that version check stuff should be gutted.
+
+Paul.
+--
+
 >
-> Cc: linux-next@vger.kernel.org
-> Cc: linux-kernel@linux-mips.org
-> Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+> I added this merge fix patch and can carry it as necessary (John, if you
+> back merge v3.14-rc1, you should include this patch in the merge commit):
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 13 Feb 2014 13:14:13 +1100
+> Subject: [PATCH] Staging: rtl8812ae: remove modules field of rate_control_ops
+>
+> This has been removed in further work.
+>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
-> This problem is only reproducible on the linux-next tree at the moment
-> ---
->   samples/seccomp/Makefile | 8 +++++++-
->   1 file changed, 7 insertions(+), 1 deletion(-)
+>  drivers/staging/rtl8821ae/rc.c | 1 -
+>  1 file changed, 1 deletion(-)
 >
-> diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
-> index 7203e66..f6bda1c 100644
-> --- a/samples/seccomp/Makefile
-> +++ b/samples/seccomp/Makefile
-> @@ -17,9 +17,14 @@ HOSTCFLAGS_bpf-direct.o += -I$(objtree)/usr/include
->   HOSTCFLAGS_bpf-direct.o += -idirafter $(objtree)/include
->   bpf-direct-objs := bpf-direct.o
+> diff --git a/drivers/staging/rtl8821ae/rc.c b/drivers/staging/rtl8821ae/rc.c
+> index d387f13ea7dc..0cc32c60ddee 100644
+> --- a/drivers/staging/rtl8821ae/rc.c
+> +++ b/drivers/staging/rtl8821ae/rc.c
+> @@ -286,7 +286,6 @@ static void rtl_rate_free_sta(void *rtlpriv,
+>  }
 >
-> +# MIPS system calls are defined based on the -mabi that is passed
-> +# to the toolchain which may or may not be a valid option
-> +# for the host toolchain. So disable tests if target architecture
-> +# is mips but the host isn't.
-> +ifndef CONFIG_MIPS
->   # Try to match the kernel target.
-> -ifndef CONFIG_64BIT
->   ifndef CROSS_COMPILE
-> +ifndef CONFIG_64BIT
+>  static struct rate_control_ops rtl_rate_ops = {
+> -       .module = NULL,
+>         .name = "rtl_rc",
+>         .alloc = rtl_rate_alloc,
+>         .free = rtl_rate_free,
+> --
+> 1.9.rc1
 >
->   # s390 has -m31 flag to build 31 bit binaries
->   ifndef CONFIG_S390
-> @@ -40,3 +45,4 @@ endif
->
->   # Tell kbuild to always build the programs
->   always := $(hostprogs-y)
-> +endif
->
-
-CC'ing the correct linux-kernel address. Sorry about that.
-
--- 
-markos
-
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
