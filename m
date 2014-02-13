@@ -1,261 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaBMDJv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 22:09:51 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:57405 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaBMDJu (ORCPT
+	id S1752531AbaBMDLa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 22:11:30 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:38273 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023AbaBMDL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 22:09:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131012171007.GA17167@gmail.com>
-References: <20131012171007.GA17167@gmail.com>
-Date: Wed, 12 Feb 2014 19:09:48 -0800
-Message-ID: <CAKbGBLgs9t4HPD4duBt=vPaw0WfxLv5qr6pNupHsPTFaV5m+dQ@mail.gmail.com>
-Subject: Re: [GIT PULL] compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
-From: Steven Noonan <steven@uplinklabs.net>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jakub Jelinek <jakub@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Richard Henderson <rth@twiddle.net>,
+	Wed, 12 Feb 2014 22:11:28 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-9a-52fc37defe67
+From: Tarek Dakhran <t.dakhran@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+        Tarek Dakhran <t.dakhran@gmail.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Tarek Dakhran <t.dakhran@samsung.com>
+Subject: [PATCH v1 1/2] clocksource: mct: remove request_irq from
+ exynos4_local_timer_setup
+Date: Thu, 13 Feb 2014 12:08:42 +0900
+Message-id: <1392260923-31659-2-git-send-email-t.dakhran@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1392260923-31659-1-git-send-email-t.dakhran@samsung.com>
+References: <1392260923-31659-1-git-send-email-t.dakhran@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xq7r3zf8EGdystpj3Wdaid8FVNotN
+	j6+xWlzeNYfNYsb5fUwWty/zWpz808to8bvnE7PF+uenGC3Wz3jNYrF501Rmi6kzfrA78Hi0
+	NPeweeycdZfd4861PWwe786dY/fYvKTeo2/LKkaPz5vkAtijuGxSUnMyy1KL9O0SuDLWfRIo
+	mCJTcXXrT9YGxh3iXYycHBICJhL3D91hg7DFJC7cWw9kc3EICSxllFjy4CgLhNPLJPFi8iPW
+	LkYODjYBbYktO7xAGkQEFCQ29z5jBalhFtjELHF5wScmkISwQKzE/86dYFNZBFQl9u/7xA5i
+	8wq4SjxsecgIsU1RovvZBLAaTgE3iZ6rzcwgthBQzbfF19kmMPIuYGRYxSiaWppcUJyUnmuk
+	V5yYW1yal66XnJ+7iRESkl93MC49ZnWIUYCDUYmH98Hi30FCrIllxZW5hxglOJiVRHhlJP4E
+	CfGmJFZWpRblxxeV5qQWH2Jk4uCUamB0iHkwlTfllp2U2dSaF/7pT0XnaSi7+3z/O3XTsRWv
+	n5/t+vBP02imk8w2W6WOdXI9kbP2ZbD2PF1fev5Y+l/Re16drld3zUtR63y59mWDrLHPgitr
+	/bqfl09sC+SzMtzVapTY136t7SzHkyCNhPzH4roeNqyztvdnSWrJHXiv3LTKvWfGKiklluKM
+	REMt5qLiRACatfVAJwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resurrecting this thread, as I'm running with GCC 4.8.2 and am
-encountering miscompiles without this quirk being enabled for my
-compiler version. I'm having trouble pinning down the miscompilation
-itself, but I have a problem that seems reliably reproducible in my
-environment.
+exynos4_local_timer_setup called on the secondary cpu before
+irqs are enabled. request_irq can sleep, which produces next warning:
 
-I noticed that when I launch/destroy a KVM guest, the guest memory is
-staying mapped. i.e. host has 200MB used, guest launches, ~4300MB
-used, guest terminates, still 4300MB used and no qemu-system-x86_64
-process hanging around. Thus depending on the guest memory size I can
-exhaust host memory after a few guest reboots.
+	BUG: sleeping function called from invalid context at mm/slub.c:965
+	in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper/3
 
-If I change the GCC_VERSION check for the asm_volatile_goto quirk to
-include 4.8.2, then KVM guests are properly cleaned up.
+Call setup_irq for each local timer in exynos4_timer_resources,
+and only call enable_irq during percpu timer setup.
 
-The test case provided in the 'asm goto' bugzilla entry doesn't fail
-on my compiler: gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
+---
+ drivers/clocksource/exynos_mct.c |   38 ++++++++++++++++++++++++++++++--------
+ 1 file changed, 30 insertions(+), 8 deletions(-)
 
-So is there some other 'asm goto' bug we haven't yet fully uncovered
-and reported to GCC upstream? Anyone have any idea where to look for
-the miscompilation? I started by looking at the
-mmu_notifier_unregister() function, since that seems like the obvious
-place for a guest memory unmap problem. mmu_notifier_unregister()
-calls mmdrop(), which uses the atomic_dec_and_test macro to determine
-whether or not to call __mmdrop(). The generated code looks correct to
-me, but it's possibly not this callsite that's broken:
+diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+index 48f76bc..1cde3de 100644
+--- a/drivers/clocksource/exynos_mct.c
++++ b/drivers/clocksource/exynos_mct.c
+@@ -82,6 +82,7 @@ static void __iomem *reg_base;
+ static unsigned long clk_rate;
+ static unsigned int mct_int_type;
+ static int mct_irqs[MCT_NR_IRQS];
++static struct irqaction __percpu *mct_LX_irqaction;
+ 
+ struct mct_clock_event_device {
+ 	struct clock_event_device evt;
+@@ -402,6 +403,25 @@ static irqreturn_t exynos4_mct_tick_isr(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
++static void exynos4_setup_irqaction_spi(unsigned int cpu)
++{
++	struct irqaction *pcpu_irqaction = per_cpu_ptr(mct_LX_irqaction, cpu);
++	unsigned int irq = mct_irqs[MCT_L0_IRQ + cpu];
++	int err;
++
++	pcpu_irqaction->name = per_cpu(percpu_mct_tick, cpu).name;
++	pcpu_irqaction->flags  = IRQF_TIMER | IRQF_NOBALANCING;
++	pcpu_irqaction->handler = exynos4_mct_tick_isr;
++	pcpu_irqaction->dev_id = &per_cpu(percpu_mct_tick, cpu);
++
++	err = setup_irq(irq, pcpu_irqaction);
++	if (err) {
++		pr_err("MCT: can't setup IRQ %d (%d)\n", irq, err);
++		return;
++	}
++	disable_irq(irq);
++}
++
+ static int exynos4_local_timer_setup(struct clock_event_device *evt)
+ {
+ 	struct mct_clock_event_device *mevt;
+@@ -425,13 +445,7 @@ static int exynos4_local_timer_setup(struct clock_event_device *evt)
+ 
+ 	if (mct_int_type == MCT_INT_SPI) {
+ 		evt->irq = mct_irqs[MCT_L0_IRQ + cpu];
+-		if (request_irq(evt->irq, exynos4_mct_tick_isr,
+-				IRQF_TIMER | IRQF_NOBALANCING,
+-				evt->name, mevt)) {
+-			pr_err("exynos-mct: cannot register IRQ %d\n",
+-				evt->irq);
+-			return -EIO;
+-		}
++		enable_irq(evt->irq);
+ 	} else {
+ 		enable_percpu_irq(mct_irqs[MCT_L0_IRQ], 0);
+ 	}
+@@ -443,7 +457,7 @@ static void exynos4_local_timer_stop(struct clock_event_device *evt)
+ {
+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+ 	if (mct_int_type == MCT_INT_SPI)
+-		free_irq(evt->irq, this_cpu_ptr(&percpu_mct_tick));
++		disable_irq(evt->irq);
+ 	else
+ 		disable_percpu_irq(mct_irqs[MCT_L0_IRQ]);
+ }
+@@ -485,9 +499,12 @@ static struct notifier_block exynos4_mct_cpu_nb = {
+ static void __init exynos4_timer_resources(struct device_node *np, void __iomem *base)
+ {
+ 	int err;
++	u32 i, cpu, nr_irqs;
+ 	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
+ 	struct clk *mct_clk, *tick_clk;
+ 
++	nr_irqs = of_irq_count(np);
++
+ 	tick_clk = np ? of_clk_get_by_name(np, "fin_pll") :
+ 				clk_get(NULL, "fin_pll");
+ 	if (IS_ERR(tick_clk))
+@@ -511,6 +528,11 @@ static void __init exynos4_timer_resources(struct device_node *np, void __iomem
+ 		WARN(err, "MCT: can't request IRQ %d (%d)\n",
+ 		     mct_irqs[MCT_L0_IRQ], err);
+ 	} else {
++		mct_LX_irqaction = alloc_percpu(struct irqaction);
++		BUG_ON(!mct_LX_irqaction);
++
++		for (i = MCT_L0_IRQ, cpu = 0; i < nr_irqs; i++, cpu++)
++			exynos4_setup_irqaction_spi(cpu);
+ 		irq_set_affinity(mct_irqs[MCT_L0_IRQ], cpumask_of(0));
+ 	}
+ 
+-- 
+1.7.10.4
 
-On Sat, Oct 12, 2013 at 10:10 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> Linus,
->
-> Please pull the latest core-urgent-for-linus git tree from:
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
->
->    HEAD: 3f0116c3238a96bc18ad4b4acefe4e7be32fa861 compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
->
-> This is the fix for the GCC miscompilation discussed in the following lkml
-> thread:
->
->    [x86] BUG: unable to handle kernel paging request at 00740060
->
-> The bug in GCC has been fixed by Jakub and the fix will be part of the GCC
-> 4.8.2 release expected to be released next week - so the quirk's version
-> test checks for <= 4.8.1.
->
-> The quirk is only added to compiler-gcc4.h and not to the higher level
-> compiler.h because all asm goto uses are behind a feature check.
->
->  Thanks,
->
->         Ingo
->
-> ------------------>
-> Ingo Molnar (1):
->       compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
->
->
->  arch/arm/include/asm/jump_label.h     |  2 +-
->  arch/mips/include/asm/jump_label.h    |  2 +-
->  arch/powerpc/include/asm/jump_label.h |  2 +-
->  arch/s390/include/asm/jump_label.h    |  2 +-
->  arch/sparc/include/asm/jump_label.h   |  2 +-
->  arch/x86/include/asm/cpufeature.h     |  6 +++---
->  arch/x86/include/asm/jump_label.h     |  2 +-
->  arch/x86/include/asm/mutex_64.h       |  4 ++--
->  include/linux/compiler-gcc4.h         | 15 +++++++++++++++
->  9 files changed, 26 insertions(+), 11 deletions(-)
->
-> diff --git a/arch/arm/include/asm/jump_label.h b/arch/arm/include/asm/jump_label.h
-> index bfc198c..863c892 100644
-> --- a/arch/arm/include/asm/jump_label.h
-> +++ b/arch/arm/include/asm/jump_label.h
-> @@ -16,7 +16,7 @@
->
->  static __always_inline bool arch_static_branch(struct static_key *key)
->  {
-> -       asm goto("1:\n\t"
-> +       asm_volatile_goto("1:\n\t"
->                  JUMP_LABEL_NOP "\n\t"
->                  ".pushsection __jump_table,  \"aw\"\n\t"
->                  ".word 1b, %l[l_yes], %c0\n\t"
-> diff --git a/arch/mips/include/asm/jump_label.h b/arch/mips/include/asm/jump_label.h
-> index 4d6d77e..e194f95 100644
-> --- a/arch/mips/include/asm/jump_label.h
-> +++ b/arch/mips/include/asm/jump_label.h
-> @@ -22,7 +22,7 @@
->
->  static __always_inline bool arch_static_branch(struct static_key *key)
->  {
-> -       asm goto("1:\tnop\n\t"
-> +       asm_volatile_goto("1:\tnop\n\t"
->                 "nop\n\t"
->                 ".pushsection __jump_table,  \"aw\"\n\t"
->                 WORD_INSN " 1b, %l[l_yes], %0\n\t"
-> diff --git a/arch/powerpc/include/asm/jump_label.h b/arch/powerpc/include/asm/jump_label.h
-> index ae098c4..f016bb6 100644
-> --- a/arch/powerpc/include/asm/jump_label.h
-> +++ b/arch/powerpc/include/asm/jump_label.h
-> @@ -19,7 +19,7 @@
->
->  static __always_inline bool arch_static_branch(struct static_key *key)
->  {
-> -       asm goto("1:\n\t"
-> +       asm_volatile_goto("1:\n\t"
->                  "nop\n\t"
->                  ".pushsection __jump_table,  \"aw\"\n\t"
->                  JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
-> diff --git a/arch/s390/include/asm/jump_label.h b/arch/s390/include/asm/jump_label.h
-> index 6c32190..346b1c8 100644
-> --- a/arch/s390/include/asm/jump_label.h
-> +++ b/arch/s390/include/asm/jump_label.h
-> @@ -15,7 +15,7 @@
->
->  static __always_inline bool arch_static_branch(struct static_key *key)
->  {
-> -       asm goto("0:    brcl 0,0\n"
-> +       asm_volatile_goto("0:   brcl 0,0\n"
->                 ".pushsection __jump_table, \"aw\"\n"
->                 ASM_ALIGN "\n"
->                 ASM_PTR " 0b, %l[label], %0\n"
-> diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
-> index 5080d16..ec2e2e2 100644
-> --- a/arch/sparc/include/asm/jump_label.h
-> +++ b/arch/sparc/include/asm/jump_label.h
-> @@ -9,7 +9,7 @@
->
->  static __always_inline bool arch_static_branch(struct static_key *key)
->  {
-> -               asm goto("1:\n\t"
-> +               asm_volatile_goto("1:\n\t"
->                          "nop\n\t"
->                          "nop\n\t"
->                          ".pushsection __jump_table,  \"aw\"\n\t"
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index d3f5c63..89270b4 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -374,7 +374,7 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
->                  * Catch too early usage of this before alternatives
->                  * have run.
->                  */
-> -               asm goto("1: jmp %l[t_warn]\n"
-> +               asm_volatile_goto("1: jmp %l[t_warn]\n"
->                          "2:\n"
->                          ".section .altinstructions,\"a\"\n"
->                          " .long 1b - .\n"
-> @@ -388,7 +388,7 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
->
->  #endif
->
-> -               asm goto("1: jmp %l[t_no]\n"
-> +               asm_volatile_goto("1: jmp %l[t_no]\n"
->                          "2:\n"
->                          ".section .altinstructions,\"a\"\n"
->                          " .long 1b - .\n"
-> @@ -453,7 +453,7 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
->   * have. Thus, we force the jump to the widest, 4-byte, signed relative
->   * offset even though the last would often fit in less bytes.
->   */
-> -               asm goto("1: .byte 0xe9\n .long %l[t_dynamic] - 2f\n"
-> +               asm_volatile_goto("1: .byte 0xe9\n .long %l[t_dynamic] - 2f\n"
->                          "2:\n"
->                          ".section .altinstructions,\"a\"\n"
->                          " .long 1b - .\n"              /* src offset */
-> diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-> index 64507f3..6a2cefb 100644
-> --- a/arch/x86/include/asm/jump_label.h
-> +++ b/arch/x86/include/asm/jump_label.h
-> @@ -18,7 +18,7 @@
->
->  static __always_inline bool arch_static_branch(struct static_key *key)
->  {
-> -       asm goto("1:"
-> +       asm_volatile_goto("1:"
->                 ".byte " __stringify(STATIC_KEY_INIT_NOP) "\n\t"
->                 ".pushsection __jump_table,  \"aw\" \n\t"
->                 _ASM_ALIGN "\n\t"
-> diff --git a/arch/x86/include/asm/mutex_64.h b/arch/x86/include/asm/mutex_64.h
-> index e7e6751..07537a4 100644
-> --- a/arch/x86/include/asm/mutex_64.h
-> +++ b/arch/x86/include/asm/mutex_64.h
-> @@ -20,7 +20,7 @@
->  static inline void __mutex_fastpath_lock(atomic_t *v,
->                                          void (*fail_fn)(atomic_t *))
->  {
-> -       asm volatile goto(LOCK_PREFIX "   decl %0\n"
-> +       asm_volatile_goto(LOCK_PREFIX "   decl %0\n"
->                           "   jns %l[exit]\n"
->                           : : "m" (v->counter)
->                           : "memory", "cc"
-> @@ -75,7 +75,7 @@ static inline int __mutex_fastpath_lock_retval(atomic_t *count)
->  static inline void __mutex_fastpath_unlock(atomic_t *v,
->                                            void (*fail_fn)(atomic_t *))
->  {
-> -       asm volatile goto(LOCK_PREFIX "   incl %0\n"
-> +       asm_volatile_goto(LOCK_PREFIX "   incl %0\n"
->                           "   jg %l[exit]\n"
->                           : : "m" (v->counter)
->                           : "memory", "cc"
-> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> index 842de22..ded4299 100644
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -65,6 +65,21 @@
->  #define __visible __attribute__((externally_visible))
->  #endif
->
-> +/*
-> + * GCC 'asm goto' miscompiles certain code sequences:
-> + *
-> + *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-> + *
-> + * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
-> + * Fixed in GCC 4.8.2 and later versions.
-> + *
-> + * (asm goto is automatically volatile - the naming reflects this.)
-> + */
-> +#if GCC_VERSION <= 40801
-> +# define asm_volatile_goto(x...)       do { asm goto(x); asm (""); } while (0)
-> +#else
-> +# define asm_volatile_goto(x...)       do { asm goto(x); } while (0)
-> +#endif
->
->  #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
->  #if GCC_VERSION >= 40400
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
