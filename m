@@ -1,94 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371AbaBMMDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 07:03:54 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:35099 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaBMMDw (ORCPT
+	id S1754362AbaBMMH2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 07:07:28 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:56110 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970AbaBMMH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 07:03:52 -0500
+	Thu, 13 Feb 2014 07:07:26 -0500
+X-IronPort-AV: E=Sophos;i="4.95,838,1384329600"; 
+   d="scan'208";a="14286130"
+Message-ID: <52FCB571.4020904@broadcom.com>
+Date: Thu, 13 Feb 2014 13:07:13 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <20140213100814.GM14909@nuc-i3427.alporthouse.com>
-References: <52FAE504.8020001@intel.com>
-	<20140212103156.GC5298@nuc-i3427.alporthouse.com>
-	<52FC8C01.1040002@intel.com>
-	<20140213100814.GM14909@nuc-i3427.alporthouse.com>
-Date: Thu, 13 Feb 2014 13:03:51 +0100
-Message-ID: <CAKMK7uGN3Of2VU6_LsSLh041kkx4TrhyH0H8zvE-PRvOtzJgfg@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915/opregion: work around buggy firmware that
- provides 8+ output devices
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Aaron Lu <aaron.lu@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tomasz Figa <tomasz.figa@gmail.com>, Rob Herring <robh+dt@kernel.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Chen-Yu Tsai <wens@csie.org>
+Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
+References: <1392059868-8782-1-git-send-email-arend@broadcom.com> <52FC8CB3.4090305@gmail.com>
+In-Reply-To: <52FC8CB3.4090305@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 11:08 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Thu, Feb 13, 2014 at 05:10:25PM +0800, Aaron Lu wrote:
->> On 02/12/2014 06:31 PM, Chris Wilson wrote:
->> > On Wed, Feb 12, 2014 at 11:05:40AM +0800, Aaron Lu wrote:
->> >> The ACPI table on ASUS UX302LA has more than 8 output devices under the
->> >> graphics controller device node. The problem is, the real active output
->> >> device, the LCD panel, is listed the last. The result is, the LCD's
->> >> device id doesn't get recorded in the active device list CADL array and
->> >> when the _DCS control method for the LCD device is executed, it returns
->> >> 0x1d, meaning it is not active. This affects the hotkey delivery ASL
->> >> code that will not deliver a notification if the output device is not
->> >> active on backlight hotkey press.
->> >>
->> >> I don't see a clean way to solve this problem since the operation region
->> >> spec doesn't allow more than 8 output devices so we have no way of
->> >> storing all these output devices. The fact that output devices that have
->> >> _BCM control method usually means they have a higher possibility of being
->> >> used than those who don't made me choose a simple way to work around
->> >> the buggy firmware by replacing the last entry in CADL array with the one
->> >> that has _BCM control method. There is no specific reason why the last
->> >> entry is picked instead of others.
->> >
->> > Another possibility is that the connector list is in rough priority
->> > order so might be useful for sorting the CADL array.
->> >
->> > Since the CADL should only be a list of currently active devices, we
->> > could just bite the bullet and repopulate it correctly after every
->> > setcrtc.
+On 02/13/2014 10:13 AM, Tomasz Figa wrote:
+> Hi Arend,
+> 
+> On 10.02.2014 20:17, Arend van Spriel wrote:
+>> The Broadcom bcm43xx sdio devices are fullmac devices that may be
+>> integrated in ARM platforms. Currently, the brcmfmac driver for
+>> these devices support use of platform data. This patch specifies
+>> the bindings that allow this platform data to be expressed in the
+>> devicetree.
 >>
->> Thanks for the suggestion. As a first step, does the following un-tested
->> patch look OK?
->
-> Yes. Maybe worth putting together the similar routines for blind
-> setting the didl and the cadl, or at least for computing the value from
-> the connector. For instance, the didl logic disagrees with the value of
-> index - is that relevant? I have a suspicion that the CADL entry should
-> match the DIDL entry for the connector, but that is not actually
-> mentioned in the opregion spec afaict.
+>> Cc: Chen-Yu Tsai <wens@csie.org>
+>> Cc: Tomasz Figa <tomasz.figa@gmail.com>
+>> Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
+>> Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+>> Signed-off-by: Arend van Spriel <arend@broadcom.com>
+>> ---
+>> This devicetree binding proposal is intended for platforms with
+>> Broadcom wireless device in MMC sdio slot. These devices may
+>> have their own interrupt and power line. Also the SDIO drive
+>> strength is often hardware dependent and expressed in this
+>> binding.
+>>
+>> Not sure if this should go in staging or not. Feel free to
+>> comment on this proposal.
+>>
+>> Regards,
+>> Arend
+>> ---
+>>   .../staging/net/wireless/brcm,bcm43xx-fmac.txt     |   37
+>> ++++++++++++++++++++
+>>   1 file changed, 37 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
+>>
+>>
+>> diff --git
+>> a/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
+>> b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
+>>
+>> new file mode 100644
+>> index 0000000..535f343
+>> --- /dev/null
+>> +++
+>> b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
+>>
+>> @@ -0,0 +1,37 @@
+>> +Broadcom BCM43xx Fullmac wireless SDIO devices
+>> +
+>> +This node provides properties for controlling the Broadcom wireless
+>> device. The
+>> +node is expected to be specified as a child node to the MMC
+>> controller that
+>> +connects the device to the system.
+>> +
+>> +Required properties:
+>> +
+>> + - compatible : Should be "brcm,bcm43xx-fmac".
+>> + - wlan-supply : phandle for fixed regulator used to control power for
+>> +    the device/module.
+> 
+> The BCM43xx WLAN chips I used to work always have been controlled by a
+> simple power enable GPIO of the chip itself. Has this changed in newer
+> chips?
+> 
+> If you need to simply toggle a GPIO to control the power, you don't need
+> to use the regulator API at all, controlling the GPIO directly.
 
-I think a problem is that often we have more than one output for a
-given type. So we need to somehow match them up to make sure we put
-the right ones intot didl/cadl lists. The issue here is that our
-connectors don't match up perfectly with the acpi output entries
-(since we have separate dp/hdmi outputs). But I think it would be
-worthwhile trying to match them up and store a link from struct
-intel_connector to the right acpi node acpi node.
+Not sure I understand. Do you really mean 'chip' or 'wifi module' here.
+The chip needs to be powered and for that it is hooked up to a
+host/module provided GPIO (at least that is my understanding).
 
-Then we could generate the didl/cadl lists by walking all connectors
-(only looking at the enabled ones for cadl) and evaluating the _ADR
-node of the linked apci node. As long as we ensure that we don't have
-duplicated entries we should be fine.
+>> +
+>> +Optional properties:
+>> + - drive-strength : drive strength used for SDIO pins on device
+>> (default = 6mA).
+> 
+> This should be a part of the MMC binding, I think. Probably also moved
+> under MMC controller's node, since it's a board-specific property
+> altering the parameters of the MMC controller, not the WLAN chip.
 
-This is a bit more work though ... And I have no idea really how
-firmware uses these lists (besides for backlight purposes apparently).
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+It is an electrical interfacing parameter between MMC controller and the
+device. The specified drive-strength here is used to configure the PMU
+on the chip so it is really related to the the chip.
+
+>> + - interrupt-parent : the phandle for the interrupt controller to
+>> which the
+>> +    device interrupt (HOST_WAKE) is connected.
+>> + - interrupts : interrupt specifier encoded according the interrupt
+>> controller
+>> +    specified by interrupt-parent property.
+> 
+> I would also add a clock here, since the BCM43xx chips usually need a
+> 32k clock to operate (or at least the ones I used to work with did). It
+> can be optional, as not all systems can control this clock.
+> 
+>> +
+>> +Example:
+>> +
+>> +mmc3: mmc@01c20000 {
+>> +    pinctrl-0 = <&mmc3_pins>;
+>> +    pinctrl-1 = <&wifi_host_wake>;
+> 
+> WLAN_HOST_WAKE pin (aka the OOB interrupt) is specific to the WLAN chip,
+> so this should be rather configured in a pinctrl state of the WLAN chip
+> itself.
+
+You mean that pinctrl-1 should move inside the "brcm,bcm43xx-fmac" node,
+right?
+
+>> +    vmmc-supply = <&mmc3_supply>;
+>> +    bus-width = <4>;
+>> +
+>> +    bcm4335: bcm4335@0 {
+> 
+> nit: Why @0, if there is no reg property under this node?
+
+I am not fluent with devicetree specifications (yet) nor know all the
+conventions.
+
+> Best regards,
+> Tomasz
+
+Thanks,
+Arend
+
+>> +        compatible = "brcm,bcm43xx-fmac";
+>> +        wlan-supply = <&wlan-reg>;
+>> +        drive-strength = <4>;
+>> +        interrupt-parent = <&gpx2>;
+>> +        interrupts = <5 IRQ_TYPE_LEVEL_HIGH>;
+>> +        interrupt-names = "HOST_WAKE";
+>> +    };
+>> +};
+>> +
+>>
+
