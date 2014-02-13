@@ -1,184 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521AbaBMTC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:02:27 -0500
-Received: from smtprelay0036.hostedemail.com ([216.40.44.36]:46807 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750861AbaBMTCZ (ORCPT
+	id S1751757AbaBMTDL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:03:11 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42890 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaBMTDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:02:25 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:2:41:69:355:379:541:599:800:960:966:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1606:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3872:3874:4117:4250:4321:4385:4419:5007:6119:7652:7903:8957:9010:9040:10004:10848:11026:11232:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12660:12679:12683:12740:13972:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: nose70_1484cbae61332
-X-Filterd-Recvd-Size: 6717
-Message-ID: <1392318137.2214.69.camel@joe-AO722>
-Subject: Re: ip_set: protocol %u message -- useful?
-From: Joe Perches <joe@perches.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: Cong Wang <cwang@twopensource.com>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Ilia Mirkin <imirkin@alum.mit.edu>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vitaly Lavrov <lve@guap.ru>
-Date: Thu, 13 Feb 2014 11:02:17 -0800
-In-Reply-To: <20140213184254.GF14175@macbook.localnet>
-References: <CAKb7UvhsLi2Sv4SWA2nVTgoFV8dzrY=3R1-SUk9D-aa0VdizSA@mail.gmail.com>
-	 <alpine.DEB.2.10.1402131117120.16734@blackhole.kfki.hu>
-	 <CAHA+R7MeEEfqz-7RhCUjsoWPx_BKHVXFV3Y32xjf0B1WwjNdRQ@mail.gmail.com>
-	 <20140213184254.GF14175@macbook.localnet>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Feb 2014 14:03:08 -0500
+Date: Thu, 13 Feb 2014 19:03:00 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Simon <horms@verge.net.au>, Magnus <magnus.damm@gmail.com>,
+        Linux-SH <linux-sh@vger.kernel.org>, linux-kernel@vger.kernel.org
+Message-ID: <20140213190300.GZ28112@sirena.org.uk>
+References: <87iosjd6lj.wl%kuninori.morimoto.gx@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vD4R8EutdGn5UgVK"
+Content-Disposition: inline
+In-Reply-To: <87iosjd6lj.wl%kuninori.morimoto.gx@gmail.com>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: gpio: reborn necessary prop
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-13 at 18:42 +0000, Patrick McHardy wrote:
-> On Thu, Feb 13, 2014 at 10:32:45AM -0800, Cong Wang wrote:
-> > On Thu, Feb 13, 2014 at 2:30 AM, Jozsef Kadlecsik
-> > <kadlec@blackhole.kfki.hu> wrote:
-> > > On Thu, 13 Feb 2014, Ilia Mirkin wrote:
-> > >> messages in my dmesg. This might be because of some local
-> > >> configuration changes I've made, or perhaps a kernel upgrade. Either
-> > >> way, it appears this message has been a pr_notice since the original
-> > >> code added it in a7b4f989a62 ("netfilter: ipset: IP set core
-> > >> support").
-> > >>
-> > >> Does this message provide a lot of value? Or could it be made into a pr_debug?
-> > >
-> > > That's a report message on the protocol version used by the ipset
-> > > subsystem. There was (and possibly will be) multiple protocols, so it
-> > > helps to catch basic userpsace/kernelspace communication issues.
-> > 
-> > But still it doesn't deserve a pr_notice()... pr_info() should be enough.
-> 
-> Maybe printing "using protocol version X" will make it appear less like
-> a debugging message referring to packet contents or something similar.
 
-Maybe making all the ip_set messages be prefixed with "ip_set: "
-would help too.
+--vD4R8EutdGn5UgVK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Add pr_fmt
-Remove embedded ip_set prefixes
-Convert pr_warning to pr_warn
-Realign arguments
+On Wed, Feb 12, 2014 at 07:39:07PM -0800, Kuninori Morimoto wrote:
+> From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+>=20
+> 934624d6e9f0b3d41557c4105c286e8daeaadb4e
+> (regulator: gpio-regulator: do not open-code counting and access of dt ar=
+ray elements)
+> removed struct property *prop from of_get_gpio_regulator_config()
+> but, it is still used on
+> 0094050d783bbadffe83effef11a0bda901153ce
+> (regulator: gpio: add gpios-status for DT)
 
----
- net/netfilter/ipset/ip_set_core.c | 39 ++++++++++++++++++++-------------------
- 1 file changed, 20 insertions(+), 19 deletions(-)
+Applied, thanks.
 
-diff --git a/net/netfilter/ipset/ip_set_core.c b/net/netfilter/ipset/ip_set_core.c
-index de770ec..1d4396f 100644
---- a/net/netfilter/ipset/ip_set_core.c
-+++ b/net/netfilter/ipset/ip_set_core.c
-@@ -9,6 +9,8 @@
- 
- /* Kernel module for IP set management */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
-@@ -101,7 +103,7 @@ load_settype(const char *name)
- 	nfnl_unlock(NFNL_SUBSYS_IPSET);
- 	pr_debug("try to load ip_set_%s\n", name);
- 	if (request_module("ip_set_%s", name) < 0) {
--		pr_warning("Can't find ip_set type %s\n", name);
-+		pr_warn("Can't find type %s\n", name);
- 		nfnl_lock(NFNL_SUBSYS_IPSET);
- 		return false;
- 	}
-@@ -195,25 +197,24 @@ ip_set_type_register(struct ip_set_type *type)
- 	int ret = 0;
- 
- 	if (type->protocol != IPSET_PROTOCOL) {
--		pr_warning("ip_set type %s, family %s, revision %u:%u uses "
--			   "wrong protocol version %u (want %u)\n",
--			   type->name, family_name(type->family),
--			   type->revision_min, type->revision_max,
--			   type->protocol, IPSET_PROTOCOL);
-+		pr_warn("type %s, family %s, revision %u:%u uses wrong protocol version %u (want %u)\n",
-+			type->name, family_name(type->family),
-+			type->revision_min, type->revision_max,
-+			type->protocol, IPSET_PROTOCOL);
- 		return -EINVAL;
- 	}
- 
- 	ip_set_type_lock();
- 	if (find_set_type(type->name, type->family, type->revision_min)) {
- 		/* Duplicate! */
--		pr_warning("ip_set type %s, family %s with revision min %u "
--			   "already registered!\n", type->name,
--			   family_name(type->family), type->revision_min);
-+		pr_warn("type %s, family %s with revision min %u already registered!\n",
-+			type->name, family_name(type->family),
-+			type->revision_min);
- 		ret = -EINVAL;
- 		goto unlock;
- 	}
- 	list_add_rcu(&type->list, &ip_set_type_list);
--	pr_debug("type %s, family %s, revision %u:%u registered.\n",
-+	pr_debug("type %s, family %s, revision %u:%u registered\n",
- 		 type->name, family_name(type->family),
- 		 type->revision_min, type->revision_max);
- unlock:
-@@ -228,13 +229,13 @@ ip_set_type_unregister(struct ip_set_type *type)
- {
- 	ip_set_type_lock();
- 	if (!find_set_type(type->name, type->family, type->revision_min)) {
--		pr_warning("ip_set type %s, family %s with revision min %u "
--			   "not registered\n", type->name,
--			   family_name(type->family), type->revision_min);
-+		pr_warn("type %s, family %s with revision min %u not registered\n",
-+			type->name, family_name(type->family),
-+			type->revision_min);
- 		goto unlock;
- 	}
- 	list_del_rcu(&type->list);
--	pr_debug("type %s, family %s with revision min %u unregistered.\n",
-+	pr_debug("type %s, family %s with revision min %u unregistered\n",
- 		 type->name, family_name(type->family), type->revision_min);
- unlock:
- 	ip_set_type_unlock();
-@@ -269,8 +270,8 @@ EXPORT_SYMBOL_GPL(ip_set_alloc);
- void
- ip_set_free(void *members)
- {
--	pr_debug("%p: free with %s\n", members,
--		 is_vmalloc_addr(members) ? "vfree" : "kfree");
-+	pr_debug("%p: free with %s\n",
-+		 members, is_vmalloc_addr(members) ? "vfree" : "kfree");
- 	if (is_vmalloc_addr(members))
- 		vfree(members);
- 	else
-@@ -1945,7 +1946,7 @@ ip_set_net_init(struct net *net)
- 		return -ENOMEM;
- 	inst->is_deleted = 0;
- 	rcu_assign_pointer(inst->ip_set_list, list);
--	pr_notice("ip_set: protocol %u\n", IPSET_PROTOCOL);
-+	pr_notice("protocol %u\n", IPSET_PROTOCOL);
- 	return 0;
- }
- 
-@@ -1980,7 +1981,7 @@ ip_set_init(void)
- {
- 	int ret = nfnetlink_subsys_register(&ip_set_netlink_subsys);
- 	if (ret != 0) {
--		pr_err("ip_set: cannot register with nfnetlink.\n");
-+		pr_err("cannot register with nfnetlink\n");
- 		return ret;
- 	}
- 	ret = nf_register_sockopt(&so_set);
-@@ -1991,7 +1992,7 @@ ip_set_init(void)
- 	}
- 	ret = register_pernet_subsys(&ip_set_net_ops);
- 	if (ret) {
--		pr_err("ip_set: cannot register pernet_subsys.\n");
-+		pr_err("cannot register pernet_subsys\n");
- 		nf_unregister_sockopt(&so_set);
- 		nfnetlink_subsys_unregister(&ip_set_netlink_subsys);
- 		return ret;
+--vD4R8EutdGn5UgVK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJS/RbhAAoJELSic+t+oim9NNIP/jpdLtn9p988zshkrOVcniFm
+LbPgxrk1cYssNvR++qIf+fz+93vcjZqQ4SDBgjkjgCIJmBcY6wqys4vkiGxR9YJX
+loam9V2ZqUqhxy9NC+xn8EidJLAJHcRH4QiVc0H+X7fIh1Q9UiD3CRUCMJCCVIKL
+va16klszc8PIDwmMm+zoXj/dC2QX8Vuj9nh2Et/p+Xu+sD3awA3m2LcxB0wh3Ce+
+0cYRwOo11Ht4qL9xReYVwd2/Ref0xwfidLBd8eborRw7xc+WR2X/XMoBcaVnIH6D
+1QgvR+YsW06HOAVnQiC3GSNCzfnlUEVr00u+BrdU31O58hTws9+hdslRU4SXB9uq
+S/XAA1PUX9ektk2Lhw6TrCa+lOUsMUQeSzN+AT/UfdS1qIKSWQqRMN9qrr5JWSlb
+/NA0cP1aB38wNrGWXTTkygaoT1O7y/NXgvBZXjULw5dB/R4oVhPLD0igWDCX1so5
+4/JX3g2CQsHU/eW++itZok6g3YfY5AOsgTPTj53Bv8emaqNi4lpTGVGEQ/Nv2B9o
+1UqmQ3ZFFQy4jVYe7pWyojP1RrENDNR4hJFSFe+0cqX3qQQn3+XDJN/+RpT6BcJ5
+m0iylqJq6/orYP9qxKi2V2QJDWntmpcW0x7uwIwzVCYpQpO7v/YrsO4+xyR+YSJA
+eKTGeiFKErVL6rmYq7nC
+=lA6k
+-----END PGP SIGNATURE-----
+
+--vD4R8EutdGn5UgVK--
