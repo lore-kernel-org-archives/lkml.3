@@ -1,148 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaBMKDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:03:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaBMKDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:03:00 -0500
-From: Daniel Borkmann <dborkman@redhat.com>
-To: akpm@linux-foundation.org
-Cc: joe@perches.com, linux-kernel@vger.kernel.org
-Subject: [PATCH akpm-next v2] random32: minor cleanups and kdoc fix
-Date: Thu, 13 Feb 2014 11:02:56 +0100
-Message-Id: <1392285776-27949-1-git-send-email-dborkman@redhat.com>
+	id S1754083AbaBMKDW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:03:22 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:18566
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751744AbaBMKDT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:03:19 -0500
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VPS4(z3197rz98dI9371I936eI148cI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275dh1de097h186068hz2dh109h2a8h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Paul Bolle <pebolle@tiscali.nl>, Steven Miao <realmz6@gmail.com>
+CC: Richard Weinberger <richard@nod.at>,
+        "adi-buildroot-devel@lists.sourceforge.net" 
+	<adi-buildroot-devel@lists.sourceforge.net>,
+        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open 
+	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
+	<linux-kernel@vger.kernel.org>
+Subject: RE: blackfin: Kconfig symbol VIDEO_MT9M114?
+Thread-Topic: blackfin: Kconfig symbol VIDEO_MT9M114?
+Thread-Index: AQHPJ9v3+hYtWqHlukeho8e+vnryFZqzOBYAgAAIaoD//7TkkA==
+Date: Thu, 13 Feb 2014 10:01:50 +0000
+Message-ID: <B168F8A49F4BCF4C84FD23DA5F6363EE61150705@NWD2MBX7.ad.analog.com>
+References: <1392200311.23759.27.camel@x220>
+	 <CAMk6uBk+jPpDOwN6C+xkuhWB1b3EGxb205-JhnK2JZhZMvVn2w@mail.gmail.com>
+ <1392283815.30853.11.camel@x220>
+In-Reply-To: <1392283815.30853.11.camel@x220>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.99.24.87]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: analog.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1DA3TSE026291
 
-These are just some very minor and misc cleanups in the PRNG. In
-prandom_u32() we store the result in an unsigned long which is
-unnecessary as it should be u32 instead that we get from
-prandom_u32_state(). prandom_bytes_state()'s comment is in kdoc
-format, so change it into such as it's done everywhere else.
-Also, use the normal comment style for the header comment. Last
-but not least for readability, add some newlines.
+Hi Paul,
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
----
- v1->v2:
-  - Applied most of Joe's feedback
+I will send out a patch to remove it.
 
- lib/random32.c | 76 ++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 39 insertions(+), 37 deletions(-)
+Regards,
 
-diff --git a/lib/random32.c b/lib/random32.c
-index 1e5b2df..b33b23e 100644
---- a/lib/random32.c
-+++ b/lib/random32.c
-@@ -1,37 +1,35 @@
- /*
--  This is a maximally equidistributed combined Tausworthe generator
--  based on code from GNU Scientific Library 1.5 (30 Jun 2004)
--
--  lfsr113 version:
--
--   x_n = (s1_n ^ s2_n ^ s3_n ^ s4_n)
--
--   s1_{n+1} = (((s1_n & 4294967294) << 18) ^ (((s1_n <<  6) ^ s1_n) >> 13))
--   s2_{n+1} = (((s2_n & 4294967288) <<  2) ^ (((s2_n <<  2) ^ s2_n) >> 27))
--   s3_{n+1} = (((s3_n & 4294967280) <<  7) ^ (((s3_n << 13) ^ s3_n) >> 21))
--   s4_{n+1} = (((s4_n & 4294967168) << 13) ^ (((s4_n <<  3) ^ s4_n) >> 12))
--
--   The period of this generator is about 2^113 (see erratum paper).
--
--   From: P. L'Ecuyer, "Maximally Equidistributed Combined Tausworthe
--   Generators", Mathematics of Computation, 65, 213 (1996), 203--213:
--   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps
--   ftp://ftp.iro.umontreal.ca/pub/simulation/lecuyer/papers/tausme.ps
--
--   There is an erratum in the paper "Tables of Maximally
--   Equidistributed Combined LFSR Generators", Mathematics of
--   Computation, 68, 225 (1999), 261--269:
--   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme2.ps
--
--        ... the k_j most significant bits of z_j must be non-
--        zero, for each j. (Note: this restriction also applies to the
--        computer code given in [4], but was mistakenly not mentioned in
--        that paper.)
--
--   This affects the seeding procedure by imposing the requirement
--   s1 > 1, s2 > 7, s3 > 15, s4 > 127.
--
--*/
-+ * This is a maximally equidistributed combined Tausworthe generator
-+ * based on code from GNU Scientific Library 1.5 (30 Jun 2004)
-+ *
-+ * lfsr113 version:
-+ *
-+ * x_n = (s1_n ^ s2_n ^ s3_n ^ s4_n)
-+ *
-+ * s1_{n+1} = (((s1_n & 4294967294) << 18) ^ (((s1_n <<  6) ^ s1_n) >> 13))
-+ * s2_{n+1} = (((s2_n & 4294967288) <<  2) ^ (((s2_n <<  2) ^ s2_n) >> 27))
-+ * s3_{n+1} = (((s3_n & 4294967280) <<  7) ^ (((s3_n << 13) ^ s3_n) >> 21))
-+ * s4_{n+1} = (((s4_n & 4294967168) << 13) ^ (((s4_n <<  3) ^ s4_n) >> 12))
-+ *
-+ * The period of this generator is about 2^113 (see erratum paper).
-+ *
-+ * From: P. L'Ecuyer, "Maximally Equidistributed Combined Tausworthe
-+ * Generators", Mathematics of Computation, 65, 213 (1996), 203--213:
-+ * http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps
-+ * ftp://ftp.iro.umontreal.ca/pub/simulation/lecuyer/papers/tausme.ps
-+ *
-+ * There is an erratum in the paper "Tables of Maximally Equidistributed
-+ * Combined LFSR Generators", Mathematics of Computation, 68, 225 (1999),
-+ * 261--269: http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme2.ps
-+ *
-+ *      ... the k_j most significant bits of z_j must be non-zero,
-+ *      for each j. (Note: this restriction also applies to the
-+ *      computer code given in [4], but was mistakenly not mentioned
-+ *      in that paper.)
-+ *
-+ * This affects the seeding procedure by imposing the requirement
-+ * s1 > 1, s2 > 7, s3 > 15, s4 > 127.
-+ */
- 
- #include <linux/types.h>
- #include <linux/percpu.h>
-@@ -75,15 +73,17 @@ EXPORT_SYMBOL(prandom_u32_state);
-  */
- u32 prandom_u32(void)
- {
--	unsigned long r;
- 	struct rnd_state *state = &get_cpu_var(net_rand_state);
--	r = prandom_u32_state(state);
-+	u32 res;
-+
-+	res = prandom_u32_state(state);
- 	put_cpu_var(state);
--	return r;
-+
-+	return res;
- }
- EXPORT_SYMBOL(prandom_u32);
- 
--/*
-+/**
-  *	prandom_bytes_state - get the requested number of pseudo-random bytes
-  *
-  *	@state: pointer to state structure holding seeded state.
-@@ -204,6 +204,7 @@ static int __init prandom_init(void)
- 		prandom_seed_very_weak(state, (i + jiffies) ^ random_get_entropy());
- 		prandom_warmup(state);
- 	}
-+
- 	return 0;
- }
- core_initcall(prandom_init);
-@@ -248,6 +249,7 @@ static void __prandom_reseed(bool late)
- 	spin_lock_irqsave(&lock, flags);
- 	if (latch && !late)
- 		goto out;
-+
- 	latch = true;
- 
- 	for_each_possible_cpu(i) {
--- 
-1.7.11.7
+Sonic
 
+>-----Original Message-----
+>From: Paul Bolle [mailto:pebolle@tiscali.nl]
+>Sent: Thursday, February 13, 2014 5:30 PM
+>To: Steven Miao
+>Cc: Zhang, Sonic; Richard Weinberger; adi-buildroot-devel@lists.sourceforge.net;
+>open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
+>list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list
+>Subject: Re: blackfin: Kconfig symbol VIDEO_MT9M114?
+>
+>Hi Steven,
+>
+>On Thu, 2014-02-13 at 17:00 +0800, Steven Miao wrote:
+>> VIDEO_MT9M114 is from patch "Aptina mt9m114 HD digital image sensor
+>> driver", but unfortunately this patch hasn't been accepted yet.
+>> https://patchwork.linuxtv.org/patch/16308/
+>> This Kconfig symbol should be removed until the mt9m114 driver is
+>> accepted by mainline.
+>
+>Thanks for looking into this.
+>
+>It's easy for me to submit a trivial patch to remove the one line depending on these
+>Kconfig macros. But it seems that line should be added to the queue for that driver at
+>the same time, otherwise we risk losing it. So it's safer if you or the people working on
+>that driver coordinate that, isn't it?
+>
+>
+>Paul Bolle
+>
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
