@@ -1,73 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaBMK3O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:29:14 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:10065 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440AbaBMK3M (ORCPT
+	id S1753964AbaBMKaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:30:06 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:44677 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaBMKaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:29:12 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,7347"; a="13883341"
-X-IronPort-AV: E=Sophos;i="4.95,838,1384329600"; 
-   d="scan'208";a="27130663"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <ath10k@lists.infradead.org>
-Subject: Re: [PATCH 1/3] ath10k: Get rid of superfluous call to pci_disable_msi()
-References: <cover.1389904166.git.agordeev@redhat.com>
-	<ad5cc6d6bdf4c8f5ce4681ec27674d07fbda089e.1389904167.git.agordeev@redhat.com>
-	<20140130134819.GA31909@dhcp-26-207.brq.redhat.com>
-	<87y51qohjn.fsf@kamboji.qca.qualcomm.com>
-	<20140204190935.GA1430@dhcp-26-207.brq.redhat.com>
-	<8761oum0l3.fsf@kamboji.qca.qualcomm.com>
-	<20140205085047.GA27820@dhcp-26-207.brq.redhat.com>
-	<871tzilz1u.fsf@kamboji.qca.qualcomm.com>
-	<20140212003143.GD21057@google.com>
-	<20140212133816.GB3147@dhcp-26-207.brq.redhat.com>
-	<CAErSpo6c_EPc5c8aaTeD9=eXWw4OowcKhWHG6YZgTOkZRMtZHQ@mail.gmail.com>
-	<87ppmsauij.fsf@kamboji.qca.qualcomm.com>
-	<CAErSpo47k8WuHded1TnHoRedHHLe-Sk7kKsXcR4XjKmQPb0Ggg@mail.gmail.com>
-Date: Thu, 13 Feb 2014 12:29:04 +0200
-In-Reply-To: <CAErSpo47k8WuHded1TnHoRedHHLe-Sk7kKsXcR4XjKmQPb0Ggg@mail.gmail.com>
-	(Bjorn Helgaas's message of "Wed, 12 Feb 2014 14:40:26 -0700")
-Message-ID: <87mwhv9uha.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 13 Feb 2014 05:30:02 -0500
+Date: Thu, 13 Feb 2014 10:29:55 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alexandre.torgue@st.com
+Subject: Re: [PATCH 4/4] phy: miphy365x: Provide support for the MiPHY356x
+ Generic PHY
+Message-ID: <20140213102955.GF32508@lee--X1>
+References: <1392220985-28189-1-git-send-email-lee.jones@linaro.org>
+ <1392220985-28189-4-git-send-email-lee.jones@linaro.org>
+ <52FC6BF5.9030900@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52FC6BF5.9030900@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas <bhelgaas@google.com> writes:
+> > The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> > devices. It has 2 ports which it can use for either; both SATA, both
+> 
+> various SATA or PCIe devices in STMicroelectronics STiH41x SoC series?
 
-> On Wed, Feb 12, 2014 at 2:30 PM, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
->> Bjorn Helgaas <bhelgaas@google.com> writes:
->>
->>>> Well, as this series is small I thought it could quickly go thru your
->>>> tree. But since ipr had conflicts, there is no point routing all patches
->>>> altogether, so up to you guys. The wil6210 patch is already in your pci/msi
->>>> branch though.
->>>
->>> It's in pci/msi, but that's not in my -next branch yet, so I can
->>> easily drop it.  Do drivers/net/wireless patches normally follow a
->>> different path than the other drivers/net patches?  The wil6210 and
->>> ath10k patches look just like the others in the 34-patch series (bnx2,
->>> bnx2x, tg3, bna, cxgb3, etc.), so I thought it would make more sense
->>> to include them there.
->>
->> ath10k patches normally go through my ath.git tree to Linville and then
->> to David Miller. To avoid conflicts I would prefer to take ath10k
->> patches to my tree whenever possible.
->
-> OK, I won't do anything with ath10k (I haven't applied it anywhere).
+To tell you the truth, I'm not sure if it is limited to ST's h/w, but
+I think it can only be found there, so I'm happy to fixup.
 
-I have now taken the ath10k patches to my pending branch, will apply
-them soon.
+<snip>
+
+> > +config PHY_MIPHY365X
+> > +	tristate "STMicroelectronics MIPHY365X PHY driver for STiH41x series"
+> > +	depends on ARCH_STI
+> > +	depends on GENERIC_PHY
+> depends on CONFIG_OF and HAS_IOMEM?
+
+Sure, I'll fix.
+
+<snip>
+
+> > + * Copyright (C) 2014 STMicroelectronics
+> > + *
+> > + * STMicroelectronics PHY driver MiPHY365 (for SoC STiH416).
+> > + *
+> > + * Author: Alexandre Torgue <alexandre.torgue@st.com>
+> 
+> The author of this patch is not Alexandre Torgue?
+
+The history of this driver is long and the authors are many. Alex
+did the last internal over-haul and converted it to use Generic PHY. I
+took Alex's driver and made significant changes in order to upstream.
+
+<snip>
+
+> > +#define HFC_TIMEOUT		50
+> > +
+> > +#define SYSCFG_2521		0x824
+> > +#define SYSCFG_2522		0x828
+> > +#define SYSCFG_PCIE_SATA_MASK	BIT(1)
+> > +#define SYSCFG_PCIE_SATA_POS	1
+> > +
+> > +/* MiPHY365x register definitiona */
+> > +#define RESET_REG		0x00
+> > +#define RST_PLL			BIT(1)
+> 
+> There are quite a few alignment problems with these macros. It needs
+> to be fixed.
+
+This is just Git playing up.
+
+In reality everything is perfectly aligned and all using tabs.
+
+<snip>
+
+> > +/*
+> > + * This function selects the system configuration,
+> > + * either two SATA, one SATA and one PCIe, or two PCIe lanes.
+> > + */
+> > +static int miphy365x_set_path(struct miphy365x_phy *miphy_phy,
+> > +			      struct miphy365x_dev *miphy_dev)
+> > +{
+> > +	u8 config = miphy_phy->type | miphy_phy->port;
+> > +	u32 mask  = SYSCFG_PCIE_SATA_MASK;
+> > +	u32 reg;
+> > +	bool sata;
+> > +
+> > +	switch (config) {
+> > +	case MIPHY_SATA_PORT0:
+> > +		reg = SYSCFG_2521;
+> > +		sata = true;
+> 
+> How do we configure PORT1 for SATA here? Do we really support all the system
+> configuration?
+
+Good spot eagle-eye!
+
+Actually in the current version there is a h/w bug which only allows
+the SATA_PORT0 and PCIE_PORT1 configuration. When a new version fixing
+this is released I will add version detection to the driver and we can
+support full intended configuration options. 
+
+<snip>
+
+> > +static inline int miphy365x_phy_hfc_not_rdy(struct miphy365x_phy *miphy_phy,
+> > +					    struct miphy365x_dev *miphy_dev)
+> > +{
+> > +	int timeout = HFC_TIMEOUT;
+> > +	u8 mask = IDLL_RDY | PLL_RDY;
+> > +	u8 regval;
+> > +
+> > +	do {
+> > +		regval = readb_relaxed(miphy_phy->base + STATUS_REG);
+> > +		usleep_range(2000, 2500);
+> 
+> Any comment on how this delay value is obtained?
+
+I don't have any specific comments, I believe the 2000us it taken from
+the datasheet and the 2500 is us playing nice with the scheduler.
+
+<snip>
+
+> > +static inline int miphy365x_phy_rdy(struct miphy365x_phy *miphy_phy,
+> > +				    struct miphy365x_dev *miphy_dev)
+> > +{
+> > +	int timeout = HFC_TIMEOUT;
+> > +	u8 mask = mask = IDLL_RDY | PLL_RDY;
+> 
+> just u8 mask = IDLL_RDY | PLL_RDY; would suffice.
+
+Hmm... not sure how this slipped through - will fix.
+
+> > +	u8 regval;
+> > +
+> > +	do {
+> > +		regval = readb_relaxed(miphy_phy->base + STATUS_REG);
+> > +		usleep_range(2000, 2500);
+> 
+> same here.
+
+As above.
+
+<snip>
+
+> > +	mask = DES_BIT_LOCK | DES_SYMBOL_LOCK;
+> > +	while ((readb_relaxed(miphy_phy->base + COMP_CTRL1_REG) & mask)	!= mask)
+> > +		cpu_relax();
+> 
+> Don't we need to break from here at some point if the LOCK's are never set?
+
+I'm sure sure that's possible, but I will invesigate and fixup if req'd.
+
+<snip>
+
+> > +static int miphy365x_phy_power_on(struct phy *phy)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static int miphy365x_phy_power_off(struct phy *phy)
+> > +{
+> > +	return 0;
+> > +}
+> 
+> Both these empty functions can be removed.
+
+You're right, I see the NULL checks, thanks.
+
+<snip>
+
+> > +static int miphy365x_phy_get_base_addr(struct platform_device *pdev,
+> > +				       struct miphy365x_phy *phy, u8 port)
+> > +{
+> > +	struct resource *res;
+> > +	char sata[16];
+> > +	char pcie[16];
+> 
+> It can be done with a single variable ;-)
+
+Right. :)
+
+<snip>
+
+> Phy provider register should be the last step in registering the PHY.
+
+Okay, will fix, thanks.
 
 -- 
-Kalle Valo
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
