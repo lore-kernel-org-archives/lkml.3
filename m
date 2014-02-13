@@ -1,170 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaBMDvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 22:51:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22047 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397AbaBMDvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 22:51:50 -0500
-Message-ID: <52FC4147.7060803@redhat.com>
-Date: Thu, 13 Feb 2014 11:51:35 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751591AbaBMEDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 23:03:06 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:35387 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaBMEDE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 23:03:04 -0500
 MIME-Version: 1.0
-To: Haiyang Zhang <haiyangz@microsoft.com>, davem@davemloft.net,
-        netdev@vger.kernel.org
-CC: kys@microsoft.com, olaf@aepfle.de, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH net,v3] hyperv: Fix the carrier status setting
-References: <1392252867-21146-1-git-send-email-haiyangz@microsoft.com>
-In-Reply-To: <1392252867-21146-1-git-send-email-haiyangz@microsoft.com>
+X-Originating-IP: [67.83.169.196]
+In-Reply-To: <1392260382.2214.18.camel@joe-AO722>
+References: <1392257593-3736-1-git-send-email-patrick@parcs.ath.cx>
+	<1392260382.2214.18.camel@joe-AO722>
+Date: Wed, 12 Feb 2014 23:03:03 -0500
+Message-ID: <CA+C-WL9ARNvOqeA4n5Abnja+99O4F1VdMDUPjuRCcXiVsMTc7A@mail.gmail.com>
+Subject: Re: [PATCH] ext4: address a benign compiler warning
+From: Patrick Palka <patrick@parcs.ath.cx>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 08:54 AM, Haiyang Zhang wrote:
-> Without this patch, the "cat /sys/class/net/ethN/operstate" shows
-> "unknown", and "ethtool ethN" shows "Link detected: yes", when VM
-> boots up with or without vNIC connected.
+On Wed, Feb 12, 2014 at 9:59 PM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2014-02-12 at 21:13 -0500, Patrick Palka wrote:
+>> When !defined(CONFIG_EXT4_DEBUG), mb_debug() should be defined as an
+>> empty do-while statement so as to suppress the following compiler
+>> warning:
 >
-> This patch fixed the problem.
+> Hello Patrick.
 >
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+>> fs/ext4/mballoc.c: In function 'ext4_mb_cleanup_pa':
+>> fs/ext4/mballoc.c:2659:47: warning: suggest braces around empty body in an 'if' statement [-Wempty-body]
+>>    mb_debug(1, "mballoc: %u PAs left\n", count);
+>> ---
+>> diff --git a/fs/ext4/mballoc.h b/fs/ext4/mballoc.h
+> []
+>> @@ -48,7 +48,7 @@ extern ushort ext4_mballoc_debug;
+>>               }                                                       \
+>>       } while (0)
+>>  #else
+>> -#define mb_debug(n, fmt, a...)
+>> +#define mb_debug(n, fmt, a...)               do { } while (0)
+>
+> Ideally, this section should be something like below
+> so the !CONFIG_EXT4_DEBUG case still verifies that
+> the format and argument types match.
+>
+> This can help avoid people adding debug statements but
+> not compiling with the proper CONFIG_<foo> variable set.
+>
 > ---
->  drivers/net/hyperv/netvsc_drv.c |   53 ++++++++++++++++++++++++++++-----------
->  1 files changed, 38 insertions(+), 15 deletions(-)
 >
-> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-> index 7756118..7141a19 100644
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-> @@ -88,8 +88,12 @@ static int netvsc_open(struct net_device *net)
->  {
->  	struct net_device_context *net_device_ctx = netdev_priv(net);
->  	struct hv_device *device_obj = net_device_ctx->device_ctx;
-> +	struct netvsc_device *nvdev;
-> +	struct rndis_device *rdev;
->  	int ret = 0;
->  
-> +	netif_carrier_off(net);
-> +
->  	/* Open up the device */
->  	ret = rndis_filter_open(device_obj);
->  	if (ret != 0) {
-> @@ -99,6 +103,11 @@ static int netvsc_open(struct net_device *net)
->  
->  	netif_start_queue(net);
->  
-> +	nvdev = hv_get_drvdata(device_obj);
-> +	rdev = nvdev->extension;
-> +	if (!rdev->link_state)
-> +		netif_carrier_on(net);
-> +
+> #ifdef CONFIG_EXT4_DEBUG
+> extern ushort ext4_mballoc_debug;
+>
+> #define mb_debug(n, fmt, ...)                                   \
+> do {                                                            \
+>         if ((n) <= ext4_mballoc_debug)                          \
+>                 pr_debug(fmt, ##__VA_ARGS__);                   \
+>         }                                                       \
+> } while (0)
+> #else
+> #define mb_debug(n, fmt, ...)                                   \
+>         no_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+> #endif
+>
+>
 
-Maybe you can just schedule the work here and then you can drop the
-rtnl_lock in netvsc_link_change() ?
->  	return ret;
->  }
->  
-> @@ -229,23 +238,24 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
->  	struct net_device *net;
->  	struct net_device_context *ndev_ctx;
->  	struct netvsc_device *net_device;
-> +	struct rndis_device *rdev;
->  
->  	net_device = hv_get_drvdata(device_obj);
-> +	rdev = net_device->extension;
-> +
-> +	rdev->link_state = status != 1;
-> +
->  	net = net_device->ndev;
->  
-> -	if (!net) {
-> -		netdev_err(net, "got link status but net device "
-> -				"not initialized yet\n");
-> +	if (!net || net->reg_state != NETREG_REGISTERED)
->  		return;
-> -	}
->  
-> +	ndev_ctx = netdev_priv(net);
->  	if (status == 1) {
-> -		netif_carrier_on(net);
-> -		ndev_ctx = netdev_priv(net);
->  		schedule_delayed_work(&ndev_ctx->dwork, 0);
->  		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
->  	} else {
-> -		netif_carrier_off(net);
-> +		schedule_delayed_work(&ndev_ctx->dwork, 0);
->  	}
->  }
->  
-> @@ -388,17 +398,35 @@ static const struct net_device_ops device_ops = {
->   * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
->   * another netif_notify_peers() into a delayed work, otherwise GARP packet
->   * will not be sent after quick migration, and cause network disconnection.
-> + * Also, we update the carrier status here.
->   */
-> -static void netvsc_send_garp(struct work_struct *w)
-> +static void netvsc_link_change(struct work_struct *w)
->  {
->  	struct net_device_context *ndev_ctx;
->  	struct net_device *net;
->  	struct netvsc_device *net_device;
-> +	struct rndis_device *rdev;
-> +	bool notify;
-> +
-> +	rtnl_lock();
->  
->  	ndev_ctx = container_of(w, struct net_device_context, dwork.work);
->  	net_device = hv_get_drvdata(ndev_ctx->device_ctx);
-> +	rdev = net_device->extension;
->  	net = net_device->ndev;
-> -	netdev_notify_peers(net);
-> +
-> +	if (rdev->link_state) {
-> +		netif_carrier_off(net);
-> +		notify = false;
-> +	} else {
-> +		netif_carrier_on(net);
-> +		notify = true;
-> +	}
-> +
-> +	rtnl_unlock();
-> +
-> +	if (notify)
-> +		netdev_notify_peers(net);
->  }
->  
+Hi Joe,
 
-Looks like this forces arp_notify here. Is it expected?
+Thanks!  I was not aware of that idiom.  It makes a good amount of
+sense.  I'm going to send a revised version of the patch shortly.
 
-Other looks good.
->  
-> @@ -414,13 +442,10 @@ static int netvsc_probe(struct hv_device *dev,
->  	if (!net)
->  		return -ENOMEM;
->  
-> -	/* Set initial state */
-> -	netif_carrier_off(net);
-> -
->  	net_device_ctx = netdev_priv(net);
->  	net_device_ctx->device_ctx = dev;
->  	hv_set_drvdata(dev, net);
-> -	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
-> +	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_link_change);
->  	INIT_WORK(&net_device_ctx->work, do_set_multicast);
->  
->  	net->netdev_ops = &device_ops;
-> @@ -443,8 +468,6 @@ static int netvsc_probe(struct hv_device *dev,
->  	}
->  	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
->  
-> -	netif_carrier_on(net);
-> -
->  	ret = register_netdev(net);
->  	if (ret != 0) {
->  		pr_err("Unable to register netdev.\n");
-
+Patrick
