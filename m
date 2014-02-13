@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712AbaBMKOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:14:11 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:52567 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaBMKOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:14:07 -0500
-Message-ID: <52FC99F8.4020002@linux.vnet.ibm.com>
-Date: Thu, 13 Feb 2014 15:40:00 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753981AbaBMKPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:15:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33093 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752156AbaBMKPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:15:35 -0500
+Date: Thu, 13 Feb 2014 11:15:30 +0100
+From: Jean Delvare <jdelvare@suse.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Laszlo Papp <lpapp@kde.org>, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [lm-sensors] [RFC PATCH] hwmon: (max6650) Convert to be a 
+ platform driver
+Message-ID: <20140213111530.2a2b4982@endymion.delvare>
+In-Reply-To: <20140213095817.GD32508@lee--X1>
+References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
+	<20140213095817.GD32508@lee--X1>
+Organization: Suse Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@linaro.org>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti Murthy <preeti.lkml@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH V2 2/3] sched: Fix race in idle_balance()
-References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org> <1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pMEFTe6pQVDFzaXmqt_A3vw3tyj7Ewqib6zbzH++YzY3w@mail.gmail.com> <52FA0577.6080607@linaro.org> <52FC7835.1090509@linaro.org>
-In-Reply-To: <52FC7835.1090509@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021310-9574-0000-0000-00000BEE371A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 02/13/2014 01:15 PM, Alex Shi wrote:
-> On 02/11/2014 07:11 PM, Daniel Lezcano wrote:
->> On 02/10/2014 10:24 AM, Preeti Murthy wrote:
->>> HI Daniel,
->>>
->>> Isn't the only scenario where another cpu can put an idle task on
->>> our runqueue,
->>
->> Well, I am not sure to understand what you meant, but I assume you are
->> asking if it is possible to have a task to be pulled when we are idle,
->> right ?
->>
->> This patch fixes the race when the current cpu is *about* to enter idle
->> when calling schedule().
+On Thu, 13 Feb 2014 09:58:17 +0000, Lee Jones wrote:
+> > The MFD driver has now been added, so this driver is now being adopted to be a
+> > subdevice driver on top of it. This means, the i2c driver usage is being
+> > converted to platform driver usage all around.
+> > 
+> > Signed-off-by: Laszlo Papp <lpapp@kde.org>
+> > ---
+> > This patch has been compile tested only and will be tested with real hardware,
+> > but early reviews to catch any trivial issues would be welcome.
+> >  drivers/hwmon/Kconfig   |   2 +-
+> >  drivers/hwmon/max6650.c | 155 ++++++++++++++++++++++++------------------------
+> >  2 files changed, 79 insertions(+), 78 deletions(-)
 > 
-> Preeti said the she didn't see a possible to insert a task on the cpu.
+> <snip>
 > 
-> I also did a quick check, maybe task come from wakeup path?
-
-Yes this is possible. Thanks for pointing this :)
-
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> >  /*
+> >   * Insmod parameters
+> > @@ -105,24 +108,23 @@ module_param(clock, int, S_IRUGO);
+> >  
+> >  #define DIV_FROM_REG(reg) (1 << (reg & 7))
+> >  
+> > -static int max6650_probe(struct i2c_client *client,
+> > -			 const struct i2c_device_id *id);
+> > -static int max6650_init_client(struct i2c_client *client);
+> > -static int max6650_remove(struct i2c_client *client);
+> > +static int max6650_probe(struct platform_device *pdev);
+> > +static int max6650_init_client(struct platform_device *pdev);
+> > +static int max6650_remove(struct platform_device *pdev);
+> >  static struct max6650_data *max6650_update_device(struct device *dev);
 > 
+> It would be good to remove these forward declarations in the future.
+> 
+> If no one volunteers I'll happily do it.
 
+Guenter just did:
+
+http://lists.lm-sensors.org/pipermail/lm-sensors/2014-February/041224.html
+
+Any change to the max6650 driver should go on top of his patch series
+to avoid conflicts:
+
+http://lists.lm-sensors.org/pipermail/lm-sensors/2014-February/041223.html
+
+-- 
+Jean Delvare
+Suse L3 Support
