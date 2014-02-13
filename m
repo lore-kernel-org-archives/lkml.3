@@ -1,114 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaBMNA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 08:00:58 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:10199 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaBMNA4 (ORCPT
+	id S1754477AbaBMNCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 08:02:47 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:55316 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaBMNCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 08:00:56 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-30-52fcc206c2b2
-Message-id: <1392296452.14541.7.camel@AMDC1943>
-Subject: Re: [PATCH v2 11/14] regulator: s2mps11: Add opmode for S2MPS14
- regulators
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Date: Thu, 13 Feb 2014 14:00:52 +0100
-In-reply-to: <20140213124320.GB3403@lee--X1>
-References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
- <1392282847-25444-12-git-send-email-k.kozlowski@samsung.com>
- <20140213124320.GB3403@lee--X1>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t/xK7psh/4EGbTM4bLYOGM9q8XUh0/Y
-	LK5/ec5qcbbpDbvF/a9HGS2+Xelgsri8aw6bxYzz+5gs1h65y25xupvV4uKKL0wO3B47Z91l
-	99i0qpPN4861PWwe804GevRtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfGg8c9bAUPhCoudK5i
-	bWD8xNfFyMkhIWAi8eVUNzuELSZx4d56ti5GLg4hgaWMEttuNzNDOJ8ZJdpmzGMBqeIV0Jf4
-	8+wGmC0sECpxad0PMJtNwFhi8/IlQN0cHCICKhLn3piD9DILTGaWODznKyNIDYuAqkT/r6Vg
-	NZwCOhJLz4SAhIUEVjBKTN8pDWIzC6hLTJq3iBniICWJ3e2d7BBxeYnNa94yQ5wgKPFj8j2W
-	CYwCs5C0zEJSNgtJ2QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYITHxZQfj4mNWhxgF
-	OBiVeHgtlv0OEmJNLCuuzD3EKMHBrCTC27jtT5AQb0piZVVqUX58UWlOavEhRiYOTqkGxmQb
-	2SsvdDTeTTjzu3KqbsJxRa1zaaeNLqw5+47/V+UK3XezutIl92+ZsaovP9Ljlt+UtzcPaWyd
-	da7pI0e4hdmaqnNCBefYom8y7TFN7z94/qApbwbPCm3+y+pzp9QfXeiRlhNzTOl14CqTTZsE
-	V/qH/J679ce5/lWy+VOdPgXsWeNznKFqdqESS3FGoqEWc1FxIgCp8jMdZwIAAA==
+	Thu, 13 Feb 2014 08:02:45 -0500
+MIME-Version: 1.0
+Date: Thu, 13 Feb 2014 21:02:44 +0800
+Message-ID: <CAAJw_ZvX2AfS8COiNdN9gi_1xJ4L_vL=ROCzcLL3u0h51kuX3Q@mail.gmail.com>
+Subject: Lenovo X240 (haswell) suspend-to-ram hangs on 3-14.0-rc2
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Can't suspend to ram/disk on the Lenovo X240 with Intel i7-4600.
+
+kernel 3.14.0-rc2
+
+The same kernel works find on Lenovo X230 with Intel i7-3520M.
+
+Here's the trace ..
 
 
-On Thu, 2014-02-13 at 12:43 +0000, Lee Jones wrote:
-> > S2MPS11/S2MPS14 regulators support different modes of operation:
-> >  - Always off;
-> >  - On/Off controlled by pin/GPIO (PWREN/LDOEN/EMMCEN);
-> >  - Always on;
-> > This is very similar to S5M8767 regulator driver which also supports
-> > opmodes (although S5M8767 have also low-power mode).
-> > 
-> > This patch adds parsing the operation mode from DTS by reading a
-> > "op_mode" property from regulator child node.
-> > 
-> > The op_mode is then used for enabling the S2MPS14 regulators.
-> > On S2MPS11 the DTS "op_mode" property is parsed but not used for
-> > enabling, as this was not tested.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> > Cc: Mark Brown <broonie@kernel.org>
-> > Cc: Liam Girdwood <lgirdwood@gmail.com>
-> > ---
-> >  drivers/regulator/s2mps11.c         |   97 ++++++++++++++++++++++++++++++++++-
-> >  include/linux/mfd/samsung/s2mps14.h |   19 +++++++
-> >  2 files changed, 115 insertions(+), 1 deletion(-)
-> 
-> <snip>
-> 
-> > +++ b/include/linux/mfd/samsung/s2mps14.h
-> > @@ -149,4 +149,23 @@ enum s2mps14_regulators {
-> >  #define S2MPS14_LDO_N_VOLTAGES		(S2MPS14_LDO_VSEL_MASK + 1)
-> >  #define S2MPS14_BUCK_N_VOLTAGES		(S2MPS14_BUCK_VSEL_MASK + 1)
-> >  
-> > +#define S2MPS14_ENCTRL_SHIFT		6
-> > +#define S2MPS14_ENCTRL_MASK		(0x3 << S2MPS14_ENCTRL_SHIFT)
-> > +
-> > +/*
-> > + * Values of regulator operation modes match device tree bindings.
-> > + */
-> > +enum s2mps14_regulator_opmode {
-> > +	S2MPS14_REGULATOR_OPMODE_OFF		= 0,
-> > +	S2MPS14_REGULATOR_OPMODE_ON		= 1,
-> > +	/*
-> > +	 * Reserved for compatibility with S5M8767 where this
-> > +	 * is a low power mode.
-> > +	 */
-> > +	S2MPS14_REGULATOR_OPMODE_RESERVED	= 2,
-> > +	S2MPS14_REGULATOR_OPMODE_SUSPEND	= 3,
-> 
-> You don't need to number these like this. If you want to force the
-> numbering to start at '0' initialise the top value, then the rest
-> should be sequential.
+[<ffffffff81034ba6>] ? do_exit+0x852/0x89d
+[<ffffffff8158e5d8>] ? prinfk+0x4f/0x54
+[<iiffffff81005060>] ? oops_end+0x78/0x7d
+[<ffffffff8158dc00>] ? no_context+0x1e6/0x1f5
+[<ffffffff810274f8>] ? __do_page_fault+0x348/0x3c7
+[<ffffffff8159376a>] ? __schedule+0x6Z3/0x775
+[<ffffffff81596562>] ? page_fault+0x2Z/8x30
+[<ffffffff814e76e4>] ? azx_enter_link_reset.isra.26+0x9/0x51
+[<ffffffff814e68ac>] ? azx_clear_irq_pending+0x12/0x3e
+[<ffffffff814e7821>1 ? azx_suspend+0xa1/0x105
+[<ffffffff8128f543>] ? pci_pm_suspend+0x6e/0xee
+[<ffffffff8128f4d5>] ? pci_pm_poweroff+0xb4/0xb4
+[<ffffffff81333479>] ? dpm_run_callback.isra.8+0x24/8x52
+[<ffffffff813335df>] ? __device_suspend+8x138/0x19b
+[<ffffffff81333658>] ? async_suspend+0x16/0x7d
+[<ffffffff8104d743>] ? async_run_entry_fn+0x55/0x10b
+[<ffffffff81044abf>] ? process_one_work+0x1be/0x2ef
+[<ffffffff8104503d>] ? worker_thread+0x1cb/0x2c4
+[<ffffffff81044e72>] ? rescuer_thread+0x25d/0x25d
+[<ffffffff81049a93>] ? kthread+0xc5/0xcd
+[<ffffffff81040000>] ? SyS_setpriority+0x179/0x233
+[<ffffffff810499ce>l ? kthread_freezable_should_stop+0x3b/0x3b
+[<ffffffff8159697c>] ? rat_from_fork+0x7c/0xb0
+[<ffffffff810499ce>l ? kthread_freezable_should_stop+0x3b/0x3b
 
-Yes, I know. I wanted to emphasize the relationship to opmode entries in
-DTS (to prevent adding new enum value somewhere between them). The code
-somehow self-documents that the enum should only be extended, not
-modified.
 
-Best regards,
-Krzysztof
-
-> 
-> > +	S2MPS14_REGULATOR_OPMODE_MAX,
-> > +};
-> > +
-> >  #endif /*  __LINUX_MFD_S2MPS14_H */
-> 
-
+Thanks,
+Jeff
