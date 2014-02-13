@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbaBMGsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 01:48:32 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:63812 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaBMGsa (ORCPT
+	id S1752876AbaBMGun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 01:50:43 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:36033 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832AbaBMGul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 01:48:30 -0500
-Message-ID: <1392274106.28471.2.camel@marge.simpson.net>
-Subject: Re: [PATCH] compiler/gcc4: make quirk for asm_volatile_goto
- unconditional
-From: Mike Galbraith <bitbucket@online.de>
-To: Steven Noonan <steven@uplinklabs.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 13 Feb 2014 07:48:26 +0100
-In-Reply-To: <1392267191-6708-1-git-send-email-steven@uplinklabs.net>
-References: <CA+55aFys_VK+q3LMRzEM-AKU-=fM_tgiDdLm2AO=jVfH7OvrHQ@mail.gmail.com>
-	 <1392267191-6708-1-git-send-email-steven@uplinklabs.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:QCUO8aGxQSYvbO6cbFhPNsoo8P1aAgB4dgee3pzflkB
- 7eSspvWIbpZQaQjxiXdFCzR/0C/iSgHCllIAtAjWsXEcRjz8CF
- heWXPnC4+K0MPdA89biJzwXWDjtburAlh8KDaCXGyD5OU4P65D
- 3OTaxGrkhFMjU999pOWF62cguYVrhCBzh+1jFxiP2OB3zSjqro
- zZMeN2MsoJOl2lm5O6xWP13XIv0nGWTLJRYyDzm4zLr4Xc2eFj
- QlVGYthv4nYm9hPiXg/8hpbPYwjvEpGyY2wJoDWqRyK5EJzCwX
- piAhC12lXLL/LUxrBIc0Z17YQdhrnwCR/nfy0+SvAl2a76Wk1r
- qKfyg4w1G4j2g3Zi/3djrBtRA+/ArH15T61AWLNc51JoPQ/erR
- P9wQMWILoRYxg==
+	Thu, 13 Feb 2014 01:50:41 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, nm@ti.com,
+        swarren@wwwdotorg.org, kgene.kim@samsung.com, jinchoi@broadcom.com,
+        tianyu.lan@intel.com, sebastian.capella@linaro.org,
+        jhbird.choi@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+Date: Thu, 13 Feb 2014 12:20:15 +0530
+Message-Id: <cover.1392273722.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-12 at 20:53 -0800, Steven Noonan wrote: 
-> I started noticing problems with KVM guest destruction on Linux 3.12+, where
-> guest memory wasn't being cleaned up. I bisected it down to the commit
-> introducing the new 'asm goto'-based atomics, and found this quirk was later
-> applied to those.
-> 
-> Unfortunately, even with GCC 4.8.2 (which ostensibly fixed the known 'asm goto'
-> bug) I am still getting some kind of miscompilation. If I enable the
-> asm_volatile_goto quirk for my compiler, KVM guests are destroyed correctly and
-> the memory is cleaned up.
-> 
-> [1] http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+This patchset creates/calls cpufreq suspend/resume callbacks from dpm_{suspend|resume}()
+for handling suspend/resume of cpufreq governors and core.
 
-Cc: stable@vger.kernel.org v3.12+ ?
+There are multiple problems that are fixed by this patch:
+- Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
+  wasn't working well with suspend/resume as calls for removing non-boot CPUs
+  was turning out into a call to drivers ->target() which then tries to play
+  with regulators. But regulators and their I2C bus were already suspended and
+  this resulted in a failure. Many platforms have such problems, samsung, tegra,
+  etc.. They solved it with driver specific PM notifiers where they used to
+  disable their driver's ->target() routine.
+- Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found an issue where tunables
+  configuration for clusters/sockets with non-boot CPUs was getting lost after
+  suspend/resume, as we were notifying governors with CPUFREQ_GOV_POLICY_EXIT on
+  removal of the last cpu for that policy and so deallocating memory for
+  tunables.  This is fixed by this patch as we don't allow any operation on
+  governors after device suspend and before device resume now.
 
-> Signed-off-by: Steven Noonan <steven@uplinklabs.net>
-> ---
->  include/linux/compiler-gcc4.h | 6 +-----
->  1 file changed, 1 insertion(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> index ded4299..2507fd2 100644
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -75,11 +75,7 @@
->   *
->   * (asm goto is automatically volatile - the naming reflects this.)
->   */
-> -#if GCC_VERSION <= 40801
-> -# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
-> -#else
-> -# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
-> -#endif
-> +#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
->  
->  #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
->  #if GCC_VERSION >= 40400
+This is already tested by few people and so incorporating their Tested-by as
+well.
 
+I have tested this again on latest stuff on my thinkpad for several
+suspend/resume cycles.
+
+Viresh Kumar (7):
+  cpufreq: suspend governors on system suspend/hibernate
+  cpufreq: suspend governors from dpm_{suspend|resume}()
+  cpufreq: call driver's suspend/resume for each policy
+  cpufreq: Implement cpufreq_generic_suspend()
+  cpufreq: exynos: Use cpufreq_generic_suspend()
+  cpufreq: s5pv210: Use cpufreq_generic_suspend()
+  cpufreq: Tegra: Use cpufreq_generic_suspend()
+
+ drivers/base/power/main.c         |   5 ++
+ drivers/cpufreq/cpufreq.c         | 133 ++++++++++++++++++++++----------------
+ drivers/cpufreq/exynos-cpufreq.c  |  96 ++-------------------------
+ drivers/cpufreq/s5pv210-cpufreq.c |  49 +-------------
+ drivers/cpufreq/tegra-cpufreq.c   |  46 ++-----------
+ include/linux/cpufreq.h           |  11 ++++
+ 6 files changed, 108 insertions(+), 232 deletions(-)
+
+-- 
+1.7.12.rc2.18.g61b472e
 
