@@ -1,84 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaBMPf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:35:29 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:47010 "EHLO gloria.sntech.de"
+	id S1752054AbaBMPgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:36:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13839 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815AbaBMPf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:35:26 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Subject: [PATCH v2] regulator: gpio-regulator: fix forgotten gpios-states reading
-Date: Thu, 13 Feb 2014 16:34:32 +0100
-Message-ID: <2852394.5yIWXYGTNK@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140213111648.GP28112@sirena.org.uk>
-References: <9348920.79Ktlcbcai@phil> <20140213111648.GP28112@sirena.org.uk>
+	id S1751414AbaBMPgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 10:36:50 -0500
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
+	<20140211072738.GA24232@gmail.com>
+	<20140211234534.6bc34e57@gandalf.local.home>
+	<1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
+	<20140213102817.4bfd5eac@gandalf.local.home>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Thu, 13 Feb 2014 10:36:35 -0500
+In-Reply-To: <20140213102817.4bfd5eac@gandalf.local.home> (Steven Rostedt's message of "Thu, 13 Feb 2014 10:28:17 -0500")
+Message-ID: <y0mlhxfnhx8.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stuebner <heiko.stuebner@bqreaders.com>
 
-Commit 934624d6e9f0 ("regulator: gpio-regulator: do not open-code counting
-and access of dt array elements") forgot to convert the recently added
-gpios-states property using the same pattern.
+rostedt wrote:
 
-Convert this instance to use the of-helpers too, resolving the build error.
+> [...]
+> Oh! You are saying that if the kernel only *supports* signed modules,
+> and you load a module that is not signed, it will taint the kernel?
 
-Signed-off-by: Heiko Stuebner <heiko.stuebner@bqreaders.com>
----
-Looks like I missed the dev_warn addition from 2014-02-11.
-Patch applies against topic/gpio.
+Yes: this is the default for several distros.
 
- drivers/regulator/gpio-regulator.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index 9fd5561..989b23b 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -171,13 +171,14 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 	if (!config->gpios)
- 		return ERR_PTR(-ENOMEM);
- 
--	prop = of_find_property(np, "gpios-states", NULL);
--	if (prop) {
--		proplen = prop->length / sizeof(int);
--		if (proplen != config->nr_gpios) {
--			dev_warn(dev, "gpios <-> gpios-states mismatch\n");
--			prop = NULL;
--		}
-+	proplen = of_property_count_u32_elems(np, "gpios-states");
-+	/* optional property */
-+	if (proplen < 0)
-+		proplen = 0;
-+
-+	if (proplen > 0 && proplen != config->nr_gpios) {
-+		dev_warn(dev, "gpios <-> gpios-states mismatch\n");
-+		proplen = 0;
- 	}
- 
- 	for (i = 0; i < config->nr_gpios; i++) {
-@@ -185,8 +186,11 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 		if (gpio < 0)
- 			break;
- 		config->gpios[i].gpio = gpio;
--		if (prop && be32_to_cpup((int *)prop->value + i))
--			config->gpios[i].flags = GPIOF_OUT_INIT_HIGH;
-+		if (proplen > 0) {
-+			of_property_read_u32_index(np, "gpios-states", i, &ret);
-+			if (ret)
-+				config->gpios[i].flags = GPIOF_OUT_INIT_HIGH;
-+		}
- 	}
- 
- 	/* Fetch states. */
--- 
-1.7.10.4
-
-
+- FChE
