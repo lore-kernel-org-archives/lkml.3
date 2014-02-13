@@ -1,1107 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaBMWJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:09:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36712 "EHLO
+	id S1752103AbaBMWKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:10:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaBMWJd (ORCPT
+	with ESMTP id S1751185AbaBMWKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:09:33 -0500
-Date: Thu, 13 Feb 2014 14:10:50 -0800
+	Thu, 13 Feb 2014 17:10:09 -0500
+Date: Thu, 13 Feb 2014 14:11:27 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.80
-Message-ID: <20140213221050.GB23260@kroah.com>
-References: <20140213221008.GA23260@kroah.com>
+Subject: Linux 3.10.30
+Message-ID: <20140213221127.GA17470@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nFreZHaLTZJo0R7j"
 Content-Disposition: inline
-In-Reply-To: <20140213221008.GA23260@kroah.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 7e9c23f19fe4..7b6c9ec4922b 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 79
-+SUBLEVEL = 80
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index cf02e971467f..0bf5ec2d5818 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -33,6 +33,7 @@
- #include <linux/proc_fs.h>
- #include <linux/acpi.h>
- #include <linux/slab.h>
-+#include <linux/regulator/machine.h>
- #ifdef CONFIG_X86
- #include <asm/mpspec.h>
- #endif
-@@ -921,6 +922,14 @@ void __init acpi_early_init(void)
- 		goto error0;
- 	}
- 
-+	/*
-+	 * If the system is using ACPI then we can be reasonably
-+	 * confident that any regulators are managed by the firmware
-+	 * so tell the regulator core it has everything it needs to
-+	 * know.
-+	 */
-+	regulator_has_full_constraints();
-+
- 	return;
- 
-       error0:
-diff --git a/drivers/gpu/drm/radeon/evergreen_cs.c b/drivers/gpu/drm/radeon/evergreen_cs.c
-index 2cbd369e0fcb..7b4cfc54ddb4 100644
---- a/drivers/gpu/drm/radeon/evergreen_cs.c
-+++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-@@ -942,7 +942,10 @@ static int evergreen_cs_track_check(struct radeon_cs_parser *p)
- 	if (track->cb_dirty) {
- 		tmp = track->cb_target_mask;
- 		for (i = 0; i < 8; i++) {
--			if ((tmp >> (i * 4)) & 0xF) {
-+			u32 format = G_028C70_FORMAT(track->cb_color_info[i]);
-+
-+			if (format != V_028C70_COLOR_INVALID &&
-+			    (tmp >> (i * 4)) & 0xF) {
- 				/* at least one component is enabled */
- 				if (track->cb_color_bo[i] == NULL) {
- 					dev_warn(p->dev, "%s:%d mask 0x%08X | 0x%08X no cb for %d\n",
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 8c403d946acc..49b622904217 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2313,14 +2313,17 @@ void r600_fence_ring_emit(struct radeon_device *rdev,
- 			  struct radeon_fence *fence)
- {
- 	struct radeon_ring *ring = &rdev->ring[fence->ring];
-+	u32 cp_coher_cntl = PACKET3_TC_ACTION_ENA | PACKET3_VC_ACTION_ENA |
-+		PACKET3_SH_ACTION_ENA;
-+
-+	if (rdev->family >= CHIP_RV770)
-+		cp_coher_cntl |= PACKET3_FULL_CACHE_ENA;
- 
- 	if (rdev->wb.use_event) {
- 		u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
- 		/* flush read cache over gart */
- 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
--					PACKET3_VC_ACTION_ENA |
--					PACKET3_SH_ACTION_ENA);
-+		radeon_ring_write(ring, cp_coher_cntl);
- 		radeon_ring_write(ring, 0xFFFFFFFF);
- 		radeon_ring_write(ring, 0);
- 		radeon_ring_write(ring, 10); /* poll interval */
-@@ -2334,9 +2337,7 @@ void r600_fence_ring_emit(struct radeon_device *rdev,
- 	} else {
- 		/* flush read cache over gart */
- 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
--					PACKET3_VC_ACTION_ENA |
--					PACKET3_SH_ACTION_ENA);
-+		radeon_ring_write(ring, cp_coher_cntl);
- 		radeon_ring_write(ring, 0xFFFFFFFF);
- 		radeon_ring_write(ring, 0);
- 		radeon_ring_write(ring, 10); /* poll interval */
-diff --git a/drivers/gpu/drm/radeon/r600_cs.c b/drivers/gpu/drm/radeon/r600_cs.c
-index b8e12af304a9..3cd9b0e6f5b3 100644
---- a/drivers/gpu/drm/radeon/r600_cs.c
-+++ b/drivers/gpu/drm/radeon/r600_cs.c
-@@ -747,7 +747,10 @@ static int r600_cs_track_check(struct radeon_cs_parser *p)
- 	if (track->cb_dirty) {
- 		tmp = track->cb_target_mask;
- 		for (i = 0; i < 8; i++) {
--			if ((tmp >> (i * 4)) & 0xF) {
-+			u32 format = G_0280A0_FORMAT(track->cb_color_info[i]);
-+
-+			if (format != V_0280A0_COLOR_INVALID &&
-+			    (tmp >> (i * 4)) & 0xF) {
- 				/* at least one component is enabled */
- 				if (track->cb_color_bo[i] == NULL) {
- 					dev_warn(p->dev, "%s:%d mask 0x%08X | 0x%08X no cb for %d\n",
-diff --git a/drivers/gpu/drm/radeon/r600d.h b/drivers/gpu/drm/radeon/r600d.h
-index 12ceb829a03e..02bb23821ce2 100644
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -873,6 +873,7 @@
- #define	PACKET3_INDIRECT_BUFFER				0x32
- #define	PACKET3_SURFACE_SYNC				0x43
- #              define PACKET3_CB0_DEST_BASE_ENA    (1 << 6)
-+#              define PACKET3_FULL_CACHE_ENA       (1 << 20) /* r7xx+ only */
- #              define PACKET3_TC_ACTION_ENA        (1 << 23)
- #              define PACKET3_VC_ACTION_ENA        (1 << 24)
- #              define PACKET3_CB_ACTION_ENA        (1 << 25)
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index c54d295c6be3..6d0c32b9e8aa 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2785,6 +2785,10 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
- 	/* tell the bios not to handle mode switching */
- 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
- 
-+	/* clear the vbios dpms state */
-+	if (ASIC_IS_DCE4(rdev))
-+		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
-+
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
-diff --git a/drivers/gpu/drm/radeon/radeon_i2c.c b/drivers/gpu/drm/radeon/radeon_i2c.c
-index 6076e85aa5da..19d68c55c7e6 100644
---- a/drivers/gpu/drm/radeon/radeon_i2c.c
-+++ b/drivers/gpu/drm/radeon/radeon_i2c.c
-@@ -1020,6 +1020,9 @@ void radeon_i2c_destroy(struct radeon_i2c_chan *i2c)
- /* Add the default buses */
- void radeon_i2c_init(struct radeon_device *rdev)
- {
-+	if (radeon_hw_i2c)
-+		DRM_INFO("hw_i2c forced on, you may experience display detection problems!\n");
-+
- 	if (rdev->is_atom_bios)
- 		radeon_atombios_i2c_init(rdev);
- 	else
-diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
-index bf6ca2d8a28b..4c5a7934b3e3 100644
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -587,8 +587,10 @@ void radeon_pm_resume(struct radeon_device *rdev)
- 	rdev->pm.current_clock_mode_index = 0;
- 	rdev->pm.current_sclk = rdev->pm.default_sclk;
- 	rdev->pm.current_mclk = rdev->pm.default_mclk;
--	rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
--	rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
-+	if (rdev->pm.power_state) {
-+		rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
-+		rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
-+	}
- 	if (rdev->pm.pm_method == PM_METHOD_DYNPM
- 	    && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
- 		rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
-diff --git a/drivers/infiniband/hw/qib/qib_ud.c b/drivers/infiniband/hw/qib/qib_ud.c
-index 828609fa4d28..c0d93d474ccb 100644
---- a/drivers/infiniband/hw/qib/qib_ud.c
-+++ b/drivers/infiniband/hw/qib/qib_ud.c
-@@ -57,13 +57,20 @@ static void qib_ud_loopback(struct qib_qp *sqp, struct qib_swqe *swqe)
- 	struct qib_sge *sge;
- 	struct ib_wc wc;
- 	u32 length;
-+	enum ib_qp_type sqptype, dqptype;
- 
- 	qp = qib_lookup_qpn(ibp, swqe->wr.wr.ud.remote_qpn);
- 	if (!qp) {
- 		ibp->n_pkt_drops++;
- 		return;
- 	}
--	if (qp->ibqp.qp_type != sqp->ibqp.qp_type ||
-+
-+	sqptype = sqp->ibqp.qp_type == IB_QPT_GSI ?
-+			IB_QPT_UD : sqp->ibqp.qp_type;
-+	dqptype = qp->ibqp.qp_type == IB_QPT_GSI ?
-+			IB_QPT_UD : qp->ibqp.qp_type;
-+
-+	if (dqptype != sqptype ||
- 	    !(ib_qib_state_ops[qp->state] & QIB_PROCESS_RECV_OK)) {
- 		ibp->n_pkt_drops++;
- 		goto drop;
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index abc6ac855598..4e1c6bfc9c8d 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -913,7 +913,7 @@ static void dma_pte_free_level(struct dmar_domain *domain, int level,
- 
- 		/* If range covers entire pagetable, free it */
- 		if (!(start_pfn > level_pfn ||
--		      last_pfn < level_pfn + level_size(level))) {
-+		      last_pfn < level_pfn + level_size(level) - 1)) {
- 			dma_clear_pte(pte);
- 			domain_flush_cache(domain, pte, sizeof(*pte));
- 			free_pgtable_page(level_pte);
-diff --git a/drivers/md/dm-sysfs.c b/drivers/md/dm-sysfs.c
-index 84d2b91e4efb..e0cc5d6a9e46 100644
---- a/drivers/md/dm-sysfs.c
-+++ b/drivers/md/dm-sysfs.c
-@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_ops = {
- 	.show	= dm_attr_show,
- };
- 
-+static void dm_kobject_release(struct kobject *kobj)
-+{
-+	complete(dm_get_completion_from_kobject(kobj));
-+}
-+
- /*
-  * dm kobject is embedded in mapped_device structure
-  * no need to define release function here
-@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_ops = {
- static struct kobj_type dm_ktype = {
- 	.sysfs_ops	= &dm_sysfs_ops,
- 	.default_attrs	= dm_attrs,
-+	.release	= dm_kobject_release,
- };
- 
- /*
-@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *md)
-  */
- void dm_sysfs_exit(struct mapped_device *md)
- {
--	kobject_put(dm_kobject(md));
-+	struct kobject *kobj = dm_kobject(md);
-+	kobject_put(kobj);
-+	wait_for_completion(dm_get_completion_from_kobject(kobj));
- }
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 32370ea32e22..d26fddf7c1fb 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -194,6 +194,9 @@ struct mapped_device {
- 	/* sysfs handle */
- 	struct kobject kobj;
- 
-+	/* wait until the kobject is released */
-+	struct completion kobj_completion;
-+
- 	/* zero-length flush that will be cloned and submitted to targets */
- 	struct bio flush_bio;
- };
-@@ -1891,6 +1894,7 @@ static struct mapped_device *alloc_dev(int minor)
- 	init_waitqueue_head(&md->wait);
- 	INIT_WORK(&md->work, dm_wq_work);
- 	init_waitqueue_head(&md->eventq);
-+	init_completion(&md->kobj_completion);
- 
- 	md->disk->major = _major;
- 	md->disk->first_minor = minor;
-@@ -2705,6 +2709,13 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
- 	return md;
- }
- 
-+struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
-+{
-+	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
-+
-+	return &md->kobj_completion;
-+}
-+
- int dm_suspended_md(struct mapped_device *md)
- {
- 	return test_bit(DMF_SUSPENDED, &md->flags);
-diff --git a/drivers/md/dm.h b/drivers/md/dm.h
-index b7dacd59d8d7..1174e9654882 100644
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -15,6 +15,7 @@
- #include <linux/list.h>
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
-+#include <linux/completion.h>
- 
- /*
-  * Suspend feature flags
-@@ -123,6 +124,7 @@ int dm_sysfs_init(struct mapped_device *md);
- void dm_sysfs_exit(struct mapped_device *md);
- struct kobject *dm_kobject(struct mapped_device *md);
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
-+struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
- 
- /*
-  * Targets for linear and striped mappings
-diff --git a/drivers/md/persistent-data/dm-space-map-common.c b/drivers/md/persistent-data/dm-space-map-common.c
-index ff3beed6ad2d..79c02d90ce39 100644
---- a/drivers/md/persistent-data/dm-space-map-common.c
-+++ b/drivers/md/persistent-data/dm-space-map-common.c
-@@ -244,6 +244,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * We need to set this before the dm_tm_new_block() call below.
-+	 */
-+	ll->nr_blocks = nr_blocks;
- 	for (i = old_blocks; i < blocks; i++) {
- 		struct dm_block *b;
- 		struct disk_index_entry idx;
-@@ -251,6 +255,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
- 		if (r < 0)
- 			return r;
-+
- 		idx.blocknr = cpu_to_le64(dm_block_location(b));
- 
- 		r = dm_tm_unlock(ll->tm, b);
-@@ -265,7 +270,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 			return r;
- 	}
- 
--	ll->nr_blocks = nr_blocks;
- 	return 0;
- }
- 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index 2a822d9e4684..e6f08d945709 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1022,11 +1022,22 @@ static void atmci_start_request(struct atmel_mci *host,
- 	iflags |= ATMCI_CMDRDY;
- 	cmd = mrq->cmd;
- 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
--	atmci_send_command(host, cmd, cmdflags);
-+
-+	/*
-+	 * DMA transfer should be started before sending the command to avoid
-+	 * unexpected errors especially for read operations in SDIO mode.
-+	 * Unfortunately, in PDC mode, command has to be sent before starting
-+	 * the transfer.
-+	 */
-+	if (host->submit_data != &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
- 
- 	if (data)
- 		host->submit_data(host, data);
- 
-+	if (host->submit_data == &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
-+
- 	if (mrq->stop) {
- 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
- 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
-diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
-index 6f87c7464eca..a06231f25f06 100644
---- a/drivers/mtd/nand/mxc_nand.c
-+++ b/drivers/mtd/nand/mxc_nand.c
-@@ -596,7 +596,6 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
- 		ecc_stat >>= 4;
- 	} while (--no_subpages);
- 
--	mtd->ecc_stats.corrected += ret;
- 	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
- 
- 	return ret;
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index d08c0d8ec22e..a7f6dcea0d76 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1984,10 +1984,6 @@ void pci_enable_ari(struct pci_dev *dev)
- 	if (pcie_ari_disabled || !pci_is_pcie(dev) || dev->devfn)
- 		return;
- 
--	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI);
--	if (!pos)
--		return;
--
- 	bridge = dev->bus->self;
- 	if (!bridge || !pci_is_pcie(bridge))
- 		return;
-@@ -2006,10 +2002,14 @@ void pci_enable_ari(struct pci_dev *dev)
- 		return;
- 
- 	pci_read_config_word(bridge, pos + PCI_EXP_DEVCTL2, &ctrl);
--	ctrl |= PCI_EXP_DEVCTL2_ARI;
-+	if (pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI)) {
-+		ctrl |= PCI_EXP_DEVCTL2_ARI;
-+		bridge->ari_enabled = 1;
-+	} else {
-+		ctrl &= ~PCI_EXP_DEVCTL2_ARI;
-+		bridge->ari_enabled = 0;
-+	}
- 	pci_write_config_word(bridge, pos + PCI_EXP_DEVCTL2, ctrl);
--
--	bridge->ari_enabled = 1;
- }
- 
- /**
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index 5f8844c1eaad..5f2eddbbff27 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -34,11 +34,11 @@
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
- #include <linux/platform_device.h>
--#include <linux/mod_devicetable.h>
- #include <linux/log2.h>
- #include <linux/pm.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/dmi.h>
- 
- /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
- #include <asm-generic/rtc.h>
-@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device *dev, struct rtc_wkalrm *t)
- 	return 0;
- }
- 
-+/*
-+ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
-+ */
-+static bool alarm_disable_quirk;
-+
-+static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
-+{
-+	alarm_disable_quirk = true;
-+	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
-+	pr_info("RTC alarms disabled\n");
-+	return 0;
-+}
-+
-+static const struct dmi_system_id rtc_quirks[] __initconst = {
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "IBM Truman",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
-+		},
-+	},
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "Gigabyte GA-990XA-UD3",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR,
-+					"Gigabyte Technology Co., Ltd."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
-+		},
-+	},
-+	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "Toshiba Satellite L300",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
-+		},
-+	},
-+	{}
-+};
-+
- static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
- {
- 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
-@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
- 	if (!is_valid_irq(cmos->irq))
- 		return -EINVAL;
- 
-+	if (alarm_disable_quirk)
-+		return 0;
-+
- 	spin_lock_irqsave(&rtc_lock, flags);
- 
- 	if (enabled)
-@@ -1166,6 +1214,8 @@ static int __init cmos_init(void)
- 			platform_driver_registered = true;
- 	}
- 
-+	dmi_check_system(rtc_quirks);
-+
- 	if (retval == 0)
- 		return 0;
- 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 3d8f662e4fe9..b7a034a3259e 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -572,7 +572,9 @@ static void spi_pump_messages(struct kthread_work *work)
- 	ret = master->transfer_one_message(master, master->cur_msg);
- 	if (ret) {
- 		dev_err(&master->dev,
--			"failed to transfer one message from queue\n");
-+			"failed to transfer one message from queue: %d\n", ret);
-+		master->cur_msg->status = ret;
-+		spi_finalize_current_message(master);
- 		return;
- 	}
- }
-diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
-index 1585db1aa365..a73bc268907f 100644
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -103,7 +103,7 @@ int ore_verify_layout(unsigned total_comps, struct ore_layout *layout)
- 
- 	layout->max_io_length =
- 		(BIO_MAX_PAGES_KMALLOC * PAGE_SIZE - layout->stripe_unit) *
--							layout->group_width;
-+					(layout->group_width - layout->parity);
- 	if (layout->parity) {
- 		unsigned stripe_length =
- 				(layout->group_width - layout->parity) *
-@@ -286,7 +286,8 @@ int  ore_get_rw_state(struct ore_layout *layout, struct ore_components *oc,
- 	if (length) {
- 		ore_calc_stripe_info(layout, offset, length, &ios->si);
- 		ios->length = ios->si.length;
--		ios->nr_pages = (ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
-+		ios->nr_pages = ((ios->offset & (PAGE_SIZE - 1)) +
-+				 ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
- 		if (layout->parity)
- 			_ore_post_alloc_raid_stuff(ios);
- 	}
-@@ -536,6 +537,7 @@ void ore_calc_stripe_info(struct ore_layout *layout, u64 file_offset,
- 	u64	H = LmodS - G * T;
- 
- 	u32	N = div_u64(H, U);
-+	u32	Nlast;
- 
- 	/* "H - (N * U)" is just "H % U" so it's bound to u32 */
- 	u32	C = (u32)(H - (N * U)) / stripe_unit + G * group_width;
-@@ -568,6 +570,10 @@ void ore_calc_stripe_info(struct ore_layout *layout, u64 file_offset,
- 	si->length = T - H;
- 	if (si->length > length)
- 		si->length = length;
-+
-+	Nlast = div_u64(H + si->length + U - 1, U);
-+	si->maxdevUnits = Nlast - N;
-+
- 	si->M = M;
- }
- EXPORT_SYMBOL(ore_calc_stripe_info);
-@@ -583,13 +589,16 @@ int _ore_add_stripe_unit(struct ore_io_state *ios,  unsigned *cur_pg,
- 	int ret;
- 
- 	if (per_dev->bio == NULL) {
--		unsigned pages_in_stripe = ios->layout->group_width *
--					(ios->layout->stripe_unit / PAGE_SIZE);
--		unsigned nr_pages = ios->nr_pages * ios->layout->group_width /
--					(ios->layout->group_width -
--					 ios->layout->parity);
--		unsigned bio_size = (nr_pages + pages_in_stripe) /
--					ios->layout->group_width;
-+		unsigned bio_size;
-+
-+		if (!ios->reading) {
-+			bio_size = ios->si.maxdevUnits;
-+		} else {
-+			bio_size = (ios->si.maxdevUnits + 1) *
-+			     (ios->layout->group_width - ios->layout->parity) /
-+			     ios->layout->group_width;
-+		}
-+		bio_size *= (ios->layout->stripe_unit / PAGE_SIZE);
- 
- 		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
- 		if (unlikely(!per_dev->bio)) {
-@@ -609,8 +618,12 @@ int _ore_add_stripe_unit(struct ore_io_state *ios,  unsigned *cur_pg,
- 		added_len = bio_add_pc_page(q, per_dev->bio, pages[pg],
- 					    pglen, pgbase);
- 		if (unlikely(pglen != added_len)) {
--			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=%u\n",
--				   per_dev->bio->bi_vcnt);
-+			/* If bi_vcnt == bi_max then this is a SW BUG */
-+			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=0x%x "
-+				   "bi_max=0x%x BIO_MAX=0x%x cur_len=0x%x\n",
-+				   per_dev->bio->bi_vcnt,
-+				   per_dev->bio->bi_max_vecs,
-+				   BIO_MAX_PAGES_KMALLOC, cur_len);
- 			ret = -ENOMEM;
- 			goto out;
- 		}
-@@ -1099,7 +1112,7 @@ int ore_truncate(struct ore_layout *layout, struct ore_components *oc,
- 		size_attr->attr = g_attr_logical_length;
- 		size_attr->attr.val_ptr = &size_attr->newsize;
- 
--		ORE_DBGMSG("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
-+		ORE_DBGMSG2("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
- 			     _LLU(oc->comps->obj.id), _LLU(obj_size), i);
- 		ret = _truncate_mirrors(ios, i * ios->layout->mirrors_p1,
- 					&size_attr->attr);
-diff --git a/fs/hpfs/dir.c b/fs/hpfs/dir.c
-index 2fa0089a02a8..46549c778001 100644
---- a/fs/hpfs/dir.c
-+++ b/fs/hpfs/dir.c
-@@ -33,25 +33,27 @@ static loff_t hpfs_dir_lseek(struct file *filp, loff_t off, int whence)
- 	if (whence == SEEK_DATA || whence == SEEK_HOLE)
- 		return -EINVAL;
- 
-+	mutex_lock(&i->i_mutex);
- 	hpfs_lock(s);
- 
- 	/*printk("dir lseek\n");*/
- 	if (new_off == 0 || new_off == 1 || new_off == 11 || new_off == 12 || new_off == 13) goto ok;
--	mutex_lock(&i->i_mutex);
- 	pos = ((loff_t) hpfs_de_as_down_as_possible(s, hpfs_inode->i_dno) << 4) + 1;
- 	while (pos != new_off) {
- 		if (map_pos_dirent(i, &pos, &qbh)) hpfs_brelse4(&qbh);
- 		else goto fail;
- 		if (pos == 12) goto fail;
- 	}
--	mutex_unlock(&i->i_mutex);
-+	hpfs_add_pos(i, &filp->f_pos);
- ok:
-+	filp->f_pos = new_off;
- 	hpfs_unlock(s);
--	return filp->f_pos = new_off;
--fail:
- 	mutex_unlock(&i->i_mutex);
-+	return new_off;
-+fail:
- 	/*printk("illegal lseek: %016llx\n", new_off);*/
- 	hpfs_unlock(s);
-+	mutex_unlock(&i->i_mutex);
- 	return -ESPIPE;
- }
- 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index a7ea637bf215..d5faa264ecc2 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6394,7 +6394,7 @@ nfs41_proc_secinfo_no_name(struct nfs_server *server, struct nfs_fh *fhandle,
- 		switch (err) {
- 		case 0:
- 		case -NFS4ERR_WRONGSEC:
--		case -NFS4ERR_NOTSUPP:
-+		case -ENOTSUPP:
- 			goto out;
- 		default:
- 			err = nfs4_handle_exception(server, err, &exception);
-@@ -6426,7 +6426,7 @@ nfs41_find_root_sec(struct nfs_server *server, struct nfs_fh *fhandle,
- 	 * Fall back on "guess and check" method if
- 	 * the server doesn't support SECINFO_NO_NAME
- 	 */
--	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
-+	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
- 		err = nfs4_find_root_sec(server, fhandle, info);
- 		goto out_freepage;
- 	}
-diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
-index c8ac9a1461c2..8cf722f2e2eb 100644
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -2955,7 +2955,8 @@ out_overflow:
- 	return -EIO;
- }
- 
--static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
-+static bool __decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected,
-+		int *nfs_retval)
- {
- 	__be32 *p;
- 	uint32_t opnum;
-@@ -2965,19 +2966,32 @@ static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
- 	if (unlikely(!p))
- 		goto out_overflow;
- 	opnum = be32_to_cpup(p++);
--	if (opnum != expected) {
--		dprintk("nfs: Server returned operation"
--			" %d but we issued a request for %d\n",
--				opnum, expected);
--		return -EIO;
--	}
-+	if (unlikely(opnum != expected))
-+		goto out_bad_operation;
- 	nfserr = be32_to_cpup(p);
--	if (nfserr != NFS_OK)
--		return nfs4_stat_to_errno(nfserr);
--	return 0;
-+	if (nfserr == NFS_OK)
-+		*nfs_retval = 0;
-+	else
-+		*nfs_retval = nfs4_stat_to_errno(nfserr);
-+	return true;
-+out_bad_operation:
-+	dprintk("nfs: Server returned operation"
-+		" %d but we issued a request for %d\n",
-+			opnum, expected);
-+	*nfs_retval = -EREMOTEIO;
-+	return false;
- out_overflow:
- 	print_overflow_msg(__func__, xdr);
--	return -EIO;
-+	*nfs_retval = -EIO;
-+	return false;
-+}
-+
-+static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
-+{
-+	int retval;
-+
-+	__decode_op_hdr(xdr, expected, &retval);
-+	return retval;
- }
- 
- /* Dummy routine */
-@@ -4680,11 +4694,12 @@ static int decode_open(struct xdr_stream *xdr, struct nfs_openres *res)
- 	uint32_t savewords, bmlen, i;
- 	int status;
- 
--	status = decode_op_hdr(xdr, OP_OPEN);
--	if (status != -EIO)
--		nfs_increment_open_seqid(status, res->seqid);
--	if (!status)
--		status = decode_stateid(xdr, &res->stateid);
-+	if (!__decode_op_hdr(xdr, OP_OPEN, &status))
-+		return status;
-+	nfs_increment_open_seqid(status, res->seqid);
-+	if (status)
-+		return status;
-+	status = decode_stateid(xdr, &res->stateid);
- 	if (unlikely(status))
- 		return status;
- 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 4f334d51b38b..acc4ff3702cf 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -487,7 +487,7 @@ static inline void audit_syscall_exit(void *pt_regs)
- {
- 	if (unlikely(current->audit_context)) {
- 		int success = is_syscall_success(pt_regs);
--		int return_code = regs_return_value(pt_regs);
-+		long return_code = regs_return_value(pt_regs);
- 
- 		__audit_syscall_exit(success, return_code);
- 	}
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e132a2d24740..1c2470de8052 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1237,6 +1237,7 @@ struct sched_entity {
- struct sched_rt_entity {
- 	struct list_head run_list;
- 	unsigned long timeout;
-+	unsigned long watchdog_stamp;
- 	unsigned int time_slice;
- 	int nr_cpus_allowed;
- 
-diff --git a/include/scsi/osd_ore.h b/include/scsi/osd_ore.h
-index a5f9b960dfc8..6ca3265a4dca 100644
---- a/include/scsi/osd_ore.h
-+++ b/include/scsi/osd_ore.h
-@@ -102,6 +102,7 @@ struct ore_striping_info {
- 	unsigned unit_off;
- 	unsigned cur_pg;
- 	unsigned cur_comp;
-+	unsigned maxdevUnits;
- };
- 
- struct ore_io_state;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3a5b31796edf..7522816cd7f6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5301,9 +5301,6 @@ static void migrate_tasks(unsigned int dead_cpu)
- 	 */
- 	rq->stop = NULL;
- 
--	/* Ensure any throttled groups are reachable by pick_next_task */
--	unthrottle_offline_cfs_rqs(rq);
--
- 	for ( ; ; ) {
- 		/*
- 		 * There's this thread running, bail when that's the only
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 363df3702c20..93be350c9b63 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2071,7 +2071,7 @@ static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- 	hrtimer_cancel(&cfs_b->slack_timer);
- }
- 
--void unthrottle_offline_cfs_rqs(struct rq *rq)
-+static void unthrottle_offline_cfs_rqs(struct rq *rq)
- {
- 	struct cfs_rq *cfs_rq;
- 
-@@ -2125,7 +2125,7 @@ static inline struct cfs_bandwidth *tg_cfs_bandwidth(struct task_group *tg)
- 	return NULL;
- }
- static inline void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b) {}
--void unthrottle_offline_cfs_rqs(struct rq *rq) {}
-+static inline void unthrottle_offline_cfs_rqs(struct rq *rq) {}
- 
- #endif /* CONFIG_CFS_BANDWIDTH */
- 
-@@ -5171,6 +5171,9 @@ static void rq_online_fair(struct rq *rq)
- static void rq_offline_fair(struct rq *rq)
- {
- 	update_sysctl();
-+
-+	/* Ensure any throttled groups are reachable by pick_next_task */
-+	unthrottle_offline_cfs_rqs(rq);
- }
- 
- #endif /* CONFIG_SMP */
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 580d05b1784d..2b0131835714 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -685,6 +685,7 @@ balanced:
- 		 * runtime - in which case borrowing doesn't make sense.
- 		 */
- 		rt_rq->rt_runtime = RUNTIME_INF;
-+		rt_rq->rt_throttled = 0;
- 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
- 		raw_spin_unlock(&rt_b->rt_runtime_lock);
- 	}
-@@ -782,6 +783,19 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
- 	const struct cpumask *span;
- 
- 	span = sched_rt_period_mask();
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * FIXME: isolated CPUs should really leave the root task group,
-+	 * whether they are isolcpus or were isolated via cpusets, lest
-+	 * the timer run on a CPU which does not service all runqueues,
-+	 * potentially leaving other CPUs indefinitely throttled.  If
-+	 * isolation is really required, the user will turn the throttle
-+	 * off to kill the perturbations it causes anyway.  Meanwhile,
-+	 * this maintains functionality for boot and/or troubleshooting.
-+	 */
-+	if (rt_b == &root_task_group.rt_bandwidth)
-+		span = cpu_online_mask;
-+#endif
- 	for_each_cpu(i, span) {
- 		int enqueue = 0;
- 		struct rt_rq *rt_rq = sched_rt_period_rt_rq(rt_b, i);
-@@ -1988,7 +2002,11 @@ static void watchdog(struct rq *rq, struct task_struct *p)
- 	if (soft != RLIM_INFINITY) {
- 		unsigned long next;
- 
--		p->rt.timeout++;
-+		if (p->rt.watchdog_stamp != jiffies) {
-+			p->rt.timeout++;
-+			p->rt.watchdog_stamp = jiffies;
-+		}
-+
- 		next = DIV_ROUND_UP(min(soft, hard), USEC_PER_SEC/HZ);
- 		if (p->rt.timeout > next)
- 			p->cputime_expires.sched_exp = p->se.sum_exec_runtime;
-@@ -1997,6 +2015,8 @@ static void watchdog(struct rq *rq, struct task_struct *p)
- 
- static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
- {
-+	struct sched_rt_entity *rt_se = &p->rt;
-+
- 	update_curr_rt(rq);
- 
- 	watchdog(rq, p);
-@@ -2014,12 +2034,15 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
- 	p->rt.time_slice = RR_TIMESLICE;
- 
- 	/*
--	 * Requeue to the end of queue if we are not the only element
--	 * on the queue:
-+	 * Requeue to the end of queue if we (and all of our ancestors) are the
-+	 * only element on the queue
- 	 */
--	if (p->rt.run_list.prev != p->rt.run_list.next) {
--		requeue_task_rt(rq, p, 0);
--		set_tsk_need_resched(p);
-+	for_each_sched_rt_entity(rt_se) {
-+		if (rt_se->run_list.prev != rt_se->run_list.next) {
-+			requeue_task_rt(rq, p, 0);
-+			set_tsk_need_resched(p);
-+			return;
-+		}
- 	}
- }
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 4e2bd6c32da7..a70d8908a6d3 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1138,7 +1138,6 @@ extern void print_rt_stats(struct seq_file *m, int cpu);
- 
- extern void init_cfs_rq(struct cfs_rq *cfs_rq);
- extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
--extern void unthrottle_offline_cfs_rqs(struct rq *rq);
- 
- extern void cfs_bandwidth_usage_inc(void);
- extern void cfs_bandwidth_usage_dec(void);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index eff0b1e96331..32f0cb8f1fe8 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -988,7 +988,8 @@ static void timekeeping_adjust(s64 offset)
-  *
-  * Returns the unconsumed cycles.
-  */
--static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
-+static cycle_t logarithmic_accumulation(cycle_t offset, int shift,
-+							unsigned int *clock_set)
- {
- 	u64 nsecps = (u64)NSEC_PER_SEC << timekeeper.shift;
- 	u64 raw_nsecs;
-@@ -1010,7 +1011,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 		timekeeper.xtime.tv_sec += leap;
- 		timekeeper.wall_to_monotonic.tv_sec -= leap;
- 		if (leap)
--			clock_was_set_delayed();
-+			*clock_set = 1;
- 	}
- 
- 	/* Accumulate raw time */
-@@ -1042,6 +1043,7 @@ static void update_wall_time(void)
- 	struct clocksource *clock;
- 	cycle_t offset;
- 	int shift = 0, maxshift;
-+	unsigned int clock_set = 0;
- 	unsigned long flags;
- 
- 	write_seqlock_irqsave(&timekeeper.lock, flags);
-@@ -1077,7 +1079,7 @@ static void update_wall_time(void)
- 	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
- 	shift = min(shift, maxshift);
- 	while (offset >= timekeeper.cycle_interval) {
--		offset = logarithmic_accumulation(offset, shift);
-+		offset = logarithmic_accumulation(offset, shift, &clock_set);
- 		if(offset < timekeeper.cycle_interval<<shift)
- 			shift--;
- 	}
-@@ -1131,7 +1133,7 @@ static void update_wall_time(void)
- 		timekeeper.xtime.tv_sec += leap;
- 		timekeeper.wall_to_monotonic.tv_sec -= leap;
- 		if (leap)
--			clock_was_set_delayed();
-+			clock_set = 1;
- 	}
- 
- 	timekeeping_update(false);
-@@ -1139,6 +1141,8 @@ static void update_wall_time(void)
- out:
- 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
- 
-+	if (clock_set)
-+		clock_was_set_delayed();
- }
- 
- /**
-@@ -1193,7 +1197,7 @@ void get_monotonic_boottime(struct timespec *ts)
- 	} while (read_seqretry(&timekeeper.lock, seq));
- 
- 	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec + sleep.tv_sec,
--			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
-+		(s64)ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
- }
- EXPORT_SYMBOL_GPL(get_monotonic_boottime);
- 
-diff --git a/mm/slub.c b/mm/slub.c
-index 71de9b5685fa..c6f225fa9a87 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -4520,7 +4520,13 @@ static ssize_t show_slab_objects(struct kmem_cache *s,
- 			page = c->partial;
- 
- 			if (page) {
--				x = page->pobjects;
-+				node = page_to_nid(page);
-+				if (flags & SO_TOTAL)
-+					WARN_ON_ONCE(1);
-+				else if (flags & SO_OBJECTS)
-+					WARN_ON_ONCE(1);
-+				else
-+					x = page->pages;
- 				total += x;
- 				nodes[node] += x;
- 			}
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index f21486a2ac48..0658fb926983 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1331,9 +1331,13 @@ call_refreshresult(struct rpc_task *task)
- 	task->tk_action = call_refresh;
- 	switch (status) {
- 	case 0:
--		if (rpcauth_uptodatecred(task))
-+		if (rpcauth_uptodatecred(task)) {
- 			task->tk_action = call_allocate;
--		return;
-+			return;
-+		}
-+		/* Use rate-limiting and a max number of retries if refresh
-+		 * had status 0 but failed to update the cred.
-+		 */
- 	case -ETIMEDOUT:
- 		rpc_delay(task, 3*HZ);
- 	case -EAGAIN:
-diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-index a7f61d52f05c..1249e17b61ff 100644
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -1914,7 +1914,19 @@ static int filename_trans_read(struct policydb *p, void *fp)
- 		if (rc)
- 			goto out;
- 
--		hashtab_insert(p->filename_trans, ft, otype);
-+		rc = hashtab_insert(p->filename_trans, ft, otype);
-+		if (rc) {
-+			/*
-+			 * Do not return -EEXIST to the caller, or the system
-+			 * will not boot.
-+			 */
-+			if (rc != -EEXIST)
-+				goto out;
-+			/* But free memory to avoid memory leak. */
-+			kfree(ft);
-+			kfree(name);
-+			kfree(otype);
-+		}
- 	}
- 	hash_eval(p->filename_trans, "filenametr");
- 	return 0;
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index ab2f682fd44c..00772661894c 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -34,6 +34,7 @@
- #include <string.h>
- #include <ctype.h>
- #include <sched.h>
-+#include <cpuid.h>
- 
- #define MSR_TSC	0x10
- #define MSR_NEHALEM_PLATFORM_INFO	0xCE
-@@ -932,7 +933,7 @@ void check_cpuid()
- 
- 	eax = ebx = ecx = edx = 0;
- 
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0));
-+	__get_cpuid(0, &max_level, &ebx, &ecx, &edx);
- 
- 	if (ebx == 0x756e6547 && edx == 0x49656e69 && ecx == 0x6c65746e)
- 		genuine_intel = 1;
-@@ -941,7 +942,7 @@ void check_cpuid()
- 		fprintf(stderr, "%.4s%.4s%.4s ",
- 			(char *)&ebx, (char *)&edx, (char *)&ecx);
- 
--	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
-+	__get_cpuid(1, &fms, &ebx, &ecx, &edx);
- 	family = (fms >> 8) & 0xf;
- 	model = (fms >> 4) & 0xf;
- 	stepping = fms & 0xf;
-@@ -963,7 +964,7 @@ void check_cpuid()
- 	 * This check is valid for both Intel and AMD.
- 	 */
- 	ebx = ecx = edx = 0;
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x80000000));
-+	__get_cpuid(0x80000000, &max_level, &ebx, &ecx, &edx);
- 
- 	if (max_level < 0x80000007) {
- 		fprintf(stderr, "CPUID: no invariant TSC (max_level 0x%x)\n", max_level);
-@@ -974,7 +975,7 @@ void check_cpuid()
- 	 * Non-Stop TSC is advertised by CPUID.EAX=0x80000007: EDX.bit8
- 	 * this check is valid for both Intel and AMD
- 	 */
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x80000007));
-+	__get_cpuid(0x80000007, &eax, &ebx, &ecx, &edx);
- 	has_invariant_tsc = edx & (1 << 8);
- 
- 	if (!has_invariant_tsc) {
-@@ -987,7 +988,7 @@ void check_cpuid()
- 	 * this check is valid for both Intel and AMD
- 	 */
- 
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x6));
-+	__get_cpuid(0x6, &eax, &ebx, &ecx, &edx);
- 	has_aperf = ecx & (1 << 0);
- 	if (!has_aperf) {
- 		fprintf(stderr, "No APERF MSR\n");
+
+--nFreZHaLTZJo0R7j
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.10.30 kernel.
+
+All users of the 3.10 kernel series must upgrade.
+
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Documentation/filesystems/proc.txt                 |    4=20
+ Documentation/i2c/busses/i2c-i801                  |    1=20
+ Makefile                                           |    2=20
+ arch/sh/kernel/kgdb.c                              |    1=20
+ arch/tile/include/asm/compat.h                     |    1=20
+ arch/xtensa/platforms/xtfpga/setup.c               |   12 -
+ drivers/acpi/bus.c                                 |    9 +
+ drivers/cpufreq/intel_pstate.c                     |   48 +++--
+ drivers/eisa/eisa-bus.c                            |   26 +--
+ drivers/gpu/drm/cirrus/cirrus_mode.c               |    4=20
+ drivers/gpu/drm/i915/i915_dma.c                    |    1=20
+ drivers/gpu/drm/i915/i915_gem_stolen.c             |    2=20
+ drivers/gpu/drm/i915/i915_reg.h                    |   10 -
+ drivers/gpu/drm/i915/intel_dp.c                    |   40 +++-
+ drivers/gpu/drm/i915/intel_ringbuffer.c            |   12 -
+ drivers/gpu/drm/mgag200/mgag200_mode.c             |    4=20
+ drivers/gpu/drm/nouveau/nouveau_bo.c               |   33 ----
+ drivers/gpu/drm/radeon/atombios_crtc.c             |    5=20
+ drivers/gpu/drm/radeon/evergreen.c                 |    4=20
+ drivers/gpu/drm/radeon/evergreen_cs.c              |    5=20
+ drivers/gpu/drm/radeon/ni.c                        |   16 -
+ drivers/gpu/drm/radeon/nid.h                       |    1=20
+ drivers/gpu/drm/radeon/r600.c                      |   13 -
+ drivers/gpu/drm/radeon/r600_cs.c                   |    5=20
+ drivers/gpu/drm/radeon/r600d.h                     |    1=20
+ drivers/gpu/drm/radeon/radeon_atombios.c           |    4=20
+ drivers/gpu/drm/radeon/radeon_i2c.c                |    3=20
+ drivers/gpu/drm/radeon/radeon_pm.c                 |    6=20
+ drivers/gpu/drm/radeon/si.c                        |    2=20
+ drivers/gpu/drm/radeon/sid.h                       |    2=20
+ drivers/i2c/busses/Kconfig                         |    1=20
+ drivers/i2c/busses/i2c-i801.c                      |    3=20
+ drivers/infiniband/hw/qib/qib_ud.c                 |    9 -
+ drivers/iommu/intel-iommu.c                        |    2=20
+ drivers/md/Kconfig                                 |    4=20
+ drivers/md/Makefile                                |    1=20
+ drivers/md/dm-builtin.c                            |   48 +++++
+ drivers/md/dm-sysfs.c                              |    5=20
+ drivers/md/dm-thin-metadata.c                      |   20 ++
+ drivers/md/dm-thin-metadata.h                      |    2=20
+ drivers/md/dm-thin.c                               |   31 ++-
+ drivers/md/dm.c                                    |   15 -
+ drivers/md/dm.h                                    |   17 ++
+ drivers/md/persistent-data/dm-space-map-common.c   |    6=20
+ drivers/md/persistent-data/dm-space-map-metadata.c |   28 ++-
+ drivers/media/dvb-frontends/dib8000.c              |   42 +++--
+ drivers/media/dvb-frontends/m88rs2000.c            |  117 ++++++++++----
+ drivers/media/dvb-frontends/m88rs2000.h            |    2=20
+ drivers/media/dvb-frontends/nxt200x.c              |    2=20
+ drivers/media/platform/s5p-mfc/s5p_mfc.c           |   28 ---
+ drivers/media/platform/s5p-mfc/s5p_mfc_common.h    |    9 -
+ drivers/media/usb/dvb-usb-v2/anysee.c              |    3=20
+ drivers/mfd/lpc_ich.c                              |   17 ++
+ drivers/mmc/card/block.c                           |    7=20
+ drivers/mmc/host/atmel-mci.c                       |   13 +
+ drivers/mtd/nand/mxc_nand.c                        |    1=20
+ drivers/rtc/rtc-cmos.c                             |   52 ++++++
+ drivers/spi/spi-bcm63xx.c                          |    2=20
+ drivers/spi/spi.c                                  |    4=20
+ fs/dcookies.c                                      |    2=20
+ fs/exofs/ore.c                                     |   37 +++-
+ fs/fuse/dev.c                                      |   22 --
+ fs/nfs/nfs4client.c                                |   18 +-
+ fs/nfs/nfs4proc.c                                  |   38 +++-
+ fs/nfs/nfs4xdr.c                                   |   47 +++--
+ fs/notify/fanotify/fanotify_user.c                 |    4=20
+ fs/read_write.c                                    |   16 -
+ fs/splice.c                                        |   18 ++
+ include/linux/audit.h                              |    2=20
+ include/linux/compat.h                             |   18 +-
+ include/linux/pipe_fs_i.h                          |    2=20
+ include/linux/vmstat.h                             |    3=20
+ include/scsi/osd_ore.h                             |    1=20
+ kernel/audit.c                                     |    5=20
+ kernel/time/timekeeping.c                          |   33 ++--
+ kernel/trace/ftrace.c                              |  171 ++++++++++++++++=
+++---
+ kernel/trace/trace.c                               |    8=20
+ mm/memory-failure.c                                |   21 +-
+ mm/oom_kill.c                                      |    2=20
+ mm/page-writeback.c                                |   57 +++----
+ mm/slub.c                                          |    8=20
+ mm/vmscan.c                                        |   49 +-----
+ net/core/skbuff.c                                  |   32 ---
+ net/sunrpc/clnt.c                                  |    8=20
+ security/selinux/ss/policydb.c                     |   14 +
+ tools/power/x86/turbostat/Makefile                 |    2=20
+ tools/power/x86/turbostat/turbostat.c              |   13 -
+ 87 files changed, 954 insertions(+), 465 deletions(-)
+
+AKASHI Takahiro (1):
+      audit: correct a type mismatch in audit_syscall_exit()
+
+Akash Goel (1):
+      drm/i915: Fix the offset issue for the stolen GEM objects
+
+Alex Deucher (6):
+      drm/radeon: warn users when hw_i2c is enabled (v2)
+      drm/radeon: disable ss on DP for DCE3.x
+      drm/radeon: fix surface sync in fence on cayman (v2)
+      drm/radeon: set the full cache bit for fences on r7xx+
+      drm/radeon: fix DAC interrupt handling on DCE5+
+      drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
+
+Alex Williamson (1):
+      intel-iommu: fix off-by-one in pagetable freeing
+
+Antti Palosaari (1):
+      media: anysee: fix non-working E30 Combo Plus DVB-T
+
+Bjorn Helgaas (1):
+      Revert "EISA: Initialize device before its resources"
+
+Boaz Harrosh (2):
+      ore: Fix wrong math in allocation of per device BIO
+      pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+
+Borislav Petkov (1):
+      rtc-cmos: Add an alarm disable quirk
+
+Brennan Shacklett (1):
+      intel_pstate: Improve accuracy by not truncating until final result
+
+Chris Wilson (1):
+      drm/i915: Flush outstanding requests before allocating new seqno
+
+Daniel Santos (1):
+      spidev: fix hang when transfer_one_message fails
+
+Dave Airlie (1):
+      drm/mgag200: fix typo causing bw limits to be ignored on some chips
+
+David Rientjes (1):
+      mm, oom: base root bonus on current usage
+
+Dirk Brandewie (1):
+      intel_pstate: Correct calculation of min pstate value
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.30
+
+Heiko Carstens (4):
+      compat: fix sys_fanotify_mark
+      fs/compat: fix parameter handling for compat readv/writev syscalls
+      fs/compat: fix lookup_dcookie() parameter handling
+      tile: remove compat_sys_lookup_dcookie declaration to fix compile err=
+or
+
+Ira Weiny (1):
+      IB/qib: Fix QP check when looping back to/from QP1
+
+James Ralston (1):
+      mfd: lpc_ich: Add support for Intel Avoton SoC
+
+Joe Thornber (4):
+      dm thin: fix discard support to a previously shared block
+      dm space map common: make sure new space is used during extend
+      dm space map metadata: fix extending the space map
+      dm space map metadata: fix bug in resizing of thin metadata
+
+Johannes Weiner (2):
+      mm/page-writeback.c: fix dirty_balance_reserve subtraction from dirty=
+able memory
+      mm/page-writeback.c: do not count anon pages as dirtyable memory
+
+John Stultz (4):
+      timekeeping: Fix lost updates to tai adjustment
+      timekeeping: Fix CLOCK_TAI timer/nanosleep delays
+      timekeeping: Fix missing timekeeping_update in suspend path
+      timekeeping: Avoid possible deadlock from clock_was_set_delayed
+
+Jonas Gorski (1):
+      spi/bcm63xx: don't substract prepend length from total length
+
+Josh Triplett (2):
+      turbostat: Don't put unprocessed uapi headers in the include path
+      turbostat: Use GCC's CPUID functions to support PIC
+
+Li Zefan (1):
+      slub: Fix calculation of cpu slabs
+
+Ludovic Desroches (1):
+      mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
+
+Maarten Lankhorst (1):
+      drm/nouveau: fix m2mf copy to tiled gart
+
+Malcolm Priestley (2):
+      m88rs2000: add m88rs2000_set_carrieroffset
+      m88rs2000: set symbol rate accurately
+
+Marek Ol=C5=A1=C3=A1k (1):
+      drm/radeon: skip colorbuffer checking if COLOR_INFO.FORMAT is set to =
+INVALID
+
+Marek Szyprowski (1):
+      media: s5p_mfc: remove s5p_mfc_get_node_type() function
+
+Mark Brown (1):
+      ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to r=
+egulator API
+
+Mauro Carvalho Chehab (2):
+      dib8000: make 32 bits read atomic
+      nxt200x: increase write buffer size
+
+Max Filippov (1):
+      xtensa: xtfpga: fix definitions of platform devices
+
+Michael Grzeschik (1):
+      mtd: mxc_nand: remove duplicated ecc_stats counting
+
+Michel D=C3=A4nzer (1):
+      radeon/pm: Guard access to rdev->pm.power_state array
+
+Mike Snitzer (1):
+      dm thin: initialize dm_thin_new_mapping returned by get_next_mapping
+
+Miklos Szeredi (1):
+      fuse: fix pipe_buf_operations
+
+Mikulas Patocka (2):
+      dm: wait until embedded kobject is released before destroying a device
+      dm sysfs: fix a module unload race
+
+Naoya Horiguchi (1):
+      mm/memory-failure.c: shift page lock from head page to tail page afte=
+r thp split
+
+Nell Hardcastle (1):
+      intel_pstate: Add Haswell CPU models
+
+Olivier Grenie (1):
+      dib8000: fix regression with dib807x
+
+Ray Jui (1):
+      mmc: fix host release issue after discard operation
+
+Richard Guy Briggs (1):
+      audit: reset audit backlog wait time after error recovery
+
+Seth Heasley (2):
+      mfd: lpc_ich: iTCO_wdt patch for Intel Coleto Creek DeviceIDs
+      i2c: i801: SMBus patch for Intel Coleto Creek DeviceIDs
+
+Srinivas Pandruvada (1):
+      intel_pstate: fix no_turbo
+
+Stanislaw Gruszka (1):
+      i915: remove pm_qos request on error
+
+Steven Rostedt (3):
+      ftrace: Synchronize setting function_trace_op with ftrace_trace_funct=
+ion
+      ftrace: Fix synchronization location disabling and freeing ftrace_ops
+      ftrace: Have function graph only trace based on global_ops filters
+
+Steven Rostedt (Red Hat) (2):
+      tracing: Have trace buffer point back to trace_array
+      tracing: Check if tracing is enabled in trace_puts()
+
+Takashi Iwai (1):
+      drm/cirrus: correct register values for 16bpp
+
+Tetsuo Handa (1):
+      SELinux: Fix memory leak upon loading policy
+
+Todd Previte (1):
+      drm/i915: VLV2 - Fix hotplug detect bits
+
+Trond Myklebust (2):
+      NFSv4: OPEN must handle the NFS4ERR_IO return code correctly
+      NFSv4.1: Handle errors correctly in nfs41_walk_client_list
+
+Wanlong Gao (1):
+      arch/sh/kernel/kgdb.c: add missing #include <linux/sched.h>
+
+Weston Andros Adamson (3):
+      nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
+      nfs4: fix discover_server_trunking use after free
+      sunrpc: Fix infinite loop in RPC state machine
+
+
+--nFreZHaLTZJo0R7j
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS/UMPAAoJEDjbvchgkmk+oQ8QANVJnDAFLVDrCfl/uITuZRjD
+BphJMngapTpPWVnmlxMa3uYAA9mIaktKBm3bVRV40h5RCMMknmybJimemuKvtFDw
+md2/yQb7EKuY1xO4vMDBs5nkTx4qayQrQFZS8tviRZeVgwjxmTUizjxEas/HnJf0
+ikWUQrRsjFdFDEFkxG3J5jAII526FV8m5/wGKqRImngYxtUJhoNh5g7dbpbQKvb3
+LHdF7LZKdFaySwdyf8u2qqkSR+xKvWFlTcC1hFyzNfwf8a8B/xDLdQtk5MlnYAHg
+1ZEp1Y45oA9Ib4h+rXYY0tm8k3tn4luU0amvHsoHNG/4Awp1UTe863BGVeJ2uyts
+YqTBEvIb0dmMOaFupdoapDzDmct/VT9BII3cd4/NQExf+9v7sNNxSs7hzHLlFxYw
+XatDu6VqYZ1xgrss/auu9v+S/tZ76D39miNKvi9ZfTlt9W+aGgOAL0VNZhVkUKQD
+nTQ5Yw+ukwro1FPPLGHOf89QjN2Q9NyFsLFypOpPTI0UqNvCe+EtresJvAUg566h
+q0wFYrWvkdG75eaDJhUSDu402OHh5QKoOjSajpeRGIDVjpHCHwHQ0lVD8heHsTJa
+vjDBHXvNS9JrQiDSQ1o26I5CEoGOKXBsygy8KlwfjWsyHeSD9RSkQd/6IsdeHINr
+/nz2IK6/yWIFlvCqcRDc
+=WmCu
+-----END PGP SIGNATURE-----
+
+--nFreZHaLTZJo0R7j--
