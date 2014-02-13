@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385AbaBMGva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 01:51:30 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:53829 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336AbaBMGvZ (ORCPT
+	id S1753430AbaBMGw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 01:52:27 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:56932 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730AbaBMGvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 01:51:25 -0500
+	Thu, 13 Feb 2014 01:51:06 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
         swarren@wwwdotorg.org, kgene.kim@samsung.com, jinchoi@broadcom.com,
         tianyu.lan@intel.com, sebastian.capella@linaro.org,
         jhbird.choi@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V5 7/7] cpufreq: Tegra: Use cpufreq_generic_suspend()
-Date: Thu, 13 Feb 2014 12:20:22 +0530
-Message-Id: <5fde49355d4ea03dfdf2c6bdf7d63e8ef4af2166.1392273723.git.viresh.kumar@linaro.org>
+Subject: [PATCH V5 4/7] cpufreq: Implement cpufreq_generic_suspend()
+Date: Thu, 13 Feb 2014 12:20:19 +0530
+Message-Id: <7c98f029b36c50addec4840d5dae88725949d386.1392273723.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1392273722.git.viresh.kumar@linaro.org>
 References: <cover.1392273722.git.viresh.kumar@linaro.org>
@@ -26,105 +26,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we have implemented PM notifiers to disable/enable ->target() routines
-functionality during suspend/resume.
-
-Now we have support present in cpufreq core, lets use it.
+Multiple platforms need to set CPU to a particular frequency before suspending
+system. And so they need a common infrastructure which is provided by this
+patch. Those platforms just need to initialize their ->suspend() pointers with
+the generic routine.
 
 Tested-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/tegra-cpufreq.c | 46 +++++------------------------------------
- 1 file changed, 5 insertions(+), 41 deletions(-)
+ drivers/cpufreq/cpufreq.c | 26 ++++++++++++++++++++++++++
+ include/linux/cpufreq.h   |  3 +++
+ 2 files changed, 29 insertions(+)
 
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index e652c1b..bcfed77 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -26,7 +26,6 @@
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/io.h>
--#include <linux/suspend.h>
- 
- static struct cpufreq_frequency_table freq_table[] = {
- 	{ .frequency = 216000 },
-@@ -47,9 +46,6 @@ static struct clk *pll_x_clk;
- static struct clk *pll_p_clk;
- static struct clk *emc_clk;
- 
--static DEFINE_MUTEX(tegra_cpu_lock);
--static bool is_suspended;
--
- static int tegra_cpu_clk_set_rate(unsigned long rate)
- {
- 	int ret;
-@@ -112,42 +108,9 @@ static int tegra_update_cpu_speed(struct cpufreq_policy *policy,
- 
- static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
- {
--	int ret = -EBUSY;
--
--	mutex_lock(&tegra_cpu_lock);
--
--	if (!is_suspended)
--		ret = tegra_update_cpu_speed(policy,
--				freq_table[index].frequency);
--
--	mutex_unlock(&tegra_cpu_lock);
--	return ret;
-+	return tegra_update_cpu_speed(policy, freq_table[index].frequency);
- }
- 
--static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
--	void *dummy)
--{
--	mutex_lock(&tegra_cpu_lock);
--	if (event == PM_SUSPEND_PREPARE) {
--		struct cpufreq_policy *policy = cpufreq_cpu_get(0);
--		is_suspended = true;
--		pr_info("Tegra cpufreq suspend: setting frequency to %d kHz\n",
--			freq_table[0].frequency);
--		if (clk_get_rate(cpu_clk) / 1000 != freq_table[0].frequency)
--			tegra_update_cpu_speed(policy, freq_table[0].frequency);
--		cpufreq_cpu_put(policy);
--	} else if (event == PM_POST_SUSPEND) {
--		is_suspended = false;
--	}
--	mutex_unlock(&tegra_cpu_lock);
--
--	return NOTIFY_OK;
--}
--
--static struct notifier_block tegra_cpu_pm_notifier = {
--	.notifier_call = tegra_pm_notify,
--};
--
- static int tegra_cpu_init(struct cpufreq_policy *policy)
- {
- 	int ret;
-@@ -166,10 +129,8 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
- 		return ret;
- 	}
- 
--	if (policy->cpu == 0)
--		register_pm_notifier(&tegra_cpu_pm_notifier);
--
- 	policy->clk = cpu_clk;
-+	policy->suspend_freq = freq_table[0].frequency;
- 	return 0;
- }
- 
-@@ -190,6 +151,9 @@ static struct cpufreq_driver tegra_cpufreq_driver = {
- 	.exit		= tegra_cpu_exit,
- 	.name		= "tegra",
- 	.attr		= cpufreq_generic_attr,
-+#ifdef CONFIG_PM
-+	.suspend	= cpufreq_generic_suspend,
-+#endif
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 87a4b96..c13c100 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1579,6 +1579,32 @@ static struct subsys_interface cpufreq_interface = {
+ 	.remove_dev	= cpufreq_remove_dev,
  };
  
- static int __init tegra_cpufreq_init(void)
++/*
++ * In case platform wants some specific frequency to be configured
++ * during suspend..
++ */
++int cpufreq_generic_suspend(struct cpufreq_policy *policy)
++{
++	int ret;
++
++	if (!policy->suspend_freq) {
++		pr_err("%s: suspend_freq can't be zero\n", __func__);
++		return -EINVAL;
++	}
++
++	pr_debug("%s: Setting suspend-freq: %u\n", __func__,
++			policy->suspend_freq);
++
++	ret = __cpufreq_driver_target(policy, policy->suspend_freq,
++			CPUFREQ_RELATION_H);
++	if (ret)
++		pr_err("%s: unable to set suspend-freq: %u. err: %d\n",
++				__func__, policy->suspend_freq, ret);
++
++	return ret;
++}
++EXPORT_SYMBOL(cpufreq_generic_suspend);
++
+ /**
+  * cpufreq_suspend() - Suspend CPUFreq governors
+  *
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 94ed907..325bab0 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -74,6 +74,8 @@ struct cpufreq_policy {
+ 	unsigned int		max;    /* in kHz */
+ 	unsigned int		cur;    /* in kHz, only needed if cpufreq
+ 					 * governors are used */
++	unsigned int		suspend_freq; /* freq to set during suspend */
++
+ 	unsigned int		policy; /* see above */
+ 	struct cpufreq_governor	*governor; /* see below */
+ 	void			*governor_data;
+@@ -299,6 +301,7 @@ cpufreq_verify_within_cpu_limits(struct cpufreq_policy *policy)
+ #ifdef CONFIG_CPU_FREQ
+ void cpufreq_suspend(void);
+ void cpufreq_resume(void);
++int cpufreq_generic_suspend(struct cpufreq_policy *policy);
+ #else
+ static inline void cpufreq_suspend(void) {}
+ static inline void cpufreq_resume(void) {}
 -- 
 1.7.12.rc2.18.g61b472e
 
