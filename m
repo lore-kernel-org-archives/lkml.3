@@ -1,132 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaBMWF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:05:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36691 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbaBMWF0 (ORCPT
+	id S1751965AbaBMWFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:05:44 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60512 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaBMWFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:05:26 -0500
-Date: Thu, 13 Feb 2014 14:05:23 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Wei Liu <wei.liu2@citrix.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Francois Romieu <romieu@fr.zoreil.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH regression] dma debug: account for cachelines and
- read-only mappings in overlap tracking
-Message-Id: <20140213140523.099fd03418d8fe1467db3bd9@linux-foundation.org>
-In-Reply-To: <20140213215652.22950.12180.stgit@viggo.jf.intel.com>
-References: <20140213215652.22950.12180.stgit@viggo.jf.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Feb 2014 17:05:39 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: kernel@pengutronix.de, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] w1-gpio: handle of_get_gpio() returning -EPROBE_DEFER better
+Date: Thu, 13 Feb 2014 23:05:28 +0100
+Message-Id: <1392329128-6221-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.5.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014 13:58:00 -0800 Dan Williams <dan.j.williams@intel.com> wrote:
+of_get_gpio() might return -EPROBE_DEFER meaning that the driver
+providing the gpio isn't ready yet. If that happens for the first gpio
+the resulting kernel output without this patch is:
 
-> While debug_dma_assert_idle() checks if a given *page* is actively
-> undergoing dma the valid granularity of a dma mapping is a *cacheline*.
-> Sander's testing shows that the warning message "DMA-API: exceeded 7
-> overlapping mappings of pfn..." is falsely triggering.  The test is
-> simply mapping multiple cachelines in a given page.
-> 
-> Ultimately we want overlap tracking to be valid as it is a real api
-> violation, so we need to track active mappings by cachelines.  Update
-> the active dma tracking to use the page-frame-relative cacheline of the
-> mapping as the key, and update debug_dma_assert_idle() to check for all
-> possible mapped cachelines for a given page.
-> 
-> However, the need to track active mappings is only relevant when the
-> dma-mapping is writable by the device.  In fact it is fairly standard
-> for read-only mappings to have hundreds or thousands of overlapping
-> mappings at once.  Limiting the overlap tracking to writable
-> (!DMA_TO_DEVICE) eliminates this class of false-positive overlap
-> reports.
-> 
-> Note, the radix gang lookup is sub-optimal.  It would be best if it
-> stopped fetching entries once the search passed a page boundary.
-> Nevertheless, this implementation does not perturb the original net_dma
-> failing case.  That is to say the extra overhead does not show up in
-> terms of making the failing case pass due to a timing change.
-> 
-> References:
-> http://marc.info/?l=linux-netdev&m=139232263419315&w=2
-> http://marc.info/?l=linux-netdev&m=139217088107122&w=2
-> 
-> ...
->
-> --- a/lib/dma-debug.c
-> +++ b/lib/dma-debug.c
-> @@ -424,111 +424,132 @@ void debug_dma_dump_mappings(struct device *dev)
->  EXPORT_SYMBOL(debug_dma_dump_mappings);
->  
->  /*
-> - * For each page mapped (initial page in the case of
-> - * dma_alloc_coherent/dma_map_{single|page}, or each page in a
-> - * scatterlist) insert into this tree using the pfn as the key. At
-> + * For each mapping (initial cacheline in the case of
-> + * dma_alloc_coherent/dma_map_page, initial cacheline in each page of a
-> + * scatterlist, or the cacheline specified in dma_map_single) insert
-> + * into this tree using the cacheline as the key. At
->   * dma_unmap_{single|sg|page} or dma_free_coherent delete the entry.  If
-> - * the pfn already exists at insertion time add a tag as a reference
-> + * the entry already exists at insertion time add a tag as a reference
->   * count for the overlapping mappings.  For now, the overlap tracking
-> - * just ensures that 'unmaps' balance 'maps' before marking the pfn
-> - * idle, but we should also be flagging overlaps as an API violation.
-> + * just ensures that 'unmaps' balance 'maps' before marking the
-> + * cacheline idle, but we should also be flagging overlaps as an API
-> + * violation.
->   *
->   * Memory usage is mostly constrained by the maximum number of available
->   * dma-debug entries in that we need a free dma_debug_entry before
-> - * inserting into the tree.  In the case of dma_map_{single|page} and
-> - * dma_alloc_coherent there is only one dma_debug_entry and one pfn to
-> - * track per event.  dma_map_sg(), on the other hand,
-> - * consumes a single dma_debug_entry, but inserts 'nents' entries into
-> - * the tree.
-> + * inserting into the tree.  In the case of dma_map_page and
-> + * dma_alloc_coherent there is only one dma_debug_entry and one
-> + * dma_active_cacheline entry to track per event.  dma_map_sg(), on the
-> + * other hand, consumes a single dma_debug_entry, but inserts 'nents'
-> + * entries into the tree.
->   *
->   * At any time debug_dma_assert_idle() can be called to trigger a
-> - * warning if the given page is in the active set.
-> + * warning if any cachelines in the given page are in the active set.
->   */
-> -static RADIX_TREE(dma_active_pfn, GFP_NOWAIT);
-> +static RADIX_TREE(dma_active_cacheline, GFP_NOWAIT);
->  static DEFINE_SPINLOCK(radix_lock);
-> -#define ACTIVE_PFN_MAX_OVERLAP ((1 << RADIX_TREE_MAX_TAGS) - 1)
-> +#define ACTIVE_CLN_MAX_OVERLAP ((1 << RADIX_TREE_MAX_TAGS) - 1)
-> +#define CACHELINE_PER_PAGE_SHIFT (PAGE_SHIFT - L1_CACHE_SHIFT)
-> +#define CACHELINES_PER_PAGE (1 << CACHELINE_PER_PAGE_SHIFT)
->  
-> -static int active_pfn_read_overlap(unsigned long pfn)
-> +unsigned long to_cln(struct dma_debug_entry *entry)
-> +{
-> +	return (entry->pfn << CACHELINE_PER_PAGE_SHIFT) +
-> +		(entry->offset >> L1_CACHE_SHIFT);
-> +}
+	w1-gpio somename: Failed to parse DT
+	platform somename: Driver w1-gpio requests probe deferral
 
-"cln" is ugly and isn't a well-known kernel abbreviation.  We typically
-spell these things out, so "cacheline".  But I think you mean
-"cacheline number", and that is too long to spell out.
+The first message is misleading and so is suppressed with this patch.
 
-So I guess "cln" just became a well-known kernel abbreviation.
+Further if determining the gpio to switch the external pullup yields
+-EPROBE_DEFER this error should be passed back to the caller instead of
+just continuing without pullup.
 
-> ....
->
->  void debug_dma_assert_idle(struct page *page)
->  {
-> +	unsigned long cln = page_to_pfn(page) << CACHELINE_PER_PAGE_SHIFT;
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+Actually I'm not completely happy with this change because IMHO if a
+device tree node contains:
 
-This worries me.  Are you sure we cannot overflow the ulong here under
-any circumstances?  32GB PAE with sparsemem or whatever?
+	gpios = <&gpio5 0 0 4>;
+
+where gpio5's #gpio-cells property is <2> I'd prefer to not bind the
+driver with an error message instead of treating it as if
+
+	gpios = <&gpio5 0 0>;
+
+was specified. Still this patch is a correct first step.
+
+So something like that would be nice:
+
+	len = get_len_of_gpio_array();
+	if (len < 0)
+		/* not well-formed */
+		return len;
+
+	if (len == 1)
+		go on without pullup
+	else if (len == 2)
+		go on with pullup
+	else
+		scream
+---
+ drivers/w1/masters/w1-gpio.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+index e36b18b2817b..4b581228a4d9 100644
+--- a/drivers/w1/masters/w1-gpio.c
++++ b/drivers/w1/masters/w1-gpio.c
+@@ -68,11 +68,22 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
+ 		pdata->is_open_drain = 1;
+ 
+ 	gpio = of_get_gpio(np, 0);
+-	if (gpio < 0)
++	if (gpio < 0) {
++		if (gpio != -EPROBE_DEFER)
++			dev_err(&pdev->dev,
++					"Failed to parse gpio property for data pin (%d)\n",
++					gpio);
++
+ 		return gpio;
++	}
+ 	pdata->pin = gpio;
+ 
+-	pdata->ext_pullup_enable_pin = of_get_gpio(np, 1);
++	gpio = of_get_gpio(np, 1);
++	if (gpio == -EPROBE_DEFER)
++		return gpio;
++	/* ignore other errors as the pullup gpio is optional */
++	pdata->ext_pullup_enable_pin = gpio;
++
+ 	pdev->dev.platform_data = pdata;
+ 
+ 	return 0;
+@@ -86,10 +97,8 @@ static int w1_gpio_probe(struct platform_device *pdev)
+ 
+ 	if (of_have_populated_dt()) {
+ 		err = w1_gpio_probe_dt(pdev);
+-		if (err < 0) {
+-			dev_err(&pdev->dev, "Failed to parse DT\n");
++		if (err < 0)
+ 			return err;
+-		}
+ 	}
+ 
+ 	pdata = dev_get_platdata(&pdev->dev);
+-- 
+1.8.5.3
+
