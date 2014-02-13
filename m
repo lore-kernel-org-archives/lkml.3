@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaBMIXV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 03:23:21 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:44205 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaBMIXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 03:23:20 -0500
-Date: Thu, 13 Feb 2014 08:23:11 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Laszlo Papp <lpapp@kde.org>, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, k.kozlowski@samsung.com,
-        sachin.kamat@linaro.org, jdelvare@suse.de, linux@roeck-us.net
-Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
-Message-ID: <20140213082311.GA32508@lee--X1>
-References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
- <20140212175018.GJ28112@sirena.org.uk>
+	id S1753304AbaBMI25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 03:28:57 -0500
+Received: from mout.gmx.net ([212.227.15.18]:65418 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752119AbaBMI2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 03:28:55 -0500
+From: Marc Dietrich <marvin24@gmx.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Stefan Agner <stefan@agner.ch>, thierry.reding@gmail.com,
+        josephl@nvidia.com, dev@lynxeye.de, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: don't timeout if CPU is powergated
+Date: Thu, 13 Feb 2014 09:28:52 +0100
+Message-ID: <4050206.sG2EzXyfMN@fb07-iapwap2>
+User-Agent: KMail/4.12.2 (Linux/3.14.0-rc2-12.gfc9498b-desktop; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <52FBC97D.8040809@wwwdotorg.org>
+References: <1d5ea6b7df4573d866779857922ac650fe59af60.1392078805.git.stefan@agner.ch> <52FBC97D.8040809@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140212175018.GJ28112@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Provags-ID: V03:K0:Ciu+3prTCUcwY6imNg9dlbZ7Al4EpL/wsja7pqqq9g7ulu1QrQE
+ t7HgTVkhZoj0YcAFlXf0/sen6CxNBBiXyo6vtPPFlfL0fIPLtanzP1HdAsXaRRcMXfYrdzS
+ Fj3y5X1Z5Ol7cegiUOV9TKfbbWSPsCftyyD31vCKl09eg4QOgtvNcu1r4iSaOzHEKg+R6dc
+ us5qMg4XVO0BkX6C2o8zg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Laszlo,
-
-> > +const struct regmap_config max665x_regmap_config = {
-> > +	.reg_bits = 5,
-> > +};
+Am Mittwoch, 12. Februar 2014, 12:20:29 schrieb Stephen Warren:
+> On 02/10/2014 05:44 PM, Stefan Agner wrote:
+> > When booting secondary CPU(s) which are not yet powergated, a wrong
+> > check lead to a timeout after 100 jiffies. With this patch, we only
+> > delay powergating if CPUs are still not powered yet.
 > 
-> This would normally be static too, and I'd *really* expect to see a
-> val_bits set here.  I'm a bit surprised this works without one.
+> I've applied this to Tegra's for-3.15/soc branch.
 
-Mark (privately) mentioned to me that this patch can't possibly work
-given the current Regmap configuration. Patches are accepted into
-Mainline based on the premise that they are fully tested and working,
-_prior_ to submitting [1].
+also for 3.14 and maybe lower versioned kernels? Since this seems to fix a bug 
+where some core doesn't come up.
 
-It's also pretty pointless having an MFD driver without any
-children, so unless (at least one of) the child device drivers have
-been accepted by pull-time, your work will not be part of the
-pull-request headed for Mainline.
+Marc
 
-Please inform me of your plans as you with to proceed.
-
-[] Documentation/SubmitChecklist
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
