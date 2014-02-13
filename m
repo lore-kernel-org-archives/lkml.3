@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899AbaBMSfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:35:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34229 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbaBMSe6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:34:58 -0500
-Date: Thu, 13 Feb 2014 10:36:16 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Gianluca Anzolin <gianluca@sottospazio.it>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Andrey Vihrov <andrey.vihrov@gmail.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 04/24] tty: Fix ref counting for port krefs
-Message-ID: <20140213183616.GA13509@kroah.com>
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
- <1391997564-1805-5-git-send-email-peter@hurleysoftware.com>
+	id S1752929AbaBMShj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:37:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40718 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752515AbaBMShi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 13:37:38 -0500
+Date: Thu, 13 Feb 2014 19:37:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
+        Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140213183736.GA16937@redhat.com>
+References: <20140212042215.GN18016@ZenIV.linux.org.uk> <20140212054043.GB13997@dastard> <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com> <20140212113928.GO18016@ZenIV.linux.org.uk> <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com> <20140212211421.GP18016@ZenIV.linux.org.uk> <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com> <20140213174020.GA14455@redhat.com> <CA+55aFxwozCQ05axLB02R3huX8sj=20EoFfw0cSDDL8fBE_Y6Q@mail.gmail.com> <20140213181013.GA15596@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391997564-1805-5-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140213181013.GA15596@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 09, 2014 at 08:59:04PM -0500, Peter Hurley wrote:
-> The tty core supports two models for handling tty_port lifetimes;
-> the tty_port can use the kref supplied by tty_port (which will
-> automatically destruct the tty_port when the ref count drops to
-> zero) or it can destruct the tty_port manually.
-> 
-> For tty drivers that choose to use the port kref to manage the
-> tty_port lifetime, it is not possible to safely acquire a port
-> reference conditionally. If the last reference is released after
-> evaluating the condition but before acquiring the reference, a
-> bogus reference will be held while the tty_port destruction
-> commences.
-> 
-> Rather, only acquire a port reference if the ref count is non-zero
-> and allow the caller to distinguish if a reference has successfully
-> been acquired.
-> 
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+On 02/13, Oleg Nesterov wrote:
+>
+> On 02/13, Linus Torvalds wrote:
+> >
+> > On Thu, Feb 13, 2014 at 9:40 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > >
+> > > And we should be careful with SIGQUEUE_PREALLOC, at least
+> > > collect_signal() should not do list_del_init()... Plus we need to
+> > > handle the SEND_SIG_FORCED-like case.
+> >
+> > I don't think the users need to care. They'd just call
+> > "sigqueue_free()" not knowing about our preallocations etc.
+>
+> Yes, but we need to be careful to avoid the races with
+> release_posix_timer().
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Plus we need to delay do_schedule_next_timer() as well. But this
+is probably good because we can avoid unlock/lock(siglock) in
+dequeue_signal().
+
+Oleg.
 
