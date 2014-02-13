@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaBMAJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 19:09:46 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:57183 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551AbaBMAJo (ORCPT
+	id S1751948AbaBMASv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 19:18:51 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:34411 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaBMASu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 19:09:44 -0500
-Date: Wed, 12 Feb 2014 19:09:39 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Filipe Brandenburger <filbranden@google.com>,
-        Li Zefan <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Markus Blank-Burian <burian@muenster.de>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] Revert "cgroup: use an ordered workqueue for cgroup
- destruction"
-Message-ID: <20140213000939.GA2916@htj.dyndns.org>
-References: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils>
- <20140207164321.GE6963@cmpxchg.org>
- <alpine.LSU.2.11.1402121417230.5029@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402121417230.5029@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Feb 2014 19:18:50 -0500
+Date: Wed, 12 Feb 2014 19:18:46 -0500 (EST)
+Message-Id: <20140212.191846.1464564509609498703.davem@davemloft.net>
+To: michal.simek@xilinx.com
+Cc: netdev@vger.kernel.org, sthokal@xilinx.com, devicetree@vger.kernel.org,
+        monstr@monstr.eu, John.Linn@xilinx.com, anirudh@xilinx.com,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/14] Xilinx axi ethernet patches
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1392220536.git.michal.simek@xilinx.com>
+References: <cover.1392220536.git.michal.simek@xilinx.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Feb 2014 16:18:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 1a11533fbd71792e8c5d36f6763fbce8df0d231d Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 12 Feb 2014 19:06:19 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+Date: Wed, 12 Feb 2014 16:55:34 +0100
 
-This reverts commit ab3f5faa6255a0eb4f832675507d9e295ca7e9ba.
-Explanation from Hugh:
+> I have exctracted patches which I have in our
+> xilinx git tree which are missing in the mainline.
+> 
+> The first two patches fix compilation error and
+> warnings. Then 5 feature patches
+> and the rest is OF cleanup and with kernel-doc
+> and checkpatch problems.
 
-  It's because more thorough testing, by others here, found that it
-  wasn't always solving the problem: so I asked Tejun privately to
-  hold off from sending it in, until we'd worked out why not.
+You should not combine bug fix and feature patches.
 
-  Most of our testing being on a v3,11-based kernel, it was perfectly
-  possible that the problem was merely our own e.g. missing Tejun's
-  8a2b75384444 ("workqueue: fix ordered workqueues in NUMA setups").
-
-  But that turned out not to be enough to fix it either. Then Filipe
-  pointed out how percpu_ref_kill_and_confirm() uses call_rcu_sched()
-  before we ever get to put the offline on to the workqueue: by the
-  time we get to the workqueue, the ordering has already been lost.
-
-  So, thanks for the Acks, but I'm afraid that this ordered workqueue
-  solution is just not good enough: we should simply forget that patch
-  and provide a different answer."
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>
----
-Queued to cgroup/for-3.14-fixes.
-
-Thanks.
-
- kernel/cgroup.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 52719ce..68d8710 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4844,16 +4844,12 @@ static int __init cgroup_wq_init(void)
- 	/*
- 	 * There isn't much point in executing destruction path in
- 	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
--	 *
--	 * XXX: Must be ordered to make sure parent is offlined after
--	 * children.  The ordering requirement is for memcg where a
--	 * parent's offline may wait for a child's leading to deadlock.  In
--	 * the long term, this should be fixed from memcg side.
-+	 * Use 1 for @max_active.
- 	 *
- 	 * We would prefer to do this in cgroup_init() above, but that
- 	 * is called before init_workqueues(): so leave this until after.
- 	 */
--	cgroup_destroy_wq = alloc_ordered_workqueue("cgroup_destroy", 0);
-+	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
- 	BUG_ON(!cgroup_destroy_wq);
- 
- 	/*
--- 
-1.8.5.3
-
+Rather, you should submit bug fixes against the 'net' tree.  Then when
+those bug fixes get applied and propagate to the 'net-next' tree you
+can submit the feature patches and cleanups against the 'net-next'
+tree.
