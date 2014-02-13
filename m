@@ -1,90 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbaBMKGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:06:03 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57412 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464AbaBMKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:06:00 -0500
-Message-ID: <52FC98FF.20800@ti.com>
-Date: Thu, 13 Feb 2014 12:05:51 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754174AbaBMKGm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:06:42 -0500
+Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:58870 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754007AbaBMKGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:06:38 -0500
+X-Greylist: delayed 87527 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 05:06:37 EST
 MIME-Version: 1.0
-To: Christoph Fritz <chf.fritz@googlemail.com>, Tero Kristo <t-kristo@ti.com>
-CC: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
-        Nishanth Menon <nm@ti.com>
-Subject: Re: OMAP: clock DT conversion issues with omap36xx
-References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>	 <52F10C3D.7000507@ti.com> <1391767923.4937.110.camel@mars> <52FB748E.6050007@ti.com> <52FC8A78.1050500@ti.com>
-In-Reply-To: <52FC8A78.1050500@ti.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="bs9L4nDHBH4XlFILvQE0ow5G1Qe1q3FRg"
+In-Reply-To: <1392285429-9325-1-git-send-email-jjhiblot@traphandler.com>
+References: <1392285429-9325-1-git-send-email-jjhiblot@traphandler.com>
+Date: Thu, 13 Feb 2014 11:06:32 +0100
+Message-ID: <CACh+v5NOkkEJxRFg3dTFJ1xMXt9XgXKuBJq9usAtakzzVuNi7Q@mail.gmail.com>
+Subject: Re: [PATCH] dt: platform driver: Fill the resources before probe and
+ defer if needed
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: gregkh <gregkh@linuxfoundation.org>,
+        "grant.likely" <grant.likely@linaro.org>,
+        "robh+dt" <robh+dt@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 11047329887542073368
+X-Ovh-Remote: 209.85.192.172 (mail-pd0-f172.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -85
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -85
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bs9L4nDHBH4XlFILvQE0ow5G1Qe1q3FRg
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi all,
 
-On 13/02/14 11:03, Tomi Valkeinen wrote:
-> On 12/02/14 15:18, Tomi Valkeinen wrote:
->=20
->> However, I hacked together the patch below, which "fixes" the issue fo=
-r
->> 96m and dss fclk. It sets the clock parents so that the x2 clocks are
->> skipped, and makes the x2 clock nodes compatible with "unused", making=
+I forgot to add the link to the discussion that lead to this patch:
+https://lkml.org/lkml/2014/2/12/306.
 
->> them effectively disappear. I only verified dss fclk, so Christoph, ca=
-n
->> you verify the 96m clock?
->=20
-> Aaand the hack patch I sent is crap... We can't skip the x2 clock path,=
+Jean-Jacques
 
-> as the dpll4_mNx2_ck clock nodes handle enable/disable bit, which is
-> present on 3630 also.
->=20
-> I think the best and simplest way to fix this is by setting the
-> multiplier in the dpll4_mNx2_mul_ck nodes to 1. I don't know why I
-> didn't think of it yesterday.
->=20
-> I have a bunch of other patches needed to get the clocks right, so I'll=
-
-> send a series separately a bit later today.
-
-I just sent the "OMAP: OMAP3 DSS related clock patches" series to l-o
-and arm lists, which hopefully solves issues discussed in this thread.
-
- Tomi
-
-
-
---bs9L4nDHBH4XlFILvQE0ow5G1Qe1q3FRg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJS/Jj/AAoJEPo9qoy8lh71AOwP/2QDs4IUVMucXwp5LhpYz+J6
-OxLPL/GiR7UZRjml2fc6A0wvAyRqZkZ1xyJx68/xWcCq3hYlYpOFB4me5BtUkwT2
-C2h4sYmBmUWZT2TDYKmzfvg+c6mGTXZeg0yzJV95krvGka+j2n9xw7wWlTfdENb4
-F5CLRnvSEGSLknuceMfJoFtAtpmjgBoyrACfDezIGY0ys3c+guTt/yPBx7t3q97N
-m7IHrYV4Hr2uXjZ15ta7Pa7waFaPeepCxrHFbeXZsMsVGOBFPgqMFR8g6Sf5Wob7
-bVTdWval8szz7lut0YOJIGqjMkDlHvcXa4VjBLNVAGE6uFZx3khRZChPBiC13mmQ
-7XbT0JjlI2GdoWMgGWdMV6Kzz2GDAlv8up/RSC36uFfgMsUxaawj20q3h59V9uCn
-3eqAz19OqVJcl1l6MlPgAXSpyxylUU3R9uNJF/GSTslpOmxswEw3IRwZHLEJQA7Z
-2DtgBzjXOmFqRlPpuwIE89H2xx9PCcC9+i6JMYgU9vWMDl+B33ELiPEVpmSQ1IuC
-1KQGi8t2kCFphJQEvwS7H3WVdpbonEFXvGo90o3TiIzYcP4o+UEPtCPU0S6vfomG
-VckILBwTXQIGoSnqCWd7WRcFQEywRQMKlBrUiTGnDUidHD53VUy7DXetc3EDXilk
-0WrW14tsupMyQPA32IOL
-=Kogz
------END PGP SIGNATURE-----
-
---bs9L4nDHBH4XlFILvQE0ow5G1Qe1q3FRg--
+2014-02-13 10:57 GMT+01:00 Jean-Jacques Hiblot <jjhiblot@traphandler.com>:
+> The goal of this patch is to allow drivers to be probed even if at the time of
+> the DT parsing some of their ressources are not available yet.
+>
+> In the current situation, the resource of a platform device are filled from the
+> DT at the time the device is created (of_device_alloc()). The drawbackof this
+> is that a device sitting close to the top of the DT (ahb for example) but
+> depending on ressources that are initialized later (IRQ domain dynamically
+> created for example)  will fail to probe because the ressources don't exist
+> at this time.
+>
+> This patch fills the resource structure only before the device is probed and
+> will defer the probe if the resource are not available yet.
+>
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> Reviewed-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>  drivers/base/platform.c     |  6 ++++
+>  drivers/of/platform.c       | 71 +++++++++++++++++++++++++++++----------------
+>  include/linux/of_platform.h | 10 +++++++
+>  3 files changed, 62 insertions(+), 25 deletions(-)
+>
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index bc78848..8e37d8b 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -481,6 +481,12 @@ static int platform_drv_probe(struct device *_dev)
+>         struct platform_device *dev = to_platform_device(_dev);
+>         int ret;
+>
+> +       if (_dev->of_node) {
+> +               ret = of_platform_device_populate_resources(dev);
+> +               if (ret < 0)
+> +                       return drv->prevent_deferred_probe ? ret : -EPROBE_DEFER;
+> +       }
+> +
+>         if (ACPI_HANDLE(_dev))
+>                 acpi_dev_pm_attach(_dev, true);
+>
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 404d1da..64a8eb8 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -141,36 +141,11 @@ struct platform_device *of_device_alloc(struct device_node *np,
+>                                   struct device *parent)
+>  {
+>         struct platform_device *dev;
+> -       int rc, i, num_reg = 0, num_irq;
+> -       struct resource *res, temp_res;
+>
+>         dev = platform_device_alloc("", -1);
+>         if (!dev)
+>                 return NULL;
+>
+> -       /* count the io and irq resources */
+> -       if (of_can_translate_address(np))
+> -               while (of_address_to_resource(np, num_reg, &temp_res) == 0)
+> -                       num_reg++;
+> -       num_irq = of_irq_count(np);
+> -
+> -       /* Populate the resource table */
+> -       if (num_irq || num_reg) {
+> -               res = kzalloc(sizeof(*res) * (num_irq + num_reg), GFP_KERNEL);
+> -               if (!res) {
+> -                       platform_device_put(dev);
+> -                       return NULL;
+> -               }
+> -
+> -               dev->num_resources = num_reg + num_irq;
+> -               dev->resource = res;
+> -               for (i = 0; i < num_reg; i++, res++) {
+> -                       rc = of_address_to_resource(np, i, res);
+> -                       WARN_ON(rc);
+> -               }
+> -               WARN_ON(of_irq_to_resource_table(np, res, num_irq) != num_irq);
+> -       }
+> -
+>         dev->dev.of_node = of_node_get(np);
+>  #if defined(CONFIG_MICROBLAZE)
+>         dev->dev.dma_mask = &dev->archdata.dma_mask;
+> @@ -233,6 +208,52 @@ static struct platform_device *of_platform_device_create_pdata(
+>         return dev;
+>  }
+>
+> +int of_platform_device_populate_resources(struct platform_device *dev)
+> +{
+> +       struct device_node *np;
+> +       int rc = 0, i, nreg = 0, nirq;
+> +
+> +       np = dev->dev.of_node;
+> +
+> +       /* count the io and irq resources */
+> +       if (of_can_translate_address(np)) {
+> +               struct resource temp_res;
+> +               while (of_address_to_resource(np, nreg, &temp_res) == 0)
+> +                       nreg++;
+> +       }
+> +       nirq = of_irq_count(np);
+> +
+> +       /* Populate the resource table */
+> +       if (nirq || nreg) {
+> +               struct resource *res;
+> +
+> +               res = krealloc(dev->resource, sizeof(*res) * (nirq + nreg),
+> +                              GFP_KERNEL);
+> +               if (!res) {
+> +                       kfree(dev->resource);
+> +                       dev->resource = NULL;
+> +                       return -ENOMEM;
+> +               }
+> +               memset(res, 0, sizeof(*res) * (nirq + nreg));
+> +               dev->resource = res;
+> +               dev->num_resources = nreg + nirq;
+> +
+> +               for (i = 0; i < nreg; i++, res++) {
+> +                       rc = of_address_to_resource(np, i, res);
+> +                       WARN_ON(rc);
+> +                       if (rc)
+> +                               break;
+> +               }
+> +
+> +               if (!rc && of_irq_to_resource_table(np, res, nirq) != nirq) {
+> +                       rc = -ENOENT;
+> +                       WARN_ON(rc);
+> +               }
+> +       }
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL(of_platform_device_populate_resources);
+> +
+>  /**
+>   * of_platform_device_create - Alloc, initialize and register an of_device
+>   * @np: pointer to node to create device for
+> diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
+> index 05cb4a9..315e1e3 100644
+> --- a/include/linux/of_platform.h
+> +++ b/include/linux/of_platform.h
+> @@ -53,6 +53,16 @@ struct of_dev_auxdata {
+>
+>  extern const struct of_device_id of_default_bus_match_table[];
+>
+> +/* Populate the resource for a platform device */
+> +#ifdef CONFIG_OF
+> +int of_platform_device_populate_resources(struct platform_device *dev);
+> +#else
+> +static inline int of_platform_device_populate_resources(
+> +       struct platform_device *)
+> +{
+> +       return -ENOSYS;
+> +}
+> +#endif
+>  /* Platform drivers register/unregister */
+>  extern struct platform_device *of_device_alloc(struct device_node *np,
+>                                          const char *bus_id,
+> --
+> 1.8.5.3
+>
