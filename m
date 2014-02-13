@@ -1,47 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaBMFLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 00:11:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29682 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751089AbaBMFLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 00:11:07 -0500
-Date: Thu, 13 Feb 2014 07:15:59 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>
-Subject: Re: [PATCH net] virtio-net: alloc big buffers also when guest can
- receive UFO
-Message-ID: <20140213051559.GB31352@redhat.com>
-References: <1392183808-16789-1-git-send-email-jasowang@redhat.com>
- <20140212115901.GC23006@redhat.com>
- <52FC35B5.6000900@redhat.com>
+	id S1751652AbaBMFUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 00:20:24 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:59700 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaBMFUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 00:20:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FC35B5.6000900@redhat.com>
+In-Reply-To: <20140212150627.GB5496@localhost.localdomain>
+References: <CALZhoSQZQcM0yKTw1=ZkYz3Z_3X2QxLk0vCw6gKXW55HSrVEdw@mail.gmail.com>
+	<alpine.DEB.2.02.1401221459590.4260@ionos.tec.linutronix.de>
+	<CALZhoSSSOZKwDok2ZHumeZAs0R88SC6bU2BaL54U3TU6jgoaZA@mail.gmail.com>
+	<CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
+	<20140212150627.GB5496@localhost.localdomain>
+Date: Thu, 13 Feb 2014 10:50:19 +0530
+Message-ID: <CAKohpomAmkvHkhqWe685M0W7N2hs0JHuSzrJ+QKmoj-w6QkMRA@mail.gmail.com>
+Subject: Re: Is it ok for deferrable timer wakeup the idle cpu?
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Lei Wen <adrian.wenl@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 11:02:13AM +0800, Jason Wang wrote:
-> On 02/12/2014 07:59 PM, Michael S. Tsirkin wrote:
-> > On Wed, Feb 12, 2014 at 01:43:28PM +0800, Jason Wang wrote:
-> >> > We should alloc big buffers also when guest can receive UFO
-> >> > pakcets. Otherwise the big packets will be truncated when mergeable rx
-> >> > buffer is disabled.
-> > Not truncated, they will be dropped.
-> >
-> 
-> Why dropped? We enable the ufo on tap0 if VIRTIO_NET_F_GUEST_UFO is
-> negotiated. So skb was queued on the receive queue. But since the
-> receive buffer is small, it will be truncated during tun_put_user().
+On 12 February 2014 20:36, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> The change I'm applying is strongly inspired from the above. Can I use your Signed-off-by?
 
-Hypervisor shouldn't truncate packets silently - if it does
-it's a hypervisor bug. Passing malformed packets to guest is
-a bad idea.
-
--- 
-MST
+Sure :)
