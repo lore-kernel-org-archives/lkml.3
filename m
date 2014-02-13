@@ -1,55 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933AbaBMCDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 21:03:08 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51288 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbaBMCDH (ORCPT
+	id S1753079AbaBMCDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 21:03:44 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:7893 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019AbaBMCDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 21:03:07 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: akpm@linux-foundation.org
-Cc: toshi.kani@hp.com, isimatu.yasuaki@jp.fujitsu.com, rientjes@google.com,
-        gong.chen@linux.intel.com, haokexin@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kernel/resource.c: fix sparse non static symbol warning
-Date: Thu, 13 Feb 2014 11:02:59 +0900
-Message-ID: <2767883.6dX08SOjIi@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Wed, 12 Feb 2014 21:03:43 -0500
+Message-ID: <52FC2779.9080905@huawei.com>
+Date: Thu, 13 Feb 2014 10:01:29 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/16] cgroup: remove css_scan_tasks()
+References: <1391953964-22088-1-git-send-email-tj@kernel.org> <1391953964-22088-10-git-send-email-tj@kernel.org>
+In-Reply-To: <1391953964-22088-10-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f8e0752ac80e56bcbfe197a5820692d199822b52 Mon Sep 17 00:00:00 2001
-From: Daeseok Youn <daeseok.youn@gmail.com>
-Date: Thu, 13 Feb 2014 10:11:39 +0900
-Subject: [PATCH] kernel/resource.c: fix sparse non static symbol warning
+On 2014/2/9 21:52, Tejun Heo wrote:
+> css_scan_tasks() doesn't have any user left.  Remove it.
+> 
 
-kernel/resource.c:518:5: warning:
- symbol 'reallocate_resource' was not declared. Should it be static?
-
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- kernel/resource.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 3f285dc..b2979c6 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -515,7 +515,7 @@ static int find_resource(struct resource *root, struct resource *new,
-  * @newsize: new size of the resource descriptor
-  * @constraint: the size and alignment constraints to be met.
-  */
--int reallocate_resource(struct resource *root, struct resource *old,
-+static int reallocate_resource(struct resource *root, struct resource *old,
- 			resource_size_t newsize,
- 			struct resource_constraint  *constraint)
- {
--- 
-1.7.9.5
-
+I always dislike css_scan_tasks().
 
