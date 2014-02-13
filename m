@@ -1,119 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaBMHLL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 02:11:11 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:34692 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730AbaBMHLA (ORCPT
+	id S1752266AbaBMHOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 02:14:40 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:22364 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaBMHOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 02:11:00 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: netdev@vger.kernel.org
-Cc: Srikanth Thokala <sthokal@xilinx.com>, Michal Simek <monstr@monstr.eu>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        John Linn <John.Linn@xilinx.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] net: axienet: Fix compilation warnings
-Date: Thu, 13 Feb 2014 08:10:43 +0100
-Message-Id: <9be652e995e74663de1df69e6ea101225cb670a2.1392275432.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <cover.1392275432.git.michal.simek@xilinx.com>
-References: <cover.1392275432.git.michal.simek@xilinx.com>
-In-Reply-To: <cover.1392275432.git.michal.simek@xilinx.com>
-References: <cover.1392275432.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-8717-1392275455-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 13 Feb 2014 02:14:39 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-e1-52fc70de5ac9
+From: Weijie Yang <weijie.yang@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: anton.vorontsov@linaro.org, rientjes@google.com,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        weijie.yang.kh@gmail.com
+Subject: [PATCH] staging: android: lowmemorykiller: set TIF_MEMDIE before send
+ kill sig
+Date: Thu, 13 Feb 2014 15:13:44 +0800
+Message-id: <000001cf288b$41699f40$c43cddc0$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8oiyGNCzvygZRKQjKNigmNj8zlvw==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t9jAd17BX+CDA7cZ7e42HqbxaJ58Xo2
+	i8u75rBZtC3ZyGTx5MR/FgdWj52z7rJ7LNhU6nHn2h42j/1z17B7fN4kF8AaxWWTkpqTWZZa
+	pG+XwJUx9/1U5oKVHBUTpm5iaWD8xdbFyMkhIWAisfTxNihbTOLCvfVANheHkMAiRokXE46z
+	QDh/GCWOLWhmAaliE9CWuNu/kRXEFhGQk3hy+w8ziM0sUCexc+1SsEnCApES29fPBbI5OFgE
+	VCVOfI4ECfMK2En8PP2KDcIWlPgx+R4LSAmzgLrElCm5EFPkJTavecsMEpYACj/6qwuxSE9i
+	y8xmVogScYmNR26xTGAUmIVk0CyEQbOQDJqFpGMBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k
+	/NxNjOAAfya9g3FVg8UhRgEORiUe3geLfwcJsSaWFVfmHmKU4GBWEuGVkfgTJMSbklhZlVqU
+	H19UmpNafIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoFxztamituKGdNebezwu5Fs
+	8WiqXXh+mUjH3It7Pt1cc2zO0s2r/M7tbXBbybo8frOMWZbBS+fo7tLo3WaC1ZdSGGSCHtyI
+	X757bnraab65u8S21y/4fdlD8F/5hzZpEYvleT4SE9ZUqR84XFI95fy0mZ8n/xVy/2GVyX7h
+	wNozLw/nibbxKOrOVWIpzkg01GIuKk4EANg7h31sAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+Set TIF_MEMDIE tsk_thread flag before send kill signal to the
+selected thread. This is to fit a usual code sequence and avoid
+potential race issue.
 
---=_mimegpg-monstr-desktop-8717-1392275455-0001
-
-Warning log:
-xilinx_axienet_main.c: In function 'axienet_start_xmit_done':
-xilinx_axienet_main.c:617:16: warning: operation on 'lp->tx_bd_ci' may be undefined [-Wsequence-point]
-xilinx_axienet_main.c: In function 'axienet_start_xmit':
-xilinx_axienet_main.c:703:18: warning: operation on 'lp->tx_bd_tail' may be undefined [-Wsequence-point]
-xilinx_axienet_main.c:719:17: warning: operation on 'lp->tx_bd_tail' may be undefined [-Wsequence-point]
-xilinx_axienet_main.c: In function 'axienet_recv':
-xilinx_axienet_main.c:792:16: warning: operation on 'lp->rx_bd_ci' may be undefined [-Wsequence-point]
-xilinx_axienet_main.c: In function 'axienet_of_probe':
-xilinx_axienet_main.c:1501:21: warning: unused variable 'rc' [-Wunused-variable]
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
+ drivers/staging/android/lowmemorykiller.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+ mode change 100644 => 100755 drivers/staging/android/lowmemorykiller.c
 
-Changes in v2:
-- Separate bug fixes from features and cleanups
-
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-index 9fb8ab2..4bfdf8c 100644
---- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-@@ -601,7 +601,8 @@ static void axienet_start_xmit_done(struct net_device *ndev)
- 		size += status & XAXIDMA_BD_STS_ACTUAL_LEN_MASK;
- 		packets++;
-
--		lp->tx_bd_ci = ++lp->tx_bd_ci % TX_BD_NUM;
-+		++lp->tx_bd_ci;
-+		lp->tx_bd_ci %= TX_BD_NUM;
- 		cur_p = &lp->tx_bd_v[lp->tx_bd_ci];
- 		status = cur_p->status;
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+old mode 100644
+new mode 100755
+index 6f094b3..4bcf00a
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -159,8 +159,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
+ 			     selected->pid, selected->comm,
+ 			     selected_oom_score_adj, selected_tasksize);
+ 		lowmem_deathpending_timeout = jiffies + HZ;
+-		send_sig(SIGKILL, selected, 0);
+ 		set_tsk_thread_flag(selected, TIF_MEMDIE);
++		send_sig(SIGKILL, selected, 0);
+ 		rem += selected_tasksize;
  	}
-@@ -687,7 +688,8 @@ static int axienet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 				     skb_headlen(skb), DMA_TO_DEVICE);
-
- 	for (ii = 0; ii < num_frag; ii++) {
--		lp->tx_bd_tail = ++lp->tx_bd_tail % TX_BD_NUM;
-+		++lp->tx_bd_tail;
-+		lp->tx_bd_tail %= TX_BD_NUM;
- 		cur_p = &lp->tx_bd_v[lp->tx_bd_tail];
- 		frag = &skb_shinfo(skb)->frags[ii];
- 		cur_p->phys = dma_map_single(ndev->dev.parent,
-@@ -703,7 +705,8 @@ static int axienet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	tail_p = lp->tx_bd_p + sizeof(*lp->tx_bd_v) * lp->tx_bd_tail;
- 	/* Start the transfer */
- 	axienet_dma_out32(lp, XAXIDMA_TX_TDESC_OFFSET, tail_p);
--	lp->tx_bd_tail = ++lp->tx_bd_tail % TX_BD_NUM;
-+	++lp->tx_bd_tail;
-+	lp->tx_bd_tail %= TX_BD_NUM;
-
- 	return NETDEV_TX_OK;
- }
-@@ -775,7 +778,8 @@ static void axienet_recv(struct net_device *ndev)
- 		cur_p->status = 0;
- 		cur_p->sw_id_offset = (u32) new_skb;
-
--		lp->rx_bd_ci = ++lp->rx_bd_ci % RX_BD_NUM;
-+		++lp->rx_bd_ci;
-+		lp->rx_bd_ci %= RX_BD_NUM;
- 		cur_p = &lp->rx_bd_v[lp->rx_bd_ci];
- 	}
-
---
-1.8.2.3
+ 
+-- 
+1.7.10.4
 
 
---=_mimegpg-monstr-desktop-8717-1392275455-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlL8b/8ACgkQykllyylKDCH+fQCgjcE7z+eIbRWIbtsCwb0o5++m
-yHUAn2im9iGN64W3+14uOX4cZe5gcUV1
-=niAh
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-8717-1392275455-0001--
