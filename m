@@ -1,96 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbaBMUAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:00:18 -0500
-Received: from trent.utfs.org ([94.185.90.103]:42236 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614AbaBMT7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:59:53 -0500
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 14:59:53 EST
-Date: Thu, 13 Feb 2014 11:53:05 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-cc: linux-mm@kvack.org
-Subject: 3.14.0-rc2: WARNING: at mm/slub.c:1007
-Message-ID: <alpine.DEB.2.19.4.1402131144390.6233@trent.utfs.org>
-User-Agent: Alpine 2.19.4 (DEB 40 2013-11-18)
+	id S1753216AbaBMUAQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:00:16 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:34696 "EHLO
+	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaBMUAM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 15:00:12 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Thu, 13 Feb 2014 11:47:33 -0800
+Message-ID: <52FD244B.1050307@synaptics.com>
+Date: Thu, 13 Feb 2014 12:00:11 -0800
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Andrew Duggan <aduggan@synaptics.com>,
+        Vincent Huang <vincent.huang@tw.synaptics.com>,
+        Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/11] Input: synaptics-rmi4 - make accessor for platform
+ data return const pointer
+References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com> <1392269277-16391-10-git-send-email-dmitry.torokhov@gmail.com>
+In-Reply-To: <1392269277-16391-10-git-send-email-dmitry.torokhov@gmail.com>
+X-Originating-IP: [10.3.20.103]
+X-Brightmail-Tracker: AAAAAQAAAWE=
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
+> When accessing platform data of RMI device let's make sure we do not
+> accidentally change data that may be shared by returning const pointer.
+> Also switch to an inline function instead of macro to ensure type safety.
 
-after upgrading from 3.13-rc8 to 3.14.0-rc2 on this PowerPC G4 machine, 
-the WARNING below was printed.
+That's a good idea.  We'll want to look at some of our other #define 
+accessors as well, I think.
 
-Shortly after, a lockdep warning appeared (possibly related to my 
-post to the XFS list yesterday[0]).
+Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
 
-Even later in the log an out-of-memory error appeared, that may or may not 
-be relatd to that WARNING at all but which I'm trying to chase down ever 
-since 3.13, but which tends to appear more often lately.
-
-Can anyone take a look if this is something to worry about?
-
-Full dmesg & .config: http://nerdbynature.de/bits/3.14-rc2/mm/
-
-Thanks,
-Christian.
-
-[0] http://oss.sgi.com/pipermail/xfs/2014-February/034054.html
-
- ------------[ cut here ]------------
- WARNING: at /usr/local/src/linux-git/mm/slub.c:1007
- Modules linked in: md5 ecb nfs i2c_powermac therm_adt746x ecryptfs arc4 
-firewire_sbp2 b43 usb_storage mac80211 cfg80211
- CPU: 0 PID: 9025 Comm: nfsd Not tainted 3.14.0-rc2 #1
- task: efbf8000 ti: ed2a0000 task.ti: ed2a0000
- NIP: c00ccc28 LR: c00ccc20 CTR: 00000000
- REGS: ed2a1980 TRAP: 0700   Not tainted  (3.14.0-rc2)
- MSR: 00021032 <ME,IR,DR,RI>  CR: 22f82b82  XER: 20000000
- 
- GPR00: c00ccc20 ed2a1a30 efbf8000 00000000 ef96e550 00000000 00000000 
-00002ce0 
- GPR08: 00000000 00000001 efbf86f8 000005e7 82fc2b88 00000000 00000001 
-00080011 
- GPR16: 00000000 00000000 c0760000 00000000 ef96e564 00100100 00200200 
-c1203914 
- GPR24: 00000000 ef96e540 00000002 ef96fa80 00000000 00000000 ed2a0000 
-c1203900 
- NIP [c00ccc28] deactivate_slab+0x4c0/0x538
- LR [c00ccc20] deactivate_slab+0x4b8/0x538
- Call Trace:
- [ed2a1a30] [c00ccc20] deactivate_slab+0x4b8/0x538 (unreliable)
- [ed2a1ae0] [c055d5f0] __slab_alloc.constprop.77+0x260/0x38c
- [ed2a1b50] [c00cd524] kmem_cache_alloc+0x118/0x140
- [ed2a1b70] [c01de4bc] kmem_zone_alloc+0x94/0x108
- [ed2a1ba0] [c01cccd4] xfs_inode_alloc+0x2c/0xd4
- [ed2a1bc0] [c01cd7a4] xfs_iget+0x2e4/0x584
- [ed2a1c30] [c020e664] xfs_lookup+0xc8/0xe4
- [ed2a1c70] [c01d3c28] xfs_vn_lookup+0x64/0xbc
- [ed2a1c90] [c00db3ac] lookup_real+0x30/0x70
- [ed2a1ca0] [c00dc384] __lookup_hash+0x3c/0x58
- [ed2a1cc0] [c00e1438] lookup_one_len+0x10c/0x15c
- [ed2a1ce0] [c01a170c] nfsd4_encode_dirent+0xb4/0x328
- [ed2a1d10] [c018f580] nfsd_readdir+0x1d4/0x288
- [ed2a1d90] [c019d648] nfsd4_encode_readdir+0x138/0x1f4
- [ed2a1dd0] [c01a1b18] nfsd4_encode_operation+0x8c/0xf0
- [ed2a1df0] [c019aa4c] nfsd4_proc_compound+0x1b8/0x4f8
- [ed2a1e30] [c0189d20] nfsd_dispatch+0x90/0x1a0
- [ed2a1e50] [c0536b04] svc_process+0x3d0/0x698
- [ed2a1e90] [c01895bc] nfsd+0xc0/0x120
- [ed2a1eb0] [c004f8fc] kthread+0xbc/0xd0
- [ed2a1f40] [c0010ae4] ret_from_kernel_thread+0x5c/0x64
- Instruction dump:
- 7fe4fb78 800100b4 b9c10068 7d810120 7d808120 7c0803a6 382100b0 4bfffb00 
- 80610048 4bf95dc5 2f830000 40beff4c <0fe00000> 4bffff44 815e000c 394a0001 
- ---[ end trace 1f5ed3ea8b3e4403 ]---
+>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>   drivers/input/rmi4/rmi_bus.h    | 7 ++++++-
+>   drivers/input/rmi4/rmi_driver.c | 8 ++++----
+>   drivers/input/rmi4/rmi_f01.c    | 2 +-
+>   drivers/input/rmi4/rmi_f11.c    | 2 +-
+>   4 files changed, 12 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/input/rmi4/rmi_bus.h b/drivers/input/rmi4/rmi_bus.h
+> index 8d47f52..02a2af8 100644
+> --- a/drivers/input/rmi4/rmi_bus.h
+> +++ b/drivers/input/rmi4/rmi_bus.h
+> @@ -224,7 +224,12 @@ struct rmi_device {
+>   };
+>
+>   #define to_rmi_device(d) container_of(d, struct rmi_device, dev)
+> -#define to_rmi_platform_data(d) ((d)->xport->dev->platform_data)
+> +
+> +static inline const struct rmi_device_platform_data *
+> +rmi_get_platform_data(struct rmi_device *d)
+> +{
+> +	return dev_get_platdata(d->xport->dev);
+> +}
+>
+>   bool rmi_is_physical_device(struct device *dev);
+>
+> diff --git a/drivers/input/rmi4/rmi_driver.c b/drivers/input/rmi4/rmi_driver.c
+> index 736cfbd..473efbc 100644
+> --- a/drivers/input/rmi4/rmi_driver.c
+> +++ b/drivers/input/rmi4/rmi_driver.c
+> @@ -598,7 +598,7 @@ static int rmi_initial_reset(struct rmi_device *rmi_dev,
+>   		u16 cmd_addr = pdt->page_start + pdt->command_base_addr;
+>   		u8 cmd_buf = RMI_DEVICE_RESET_CMD;
+>   		const struct rmi_device_platform_data *pdata =
+> -				to_rmi_platform_data(rmi_dev);
+> +				rmi_get_platform_data(rmi_dev);
+>
+>   		error = rmi_write_block(rmi_dev, cmd_addr, &cmd_buf, 1);
+>   		if (error) {
+> @@ -621,7 +621,7 @@ static int rmi_create_function(struct rmi_device *rmi_dev,
+>   {
+>   	struct device *dev = &rmi_dev->dev;
+>   	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
+> -	struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
+> +	const struct rmi_device_platform_data *pdata = rmi_get_platform_data(rmi_dev);
+>   	int *current_irq_count = ctx;
+>   	struct rmi_function *fn;
+>   	int i;
+> @@ -745,7 +745,7 @@ static int rmi_driver_remove(struct device *dev)
+>   	struct rmi_device *rmi_dev = to_rmi_device(dev);
+>   	struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
+>   	const struct rmi_device_platform_data *pdata =
+> -					to_rmi_platform_data(rmi_dev);
+> +					rmi_get_platform_data(rmi_dev);
+>
+>   	disable_sensor(rmi_dev);
+>   	rmi_free_function_list(rmi_dev);
+> @@ -781,7 +781,7 @@ static int rmi_driver_probe(struct device *dev)
+>   	rmi_driver = to_rmi_driver(dev->driver);
+>   	rmi_dev->driver = rmi_driver;
+>
+> -	pdata = to_rmi_platform_data(rmi_dev);
+> +	pdata = rmi_get_platform_data(rmi_dev);
+>
+>   	data = devm_kzalloc(dev, sizeof(struct rmi_driver_data), GFP_KERNEL);
+>   	if (!data) {
+> diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
+> index 0e21004..36fcf8d 100644
+> --- a/drivers/input/rmi4/rmi_f01.c
+> +++ b/drivers/input/rmi4/rmi_f01.c
+> @@ -184,7 +184,7 @@ static int rmi_f01_probe(struct rmi_function *fn)
+>   {
+>   	struct rmi_device *rmi_dev = fn->rmi_dev;
+>   	struct rmi_driver_data *driver_data = dev_get_drvdata(&rmi_dev->dev);
+> -	const struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
+> +	const struct rmi_device_platform_data *pdata = rmi_get_platform_data(rmi_dev);
+>   	struct f01_data *f01;
+>   	size_t f01_size;
+>   	int error;
+> diff --git a/drivers/input/rmi4/rmi_f11.c b/drivers/input/rmi4/rmi_f11.c
+> index 2aa7d17..5072437 100644
+> --- a/drivers/input/rmi4/rmi_f11.c
+> +++ b/drivers/input/rmi4/rmi_f11.c
+> @@ -1176,7 +1176,7 @@ static int rmi_f11_initialize(struct rmi_function *fn)
+>   	u16 control_base_addr;
+>   	u16 max_x_pos, max_y_pos, temp;
+>   	int rc;
+> -	struct rmi_device_platform_data *pdata = to_rmi_platform_data(rmi_dev);
+> +	const struct rmi_device_platform_data *pdata = rmi_get_platform_data(rmi_dev);
+>   	struct f11_2d_sensor *sensor;
+>   	u8 buf;
+>
+>
 
 
 -- 
-BOFH excuse #65:
 
-system needs to be rebooted
+Christopher Heiny
+Senior Staff Firmware Engineer
+Synaptics Incorporated
