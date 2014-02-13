@@ -1,101 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaBMAHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 19:07:01 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43460 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922AbaBMAG6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 19:06:58 -0500
-Message-ID: <52FC0CA1.5000004@codeaurora.org>
-Date: Wed, 12 Feb 2014 16:06:57 -0800
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753267AbaBMAH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 19:07:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54874 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751854AbaBMAHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 19:07:55 -0500
+Date: Wed, 12 Feb 2014 19:07:49 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Akhil Bhansali <abhansali@stec-inc.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: skd: disable discard support
+Message-ID: <20140213000749.GA5414@redhat.com>
+References: <20140212221835.GA4265@redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: devicetree@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
-References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org> <201402121251.06280.arnd@arndb.de>
-In-Reply-To: <201402121251.06280.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212221835.GA4265@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/12/2014 3:51 AM, Arnd Bergmann wrote:
-> On Wednesday 12 February 2014, Laura Abbott wrote:
->> This is an RFC to seed the random number pool earlier when using devicetree.
->> The big issue this is trying to solve is the fact that the stack canary for
->> ARM tends to be the same across bootups of the same device. This is because
->> the random number pools do not get initialized until after the canary has
->> been set up. The canary can be moved later, but in general there is still
->> no way to reliably get random numbers early for other features (e.g. vector
->> randomization).
->
-> Implementation-wise this looks reasonable, and it obviously addresses a
-> very real problem.
->
->> The goal here is to allow devices to add to the random pools via
->> add_device_randomness or some other method of their chosing at FDT time.
->> I realize that ARCH_RANDOM is already available but this didn't work because
->> 1) ARCH_RANDOM is not multi-platform compatible without added
->> infrastructure to ARM
->
-> That could certainly be done, but I agree that a more generic
-> approach like you did is nicer. One thing that might be useful
-> would be to wire up your OF_RANDOM infrastructure as a generic
-> implementation of ARCH_RANDOM, and merge your header file into
-> include/asm-generic/archrandom.h, with an added way to call
-> arch_get_random_long() for the devices you add.
->
+On Wed, Feb 12 2014 at  5:18pm -0500,
+Mike Snitzer <snitzer@redhat.com> wrote:
 
-I originally tried that approach but ran into some hiccups related to 
-mapping for access to the HWRNG. early_ioremap would be needed to access 
-hardware registers but on ARM early_ioremap does not persist across 
-paging init. I couldn't come up with a sufficiently not terrible way to 
-unmap the early mapping and re-map with a proper ioremap.
+> The skd driver has never handled discards reliably.
+> 
+> The kernel will BUG as a result of issuing discards to the skd device.
+> Disable the skd driver's discard support until it is proven reliable.
+> 
+> The device-mapper-test-suite test that exposed this bug just issues a
+> discard that covers a portion of the skd device that was previously
+> written through a dm-thin device.  The discard spans the entire 1GB thin
+> device (logical sector 0 through 2097152).
+> 
+> dmtest run --profile stec --suite thin-provisioning -n /discard_fully_provisioned_device/
 
->> The big reason to skip ARCH_RANDOM though is that the random number generation
->> we have would be reasonable if only seeded earlier.
->
-> Yes, makes sense.
->
-> I also wonder if we should add a 'trivial' implementation that just
-> reads a DT property full of random numbers to use as either an initial
-> seed, or to feed into arch_get_random_long(). This would allow the
-> boot loader to pass any entropy it has already gathered into the kernel,
-> but leaves the danger that people might pass static not-so-random data
-> through a precompiled dtb file ;-). If we get the boot loaders to be
-> smart enough, doing only this would be a much simpler kernel implementation
-> than your suggestion, but I'm not sure how far I want to trust boot loaders.
->
+I retested after applying these linux-block.git commits ontop of
+3.14-rc1:
 
-This was similar to an option discussed internally (passing a seed on 
-the command line). Ultimately, it was concluded that relying on the 
-bootloader to do this would be too much overhead vs. doing all the work 
-in the kernel.
+5cb8850c9c4a block: Explicitly handle discard/write same segments
+8423ae3d7a3c block: Fix cloning of discard/write same bios
 
-> Another possibilitiy is to mix in the any contents of a "local-mac-address"
-> property into the entropy at early DT probing, which would still be
-> deterministic for a given machine and should not count as entropty,
-> but at least give each machine with this property a unique seed in the
-> absence of any other entropy source.
+And got this:
 
-Is this typically updated by the bootloader as well? I'm looking at the 
-tree and most of the instances of local-mac-address I see are all zero.
-
->
-> 	Arnd
-
-Thanks,
-Laura
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+request botched: dev skd0: type=1, flags=12248081
+  sector 8390784, nr/cnr 0/128
+  bio ffff88033169cba0, biotail ffff88032e42bb60, buffer           (null), len 0                                                                                       
+------------[ cut here ]------------                                                                                                                                   
+kernel BUG at block/blk-core.c:2693!                                                                                                                                   
+invalid opcode: 0000 [#1] SMP                                                                                                                                          
+Modules linked in: dm_thin_pool dm_bio_prison dm_persistent_data dm_bufio libcrc32c ebtable_nat ebtables xt_CHECKSUM iptable_mangle bridge autofs4 target_core_iblock t
+arget_core_file target_core_pscsi target_core_mod configfs bnx2fc fcoe libfcoe 8021q libfc garp stp llc scsi_transport_fc scsi_tgt sunrpc cpufreq_ondemand ipt_REJECT n
+f_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables bnx2i cnic uio i
+pv6 cxgb4i cxgb4 cxgb3i libcxgbi cxgb3 iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror dm_region_hash dm_log vhost_net macvtap macvlan vhost tun kvm_int
+el kvm iTCO_wdt iTCO_vendor_support microcode i2c_i801 lpc_ich mfd_core igb i2c_algo_bit i2c_core i7core_edac edac_core ixgbe dca ptp pps_core mdio ses enclosure sg ac
+pi_cpufreq dm_mod ext4 jbd2 mbcache sr_mod cdrom pata_acpi ata_generic ata_piix skd sd_mod crc_t10dif crct10dif_common megaraid_sas                                    
+CPU: 2 PID: 0 Comm: swapper/2 Tainted: G        W    3.14.0-rc1.snitm+ #5                                                                                              
+Hardware name: FUJITSU                          PRIMERGY RX300 S6             /D2619, BIOS 6.00 Rev. 1.10.2619.N1           05/24/2011                                 
+task: ffff88033299e150 ti: ffff8803329a4000 task.ti: ffff8803329a4000                                                                                                  
+RIP: 0010:[<ffffffff81252f1a>]  [<ffffffff81252f1a>] __blk_end_request_all+0x2a/0x40                                                                                   
+RSP: 0018:ffff88033fc43cf8  EFLAGS: 00010002                                                                                                                           
+RAX: 0000000000000001 RBX: ffff88032e636ac8 RCX: 0000000000000006                                                                                                      
+RDX: 0000000000000001 RSI: ffff88033169cba0 RDI: ffff88032ec755c0                                                                                                      
+RBP: ffff88033fc43cf8 R08: 0000000000000002 R09: 0000000000000000                                                                                                      
+R10: 00000000000006f3 R11: 0000000000000001 R12: 0000000000000000                                                                                                      
+R13: ffff88033195faa8 R14: ffff8800ba396000 R15: 0000000000000001                                                                                                      
+FS:  0000000000000000(0000) GS:ffff88033fc40000(0000) knlGS:0000000000000000                                                                                           
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b                                                                                                                      
+CR2: 0000003bfea13000 CR3: 000000032fbdc000 CR4: 00000000000007e0                                                                                                      
+Stack:                                                                                                                                                                 
+ ffff88033fc43d58 ffffffffa0037b85 ffff88033fc43d48 ffffffff8129ca09                                                                                    
+ ffff88033fc43d28 ffff88032e636ac8 ffff8800ba396000 ffff88032e650080
+ ffff8800ba396000 ffff88032e650080 ffff88032e636ac8 0000000000003c17
+Call Trace:
+ <IRQ>
+ [<ffffffffa0037b85>] skd_end_request+0x55/0x160 [skd]
+ [<ffffffff8129ca09>] ? swiotlb_unmap_sg_attrs+0x69/0x80
+ [<ffffffffa003c513>] skd_isr_completion_posted+0x1e3/0x5d0 [skd]
+ [<ffffffff810930a3>] ? __wake_up+0x53/0x70
+ [<ffffffffa003d1b2>] skd_isr+0x122/0x280 [skd]
+ [<ffffffff810a73ed>] handle_irq_event_percpu+0x6d/0x200
+ [<ffffffff810a75c2>] handle_irq_event+0x42/0x70
+ [<ffffffff810aad19>] handle_edge_irq+0x69/0x120
+ [<ffffffff81005aec>] handle_irq+0x5c/0x150
+ [<ffffffff815470f2>] ? __atomic_notifier_call_chain+0x12/0x20
+ [<ffffffff81547116>] ? atomic_notifier_call_chain+0x16/0x20
+ [<ffffffff8154d91e>] do_IRQ+0x5e/0x110
+ [<ffffffff8154366a>] common_interrupt+0x6a/0x6a
+ <EOI>
+ [<ffffffff8144d5e3>] ? cpuidle_enter_state+0x53/0xd0
+ [<ffffffff8144d5df>] ? cpuidle_enter_state+0x4f/0xd0
+ [<ffffffff8144d7a7>] cpuidle_idle_call+0xc7/0x160
+ [<ffffffff8100cf5e>] arch_cpu_idle+0xe/0x30
+ [<ffffffff810a696a>] cpu_idle_loop+0x9a/0x240
+ [<ffffffff810b9e64>] ? clockevents_register_device+0xc4/0x130
+ [<ffffffff810a6b33>] cpu_startup_entry+0x23/0x30
+ [<ffffffff81032d5a>] start_secondary+0x7a/0x80
+Code: 00 55 48 89 e5 66 66 66 66 90 48 8b 87 78 01 00 00 48 85 c0 75 10 31 c9 8b 57 64 e8 91 ff ff ff 84 c0 75 07 c9 c3 8b 48 64 eb ed <0f> 0b 0f 1f 40 00 eb fa 66 66
+66 66 66 2e 0f 1f 84 00 00 00 00
+RIP  [<ffffffff81252f1a>] __blk_end_request_all+0x2a/0x40
+ RSP <ffff88033fc43cf8>
+---[ end trace 494de22d0f0be0f8 ]---
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.394 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.402 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.405 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.410 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.414 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.417 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.421 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.424 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.428 msecs
+INFO: NMI handler (ghes_notify_nmi) took too long to run: 2.431 msecs
+Kernel panic - not syncing: Fatal exception in interrupt
+Shutting down cpus with NMI
+Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
