@@ -1,137 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861AbaBMAdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 19:33:20 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60410 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbaBMAdQ (ORCPT
+	id S1752995AbaBMAdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 19:33:44 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48572 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305AbaBMAdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 19:33:16 -0500
-Date: Wed, 12 Feb 2014 16:33:11 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
- workqueue
-Message-ID: <20140213003311.GJ4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
- <52F8A51F.4090909@cn.fujitsu.com>
- <20140210184729.GL4250@linux.vnet.ibm.com>
- <20140212182336.GD5496@localhost.localdomain>
- <20140212190241.GD4250@linux.vnet.ibm.com>
- <20140212192354.GC26809@htj.dyndns.org>
- <20140212195922.GE4250@linux.vnet.ibm.com>
- <20140212230454.GA14383@localhost.localdomain>
+	Wed, 12 Feb 2014 19:33:42 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-40-52fc12e31f8b
+Message-ID: <52FC12E3.9060300@lge.com>
+Date: Thu, 13 Feb 2014 09:33:39 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212230454.GA14383@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021300-6688-0000-0000-0000066EE9EF
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [BUG] perf report/annotate: consuming too many file descriptors
+References: <CABPqkBSzttXoe3f_jC=Fv+ieN7_TNxLMDs4CH1C0TLYRq+Oz7g@mail.gmail.com>
+In-Reply-To: <CABPqkBSzttXoe3f_jC=Fv+ieN7_TNxLMDs4CH1C0TLYRq+Oz7g@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------030908040302000509050709"
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 12:04:57AM +0100, Frederic Weisbecker wrote:
-> On Wed, Feb 12, 2014 at 11:59:22AM -0800, Paul E. McKenney wrote:
-> > On Wed, Feb 12, 2014 at 02:23:54PM -0500, Tejun Heo wrote:
-> > > Hello,
-> > > 
-> > > On Wed, Feb 12, 2014 at 11:02:41AM -0800, Paul E. McKenney wrote:
-> > > > +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
-> > > > +	to force the WQ_SYSFS workqueues to run on the specified set
-> > > > +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
-> > > > +	"ls sys/devices/virtual/workqueue".
-> > > 
-> > > One thing to be careful about is that once published, it becomes part
-> > > of userland visible interface.  Maybe adding some words warning
-> > > against sprinkling WQ_SYSFS willy-nilly is a good idea?
-> > 
-> > Good point!  How about the following?
-> > 
-> > 							Thanx, Paul
-> > 
-> > ------------------------------------------------------------------------
-> > 
-> > Documentation/kernel-per-CPU-kthreads.txt: Workqueue affinity
-> > 
-> > This commit documents the ability to apply CPU affinity to WQ_SYSFS
-> > workqueues, thus offloading them from the desired worker CPUs.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > 
-> > diff --git a/Documentation/kernel-per-CPU-kthreads.txt b/Documentation/kernel-per-CPU-kthreads.txt
-> > index 827104fb9364..214da3a47a68 100644
-> > --- a/Documentation/kernel-per-CPU-kthreads.txt
-> > +++ b/Documentation/kernel-per-CPU-kthreads.txt
-> > @@ -162,7 +162,16 @@ Purpose: Execute workqueue requests
-> >  To reduce its OS jitter, do any of the following:
-> >  1.	Run your workload at a real-time priority, which will allow
-> >  	preempting the kworker daemons.
-> > -2.	Do any of the following needed to avoid jitter that your
-> > +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
-> > +	to force the WQ_SYSFS workqueues to run on the specified set
-> > +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
-> > +	"ls sys/devices/virtual/workqueue".  That said, the workqueues
-> > +	maintainer would like to caution people against indiscriminately
-> > +	sprinkling WQ_SYSFS across all the workqueues.  The reason for
-> > +	caution is that it is easy to add WQ_SYSFS, but because sysfs
-> > +	is part of the formal user/kernel API, it can be nearly impossible
-> > +	to remove it, even if its addition was a mistake.
-> > +3.	Do any of the following needed to avoid jitter that your
-> 
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> 
-> I just suggest we append a small explanation about what WQ_SYSFS is about.
-> Like:
+This is a multi-part message in MIME format.
+--------------030908040302000509050709
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Fair point!  I wordsmithed it into the following.  Seem reasonable?
+Hi Stephane,
 
-							Thanx, Paul
+(I'd be better if you use my korg address).
 
-------------------------------------------------------------------------
+2014-02-12 PM 11:32, Stephane Eranian wrote:
+> Hi,
+>
+>
+> I was testing 3.14-rc2 (tip.git) perf and ran into a serious problem
+> with report/annotate on a collection with lots of shared libraries (500).
+>
+> Perf ran out of file descriptors (ulimit set to 1024). It did not print
+> an error message, but simply refused to proceed to objdump.
+>
+> I ran strace and discovered it was running out of descriptors to
+> my big surprise! I narrowed it down with strace -etrace=open.
+> I saw an appalling result.
+>
+> My .so files were opened at least 4 times each, each
+> allocated an fd that was kept open, each open incur a read of the ELF
+> headers. So each dso was consuming 4 fd.
+>
+> Why?
+>
+> Because of what's going on in dso__load() when perf iterates
+> over the binary_type_symtab[]. It tries a bunch of types. For
+> each match, symsrc_init() is invoked to read the ELF image.
+> The fd opened there is kept open (for later loading).
+>
+> The first problem is why is dso__read_binary_type_filename()
+> blindly returning success on many types. For my files, I got matches
+> on DEBUGLINK, SYSTEM_DSO_PATH, GUEST_KMODULE,
+> SYSTEM_PATH_KMODULE.
+>
+> I have a tendency to believe that the dso__read_binary_type_filename()
+> meaning has been abused to stash things that do not really
+> belong there.
+>
+> Furthermore, I believe many of the type matches do NOT need an ELF
+> read and certainly not one that keeps a descriptor opened.
+>
+> This problem is not just about consuming too many fd, it is also about
+> execution overhead. Why read the ELF headers 4 times?
+>
+> The current situation makes reporting on large collection impossible for
+> regular users. I don't quite know how to best address this issue. One way
+> I found would be for  dso__read_binary_type_filename() to return a value
+> meaning success but no ELF read. Not sure would be correct, though.
 
-Documentation/kernel-per-CPU-kthreads.txt: Workqueue affinity
+It looks like a case of stripped binary or static build.  dso__load() 
+looked for both of symtab and dynsym, but it failed.  So it iterated 
+through the binary types and continued to fail with fd open. :(
 
-This commit documents the ability to apply CPU affinity to WQ_SYSFS
-workqueues, thus offloading them from the desired worker CPUs.
+I think we should close/destroy the duplicate symsrcs.  Does attached 
+patch fix your problem?
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Thanks,
+Namhyung
 
-diff --git a/Documentation/kernel-per-CPU-kthreads.txt b/Documentation/kernel-per-CPU-kthreads.txt
-index 827104fb9364..f3cd299fcc41 100644
---- a/Documentation/kernel-per-CPU-kthreads.txt
-+++ b/Documentation/kernel-per-CPU-kthreads.txt
-@@ -162,7 +162,18 @@ Purpose: Execute workqueue requests
- To reduce its OS jitter, do any of the following:
- 1.	Run your workload at a real-time priority, which will allow
- 	preempting the kworker daemons.
--2.	Do any of the following needed to avoid jitter that your
-+2.	A given workqueue can be made visible in the sysfs filesystem
-+	by passing the WQ_SYSFS to that workqueue's alloc_workqueue().
-+	Such a workqueue can be confined to a given subset of the
-+	CPUs using the /sys/devices/virtual/workqueue/*/cpumask sysfs
-+	files.	The set of WQ_SYSFS workqueues can be displayed using
-+	"ls sys/devices/virtual/workqueue".  That said, the workqueues
-+	maintainer would like to caution people against indiscriminately
-+	sprinkling WQ_SYSFS across all the workqueues.	The reason for
-+	caution is that it is easy to add WQ_SYSFS, but because sysfs is
-+	part of the formal user/kernel API, it can be nearly impossible
-+	to remove it, even if its addition was a mistake.
-+3.	Do any of the following needed to avoid jitter that your
- 	application cannot tolerate:
- 	a.	Build your kernel with CONFIG_SLUB=y rather than
- 		CONFIG_SLAB=y, thus avoiding the slab allocator's periodic
 
+--------------030908040302000509050709
+Content-Type: text/plain; charset=x-windows-949;
+ name="destory-unnecessary-symsrc.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="destory-unnecessary-symsrc.patch"
+
+ZGlmZiAtLWdpdCBhL3Rvb2xzL3BlcmYvdXRpbC9zeW1ib2wuYyBiL3Rvb2xzL3BlcmYvdXRp
+bC9zeW1ib2wuYwppbmRleCBhYmViYzI1OTE5NjAuLmNkOTcwMTA2ZGU5OSAxMDA2NDQKLS0t
+IGEvdG9vbHMvcGVyZi91dGlsL3N5bWJvbC5jCisrKyBiL3Rvb2xzL3BlcmYvdXRpbC9zeW1i
+b2wuYwpAQCAtMTMzNyw2ICsxMzM3LDggQEAgaW50IGRzb19fbG9hZChzdHJ1Y3QgZHNvICpk
+c28sIHN0cnVjdCBtYXAgKm1hcCwgc3ltYm9sX2ZpbHRlcl90IGZpbHRlcikKIAogCQkJaWYg
+KHN5bXNfc3MgJiYgcnVudGltZV9zcykKIAkJCQlicmVhazsKKwkJfSBlbHNlIHsKKwkJCXN5
+bXNyY19fZGVzdHJveShzcyk7CiAJCX0KIAogCX0K
+--------------030908040302000509050709--
