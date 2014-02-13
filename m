@@ -1,85 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaBMJ57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:57:59 -0500
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:56344 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753382AbaBMJ54 (ORCPT
+	id S1753941AbaBMJ61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:58:27 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37101 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382AbaBMJ6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:57:56 -0500
-Message-ID: <1392285474.30853.28.camel@x220>
-Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_ADT7310" and friends
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Guenter Roeck <linux@roeck-us.net>, Steven Miao <realmz6@gmail.com>,
-        adi-buildroot-devel@lists.sourceforge.net,
+	Thu, 13 Feb 2014 04:58:23 -0500
+Date: Thu, 13 Feb 2014 09:58:17 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: jdelvare@suse.de, linux@roeck-us.net, lm-sensors@lm-sensors.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 13 Feb 2014 10:57:54 +0100
-In-Reply-To: <51507126.2040002@metafoo.de>
-References: <1364211831.1390.285.camel@x61.thuisdomein>
-	 <20130325152258.GA17467@roeck-us.net> <51507126.2040002@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Feb 2014 09:57:55.0052 (UTC) FILETIME=[10E882C0:01CF28A2]
-X-RcptDomain: vger.kernel.org
+Subject: Re: [RFC PATCH] hwmon: (max6650) Convert to be a platform driver
+Message-ID: <20140213095817.GD32508@lee--X1>
+References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392281438-31836-1-git-send-email-lpapp@kde.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Replaced previous maintainer and list with current maintainer and
-list.]
-
-On Mon, 2013-03-25 at 16:45 +0100, Lars-Peter Clausen wrote:
-> On 03/25/2013 04:22 PM, Guenter Roeck wrote:
-> > On Mon, Mar 25, 2013 at 12:43:51PM +0100, Paul Bolle wrote:
-> >> The Kconfig symbol ADT7310 got removed in commit
-> >> 2b0c856ad9571013db8fc369194b7108dff3c18e ("staging:iio: Consolidate
-> >> adt7310 and adt7410 driver"). That commit did not touch the references
-> >> to CONFIG_ADT7310 and CONFIG_ADT7310_MODULE in the BF537-STAMP code.
-> >> Convert these now, to their ADT7410 equivalents.
-> >>
-> >> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> >> ---
-> >> 0) Untested. This took a bit of guesswork. I guessed that multiple AD
-> >> drivers can be enabled at the same time in this code. And I also guessed
-> >> that the "adt7310" modalias is still correct.
-> >>
-> >> 1) If this passes testing it could go in stable (3.8.y).
-> >>
-> >>  arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-> >> index 95114ed..23bb55d 100644
-> >> --- a/arch/blackfin/mach-bf537/boards/stamp.c
-> >> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
-> >> @@ -700,7 +700,7 @@ static struct bfin5xx_spi_chip ad7816_spi_chip_info = {
-> >>  };
-> >>  #endif
-> >>  
-> >> -#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
-> >> +#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
-> > 
-> > It might be easier and more future-proof to just drop the conditional.
-> > If the driver isn't there, it won't be loaded anyway. It would also make
-> > back-porting much easier.
-> > 
-> > Guenter
+> The MFD driver has now been added, so this driver is now being adopted to be a
+> subdevice driver on top of it. This means, the i2c driver usage is being
+> converted to platform driver usage all around.
 > 
-> 
-> The situation is unfortunately really messy. The issue is that these are
-> add-on board and the same SPI chip select pin is used for multiple devices.
-> If we add the spi_board_info for all devices unconditionally the SPI core
-> will scream at us because we tried to register multiple devices with the
-> same chip select pin and none of the devices gets actually registered.
+> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+> ---
+> This patch has been compile tested only and will be tested with real hardware,
+> but early reviews to catch any trivial issues would be welcome.
+>  drivers/hwmon/Kconfig   |   2 +-
+>  drivers/hwmon/max6650.c | 155 ++++++++++++++++++++++++------------------------
+>  2 files changed, 79 insertions(+), 78 deletions(-)
 
-This issue is still present in v3.14-rc2. Guenter's suggestion is the
-easiest way out. Should I submit a trivial patch that just removes the
-dead code depending on never defined CONFIG_ADT7310 and
-CONFIG_ADT7310_MODULE?
+<snip>
 
+>  /*
+>   * Insmod parameters
+> @@ -105,24 +108,23 @@ module_param(clock, int, S_IRUGO);
+>  
+>  #define DIV_FROM_REG(reg) (1 << (reg & 7))
+>  
+> -static int max6650_probe(struct i2c_client *client,
+> -			 const struct i2c_device_id *id);
+> -static int max6650_init_client(struct i2c_client *client);
+> -static int max6650_remove(struct i2c_client *client);
+> +static int max6650_probe(struct platform_device *pdev);
+> +static int max6650_init_client(struct platform_device *pdev);
+> +static int max6650_remove(struct platform_device *pdev);
+>  static struct max6650_data *max6650_update_device(struct device *dev);
 
-Paul Bolle
+It would be good to remove these forward declarations in the future.
 
+If no one volunteers I'll happily do it.
+
+>  /*
+>   * Driver data (common to all clients)
+>   */
+>  
+> -static const struct i2c_device_id max6650_id[] = {
+> +static const struct platform_device_id max6650_id[] = {
+>  	{ "max6650", 1 },
+>  	{ "max6651", 4 },
+>  	{ }
+>  };
+> -MODULE_DEVICE_TABLE(i2c, max6650_id);
+> +MODULE_DEVICE_TABLE(platform, max6650_id);
+
+I thought you were going to do the matching in the MFD driver?
+
+If not, what's the point in the exported 'type' attribute?
+
+> -static struct i2c_driver max6650_driver = {
+> +static struct platform_driver max6650_driver = {
+>  	.driver = {
+>  		.name	= "max6650",
+
+This should be changed as it now supports max665{0,1} right?
+
+<snip>
+
+> -	i2c_smbus_write_byte_data(client, MAX6650_REG_SPEED, data->speed);
+> +	regmap_write(data->iodev->map, MAX6650_REG_SPEED, data->speed);
+
+Ensure all of the regmap stuff is fully tested.
+
+<snip>
+
+> @@ -484,10 +482,12 @@ static umode_t max6650_attrs_visible(struct kobject *kobj, struct attribute *a,
+>  				    int n)
+>  {
+>  	struct device *dev = container_of(kobj, struct device, kobj);
+> -	struct i2c_client *client = to_i2c_client(dev);
+> -	u8 alarm_en = i2c_smbus_read_byte_data(client, MAX6650_REG_ALARM_EN);
+> +	struct max6650_data *data = dev_get_drvdata(dev);
+> +	int alarm_en;
+>  	struct device_attribute *devattr;
+>  
+> +	regmap_read(data->iodev->map, MAX6650_REG_ALARM_EN, &alarm_en);
+> +
+
+Where is this then used?
+
+> -static int max6650_probe(struct i2c_client *client,
+> -			 const struct i2c_device_id *id)
+> +static int max6650_probe(struct platform_device *pdev)
+>  {
+> +	struct max665x_dev *max665x = dev_get_drvdata(pdev->dev.parent);
+>  	struct max6650_data *data;
+> +	const struct platform_device_id *id = platform_get_device_id(pdev);
+
+What's the point in 'type' in the global container?
+
+It's looking as though you're not going to need it to be global after
+all, right?
+
+<snip>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
