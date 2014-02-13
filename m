@@ -1,114 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253AbaBMHPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 02:15:42 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:39645 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348AbaBMHPl (ORCPT
+	id S1752869AbaBMHTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 02:19:14 -0500
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:32696 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751174AbaBMHTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 02:15:41 -0500
+	Thu, 13 Feb 2014 02:19:13 -0500
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzbb2dI98dI9371I936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh19b6n1155h)
+Date: Thu, 13 Feb 2014 08:19:02 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Date: Wed, 12 Feb 2014 23:15:38 -0800
-Message-ID: <CAKx2Y1kyfxzaWnFhSx-EkeCWKi+tn6e1YHCkbt4RtYmBskZHTQ@mail.gmail.com>
-Subject: nouveau init unknown opcode error, when CONFIG_DRM_NOUVEAU=y
-From: Kui Zhang <kuizhang@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: Michal Simek <michal.simek@xilinx.com>, <netdev@vger.kernel.org>,
+        Srikanth Thokala <sthokal@xilinx.com>,
+        Srikanth Thokala <srikanth.thokala@xilinx.com>,
+        Michal Simek <monstr@monstr.eu>, Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/14] net: axienet: Removed checkpatch errors/warnings
+References: <cover.1392220536.git.michal.simek@xilinx.com>  <75b669c0a947effe74b291093abfa8c71f83736a.1392220536.git.michal.simek@xilinx.com> <1392251494.2214.11.camel@joe-AO722>
+In-Reply-To: <1392251494.2214.11.camel@joe-AO722>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <ff5b1f6a-a6a7-405c-9e83-59ad33852b93@TX2EHSMHS044.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Joe,
 
-When CONFIG_DRM_NOUVEAU=y, I get following error. Blank screen after initrd.
+On 02/13/2014 01:31 AM, Joe Perches wrote:
+> On Wed, 2014-02-12 at 16:55 +0100, Michal Simek wrote:
+>> From: Srikanth Thokala <srikanth.thokala@xilinx.com>
+> 
+> trivia:
+> 
+>> diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+> 
+>> +			netdev_err(lp->ndev,
+>> +				"axienet_device_reset DMA reset timeout!\n");
+> 
+> could you please align multi-line arguments to the
+> appropriate open parenthesis?
+> 
+> 			netdev_err(lp->ndev,
+> 				   "axienet_device_reset DMA reset timeout!\n");
+> 
+> or maybe:
+> 
+> 			netdev_err(lp->ndev, "%s: "DMA reset timeout!\n",
+> 				   __func__);
 
-This was in the dmesg.
+ok.
 
-[    0.282559] [drm] hdmi device  not found 1 0 1
-[    0.282688] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x046800a3
-[    0.282693] nouveau  [  DEVICE][0000:01:00.0] Chipset: G72 (NV46)
-[    0.282696] nouveau  [  DEVICE][0000:01:00.0] Family : NV40
-[    0.284293] nouveau  [   VBIOS][0000:01:00.0] checking PRAMIN for image...
-[    0.366261] nouveau  [   VBIOS][0000:01:00.0] ... checksum invalid
-[    0.366266] nouveau  [   VBIOS][0000:01:00.0] checking PROM for image...
-[    0.366279] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
-[    0.366283] nouveau  [   VBIOS][0000:01:00.0] checking ACPI for image...
-[    0.366286] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
-[    0.366290] nouveau  [   VBIOS][0000:01:00.0] checking PCIROM for image...
-[    0.366454] nouveau  [   VBIOS][0000:01:00.0] ... appears to be valid
-[    0.366462] nouveau  [   VBIOS][0000:01:00.0] using image from PCIROM
-[    0.366603] nouveau  [   VBIOS][0000:01:00.0] BIT signature found
-[    0.366609] nouveau  [   VBIOS][0000:01:00.0] version 05.72.22.41.19
-[    0.367101] nouveau E[   VBIOS][0000:01:00.0] 0xe008[ ]: unknown opcode 0xc0
-[    0.367107] nouveau E[ DEVINIT][0000:01:00.0] init failed, -22
-[    0.367112] nouveau E[     DRM] failed to create 0x80000080, -22
-[    0.367833] nouveau: probe of 0000:01:00.0 failed with error -22
-
-
-When CONFIG_DRM_NOUVEAU=m. Everything appears to work as expected.
-
-[    0.796974] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x046800a3
-[    0.796980] nouveau  [  DEVICE][0000:01:00.0] Chipset: G72 (NV46)
-[    0.796985] nouveau  [  DEVICE][0000:01:00.0] Family : NV40
-[    0.799366] nouveau  [   VBIOS][0000:01:00.0] source: PRAMIN
-[    0.887657] nouveau  [   VBIOS][0000:01:00.0] ... checksum invalid
-[    0.887838] nouveau  [   VBIOS][0000:01:00.0] BIT signature found
-[    0.887844] nouveau  [   VBIOS][0000:01:00.0] version 05.72.22.41.19
-[    0.888074] nouveau 0000:01:00.0: irq 47 for MSI/MSI-X
-[    0.888087] nouveau  [     PMC][0000:01:00.0] MSI interrupts enabled
-[    0.888123] nouveau  [     PFB][0000:01:00.0] RAM type: DDR1
-[    0.888128] nouveau  [     PFB][0000:01:00.0] RAM size: 64 MiB
-[    0.888132] nouveau  [     PFB][0000:01:00.0]    ZCOMP: 0 tags
-[    0.901582] nouveau  [    VOLT][0000:01:00.0] GPU voltage: 1000000uv
-[    0.927993] nouveau  [  PTHERM][0000:01:00.0] FAN control: none / external
-[    0.928008] nouveau  [  PTHERM][0000:01:00.0] fan management: automatic
-[    0.928013] nouveau  [  PTHERM][0000:01:00.0] internal sensor: yes
-[    0.948079] nouveau  [     CLK][0000:01:00.0] 20: core 100 MHz
-shader 100 MHz memory 220 MHz
-[    0.948089] nouveau  [     CLK][0000:01:00.0] 21: core 200 MHz
-shader 200 MHz memory 400 MHz
-[    0.948096] nouveau  [     CLK][0000:01:00.0] 22: core 450 MHz
-shader 450 MHz memory 700 MHz
-[    0.948109] nouveau  [     CLK][0000:01:00.0] --: core 199 MHz memory 391 MHz
-[    0.948280] nouveau  [     DRM] VRAM: 60 MiB
-[    0.948283] nouveau  [     DRM] GART: 512 MiB
-[    0.948289] nouveau  [     DRM] TMDS table version 1.1
-[    0.948292] nouveau W[     DRM] TMDS table script pointers not stubbed
-[    0.948296] nouveau  [     DRM] DCB version 3.0
-[    0.948301] nouveau  [     DRM] DCB outp 00: 030053f3 00000005
-[    0.948305] nouveau  [     DRM] DCB outp 01: 01010300 00000028
-[    0.948309] nouveau  [     DRM] DCB outp 02: 04016312 00000000
-[    0.948313] nouveau  [     DRM] DCB conn 00: 0000
-[    0.948317] nouveau  [     DRM] DCB conn 01: 0130
-[    0.948321] nouveau  [     DRM] DCB conn 02: 0210
-[    0.948325] nouveau  [     DRM] DCB conn 03: 0211
-[    0.948328] nouveau  [     DRM] DCB conn 04: 0213
-[    0.948332] nouveau  [     DRM] DCB conn 05: 0340
-[    0.948335] nouveau  [     DRM] DCB conn 06: 1431
-[    0.948346] nouveau  [     DRM] BIOS FP mode: 1280x800 (83500kHz pixel clock)
-[    0.950596] nouveau  [     DRM] 0xD409: Parsing digital output script table
-[    1.003680] nouveau  [     DRM] MM: using M2MF for buffer copies
-[    1.003694] nouveau  [     DRM] Calling LVDS script 6:
-[    1.003699] nouveau  [     DRM] 0xD143: Parsing digital output script table
-[    1.071498] nouveau  [     DRM] allocated 1280x800 fb: 0x9000, bo
-ffff880037991400
-[    1.071614] fbcon: nouveaufb (fb0) is primary device
-[    1.092292] nouveau  [     DRM] Calling LVDS script 2:
-[    1.092295] nouveau  [     DRM] 0xD1A4: Parsing digital output script table
-[    1.224348] nouveau  [     DRM] Calling LVDS script 5:
-[    1.224350] nouveau  [     DRM] 0xD134: Parsing digital output script table
-[    1.225793] nouveau 0000:01:00.0: fb0: nouveaufb frame buffer device
-[    1.225801] nouveau 0000:01:00.0: registered panic notifier
-[    1.225819] [drm] Initialized nouveau 1.1.1 20120801 for
-0000:01:00.0 on minor 0
-[   30.396123] nouveau  [     DRM] Calling LVDS script 6:
-[   30.396131] nouveau  [     DRM] 0xD143: Parsing digital output script table
-[   30.456806] nouveau  [     DRM] Calling LVDS script 2:
-[   30.456814] nouveau  [     DRM] 0xD1A4: Parsing digital output script table
-[   30.588863] nouveau  [     DRM] Calling LVDS script 5:
-[   30.588869] nouveau  [     DRM] 0xD134: Parsing digital output script table
+> 
+>> @@ -484,8 +484,8 @@ static void axienet_device_reset(struct net_device *ndev)
+>>  	}
+>>
+>>  	if (axienet_dma_bd_init(ndev)) {
+>> -		dev_err(&ndev->dev, "axienet_device_reset descriptor "
+>> -			"allocation failed\n");
+>> +		netdev_err(ndev,
+>> +			"axienet_device_reset descriptor allocation failed\n");
+> 
+> etc, et al.
 
 
-Thanks
-Kui.Z
+ok.
+
+> 
+>> diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
+> []
+>> @@ -161,19 +161,19 @@ int axienet_mdio_setup(struct axienet_local *lp, struct device_node *np)
+>>
+>>  	np1 = of_find_node_by_name(NULL, "cpu");
+>>  	if (!np1) {
+>> -		printk(KERN_WARNING "%s(): Could not find CPU device node.",
+>> -		       __func__);
+>> -		printk(KERN_WARNING "Setting MDIO clock divisor to "
+>> -		       "default %d\n", DEFAULT_CLOCK_DIVISOR);
+>> +		netdev_warn(lp->ndev, "Could not find CPU device node.");
+> 
+> missing trailing "\n" to terminate message.
+
+ok.
+
+> 
+>> +		netdev_warn(lp->ndev,
+>> +			 "Could not find clock ethernet controller property.");
+> 
+> here too. (and alignment)
+
+This is problematic. I would like to keep 80 char limits and keeping
+this align just break it. That's why I was using tab alignment.
+Probably the solution is just to shorten message.
+
+Thanks for your comments,
+Michal
+
+
