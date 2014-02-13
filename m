@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaBMXz2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:55:28 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37727 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469AbaBMXz1 (ORCPT
+	id S1752103AbaBMX6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:58:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37492 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199AbaBMX6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:55:27 -0500
-Date: Fri, 14 Feb 2014 00:55:27 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, John Kacur <jkacur@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12.9-rt13: BUG: soft lockup
-In-Reply-To: <52FD4D89.2000207@localhost>
-Message-ID: <alpine.DEB.2.02.1402140053000.21991@ionos.tec.linutronix.de>
-References: <52FBF2F1.8040504@localhost> <alpine.DEB.2.02.1402132324230.21991@ionos.tec.linutronix.de> <52FD4D89.2000207@localhost>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 13 Feb 2014 18:58:41 -0500
+Date: Thu, 13 Feb 2014 15:59:59 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: =?utf-8?B?5ZC056ug6YeR?= <falcon@meizu.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] async: async device driver probing
+Message-ID: <20140213235959.GA15564@kroah.com>
+References: <uovsqced4yboii55ncyjppla.1391933910239@email.android.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <uovsqced4yboii55ncyjppla.1391933910239@email.android.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014, Fernando Lopez-Lezcano wrote:
-
-> On 02/13/2014 02:25 PM, Thomas Gleixner wrote:
-> > On Wed, 12 Feb 2014, Fernando Lopez-Lezcano wrote:
-> > > [771508.546449] RIP: 0010:[<ffffffff810dc60a>]  [<ffffffff810dc60a>]
-> > > smp_call_function_many+0x2ca/0x330
-> > 
-> > Can you decode the exact location inside of smp_call_function_many via
-> > addr2line please ?
+On Sun, Feb 09, 2014 at 08:40:43AM +0000, 吴章金 wrote:
+> Hi, Greg
 > 
-> Hope this is useful (adding 0x2ce/0x330 as offsets does not make any
-> difference, don't know if it should)...
+> These two patches aim to thread the initcalls(only probes here) for SMP
+> systems. to simplify the upgrade of Linux for Android smartphones, the modules
+> are built into the Linux kernel image, and hence the initcalls are called in
+> serial order, to speedup the booting, benefit from SMP, thread these initcalls
+> may parallel the probings.
 > 
-> # grep smp_call_function /var/log/messages|tail -1
-> Feb 12 14:18:21 cmn27 kernel: [771840.224419] RIP: 0010:[<ffffffff810dc60e>]
-> [<ffffffff810dc60e>] smp_call_function_many+0x2ce/0x330
-> # addr2line -e
-> /usr/lib/debug/lib/modules/3.12.10-300.rt15.1.fc20.ccrma.x86_64+rt/vmlinux
-> ffffffff810dc60e
-> /usr/src/debug/kernel-3.12.fc20.ccrma/linux-3.12.10-300.rt15.1.fc20.ccrma.x86_64/kernel/rtmutex.c:1295
-> 
+> and I rechecked the deferred probing, seems it solves the problem of getting
+> devices initialized in the right order, the probing will be threaded only if
+> the probe fails with the -EPROBE_DEFER. it doesn't provide any mechanism to
+> thread a probe explicitly.
 
-I can't see how the kernel decoder thinks it's smp_call_function_many
-but addr2line looks at rtmutex.c
+It's up to the bus to do threaded probing, but watch out, that is almost
+never the bottleneck in your boot process (hint, in Android, booting the
+kernel is almost not even in the range that can be measured overall).
+There are so many other things that Android does at boot time that could
+be worked on instead of worrying about this :)
 
-That doesn't make any sense at all. Version mismatch?
+good luck,
 
-Thanks,
-
-	tglx
+greg k-h
