@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743AbaBMKWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:22:39 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:49521 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaBMKWf (ORCPT
+	id S1753950AbaBMKXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:23:00 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:62626 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753791AbaBMKW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:22:35 -0500
-Message-ID: <52FC9CE9.8000700@linaro.org>
-Date: Thu, 13 Feb 2014 11:22:33 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Alex Shi <alex.shi@linaro.org>
-CC: Preeti Murthy <preeti.lkml@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH V2 2/3] sched: Fix race in idle_balance()
-References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org> <1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pMEFTe6pQVDFzaXmqt_A3vw3tyj7Ewqib6zbzH++YzY3w@mail.gmail.com> <52FA0577.6080607@linaro.org> <52FC7835.1090509@linaro.org> <52FC99F8.4020002@linux.vnet.ibm.com>
-In-Reply-To: <52FC99F8.4020002@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 13 Feb 2014 05:22:57 -0500
+Message-ID: <1392286975.30853.44.camel@x220>
+Subject: Re: [PATCH] Blackfin: bf537: use "CONFIG_SND_SOC_AD193X"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Steven Miao <realmz6@gmail.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Feb 2014 11:22:55 +0100
+In-Reply-To: <1365153646.1830.58.camel@x61.thuisdomein>
+References: <1365153646.1830.58.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Feb 2014 10:22:56.0569 (UTC) FILETIME=[8FE1D290:01CF28A5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 11:10 AM, Preeti U Murthy wrote:
-> Hi,
->
-> On 02/13/2014 01:15 PM, Alex Shi wrote:
->> On 02/11/2014 07:11 PM, Daniel Lezcano wrote:
->>> On 02/10/2014 10:24 AM, Preeti Murthy wrote:
->>>> HI Daniel,
->>>>
->>>> Isn't the only scenario where another cpu can put an idle task on
->>>> our runqueue,
->>>
->>> Well, I am not sure to understand what you meant, but I assume you are
->>> asking if it is possible to have a task to be pulled when we are idle,
->>> right ?
->>>
->>> This patch fixes the race when the current cpu is *about* to enter idle
->>> when calling schedule().
->>
->> Preeti said the she didn't see a possible to insert a task on the cpu.
->>
->> I also did a quick check, maybe task come from wakeup path?
->
-> Yes this is possible. Thanks for pointing this :)
->
-> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+[Replaced previous maintainer and list with current maintainer and
+list.]
 
-Thanks for the review !
+On Fri, 2013-04-05 at 11:20 +0200, Paul Bolle wrote:
+> Commit 57084ede395bb3c9da7905701d34a3b7d33c9356 ("blackfin: bf537:
+> stamp: update board file for 193x") changed two references to
+> CONFIG_SND_BF5XX_SOC_AD193X (and CONFIG_SND_BF5XX_SOC_AD193X_MODULE).
+> One was changed to CONFIG_SND_SOC_AD193X_SPI, the other to
+> CONFIG_SND_SOC_AD193X_I2C. The commit explanation doesn't elaborate on
+> the reason for these changes nor on the reason to drop module support.
+> 
+> Anyhow, neither of these two new Kconfig macros is valid. It was
+> probably intended to use CONFIG_SND_SOC_AD193X here. So let's use that.
+> And let's also reenable module support by using the IS_ENABLED() macro.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-   -- Daniel
+And this issue is also still present in v3.14-rc2. Jean and Guenter
+replied, but preferred not to get involved with this messy "stamp" file.
+Can someone please actually look at this patch? 
+
+> 0) Untested. Please note that I fail to see the point of commit
+> 57084ede395bb3c9da7905701d34a3b7d33c9356, which was added in v3.4, even
+> if I assume it wanted to use CONFIG_SND_SOC_AD193X. Perhaps I'm missing
+> something obvious. Anyhow, review is appreciated.
+> 
+> 1) Added Jean and Guenter because they seem to take in interest in
+> Blackfin's stamp files.
+> 
+>  arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+> index e6fdc2a..94a193e 100644
+> --- a/arch/blackfin/mach-bf537/boards/stamp.c
+> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
+> @@ -975,7 +975,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
+>  	},
+>  #endif
+>  
+> -#ifdef CONFIG_SND_SOC_AD193X_SPI
+> +#if IS_ENABLED(CONFIG_SND_SOC_AD193X)
+>  	{
+>  		.modalias = "ad193x",
+>  		.max_speed_hz = 3125000,     /* max spi clock (SCK) speed in HZ */
+> @@ -2176,7 +2176,7 @@ static unsigned long adt7316_i2c_data[2] = {
+>  #endif
+>  
+>  static struct i2c_board_info __initdata bfin_i2c_board_info[] = {
+> -#ifdef CONFIG_SND_SOC_AD193X_I2C
+> +#if IS_ENABLED(CONFIG_SND_SOC_AD193X)
+>  	{
+>  		I2C_BOARD_INFO("ad1937", 0x04),
+>  	},
 
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Paul Bolle
 
