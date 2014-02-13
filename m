@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259AbaBMKqr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 05:46:47 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:30256 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753829AbaBMKqq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 05:46:46 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-3.tower-39.messagelabs.com!1392288350!13299030!2
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <e11bde69763b77a6b17b851c7d18a892d193411f.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1392286537.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <adam.thomson@diasemi.com>
-Date: Thu, 13 Feb 2014 10:45:50 +0000
-Subject: [PATCH 1/2] mfd: da9055: Add DT support for PMIC
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Rob Herring <robh+dt@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
+	id S1754333AbaBMKrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 05:47:55 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:47695 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaBMKry (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 05:47:54 -0500
+Date: Thu, 13 Feb 2014 10:47:47 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.torgue@st.com" <alexandre.torgue@st.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH 4/4] phy: miphy365x: Provide support for the MiPHY356x
+ Generic PHY
+Message-ID: <20140213104747.GG32508@lee--X1>
+References: <1392220985-28189-1-git-send-email-lee.jones@linaro.org>
+ <1392220985-28189-4-git-send-email-lee.jones@linaro.org>
+ <20140212165454.GF25957@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140212165454.GF25957@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
----
- drivers/mfd/da9055-i2c.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+> > The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> > devices. It has 2 ports which it can use for either; both SATA, both
+> > PCIe or one of each in any configuration.
+> >
+> > Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/phy/Kconfig         |   8 +
+> >  drivers/phy/Makefile        |   1 +
+> >  drivers/phy/phy-miphy365x.c | 634 ++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 643 insertions(+)
+> >  create mode 100644 drivers/phy/phy-miphy365x.c
+> >
+> 
+> [...]
+> 
+> > +static int miphy365x_phy_get_base_addr(struct platform_device *pdev,
+> > +                                      struct miphy365x_phy *phy, u8 port)
+> > +{
+> > +       struct resource *res;
+> > +       char sata[16];
+> > +       char pcie[16];
+> 
+> Isn't 6 enough for either of these? There are at most two ports IIUC, so
+> we only need a single character for the port number.
 
-diff --git a/drivers/mfd/da9055-i2c.c b/drivers/mfd/da9055-i2c.c
-index 8103e43..d4d4c16 100644
---- a/drivers/mfd/da9055-i2c.c
-+++ b/drivers/mfd/da9055-i2c.c
-@@ -15,6 +15,8 @@
- #include <linux/device.h>
- #include <linux/i2c.h>
- #include <linux/err.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
+Yep, being a bit overzealous there, will fix.
 
- #include <linux/mfd/da9055/core.h>
+<snip>
 
-@@ -66,6 +68,11 @@ static struct i2c_device_id da9055_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
+> > +
+> > +       of_property_read_string(np, "st,sata_gen", &sata_gen);
+> 
+> This wasn't in the binding documentation. It also violates dt style;
+> s/_/-/
 
-+static const struct of_device_id da9055_of_match[] = {
-+       { .compatible = "dlg,da9055-pmic", },
-+       { }
-+};
-+
- static struct i2c_driver da9055_i2c_driver = {
-        .probe = da9055_i2c_probe,
-        .remove = da9055_i2c_remove,
-@@ -73,6 +80,7 @@ static struct i2c_driver da9055_i2c_driver = {
-        .driver = {
-                .name = "da9055-pmic",
-                .owner = THIS_MODULE,
-+               .of_match_table = of_match_ptr(da9055_of_match),
-        },
- };
+No problem, will fix.
 
---
-1.7.0.4
+> Could these not be numbers, or can this not come from elsewhere?
+> 
+> Or are there some crazy SATA generations to support?
 
-Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
+Nope, just [1|2|3] I think. Can be numbers, will fix.
 
-Please consider the environment before printing this e-mail
+> > +       if (sata_gen) {
+> > +               if (!strcmp(sata_gen, "gen3"))
+> > +                       phy_dev->sata_gen = SATA_GEN3;
+> > +               else if (!strcmp(sata_gen, "gen2"))
+> > +                       phy_dev->sata_gen = SATA_GEN2;
+> > +       }
+> > +
+> > +       phy_dev->pcie_tx_pol_inv =
+> > +               of_property_read_bool(np, "st,pcie_tx_pol_inv");
+> > +
+> > +       phy_dev->sata_tx_pol_inv =
+> > +               of_property_read_bool(np, "st,sata_tx_pol_inv");
+> 
+> Likewise for both of these on the first two points.
 
+1. Roger will fix.
 
+2. Not probeable I'm afraid.
+
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static int miphy365x_phy_probe(struct platform_device *pdev)
+> > +{
+> > +       struct device_node *np = pdev->dev.of_node;
+> > +       struct miphy365x_dev *phy_dev;
+> > +       struct device *dev = &pdev->dev;
+> > +       struct phy_provider *provider;
+> > +       u8 port;
+> > +       int ret;
+> > +
+> > +       if (!np) {
+> > +               dev_err(dev, "No DT found\n");
+> 
+> s/DT/node/ ?
+
+s/DT/DT node/
+
+Will fix, thanks.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
