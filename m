@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaBMW5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:57:39 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37340 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533AbaBMW5h (ORCPT
+	id S1752620AbaBMW5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:57:45 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:42145 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbaBMW5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:57:37 -0500
-Date: Thu, 13 Feb 2014 23:57:45 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH RT] arm/unwind: fail on unwind in irq disabled regions
-In-Reply-To: <1390580663-28869-1-git-send-email-bigeasy@linutronix.de>
-Message-ID: <alpine.DEB.2.02.1402132355360.21991@ionos.tec.linutronix.de>
-References: <1390580663-28869-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 13 Feb 2014 17:57:42 -0500
+Message-ID: <52FD4DDD.6020400@samsung.com>
+Date: Fri, 14 Feb 2014 07:57:33 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-282708098-1392332266=:21991"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: Richard Weinberger <richard@nod.at>, Ben Dooks <ben-linux@fluff.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM SUB-ARCHITECT..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "moderated list:ARM/SAMSUNG ARM A..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH 22/28] Remove S3C24XX_GPIO_EXTRA128
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <1391971686-9517-23-git-send-email-richard@nod.at> <52F999A1.1070709@samsung.com>
+In-Reply-To: <52F999A1.1070709@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 02/11/14 12:31, Kukjin Kim wrote:
+> On 02/10/14 03:48, Richard Weinberger wrote:
+>> The symbol is an orphan, get rid of it.
+>>
+>> Signed-off-by: Richard Weinberger<richard@nod.at>
+>> ---
+>> arch/arm/mach-s3c24xx/Kconfig | 1 -
+>> 1 file changed, 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-s3c24xx/Kconfig
+>> b/arch/arm/mach-s3c24xx/Kconfig
+>> index 1c67f04..bb1fa603 100644
+>> --- a/arch/arm/mach-s3c24xx/Kconfig
+>> +++ b/arch/arm/mach-s3c24xx/Kconfig
+>> @@ -561,7 +561,6 @@ config MACH_OSIRIS
+>> select S3C2410_IOTIMING if ARM_S3C2440_CPUFREQ
+>> select S3C2440_XTAL_12000000
+>> select S3C24XX_DCLK
+>> - select S3C24XX_GPIO_EXTRA128
+>> select S3C24XX_SIMTEC_PM if PM
+>> select S3C_DEV_NAND
+>> select S3C_DEV_USB_HOST
+>
+> OK good, but I will squash this with 13th for mach-s3c24xx/Kconfig when
+> I apply.
+>
++ Paul Bolle
 
---8323329-282708098-1392332266=:21991
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Richard,
 
-
-
-On Fri, 24 Jan 2014, Sebastian Andrzej Siewior wrote:
-
-> Mostly unwind is done with irqs enabled however SLUB may call it with
-> irqs disabled while creating a new SLUB cache.
-> 
-> I had system freeze while loading a module which called
-> kmem_cache_create() on init. That means SLUB's __slab_alloc() disabled
-> interrupts and then
-> 
-> ->new_slab_objects()
->  ->new_slab()
->   ->setup_object()
->    ->setup_object_debug()
->     ->init_tracking()
->      ->set_track()
->       ->save_stack_trace()
->        ->save_stack_trace_tsk()
->         ->walk_stackframe()
->          ->unwind_frame()
->           ->unwind_find_idx()
->            =>spin_lock_irqsave(&unwind_lock);
-> 
-> I would prefer not to turn this into a raw lock so for now it will just
-> fail if it is called with irqs disabled which might return a few "empty"
-> traces…
-
-If we really end up with unwinding then the few cycles to follow the
-stack are not that important anymore. We really want that output.
+I found same patch ([PATCH] ARM: s3c24xx: get rid of unneeded selects) 
+for S3C24XX from Paul before your posting. So I picked that up.
 
 Thanks,
-
-	tglx
-
-
---8323329-282708098-1392332266=:21991--
+Kukjin
