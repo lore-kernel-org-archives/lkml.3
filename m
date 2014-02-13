@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaBMI25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 03:28:57 -0500
-Received: from mout.gmx.net ([212.227.15.18]:65418 "EHLO mout.gmx.net"
+	id S1753339AbaBMIda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 03:33:30 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:45253 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752119AbaBMI2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 03:28:55 -0500
-From: Marc Dietrich <marvin24@gmx.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Stefan Agner <stefan@agner.ch>, thierry.reding@gmail.com,
-        josephl@nvidia.com, dev@lynxeye.de, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra: don't timeout if CPU is powergated
-Date: Thu, 13 Feb 2014 09:28:52 +0100
-Message-ID: <4050206.sG2EzXyfMN@fb07-iapwap2>
-User-Agent: KMail/4.12.2 (Linux/3.14.0-rc2-12.gfc9498b-desktop; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <52FBC97D.8040809@wwwdotorg.org>
-References: <1d5ea6b7df4573d866779857922ac650fe59af60.1392078805.git.stefan@agner.ch> <52FBC97D.8040809@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Provags-ID: V03:K0:Ciu+3prTCUcwY6imNg9dlbZ7Al4EpL/wsja7pqqq9g7ulu1QrQE
- t7HgTVkhZoj0YcAFlXf0/sen6CxNBBiXyo6vtPPFlfL0fIPLtanzP1HdAsXaRRcMXfYrdzS
- Fj3y5X1Z5Ol7cegiUOV9TKfbbWSPsCftyyD31vCKl09eg4QOgtvNcu1r4iSaOzHEKg+R6dc
- us5qMg4XVO0BkX6C2o8zg==
+	id S1751506AbaBMId3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 03:33:29 -0500
+X-Mailbox-Line: From 6e9c26a067d3ee253ab78d316181cfa44535e041 Mon Sep 17 00:00:00 2001
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Thu, 13 Feb 2014 09:13:34 +0100
+Subject: [PATCH] drm/i2c: tda998x: fix memory leak in case of i2c error
+To: Dave Airlie <airlied@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Message-Id: <20140213083316.38D7D822BD@smtp6-g21.free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 12. Februar 2014, 12:20:29 schrieb Stephen Warren:
-> On 02/10/2014 05:44 PM, Stefan Agner wrote:
-> > When booting secondary CPU(s) which are not yet powergated, a wrong
-> > check lead to a timeout after 100 jiffies. With this patch, we only
-> > delay powergating if CPUs are still not powered yet.
-> 
-> I've applied this to Tegra's for-3.15/soc branch.
+When the creation of the second i2c client was failing, the private
+buffer was not freed.
 
-also for 3.14 and maybe lower versioned kernels? Since this seems to fix a bug 
-where some core doesn't come up.
+This bug was introduced by the commit 6ae668cc19e8
+'drm/i2c: tda998x: check the CEC device creation'
 
-Marc
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+---
+ drivers/gpu/drm/i2c/tda998x_drv.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index fa18cf3..faa77f5 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -1151,8 +1151,10 @@ tda998x_encoder_init(struct i2c_client *client,
+ 
+ 	priv->current_page = 0xff;
+ 	priv->cec = i2c_new_dummy(client->adapter, 0x34);
+-	if (!priv->cec)
++	if (!priv->cec) {
++		kfree(priv);
+ 		return -ENODEV;
++	}
+ 	priv->dpms = DRM_MODE_DPMS_OFF;
+ 
+ 	encoder_slave->slave_priv = priv;
+-- 
+1.9.0.rc3
 
