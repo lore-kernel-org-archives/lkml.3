@@ -1,116 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576AbaBMJsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:48:05 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:45540 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989AbaBMJsA (ORCPT
+	id S1753752AbaBMJsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:48:36 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:59304 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065AbaBMJsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:48:00 -0500
+	Thu, 13 Feb 2014 04:48:33 -0500
+Date: Thu, 13 Feb 2014 10:48:24 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <939539486.20140213104824@eikelenboom.it>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Tony Luck <tony.luck@intel.com>, Dave Airlie <airlied@redhat.com>,
+        Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
+        "linux-pci @ vger . kernel . org" <linux-pci@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>
+Subject: Re: [PATCH v2] Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary prevents it from reading it's own rom. It will get the content of the shadowrom at C000 instead, which is of the primary VGA card and the driver of the secondary card will bail out.
+In-Reply-To: <20140203145205.GB2992@phenom.dumpdata.com>
+References: <20140130000831.GJ16825@google.com> <1391160503-11122-1-git-send-email-linux@eikelenboom.it> <20140203145205.GB2992@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <1392240089-19489-1-git-send-email-shuah.kh@samsung.com>
-References: <1392240089-19489-1-git-send-email-shuah.kh@samsung.com>
-Date: Thu, 13 Feb 2014 10:47:59 +0100
-Message-ID: <CAPDyKFoukY2PGNWimUbRqDr36eJ_+eBASJR4uac6nH4-kowmCQ@mail.gmail.com>
-Subject: Re: [RFT][PATCH v3] mmc: change cb710-mmc platform power management
- to use dev_pm_ops
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, mirq-linux@rere.qmqm.pl,
-        Chris Ball <chris@printf.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Shuah Khan <shuahkhan@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 February 2014 22:21, Shuah Khan <shuah.kh@samsung.com> wrote:
-> Change cb710-mmc platform driver to register pm ops using dev_pm_ops instead
-> of legacy pm_ops. The existing legacy suspend/resume routines are identical
-> and simply clear IRQ mask in the device in case it got undefined during sleep
-> state. Changed code to collapse suspend and resume into one .pm interface
-> for suspend and resume which gets installed for suspend, freeze, poweroff,
-> thaw, restore, and resume states using SIMPLE_DEV_PM_OPS().
->
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> ---
->
-> patch v3: Addresses review comments on patch v2
->
->  drivers/mmc/host/cb710-mmc.c |   40 ++++++++++++++++------------------------
->  1 file changed, 16 insertions(+), 24 deletions(-)
->
-> diff --git a/drivers/mmc/host/cb710-mmc.c b/drivers/mmc/host/cb710-mmc.c
-> index 1087b4c..2dc7b2dc 100644
-> --- a/drivers/mmc/host/cb710-mmc.c
-> +++ b/drivers/mmc/host/cb710-mmc.c
-> @@ -662,26 +662,6 @@ static const struct mmc_host_ops cb710_mmc_host = {
->         .get_cd = cb710_mmc_get_cd,
->  };
->
-> -#ifdef CONFIG_PM
-> -
-> -static int cb710_mmc_suspend(struct platform_device *pdev, pm_message_t state)
-> -{
-> -       struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
-> -
-> -       cb710_mmc_enable_irq(slot, 0, ~0);
-> -       return 0;
-> -}
-> -
-> -static int cb710_mmc_resume(struct platform_device *pdev)
-> -{
-> -       struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
-> -
-> -       cb710_mmc_enable_irq(slot, 0, ~0);
-> -       return 0;
-> -}
-> -
-> -#endif /* CONFIG_PM */
-> -
->  static int cb710_mmc_init(struct platform_device *pdev)
->  {
->         struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
-> @@ -762,14 +742,26 @@ static int cb710_mmc_exit(struct platform_device *pdev)
->         return 0;
->  }
->
-> +#ifdef CONFIG_PM_SLEEP
-> +static int cb710_mmc_suspend_resume(struct device *dev)
-> +{
-> +       struct cb710_slot *slot = cb710_pdev_to_slot(to_platform_device(dev));
-> +
-> +       cb710_mmc_enable_irq(slot, 0, ~0);
-> +       return 0;
-> +}
-> +#else
-> +#define cb710_mmc_suspend_resume NULL
+Hi Bjorn,
 
-You don't need this. The macro will handle this for you.
+I have given it another email and another week, but without gaining any reviewed or acked-by's.
+It seems the only way forward is to shovel it in linux-next earlier, give it a good soak and see if
+anyone starts to squeal .. or that everything seems to be ok :-)
 
-Kind regards
-Ulf Hansson
+Would you need a v3 with the acked and reviewed-by from Konrad for x86 in it ?
 
-> +#endif
-> +
-> +static SIMPLE_DEV_PM_OPS(cb710_mmc_dev_pm_ops, cb710_mmc_suspend_resume,
-> +                        cb710_mmc_suspend_resume);
-> +
->  static struct platform_driver cb710_mmc_driver = {
->         .driver.name = "cb710-mmc",
->         .probe = cb710_mmc_init,
->         .remove = cb710_mmc_exit,
-> -#ifdef CONFIG_PM
-> -       .suspend = cb710_mmc_suspend,
-> -       .resume = cb710_mmc_resume,
-> -#endif
-> +       .driver.pm = &cb710_mmc_dev_pm_ops,
->  };
->
->  module_platform_driver(cb710_mmc_driver);
-> --
-> 1.7.10.4
->
+--
+
+Sander
+
+
+Monday, February 3, 2014, 3:52:05 PM, you wrote:
+
+> On Fri, Jan 31, 2014 at 10:28:22AM +0100, Sander Eikelenboom wrote:
+>> Hi Bjorn / Tony,
+>> 
+>> I fixed up ia64 as well and brought it inline again with the x86 code,
+>> but i don't have a ia64 machine, so that part is untested.
+>> Perhaps Tony is able to review/test it ?
+>> 
+>> Sander
+>> 
+>> 
+>> 
+>> Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary
+>> prevents it from reading it's own rom. It will get the content of the shadowrom
+>> at C000 instead, which is of the primary VGA card and the driver of the
+>> secondary card will bail out.
+>> 
+>> Fix this by checking if the arch code or vga-arbitration has already
+>> determined the vga_default_device, if so only apply the fix to this
+>> primary video device and let the comment reflect this.
+>> 
+>> v2:
+>>     - Fix pci_fixup_video both in x86 and ia64
+>> 
+>> 
+>> Sander Eikelenboom (1):
+>>   Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the
+>>     primary     prevents it from reading it's own rom. It will get the
+>>     content of the shadowrom     at C000 instead, which is of the
+>>     primary VGA card and the driver of the     secondary card will bail
+>>     out.
+
+> Your editor mutilated your subject line. It ought to have been just
+> one line.
+
+> Anyhow, you can also add 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com'
+> on the patch for the x86 part.
+
+> The ia64 "looks" OK to me, but my ia64 box won't boot v3.11 or later
+> so I can't give it a 'Tested-by' yet.
+
+>> 
+>>  arch/ia64/pci/fixup.c |   24 +++++++++++++-----------
+>>  arch/x86/pci/fixup.c  |   18 ++++++++++--------
+>>  2 files changed, 23 insertions(+), 19 deletions(-)
+>> 
+>> -- 
+>> 1.7.10.4
+>> 
+
+
