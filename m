@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaBMEKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 23:10:07 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36363 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390AbaBMEKE (ORCPT
+	id S1752625AbaBMELw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 23:11:52 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:34386 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaBMELu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 23:10:04 -0500
-Date: Wed, 12 Feb 2014 23:09:53 -0500 (EST)
-Message-Id: <20140212.230953.770721407102955395.davem@davemloft.net>
-To: gregkh@linuxfoundation.org
-Cc: mst@redhat.com, linux-kernel@vger.kernel.org, jasowang@redhat.com,
-        virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        qinchuanyu@huawei.com, joern@logfs.org, anatol.pomozov@gmail.com,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH net 1/3] kref: add kref_sub_return
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140212.230506.1305102368255894549.davem@davemloft.net>
-References: <20140212.190637.328045386111912135.davem@davemloft.net>
-	<20140213013902.GA21261@kroah.com>
-	<20140212.230506.1305102368255894549.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Feb 2014 20:10:04 -0800 (PST)
+	Wed, 12 Feb 2014 23:11:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKbGBLgs9t4HPD4duBt=vPaw0WfxLv5qr6pNupHsPTFaV5m+dQ@mail.gmail.com>
+References: <20131012171007.GA17167@gmail.com>
+	<CAKbGBLgs9t4HPD4duBt=vPaw0WfxLv5qr6pNupHsPTFaV5m+dQ@mail.gmail.com>
+Date: Wed, 12 Feb 2014 20:11:49 -0800
+X-Google-Sender-Auth: tyz2X4K_t_iX4I7OPMlpLb8pp_c
+Message-ID: <CA+55aFys_VK+q3LMRzEM-AKU-=fM_tgiDdLm2AO=jVfH7OvrHQ@mail.gmail.com>
+Subject: Re: [GIT PULL] compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Noonan <steven@uplinklabs.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jakub Jelinek <jakub@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Wed, 12 Feb 2014 23:05:06 -0500 (EST)
+On Wed, Feb 12, 2014 at 7:09 PM, Steven Noonan <steven@uplinklabs.net> wrote:
+>
+> If I change the GCC_VERSION check for the asm_volatile_goto quirk to
+> include 4.8.2, then KVM guests are properly cleaned up.
 
-> From: Greg KH <gregkh@linuxfoundation.org>
-> Date: Wed, 12 Feb 2014 17:39:02 -0800
-> 
->> Yes, that's horrible as well, but as was already pointed out in this
->> thread, you can't rely on that value to really be "1" after reading it
->> due to the way krefs work, what happened if someone else just grabbed
->> it?
->> 
->> If all they want is a "count" for when to start polling, then use a
->> separate atomic count, but don't abuse the kref interface for this, I
->> don't think that will work properly at all.
-> 
-> They want to know which thread of control decrements the count to "1"
-> as buffers are released.
-> 
-> That seems entirely reasonable to me.
-> 
-> They could add another atomic counter for this, but that's rather
-> silly since the kref already has an atomic they can use for this
-> purpose.
+Ok, I guess that means we should just make the quirk unconditional.
 
-If you still can't understand what they are trying to do, they want to
-do something precisely when the number of pending buffers is dropped
-to 1 or less.
+Ingo, do you want to do that or should I?
 
-They are using krefs to track how many buffers are attached at a given
-moment.
+> So is there some other 'asm goto' bug we haven't yet fully uncovered
+> and reported to GCC upstream?
 
-The counter can re-increment after the decrement to 1 or less occurs,
-they don't care.
+Not to my knowledge. But I'm sure Jakub&co would love to have a test-case.
 
-But they want precisely the entity that drops it down to 1 or less to
-perform that action.
+Sadly, gcc has that really annoying habit of making small changes
+create *huge* changes in label numbers etc, and that's definitely the
+case with the extra empty asm - it's basically impossible to compare
+the generated asm with and without the workaround, because all the
+label numbers change.
 
-Just reading the atomic value directly, they cannot do this.
+I have no idea how gcc people debug things like this, when the output
+is so unstable.
 
+Jakub, any suggestions to how Steven might be able to pinpoint where
+the code generation problem lies?
 
+                Linus
