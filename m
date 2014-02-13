@@ -1,104 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaBMWUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:20:16 -0500
-Received: from fep14.mx.upcmail.net ([62.179.121.34]:47760 "EHLO
-	fep14.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaBMWUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:20:14 -0500
-X-SourceIP: 37.49.105.23
-X-Authenticated-Sender: bjoern.christoph@kabelbw.de
-Date: Thu, 13 Feb 2014 23:19:58 +0100
-From: bjoern <lkml@call-home.ch>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: IRQ nobody cared; Comm: swapper/2 Not tainted
-Message-ID: <20140213231958.30e19e9f@ubuntu>
-In-Reply-To: <52FCFB51.5060105@hurleysoftware.com>
-References: <20140211164233.6a94ecc0@ubuntu>
-	<52FCFB51.5060105@hurleysoftware.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.13; i686-pc-linux-gnu)
+	id S1752059AbaBMWXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:23:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60058 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751745AbaBMWXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 17:23:08 -0500
+Message-ID: <52FD458D.6020107@redhat.com>
+Date: Thu, 13 Feb 2014 23:22:05 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
+References: <1391649046-4383-1-git-send-email-ast@plumgrid.com> <52F3670D.5090608@redhat.com> <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com> <52FD2908.8000009@redhat.com>
+In-Reply-To: <52FD2908.8000009@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 02/13/2014 09:20 PM, Daniel Borkmann wrote:
+> On 02/07/2014 02:20 AM, Alexei Starovoitov wrote:
+> ...
+>> Hi Daniel,
+>
+> Thanks for your answer and sorry for the late reply.
+>
+>> Thank you for taking a look. Good questions. I had the same concerns.
+>> Old BPF was carefully extended in specific places.
+>> End result may look big at first glance, but every extension has specific
+>> reason behind it. I tried to explain the reasoning in Documentation/bpf_jit.txt
+>>
+>> I'm planning to write an on-the-fly converter from old BPF to BPF64
+>> when BPF64 manages to demonstrate that it is equally safe.
+>> It is straight forward to convert. Encoding is very similar.
+>> Core concepts are the same.
+>> Try diff include/uapi/linux/filter.h include/linux/bpf.h
+>> to see how much is reused.
+>>
+>> I believe that old BPF outlived itself and BPF64 should
+>> replace it in all current use cases plus a lot more.
+>> It just cannot happen at once.
+>> BPF64 can come in. bpf32->bpf64 converter functioning.
+>> JIT from bpf64->aarch64 and may be sparc64 needs to be in place.
+>> Then old bpf can fade away.
+>
+> Do you see a possibility to integrate your work step by step? That is,
+> to first integrate the interpreter part only; meaning, to detect "old"
+> BPF programs e.g. coming from SO_ATTACH_FILTER et al and run them in
+> compatibility mode while extended BPF is fully integrated and replaces
+> the old engine in net/core/filter.c. Maybe, "old" programs can be
+> transformed transparently to the new representation and then would be
+> good to execute in eBPF. If possible, in such a way that in the first
+> step JIT compilers won't need any upgrades. Once that is resolved,
+> JIT compilers could successively migrate, arch by arch, to compile the
+> new code? And last but not least the existing tools as well for handling
+> eBPF. I think, if possible, that would be great. Also, I unfortunately
+> haven't looked into your code too deeply yet due to time constraints,
+> but I'm wondering e.g. for accessing some skb fields we currently use
+> the "hack" to "overload" load instructions with negative arguments. Do
+> we have a sort of "meta" instruction that is extendible in eBPF to avoid
+> such things in future?
+>
+>>> First of all, I think it's very interesting work ! I'm just a bit concerned
+>>> that this _huge_ patchset with 64 bit BPF, or however we call it, will line
+>>
+>> Huge?
+>> kernel is only 2k
+>> the rest is 6k of userspace LLVM backend where most of it is llvm's
+>> boilerplate code. GCC backend for BPF is 3k.
+>> The goal is to have both GCC and LLVM backends to be upstreamed
+>> when kernel pieces are agreed upon.
+>> For comparison existing tools/net/bpf* is 2.5k
+>> but here with 6k we get optimizing compiler from C and assembler.
+>>
+>>> up in one row next to the BPF code we currently have and next to new
+>>> nftables
+>>> engine and we will end up with three such engines which do quite similar
+>>> things and are all exposed to user space thus they need to be maintained
+>>> _forever_, adding up legacy even more. What would be the long-term future
+>>> use
+>>> cases where the 64 bit engine comes into place compared to the current BPF
+>>> engine? What are the concrete killer features? I didn't went through your
+>>
+>> killer features vs old bpf are:
+>> - zero-cost function calls
+>> - 32-bit vs 64-bit
+>> - optimizing compiler that can compile C into BPF64
+>>
+>> Why call kernel function from BPF?
+>> So that BPF instruction set has to be extended only once and JITs are
+>> written only once.
+>> Over the years many extensions crept into old BPF as 'negative offsets'.
+>> but JITs don't support all of them and assume bpf input as 'skb' only.
+>> seccomp is using old bpf, but, because of these limitations, cannot use JIT.
+>> BPF64 allows seccomp to be JITed, since bpf input is generalized
+>> as 'struct bpf_context'.
+>> New 'negative offset' extension for old bpf would mean implementing it in
+>> JITs of all architectures? Painful, but doable. We can do better.
 
-Perfect - I actually am using i915. Great, will wait then for rc3 to
-test it and will get back here if needed!
+I'm very curious, do you also have any performance numbers, e.g. for
+networking by taking JIT'ed/non-JIT'ed BPF filters and compare them against
+JIT'ed/non-JIT'ed eBPF filters to see how many pps we gain or loose e.g.
+for a scenario with a middle box running cls_bpf .. or some other macro/
+micro benchmark just to get a picture where both stand in terms of
+performance? Who knows, maybe it would outperform nftables engine as
+well? ;-) How would that look on a 32bit arch with eBPF that is 64bit?
 
-Cheers,
-Bjoern
-
-Am Thu, 13 Feb 2014 12:05:21 -0500
-schrieb Peter Hurley <peter@hurleysoftware.com>:
-
-> Hi bjoern,
-> 
-> On 02/11/2014 10:42 AM, bjoern wrote:
-> > Hi,
-> >
-> > I just got this dump on my system. It happens occasionally, maybe
-> > once a week. Result is that my USB keyboard and mouse (both Logitech
-> > wireless) are laggy, mouse jumps across the screen and keyboard
-> > input lags behind and creates multiple same keystrokes although the
-> > key was only hit once.
-> >
-> > Ubuntu x64 13.10, Ubuntu kernel 3.13.1 (issue has occured in past
-> > also when using 3.10/3.11)
-> >
-> > [    6.161395] irq 16: nobody cared (try booting with the "irqpoll"
-> > option)
-> 
-> Are you using the i915 driver? There is a similar report [1] which
-> apparently has been fixed and will make its way to rc3.
-> 
-> If not, we'll go from there.
-> 
-> Regards,
-> Peter Hurley
-> 
-> [1] https://lkml.org/lkml/2014/2/11/705
-> 
-> > [    6.161428] CPU: 2 PID: 0 Comm: swapper/2 Not tainted
-> > 3.13.1-031301-generic #201401291035
-> > [    6.161429] Hardware
-> > name:                  /DH61AG, BIOS
-> > AGH6110H.86A.0106.2013.0509.1441 05/09/2013
-> > [    6.161431]  ffff880119548e9c ffff88011f303e48 ffffffff8173356d
-> > 0000000000002652
-> > [    6.161433]  ffff880119548e00 ffff88011f303e78 ffffffff810c461d
-> > 0000001c2000af00
-> > [    6.161435] ffff880119548e00 0000000000000010 0000000000000000
-> > ffff88011f303ea8
-> > [    6.161437] Call Trace:
-> > [    6.161438]  <IRQ> [<ffffffff8173356d>] dump_stack+0x46/0x58
-> > [    6.161446] [<ffffffff810c461d>] __report_bad_irq+0x3d/0xe0
-> > [    6.161448] [<ffffffff810c4a4b>] note_interrupt+0x14b/0x1a0
-> > [    6.161450] [<ffffffff810c2201>]
-> > handle_irq_event_percpu+0xb1/0x210 [    6.161453]
-> > [<ffffffff8101d089>] ? sched_clock+0x9/0x10 [    6.161454]
-> > [<ffffffff810c23a8>] handle_irq_event+0x48/0x70 [    6.161456]
-> > [<ffffffff810c568a>] handle_fasteoi_irq+0x5a/0x100 [    6.161460]
-> > [<ffffffff81016f32>] handle_irq+0x22/0x40 [    6.161463]
-> > [<ffffffff8174ad9a>] do_IRQ+0x5a/0xe0 [    6.161466]
-> > [<ffffffff8173ff6d>] common_interrupt+0x6d/0x6d [    6.161467] <EOI>
-> > [<ffffffff815db8e1>] ?cpuidle_enter_state+0x61/0xe0
-> > [    6.161472] [<ffffffff815db8d7>] ? cpuidle_enter_state+0x57/0xe0
-> > [    6.161474] [<ffffffff815dba20>] cpuidle_idle_call+0xc0/0x210
-> > [    6.161477] [<ffffffff8101e4fe>] arch_cpu_idle+0xe/0x30
-> > [    6.161481] [<ffffffff810c1598>] cpu_idle_loop+0x78/0x270
-> > [    6.161485]
-> > [<ffffffff810d6eb2>] ?clockevents_register_device+0xe2/0x140
-> > [    6.161487] [<ffffffff810c17fb>] cpu_startup_entry+0x6b/0x70
-> > [    6.161489] [<ffffffff810440e8>] start_secondary+0xc8/0xd0
-> > [    6.161490] handlers:
-> > [    6.161505] [<ffffffff81547a40>] usb_hcd_irq
-> > [    6.161526] Disabling IRQ #16
-> 
-> 
-
+>> Fixed instruction set that allows zero-overhead calls into kernel functions
+>> is much more flexible and extendable in a clean way.
+>> Take a look at kernel/trace/bpf_trace_callbacks.c
+>> It is a customization of generic BPF64 core for 'tracing filters'.
+>> The set of functions for networking and definition of 'bpf_context'
+>> will be different.
+>> So BPF64 for tracing need X extensions, BPF64 for networking needs Y
+>> extensions, but core framework stays the same and JIT stays the same.
+>>
+>> How to do zero-overhead call?
+>> Map BPF registers to native registers one to one
+>> and have compatible calling convention between BPF and native.
+>> Then BPF asm code:
+>> mov R1, 1
+>> mov R2, 2
+>> call foo
+>> will be JITed into x86-64:
+>> mov rdi, 1
+>> mov rsi, 2
+>> call foo
+>> That makes BPF64 calls into kernel as fast as possible.
+>> Especially for networking we don't want overhead of FFI mechanisms.
+>>
+>> That's why A and X regs and lack of callee-saved regs make old BPF
+>> impractical to support generic function calls.
+>>
+>> BPF64 defines R1-R5 as function arguments and R6-R9 as
+>> callee-saved, so kernel can natively call into JIT-ed BPF and back
+>> with no extra argument shuffling.
+>> gcc/llvm backends know that R6-R9 will be preserved while BPF is
+>> calling into kernel functions and can make proper optimizations.
+>> R6-R9 map to rbx-r15 on x86-64. On aarch64 we have
+>> even more freedom of mapping.
+>>
+>>> code
+>>> in detail, but although we might/could have _some_ performance benefits but
+>>> at
+>>> the _huge_ cost of adding complexity. The current BPF I find okay to debug
+>>> and
+>>> to follow, but how would be debug'ability of 64 bit programs end up, as you
+>>> mention, it becomes "unbearably complex"?
+>>
+>> "unbearably complex" was the reference to x86 static analyzer :)
+>> It's difficult to reconstruct and verify control and data flow of x86 asm code.
+>> Binary compilers do that (like transmeta and others), but that's not suitable
+>> for kernel.
+>>
+>> Both old bpf asm and bpf64 asm code I find equivalent in readability.
+>>
+>> clang dropmon.c ...|llc -filetype=asm
+>> will produce the following bpf64 asm code:
+>>          mov     r6, r1
+>>          ldd     r1, 8(r6)
+>>          std     -8(r10), r1
+>>          mov     r7, 0
+>>          mov     r3, r10
+>>          addi    r3, -8
+>>          mov     r1, r6
+>>          mov     r2, r7
+>>          call    bpf_table_lookup
+>>          jeqi    r0, 0 goto .LBB0_2
+>>
+>> which corresponds to C:
+>> void dropmon(struct bpf_context *ctx)
+>> {       void *loc;
+>>          uint64_t *drop_cnt;
+>>          loc = (void *)ctx->arg2;
+>>          drop_cnt = bpf_table_lookup(ctx, 0, &loc);
+>>          if (drop_cnt) ...
+>>
+>> I think restricted C is easier to program and debug.
+>> Which is another killer feature of bpf64.
+>>
+>> Interesting use case would be if some kernel subsystem
+>> decides to generate BPF64 insns on the fly and JIT them.
+>> Sort of self-modifieable kernel code.
+>> It's certainly easier to generate BPF64 binary with macroses
+>> from linux/bpf.h instead of x86 binary...
+>> I may be dreaming here :)
+>>
+>>> Did you instead consider to
+>>> replace
+>>> the current BPF engine instead, and add a sort of built-in compatibility
+>>> mode for current BPF programs? I think that this would be the way better
+>>> option to go with instead of adding a new engine next to the other. For
+>>> maintainability, trying to replace the old one might be harder to do on the
+>>> short term but better to maintain on the long run for everyone, no?
+>>
+>> Exactly. I think on-the-fly converter from bpf32->bpf64 is this built-in
+>> compatibility layer. I completely agree that replacing bpf32 is hard
+>> short term, since it will raise too many concerns about
+>> stability/safety, but long term it's a way to go.
+>
+> Yes, I agree.
+>
+>> I'm open to all suggestions on how to make it more generic, useful,
+>> faster.
+>>
+>> Thank you for feedback.
+>
+> Thank you, must have been really fun to implement this. :)
+>
+>> Regards,
+>> Alexei
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
