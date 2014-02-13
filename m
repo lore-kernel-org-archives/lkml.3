@@ -1,119 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaBMOxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 09:53:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751095AbaBMOxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 09:53:16 -0500
-Date: Thu, 13 Feb 2014 15:53:14 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] memcg: barriers to see memcgs as fully initialized
-Message-ID: <20140213145314.GC11986@dhcp22.suse.cz>
-References: <alpine.LSU.2.11.1402121717420.5917@eggly.anvils>
- <alpine.LSU.2.11.1402121727050.5917@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402121727050.5917@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751692AbaBMOzQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 09:55:16 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:16379 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385AbaBMOzN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 09:55:13 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-ab-52fcdcced4d6
+Message-id: <52FCDCCB.70908@samsung.com>
+Date: Thu, 13 Feb 2014 15:55:07 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 10/14] Documentation: mfd: s2mps11: Document support for
+ S2MPS14
+References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
+ <1392282847-25444-11-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1392282847-25444-11-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42I5/e/4Vd1zd/4EGTydY2WxccZ6VoupD5+w
+	Wcw/co7Vov/NQlaLc69WMlq8fmFocbbpDbvF/a9HGS2+Xelgsri8aw6bxYzz+5gs1h65y26x
+	9PpFJosJ09eyWLTuPcJucbqb1eLiii9MDoIea+atYfS43NfL5LFz1l12j5XLv7B5bFrVyeZx
+	59oeNo95JwM9+rasYvT4vEkugDOKyyYlNSezLLVI3y6BK+Pn1TdMBU1CFZOmNTE1MG7n62Lk
+	5JAQMJFY/WcOK4QtJnHh3nq2LkYuDiGBpYwSt5bPY4dwPjNKvL29ggWkildAQ2Jq3xFmEJtF
+	QFXifts/JhCbTUBN4nPDIzYQW1QgQuLvvPWMEPWCEj8m32MBGSQi8IRR4tuqO8wgDrPAdmaJ
+	P5fmsoNUCQtESmxatIUJYl0bo8TsB//AjuIU8JRYMuMX2GpmAWuJlZO2MULY8hKb17xlnsAo
+	MAvJlllIymYhKVvAyLyKUTS1NLmgOCk910ivODG3uDQvXS85P3cTIyTmvu5gXHrM6hCjAAej
+	Eg/vg8W/g4RYE8uKK3MPMUpwMCuJ8IYf+RMkxJuSWFmVWpQfX1Sak1p8iJGJg1OqgXGKxKwT
+	ITun3upvfPz3jPWCOQniri/lk30zDpU4f/hy9rnRlVirxxzO68uPnroyqartP49P/AVPztaV
+	9y5smrTxtGXnxqfxMw4JX0pYpPFO58BWg6/OFrVb9l3gSmvftPxvQclfBlMpBYdpygwRSnV3
+	1s1hcTVIFH2Y8u7Jtq8Trgmk5kueuqaoxFKckWioxVxUnAgAAv1lopcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-02-14 17:29:09, Hugh Dickins wrote:
-> Commit d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully
-> initialized") is not bad, but Greg Thelen asks "Are barriers needed?"
-> 
-> Yes, I'm afraid so: this makes it a little heavier than the original,
-> but there's no point in guaranteeing that mem_cgroup_iter() returns only
-> fully initialized memcgs, if we don't guarantee that the initialization
-> is visible.
-> 
-> If we move online_css()'s setting CSS_ONLINE after rcu_assign_pointer()
-> (I don't see why not), we can reasonably rely on the smp_wmb() in that.
-> But I can't find a pre-existing barrier at the mem_cgroup_iter() end,
-> so add an smp_rmb() where __mem_cgroup_iter_next() returns non-NULL.
-> 
-> Fixes: d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully initialized")
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: stable@vger.kernel.org # 3.12+
+Hi,
+
+On 13.02.2014 10:14, Krzysztof Kozlowski wrote:
+> Add bindings documentation for S2MPS14 device to the s2mps11 driver.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Liam Girdwood <lgirdwood@gmail.com>
+> Cc: Tomasz Figa <t.figa@samsung.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
 > ---
-> I'd have been happier not to have to add this patch: maybe you can see
-> a better placement, or a way we can avoid this altogether.
+>   Documentation/devicetree/bindings/mfd/s2mps11.txt |   12 ++++++++----
+>   1 file changed, 8 insertions(+), 4 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> index 15ee89c3cc7b..f69bec294f02 100644
+> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> @@ -1,5 +1,5 @@
+>
+> -* Samsung S2MPS11 Voltage and Current Regulator
+> +* Samsung S2MPS11 and S2MPS14 Voltage and Current Regulator
+>
+>   The Samsung S2MPS11 is a multi-function device which includes voltage and
+>   current regulators, RTC, charger controller and other sub-blocks. It is
+> @@ -7,7 +7,7 @@ interfaced to the host controller using an I2C interface. Each sub-block is
+>   addressed by the host system using different I2C slave addresses.
+>
+>   Required properties:
+> -- compatible: Should be "samsung,s2mps11-pmic".
+> +- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic".
+>   - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
+>
+>   Optional properties:
+> @@ -59,10 +59,14 @@ supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
+>   as per the datasheet of s2mps11.
+>
+>   	- LDOn
+> -		  - valid values for n are 1 to 38
+> +		  - valid values for n are:
+> +			- S2MPS11: 1 to 38
+> +			- S2MPS14: 1 to 25
+>   		  - Example: LDO1, LD02, LDO28
+>   	- BUCKn
+> -		  - valid values for n are 1 to 10.
+> +		  - valid values for n are:
+> +			- S2MPS11: 1 to 10
+> +			- S2MPS14: 1 to 5
+>   		  - Example: BUCK1, BUCK2, BUCK9
+>
+>   Example:
+>
 
-I don't know. I have thought about this again and I really do not see
-why we have to provide such a guarantee, to be honest.
+Acked-by: Tomasz Figa <t.figa@samsung.com>
 
-Such a half initialized memcg wouldn't see its hierarchical parent
-properly (including inheritted attributes) and it wouldn't have kmem
-fully initialized. But it also wouldn't have any tasks in it IIRC so it
-shouldn't matter much.
-
-So I really don't know whether this all is worth all the troubles. 
-I am not saying your patch is wrong (although I am not sure whether
-css->flags vs. subsystem css association ordering is relevant and
-ae7f164a09408 changelog didn't help me much) and it made sense when
-you proposed it back then but the additional ordering requirements
-complicates the thing.
-
-I will keep thinking about that.
-
->  kernel/cgroup.c |    8 +++++++-
->  mm/memcontrol.c |   11 +++++++++--
->  2 files changed, 16 insertions(+), 3 deletions(-)
-> 
-> --- 3.14-rc2+/kernel/cgroup.c	2014-02-02 18:49:07.737302111 -0800
-> +++ linux/kernel/cgroup.c	2014-02-12 11:59:52.804041895 -0800
-> @@ -4063,9 +4063,15 @@ static int online_css(struct cgroup_subs
->  	if (ss->css_online)
->  		ret = ss->css_online(css);
->  	if (!ret) {
-> -		css->flags |= CSS_ONLINE;
->  		css->cgroup->nr_css++;
->  		rcu_assign_pointer(css->cgroup->subsys[ss->subsys_id], css);
-> +		/*
-> +		 * Set CSS_ONLINE after rcu_assign_pointer(), so that its
-> +		 * smp_wmb() will guarantee that those seeing CSS_ONLINE
-> +		 * can see the initialization done in ss->css_online() - if
-> +		 * they provide an smp_rmb(), as in __mem_cgroup_iter_next().
-> +		 */
-> +		css->flags |= CSS_ONLINE;
->  	}
->  	return ret;
->  }
-> --- 3.14-rc2+/mm/memcontrol.c	2014-02-12 11:55:02.836035004 -0800
-> +++ linux/mm/memcontrol.c	2014-02-12 11:59:52.804041895 -0800
-> @@ -1128,9 +1128,16 @@ skip_node:
->  	 */
->  	if (next_css) {
->  		if ((next_css == &root->css) ||
-> -		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css)))
-> +		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))) {
-> +			/*
-> +			 * Ensure that all memcg initialization, done before
-> +			 * CSS_ONLINE was set, will be visible to our caller.
-> +			 * This matches the smp_wmb() in online_css()'s
-> +			 * rcu_assign_pointer(), before it set CSS_ONLINE.
-> +			 */
-> +			smp_rmb();
->  			return mem_cgroup_from_css(next_css);
-> -
-> +		}
->  		prev_css = next_css;
->  		goto skip_node;
->  	}
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
+Best regards,
+Tomasz
