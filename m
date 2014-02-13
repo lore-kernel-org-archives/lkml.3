@@ -1,52 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaBMDsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 22:48:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62975 "EHLO mx1.redhat.com"
+	id S1752204AbaBMDvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 22:51:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22047 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246AbaBMDsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 22:48:07 -0500
-Date: Wed, 12 Feb 2014 22:47:51 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: moinejf@free.fr, rmk+kernel@arm.linux.org.uk,
-        linux-coverity@vger.kernel.org
-Subject: drm/i2c: tda998x: Fix memory leak in tda998x_encoder_init error path.
-Message-ID: <20140213034751.GA26499@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	moinejf@free.fr, rmk+kernel@arm.linux.org.uk,
-	linux-coverity@vger.kernel.org
-References: <20140212171058.6CCD6660CAF@gitolite.kernel.org>
+	id S1751397AbaBMDvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 22:51:50 -0500
+Message-ID: <52FC4147.7060803@redhat.com>
+Date: Thu, 13 Feb 2014 11:51:35 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212171058.6CCD6660CAF@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Haiyang Zhang <haiyangz@microsoft.com>, davem@davemloft.net,
+        netdev@vger.kernel.org
+CC: kys@microsoft.com, olaf@aepfle.de, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net,v3] hyperv: Fix the carrier status setting
+References: <1392252867-21146-1-git-send-email-haiyangz@microsoft.com>
+In-Reply-To: <1392252867-21146-1-git-send-email-haiyangz@microsoft.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6ae668cc19e8b18df28cd67b3448d9abd79284a4 introduced a memory leak
-in the error path of tda998x_encoder_init
+On 02/13/2014 08:54 AM, Haiyang Zhang wrote:
+> Without this patch, the "cat /sys/class/net/ethN/operstate" shows
+> "unknown", and "ethtool ethN" shows "Link detected: yes", when VM
+> boots up with or without vNIC connected.
+>
+> This patch fixed the problem.
+>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/net/hyperv/netvsc_drv.c |   53 ++++++++++++++++++++++++++++-----------
+>  1 files changed, 38 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+> index 7756118..7141a19 100644
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -88,8 +88,12 @@ static int netvsc_open(struct net_device *net)
+>  {
+>  	struct net_device_context *net_device_ctx = netdev_priv(net);
+>  	struct hv_device *device_obj = net_device_ctx->device_ctx;
+> +	struct netvsc_device *nvdev;
+> +	struct rndis_device *rdev;
+>  	int ret = 0;
+>  
+> +	netif_carrier_off(net);
+> +
+>  	/* Open up the device */
+>  	ret = rndis_filter_open(device_obj);
+>  	if (ret != 0) {
+> @@ -99,6 +103,11 @@ static int netvsc_open(struct net_device *net)
+>  
+>  	netif_start_queue(net);
+>  
+> +	nvdev = hv_get_drvdata(device_obj);
+> +	rdev = nvdev->extension;
+> +	if (!rdev->link_state)
+> +		netif_carrier_on(net);
+> +
 
-Picked up by the nightly Coverity scan. CID 1174076
-    
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Maybe you can just schedule the work here and then you can drop the
+rtnl_lock in netvsc_link_change() ?
+>  	return ret;
+>  }
+>  
+> @@ -229,23 +238,24 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+>  	struct net_device *net;
+>  	struct net_device_context *ndev_ctx;
+>  	struct netvsc_device *net_device;
+> +	struct rndis_device *rdev;
+>  
+>  	net_device = hv_get_drvdata(device_obj);
+> +	rdev = net_device->extension;
+> +
+> +	rdev->link_state = status != 1;
+> +
+>  	net = net_device->ndev;
+>  
+> -	if (!net) {
+> -		netdev_err(net, "got link status but net device "
+> -				"not initialized yet\n");
+> +	if (!net || net->reg_state != NETREG_REGISTERED)
+>  		return;
+> -	}
+>  
+> +	ndev_ctx = netdev_priv(net);
+>  	if (status == 1) {
+> -		netif_carrier_on(net);
+> -		ndev_ctx = netdev_priv(net);
+>  		schedule_delayed_work(&ndev_ctx->dwork, 0);
+>  		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
+>  	} else {
+> -		netif_carrier_off(net);
+> +		schedule_delayed_work(&ndev_ctx->dwork, 0);
+>  	}
+>  }
+>  
+> @@ -388,17 +398,35 @@ static const struct net_device_ops device_ops = {
+>   * current context when receiving RNDIS_STATUS_MEDIA_CONNECT event. So, add
+>   * another netif_notify_peers() into a delayed work, otherwise GARP packet
+>   * will not be sent after quick migration, and cause network disconnection.
+> + * Also, we update the carrier status here.
+>   */
+> -static void netvsc_send_garp(struct work_struct *w)
+> +static void netvsc_link_change(struct work_struct *w)
+>  {
+>  	struct net_device_context *ndev_ctx;
+>  	struct net_device *net;
+>  	struct netvsc_device *net_device;
+> +	struct rndis_device *rdev;
+> +	bool notify;
+> +
+> +	rtnl_lock();
+>  
+>  	ndev_ctx = container_of(w, struct net_device_context, dwork.work);
+>  	net_device = hv_get_drvdata(ndev_ctx->device_ctx);
+> +	rdev = net_device->extension;
+>  	net = net_device->ndev;
+> -	netdev_notify_peers(net);
+> +
+> +	if (rdev->link_state) {
+> +		netif_carrier_off(net);
+> +		notify = false;
+> +	} else {
+> +		netif_carrier_on(net);
+> +		notify = true;
+> +	}
+> +
+> +	rtnl_unlock();
+> +
+> +	if (notify)
+> +		netdev_notify_peers(net);
+>  }
+>  
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index fa18cf374470..faa77f543a07 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -1151,8 +1151,10 @@ tda998x_encoder_init(struct i2c_client *client,
- 
- 	priv->current_page = 0xff;
- 	priv->cec = i2c_new_dummy(client->adapter, 0x34);
--	if (!priv->cec)
-+	if (!priv->cec) {
-+		kfree(priv);
- 		return -ENODEV;
-+	}
- 	priv->dpms = DRM_MODE_DPMS_OFF;
- 
- 	encoder_slave->slave_priv = priv;
+Looks like this forces arp_notify here. Is it expected?
+
+Other looks good.
+>  
+> @@ -414,13 +442,10 @@ static int netvsc_probe(struct hv_device *dev,
+>  	if (!net)
+>  		return -ENOMEM;
+>  
+> -	/* Set initial state */
+> -	netif_carrier_off(net);
+> -
+>  	net_device_ctx = netdev_priv(net);
+>  	net_device_ctx->device_ctx = dev;
+>  	hv_set_drvdata(dev, net);
+> -	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
+> +	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_link_change);
+>  	INIT_WORK(&net_device_ctx->work, do_set_multicast);
+>  
+>  	net->netdev_ops = &device_ops;
+> @@ -443,8 +468,6 @@ static int netvsc_probe(struct hv_device *dev,
+>  	}
+>  	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
+>  
+> -	netif_carrier_on(net);
+> -
+>  	ret = register_netdev(net);
+>  	if (ret != 0) {
+>  		pr_err("Unable to register netdev.\n");
+
