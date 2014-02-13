@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaBMWpP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:45:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63304 "EHLO mx1.redhat.com"
+	id S1752211AbaBMWsl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:48:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45275 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751937AbaBMWpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:45:12 -0500
-Message-ID: <52FD4AC0.7090502@redhat.com>
-Date: Thu, 13 Feb 2014 23:44:16 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1750932AbaBMWsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 17:48:39 -0500
+Message-ID: <52FD4B97.9020306@zytor.com>
+Date: Thu, 13 Feb 2014 14:47:51 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
+To: Daniel Borkmann <dborkman@redhat.com>
 CC: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
         "David S. Miller" <davem@davemloft.net>,
         Steven Rostedt <rostedt@goodmis.org>,
@@ -29,39 +29,24 @@ CC: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
 Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>	<52F3670D.5090608@redhat.com> <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com> <52FD47F9.2090907@zytor.com>
-In-Reply-To: <52FD47F9.2090907@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>	<52F3670D.5090608@redhat.com> <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com> <52FD47F9.2090907@zytor.com> <52FD4AC0.7090502@redhat.com>
+In-Reply-To: <52FD4AC0.7090502@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 11:32 PM, H. Peter Anvin wrote:
-> On 02/06/2014 05:20 PM, Alexei Starovoitov wrote:
->>
->> I believe that old BPF outlived itself and BPF64 should
->> replace it in all current use cases plus a lot more.
->> It just cannot happen at once.
->> BPF64 can come in. bpf32->bpf64 converter functioning.
->> JIT from bpf64->aarch64 and may be sparc64 needs to be in place.
->> Then old bpf can fade away.
->
-> I don't think that is doable any time soon.  Right now pretty much all
-> mobile devices, for example, are 32 bits and they really want to use
-> syscall filtering for security.  Performance matters greatly there.
+On 02/13/2014 02:44 PM, Daniel Borkmann wrote:
+> 
+> Well, if that would be the case, then seccomp would have had JIT support
+> long ago. ;-) Right now BPF filters with seccomp are not JIT compiled
+> for _any_ architecture.
+> 
 
-Well, if that would be the case, then seccomp would have had JIT support
-long ago. ;-) Right now BPF filters with seccomp are not JIT compiled
-for _any_ architecture.
+Really, I was under the impression there were.  They *should be*, that
+was an important concept in the development of the seccomp filters.
 
-> As such, 32-bit JIT support is going to be very important for a long
-> time to come.
+	-hpa
 
-True, I think that pretty much depends if we can manage to find a way
-to cleanly integrate it into net/core/filter.c while still supporting
-the old instructions as I've mentioned earlier.
-
-> 	-hpa
->
->
