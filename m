@@ -1,75 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320AbaBMOUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 09:20:51 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:36312 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaBMOUu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 09:20:50 -0500
-Date: Thu, 13 Feb 2014 15:20:47 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
-Message-ID: <20140213142045.GC14383@localhost.localdomain>
-References: <20140115171704.GB21574@localhost.localdomain>
- <CAKohponEZydR1OmP2xziA9bc3OJPgP3bFmuWFQmrmeQFZccMVQ@mail.gmail.com>
- <alpine.DEB.2.02.1401161043350.4207@ionos.tec.linutronix.de>
- <CAKohpond3wY25H_tsJQ9xs_D2dP2_wGGU5J8fBteyfB=7wmAdA@mail.gmail.com>
- <20140120155145.GB9436@localhost.localdomain>
- <CAKohpom8av7A1wwcdOr5+LpHz--P+s9m_gR_9B+Aa4fpwkN7uQ@mail.gmail.com>
- <20140123145842.GD13345@localhost.localdomain>
- <CAKohpok5AObcFbOmLYGT-KkjhVHUiLRZ=AYqofYk59_sVneSjA@mail.gmail.com>
- <20140128132306.GB9172@localhost.localdomain>
- <CAKohpommw4=LcyYKvj8rNJgUkOT+_Gh=1kppcDQYm3BuQQe_Qg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpommw4=LcyYKvj8rNJgUkOT+_Gh=1kppcDQYm3BuQQe_Qg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751528AbaBMOXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 09:23:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014AbaBMOXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 09:23:17 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>, linux-pci@vger.kernel.org
+Subject: [PATCH] PCI/MSI: Add pci_enable_msi_exact() and pci_enable_msix_exact()
+Date: Thu, 13 Feb 2014 15:25:02 +0100
+Message-Id: <1392301502-22949-1-git-send-email-agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 02:22:43PM +0530, Viresh Kumar wrote:
-> On 28 January 2014 18:53, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > No, when a single task is running on a full dynticks CPU, the tick is supposed to run
-> > every seconds. I'm actually suprised it doesn't happen in your traces, did you tweak
-> > something specific?
-> 
-> Why do we need this 1 second tick currently? And what will happen if I
-> hotunplug that
-> CPU and get it back? Would the timer for tick move away from CPU in
-> question? I see
-> that when I have changed this 1sec stuff to 300 seconds. But what
-> would be impact
-> of that? Will things still work normally?
+The new functions are special cases for pci_enable_msi_range() and
+pci_enable_msix_range() when a particular number of MSI or MSI-X
+is needed.
 
-So the problem resides in the gazillions accounting maintained in scheduler_tick() and
-current->sched_class->task_tick().
+By contrast with pci_enable_msi_range() and pci_enable_msix_range()
+functions, pci_enable_msi_exact() and pci_enable_msix_exact()
+return zero in case of success, which indicates MSI or MSI-X
+interrupts have been successfully allocated.
 
-The scheduler correctness depends on these to be updated regularly. If you deactivate
-or increase the delay with very high values, the result is unpredictable. Just expect that
-at least some scheduler feature will behave randomly, like load balancing for example or
-simply local fairness issues.
+Cc: linux-pci@vger.kernel.org
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ Documentation/PCI/MSI-HOWTO.txt |   86 ++++++++++++++++++++++++++++++++++++++-
+ include/linux/pci.h             |   20 +++++++++
+ 2 files changed, 104 insertions(+), 2 deletions(-)
 
-So we have that 1 Hz max that makes sure that things are moving forward while keeping
-a rate that should be still nice for HPC workloads. But we certainly want to find a
-way to remove the need for any tick altogether for extreme real time workloads which
-need guarantees rather than just optimizations.
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index 96ee5eb..ae7307c 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -159,6 +159,11 @@ static int foo_driver_enable_msi(struct pci_dev *pdev, int nvec)
+ 	return pci_enable_msi_range(pdev, nvec, nvec);
+ }
+ 
++Note, unlike pci_enable_msi_exact() function, which could be also used to
++enable a particular number of MSI-X interrupts, pci_enable_msi_range()
++returns either a negative errno or 'nvec' (not negative errno or 0 - as
++pci_enable_msi_exact() does).
++
+ 4.2.1.3 Single MSI mode
+ 
+ The most notorious example of the request type described above is
+@@ -175,7 +180,22 @@ enable the single MSI mode, pci_enable_msi_range() returns either a
+ negative errno or 1 (not negative errno or 0 - as pci_enable_msi()
+ does).
+ 
+-4.2.3 pci_disable_msi
++4.2.3 pci_enable_msi_exact
++
++int pci_enable_msi_exact(struct pci_dev *dev, int nvec)
++
++This variation on pci_enable_msi_range() call allows a device driver to
++request exactly 'nvec' MSIs.
++
++If this function returns a negative number, it indicates an error and
++the driver should not attempt to request any more MSI interrupts for
++this device.
++
++By contrast with pci_enable_msi_range() function, pci_enable_msi_exact()
++returns zero in case of success, which indicates MSI interrupts have been
++successfully allocated.
++
++4.2.4 pci_disable_msi
+ 
+ void pci_disable_msi(struct pci_dev *dev)
+ 
+@@ -303,6 +323,11 @@ static int foo_driver_enable_msix(struct foo_adapter *adapter, int nvec)
+ 				     nvec, nvec);
+ }
+ 
++Note, unlike pci_enable_msix_exact() function, which could be also used to
++enable a particular number of MSI-X interrupts, pci_enable_msix_range()
++returns either a negative errno or 'nvec' (not negative errno or 0 - as
++pci_enable_msix_exact() does).
++
+ 4.3.1.3 Specific requirements to the number of MSI-X interrupts
+ 
+ As noted above, there could be devices that can not operate with just any
+@@ -349,7 +374,64 @@ Note how pci_enable_msix_range() return value is analized for a fallback -
+ any error code other than -ENOSPC indicates a fatal error and should not
+ be retried.
+ 
+-4.3.2 pci_disable_msix
++4.3.2 pci_enable_msix_exact
++
++int pci_enable_msix_exact(struct pci_dev *dev,
++			  struct msix_entry *entries, int nvec)
++
++This variation on pci_enable_msix_range() call allows a device driver to
++request exactly 'nvec' MSI-Xs.
++
++If this function returns a negative number, it indicates an error and
++the driver should not attempt to allocate any more MSI-X interrupts for
++this device.
++
++By contrast with pci_enable_msix_range() function, pci_enable_msix_exact()
++returns zero in case of success, which indicates MSI-X interrupts have been
++successfully allocated.
++
++Another version of a routine that enables MSI-X mode for a device with
++specific requirements described in chapter 4.3.1.3 might look like this:
++
++/*
++ * Assume 'minvec' and 'maxvec' are non-zero
++ */
++static int foo_driver_enable_msix(struct foo_adapter *adapter,
++				  int minvec, int maxvec)
++{
++	int rc;
++
++	minvec = roundup_pow_of_two(minvec);
++	maxvec = rounddown_pow_of_two(maxvec);
++
++	if (minvec > maxvec)
++		return -ERANGE;
++
++retry:
++	rc = pci_enable_msix_exact(adapter->pdev,
++				   adapter->msix_entries, maxvec);
++
++	/*
++	 * -ENOSPC is the only error code allowed to be analized
++	 */
++	if (rc == -ENOSPC) {
++		if (maxvec == 1)
++			return -ENOSPC;
++
++		maxvec /= 2;
++
++		if (minvec > maxvec)
++			return -ENOSPC;
++
++		goto retry;
++	} else if (rc < 0) {
++		return rc;
++	}
++
++	return maxvec;
++}
++
++4.3.3 pci_disable_msix
+ 
+ void pci_disable_msix(struct pci_dev *dev)
+ 
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index fb57c89..33aa2ca 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1169,8 +1169,23 @@ void msi_remove_pci_irq_vectors(struct pci_dev *dev);
+ void pci_restore_msi_state(struct pci_dev *dev);
+ int pci_msi_enabled(void);
+ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec);
++static inline int pci_enable_msi_exact(struct pci_dev *dev, int nvec)
++{
++	int rc = pci_enable_msi_range(dev, nvec, nvec);
++	if (rc < 0)
++		return rc;
++	return 0;
++}
+ int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
+ 			  int minvec, int maxvec);
++static inline int pci_enable_msix_exact(struct pci_dev *dev,
++					struct msix_entry *entries, int nvec)
++{
++	int rc = pci_enable_msix_range(dev, entries, nvec, nvec);
++	if (rc < 0)
++		return rc;
++	return 0;
++}
+ #else
+ static inline int pci_msi_vec_count(struct pci_dev *dev) { return -ENOSYS; }
+ static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
+@@ -1189,9 +1204,14 @@ static inline int pci_msi_enabled(void) { return 0; }
+ static inline int pci_enable_msi_range(struct pci_dev *dev, int minvec,
+ 				       int maxvec)
+ { return -ENOSYS; }
++static inline int pci_enable_msi_exact(struct pci_dev *dev, int nvec)
++{ return -ENOSYS; }
+ static inline int pci_enable_msix_range(struct pci_dev *dev,
+ 		      struct msix_entry *entries, int minvec, int maxvec)
+ { return -ENOSYS; }
++static inline int pci_enable_msix_exact(struct pci_dev *dev,
++		      struct msix_entry *entries, int nvec)
++{ return -ENOSYS; }
+ #endif
+ 
+ #ifdef CONFIG_PCIEPORTBUS
+-- 
+1.7.7.6
 
-I see two potential solutions for that:
-
-1) Rework the scheduler accounting such that it is safe against full dynticks. That
-was the initial plan but it's scary. The scheduler accountings is a huge maze. And I'm not
-sure it's actually worth the complication.
-
-2) Offload the accounting. For example we could imagine that the timekeeping could handle the
-task_tick() calls on behalf of the full dynticks CPUs. At a small rate like 1 Hz.
