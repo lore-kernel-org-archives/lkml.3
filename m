@@ -1,131 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaBMQlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 11:41:10 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:63175 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926AbaBMQlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 11:41:08 -0500
-Message-ID: <52FCF59E.3090100@gmail.com>
-Date: Thu, 13 Feb 2014 17:41:02 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 00/13] pinctrl: mvebu: restructure resource allocation
-References: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com> <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140213172620.76e760ba@skate>
-In-Reply-To: <20140213172620.76e760ba@skate>
+	id S1752355AbaBMQmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 11:42:04 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:45867 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751676AbaBMQmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 11:42:00 -0500
+Message-ID: <52FCF5DB.4030804@mm-sol.com>
+Date: Thu, 13 Feb 2014 18:42:03 +0200
+From: Georgi Djakov <gdjakov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-mmc@vger.kernel.org, cjb@laptop.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v8 3/3] mmc: sdhci-msm: Add platform_execute_tunning implementation
+References: <1391107507-17321-1-git-send-email-gdjakov@mm-sol.com> <1391107507-17321-4-git-send-email-gdjakov@mm-sol.com> <20140208032315.GB10784@codeaurora.org>
+In-Reply-To: <20140208032315.GB10784@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/14 17:26, Thomas Petazzoni wrote:
-> Thanks again for working on this! I have boot tested this successfully
-> on an Armada XP platform, and it seems to behave normally, the debugfs
-> pinctrl contents make sense.
+Hi Stephen,
 
-I guess this is a Tested-by ?
-
-> I have a few comments below, though.
->
-> On Wed, 12 Feb 2014 16:59:23 +0100, Sebastian Hesselbarth wrote:
->
->> Also, in the meantime, pinctrl driver stubs for new Armada 375/28x have
->> been posted [3]. Before any of this patches move to a stable branch, I
->> plan to send an updated version comprising the required patches for the
->> new SoCs. As the new driver stubs are very much like what we already have
->> for Armada 370/XP, let's only discuss the general approach now and add
->> the branch dependency and patches later.
->
-> I am not sure what you mean here in terms of the ordering for the
-> patches. I'm attaching several patches, and the first three patches
-> adapt your patch series to also cover 375 and 38x, assuming the pinctrl
-> support for 375 and 38x is merged before your patch series.
-
-Right. If 375/38x pinctrl goes in first (what I expect), I'd have to add
-corresponding patches. You already sent them, I'll pick them up.
-
-> With these patches, I have
->
->> Patches 1-3 first deal with the way we handle unnamed "generic" mpp
->> controls. Patch 1 consolidates the per-control allocation of name buffers
->> to counting unnamed controls first and then allocate a global name buffer
->> for all those controls. Patch 2 then removes the now obsolete per-control
->> allocation of name buffers. Patch 3 then makes the common driver to
->> identify "generic" mpp controls by an empty name and adds some valuable
->> comments about that special treatment.
->
-> I must say I dislike quite a bit this unnamed mpp controls mechanism.
-> Why isn't the name statically defined in the source code by the
-> MPP_MODE macro, which already takes as first argument the pin number?
-
-Honestly, the unnamed mpp control thing is a bit odd. But if you tell
-me how to create ~60 statically defined one pin groups out of a
-single-line macro, we can change that easily.
-
-Back when that unnamed mpp control thing was invented, I must have been
-to lazy to write e.g.
-
-MPP_FUNC_CTRL(0, 0, "mpp0", armada_xp_mpp_ctrl),
-MPP_FUNC_CTRL(1, 1, "mpp1", armada_xp_mpp_ctrl),
-MPP_FUNC_CTRL(2, 2, "mpp2", armada_xp_mpp_ctrl),
-...
-MPP_FUNC_CTRL(66, 66, "mpp66", armada_xp_mpp_ctrl),
-
-instead of
-
-MPP_FUNC_CTRL(0, 66, NULL, armada_xp_mpp_ctrl),
-
-and generate the 66 names dynamically.
-
-> All the calculation of the buffer size, generating the names and so on,
-> looks like a lot of unnecessary code to me. But well, this unnamed
-> thing was already here, so I'm not saying your patch series should do
-> anything about it.
-
-If you come up with a cool idea, we can shove it in now.
-
->> Patch 4 removes passing struct mvebu_mpp_ctrl to the special callback
->> as the only relevant information in that struct for the callback is the
->> pin number which is passed directly instead.
+On 02/08/2014 05:23 AM, Stephen Boyd wrote:
+> On 01/30, Georgi Djakov wrote:
+>> @@ -75,17 +110,389 @@ struct sdhci_msm_host {
+>>   };
 >>
->> Patches 5-9 then add some global defines and provide SoC specific
->> callbacks even for the "generic" mpp controls. This allows Patch 10 to
->> move resource allocation to SoC specific drivers and remove the common
->> generic callbacks in Patch 11.
+>>   /* MSM platform specific tuning */
+>> -int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+>> +static inline int msm_dll_poll_ck_out_en(struct sdhci_host *host, u8 poll)
+>> +{
+>> +	u32 wait_cnt = 50;
+>> +	u8 ck_out_en = 0;
 >
-> This is definitely good, but I'm wondering why the core cannot provide
-> helper functions for the generic case where we have 4 bits per pin in
-> contiguous registers. This would avoid duplicating the helper function
-> six times (you have four in your patch series, and we'll need two more
-> for A375 and A38x).
+> Looks like a useless assignment.
 
-I thought about it too, but we would need a soc specific callback
-anyway as you'll have to pass the base address somehow (and that is now
-known by soc specific stub only). My quick rule of thumb was that the
-amount of code replication would be almost the same.
+Yes, thanks!
 
-> I've also attached other patches:
 >
->   * One patch that fixes your Armada XP handling, which missed the
->     mv78230 and mv78260 cases (PATCH 4)
+>> +	struct mmc_host *mmc = host->mmc;
+>> +
+>> +	/* poll for CK_OUT_EN bit.  max. poll time = 50us */
+>> +	ck_out_en = !!(readl_relaxed(host->ioaddr + CORE_DLL_CONFIG) &
+>> +			CORE_CK_OUT_EN);
+>> +
+>> +	while (ck_out_en != poll) {
+>> +		if (--wait_cnt == 0) {
+>> +			dev_err(mmc_dev(mmc), "%s: CK_OUT_EN bit is not %d\n",
+>> +			       mmc_hostname(mmc), poll);
+>> +			return -ETIMEDOUT;
+>> +		}
+>> +		udelay(1);
+>> +
+>> +		ck_out_en = !!(readl_relaxed(host->ioaddr + CORE_DLL_CONFIG) &
+>> +				CORE_CK_OUT_EN);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int msm_config_cm_dll_phase(struct sdhci_host *host, u8 phase)
+>> +{
+>> +	int rc = 0;
 >
->   * One patch that removes MPP_REG_CTRL (PATCH 5)
->
->   * One patch that adjusts a comment in the code that was no longer true
->     (PATCH 6)
->
-> Feel free to squash these patches into the appropriate patches.
+> Looks like a useless assignment.
 
-Yep, thanks for these! I'll squash them in and send an updated v4 as
-soon as the discussion here stalls.
+Ok.
 
-Sebastian
+>
+>> +	u8 grey_coded_phase_table[] = {
+>> +		0x0, 0x1, 0x3, 0x2, 0x6, 0x7, 0x5, 0x4,
+>> +		0xc, 0xd, 0xf, 0xe, 0xa, 0xb, 0x9, 0x8
+>> +	};
+>
+> This could be static const?
+
+Yes, indeed!
+
+>
+>> +	unsigned long flags;
+>> +	u32 config;
+>> +	struct mmc_host *mmc = host->mmc;
+>> +
+>> +	spin_lock_irqsave(&host->lock, flags);
+>> +
+>> +	config = readl_relaxed(host->ioaddr + CORE_DLL_CONFIG);
+>> +	config &= ~(CORE_CDR_EN | CORE_CK_OUT_EN);
+>> +	config |= (CORE_CDR_EXT_EN | CORE_DLL_EN);
+>> +	writel_relaxed(config, host->ioaddr + CORE_DLL_CONFIG);
+>> +
+>> +	/* Wait until CK_OUT_EN bit of DLL_CONFIG register becomes '0' */
+>> +	rc = msm_dll_poll_ck_out_en(host, 0);
+>> +	if (rc)
+>> +		goto err_out;
+>> +
+>> +	/*
+>> +	 * Write the selected DLL clock output phase (0 ... 15)
+>> +	 * to CDR_SELEXT bit field of DLL_CONFIG register.
+>> +	 */
+>> +	writel_relaxed(((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
+>> +			 & ~(0xF << 20))
+>> +			| (grey_coded_phase_table[phase] << 20)),
+>> +		       host->ioaddr + CORE_DLL_CONFIG);
+>
+> Wow this is complicated. Can we please break this up into
+> multiple lines? What does 0xf << 20 mean?
+
+Yes, sure! I will simplify it! Only bits 23:20 are used.
+
+>
+>> +
+>> +	/* Set CK_OUT_EN bit of DLL_CONFIG register to 1. */
+>> +	writel_relaxed((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
+>> +			| CORE_CK_OUT_EN), host->ioaddr + CORE_DLL_CONFIG);
+>> +
+> [...]
+>> +}
+>> +
+>> +static int msm_find_most_appropriate_phase(struct sdhci_host *host,
+>> +					   u8 *phase_table, u8 total_phases)
+>> +{
+> [...]
+>> +
+>> +	for (cnt = 0; cnt <= row_index; cnt++) {
+>> +		if (phases_per_row[cnt] > curr_max) {
+>> +			curr_max = phases_per_row[cnt];
+>> +			selected_row_index = cnt;
+>> +		}
+>> +	}
+>> +
+>> +	i = ((curr_max * 3) / 4);
+>
+> Unnecessary extra parentheses here.
+
+Thanks!
+
+>
+>> +	if (i)
+>> +		i--;
+>> +
+>> +	ret = (int)ranges[selected_row_index][i];
+>
+> Is this cast necessary?
+
+Not necessary. Will fix it!
+
+>
+>> +
+>> +	if (ret >= MAX_PHASES) {
+>> +		ret = -EINVAL;
+>> +		dev_err(mmc_dev(mmc), "%s: invalid phase selected=%d\n",
+>> +		       mmc_hostname(mmc), ret);
+>> +	}
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +static inline void msm_cm_dll_set_freq(struct sdhci_host *host)
+>> +{
+>> +	u32 mclk_freq = 0;
+>> +
+>> +	/* Program the MCLK value to MCLK_FREQ bit field */
+>> +	if (host->clock <= 112000000)
+>> +		mclk_freq = 0;
+>> +	else if (host->clock <= 125000000)
+>> +		mclk_freq = 1;
+>> +	else if (host->clock <= 137000000)
+>> +		mclk_freq = 2;
+>> +	else if (host->clock <= 150000000)
+>> +		mclk_freq = 3;
+>> +	else if (host->clock <= 162000000)
+>> +		mclk_freq = 4;
+>> +	else if (host->clock <= 175000000)
+>> +		mclk_freq = 5;
+>> +	else if (host->clock <= 187000000)
+>> +		mclk_freq = 6;
+>> +	else if (host->clock <= 200000000)
+>> +		mclk_freq = 7;
+>
+> This could be a case statement but I'm not sure it's any clearer.
+> At least the range is specified.
+>
+> 	switch (host->clock) {
+> 	case 0 ... 112000000:
+> 		mclk_freq = 0;
+> 		break;
+> 	case 112000001 ...  125000000:
+> 		mclk_freq = 1;
+> 		break;
+> 	...
+
+It seems to be shorter with the ifs, so i prefer to keep it this way.
+
+>
+>> +
+>> +	writel_relaxed(((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
+>> +			 & ~(7 << 24)) | (mclk_freq << 24)),
+>> +		       host->ioaddr + CORE_DLL_CONFIG);
+>
+> This is also complicated. Can you split this up into multiple lines?
+
+Yes, sure!
+
+>
+>> +int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+>> +{
+> [...]
+>> +	do {
+>> +		struct mmc_command cmd = { 0 };
+>> +		struct mmc_data data = { 0 };
+>> +		struct mmc_request mrq = {
+>> +			.cmd = &cmd,
+>> +			.data = &data
+>> +		};
+>> +		struct scatterlist sg;
+>> +
+>> +		/* set the phase in delay line hw block */
+>> +		rc = msm_config_cm_dll_phase(host, phase);
+>> +		if (rc)
+>> +			goto out;
+>> +
+>> +		cmd.opcode = opcode;
+>> +		cmd.flags = MMC_RSP_R1 | MMC_CMD_ADTC;
+>> +
+>> +		data.blksz = size;
+>> +		data.blocks = 1;
+>> +		data.flags = MMC_DATA_READ;
+>> +		data.timeout_ns = 1000 * 1000 * 1000;	/* 1 sec */
+>
+> NSEC_PER_SEC?
+
+Thanks!
+
+>
+>> +
+>> +		data.sg = &sg;
+>> +		data.sg_len = 1;
+>> +		sg_init_one(&sg, data_buf, sizeof(data_buf));
+>> +		memset(data_buf, 0, sizeof(data_buf));
+>> +		mmc_wait_for_req(mmc, &mrq);
+>> +
+>> +		if (!cmd.error && !data.error &&
+>> +		    !memcmp(data_buf, tuning_block_pattern, sizeof(data_buf))) {
+>> +			/* tuning is successful at this tuning point */
+>> +			tuned_phases[tuned_phase_cnt++] = phase;
+>> +			dev_dbg(mmc_dev(mmc), "%s: found good phase = %d\n",
+>> +				 mmc_hostname(mmc), phase);
+>> +		}
+>> +	} while (++phase < 16);
+>
+> ++phase < ARRAY_SIZE(tuned_phases) ?
+
+Thanks!
+
+>
+>> +
+>> +	if (tuned_phase_cnt) {
+>> +		rc = msm_find_most_appropriate_phase(host, tuned_phases,
+>> +						     tuned_phase_cnt);
+>> +		if (rc < 0)
+>> +			goto out;
+>> +		else
+>> +			phase = (u8) rc;
+>
+> Unnecessary cast?
+
+Yes, thank you for the review!
+
+BR,
+Georgi
+
 
