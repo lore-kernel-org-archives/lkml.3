@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaBMWdc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:33:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45115 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795AbaBMWd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:33:29 -0500
-Message-ID: <52FD47F9.2090907@zytor.com>
-Date: Thu, 13 Feb 2014 14:32:25 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752075AbaBMWhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:37:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36884 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaBMWhO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 17:37:14 -0500
+Date: Thu, 13 Feb 2014 14:38:32 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Jones <davej@redhat.com>, Fabian Frederick <fabf@skynet.be>,
+        linux-kernel@vger.kernel.org, akpm <akpm@linux-foundation.org>,
+        rdunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH 1/1] sys_sysfs: Add CONFIG_SYSFS_SYSCALL
+Message-ID: <20140213223832.GA14535@kroah.com>
+References: <20140213220942.ff2ebaeff3876b7136fa4b10@skynet.be>
+ <20140213223141.GA1232@redhat.com>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>	<52F3670D.5090608@redhat.com> <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
-In-Reply-To: <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140213223141.GA1232@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 05:20 PM, Alexei Starovoitov wrote:
+On Thu, Feb 13, 2014 at 05:31:41PM -0500, Dave Jones wrote:
+> On Thu, Feb 13, 2014 at 10:09:42PM +0800, Fabian Frederick wrote:
+>  > sys_sysfs is an obsolete system call no longer supported by libc ...
+>  > -This patch adds a default CONFIG_SYSFS_SYSCALL=y
+>  > -Option can be turned off in expert mode.
+>  > -cond_syscall added to kernel/sys_ni.c
+>  > 
+>  > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+>  > ---
+>  >  fs/filesystems.c |  2 ++
+>  >  init/Kconfig     | 10 ++++++++++
+>  >  kernel/sys_ni.c  |  1 +
+>  >  3 files changed, 13 insertions(+)
 > 
-> I believe that old BPF outlived itself and BPF64 should
-> replace it in all current use cases plus a lot more.
-> It just cannot happen at once.
-> BPF64 can come in. bpf32->bpf64 converter functioning.
-> JIT from bpf64->aarch64 and may be sparc64 needs to be in place.
-> Then old bpf can fade away.
-> 
+> did anyone ever ship userspace that actually used that syscall ?
+> Some ancient version of udev that probably doesn't work on a modern kernel anyway maybe ?
 
-I don't think that is doable any time soon.  Right now pretty much all
-mobile devices, for example, are 32 bits and they really want to use
-syscall filtering for security.  Performance matters greatly there.
+sys_sysfs doesn't have anything to do with /sys/ and udev in any way
+that I know of, it's a much older thing, a sysv syscall that can return
+the index, name, or max index of a filesystem.
 
-As such, 32-bit JIT support is going to be very important for a long
-time to come.
+And yes, I got confused by it all the time when creating sysfs :)
 
-	-hpa
+thanks,
 
-
+greg k-h
