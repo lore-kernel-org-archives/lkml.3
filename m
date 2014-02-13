@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaBMTsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 14:48:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3999 "EHLO mx1.redhat.com"
+	id S1752943AbaBMTsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 14:48:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752869AbaBMTsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 14:48:06 -0500
-Date: Thu, 13 Feb 2014 14:47:59 -0500
-Message-Id: <201402131947.s1DJlxIJ023501@gelk.kernelslacker.org>
+	id S1752920AbaBMTsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 14:48:21 -0500
+Date: Thu, 13 Feb 2014 14:48:14 -0500
+Message-Id: <201402131948.s1DJmEHR023519@gelk.kernelslacker.org>
 From: Dave Jones <davej@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org
-Subject: [PATCH 35/38] staging/bcm: move IOCTL_BCM_NVM_RAW_READ case out to its own function.
+Subject: [PATCH 38/38] staging/bcm: move IOCTL_BCM_TIME_SINCE_NET_ENTRY case out to its own function.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,208 +22,76 @@ this a lot.
 
 Signed-off-by: Dave Jones <davej@fedoraproject.org>
 ---
- drivers/staging/bcm/Bcmchar.c | 181 ++++++++++++++++++++++--------------------
- 1 file changed, 94 insertions(+), 87 deletions(-)
+ drivers/staging/bcm/Bcmchar.c | 42 ++++++++++++++++++++++++------------------
+ 1 file changed, 24 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
-index 046e67ff2e35..0dc1c88c4576 100644
+index 74360ee45c2b..fdebc3bba0b5 100644
 --- a/drivers/staging/bcm/Bcmchar.c
 +++ b/drivers/staging/bcm/Bcmchar.c
-@@ -1886,6 +1886,97 @@ static int bcm_char_ioctl_select_dsd(void __user *argp, struct bcm_mini_adapter
+@@ -2029,6 +2029,27 @@ static int bcm_char_ioctl_get_device_driver_info(void __user *argp, struct bcm_m
  	return STATUS_SUCCESS;
  }
  
-+static int bcm_char_ioctl_nvm_raw_read(void __user *argp, struct bcm_mini_adapter *Adapter)
++static int bcm_char_ioctl_time_since_net_entry(void __user *argp, struct bcm_mini_adapter *Adapter)
 +{
-+	struct bcm_nvm_readwrite stNVMRead;
++	struct bcm_time_elapsed stTimeElapsedSinceNetEntry = {0};
 +	struct bcm_ioctl_buffer IoBuffer;
-+	INT NOB;
-+	INT BuffSize;
-+	INT ReadOffset = 0;
-+	UINT ReadBytes = 0;
-+	PUCHAR pReadBuff;
-+	void __user *OutPutBuff;
-+	INT Status = STATUS_FAILURE;
 +
-+	if (Adapter->eNVMType != NVM_FLASH) {
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "NVM TYPE is not Flash");
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_TIME_SINCE_NET_ENTRY called");
++
++	if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
++		return -EFAULT;
++
++	if (IoBuffer.OutputLength < sizeof(struct bcm_time_elapsed))
 +		return -EINVAL;
-+	}
 +
-+	/* Copy Ioctl Buffer structure */
-+	if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer))) {
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "copy_from_user 1 failed\n");
-+		return -EFAULT;
-+	}
++	stTimeElapsedSinceNetEntry.ul64TimeElapsedSinceNetEntry = get_seconds() - Adapter->liTimeSinceLastNetEntry;
 +
-+	if (copy_from_user(&stNVMRead, IoBuffer.OutputBuffer, sizeof(struct bcm_nvm_readwrite)))
++	if (copy_to_user(IoBuffer.OutputBuffer, &stTimeElapsedSinceNetEntry, sizeof(struct bcm_time_elapsed)))
 +		return -EFAULT;
 +
-+	NOB = stNVMRead.uiNumBytes;
-+	/* In Raw-Read max Buff size : 64MB */
-+
-+	if (NOB > DEFAULT_BUFF_SIZE)
-+		BuffSize = DEFAULT_BUFF_SIZE;
-+	else
-+		BuffSize = NOB;
-+
-+	ReadOffset = stNVMRead.uiOffset;
-+	OutPutBuff = stNVMRead.pBuffer;
-+
-+	pReadBuff = kzalloc(BuffSize , GFP_KERNEL);
-+	if (pReadBuff == NULL) {
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Memory allocation failed for Flash 2.x Read Structure");
-+		return -ENOMEM;
-+	}
-+	down(&Adapter->NVMRdmWrmLock);
-+
-+	if ((Adapter->IdleMode == TRUE) ||
-+		(Adapter->bShutStatus == TRUE) ||
-+		(Adapter->bPreparingForLowPowerMode == TRUE)) {
-+
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Device is in Idle/Shutdown Mode\n");
-+		kfree(pReadBuff);
-+		up(&Adapter->NVMRdmWrmLock);
-+		return -EACCES;
-+	}
-+
-+	Adapter->bFlashRawRead = TRUE;
-+
-+	while (NOB) {
-+		if (NOB > DEFAULT_BUFF_SIZE)
-+			ReadBytes = DEFAULT_BUFF_SIZE;
-+		else
-+			ReadBytes = NOB;
-+
-+		/* Reading the data from Flash 2.x */
-+		Status = BeceemNVMRead(Adapter, (PUINT)pReadBuff, ReadOffset, ReadBytes);
-+		if (Status) {
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Flash 2x read err with Status :%d", Status);
-+			break;
-+		}
-+
-+		BCM_DEBUG_PRINT_BUFFER(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, pReadBuff, ReadBytes);
-+
-+		Status = copy_to_user(OutPutBuff, pReadBuff, ReadBytes);
-+		if (Status) {
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Copy to use failed with status :%d", Status);
-+			up(&Adapter->NVMRdmWrmLock);
-+			kfree(pReadBuff);
-+			return -EFAULT;
-+		}
-+		NOB = NOB - ReadBytes;
-+		if (NOB) {
-+			ReadOffset = ReadOffset + ReadBytes;
-+			OutPutBuff = OutPutBuff + ReadBytes;
-+		}
-+	}
-+	Adapter->bFlashRawRead = false;
-+	up(&Adapter->NVMRdmWrmLock);
-+	kfree(pReadBuff);
-+	return Status;
++	return STATUS_SUCCESS;
 +}
 +
-+
+ 
  static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
  {
- 	struct bcm_tarang_data *pTarang = filp->private_data;
-@@ -2117,93 +2208,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
- 		Status = bcm_char_ioctl_select_dsd(argp, Adapter);
+@@ -2036,7 +2057,6 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ 	void __user *argp = (void __user *)arg;
+ 	struct bcm_mini_adapter *Adapter = pTarang->Adapter;
+ 	INT Status = STATUS_FAILURE;
+-	struct bcm_ioctl_buffer IoBuffer;
+ 
+ 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL,
+ 			"Parameters Passed to control IOCTL cmd=0x%X arg=0x%lX",
+@@ -2273,23 +2293,9 @@ static long bcm_char_ioctl(struct file *filp, UINT cmd, ULONG arg)
+ 		Status = bcm_char_ioctl_get_device_driver_info(argp, Adapter);
  		return Status;
  
--	case IOCTL_BCM_NVM_RAW_READ: {
--		struct bcm_nvm_readwrite stNVMRead;
--		INT NOB;
--		INT BuffSize;
--		INT ReadOffset = 0;
--		UINT ReadBytes = 0;
--		PUCHAR pReadBuff;
--		void __user *OutPutBuff;
+-	case IOCTL_BCM_TIME_SINCE_NET_ENTRY: {
+-		struct bcm_time_elapsed stTimeElapsedSinceNetEntry = {0};
 -
--		if (Adapter->eNVMType != NVM_FLASH) {
--			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "NVM TYPE is not Flash");
+-		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_BCM_TIME_SINCE_NET_ENTRY called");
+-
+-		if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
+-			return -EFAULT;
+-
+-		if (IoBuffer.OutputLength < sizeof(struct bcm_time_elapsed))
 -			return -EINVAL;
--		}
 -
--		/* Copy Ioctl Buffer structure */
--		if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer))) {
--			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "copy_from_user 1 failed\n");
+-		stTimeElapsedSinceNetEntry.ul64TimeElapsedSinceNetEntry = get_seconds() - Adapter->liTimeSinceLastNetEntry;
+-
+-		if (copy_to_user(IoBuffer.OutputBuffer, &stTimeElapsedSinceNetEntry, sizeof(struct bcm_time_elapsed)))
 -			return -EFAULT;
--		}
--
--		if (copy_from_user(&stNVMRead, IoBuffer.OutputBuffer, sizeof(struct bcm_nvm_readwrite)))
--			return -EFAULT;
--
--		NOB = stNVMRead.uiNumBytes;
--		/* In Raw-Read max Buff size : 64MB */
--
--		if (NOB > DEFAULT_BUFF_SIZE)
--			BuffSize = DEFAULT_BUFF_SIZE;
--		else
--			BuffSize = NOB;
--
--		ReadOffset = stNVMRead.uiOffset;
--		OutPutBuff = stNVMRead.pBuffer;
--
--		pReadBuff = kzalloc(BuffSize , GFP_KERNEL);
--		if (pReadBuff == NULL) {
--			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Memory allocation failed for Flash 2.x Read Structure");
--			Status = -ENOMEM;
--			break;
--		}
--		down(&Adapter->NVMRdmWrmLock);
--
--		if ((Adapter->IdleMode == TRUE) ||
--			(Adapter->bShutStatus == TRUE) ||
--			(Adapter->bPreparingForLowPowerMode == TRUE)) {
--
--			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Device is in Idle/Shutdown Mode\n");
--			kfree(pReadBuff);
--			up(&Adapter->NVMRdmWrmLock);
--			return -EACCES;
--		}
--
--		Adapter->bFlashRawRead = TRUE;
--
--		while (NOB) {
--			if (NOB > DEFAULT_BUFF_SIZE)
--				ReadBytes = DEFAULT_BUFF_SIZE;
--			else
--				ReadBytes = NOB;
--
--			/* Reading the data from Flash 2.x */
--			Status = BeceemNVMRead(Adapter, (PUINT)pReadBuff, ReadOffset, ReadBytes);
--			if (Status) {
--				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Flash 2x read err with Status :%d", Status);
--				break;
--			}
--
--			BCM_DEBUG_PRINT_BUFFER(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, pReadBuff, ReadBytes);
--
--			Status = copy_to_user(OutPutBuff, pReadBuff, ReadBytes);
--			if (Status) {
--				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "Copy to use failed with status :%d", Status);
--				up(&Adapter->NVMRdmWrmLock);
--				kfree(pReadBuff);
--				return -EFAULT;
--			}
--			NOB = NOB - ReadBytes;
--			if (NOB) {
--				ReadOffset = ReadOffset + ReadBytes;
--				OutPutBuff = OutPutBuff + ReadBytes;
--			}
--		}
--		Adapter->bFlashRawRead = false;
--		up(&Adapter->NVMRdmWrmLock);
--		kfree(pReadBuff);
--		break;
 -	}
-+	case IOCTL_BCM_NVM_RAW_READ:
-+		Status = bcm_char_ioctl_nvm_raw_read(argp, Adapter);
+-	break;
++	case IOCTL_BCM_TIME_SINCE_NET_ENTRY:
++		Status = bcm_char_ioctl_time_since_net_entry(argp, Adapter);
 +		return Status;
  
- 	case IOCTL_BCM_CNTRLMSG_MASK: {
- 		ULONG RxCntrlMsgBitMask = 0;
+ 	case IOCTL_CLOSE_NOTIFICATION:
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "IOCTL_CLOSE_NOTIFICATION");
 -- 
 1.8.5.3
 
