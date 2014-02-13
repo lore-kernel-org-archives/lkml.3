@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaBMV2C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 16:28:02 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:57456 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855AbaBMV2A (ORCPT
+	id S1752210AbaBMV3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 16:29:10 -0500
+Received: from mail.windriver.com ([147.11.1.11]:38928 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbaBMV3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 16:28:00 -0500
-X-Auth-Info: 8rkOTgE+tS6blttqMUrZIDnu8U7jPceMWKGWAyXzcf8=
-Date: Thu, 13 Feb 2014 22:27:57 +0100
-From: Gerhard Sittig <gsi@denx.de>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: core: Validate lenght of the transfers in message
-Message-ID: <20140213212757.GM4524@book.gsilab.sittig.org>
-References: <1392302806-17267-1-git-send-email-iivanov@mm-sol.com>
+	Thu, 13 Feb 2014 16:29:08 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Michal Marek <mmarek@suse.cz>, David Howells <dhowells@redhat.com>
+Subject: [PATCH] kbuild: unconditionally clobber include/linux/version.h on distclean
+Date: Thu, 13 Feb 2014 16:28:58 -0500
+Message-ID: <1392326938-14405-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392302806-17267-1-git-send-email-iivanov@mm-sol.com>
-Organization: DENX Software Engineering GmbH
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 16:46 +0200, Ivan T. Ivanov wrote:
-> 
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> SPI transfer lenght should be a power-of-two multiple
-> of eight bits.
+As of v3.7, the UAPI changes relocated headers around such that the
+kernel version header lived in a new place.
 
-Are you suggesting that an SPI transfer cannot consist of e.g.
-three bytes?  This would be surprising, and certainly would be
-rather wrong an assumption.  Am I missing/misunderstanding
-something?
+If a person is bisecting and if you go back to pre-UAPI days,
+you will create an include/linux/version.h  -- then if you checkout a
+post-UAPI kernel, and even run "make distclean" it still won't delete
+that old version file.  So you get a situation like this:
 
+$ grep -R LINUX_VERSION_CODE include/
+include/generated/uapi/linux/version.h:#define LINUX_VERSION_CODE 200192
+include/linux/version.h:#define LINUX_VERSION_CODE 132646
 
-virtually yours
-Gerhard Sittig
+The value in that second line is representative of a v2.6.38 version.
+And it will be sourced/used, hence leading to strange behaviours, such
+as drivers/staging content (which typically hasn't been purged of version
+ifdefs) failing to build.
+
+Since it is a subtle mode of failure, lets always clobber the old
+file when doing a distclean.
+
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+diff --git a/Makefile b/Makefile
+index fd6a01ed9ab9..1342363ca10d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1071,7 +1071,7 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
+ 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
+ 		  signing_key.priv signing_key.x509 x509.genkey		\
+ 		  extra_certificates signing_key.x509.keyid		\
+-		  signing_key.x509.signer
++		  signing_key.x509.signer include/linux/version.h
+ 
+ # clean - Delete most, but leave enough to build external modules
+ #
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
-Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
+1.8.5.2
+
