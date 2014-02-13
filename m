@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbaBMXvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 18:51:35 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51583 "EHLO
+	id S1752860AbaBMXm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 18:42:26 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:51503 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaBMXve (ORCPT
+	with ESMTP id S1752056AbaBMXmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 18:51:34 -0500
-Date: Thu, 13 Feb 2014 18:51:31 -0500 (EST)
-Message-Id: <20140213.185131.1052801902077727878.davem@davemloft.net>
-To: hs@denx.de
-Cc: linux-arm-kernel@lists.infradead.org, mugunthanvnm@ti.com,
-        bigeasy@linutronix.de, zonque@gmail.com, balbi@ti.com,
-        mpa@pengutronix.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: net: cpsw: fix buggy loop condition
+	Thu, 13 Feb 2014 18:42:24 -0500
+Date: Thu, 13 Feb 2014 18:42:21 -0500 (EST)
+Message-Id: <20140213.184221.1712626655601756449.davem@davemloft.net>
+To: sergei.shtylyov@cogentembedded.com
+Cc: liujunliang_ljl@163.com, thierry.reding@gmail.com, horms@verge.net.au,
+        joe@perches.com, romieu@fr.zoreil.com, gregkh@linuxfoundation.org,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sunhecheng@vip.126.com
+Subject: Re: [PATCH] Fix Default to 'y' for SR9800 Device Driver, setting
+ to 'n'
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1392299247-16917-1-git-send-email-hs@denx.de>
-References: <1392299247-16917-1-git-send-email-hs@denx.de>
+In-Reply-To: <52FD6579.5070104@cogentembedded.com>
+References: <1392265339-14841-1-git-send-email-liujunliang_ljl@163.com>
+	<20140213.183237.1108958546198981160.davem@davemloft.net>
+	<52FD6579.5070104@cogentembedded.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Feb 2014 15:51:34 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Feb 2014 15:42:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Schocher <hs@denx.de>
-Date: Thu, 13 Feb 2014 14:47:27 +0100
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Date: Fri, 14 Feb 2014 03:38:17 +0300
 
-> commit:
-> From 0cd8f9cc0654c06adde353c6532114c5f53a18e8 Mon Sep 17 00:00:00 2001
-> From: Mugunthan V N <mugunthanvnm@ti.com>
-> Date: Thu, 23 Jan 2014 00:03:12 +0530
-> Subject: [PATCH] drivers: net: cpsw: enable promiscuous mode support
-
-The correct way to reference a commit is:
-
-$(SHA1_ID) ("Commit message header text.")
-
-So in this case it would be:
-
-Commit 0cd8f9cc0654c06adde353c6532114c5f53a18e8 ("drivers: net: cpsw:
-enable promiscuous mode support")
-
-I fixed this up when applying this patch.  I will not extend this same
-courtesy next time.
-
-> Enable promiscuous mode support for CPSW.
+> Hello.
 > 
-> Introduced a crash on an am335x based board (similiar to am335x-evm).
-> Reason is buggy end condition in for loop in cpsw_set_promiscious()
+> On 02/14/2014 02:32 AM, David Miller wrote:
 > 
-> for (i = 0; i <= priv->data.slaves; i++)
+>>> From: Liu Junliang <liujunliang_ljl@163.com>
 > 
-> should be
+>>> Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
 > 
-> for (i = 0; i < priv->data.slaves; i++)
+>> I think it's more canonical to specify no default at all.
 > 
-> Fix this ...
-> 
-> Signed-off-by: Heiko Schocher <hs@denx.de>
+>    That's what he did, no?
 
-Applied, thanks.
+Indeed, my bad, patch applied, thanks!
