@@ -1,109 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722AbaBMMg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 07:36:26 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:13625 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaBMMgY (ORCPT
+	id S1754728AbaBMMhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 07:37:24 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:8994 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaBMMhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 07:36:24 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-95-52fcbc4565d8
-Message-id: <52FCBC42.6020904@samsung.com>
-Date: Thu, 13 Feb 2014 13:36:18 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tarek Dakhran <t.dakhran@gmail.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
+	Thu, 13 Feb 2014 07:37:22 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-b7-52fcbc8000ad
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v1 0/2] exynos_mct driver: fix irq allocation and cleanup
-References: <1392260923-31659-1-git-send-email-t.dakhran@samsung.com>
-In-reply-to: <1392260923-31659-1-git-send-email-t.dakhran@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xq7que/4EGSzdpG0x77OsRe+Cq2wW
-	mx5fY7W4vGsOm8WM8/uYLG5f5rU4+aeX0eJ3zydmi/XPTzFabN40ldli6owf7A7cHi3NPWwe
-	O2fdZfe4c20Pm8e7c+fYPTYvqffo27KK0ePzJrkA9igum5TUnMyy1CJ9uwSujBWTVrIWTFGs
-	WLm5m6mBsV+mi5GTQ0LARGL/5DPMELaYxIV769m6GLk4hASWMkr0fvvJBOF8ZpTY03acHaSK
-	V0BLYt3v1WA2i4CqxJdDr9hAbDYBNYnPDY/AbFGBCIm/89YzQtQLSvyYfI8FxBYRcJfo2z2Z
-	HWQos8BzJoln6/+DJYQFfCW2HJgG1iAk4CrxbfF1sEGcAm4SPVebwc5jFrCWWDlpGyOELS+x
-	ec1b5gmMArOQ7JiFpGwWkrIFjMyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MULi4+sOxqXH
-	rA4xCnAwKvHwPlj8O0iINbGsuDL3EKMEB7OSCG/jtj9BQrwpiZVVqUX58UWlOanFhxiZODil
-	Ghg9Xcq2nFNmi1196Xhmrt1Mh8SPH64seRMmEq/7y6DbT/2zR5yOIeutv5aVF3TE56rOuOCf
-	92/+kSvqV+ZJOd5+Hb3b745VXcu39be7kwwa9zulLJMyCUxiW6z1STxe3qolPWtCOov23rnu
-	muqMl9Ylu7X33O/y25ymXncuZ+PCXM2s283fxJRYijMSDbWYi4oTATRX+39tAgAA
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Subject: [PATCH 07/14] regulator: s2mps11: Copy supported regulators from
+ initconst
+Date: Thu, 13 Feb 2014 13:37:03 +0100
+Message-id: <1392295024-4862-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <CAKew6eUtuQEHJJ9G+g54LRoH8sXzqixDBUEjCjFyRDJTRP00Nw@mail.gmail.com>
+References: <CAKew6eUtuQEHJJ9G+g54LRoH8sXzqixDBUEjCjFyRDJTRP00Nw@mail.gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xq7oNe/4EGWx/YmSxccZ6VoupD5+w
+	WVz/8pzV4vULQ4uzTW/YLe5/Pcpo8e1KB5PF5V1z2CxmnN/HZLH2yF12i9PdrBYXV3xhspj7
+	u5HVgddj56y77B6bVnWyedy5tofNY97JQI++LasYPT5vkgtgi+KySUnNySxLLdK3S+DKOPD+
+	CFvBZJ2KuyuOMDcwHlLpYuTkkBAwkTj8bRUThC0mceHeerYuRi4OIYGljBIN/7oYIZw+Jokl
+	W+Yxg1SxCRhLbF6+BKxKRGAzo8Ti71dZQRLMAk+ZJD7elexi5OAQFgiVuLPTCSTMIqAq8bZ5
+	GlgJr4CbxP7ld5lASiQEFCTmTLIBCXMKBEs8+b8JbLyQQIDEz39NzBMYeRcwMqxiFE0tTS4o
+	TkrPNdQrTswtLs1L10vOz93ECAnKLzsYFx+zOsQowMGoxMNrsex3kBBrYllxZe4hRgkOZiUR
+	3sZtf4KEeFMSK6tSi/Lji0pzUosPMTJxcEo1MK4PmBEnWhz8wXfzxBov9ar/sxT2sZ15UrYn
+	fN/9n3vuBf/6GnZVQYh9S8B97yUTtZhizT9rO8RzH42a377I7N2TPyLnOe+LdnufW3l7oZNZ
+	0TKLddqXluoHfZGKlTfWP7RmhUqtw8sskZuKT9Ynxzaw7VRY+SyDbZ/yxKiMI1n3thl3Bixi
+	rFFiKc5INNRiLipOBADaHMp9KAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tarek,
+Add __initconst to 'regulator_desc' array with supported regulators.
+During probe choose how many and which regulators will be supported
+according to device ID. Then copy the 'regulator_desc' array to
+allocated memory so the regulator core can use it.
 
-On 13.02.2014 04:08, Tarek Dakhran wrote:
-> exynos4_local_timer_setup called on the secondary cpu before
-> irqs are enabled. request_irq can sleep, which produces next warning:
->
-> on boot:
-> [    0.370000] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
-> [    0.370000] Setting up static identity map for 0x403b5700 - 0x403b5758
-> [    0.395000] CPU1: Booted secondary processor
-> [    0.395000] ------------[ cut here ]------------
-> [    0.395000] WARNING: CPU: 1 PID: 0 at kernel/locking/lockdep.c:2742 lockdep_trace_alloc+0xe0/0xfc()
-> [    0.395000] DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
-> [    0.395000] Modules linked in:
-> [    0.395000] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.14.0-rc2-00004-g0db95f4 #128
-> [    0.395000] [<c0014308>] (unwind_backtrace) from [<c0011690>] (show_stack+0x10/0x14)
-> [    0.395000] [<c0011690>] (show_stack) from [<c03ae7d0>] (dump_stack+0x6c/0xb8)
-> [    0.395000] [<c03ae7d0>] (dump_stack) from [<c001d504>] (warn_slowpath_common+0x68/0x8c)
-> [    0.395000] [<c001d504>] (warn_slowpath_common) from [<c001d5bc>] (warn_slowpath_fmt+0x30/0x40)
-> [    0.395000] [<c001d5bc>] (warn_slowpath_fmt) from [<c0059824>] (lockdep_trace_alloc+0xe0/0xfc)
-> [    0.395000] [<c0059824>] (lockdep_trace_alloc) from [<c00bee24>] (kmem_cache_alloc+0x24/0x160)
-> [    0.395000] [<c00bee24>] (kmem_cache_alloc) from [<c0068174>] (request_threaded_irq+0x64/0x130)
-> [    0.395000] [<c0068174>] (request_threaded_irq) from [<c02efaf8>] (exynos4_local_timer_setup+0xd0/0x124)
-> [    0.395000] [<c02efaf8>] (exynos4_local_timer_setup) from [<c02efc34>] (exynos4_mct_cpu_notify+0x78/0xf0)
-> [    0.395000] [<c02efc34>] (exynos4_mct_cpu_notify) from [<c003d318>] (notifier_call_chain+0x44/0x84)
-> [    0.395000] [<c003d318>] (notifier_call_chain) from [<c001d61c>] (__cpu_notify+0x24/0x40)
-> [    0.395000] [<c001d61c>] (__cpu_notify) from [<c0013314>] (secondary_start_kernel+0xe4/0x134)
-> [    0.395000] [<c0013314>] (secondary_start_kernel) from [<40008624>] (0x40008624)
-> [    0.395000] ---[ end trace 347890460e745f50 ]---
-> [    0.420000] CPU1: update cpu_power 1024
-> [    0.420000] CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
->
-> on hotplug:
-> [  108.040000] CPU3: Booted secondary processor
-> [  108.040000] BUG: sleeping function called from invalid context at mm/slub.c:965
-> [  108.040000] in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper/3
-> [  108.040000] INFO: lockdep is turned off.
-> [  108.040000] irq event stamp: 0
-> [  108.040000] hardirqs last  enabled at (0): [<  (null)>]   (null)
-> [  108.040000] hardirqs last disabled at (0): [<c001b768>] copy_process.part.2+0x2a4/0x12f4
-> [  108.040000] softirqs last  enabled at (0): [<c001b768>] copy_process.part.2+0x2a4/0x12f4
-> [  108.040000] softirqs last disabled at (0): [<  (null)>]   (null)
-> [  108.040000] CPU: 3 PID: 0 Comm: swapper/3 Tainted: G        W    3.14.0-rc2-00004-g0db95f4 #128
-> [  108.040000] [<c0014308>] (unwind_backtrace) from [<c0011690>] (show_stack+0x10/0x14)
-> [  108.040000] [<c0011690>] (show_stack) from [<c03ae7d0>] (dump_stack+0x6c/0xb8)
-> [  108.040000] [<c03ae7d0>] (dump_stack) from [<c00beed4>] (kmem_cache_alloc+0xd4/0x160)
-> [  108.040000] [<c00beed4>] (kmem_cache_alloc) from [<c0068174>] (request_threaded_irq+0x64/0x130)
-> [  108.040000] [<c0068174>] (request_threaded_irq) from [<c02efaf8>] (exynos4_local_timer_setup+0xd0/0x124)
-> [  108.040000] [<c02efaf8>] (exynos4_local_timer_setup) from [<c02efc34>] (exynos4_mct_cpu_notify+0x78/0xf0)
-> [  108.040000] [<c02efc34>] (exynos4_mct_cpu_notify) from [<c003d318>] (notifier_call_chain+0x44/0x84)
-> [  108.040000] [<c003d318>] (notifier_call_chain) from [<c001d61c>] (__cpu_notify+0x24/0x40)
-> [  108.040000] [<c001d61c>] (__cpu_notify) from [<c0013314>] (secondary_start_kernel+0xe4/0x134)
-> [  108.040000] [<c0013314>] (secondary_start_kernel) from [<40008624>] (0x40008624)
->
-> First patch fixes this problem by removing request_irq from exynos4_local_timer_setup
-> Second removes non-dt stuff.
->
-> Tested on linux kernel v3.14-rc2.
+Additionally allocate array of of_regulator_match() dynamically (based
+on number of regulators) instead of allocation on the stack.
 
-It would be nice to say on which boards it has been tested. Let me check 
-this on our boards anyway.
+This is needed for supporting different devices in s2mps11
+driver and actually prepares the regulator driver for supporting the
+S2MPS14 device.
 
-Best regards,
-Tomasz
+Code for supporting the S2MPS14 device will add its own array of
+'regulator_desc' (also marked as __initconst). This way memory footprint
+of the driver will be reduced (approximately 'regulators_desc' array for
+S2MPS11 occupies 5 kB on 32-bit ARM, for S2MPS14 will occupy 3 kB).
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ drivers/regulator/s2mps11.c |   75 +++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 65 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index d44bd5b3fe8e..8504ab29aa9f 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -25,10 +25,9 @@
+ #include <linux/mfd/samsung/core.h>
+ #include <linux/mfd/samsung/s2mps11.h>
+ 
+-#define S2MPS11_REGULATOR_CNT ARRAY_SIZE(regulators)
+-
+ struct s2mps11_info {
+-	struct regulator_dev *rdev[S2MPS11_REGULATOR_MAX];
++	struct regulator_dev **rdev;
++	unsigned int rdev_num;
+ 
+ 	int ramp_delay2;
+ 	int ramp_delay34;
+@@ -345,7 +344,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
+ 
+-static const struct regulator_desc regulators[] = {
++static const struct regulator_desc s2mps11_regulators[] __initconst = {
+ 	regulator_desc_ldo2(1),
+ 	regulator_desc_ldo1(2),
+ 	regulator_desc_ldo1(3),
+@@ -396,21 +395,62 @@ static const struct regulator_desc regulators[] = {
+ 	regulator_desc_buck10,
+ };
+ 
++/*
++ * Allocates memory under 'regulators' pointer and copies there array
++ * of regulator_desc for given device.
++ *
++ * Returns number of regulators or negative ERRNO on error.
++ */
++static int __init
++s2mps11_pmic_init_regulators_desc(struct platform_device *pdev,
++		struct regulator_desc **regulators)
++{
++	const struct regulator_desc *regulators_init;
++	enum sec_device_type dev_type;
++	int rdev_num;
++
++	dev_type = platform_get_device_id(pdev)->driver_data;
++	switch (dev_type) {
++	case S2MPS11X:
++		rdev_num = ARRAY_SIZE(s2mps11_regulators);
++		regulators_init = s2mps11_regulators;
++		break;
++	default:
++		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
++		return -EINVAL;
++	};
++
++	*regulators = devm_kzalloc(&pdev->dev,
++			sizeof(**regulators) * rdev_num, GFP_KERNEL);
++	if (!*regulators)
++		return -ENOMEM;
++
++	memcpy(*regulators, regulators_init, sizeof(**regulators) * rdev_num);
++
++	return rdev_num;
++}
++
+ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+-	struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
+-	struct of_regulator_match rdata[S2MPS11_REGULATOR_MAX];
++	struct sec_platform_data *pdata = iodev->pdata;
++	struct of_regulator_match *rdata = NULL;
+ 	struct device_node *reg_np = NULL;
+ 	struct regulator_config config = { };
+ 	struct s2mps11_info *s2mps11;
+ 	int i, ret;
++	struct regulator_desc *regulators = NULL;
++	unsigned int rdev_num;
+ 
+ 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
+ 				GFP_KERNEL);
+ 	if (!s2mps11)
+ 		return -ENOMEM;
+ 
++	rdev_num = s2mps11_pmic_init_regulators_desc(pdev, &regulators);
++	if (rdev_num < 0)
++		return rdev_num;
++
+ 	if (!iodev->dev->of_node) {
+ 		if (pdata) {
+ 			goto common_reg;
+@@ -421,7 +461,17 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	for (i = 0; i < S2MPS11_REGULATOR_CNT; i++)
++	s2mps11->rdev = devm_kzalloc(&pdev->dev,
++			sizeof(*s2mps11->rdev) * rdev_num, GFP_KERNEL);
++	if (!s2mps11->rdev)
++		return -ENOMEM;
++
++	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) * rdev_num,
++			GFP_KERNEL);
++	if (!rdata)
++		return -ENOMEM;
++
++	for (i = 0; i < rdev_num; i++)
+ 		rdata[i].name = regulators[i].name;
+ 
+ 	reg_np = of_find_node_by_name(iodev->dev->of_node, "regulators");
+@@ -430,15 +480,16 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	of_regulator_match(&pdev->dev, reg_np, rdata, S2MPS11_REGULATOR_MAX);
++	of_regulator_match(&pdev->dev, reg_np, rdata, rdev_num);
+ 
+ common_reg:
+ 	platform_set_drvdata(pdev, s2mps11);
++	s2mps11->rdev_num = rdev_num;
+ 
+ 	config.dev = &pdev->dev;
+ 	config.regmap = iodev->regmap_pmic;
+ 	config.driver_data = s2mps11;
+-	for (i = 0; i < S2MPS11_REGULATOR_MAX; i++) {
++	for (i = 0; i < rdev_num; i++) {
+ 		if (!reg_np) {
+ 			config.init_data = pdata->regulators[i].initdata;
+ 			config.of_node = pdata->regulators[i].reg_node;
+@@ -457,11 +508,15 @@ common_reg:
+ 		}
+ 	}
+ 
++	/* rdata was needed only for of_regulator_match() during probe */
++	if (rdata)
++		devm_kfree(&pdev->dev, rdata);
++
+ 	return 0;
+ }
+ 
+ static const struct platform_device_id s2mps11_pmic_id[] = {
+-	{ "s2mps11-pmic", 0},
++	{ "s2mps11-pmic", S2MPS11X},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
+-- 
+1.7.9.5
+
