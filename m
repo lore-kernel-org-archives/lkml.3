@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaBMJCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 04:02:54 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:42310 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaBMJCt (ORCPT
+	id S1753584AbaBMJDL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 04:03:11 -0500
+Received: from smtp-4.sys.kth.se ([130.237.48.193]:56187 "EHLO
+	smtp-4.sys.kth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283AbaBMJDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 04:02:49 -0500
+	Thu, 13 Feb 2014 04:03:04 -0500
+X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 04:03:04 EST
+X-KTH-Auth: tommie [89.100.2.51]
+X-KTH-mail-from: tommie@gannert.se
+Message-ID: <52FC87B6.4070001@gannert.se>
+Date: Thu, 13 Feb 2014 08:52:06 +0000
+From: Tommie Gannert <tommie@gannert.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1392202477.23759.28.camel@x220>
-References: <1392202477.23759.28.camel@x220>
-Date: Thu, 13 Feb 2014 17:02:48 +0800
-Message-ID: <CAMk6uB=womgrUM6SnU9sWb__J8HOpF=6DDk5fpWARQH_tEem0g@mail.gmail.com>
-Subject: Re: [PATCH] blackfin: Remove GENERIC_GPIO config option again
-From: Steven Miao <realmz6@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: adi-buildroot-devel@lists.sourceforge.net,
-        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
-	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Samuel Ortiz <samuel@sortiz.org>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] irtty-sir.c: Do not set_termios() on irtty_close()
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+From: Tommie Gannert <tommie@gannert.se>
 
-On Wed, Feb 12, 2014 at 6:54 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> The Kconfig symbol GENERIC_GPIO was removed in v3.10. Nothing cares
-> about it anymore. It popped up somehow in v3.13, so it can be removed
-> again.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested, but safe anyhow.
->
->  arch/blackfin/Kconfig | 3 ---
->  1 file changed, 3 deletions(-)
->
-> diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-> index 9ceccef..debd9df 100644
-> --- a/arch/blackfin/Kconfig
-> +++ b/arch/blackfin/Kconfig
-> @@ -51,9 +51,6 @@ config GENERIC_BUG
->  config ZONE_DMA
->         def_bool y
->
-> -config GENERIC_GPIO
-> -       def_bool y
-> -
-Applied. Thanks!
+Issuing set_termios() from irtty_close() causes kernel Oops for
+unplugged usb-serial devices.
 
->  config FORCE_MAX_ZONEORDER
->         int
->         default "14"
-> --
-> 1.8.5.3
->
+Since no other tty_ldisc calls set_termios() on close and no tty driver
+seem to check if tty->device_data is NULL or not on entry to set_termios(),
+the only solution I can come up with is to remove the irtty_stop_receiver()
+call, which only updates termios.
+
+Signed-off-by: Tommie Gannert <tommie@gannert.se>
+
+---
+I know very little of this code, and I'm not sure this is a good solution,
+so here's some background:
+
+I have a gadget using IrLAP over RS-232, and it's connected to a
+USB-RS232 converter. I have udev rules to start/stop irattach on USB
+connect/disconnect, but I see an oops if I simply disconnect the device
+while irattach is still running:
+
+Crash log:
+
+[  631.791294] BUG: unable to handle kernel NULL pointer dereference at 0000000000000024
+[  631.791390] IP: [<ffffffffa0c07e42>] ftdi_set_termios+0x42/0x670 [ftdi_sio]
+...
+[  631.793963]  [<ffffffffa0b7fba3>] serial_set_termios+0x43/0x90 [usbserial]
+[  631.794031]  [<ffffffffa0c013ec>] irtty_close+0x10c/0x190 [irtty_sir]
+[  631.794096]  [<ffffffff81356e88>] tty_ldisc_close.isra.1+0x38/0x50
+[  631.794157]  [<ffffffff81356eb8>] tty_ldisc_kill+0x18/0x90
+[  631.794209]  [<ffffffff81357894>] tty_ldisc_release+0x34/0x90
+[  631.794266]  [<ffffffff8134fe00>] tty_release+0x470/0x600
+
+There is a comment in irtty_close() speculating about potential problems
+with usb-serial. I'm not sure if that comment belongs to sirdev_put_instance() or
+the irtty_stop_receiver() call. I would guess both, so I let it be.
+
+The effect of this is that /dev/ttyUSB* is still in use, and thus leaking
+at least dev nodes. This is a minimal patch that solves that oops.
+--- linux-3.12/drivers/net/irda/irtty-sir.c.orig	2014-02-12 21:36:46.132496089 +0000
++++ linux-3.12/drivers/net/irda/irtty-sir.c	2014-02-12 21:57:21.635843884 +0000
+@@ -521,7 +521,6 @@ static void irtty_close(struct tty_struc
+  	sirdev_put_instance(priv->dev);
+  
+  	/* Stop tty */
+-	irtty_stop_receiver(tty, TRUE);
+  	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+  	if (tty->ops->stop)
+  		tty->ops->stop(tty);
