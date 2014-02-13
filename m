@@ -1,148 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaBMWdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:33:08 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:40605 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbaBMWdF (ORCPT
+	id S1752706AbaBMWdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:33:20 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:50160 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795AbaBMWdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:33:05 -0500
+	Thu, 13 Feb 2014 17:33:16 -0500
+Message-ID: <52FD4824.2020303@samsung.com>
+Date: Fri, 14 Feb 2014 07:33:08 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <20140213140523.099fd03418d8fe1467db3bd9@linux-foundation.org>
-References: <20140213215652.22950.12180.stgit@viggo.jf.intel.com>
-	<20140213140523.099fd03418d8fe1467db3bd9@linux-foundation.org>
-Date: Thu, 13 Feb 2014 14:33:03 -0800
-Message-ID: <CAPcyv4jbc5vHpXVcvnT2DoiwYvcQPO9ivAO+zThbw_-YYRyrHA@mail.gmail.com>
-Subject: Re: [PATCH regression] dma debug: account for cachelines and
- read-only mappings in overlap tracking
-From: Dan Williams <dan.j.williams@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wei Liu <wei.liu2@citrix.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Francois Romieu <romieu@fr.zoreil.com>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sachin Kamat <sachin.kamat@linaro.org>
+CC: Paul Bolle <pebolle@tiscali.nl>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Richard Weinberger <richard@nod.at>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: S3C24XX: Fix typo "CONFIG_CPUS_3C2443"
+References: <1392198068.23759.7.camel@x220> <CAK9yfHyXmY52KmKPj6=te829-R83dfM7wB813h=+=zCpzzxobA@mail.gmail.com>
+In-Reply-To: <CAK9yfHyXmY52KmKPj6=te829-R83dfM7wB813h=+=zCpzzxobA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 2:05 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 13 Feb 2014 13:58:00 -0800 Dan Williams <dan.j.williams@intel.com> wrote:
+On 02/12/14 18:47, Sachin Kamat wrote:
+> On 12 February 2014 15:11, Paul Bolle<pebolle@tiscali.nl>  wrote:
+>> Signed-off-by: Paul Bolle<pebolle@tiscali.nl>
+>> ---
+>> Untested. This needs testing by people with access to knowledge,
+>> compilers, and/or hardware related to CPU_S3C2443. I'm not one of them.
+>>
+>>   arch/arm/mach-s3c24xx/common.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-s3c24xx/common.c b/arch/arm/mach-s3c24xx/common.c
+>> index 4adaa4b..1d77d70 100644
+>> --- a/arch/arm/mach-s3c24xx/common.c
+>> +++ b/arch/arm/mach-s3c24xx/common.c
+>> @@ -484,7 +484,7 @@ struct platform_device s3c2440_device_dma = {
+>>   };
+>>   #endif
+>>
+>> -#if defined(CONFIG_CPUS_3C2443) || defined(CONFIG_CPU_S3C2416)
+>> +#if defined(CONFIG_CPU_S3C2443) || defined(CONFIG_CPU_S3C2416)
 >
->> While debug_dma_assert_idle() checks if a given *page* is actively
->> undergoing dma the valid granularity of a dma mapping is a *cacheline*.
->> Sander's testing shows that the warning message "DMA-API: exceeded 7
->> overlapping mappings of pfn..." is falsely triggering.  The test is
->> simply mapping multiple cachelines in a given page.
->>
->> Ultimately we want overlap tracking to be valid as it is a real api
->> violation, so we need to track active mappings by cachelines.  Update
->> the active dma tracking to use the page-frame-relative cacheline of the
->> mapping as the key, and update debug_dma_assert_idle() to check for all
->> possible mapped cachelines for a given page.
->>
->> However, the need to track active mappings is only relevant when the
->> dma-mapping is writable by the device.  In fact it is fairly standard
->> for read-only mappings to have hundreds or thousands of overlapping
->> mappings at once.  Limiting the overlap tracking to writable
->> (!DMA_TO_DEVICE) eliminates this class of false-positive overlap
->> reports.
->>
->> Note, the radix gang lookup is sub-optimal.  It would be best if it
->> stopped fetching entries once the search passed a page boundary.
->> Nevertheless, this implementation does not perturb the original net_dma
->> failing case.  That is to say the extra overhead does not show up in
->> terms of making the failing case pass due to a timing change.
->>
->> References:
->> http://marc.info/?l=linux-netdev&m=139232263419315&w=2
->> http://marc.info/?l=linux-netdev&m=139217088107122&w=2
->>
->> ...
->>
->> --- a/lib/dma-debug.c
->> +++ b/lib/dma-debug.c
->> @@ -424,111 +424,132 @@ void debug_dma_dump_mappings(struct device *dev)
->>  EXPORT_SYMBOL(debug_dma_dump_mappings);
->>
->>  /*
->> - * For each page mapped (initial page in the case of
->> - * dma_alloc_coherent/dma_map_{single|page}, or each page in a
->> - * scatterlist) insert into this tree using the pfn as the key. At
->> + * For each mapping (initial cacheline in the case of
->> + * dma_alloc_coherent/dma_map_page, initial cacheline in each page of a
->> + * scatterlist, or the cacheline specified in dma_map_single) insert
->> + * into this tree using the cacheline as the key. At
->>   * dma_unmap_{single|sg|page} or dma_free_coherent delete the entry.  If
->> - * the pfn already exists at insertion time add a tag as a reference
->> + * the entry already exists at insertion time add a tag as a reference
->>   * count for the overlapping mappings.  For now, the overlap tracking
->> - * just ensures that 'unmaps' balance 'maps' before marking the pfn
->> - * idle, but we should also be flagging overlaps as an API violation.
->> + * just ensures that 'unmaps' balance 'maps' before marking the
->> + * cacheline idle, but we should also be flagging overlaps as an API
->> + * violation.
->>   *
->>   * Memory usage is mostly constrained by the maximum number of available
->>   * dma-debug entries in that we need a free dma_debug_entry before
->> - * inserting into the tree.  In the case of dma_map_{single|page} and
->> - * dma_alloc_coherent there is only one dma_debug_entry and one pfn to
->> - * track per event.  dma_map_sg(), on the other hand,
->> - * consumes a single dma_debug_entry, but inserts 'nents' entries into
->> - * the tree.
->> + * inserting into the tree.  In the case of dma_map_page and
->> + * dma_alloc_coherent there is only one dma_debug_entry and one
->> + * dma_active_cacheline entry to track per event.  dma_map_sg(), on the
->> + * other hand, consumes a single dma_debug_entry, but inserts 'nents'
->> + * entries into the tree.
->>   *
->>   * At any time debug_dma_assert_idle() can be called to trigger a
->> - * warning if the given page is in the active set.
->> + * warning if any cachelines in the given page are in the active set.
->>   */
->> -static RADIX_TREE(dma_active_pfn, GFP_NOWAIT);
->> +static RADIX_TREE(dma_active_cacheline, GFP_NOWAIT);
->>  static DEFINE_SPINLOCK(radix_lock);
->> -#define ACTIVE_PFN_MAX_OVERLAP ((1 << RADIX_TREE_MAX_TAGS) - 1)
->> +#define ACTIVE_CLN_MAX_OVERLAP ((1 << RADIX_TREE_MAX_TAGS) - 1)
->> +#define CACHELINE_PER_PAGE_SHIFT (PAGE_SHIFT - L1_CACHE_SHIFT)
->> +#define CACHELINES_PER_PAGE (1 << CACHELINE_PER_PAGE_SHIFT)
->>
->> -static int active_pfn_read_overlap(unsigned long pfn)
->> +unsigned long to_cln(struct dma_debug_entry *entry)
->> +{
->> +     return (entry->pfn << CACHELINE_PER_PAGE_SHIFT) +
->> +             (entry->offset >> L1_CACHE_SHIFT);
->> +}
+> This is definitely a typo and the current fix looks good.
 >
-> "cln" is ugly and isn't a well-known kernel abbreviation.  We typically
-> spell these things out, so "cacheline".  But I think you mean
-> "cacheline number", and that is too long to spell out.
+> Reviewed-by: Sachin Kamat<sachin.kamat@linaro.org>
 >
+Applied, thanks.
 
-I do mean cacheline number.
-
-> So I guess "cln" just became a well-known kernel abbreviation.
-
-I can at least make the function names use "cacheline" to give better
-context about the local 'cln' variable.
-
->> ....
->>
->>  void debug_dma_assert_idle(struct page *page)
->>  {
->> +     unsigned long cln = page_to_pfn(page) << CACHELINE_PER_PAGE_SHIFT;
->
-> This worries me.  Are you sure we cannot overflow the ulong here under
-> any circumstances?  32GB PAE with sparsemem or whatever?
-
-You're right, I can't be sure.  Certainly page_to_pfn() and max_pfn
-are unsigned long, but I don't know how much headroom we have to play
-with on all memory-models...  so better make a 'cacheline number' be a
-phys_addr_t to be safe.
-
---
-Dan
+- Kukjin
