@@ -1,450 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaBMUa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 15:30:26 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:34734 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051AbaBMU3A (ORCPT
+	id S1752540AbaBMUcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 15:32:07 -0500
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:58144 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaBMUcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 15:29:00 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/7] cgroup: use css_set->mg_tasks to track target tasks during migration
-Date: Thu, 13 Feb 2014 15:28:48 -0500
-Message-Id: <1392323333-18907-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392323333-18907-1-git-send-email-tj@kernel.org>
-References: <1392323333-18907-1-git-send-email-tj@kernel.org>
+	Thu, 13 Feb 2014 15:32:04 -0500
+Subject: mmotm 2014-02-13-12-31 uploaded
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+From: akpm@linux-foundation.org
+Date: Thu, 13 Feb 2014 12:32:02 -0800
+Message-Id: <20140213203202.C10EC5A42D8@corp2gmr1-2.hot.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, while migrating tasks from one cgroup to another,
-cgroup_attach_task() builds a flex array of all target tasks;
-unfortunately, this has a couple issues.
+The mm-of-the-moment snapshot 2014-02-13-12-31 has been uploaded to
 
-* Flex array has size limit.  On 64bit, struct task_and_cgroup is
-  24bytes making the flex element limit around 87k.  It is a high
-  number but not impossible to hit.  This means that the current
-  cgroup implementation can't migrate a process with more than 87k
-  threads.
+   http://www.ozlabs.org/~akpm/mmotm/
 
-* Process migration involves memory allocation whose size is dependent
-  on the number of threads the process has.  This means that cgroup
-  core can't guarantee success or failure of multi-process migrations
-  as memory allocation failure can happen in the middle.  This is in
-  part because cgroup can't grab threadgroup locks of multiple
-  processes at the same time, so when there are multiple processes to
-  migrate, it is imposible to tell how many tasks are to be migrated
-  beforehand.
+mmotm-readme.txt says
 
-  Note that this already affects cgroup_transfer_tasks().  cgroup
-  currently cannot guarantee atomic success or failure of the
-  operation.  It may fail in the middle and after such failure cgroup
-  doesn't have enough information to roll back properly.  It just
-  aborts with some tasks migrated and others not.
+README for mm-of-the-moment:
 
-To resolve the situation, this patch updates the migration path to use
-task->cg_list to track target tasks.  The previous patch already added
-css_set->mg_tasks and updated iterations in non-migration paths to
-include them during task migration.  This patch updates migration path
-to actually make use of it.
+http://www.ozlabs.org/~akpm/mmotm/
 
-Instead of putting onto a flex_array, each target task is moved from
-its css_set->tasks list to css_set->mg_tasks and the migration path
-keeps trace of all the source css_sets and the associated cgroups.
-Once all source css_sets are determined, the destination css_set for
-each is determined, linked to the matching source css_set and put on a
-separate list.
+This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+more than once a week.
 
-To iterate the target tasks, migration path just needs to iterat
-through either the source or target css_sets, depending on whether
-migration has been committed or not, and the tasks on their ->mg_tasks
-lists.  cgroup_taskset is updated to contain the list_heads for source
-and target css_sets and the iteration cursor.  cgroup_taskset_*() are
-accordingly updated to walk through css_sets and their ->mg_tasks.
+You will need quilt to apply these patches to the latest Linus release (3.x
+or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+http://ozlabs.org/~akpm/mmotm/series
 
-This resolves the above listed issues with moderate additional
-complexity.
+The file broken-out.tar.gz contains two datestamp files: .DATE and
+.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+followed by the base kernel version against which this patch series is to
+be applied.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/cgroup.h |  16 ++++
- kernel/cgroup.c        | 223 +++++++++++++++++++++++++------------------------
- 2 files changed, 131 insertions(+), 108 deletions(-)
+This tree is partially included in linux-next.  To see which patches are
+included in linux-next, consult the `series' file.  Only the patches
+within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+linux-next.
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 3238abd..42a0b56 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -346,6 +346,22 @@ struct css_set {
- 	 */
- 	struct cgroup_subsys_state *subsys[CGROUP_SUBSYS_COUNT];
- 
-+	/*
-+	 * List of csets participating in the on-going migration either as
-+	 * source or destination.  Protected by cgroup_mutex.
-+	 */
-+	struct list_head mg_node;
-+
-+	/*
-+	 * If this cset is acting as the source of migration the following
-+	 * two fields are set.  mg_src_cgrp is the source cgroup of the
-+	 * on-going migration and mg_dst_cset is the destination cset the
-+	 * target tasks on this cset should be migrated to.  Protected by
-+	 * cgroup_mutex.
-+	 */
-+	struct cgroup *mg_src_cgrp;
-+	struct css_set *mg_dst_cset;
-+
- 	/* For RCU-protected deletion */
- 	struct rcu_head rcu_head;
- };
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index c423bac..539758c 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -52,7 +52,6 @@
- #include <linux/pid_namespace.h>
- #include <linux/idr.h>
- #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
--#include <linux/flex_array.h> /* used in cgroup_attach_task */
- #include <linux/kthread.h>
- #include <linux/delay.h>
- 
-@@ -645,6 +644,7 @@ static struct css_set *find_css_set(struct css_set *old_cset,
- 	INIT_LIST_HEAD(&cset->cgrp_links);
- 	INIT_LIST_HEAD(&cset->tasks);
- 	INIT_LIST_HEAD(&cset->mg_tasks);
-+	INIT_LIST_HEAD(&cset->mg_node);
- 	INIT_HLIST_NODE(&cset->hlist);
- 
- 	/* Copy the set of subsystem state objects generated in
-@@ -1637,20 +1637,26 @@ char *task_cgroup_path(struct task_struct *task, char *buf, size_t buflen)
- }
- EXPORT_SYMBOL_GPL(task_cgroup_path);
- 
--/*
-- * Control Group taskset
-- */
--struct task_and_cgroup {
--	struct task_struct	*task;
--	struct cgroup		*cgrp;
--	struct css_set		*cset;
--};
--
-+/* used to track tasks and other necessary states during migration */
- struct cgroup_taskset {
--	struct task_and_cgroup	single;
--	struct flex_array	*tc_array;
--	int			tc_array_len;
--	int			idx;
-+	/* the src and dst cset list running through cset->mg_node */
-+	struct list_head	src_csets;
-+	struct list_head	dst_csets;
-+
-+	/*
-+	 * Fields for cgroup_taskset_*() iteration.
-+	 *
-+	 * Before migration is committed, the target migration tasks are on
-+	 * ->mg_tasks of the csets on ->src_csets.  After, on ->mg_tasks of
-+	 * the csets on ->dst_csets.  ->csets point to either ->src_csets
-+	 * or ->dst_csets depending on whether migration is committed.
-+	 *
-+	 * ->cur_csets and ->cur_task point to the current task position
-+	 * during iteration.
-+	 */
-+	struct list_head	*csets;
-+	struct css_set		*cur_cset;
-+	struct task_struct	*cur_task;
- };
- 
- /**
-@@ -1661,12 +1667,10 @@ struct cgroup_taskset {
-  */
- struct task_struct *cgroup_taskset_first(struct cgroup_taskset *tset)
- {
--	if (tset->tc_array) {
--		tset->idx = 0;
--		return cgroup_taskset_next(tset);
--	} else {
--		return tset->single.task;
--	}
-+	tset->cur_cset = list_first_entry(tset->csets, struct css_set, mg_node);
-+	tset->cur_task = NULL;
-+
-+	return cgroup_taskset_next(tset);
- }
- 
- /**
-@@ -1678,13 +1682,27 @@ struct task_struct *cgroup_taskset_first(struct cgroup_taskset *tset)
-  */
- struct task_struct *cgroup_taskset_next(struct cgroup_taskset *tset)
- {
--	struct task_and_cgroup *tc;
-+	struct css_set *cset = tset->cur_cset;
-+	struct task_struct *task = tset->cur_task;
- 
--	if (!tset->tc_array || tset->idx >= tset->tc_array_len)
--		return NULL;
-+	while (&cset->mg_node != tset->csets) {
-+		if (!task)
-+			task = list_first_entry(&cset->mg_tasks,
-+						struct task_struct, cg_list);
-+		else
-+			task = list_next_entry(task, cg_list);
- 
--	tc = flex_array_get(tset->tc_array, tset->idx++);
--	return tc->task;
-+		if (&task->cg_list != &cset->mg_tasks) {
-+			tset->cur_cset = cset;
-+			tset->cur_task = task;
-+			return task;
-+		}
-+
-+		cset = list_next_entry(cset, mg_node);
-+		task = NULL;
-+	}
-+
-+	return NULL;
- }
- 
- /**
-@@ -1712,11 +1730,13 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
- 	WARN_ON_ONCE(tsk->flags & PF_EXITING);
- 	old_cset = task_css_set(tsk);
- 
-+	get_css_set(new_cset);
-+
- 	task_lock(tsk);
- 	rcu_assign_pointer(tsk->cgroups, new_cset);
- 	task_unlock(tsk);
- 
--	list_move(&tsk->cg_list, &new_cset->tasks);
-+	list_move(&tsk->cg_list, &new_cset->mg_tasks);
- 
- 	/*
- 	 * We just gained a reference on old_cset by taking it from the
-@@ -1739,80 +1759,58 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
- static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
- 			      bool threadgroup)
- {
--	int ret, i, group_size;
--	struct cgroupfs_root *root = cgrp->root;
-+	struct cgroup_taskset tset = {
-+		.src_csets	= LIST_HEAD_INIT(tset.src_csets),
-+		.dst_csets	= LIST_HEAD_INIT(tset.dst_csets),
-+		.csets		= &tset.src_csets,
-+	};
- 	struct cgroup_subsys_state *css, *failed_css = NULL;
--	/* threadgroup list cursor and array */
--	struct task_struct *task;
--	struct task_and_cgroup *tc;
--	struct flex_array *group;
--	struct cgroup_taskset tset = { };
--
--	/*
--	 * step 0: in order to do expensive, possibly blocking operations for
--	 * every thread, we cannot iterate the thread group list, since it needs
--	 * rcu or tasklist locked. instead, build an array of all threads in the
--	 * group - group_rwsem prevents new threads from appearing, and if
--	 * threads exit, this will just be an over-estimate.
--	 */
--	if (threadgroup)
--		group_size = get_nr_threads(leader);
--	else
--		group_size = 1;
--	/* flex_array supports very large thread-groups better than kmalloc. */
--	group = flex_array_alloc(sizeof(*tc), group_size, GFP_KERNEL);
--	if (!group)
--		return -ENOMEM;
--	/* pre-allocate to guarantee space while iterating in rcu read-side. */
--	ret = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
--	if (ret)
--		goto out_free_group_list;
-+	struct css_set *cset, *tmp_cset;
-+	struct task_struct *task, *tmp_task;
-+	int i, ret;
- 
--	i = 0;
- 	/*
- 	 * Prevent freeing of tasks while we take a snapshot. Tasks that are
- 	 * already PF_EXITING could be freed from underneath us unless we
- 	 * take an rcu_read_lock.
- 	 */
--	down_read(&css_set_rwsem);
-+	down_write(&css_set_rwsem);
- 	rcu_read_lock();
- 	task = leader;
- 	do {
--		struct task_and_cgroup ent;
-+		struct cgroup *src_cgrp;
- 
- 		/* @task either already exited or can't exit until the end */
- 		if (task->flags & PF_EXITING)
- 			goto next;
- 
--		/* as per above, nr_threads may decrease, but not increase. */
--		BUG_ON(i >= group_size);
--		ent.task = task;
--		ent.cgrp = task_cgroup_from_root(task, root);
-+		cset = task_css_set(task);
-+		src_cgrp = task_cgroup_from_root(task, cgrp->root);
-+
- 		/* nothing to do if this task is already in the cgroup */
--		if (ent.cgrp == cgrp)
-+		if (src_cgrp == cgrp)
- 			goto next;
--		/*
--		 * saying GFP_ATOMIC has no effect here because we did prealloc
--		 * earlier, but it's good form to communicate our expectations.
--		 */
--		ret = flex_array_put(group, i, &ent, GFP_ATOMIC);
--		BUG_ON(ret != 0);
--		i++;
-+
-+		if (!cset->mg_src_cgrp) {
-+			WARN_ON(!list_empty(&cset->mg_tasks));
-+			WARN_ON(!list_empty(&cset->mg_node));
-+
-+			cset->mg_src_cgrp = src_cgrp;
-+			list_add(&cset->mg_node, &tset.src_csets);
-+			get_css_set(cset);
-+		}
-+
-+		list_move(&task->cg_list, &cset->mg_tasks);
- 	next:
- 		if (!threadgroup)
- 			break;
- 	} while_each_thread(leader, task);
- 	rcu_read_unlock();
--	up_read(&css_set_rwsem);
--	/* remember the number of threads in the array for later. */
--	group_size = i;
--	tset.tc_array = group;
--	tset.tc_array_len = group_size;
-+	up_write(&css_set_rwsem);
- 
- 	/* methods shouldn't be called if no task is actually migrating */
--	ret = 0;
--	if (!group_size)
--		goto out_free_group_list;
-+	if (list_empty(&tset.src_csets))
-+		return 0;
- 
- 	/*
- 	 * step 1: check that we can legitimately attach to the cgroup.
-@@ -1831,16 +1829,21 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
- 	 * step 2: make sure css_sets exist for all threads to be migrated.
- 	 * we use find_css_set, which allocates a new one if necessary.
- 	 */
--	for (i = 0; i < group_size; i++) {
--		struct css_set *old_cset;
-+	list_for_each_entry(cset, &tset.src_csets, mg_node) {
-+		struct css_set *dst_cset;
- 
--		tc = flex_array_get(group, i);
--		old_cset = task_css_set(tc->task);
--		tc->cset = find_css_set(old_cset, cgrp);
--		if (!tc->cset) {
-+		dst_cset = find_css_set(cset, cgrp);
-+		if (!dst_cset) {
- 			ret = -ENOMEM;
--			goto out_put_css_set_refs;
-+			goto out_release_tset;
- 		}
-+
-+		if (list_empty(&dst_cset->mg_node))
-+			list_add(&dst_cset->mg_node, &tset.dst_csets);
-+		else
-+			put_css_set(dst_cset, false);
-+
-+		cset->mg_dst_cset = dst_cset;
- 	}
- 
- 	/*
-@@ -1849,12 +1852,17 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
- 	 * failure cases after here, so this is the commit point.
- 	 */
- 	down_write(&css_set_rwsem);
--	for (i = 0; i < group_size; i++) {
--		tc = flex_array_get(group, i);
--		cgroup_task_migrate(tc->cgrp, tc->task, tc->cset);
-+	list_for_each_entry(cset, &tset.src_csets, mg_node) {
-+		list_for_each_entry_safe(task, tmp_task, &cset->mg_tasks, cg_list)
-+			cgroup_task_migrate(cset->mg_src_cgrp, task,
-+					    cset->mg_dst_cset);
- 	}
- 	up_write(&css_set_rwsem);
--	/* nothing is sensitive to fork() after this point. */
-+
-+	/* migration is committed, all target tasks are now on dst_csets */
-+	tset.csets = &tset.dst_csets;
-+
-+	/* nothing is sensitive to fork() after this point */
- 
- 	/*
- 	 * step 4: do subsystem attach callbacks.
-@@ -1863,30 +1871,27 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
- 		if (css->ss->attach)
- 			css->ss->attach(css, &tset);
- 
--	/*
--	 * step 5: success! and cleanup
--	 */
- 	ret = 0;
--out_put_css_set_refs:
--	if (ret) {
--		for (i = 0; i < group_size; i++) {
--			tc = flex_array_get(group, i);
--			if (!tc->cset)
--				break;
--			put_css_set(tc->cset, false);
--		}
--	}
-+	goto out_release_tset;
-+
- out_cancel_attach:
--	if (ret) {
--		for_each_css(css, i, cgrp) {
--			if (css == failed_css)
--				break;
--			if (css->ss->cancel_attach)
--				css->ss->cancel_attach(css, &tset);
--		}
-+	for_each_css(css, i, cgrp) {
-+		if (css == failed_css)
-+			break;
-+		if (css->ss->cancel_attach)
-+			css->ss->cancel_attach(css, &tset);
- 	}
--out_free_group_list:
--	flex_array_free(group);
-+out_release_tset:
-+	down_write(&css_set_rwsem);
-+	list_splice_init(&tset.dst_csets, &tset.src_csets);
-+	list_for_each_entry_safe(cset, tmp_cset, &tset.src_csets, mg_node) {
-+		list_splice_init(&cset->mg_tasks, &cset->tasks);
-+		cset->mg_dst_cset = NULL;
-+		cset->mg_src_cgrp = NULL;
-+		list_del_init(&cset->mg_node);
-+		put_css_set_locked(cset, false);
-+	}
-+	up_write(&css_set_rwsem);
- 	return ret;
- }
- 
-@@ -3888,6 +3893,8 @@ int __init cgroup_init_early(void)
- 	atomic_set(&init_css_set.refcount, 1);
- 	INIT_LIST_HEAD(&init_css_set.cgrp_links);
- 	INIT_LIST_HEAD(&init_css_set.tasks);
-+	INIT_LIST_HEAD(&init_css_set.mg_tasks);
-+	INIT_LIST_HEAD(&init_css_set.mg_node);
- 	INIT_HLIST_NODE(&init_css_set.hlist);
- 	css_set_count = 1;
- 	init_cgroup_root(&cgroup_dummy_root);
--- 
-1.8.5.3
+A git tree which contains the memory management portion of this tree is
+maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+by Michal Hocko.  It contains the patches which are between the
+"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+file, http://www.ozlabs.org/~akpm/mmotm/series.
 
+
+A full copy of the full kernel tree with the linux-next and mmotm patches
+already applied is available through git within an hour of the mmotm
+release.  Individual mmotm releases are tagged.  The master branch always
+points to the latest release, so it's constantly rebasing.
+
+http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+
+To develop on top of mmotm git:
+
+  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+  $ git remote update mmotm
+  $ git checkout -b topic mmotm/master
+  <make changes, commit>
+  $ git send-email mmotm/master.. [...]
+
+To rebase a branch with older patches to a new mmotm release:
+
+  $ git remote update mmotm
+  $ git rebase --onto mmotm/master <topic base> topic
+
+
+
+
+The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+contains daily snapshots of the -mm tree.  It is updated more frequently
+than mmotm, and is untested.
+
+A git copy of this tree is available at
+
+	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+
+and use of this tree is similar to
+http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+
+
+This mmotm tree contains the following patches against 3.14-rc2:
+(patches marked "*" will be included in linux-next)
+
+  origin.patch
+  arch-alpha-kernel-systblss-remove-debug-check.patch
+  i-need-old-gcc.patch
+* mm-page_alloc-make-first_page-visible-before-pagetail.patch
+* mm-hwpoison-release-page-on-pagehwpoison-in-__do_fault.patch
+* drivers-iommu-omap-iommu-debugc-fix-decimal-permissions.patch
+* drivers-fmc-fmc-write-eepromc-fix-decimal-permissions.patch
+* mm-thp-fix-infinite-loop-on-memcg-oom.patch
+* memcg-change-oom_info_lock-to-mutex.patch
+* ipcmqueue-remove-limits-for-the-amount-of-system-wide-queues.patch
+* arm-mm-fix-the-memblock-allocation-for-lpae-machines.patch
+* kthread-ensure-locality-of-task_struct-allocations.patch
+* arm-use-generic-fixmaph.patch
+* fs-cifs-cifsfsc-add-__init-to-cifs_init_inodecache.patch
+* fanotify-remove-useless-bypass_perm-check.patch
+* fanotify-use-fanotify-event-structure-for-permission-response-processing.patch
+* fanotify-remove-useless-test-from-event-initialization.patch
+* fanotify-convert-access_mutex-to-spinlock.patch
+* fanotify-reorganize-loop-in-fanotify_read.patch
+* fanotify-move-unrelated-handling-from-copy_event_to_user.patch
+* sched_clock-document-4mhz-vs-1mhz-decision.patch
+* input-route-kbd-leds-through-the-generic-leds-layer.patch
+* jffs2-unlock-f-sem-on-error-in-jffs2_new_inode.patch
+* jffs2-fix-unbalanced-locking.patch
+* jffs2-avoid-soft-lockup-in-jffs2_reserve_space_gc.patch
+* jffs2-remove-wait-queue-after-schedule.patch
+* fs-udf-superc-add-__init-to-init_inodecache.patch
+* drivers-net-irda-donauboe-convert-to-module_pci_driver.patch
+* net-core-rtnetlinkc-copy-paste-error-in-rtnl_bridge_notify.patch
+* ocfs2-fix-null-pointer-dereference-when-access-dlm_state-before-launching-dlm-thread.patch
+* ocfs2-o2net-incorrect-to-terminate-accepting-connections-loop-upon-rejecting-an-invalid-one.patch
+* ocfs2-fix-a-tiny-race-when-running-dirop_fileop_racer.patch
+* ocfs2-o2net-o2net_listen_data_ready-should-do-nothing-if-socket-state-is-not-tcp_listen.patch
+* ocfs2-should-call-ocfs2_journal_access_di-before-ocfs2_delete_entry-in-ocfs2_orphan_del.patch
+* ocfs2-llseek-requires-ocfs2-inode-lock-for-the-file-in-seek_end.patch
+* drivers-scsi-megaraid-megaraid_mmc-missing-bounds-check-in-mimd_to_kioc.patch
+* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
+* kernel-watchdogc-touch_nmi_watchdog-should-only-touch-local-cpu-not-every-one.patch
+* watchdog-trigger-all-cpu-backtrace-when-locked-up-and-going-to-panic.patch
+* mm-slab-slub-use-page-list-consistently-instead-of-page-lru.patch
+  mm.patch
+* mm-vmscan-respect-numa-policy-mask-when-shrinking-slab-on-direct-reclaim.patch
+* mm-vmscan-move-call-to-shrink_slab-to-shrink_zones.patch
+* mm-vmscan-remove-shrink_control-arg-from-do_try_to_free_pages.patch
+* mm-compaction-ignore-pageblock-skip-when-manually-invoking-compaction.patch
+* mm-optimize-put_mems_allowed-usage.patch
+* mm-hugetlb-unify-region-structure-handling.patch
+* mm-hugetlb-improve-cleanup-resv_map-parameters.patch
+* mm-hugetlb-fix-race-in-region-tracking.patch
+* mm-hugetlb-remove-resv_map_put.patch
+* mm-hugetlb-use-vma_resv_map-map-types.patch
+* mm-hugetlb-improve-page-fault-scalability.patch
+* mm-hugetlb-improve-page-fault-scalability-fix.patch
+* mm-vmscan-shrink_slab-rename-max_pass-freeable.patch
+* zram-drop-init_done-struct-zram-member.patch
+* zram-do-not-pass-rw-argument-to-__zram_make_request.patch
+* zram-remove-good-and-bad-compress-stats.patch
+* zram-use-atomic64_t-for-all-zram-stats.patch
+* zram-remove-zram-stats-code-duplication.patch
+* zram-report-failed-read-and-write-stats.patch
+* zram-drop-not-used-table-count-member.patch
+* zram-move-zram-size-warning-to-documentation.patch
+* zram-document-failed_reads-failed_writes-stats.patch
+* mm-vmstat-fix-up-zone-state-accounting.patch
+* mm-vmstat-fix-up-zone-state-accounting-fix.patch
+* fs-cachefiles-use-add_to_page_cache_lru.patch
+* lib-radix-tree-radix_tree_delete_item.patch
+* mm-shmem-save-one-radix-tree-lookup-when-truncating-swapped-pages.patch
+* mm-filemap-move-radix-tree-hole-searching-here.patch
+* mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees.patch
+* mm-fs-store-shadow-entries-in-page-cache.patch
+* mm-thrash-detection-based-file-cache-sizing.patch
+* lib-radix_tree-tree-node-interface.patch
+* mm-keep-page-cache-radix-tree-nodes-in-check.patch
+* mm-keep-page-cache-radix-tree-nodes-in-check-fix.patch
+* mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix.patch
+* mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix-fix.patch
+* mm-hugetlb-mark-some-bootstrap-functions-as-__init.patch
+* mm-compaction-avoid-isolating-pinned-pages.patch
+* mm-compactionc-mark-function-as-static.patch
+* mm-memoryc-mark-functions-as-static.patch
+* mm-mmapc-mark-function-as-static.patch
+* mm-process_vm_accessc-mark-function-as-static.patch
+* mm-page_cgroupc-mark-functions-as-static.patch
+* mm-nobootmemc-mark-function-as-static.patch
+* include-linux-mmh-remove-ifdef-condition.patch
+* mm-readaheadc-fix-readahead-fail-for-no-local-memory-and-limit-readahead-pages.patch
+* pagewalk-update-page-table-walker-core.patch
+* pagewalk-add-walk_page_vma.patch
+* smaps-redefine-callback-functions-for-page-table-walker.patch
+* clear_refs-redefine-callback-functions-for-page-table-walker.patch
+* pagemap-redefine-callback-functions-for-page-table-walker.patch
+* numa_maps-redefine-callback-functions-for-page-table-walker.patch
+* memcg-redefine-callback-functions-for-page-table-walker.patch
+* madvise-redefine-callback-functions-for-page-table-walker.patch
+* arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
+* pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
+* mempolicy-apply-page-table-walker-on-queue_pages_range.patch
+* mm-rename-__do_fault-do_fault.patch
+* mm-do_fault-extract-to-call-vm_ops-do_fault-to-separate-function.patch
+* mm-introduce-do_read_fault.patch
+* mm-introduce-do_cow_fault.patch
+* mm-introduce-do_shared_fault-and-drop-do_fault.patch
+* mm-consolidate-code-to-call-vm_ops-page_mkwrite.patch
+* mm-consolidate-code-to-setup-pte.patch
+* mm-thp-drop-do_huge_pmd_wp_zero_page_fallback.patch
+* mm-remove-read_cache_page_async.patch
+* drop_caches-add-some-documentation-and-info-message.patch
+* mm-zswap-fix-trivial-typo-and-arrange-indentation.patch
+* mm-zswap-update-zsmalloc-in-comment-to-zbud.patch
+* include-linux-syscallsh-add-sys32_quotactl-prototype.patch
+* include-linux-syscallsh-add-sys32_quotactl-prototype-fix.patch
+* kernel-used-macros-from-compilerh-instead-of-__attribute__.patch
+* asm-systemh-clean-asm-systemh-from-docs.patch
+* asm-systemh-sparc-sparc_cpu_model-isnt-in-asm-systemh-any-more.patch
+* asm-systemh-um-arch_align_stack-moved-to-asm-exech.patch
+* asm-systemh-arm-delete-asm-systemh.patch
+* kernel-audit-fix-non-modular-users-of-module_init-in-core-code.patch
+* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
+* vsprintf-remove-%n-handling.patch
+* lib-vsprintf-add-%pt-format-specifier.patch
+* maintainers-add-backlight-co-maintainers.patch
+* backlight-update-bd-state-fb_blank-properties-when-necessary.patch
+* backlight-update-backlight-status-when-necessary.patch
+* backlight-aat2870-remove-unnecessary-oom-messages.patch
+* backlight-adp8860-remove-unnecessary-oom-messages.patch
+* backlight-adp8870-remove-unnecessary-oom-messages.patch
+* backlight-corgi_lcd-remove-unnecessary-oom-messages.patch
+* backlight-hx8357-remove-unnecessary-oom-messages.patch
+* backlight-ili922x-remove-unnecessary-oom-messages.patch
+* backlight-ili9320-remove-unnecessary-oom-messages.patch
+* backlight-l4f00242t03-remove-unnecessary-oom-messages.patch
+* backlight-lm3533_bl-remove-unnecessary-oom-messages.patch
+* backlight-lms283gf05-remove-unnecessary-oom-messages.patch
+* backlight-platform_lcd-remove-unnecessary-oom-messages.patch
+* backlight-tps65217_bl-remove-unnecessary-oom-messages.patch
+* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
+* lib-devresc-fix-some-sparse-warnings.patch
+* mm-utilc-add-kstrimdup.patch
+* lib-add-crc64-ecma-module.patch
+* checkpatch-add-test-for-long-udelay.patch
+* checkpatch-dont-warn-on-some-function-pointer-return-styles.patch
+* checkpatch-add-checks-for-constant-non-octal-permissions.patch
+* checkpatch-warn-on-uses-of-__constant_foo-functions.patch
+* fs-efs-superc-add-__init-to-init_inodecache.patch
+* binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
+* init-do_mountsc-fix-comment-error.patch
+* ncpfs-add-pr_fmt-and-convert-printks-to-pr_level.patch
+* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg.patch
+* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix.patch
+* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix-fix.patch
+* ncpfs-convert-pprintk-to-ncp_vdbg.patch
+* ncpfs-remove-now-unused-printk-macro.patch
+* ncpfs-inode-fix-mismatch-printk-formats-and-arguments.patch
+* rtc-rtc-imxdi-check-the-return-value-from-clk_prepare_enable.patch
+* rtc-rtc-at32ap700x-remove-unnecessary-oom-messages.patch
+* rtc-rtc-davinci-remove-unnecessary-oom-messages.patch
+* rtc-rtc-ds1390-remove-unnecessary-oom-messages.patch
+* rtc-rtc-moxart-remove-unnecessary-oom-messages.patch
+* rtc-rtc-nuc900-remove-unnecessary-oom-messages.patch
+* rtc-rtc-pm8xxx-remove-unnecessary-oom-messages.patch
+* rtc-rtc-rx8025-remove-unnecessary-oom-messages.patch
+* rtc-rtc-sirfsoc-remove-unnecessary-oom-messages.patch
+* rtc-rtc-lpc32xx-remove-unnecessary-oom-messages.patch
+* rtc-rtc-spear-remove-unnecessary-oom-messages.patch
+* rtc-rtc-coh901331-use-devm_ioremap_resource.patch
+* rtc-rtc-davinci-use-devm_ioremap_resource.patch
+* rtc-rtc-vt8500-use-devm_ioremap_resource.patch
+* rtc-rtc-jz4740-use-devm_ioremap_resource.patch
+* drivers-rtc-rtc-isl12057c-remove-duplicate-include.patch
+* drivers-rtc-rtc-da9052c-remove-redundant-private-structure-field.patch
+* fs-minix-inodec-add-__init-to-init_inodecache.patch
+* nilfs2-update-maintainers-file-entries.patch
+* nilfs2-add-struct-nilfs_suinfo_update-and-flags.patch
+* nilfs2-add-nilfs_sufile_set_suinfo-to-update-segment-usage.patch
+* nilfs2-add-nilfs_sufile_set_suinfo-to-update-segment-usage-fix.patch
+* nilfs2-implementation-of-nilfs_ioctl_set_suinfo-ioctl.patch
+* nilfs2-implementation-of-nilfs_ioctl_set_suinfo-ioctl-fix.patch
+* hfsplus-add-hfsx-subfolder-count-support.patch
+* fs-ufs-superc-add-__init-to-init_inodecache.patch
+* fs-ufs-remove-unused-ufs_super_block_first-pointer.patch
+* fs-ufs-remove-unused-ufs_super_block_second-pointer.patch
+* fs-ufs-remove-unused-ufs_super_block_third-pointer.patch
+* ufs-sb-mutex-merge-mutex_destroy.patch
+* fs-reiserfs-move-prototype-declaration-to-header-file.patch
+* fat-add-i_disksize-to-represent-uninitialized-size.patch
+* fat-add-fat_fallocate-operation.patch
+* fat-zero-out-seek-range-on-_fat_get_block.patch
+* fat-fallback-to-buffered-write-in-case-of-fallocated-region-on-direct-io.patch
+* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region.patch
+* fat-update-the-limitation-for-fat-fallocate.patch
+* cpusets-allocate-heap-only-when-required.patch
+* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2.patch
+* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-fix.patch
+* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-checkpatch-fixes.patch
+* include-linux-crash_dumph-add-vmcore_cleanup-prototype.patch
+* include-linux-crash_dumph-add-vmcore_cleanup-prototype-fix.patch
+* fs-adfs-superc-add-__init-to-init_inodecache.patch
+* kernel-panicc-display-reason-at-end-pr_emerg.patch
+* kernel-panicc-display-reason-at-end-pr_emerg-fix.patch
+* pps-add-non-blocking-option-to-pps_fetch-ioctl.patch
+* drivers-misc-sgi-gru-grukdumpc-cleanup-gru_dump_context-a-little.patch
+  linux-next.patch
+  linux-next-git-rejects.patch
+* drivers-spi-spic-fix-max-warning.patch
+* w1-call-put_device-if-device_register-fails.patch
+* arm-move-arm_dma_limit-to-setup_dma_zone.patch
+* mm-add-strictlimit-knob-v2.patch
+  debugging-keep-track-of-page-owners.patch
+  make-sure-nobodys-leaking-resources.patch
+  journal_add_journal_head-debug.patch
+  releasing-resources-with-children.patch
+  make-frame_pointer-default=y.patch
+  kernel-forkc-export-kernel_thread-to-modules.patch
+  mutex-subsystem-synchro-test-module.patch
+  slab-leaks3-default-y.patch
+  put_bh-debug.patch
+  add-debugging-aid-for-memory-initialisation-problems.patch
+  workaround-for-a-pci-restoring-bug.patch
+  single_open-seq_release-leak-diagnostics.patch
