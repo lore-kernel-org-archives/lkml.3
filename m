@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaBMNLs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 08:11:48 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27482 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754498AbaBMNLr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 08:11:47 -0500
-Message-ID: <1392297105.848.82.camel@hornet>
-Subject: Re: [PATCH 06/12] mfd: vexpress-sysreg: Add labels to gpio banks
-From: Pawel Moll <pawel.moll@arm.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1754326AbaBMNQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 08:16:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751939AbaBMNQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 08:16:06 -0500
+Date: Thu, 13 Feb 2014 14:18:02 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Date: Thu, 13 Feb 2014 13:11:45 +0000
-In-Reply-To: <CACRpkdZjrCdhyBMF2WbDCnHuuMSpcpwiPx2k555PY3yBwdc1aw@mail.gmail.com>
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
-	 <1392138636-29240-7-git-send-email-pawel.moll@arm.com>
-	 <CACRpkdZjrCdhyBMF2WbDCnHuuMSpcpwiPx2k555PY3yBwdc1aw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Kalle Valo <kvalo@qca.qualcomm.com>, wil6210@qca.qualcomm.com
+Subject: Re: [PATCH 1/3] ath10k: Get rid of superfluous call to
+ pci_disable_msi()
+Message-ID: <20140213131802.GA21757@dhcp-26-207.brq.redhat.com>
+References: <20140130134819.GA31909@dhcp-26-207.brq.redhat.com>
+ <87y51qohjn.fsf@kamboji.qca.qualcomm.com>
+ <20140204190935.GA1430@dhcp-26-207.brq.redhat.com>
+ <8761oum0l3.fsf@kamboji.qca.qualcomm.com>
+ <20140205085047.GA27820@dhcp-26-207.brq.redhat.com>
+ <871tzilz1u.fsf@kamboji.qca.qualcomm.com>
+ <20140212003143.GD21057@google.com>
+ <20140212133816.GB3147@dhcp-26-207.brq.redhat.com>
+ <CAErSpo6c_EPc5c8aaTeD9=eXWw4OowcKhWHG6YZgTOkZRMtZHQ@mail.gmail.com>
+ <87ppmsauij.fsf@kamboji.qca.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ppmsauij.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-13 at 13:08 +0000, Linus Walleij wrote:
-> On Tue, Feb 11, 2014 at 6:10 PM, Pawel Moll <pawel.moll@arm.com> wrote:
+On Wed, Feb 12, 2014 at 11:30:44PM +0200, Kalle Valo wrote:
+> Bjorn Helgaas <bhelgaas@google.com> writes:
 > 
-> > ... so debugfs interfaces are easier to use.
+> >> Well, as this series is small I thought it could quickly go thru your
+> >> tree. But since ipr had conflicts, there is no point routing all patches
+> >> altogether, so up to you guys. The wil6210 patch is already in your pci/msi
+> >> branch though.
 > >
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Cc: Alexandre Courbot <gnurou@gmail.com>
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Cc: Lee Jones <lee.jones@linaro.org>
-> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > It's in pci/msi, but that's not in my -next branch yet, so I can
+> > easily drop it.  Do drivers/net/wireless patches normally follow a
+> > different path than the other drivers/net patches?  The wil6210 and
+> > ath10k patches look just like the others in the 34-patch series (bnx2,
+> > bnx2x, tg3, bna, cxgb3, etc.), so I thought it would make more sense
+> > to include them there.
 > 
-> This doesn't apply to the v3.14-rc1-based GPIO tree. Can you rebase it
-> with Lee's ACK so I can apply this?
+> ath10k patches normally go through my ath.git tree to Linville and then
+> to David Miller. To avoid conflicts I would prefer to take ath10k
+> patches to my tree whenever possible.
 
-Uh, it won't apply. This series depends on the one reworking sysregs.
-I'll send them separately once it's ready. Sorry about confusion and
-thanks for trying!
+CC'ing Vladimir, in case he decides to do the same with wil6210.
 
-Pawel
+> -- 
+> Kalle Valo
 
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
