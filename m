@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaBMP2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 10:28:20 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:56587 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751735AbaBMP2T (ORCPT
+	id S1751668AbaBMPeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 10:34:11 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:60588 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071AbaBMPeJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 10:28:19 -0500
-Date: Thu, 13 Feb 2014 10:28:17 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
-Message-ID: <20140213102817.4bfd5eac@gandalf.local.home>
-In-Reply-To: <1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
-	<20140211072738.GA24232@gmail.com>
-	<20140211234534.6bc34e57@gandalf.local.home>
-	<1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 13 Feb 2014 10:34:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <201401082236.25135@pali>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <201312301531.29768@pali> <20131230145250.GA16904@earth.universe> <201401082236.25135@pali>
+From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Date: Thu, 13 Feb 2014 16:33:28 +0100
+Message-ID: <CAHYPw2EJC9RwgzXmGuQgh5_L6EMtS7MW8N3u2dR8KeVc0kb43g@mail.gmail.com>
+Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
+To: Pavel Machek <pavel@ucw.cz>, Marcel Holtmann <marcel@holtmann.org>,
+        Sebastian Reichel <sre@ring0.de>
+Cc: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014 15:10:14 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+2014-01-08 22:36 GMT+01:00 Pali Rohár <pali.rohar@gmail.com>:
+> On Monday 30 December 2013 15:52:51 Sebastian Reichel wrote:
+>> > > > +MODULE_DESCRIPTION("Bluetooth h4 driver with nokia
+>> > > > extensions"); +MODULE_LICENSE("GPL");
+>> > > > +MODULE_AUTHOR("Ville Tervo");
+>> > > > +MODULE_FIRMWARE(FW_NAME_TI1271_PRELE);
+>> > > > +MODULE_FIRMWARE(FW_NAME_TI1271_LE);
+>> > > > +MODULE_FIRMWARE(FW_NAME_TI1271);
+>> > > > +MODULE_FIRMWARE(FW_NAME_BCM2048);
+>> > > > +MODULE_FIRMWARE(FW_NAME_CSR);
+>> > >
+>> > > Do we actually have all these firmware files still
+>> > > available. If not, then focus on the ones we have.
+>> >
+>> > Firmware files are available for download from nemo project:
+>> >
+>> > https://api.merproject.org/public/source/nemo:devel:hw:ti:om
+>> > ap3:n900/bcm-bt-firmware/bcm-bt-firmware-0.21rc3.tar.bz2
+>> > https://api.merproject.org/public/source/nemo:devel:hw:ti:o
+>> > map3:n950-n9/ti-wl1273-bt-firmware/bt-firmware-ti1273_0.23+0
+>> > m6.tar.gz
+>>
+>> Would be nice to have them added to the linux-firmware.git.
+>>
+>> -- Sebastian
+>
+> Can somebody send firmware files for inclusion to linux-firmware?
+>
+> --
+> Pali Rohár
+> pali.rohar@gmail.com
 
-> ----- Original Message -----
-> > From: "Steven Rostedt" <rostedt@goodmis.org>
-> > To: "Ingo Molnar" <mingo@kernel.org>
-> > Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, linux-kernel@vger.kernel.org, "Ingo Molnar"
-> > <mingo@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>, "Rusty Russell" <rusty@rustcorp.com.au>, "David Howells"
-> > <dhowells@redhat.com>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-> > Sent: Tuesday, February 11, 2014 11:45:34 PM
-> > Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-> > 
-> > 
-> [...]
-> > But if the kernel expects to have signed modules, and you force a
-> > module to be loaded that is not signed, then you still get that
-> > "forced" module taint, which is the same one as loading a module from
-> > an older kernel into a newer kernel. It's a different problem, and I
-> > can see having a different taint flag be more informative to kernel
-> > developers in general. I would welcome that change with or without
-> > letting tracepoints be set for that module.
-> 
-> There is one important inaccuracy in your explanation above: a
-> kernel supporting signed modules, but not enforcing "sig_force",
-> can load unsigned modules with a simple modprobe or insmod, without
-> any "--force" argument. Therefore, tainting the module as
-> "TAINT_FORCED_MODULE" is misleading.
-> 
+Now when driver is queued for staging, can somebody add firmware files
+to linux-firmware repository? Note that without firmware files, driver
+not working...
 
-Oh! You are saying that if the kernel only *supports* signed modules,
-and you load a module that is not signed, it will taint the kernel?
-
-
--- Steve
+-- 
+Pali Rohár
+pali.rohar@gmail.com
