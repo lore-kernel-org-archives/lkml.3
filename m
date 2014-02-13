@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaBMSnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 13:43:01 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35238 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751108AbaBMSm6 (ORCPT
+	id S1752126AbaBMSnF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 13:43:05 -0500
+Received: from stinky.trash.net ([213.144.137.162]:42148 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108AbaBMSnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 13:42:58 -0500
-Date: Thu, 13 Feb 2014 18:42:49 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
-	device probe
-Message-ID: <20140213184249.GC30257@n2100.arm.linux.org.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org> <1390208555-27770-3-git-send-email-tushar.behera@linaro.org> <20140120100415.GX15937@n2100.arm.linux.org.uk> <20140213181216.GB24155@kroah.com> <20140213181559.GB30257@n2100.arm.linux.org.uk> <20140213182701.GA32578@kroah.com>
+	Thu, 13 Feb 2014 13:43:02 -0500
+Date: Thu, 13 Feb 2014 18:42:54 +0000
+From: Patrick McHardy <kaber@trash.net>
+To: Cong Wang <cwang@twopensource.com>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vitaly Lavrov <lve@guap.ru>
+Subject: Re: ip_set: protocol %u message -- useful?
+Message-ID: <20140213184254.GF14175@macbook.localnet>
+References: <CAKb7UvhsLi2Sv4SWA2nVTgoFV8dzrY=3R1-SUk9D-aa0VdizSA@mail.gmail.com>
+ <alpine.DEB.2.10.1402131117120.16734@blackhole.kfki.hu>
+ <CAHA+R7MeEEfqz-7RhCUjsoWPx_BKHVXFV3Y32xjf0B1WwjNdRQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140213182701.GA32578@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAHA+R7MeEEfqz-7RhCUjsoWPx_BKHVXFV3Y32xjf0B1WwjNdRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 10:27:01AM -0800, Greg KH wrote:
-> On Thu, Feb 13, 2014 at 06:15:59PM +0000, Russell King - ARM Linux wrote:
-> > On Thu, Feb 13, 2014 at 10:12:16AM -0800, Greg KH wrote:
-> > > On Mon, Jan 20, 2014 at 10:04:15AM +0000, Russell King - ARM Linux wrote:
-> > > > On Mon, Jan 20, 2014 at 02:32:35PM +0530, Tushar Behera wrote:
-> > > > > uart_register_driver call binds the driver to a specific device
-> > > > > node through tty_register_driver call. This should typically happen
-> > > > > during device probe call.
-> > > > > 
-> > > > > In a multiplatform scenario, it is possible that multiple serial
-> > > > > drivers are part of the kernel. Currently the driver registration fails
-> > > > > if multiple serial drivers with same default major/minor numbers are
-> > > > > included in the kernel.
-> > > > > 
-> > > > > A typical case is observed with amba-pl011 and samsung-uart drivers.
-> > > > 
-> > > > NAK.  There should not be any other driver using amba-pl011's device numbers.
-> > > 
-> > > I agree, but there is.  And because of that, moving the registration to
-> > > the probe call fixes the issue with building a kernel with all of the
-> > > drivers built into them, so I'm going to take both of these patches, as
-> > > it does solve that problem, while still allowing the device number
-> > > collision to happen.
-> > 
-> > So what happens when two _devices_ are probed by this driver at the same
-> > time?
+On Thu, Feb 13, 2014 at 10:32:45AM -0800, Cong Wang wrote:
+> On Thu, Feb 13, 2014 at 2:30 AM, Jozsef Kadlecsik
+> <kadlec@blackhole.kfki.hu> wrote:
+> > On Thu, 13 Feb 2014, Ilia Mirkin wrote:
+> >> messages in my dmesg. This might be because of some local
+> >> configuration changes I've made, or perhaps a kernel upgrade. Either
+> >> way, it appears this message has been a pr_notice since the original
+> >> code added it in a7b4f989a62 ("netfilter: ipset: IP set core
+> >> support").
+> >>
+> >> Does this message provide a lot of value? Or could it be made into a pr_debug?
+> >
+> > That's a report message on the protocol version used by the ipset
+> > subsystem. There was (and possibly will be) multiple protocols, so it
+> > helps to catch basic userpsace/kernelspace communication issues.
 > 
-> The bus that the driver is on will not allow that to happen, I thought
-> we went through this before...
-> 
-> And yes, devices on different busses could cause problems, but is that
-> the case here for these devices?  At first glance, I don't think that
-> can happen for these drivers.
+> But still it doesn't deserve a pr_notice()... pr_info() should be enough.
 
-We went through this before, and I stated the paths, and no one disagreed
-with that.
+Maybe printing "using protocol version X" will make it appear less like
+a debugging message referring to packet contents or something similar.
 
-It /is/ racy.
-
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+> diff --git a/net/netfilter/ipset/ip_set_core.c
+> b/net/netfilter/ipset/ip_set_core.c
+> index de770ec..5ea063f 100644
+> --- a/net/netfilter/ipset/ip_set_core.c
+> +++ b/net/netfilter/ipset/ip_set_core.c
+> @@ -1945,7 +1945,7 @@ ip_set_net_init(struct net *net)
+>                 return -ENOMEM;
+>         inst->is_deleted = 0;
+>         rcu_assign_pointer(inst->ip_set_list, list);
+> -       pr_notice("ip_set: protocol %u\n", IPSET_PROTOCOL);
+> +       pr_info("ip_set: protocol %u\n", IPSET_PROTOCOL);
+>         return 0;
+>  }
