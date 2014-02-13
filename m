@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaBMAAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 19:00:25 -0500
-Received: from mga11.intel.com ([192.55.52.93]:10134 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767AbaBMAAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 19:00:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,835,1384329600"; 
-   d="scan'208";a="480575245"
-Date: Wed, 12 Feb 2014 17:00:00 -0700 (MST)
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-X-X-Sender: rzwisler@scrumpy
-To: Ross Zwisler <ross.zwisler@linux.intel.com>
-cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-ext4@vger.kernel.org, david@fromorbit.com
-Subject: Re: [PATCH v5 19/22] ext4: Add XIP functionality
-In-Reply-To: <alpine.OSX.2.00.1402111536290.55274@scrumpy>
-Message-ID: <alpine.OSX.2.00.1402121654410.60058@scrumpy>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CF1FF3EB.24114%matthew.r.wilcox@intel.com> <alpine.OSX.2.00.1402111536290.55274@scrumpy>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752075AbaBMABR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 19:01:17 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:50730 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaBMABQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 19:01:16 -0500
+Date: Thu, 13 Feb 2014 01:01:15 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Ortwin =?utf-8?B?R2zDvGNr?= <odi@odi.ch>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: xfrm: is pmtu broken with ESP tunneling?
+Message-ID: <20140213000115.GH11150@order.stressinduktion.org>
+Mail-Followup-To: Ortwin =?utf-8?B?R2zDvGNr?= <odi@odi.ch>,
+	linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+References: <52F890D2.2060109@odi.ch> <20140211023258.GC11150@order.stressinduktion.org> <52FA8618.5030509@odi.ch>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52FA8618.5030509@odi.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014, Ross Zwisler wrote:
-> On Wed, 15 Jan 2014, Matthew Wilcox wrote:
-> > From: Ross Zwisler <ross.zwisler@linux.intel.com>
-> > 
-> > This is a port of the XIP functionality found in the current version of
-> > ext2.
-> > 
-> > Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-> > Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-> > [heavily tweaked]
-> > Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+On Tue, Feb 11, 2014 at 09:20:40PM +0100, Ortwin Glück wrote:
+> On 02/11/2014 03:32 AM, Hannes Frederic Sowa wrote:
+> >>net.ipv4.ip_no_pmtu_disc=1.
+> >
+> >This setting will shrink the path mtu to min_pmtu when a frag needed icmp 
+> >is
+> >received.
 > 
-> ...
+> The UDP+ESP encapsulation adds 60 bytes to the original packet size.
 > 
-> > diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> > index c767666..8b73d77 100644
-> > --- a/fs/ext4/inode.c
-> > +++ b/fs/ext4/inode.c
-> > @@ -663,6 +663,18 @@ found:
-> >  			WARN_ON(1);
-> >  		}
-> >  
-> > +		/* this is probably wrong for ext4.  unlike ext2, ext4 supports
-> > +		 * uninitialised extents, so we should probably be hooking
-> > +		 * into the "make it initialised" code instead. */
-> > +		if (IS_XIP(inode)) {
+> ifconfig wla0 shows an mtu of 1500.
 > 
-> With the very first version of this patch the above logic seemed to work
-> correctly, zeroing blocks as we allocated them.  With the current XIP
-> infrastructure based tightly on direct IO this ends up being wrong because in
-> some cases we can call ext4_map_blocks() twice for a given block.  
+> The size of the first big packet on the interface:
+> net.ipv4.ip_no_pmtu_disc=1: packet length is 1300
+> net.ipv4.ip_no_pmtu_disc=0: packet length is 1500
 > 
-> A quick userland test program that creates a new file, truncates it up to 4k
-> and then does a partial block write will end up giving you a file filled with
-> all zeros.  This is because we zero the data before the write, do the write,
-> and then zero again, overwriting the data.  The second call to
-> ext4_map_blocks() happens via ext4_ext_direct_IO =>
-> ext4_convert_unwritten_extents() => ext4_map_blocks().
+> Length is without the ESP wrapper and UDP encapsulation. The packets are so 
+> big that they can't even leave the wireless interface and never show up on 
+> the router. So no ICMP packets are received. PMTU can't work with initial 
+> packets of that size.
 > 
-> We can know in ext4_map_blocks() that we are being called after a write has
-> already completed by looking at the flags.  One solution to get around this
-> double-zeroing would be to change the above test to:
-> 
-> +                 if (IS_XIP(inode) && !(flags & EXT4_GET_BLOCKS_CONVERT)) {
-> 
-> This fixes the tests I've been able to come up with, but I'm not certain it's
-> the correct fix for the long term.  It seems wasteful to zero the blocks we're
-> allocating, just to have the zeros overwritten immediately by a write.  Maybe
-> a cleaner way would be to try and zero the unwritten bits inside of
-> ext4_convert_unwritten_extents(), or somewhere similar?
-> 
-> It's worth noting that I don't think the direct I/O path has this kind of
-> logic because they don't allow partial block writes.  The regular I/O path
-> knows to zero unwritten space based on the BH_New flag, as set via the
-> set_buffer_new() call in ext4_da_map_blocks().  This is a pretty different I/O
-> path, though, so I'm not sure how much we can borrow for the XIP code.
-> 
-> Thoughts on the correct fix?
-> 
-> - Ross
+> dump question: which layer discard these packets? qdisc? why no 
+> notification to the sender?
 
-It looks like Dave Chinner outlined a way to deal with this in response to the
-"[PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4" mail.
+Could you try either dropwatch or perf script net_dropmonitor and flood the
+network with the problematic packets. From the traces we could see where the
+packets get dropped without notification in the kernel.
 
-I'll try and implement things as Dave has described (zero full blocks in the
-case of xip_fault() and mark extents as written, use buffer_new(bh) to zero
-edges for normal I/O) and send out code or questions as I have them.
+> When I increase the mtu of the interface to 2000 with ifconfig, then I 
+> start seeing ICMP fragmentation needed from the next hop, indicating 1500 
+> as the mtu as response to a 1560 byte UDP[ESP] packet.
+> 
+> The next UDP[ESP] packet is shorter: 1360 bytes. It gets hard to see what's 
+> going on after that, but the connection is still not working.
+> 
+> So, instead of somehow losing these packets on the way out of the interface 
+> should the kernel not start with a lower mtu in the first place? Now it 
+> seems it is trying with the maximum of the interface and expecting to scale 
+> down with pmtu - which can ever happen.
+> 
+> >Can you send a ip route get <ip> to the problematic target to see how
+> >far off the calculated value is?
+> 
+> That command doesn't return anything useful. No hint on the mtu here.
+> 
+> BTW, instead of disabling pmtu, setting mtu explicitly also helps:
+> ip route add 10.6.6.0/24 via ${localip} mtu 1300
 
-- Ross
+Strange that the problem disappears if you enable no_pmtu_disc then.
+
+Thanks,
+
+  Hannes
