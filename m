@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaBMWOl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 17:14:41 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:40322 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386AbaBMWOj (ORCPT
+	id S1752341AbaBMWPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 17:15:21 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:33714 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaBMWPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 17:14:39 -0500
-Date: Thu, 13 Feb 2014 14:14:37 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christian Kujau <lists@nerdbynature.de>
-cc: LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com, linux-mm@kvack.org
-Subject: Re: 3.14.0-rc2: WARNING: at mm/slub.c:1007
-In-Reply-To: <alpine.DEB.2.19.4.1402131158590.6233@trent.utfs.org>
-Message-ID: <alpine.DEB.2.02.1402131413070.13899@chino.kir.corp.google.com>
-References: <alpine.DEB.2.19.4.1402131144390.6233@trent.utfs.org> <alpine.DEB.2.19.4.1402131158590.6233@trent.utfs.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 13 Feb 2014 17:15:19 -0500
+Date: Thu, 13 Feb 2014 17:15:15 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>, Tommi Rantala <tt.rantala@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, trinity@vger.kernel.org
+Subject: Re: lockdep: strange %s#5 lock name
+Message-ID: <20140213221515.GL17608@htj.dyndns.org>
+References: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
+ <20140210192846.GF27965@twins.programming.kicks-ass.net>
+ <20140210215224.GB25350@mtj.dyndns.org>
+ <20140211110036.GT9987@twins.programming.kicks-ass.net>
+ <20140211152741.GA24490@htj.dyndns.org>
+ <1392266124.4974.35.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140213212645.GG17608@htj.dyndns.org>
+ <20140213213253.GF27965@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140213213253.GF27965@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014, Christian Kujau wrote:
-
-> > after upgrading from 3.13-rc8 to 3.14.0-rc2 on this PowerPC G4 machine, 
-> > the WARNING below was printed.
+On Thu, Feb 13, 2014 at 10:32:53PM +0100, Peter Zijlstra wrote:
+> On Thu, Feb 13, 2014 at 04:26:45PM -0500, Tejun Heo wrote:
+> > > It seems to me that when the second time alloc_workqueue() is called
+> > > from the same code path, it would have two locks with the same key, but
+> > > not the same &wq->name, which doesn't meet lockdep's assumption.
 > > 
-> > Shortly after, a lockdep warning appeared (possibly related to my 
-> > post to the XFS list yesterday[0]).
+> > Dang...  I reverted the previous patch for now.  Peter, does this
+> > approach sound good to you?
 > 
-> Sigh, only _after_ sending the email, I came across an earlier posting on 
-> lkml: http://marc.info/?l=linux-mm&m=139145788623391
-> 
+> Whatever works I suppose; like Li said; a little ugly but not sure we
+> can do better.
 
-There's a fix for that: http://marc.info/?l=linux-kernel&m=139145999324131
-or alternatively wait for 3.14-rc3 which will already have it.
+Cool, Li, can you please spin it on top of v3.14-rc1 w/ SOB and
+description.
+
+Thanks.
+
+-- 
+tejun
