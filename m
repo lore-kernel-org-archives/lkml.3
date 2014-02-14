@@ -1,117 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaBNUY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:24:29 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44622 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436AbaBNUY1 (ORCPT
+	id S1753648AbaBNUYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:24:54 -0500
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:47242 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753355AbaBNUU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:24:27 -0500
-Date: Fri, 14 Feb 2014 21:24:26 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH RT] arm/unwind: fail on unwind in irq disabled regions
-Message-ID: <20140214202426.GA14019@linutronix.de>
-References: <1390580663-28869-1-git-send-email-bigeasy@linutronix.de>
- <alpine.DEB.2.02.1402132355360.21991@ionos.tec.linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402132355360.21991@ionos.tec.linutronix.de>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Feb 2014 15:20:29 -0500
+Message-Id: <20140214201907.871760752@linux.com>
+Date: Fri, 14 Feb 2014 14:19:18 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 37/48] s390: Handle new __get_cpu_var calls added in 3.14
+References: <20140214201841.826179349@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=s390_new
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner | 2014-02-13 23:57:45 [+0100]:
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
->If we really end up with unwinding then the few cycles to follow the
->stack are not that important anymore. We really want that output.
-
-Here you go.
-
-diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index 2af232d..bbafc67 100644
---- a/arch/arm/kernel/unwind.c
-+++ b/arch/arm/kernel/unwind.c
-@@ -87,7 +87,7 @@ extern const struct unwind_idx __start_unwind_idx[];
- static const struct unwind_idx *__origin_unwind_idx;
- extern const struct unwind_idx __stop_unwind_idx[];
+Index: linux/arch/s390/kernel/perf_cpum_sf.c
+===================================================================
+--- linux.orig/arch/s390/kernel/perf_cpum_sf.c	2014-01-20 16:18:06.634974387 -0600
++++ linux/arch/s390/kernel/perf_cpum_sf.c	2014-02-03 14:20:50.982932405 -0600
+@@ -562,7 +562,7 @@
+ static void setup_pmc_cpu(void *flags)
+ {
+ 	int err;
+-	struct cpu_hw_sf *cpusf = &__get_cpu_var(cpu_hw_sf);
++	struct cpu_hw_sf *cpusf = this_cpu_ptr(&cpu_hw_sf);
  
--static DEFINE_SPINLOCK(unwind_lock);
-+static DEFINE_RAW_SPINLOCK(unwind_lock);
- static LIST_HEAD(unwind_tables);
+ 	err = 0;
+ 	switch (*((int *) flags)) {
+@@ -849,7 +849,7 @@
  
- /* Convert a prel31 symbol to an absolute address */
-@@ -195,12 +195,7 @@ static const struct unwind_idx *unwind_find_idx(unsigned long addr)
- 		/* module unwind tables */
- 		struct unwind_table *table;
+ static void cpumsf_pmu_enable(struct pmu *pmu)
+ {
+-	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
++	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
+ 	struct hw_perf_event *hwc;
+ 	int err;
  
--#ifdef CONFIG_PREEMPT_RT_FULL
--		if (irqs_disabled())
--			goto out;
--#endif
--
--		spin_lock_irqsave(&unwind_lock, flags);
-+		raw_spin_lock_irqsave(&unwind_lock, flags);
- 		list_for_each_entry(table, &unwind_tables, list) {
- 			if (addr >= table->begin_addr &&
- 			    addr < table->end_addr) {
-@@ -212,11 +207,10 @@ static const struct unwind_idx *unwind_find_idx(unsigned long addr)
- 				break;
- 			}
- 		}
--		spin_unlock_irqrestore(&unwind_lock, flags);
-+		raw_spin_unlock_irqrestore(&unwind_lock, flags);
- 	}
+@@ -898,7 +898,7 @@
  
- 	pr_debug("%s: idx = %p\n", __func__, idx);
--out:
- 	return idx;
- }
+ static void cpumsf_pmu_disable(struct pmu *pmu)
+ {
+-	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
++	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
+ 	struct hws_lsctl_request_block inactive;
+ 	struct hws_qsi_info_block si;
+ 	int err;
+@@ -1306,7 +1306,7 @@
+  */
+ static void cpumsf_pmu_start(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
++	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
  
-@@ -351,9 +345,7 @@ int unwind_frame(struct stackframe *frame)
- 
- 	idx = unwind_find_idx(frame->pc);
- 	if (!idx) {
--#ifndef CONFIG_PREEMPT_RT_FULL
- 		pr_warning("unwind: Index not found %08lx\n", frame->pc);
--#endif
- 		return -URC_FAILURE;
- 	}
- 
-@@ -477,9 +469,9 @@ struct unwind_table *unwind_table_add(unsigned long start, unsigned long size,
- 	tab->begin_addr = text_addr;
- 	tab->end_addr = text_addr + text_size;
- 
--	spin_lock_irqsave(&unwind_lock, flags);
-+	raw_spin_lock_irqsave(&unwind_lock, flags);
- 	list_add_tail(&tab->list, &unwind_tables);
--	spin_unlock_irqrestore(&unwind_lock, flags);
-+	raw_spin_unlock_irqrestore(&unwind_lock, flags);
- 
- 	return tab;
- }
-@@ -491,9 +483,9 @@ void unwind_table_del(struct unwind_table *tab)
- 	if (!tab)
+ 	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
  		return;
+@@ -1327,7 +1327,7 @@
+  */
+ static void cpumsf_pmu_stop(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
++	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
  
--	spin_lock_irqsave(&unwind_lock, flags);
-+	raw_spin_lock_irqsave(&unwind_lock, flags);
- 	list_del(&tab->list);
--	spin_unlock_irqrestore(&unwind_lock, flags);
-+	raw_spin_unlock_irqrestore(&unwind_lock, flags);
+ 	if (event->hw.state & PERF_HES_STOPPED)
+ 		return;
+@@ -1346,7 +1346,7 @@
  
- 	kfree(tab);
- }
--- 
-1.9.0.rc3
+ static int cpumsf_pmu_add(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
++	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
+ 	int err;
+ 
+ 	if (cpuhw->flags & PMU_F_IN_USE)
+@@ -1397,7 +1397,7 @@
+ 
+ static void cpumsf_pmu_del(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
++	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
+ 
+ 	perf_pmu_disable(event->pmu);
+ 	cpumsf_pmu_stop(event, PERF_EF_UPDATE);
+@@ -1470,7 +1470,7 @@
+ 	if (!(alert & CPU_MF_INT_SF_MASK))
+ 		return;
+ 	inc_irq_stat(IRQEXT_CMS);
+-	cpuhw = &__get_cpu_var(cpu_hw_sf);
++	cpuhw = this_cpu_ptr(&cpu_hw_sf);
+ 
+ 	/* Measurement alerts are shared and might happen when the PMU
+ 	 * is not reserved.  Ignore these alerts in this case. */
 
->Thanks,
->
->	tglx
-
-Sebastian
