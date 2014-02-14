@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131AbaBNVVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 16:21:06 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38331 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbaBNVVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 16:21:03 -0500
-Date: Fri, 14 Feb 2014 16:21:01 -0500 (EST)
-Message-Id: <20140214.162101.359269415805856434.davem@davemloft.net>
-To: bitbucket@online.de
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] net,bonding: fix bond_options.c direct rwlock.h include
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1392362464.5579.41.camel@marge.simpson.net>
-References: <1392362464.5579.41.camel@marge.simpson.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 14 Feb 2014 13:21:03 -0800 (PST)
+	id S1753173AbaBNVW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 16:22:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:6596 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752583AbaBNVWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 16:22:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,847,1384329600"; 
+   d="scan'208";a="475474898"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-kbuild@vger.kernel.org, mmarek@suse.cz,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 02/19] lto: Disable LTO for hweight functions
+Date: Fri, 14 Feb 2014 22:21:26 +0100
+Message-Id: <1392412903-25733-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1392412903-25733-1-git-send-email-andi@firstfloor.org>
+References: <1392412903-25733-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Galbraith <bitbucket@online.de>
-Date: Fri, 14 Feb 2014 08:21:04 +0100
+From: Andi Kleen <ak@linux.intel.com>
 
-> drivers/net/bonding/bond_options.c includes rwlock.h directly,
-> which is a nono, and which also breaks RT kernel build.
-> 
-> Signed-off-by: Mike Galbraith <bitbucket@online.de>
+x86 calls the hweight library functions with special calling conventions.
+LTO doesn't support compiling individual files with special options.
+Just disable LTO for the file.
 
-Applied, thank you.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ lib/Makefile | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/lib/Makefile b/lib/Makefile
+index 48140e3..2057304 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -46,7 +46,9 @@ obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
+ obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
+ 
+ GCOV_PROFILE_hweight.o := n
+-CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
++CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS)) \
++		   $(DISABLE_LTO)
++
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
+ 
+ obj-$(CONFIG_BTREE) += btree.o
+-- 
+1.8.5.2
+
