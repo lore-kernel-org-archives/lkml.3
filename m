@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaBNQZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 11:25:47 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36929 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751551AbaBNQZn (ORCPT
+	id S1752778AbaBNQ0D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 11:26:03 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:53007 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355AbaBNQZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 11:25:43 -0500
-Date: Fri, 14 Feb 2014 16:24:58 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pavel Machek <pavel@ucw.cz>, Sebastian Reichel <sre@ring0.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        kvalo@qca.qualcomm.com, linville@tuxdriver.com
-Subject: Re: [BISECTED] ssh - Received disconnect from x.x.x.x: 2: Bad packet
- length 3149594624
-Message-ID: <20140214162458.GF21986@mudshark.cambridge.arm.com>
-References: <52FD08D1.3030405@gmail.com>
- <20140213182105.GN13576@mudshark.cambridge.arm.com>
- <52FD1243.9040706@gmail.com>
- <20140213192909.GO13576@mudshark.cambridge.arm.com>
- <52FE407C.3080002@gmail.com>
+	Fri, 14 Feb 2014 11:25:59 -0500
+Date: Fri, 14 Feb 2014 11:25:56 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: Subject: Warning in workqueue.c
+Message-ID: <20140214162556.GF31544@htj.dyndns.org>
+References: <20140207165113.GD3304@htj.dyndns.org>
+ <52F51E10.8050208@linux.vnet.ibm.com>
+ <20140207193604.GA8833@htj.dyndns.org>
+ <52F8F0FB.3080206@linux.vnet.ibm.com>
+ <20140210231742.GK25350@mtj.dyndns.org>
+ <52FB90C6.4010701@linux.vnet.ibm.com>
+ <52FC3C83.8020303@cn.fujitsu.com>
+ <52FD07B2.5080402@linux.vnet.ibm.com>
+ <20140213204102.GC17608@htj.dyndns.org>
+ <20140214160923.GK27965@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52FE407C.3080002@gmail.com>
+In-Reply-To: <20140214160923.GK27965@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 04:12:44PM +0000, Ivaylo Dimitrov wrote:
-> On 13.02.2014 21:29, Will Deacon wrote:
-> >
-> > Can you try hacking crypto/memneq.c so that it doesn't use
-> > CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS please? That would at least point the
-> > finger at net/mac80211/rx.c or similar.
-> >
+Hey, Peter.
+
+On Fri, Feb 14, 2014 at 05:09:23PM +0100, Peter Zijlstra wrote:
+> > Ingo, Peter, Jason is reporting workqueue triggering warning because a
+> > worker is running on the wrong CPU, which is relatively reliably
+> > reproducible with the above workload on s390. 
 > 
-> Well, I am lazy so I hacked net/mac80211/rx.c first:
-
-No problem, thanks for having a go.
-
-> index c24ca0d..6839c77 100644
-> --- a/net/mac80211/rx.c
-> +++ b/net/mac80211/rx.c
-> @@ -1963,7 +1963,7 @@ ieee80211_deliver_skb(struct ieee80211_rx_data *rx)
->                  }
->          }
+> Wasn't that a feature of workqueues? You know we've had arguments about
+> that behaviour -- I'm strongly in favour of flushing and killing workers
+> on unplug, but you let them run on the wrong cpu.
 > 
-> -#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> +//#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
->          if (skb) {
->                  /* 'align' will only take the values 0 or 2 here since all
->                   * frames are required to be aligned to 2-byte boundaries
-> @@ -1987,7 +1987,7 @@ ieee80211_deliver_skb(struct ieee80211_rx_data *rx)
->                          }
->                  }
->          }
-> -#endif
-> +//#endif
+> So strongly in fact, I'd call the current behaviour quite insane and
+> broken :-)
+
+Hey, we now even keep normal kthreads across cpu down/ups. :)
+
+> Yeah, just calling schedule() won't fix placement, you need to actually
+> block and wake-up. But given you've called things like
+> set_cpus_allowed_ptr() and such to set the mask back to 5..
+
+Hmmm... I see.  It's kinda weird that the code has been there for so
+long and this is the first time it's getting reported.
+
+> You can try something like the below which makes it slightly more
+> aggressive about moving tasks about.
 > 
->          if (skb) {
->                  /* deliver to local stack */
+> > Any ideas?
 > 
+> Not really; s390 doesn't have NUMA, so all those changes are out.
 > 
-> and that seems to fix the problem.
+> ---
+>  kernel/sched/core.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> I am not sure whom I should forward the problem.
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index fb9764fbc537..20bd4de44bb3 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4504,7 +4504,8 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+>  
+>  	rq = task_rq_lock(p, &flags);
+>  
+> -	if (cpumask_equal(&p->cpus_allowed, new_mask))
+> +	if (cpumask_equal(&p->cpus_allowed, new_mask) && 
+> +	    cpumask_test_cpu(rq->cpu, &p->cpus_allowed))
+>  		goto out;
+>  
+>  	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
 
-Well, we probably need a bit more to go on, because I doubt that this code
-is to blame. More likely, the issue is in the caller.
-Looking at drivers/net/wireless/ti/wl1251/rx.c:182
+Hmmm... weird, p's rq shouldn't have changed without its cpus_allowed
+busted.  Anyways, let's wait for Jason's test results and see whether
+this is a regression at all.
 
-        /* The actual length doesn't include the target's alignment */
-        skb->len = desc->length  - PLCP_HEADER_LENGTH;
+Thanks.
 
-        fc = (u16 *)skb->data;
-
-        if ((*fc & IEEE80211_FCTL_STYPE) == IEEE80211_STYPE_BEACON)
-                beacon = 1;
-
-        wl1251_rx_status(wl, desc, &status, beacon);
-
-        wl1251_debug(DEBUG_RX, "rx skb 0x%p: %d B %s", skb, skb->len,
-                     beacon ? "beacon" : "");
-
-        memcpy(IEEE80211_SKB_RXCB(skb), &status, sizeof(status));
-        ieee80211_rx_ni(wl->hw, skb);
-
-I wonder whether that first line (with the comment about alignment) is
-assuming some behaviour from the mac80211 layer.
-
-You could try putting back the UNALIGNED_ACCESS in net/mac80211/rx.c and
-commenting out the skb->len = desc->length  - PLCP_HEADER_LENGTH;  line
-above.
-
-Adding the original author (I think) and John Linville, since I'm well out
-of my depth in this code!
-
-Will
+-- 
+tejun
