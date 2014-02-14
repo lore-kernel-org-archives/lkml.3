@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806AbaBNFqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 00:46:24 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50549 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaBNFqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 00:46:22 -0500
+	id S1752055AbaBNFqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 00:46:33 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:37908 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990AbaBNFq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 00:46:27 -0500
 From: Nishanth Menon <nm@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Balaji T K <balajitk@ti.com>,
         Chris Ball <chris@printf.net>
@@ -14,9 +13,9 @@ CC: <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         Felipe Balbi <balbi@ti.com>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2 2/2] ARM: dts: omap3-ldp: fix mmc configuration
-Date: Thu, 13 Feb 2014 23:45:49 -0600
-Message-ID: <1392356749-32091-3-git-send-email-nm@ti.com>
+Subject: [PATCH V2 1/2] mmc: omap_hsmmc: Add support for quirky omap3 hsmmc controller
+Date: Thu, 13 Feb 2014 23:45:48 -0600
+Message-ID: <1392356749-32091-2-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392356749-32091-1-git-send-email-nm@ti.com>
 References: <1392356749-32091-1-git-send-email-nm@ti.com>
@@ -26,67 +25,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MMC1 is the only MMC interface available on the platform. Further,
-since the platform is based on older revision of SoC which is not
-capable of doing multi-block reads, mark it with compatibility for the
-same and add pinmux to ensure that all relevant pins are configured
-for non-MMC boot mode.
+When device is booted using devicetree, platforms impacted by Erratum
+2.1.1.128 is not detected easily in the mmc driver. This erratum
+indicates that the module cannot do multi-block transfers. Platforms
+such as LDP which use OMAP3 ES revision prior to ES3.0 are impacted by
+this.
+
+Provide a new compatible property "ti,omap3-pre-es3-hsmmc" to allow
+driver to determine if driver needs to implement quirks associated
+with the specific module version (primarily because the IP revision
+information is not sufficient for the same).
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
+Changes since v1:
+	- new compatible flag as suggested by Tony which contains
+	  the relevant controller flag to work around the erratum
 
-Changes since V1:
-	- fixed commit message as suggested by Balaji.
-	- update to use new compatible match for the erratum.
+V1: https://patchwork.kernel.org/patch/3514851/
 
-V1: https://patchwork.kernel.org/patch/3514881/
+ .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |    1 +
+ drivers/mmc/host/omap_hsmmc.c                      |   26 +++++++++++++++++---
+ 2 files changed, 23 insertions(+), 4 deletions(-)
 
- arch/arm/boot/dts/omap3-ldp.dts |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
-
-diff --git a/arch/arm/boot/dts/omap3-ldp.dts b/arch/arm/boot/dts/omap3-ldp.dts
-index ddce0d8..0abe986 100644
---- a/arch/arm/boot/dts/omap3-ldp.dts
-+++ b/arch/arm/boot/dts/omap3-ldp.dts
-@@ -174,8 +174,20 @@
+diff --git a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+index 8c8908a..ce80561 100644
+--- a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
++++ b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+@@ -10,6 +10,7 @@ Required properties:
+ - compatible:
+  Should be "ti,omap2-hsmmc", for OMAP2 controllers
+  Should be "ti,omap3-hsmmc", for OMAP3 controllers
++ Should be "ti,omap3-pre-es3-hsmmc" for OMAP3 controllers pre ES3.0
+  Should be "ti,omap4-hsmmc", for OMAP4 controllers
+ - ti,hwmods: Must be "mmc<n>", n is controller instance starting 1
+ 
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 575f9cc..390f421 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -192,6 +192,11 @@ struct omap_hsmmc_host {
+ 	struct	omap_mmc_platform_data	*pdata;
  };
  
- &mmc1 {
++struct omap_mmc_of_data {
++	u32 reg_offset;
++	u8 controller_flags;
++};
++
+ static int omap_hsmmc_card_detect(struct device *dev, int slot)
+ {
+ 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
+@@ -1678,18 +1683,29 @@ static void omap_hsmmc_debugfs(struct mmc_host *mmc)
+ #endif
+ 
+ #ifdef CONFIG_OF
+-static u16 omap4_reg_offset = 0x100;
++static const struct omap_mmc_of_data omap3_pre_es3_mmc_of_data = {
 +	/* See 35xx errata 2.1.1.128 in SPRZ278F */
-+	compatible = "ti,omap3-pre-es3-hsmmc";
- 	vmmc-supply = <&vmmc1>;
- 	bus-width = <4>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mmc1_pins>;
++	.controller_flags = OMAP_HSMMC_BROKEN_MULTIBLOCK_READ,
 +};
 +
-+&mmc2 {
-+	status="disabled";
++static const struct omap_mmc_of_data omap4_mmc_of_data = {
++	.reg_offset = 0x100,
 +};
-+
-+&mmc3 {
-+	status="disabled";
- };
  
- &omap3_pmx_core {
-@@ -209,6 +221,17 @@
- 			0x174 (PIN_OUTPUT | MUX_MODE0)	/* hsusb0_stp.hsusb0_stp */
- 		>;
- 	};
-+
-+	mmc1_pins: pinmux_mmc1_pins {
-+		pinctrl-single,pins = <
-+			OMAP3_CORE1_IOPAD(0x2144, PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc1_clk.mmc1_clk */
-+			OMAP3_CORE1_IOPAD(0x2146, PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc1_cmd.mmc1_cmd */
-+			OMAP3_CORE1_IOPAD(0x2148, PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc1_dat0.mmc1_dat0 */
-+			OMAP3_CORE1_IOPAD(0x214A, PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc1_dat1.mmc1_dat1 */
-+			OMAP3_CORE1_IOPAD(0x214C, PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc1_dat2.mmc1_dat2 */
-+			OMAP3_CORE1_IOPAD(0x214e, PIN_INPUT_PULLUP | MUX_MODE0)	/* mmc1_dat3.mmc1_dat3 */
-+		>;
-+	};
+ static const struct of_device_id omap_mmc_of_match[] = {
+ 	{
+ 		.compatible = "ti,omap2-hsmmc",
+ 	},
+ 	{
++		.compatible = "ti,omap3-pre-es3-hsmmc",
++		.data = &omap3_pre_es3_mmc_of_data,
++	},
++	{
+ 		.compatible = "ti,omap3-hsmmc",
+ 	},
+ 	{
+ 		.compatible = "ti,omap4-hsmmc",
+-		.data = &omap4_reg_offset,
++		.data = &omap4_mmc_of_data,
+ 	},
+ 	{},
  };
+@@ -1759,6 +1775,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 	dma_cap_mask_t mask;
+ 	unsigned tx_req, rx_req;
+ 	struct pinctrl *pinctrl;
++	const struct omap_mmc_of_data *data;
  
- &usb_otg_hs {
+ 	match = of_match_device(of_match_ptr(omap_mmc_of_match), &pdev->dev);
+ 	if (match) {
+@@ -1768,8 +1785,9 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 			return PTR_ERR(pdata);
+ 
+ 		if (match->data) {
+-			const u16 *offsetp = match->data;
+-			pdata->reg_offset = *offsetp;
++			data = match->data;
++			pdata->reg_offset = data->reg_offset;
++			pdata->controller_flags |= data->controller_flags;
+ 		}
+ 	}
+ 
 -- 
 1.7.9.5
 
