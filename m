@@ -1,171 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaBNNoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:44:32 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33430 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044AbaBNNo3 (ORCPT
+	id S1752770AbaBNNpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:45:55 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:51269 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559AbaBNNpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:44:29 -0500
-Date: Fri, 14 Feb 2014 13:43:49 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Marek Belisko <marek@goldelico.com>
-Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hns@goldelico.com" <hns@goldelico.com>
-Subject: Re: [PATCH] power: twl4030_madc_battery: Add device tree support.
-Message-ID: <20140214134349.GB17796@e106331-lin.cambridge.arm.com>
-References: <1392384259-14311-1-git-send-email-marek@goldelico.com>
+	Fri, 14 Feb 2014 08:45:53 -0500
+Message-ID: <52FE1E14.5090400@cogentembedded.com>
+Date: Fri, 14 Feb 2014 17:45:56 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392384259-14311-1-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-sh@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 26/27] ARM: shmobile: lager-reference: Enable CMT0 in
+ device tree
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1392339605-20691-27-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+In-Reply-To: <1392339605-20691-27-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 01:24:19PM +0000, Marek Belisko wrote:
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
-> ---
->  .../bindings/power_supply/twl4030_madc_battery.txt |  15 +++
->  drivers/power/twl4030_madc_battery.c               | 109 +++++++++++++++++++++
->  2 files changed, 124 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
-> new file mode 100644
-> index 0000000..bebc876
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
-> @@ -0,0 +1,15 @@
-> +twl4030_madc_battery
-> +
-> +Required properties:
-> + - compatible : "ti,twl4030-madc-battery"
-> + - capacity : battery capacity in uAh
-> + - charging-calibration-data : list of voltage(mV):level(%) values for charging calibration (see example)
-> + - discharging-calibration-data : list of voltage(mV):level(%) values for discharging calibration (see example)
-> +
-> +Example:
-> +	madc-battery {
-> +		compatible = "ti,twl4030-madc-battery";
-> +		capacity = <1200000>;
-> +		charging-calibration-data = <4200 100 4100 75 4000 55 3900 25 3800 5 3700 2 3600 1 3300 0>;
-> +		discharging-calibration-data = <4200 100 4100 95 4000 70 3800 50 3700 10 3600 5 3300 0>;
+Hello.
 
-Please bracket list entries individually.
+On 14-02-2014 5:00, Laurent Pinchart wrote:
 
-> +	};
-> diff --git a/drivers/power/twl4030_madc_battery.c b/drivers/power/twl4030_madc_battery.c
-> index 7ef445a..2843382 100644
-> --- a/drivers/power/twl4030_madc_battery.c
-> +++ b/drivers/power/twl4030_madc_battery.c
-> @@ -19,6 +19,7 @@
->  #include <linux/sort.h>
->  #include <linux/i2c/twl4030-madc.h>
->  #include <linux/power/twl4030_madc_battery.h>
-> +#include <linux/of.h>
->  
->  struct twl4030_madc_battery {
->  	struct power_supply psy;
-> @@ -188,6 +189,110 @@ static int twl4030_cmp(const void *a, const void *b)
->  		((struct twl4030_madc_bat_calibration *)a)->voltage;
->  }
->  
-> +#ifdef CONFIG_OF
-> +static struct twl4030_madc_bat_platform_data *
-> +	twl4030_madc_dt_probe(struct platform_device *pdev)
-> +{
-> +	struct twl4030_madc_bat_platform_data *pdata;
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct property *prop;
-> +	int ret;
-> +	int sz, i, j = 0;
-> +
-> +	pdata = devm_kzalloc(&pdev->dev,
-> +			sizeof(struct twl4030_madc_bat_platform_data),
-> +			GFP_KERNEL);
-> +	if (!pdata)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	ret = of_property_read_u32(np, "capacity", &pdata->capacity);
-> +	if (ret != 0)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	/* parse and prepare charging data */
-> +	prop = of_find_property(np, "charging-calibration-data", &sz);
-> +	if (!prop)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	if (sz % 2) {
-> +		dev_warn(&pdev->dev, "Count of charging-calibration-data must be even!\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
+> Enable the CMT0 device and configure channel 0 as a clock event
+> provider.
 
-As sz is in bytes this checks that the property is a multiple of 2
-bytes, not that it has an even number of u32 elements.
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Heiko Stübner recently added of_property_count_u32_elems [1,2]. Use that
-instead.
+> diff --git a/arch/arm/mach-shmobile/include/mach/r8a7790.h b/arch/arm/mach-shmobile/include/mach/r8a7790.h
+> index 0b95bab..62b31f3 100644
+> --- a/arch/arm/mach-shmobile/include/mach/r8a7790.h
+> +++ b/arch/arm/mach-shmobile/include/mach/r8a7790.h
+> @@ -29,7 +29,6 @@ enum {
+>   };
+>
+>   void r8a7790_add_standard_devices(void);
+> -void r8a7790_add_dt_devices(void);
+>   void r8a7790_clock_init(void);
+>   void r8a7790_pinmux_init(void);
+>   void r8a7790_pm_init(void);
+> diff --git a/arch/arm/mach-shmobile/setup-r8a7790.c b/arch/arm/mach-shmobile/setup-r8a7790.c
+> index 3e5813f..462c81f 100644
+> --- a/arch/arm/mach-shmobile/setup-r8a7790.c
+> +++ b/arch/arm/mach-shmobile/setup-r8a7790.c
+> @@ -294,11 +294,6 @@ static struct resource cmt0_resources[] = {
+>   					  &cmt##idx##_platform_data,	\
+>   					  sizeof(struct sh_timer_config))
+>
+> -void __init r8a7790_add_dt_devices(void)
+> -{
+> -	r8a7790_register_cmt(0);
+> -}
+> -
+>   void __init r8a7790_add_standard_devices(void)
+>   {
+>   	r8a7790_register_scif(0);
+> @@ -311,7 +306,7 @@ void __init r8a7790_add_standard_devices(void)
+>   	r8a7790_register_scif(7);
+>   	r8a7790_register_scif(8);
+>   	r8a7790_register_scif(9);
+> -	r8a7790_add_dt_devices();
+> +	r8a7790_register_cmt(0);
+>   	r8a7790_register_irqc(0);
+>   	r8a7790_register_thermal();
+>   }
 
-> +
-> +	sz /= sizeof(u32);
-> +
-> +	{
-> +		u32 data[sz];
-> +
-> +		ret = of_property_read_u32_array(np,
-> +				"charging-calibration-data", &data[0], sz);
-> +		if (ret)
-> +			return ERR_PTR(ret);
+    IMHO, these 2 files should be split into a separate patch.
 
-Why not just allocate then try to read, possibly having to free if the
-read fails?
+WBR, Sergei
 
-Otherwise we're trying to put an arbitrarily large value onto the stack
-for no good reason.
-
-> +
-> +		pdata->charging = devm_kzalloc(&pdev->dev,
-> +				sizeof(struct twl4030_madc_bat_calibration) * (sz / 2),
-> +				GFP_KERNEL);
-> +
-> +		for (i = 0; i < sz; i += 2) {
-> +			pdata->charging[j].voltage = data[i];
-> +			pdata->charging[j].level = data[i+1];
-> +			j++;
-
-Why not have (i = 0; i < sz/2; i++), and get rid of j?
-
-> +		}
-> +
-> +		pdata->charging_size = sz / 2;
-> +	}
-> +
-> +	/* parse and prepare discharging data */
-> +	prop = of_find_property(np, "discharging-calibration-data", &sz);
-> +	if (!prop)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	if (sz % 2) {
-> +		dev_warn(&pdev->dev, "Count of discharging-calibration-data must be even!\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-
-This has the same issues as with charging-calibration-data.
-
-Thanks,
-Mark.
-
-[1] http://www.spinics.net/lists/devicetree/msg21358.html
-[2] http://www.spinics.net/lists/devicetree/msg21502.html
