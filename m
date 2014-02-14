@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790AbaBNI57 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:57:59 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:56800 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507AbaBNI55 (ORCPT
+	id S1752210AbaBNJC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 04:02:26 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:59821 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbaBNJCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:57:57 -0500
-Message-ID: <52FDDA77.6070606@huawei.com>
-Date: Fri, 14 Feb 2014 16:57:27 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 14 Feb 2014 04:02:21 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernfs: fix kernfs_node_from_dentry()
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140212175018.GJ28112@sirena.org.uk>
+References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
+	<20140212175018.GJ28112@sirena.org.uk>
+Date: Fri, 14 Feb 2014 09:02:20 +0000
+X-Google-Sender-Auth: r4jLbzJKeyZCKfrz6vJLyJSo_Gc
+Message-ID: <CAOMwXhNd69KMDcBLjfiw16T3bWWki-Dvxbz+zhgNe6OESnVaSw@mail.gmail.com>
+Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
+From: Laszlo Papp <lpapp@kde.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kernfs_node_from_dentry() returns NULL for root dentry,
-because root_dentry->d_op == NULL.
+On Wed, Feb 12, 2014 at 5:50 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Wed, Feb 12, 2014 at 04:02:40AM +0000, Laszlo Papp wrote:
+>
+>> +const struct regmap_config max665x_regmap_config = {
+>> +     .reg_bits = 5,
+>> +};
+>
+> This would normally be static too, and I'd *really* expect to see a
+> val_bits set here.  I'm a bit surprised this works without one.
 
-Due to this bug cgroupstats_build() returns -EINVAL for root cgroup.
+Makes sense, thanks. Shall I also set the .max_register or any other
+mandatory variables in here?
 
-  # mount -t cgroup -o cpuacct /cgroup
-  # Documentation/accounting/getdelays -C /cgroup
-  fatal reply error,  errno -22
+>> +     mutex_init(&max665x->iolock);
+>
+> What is this needed for?
 
-With this fix:
-
-  # Documentation/accounting/getdelays -C /cgroup
-  sleeping 305, blocked 0, running 1, stopped 0, uninterruptible 1
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- fs/kernfs/dir.c             | 2 +-
- fs/kernfs/kernfs-internal.h | 1 +
- fs/kernfs/mount.c           | 2 +-
- 3 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 939684e..300f57b 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -501,7 +501,7 @@ const struct dentry_operations kernfs_dops = {
-  */
- struct kernfs_node *kernfs_node_from_dentry(struct dentry *dentry)
- {
--	if (dentry->d_op == &kernfs_dops)
-+	if (dentry->d_sb->s_op == &kernfs_sops)
- 		return dentry->d_fsdata;
- 	return NULL;
- }
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index a91d7a1..8be13b2 100644
---- a/fs/kernfs/kernfs-internal.h
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -65,6 +65,7 @@ struct kernfs_super_info {
- };
- #define kernfs_info(SB) ((struct kernfs_super_info *)(SB->s_fs_info))
- 
-+extern const struct super_operations kernfs_sops;
- extern struct kmem_cache *kernfs_node_cache;
- 
- /*
-diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-index e5b28b0..405279b 100644
---- a/fs/kernfs/mount.c
-+++ b/fs/kernfs/mount.c
-@@ -39,7 +39,7 @@ static int kernfs_sop_show_options(struct seq_file *sf, struct dentry *dentry)
- 	return 0;
- }
- 
--static const struct super_operations kernfs_sops = {
-+const struct super_operations kernfs_sops = {
- 	.statfs		= simple_statfs,
- 	.drop_inode	= generic_delete_inode,
- 	.evict_inode	= kernfs_evict_inode,
--- 
-1.8.0.2
-
+It was done for consistency with the other mfd drivers (maxim), e.g.
+8997 or 8998 as the closest resemblence in this family. Would you
+prefer me removing this mutex locker?
