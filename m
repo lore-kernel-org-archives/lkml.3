@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaBNOHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 09:07:36 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42120 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436AbaBNOHf (ORCPT
+	id S1752901AbaBNOI3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 09:08:29 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:44747 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436AbaBNOI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 09:07:35 -0500
-Date: Fri, 14 Feb 2014 15:07:29 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: linux-rt-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>
-Subject: Re: [PATCH RT 5/5] allow preemption in slab_alloc_node and slab_free
-Message-ID: <20140214140729.GI28438@linutronix.de>
-References: <20140210154016.GF20017@opentech.at>
+	Fri, 14 Feb 2014 09:08:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140210154016.GF20017@opentech.at>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140214133101.GA17796@e106331-lin.cambridge.arm.com>
+References: <1392384058-14240-1-git-send-email-marek@goldelico.com>
+	<20140214133101.GA17796@e106331-lin.cambridge.arm.com>
+Date: Fri, 14 Feb 2014 15:08:25 +0100
+Message-ID: <CAAfyv36Eo578K1LAdFJdKKjs800Gz2_kfJqvEcdD_U1qRCKY6w@mail.gmail.com>
+Subject: Re: [PATCH] hwmon: twl4030-madc-hwmon: Add device tree support.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "jdelvare@suse.de" <jdelvare@suse.de>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "hns@goldelico.com" <hns@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nicholas Mc Guire | 2014-02-10 16:40:16 [+0100]:
+On Fri, Feb 14, 2014 at 2:31 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Fri, Feb 14, 2014 at 01:20:58PM +0000, Marek Belisko wrote:
+>> Signed-off-by: Marek Belisko <marek@goldelico.com>
+>> ---
+>>  Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt |  9 +++++++++
+>>  drivers/hwmon/twl4030-madc-hwmon.c                             | 10 ++++++++++
+>>  2 files changed, 19 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt b/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
+>> new file mode 100644
+>> index 0000000..e8016d1
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
+>> @@ -0,0 +1,9 @@
+>> +TWL4030 MADC hwmon.
+>> +
+>> +Required properties:
+>> +- compatible: "ti,twl4030-madc-hwmon"
+>> +
+>> +Example:
+>> +madc-hwmon {
+>> +     compatible = "ti,twl4030-madc-hwmon";
+>> +};
+>
+> Huh?
+>
+> What is this a binding for? From a look at the driver in mainline this
+> just calls into functions from the twl4030 madc driver (which doesn't
+> seem to have a binding).
+I post bindings for twl4030-madc [1]. Without probing this driver
+other things will not work (twl4030-madc-battery e.g.).
+Is there better way to handle this situation?
+>
+> This doesn't look like a description of hardware, but rather a hack to
+> get a Linux driver to probe. As far as I can see, no useful information
+> is given by this binding.
+>
+> Thanks,
+> Mark.
 
->__slab_alloc is only called from slub.c:slab_alloc_node
->it runs with local irqs disabled so it can't be pushed off this CPU
->asynchronously, the preempt_disable/enable is thus not needed.
->Aside from that the later this_cpu_cmpxchg_double would catch such a 
->migration event anyay.
+BR,
 
-Not sure what to do with this one. You do write a longer chapter why it
-is okay to drop the preemption disable section and that
-this_cpu_cmpxchg_double() would catch it. And I didn't figure out so
-far why need to keep preemption disabled while looking at c->tid but not
-at c->page.
-However, it seems that Christoph Lameter found it important to add a
-note in the comment that this preemption disable here is important.
-Looking at commit 7cccd80 ("slub: tid must be retrieved from the percpu
-area of the current processor") it seems that Steven Rostedt run into
-trouble and now we have that preemption_disable() here.
+marek
 
-So if you really get better performance and you haven't seen anything
-bad happen then you might want to check with Lameter & Rostedt about
-your patch and getting it merged upstream.
-The commit I mentioned is upstream since v3.11-rc1 and I can see it in
-v3.8-RT tree so it looks serious.
-I fail to see it in v3.2-RT, Steven, isn't this something we want there,
-too?
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-Sebastian
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
