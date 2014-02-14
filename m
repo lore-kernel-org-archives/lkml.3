@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaBNWWj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 17:22:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712AbaBNWWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 17:22:37 -0500
-Message-ID: <1392416555.15608.430.camel@ul30vt.home>
-Subject: Re: [PATCH v2 0/3] Quirk Intel PCH root ports for ACS-like features
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Don Dugger <donald.d.dugger@intel.com>
-Date: Fri, 14 Feb 2014 15:22:35 -0700
-In-Reply-To: <CAErSpo5D55RcaSASGrU8hEcg+BYvGKOQHFjor8k1gSzfZKWy2g@mail.gmail.com>
-References: <20140203212216.8607.68273.stgit@bling.home>
-	 <CAErSpo5D55RcaSASGrU8hEcg+BYvGKOQHFjor8k1gSzfZKWy2g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753161AbaBNWZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 17:25:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45819 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034AbaBNWZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 17:25:57 -0500
+Date: Fri, 14 Feb 2014 14:27:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        B08248@freescale.com, kim.phillips@linaro.org, jan.kiszka@siemens.com,
+        kvm@vger.kernel.org, R65777@freescale.com, B07421@freescale.com,
+        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
+        will.deacon@arm.com, Tejun Heo <tj@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Guenter Roeck <linux@roeck-us.net>, Toshi Kani <toshi.kani@hp.com>,
+        Joe Perches <joe@perches.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Michal Hocko <mhocko@suse.cz>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [RFC PATCH v4 01/10] driver core: export driver_probe_device()
+Message-ID: <20140214222716.GA11838@kroah.com>
+References: <1391880580-471-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1391880580-471-2-git-send-email-a.motakis@virtualopensystems.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391880580-471-2-git-send-email-a.motakis@virtualopensystems.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-14 at 14:43 -0700, Bjorn Helgaas wrote:
-> [+cc Don]
+On Sat, Feb 08, 2014 at 06:29:31PM +0100, Antonios Motakis wrote:
+> From: Kim Phillips <kim.phillips@linaro.org>
 > 
-> On Mon, Feb 03, 2014 at 02:27:27PM -0700, Alex Williamson wrote:
-> > v2:
-> >  - Remove bus #0 bug in filtering matching
-> >  - Add 2/3 introducing PCI_DEV_FLAGS_ACS_ENABLED_QUIRK, this gives
-> >    is better tracking and addresses the theoretical hotplug issue
-> >  - Update 3/3 for PCI_DEV_FLAGS_ACS_ENABLED_QUIRK
-> >  - Add dev_info to print regardless of whether we changes bits
-> >  - Add Intel cc
-> >
-> > As described in 3/3 many Intel root ports lack PCIe ACS capabilities
-> > which results in excessively large IOMMU groups.  Many of these root
-> > ports do provide isolation capabilities, we just need to use device
-> > specific mechanisms to enable and verify.  Long term, I hope we can
-> > round out this list (particularly to include X79 root ports) and
-> > more importantly, encourage proper PCIe ACS support in future
-> > products.  I'm really hoping we can get this in during the 3.14 cycle.
-> > Thanks,
-> >
-> > Alex
-> > ---
-> >
-> > Alex Williamson (3):
-> >       pci: Add device specific PCI ACS enable
-> >       pci: Add pci_dev_flag for ACS enable quirks
-> >       pci/quirks: Enable quirks for PCIe ACS on Intel PCH root ports
+> Needed by drivers, such as the vfio platform driver [1], seeking to
+> bypass bind_store()'s driver_match_device(), and bind to any device
+> via a private sysfs bind file.
 > 
-> I applied these (with Don's ack for 3/3) to pci/virtualization.
+> [1] https://lkml.org/lkml/2013/12/11/522
 > 
-> I tried to figure out how to handle post-merge window patches.  Per
-> Documentation/development-process/2.Process, "[after -rc1], only patches
-> which fix problems should be submitted to the mainline," so one might
-> conclude that a fix for any sort of problem is allowed.  However,
-> Documentation/networking/netdev-FAQ.txt says "No new features get mainlined
-> after this [-rc1] -- only fixes to the rc1 content are expected," which is
-> how I've been operating.
-> 
-> In any case, these patches look more like new functionality (enabling a
-> non-standard ACS feature) than a bug fix to me, so my preference is to
-> merge them during the v3.15 merge window.
-> 
-> I understand the desire for v3.14, namely, "lots of Intel devices don't
-> support ACS, and that makes it hard for users to expose devices to
-> userspace with fine granularity, and waiting for v3.15 will mean another
-> two months."  But this problem is really of Intel's own making: if they'd
-> used standard ACS, or if they'd documented their non-standard mechanism,
-> this wouldn't be an issue.
+> note: the EXPORT_SYMBOL is needed because vfio-platform can be built
+> as a module.
 
-I appreciate you taking the time to consider it for 3.14.  I'll look
-forward to it appearing in linux-next for 3.15.  Thanks for review and
-applying,
+No code outside of drivers/base/ should be calling this function, you
+are doing something wrong in your bus if you want to do this, please fix
+your bus code.
 
-Alex
+sorry, I can't accept this at all.
 
+greg k-h
