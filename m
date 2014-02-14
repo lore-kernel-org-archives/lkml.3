@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaBNJGP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 04:06:15 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:39217 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487AbaBNJGK (ORCPT
+	id S1752234AbaBNJKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 04:10:24 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:54921 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668AbaBNJKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 04:06:10 -0500
-Date: Fri, 14 Feb 2014 10:06:01 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: stefan.sorensen@spectralink.com, grant.likely@linaro.org,
-        robh+dt@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v3 0/3] dp83640: Get pin and master/slave configuration
- from DT
-Message-ID: <20140214090601.GA3906@netboy>
-References: <1392302129-24947-1-git-send-email-stefan.sorensen@spectralink.com>
- <20140213.173957.2126489785330496380.davem@davemloft.net>
+	Fri, 14 Feb 2014 04:10:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Jisheng Zhang <jszhang@marvell.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: use {readl|writel}_relaxed instead of readl/writel in i2c-designware-core ?
+Date: Fri, 14 Feb 2014 10:09:44 +0100
+Message-ID: <8705989.qzo882Ldx0@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140214155438.4f749a79@xhacker>
+References: <20140214155438.4f749a79@xhacker>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140213.173957.2126489785330496380.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:I2bb06ubJDvu2T/bldGeOkYWFu428VleKhpCEZ65tTq
+ 0yxyYqGB3UG/lHqh5WVsSEuzOCNBukml/cKpylfpwDTJNDQfon
+ zY4IEsgsquLDWvBcpem2kL/A38B30ko+KWx+7JKJOPNSpbTkzk
+ m1Lop/F7l0byX9kJekE2EzKjzd7ebXSXoU6oHZLSyGYzExGOAt
+ qRAYLXR/b2/DPC8ikfPYuC+VTlrtSzcpsDJBkVGszDqvhslxw6
+ 2kloFBseoN24QJCe2ngAqW6e+PTw8R3etN5hhtK9l7s/7lLuHC
+ Ho0syeD56cDm7b9SptvHYhlD8phMMUCV7KtTFYAIWoxvif+jj/
+ mMVMuqVOxs7wbz1UXFFA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 05:39:57PM -0500, David Miller wrote:
+On Friday 14 February 2014 15:54:38 Jisheng Zhang wrote:
+> Hi all,
+> 
+> The writel/readl is too expensive especially on Cortex A9 w/ outer L2 cache. This
+> introduce i2c read/write error on Marvell Berlin SoCs when there are L2 cache
+> maintenance operations at the same time.
+> 
+> In our internal berlin bsp, we just replaced readl/writel with the relaxed
+> version. But AFAIK, the "relaxed" version doesn't exist on all architectures. How
+> to handle this issue? 
 
-> You'll have to code this in a way such that people who currently specify
-> this parameter keep working.
+In case of i2c-designware, this is safe because that driver does not perform
+DMA. In other drivers, you may have to be more careful, to ensure that all MMIO
+is serialized with DMA operations performed by the driver.
 
-So, do module parameters count as user land ABI?
+> Any suggestions are appreciated.
 
-[ In any case, for this module, there must be a way to retain the
-  parameters and still offer DT, and letting DT have precedence. ]
+I would definitely welcome a patch that adds a default  _relaxed implementation
+to include/linux/io.h, like this:
 
-People want to be able to configure the auxiliary functions on the
-pins of their PTP devices. My preference for supporting this is:
+#ifndef readb_relaxed
+#define readb_relaxed(p) readb(p)
+#endif
 
-1. additional ioctl on the PTP character device
-2. ethtool ioctl
-3. DT and/or ACPI
+and then adds "#define readb_relaxed(p) readb_relaxed(p)" etc. to all
+architectures that have a non-macro definition for readb.
 
-The first option seems best because that is how you activate the
-auxiliary functions. I am working on something in this direction.
+Alternatively, we could have a CONFIG_ARCH_MMIO_RELAXED configuration
+symbol that gets selected by any architecture that provides the _relaxed
+accessors, and get linux/io.h to define all of them for the other
+architectures.
 
-Can't we just drop the DT idea altogther?
-
-> If you don't like it, be angry at whoever added this module parameter
-> in the first place, not me.  Module parameters are 99 times out of 100
-> not the right way to configure something, really.
-
-Yeah, I am the one, be angry with me.
-
-Sorry,
-Richard
+	Arnd
