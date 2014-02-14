@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaBNANU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 19:13:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37737 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaBNANS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 19:13:18 -0500
-Date: Thu, 13 Feb 2014 16:14:36 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
- device probe
-Message-ID: <20140214001436.GA16287@kroah.com>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
- <1390208555-27770-3-git-send-email-tushar.behera@linaro.org>
- <20140120100415.GX15937@n2100.arm.linux.org.uk>
- <20140213181216.GB24155@kroah.com>
- <20140213181559.GB30257@n2100.arm.linux.org.uk>
- <20140213182701.GA32578@kroah.com>
- <20140213184249.GC30257@n2100.arm.linux.org.uk>
- <20140213232606.GA27372@kroah.com>
- <20140214000717.GG30257@n2100.arm.linux.org.uk>
+	id S1752065AbaBNAOv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 19:14:51 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43664 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089AbaBNAOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 19:14:50 -0500
+Date: Thu, 13 Feb 2014 16:14:38 -0800
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+Message-ID: <20140214001438.GB1651@linux.vnet.ibm.com>
+References: <52F4B8A4.70405@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402071239301.4212@chino.kir.corp.google.com>
+ <52F88C16.70204@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
+ <52F8C556.6090006@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
+ <52FC6F2A.30905@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
+ <52FC98A6.1000701@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140214000717.GG30257@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
+X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021400-7182-0000-0000-000009D56AC1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 12:07:17AM +0000, Russell King - ARM Linux wrote:
-> On Thu, Feb 13, 2014 at 03:26:06PM -0800, Greg KH wrote:
-> > On Thu, Feb 13, 2014 at 06:42:49PM +0000, Russell King - ARM Linux wrote:
-> > > We went through this before, and I stated the paths, and no one disagreed
-> > > with that.
-> > > 
-> > > It /is/ racy.
+On 13.02.2014 [14:41:04 -0800], David Rientjes wrote:
+> On Thu, 13 Feb 2014, Raghavendra K T wrote:
+> 
+> > Thanks David, unfortunately even after applying that patch, I do not see
+> > the improvement.
 > > 
-> > Ok, I just went and looked at the uart driver register path, and I don't
-> > see the race (note, if there is one, it's there today, regardless of
-> > this patch).
+> > Interestingly numa_mem_id() seem to still return the value of a
+> > memoryless node.
+> > May be  per cpu _numa_mem_ values are not set properly. Need to dig out ....
+> > 
 > 
-> The race isn't the uart code, it's the driver model.
+> I believe ppc will be relying on __build_all_zonelists() to set 
+> numa_mem_id() to be the proper node, and that relies on the ordering of 
+> the zonelist built for the memoryless node.  It would be very strange if 
+> local_memory_node() is returning a memoryless node because it is the first 
+> zone for node_zonelist(GFP_KERNEL) (why would a memoryless node be on the 
+> zonelist at all?).
 > 
-> Consider what happens when this happens:
+> I think the real problem is that build_all_zonelists() is only called at 
+> init when the boot cpu is online so it's only setting numa_mem_id() 
+> properly for the boot cpu.  Does it return a node with memory if you 
+> toggle /proc/sys/vm/numa_zonelist_order?  Do
 > 
-> * Two pl011 devices get registered at the same time by two different
->   threads.
+> 	echo node > /proc/sys/vm/numa_zonelist_order
+> 	echo zone > /proc/sys/vm/numa_zonelist_order
+> 	echo default > /proc/sys/vm/numa_zonelist_order
+> 
+> and check if it returns the proper value at either point.  This will force 
+> build_all_zonelists() and numa_mem_id() to point to the proper node since 
+> all cpus are now online.
+> 
+> So the prerequisite for CONFIG_HAVE_MEMORYLESS_NODES is that there is an 
+> arch-specific set_numa_mem() that makes this mapping correct like ia64 
+> does.  If that's the case, then it's (1) completely undocumented and (2) 
+> Nishanth's patch is incomplete because anything that adds 
+> CONFIG_HAVE_MEMORYLESS_NODES needs to do the proper set_numa_mem() for it 
+> to be any different than numa_node_id().
 
-How?  What two different busses will see this same device?  The amba bus
-code should prevent that from happening, right?  If not, there's bigger
-problems in that bus code :)
+I'm working on this latter bit now. I tried to mirror ia64, but it looks
+like they have CONFIG_USER_PERCPU_NUMA_NODE_ID, which powerpc doesn't.
+It seems like CONFIG_USER_PERCPU_NUMA_NODE_ID and
+CONFIG_HAVE_MEMORYLESS_NODES should be tied together in Kconfig?
 
-That's where this problem should be fixed, if there is one, otherwise
-this same issue would be there for any type of driver that calles into
-the uart core, right?
+I'll keep working, but would appreciate any further insight.
 
-> * Both devices have a lock taken on the _device_ itself before matching
->   against the driver.
-> 
-> * Both devices get matched to the same driver.
-> 
-> * Both devices are passed into the driver's probe function.
-> 
-> * Both check uart_reg.state, both call uart_register_driver() on that
->   at the same time, which results in two allocations inside
->   uart_register_driver(), one gets overwritten...
-> 
-> So, the /only/ thing which stops this happening is that the devices
-> are generally available before the driver is registered, and driver
-> registration results in devices being probed serially.  Moreover, both
-> attempt to call tty_register_driver()... one succeeds, the other fails.
-> 
-> However, what about the userspace bind/unbind methods.  Yes, userspace
-> can ask the driver core to unbind devices from a driver or bind - and
-> again, there's no per-driver locking here.  So, if you can trigger two
-> concurrent binds from userspace, you hit the same race as above.
-> 
-> So, if you want to accept these patches, go ahead, introduce races, but
-> personally I'd recommend plugging these races.
+-Nish
 
-The only way to solve this would be to do it in the bus, I don't see
-anything here that makes it any "racier" than it currently is.
-
-thanks,
-
-greg k-h
