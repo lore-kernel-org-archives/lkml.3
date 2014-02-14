@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaBNBCr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:02:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11755 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753156AbaBNBCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 20:02:46 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mtosatti@redhat.com, mgorman@suse.de, aarcange@redhat.com,
-        andi@firstfloor.org, riel@redhat.com, davidlohr@hp.com,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        rientjes@google.com
-Subject: [PATCH 2/4] memblock: add memblock_virt_alloc_nid_nopanic()
-Date: Thu, 13 Feb 2014 20:02:06 -0500
-Message-Id: <1392339728-13487-3-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
-References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
+	id S1752948AbaBNBAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 20:00:18 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37462 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026AbaBNA7P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 19:59:15 -0500
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+To: linux-sh@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 19/27] ARM: shmobile: r8a7740: Switch to new style CMT device
+Date: Fri, 14 Feb 2014 01:59:57 +0100
+Message-Id: <1392339605-20691-20-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luiz capitulino <lcapitulino@redhat.com>
+The CMT (Compare Match Timer) driver implements a new style of platform
+data that handles the timer as a single device with multiple channel.
+Switch from the old-style platform data to the new-style platform data.
 
-This function tries to allocate memory from the specified node only (vs.
-falling back to other nodes).
-
-This is going to be used by HugeTLB boot-time allocation code in next
-commits.
-
-Signed-off-by: Luiz capitulino <lcapitulino@redhat.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- include/linux/bootmem.h |  4 ++++
- mm/memblock.c           | 30 ++++++++++++++++++++++++++++++
- 2 files changed, 34 insertions(+)
+ arch/arm/mach-shmobile/clock-r8a7740.c |  2 +-
+ arch/arm/mach-shmobile/setup-r8a7740.c | 45 ++++++++++++++++------------------
+ 2 files changed, 22 insertions(+), 25 deletions(-)
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index db51fe4..6961b11 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -153,6 +153,10 @@ extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
- void *memblock_virt_alloc_try_nid_nopanic(phys_addr_t size,
- 		phys_addr_t align, phys_addr_t min_addr,
- 		phys_addr_t max_addr, int nid);
-+void * __init memblock_virt_alloc_nid_nopanic(
-+				phys_addr_t size, phys_addr_t align,
-+				phys_addr_t min_addr, phys_addr_t max_addr,
-+				int nid);
- void *memblock_virt_alloc_try_nid(phys_addr_t size, phys_addr_t align,
- 		phys_addr_t min_addr, phys_addr_t max_addr, int nid);
- void __memblock_free_early(phys_addr_t base, phys_addr_t size);
-diff --git a/mm/memblock.c b/mm/memblock.c
-index f3821ef..2a5d72e 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -1157,6 +1157,36 @@ void * __init memblock_virt_alloc_try_nid_nopanic(
- }
+diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
+index dd989f9..50d3073 100644
+--- a/arch/arm/mach-shmobile/clock-r8a7740.c
++++ b/arch/arm/mach-shmobile/clock-r8a7740.c
+@@ -583,7 +583,7 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("sh-sci.6",		&mstp_clks[MSTP230]),
+ 	CLKDEV_DEV_ID("e6cc0000.sci",		&mstp_clks[MSTP230]),
  
- /**
-+ * memblock_virt_alloc_nid_nopanic - allocate boot memory block from
-+ * specified node
-+ * @size: size of memory block to be allocated in bytes
-+ * @align: alignment of the region and block's size
-+ * @min_addr: the lower bound of the memory region from where the allocation
-+ *	  is preferred (phys address)
-+ * @max_addr: the upper bound of the memory region from where the allocation
-+ *	      is preferred (phys address), or %BOOTMEM_ALLOC_ACCESSIBLE to
-+ *	      allocate only from memory limited by memblock.current_limit value
-+ * @nid: nid of the free area to find, %NUMA_NO_NODE for any node
-+ *
-+ * This function tries to allocate memory from @nid only. It @nid doesn't
-+ * have enough memory, this function returns failure.
-+ *
-+ * RETURNS:
-+ * Virtual address of allocated memory block on success, NULL on failure.
-+ */
-+void * __init memblock_virt_alloc_nid_nopanic(
-+				phys_addr_t size, phys_addr_t align,
-+				phys_addr_t min_addr, phys_addr_t max_addr,
-+				int nid)
-+{
-+	memblock_dbg("%s: %llu bytes align=0x%llx nid=%d from=0x%llx max_addr=0x%llx %pF\n",
-+		     __func__, (u64)size, (u64)align, nid, (u64)min_addr,
-+		     (u64)max_addr, (void *)_RET_IP_);
-+	return memblock_virt_alloc_internal(size, align, min_addr,
-+					     max_addr, nid, __GFP_THISNODE);
-+}
+-	CLKDEV_DEV_ID("sh_cmt.10",		&mstp_clks[MSTP329]),
++	CLKDEV_DEV_ID("sh-cmt-48.1",		&mstp_clks[MSTP329]),
+ 	CLKDEV_DEV_ID("sh_fsi2",		&mstp_clks[MSTP328]),
+ 	CLKDEV_DEV_ID("fe1f0000.sound",		&mstp_clks[MSTP328]),
+ 	CLKDEV_DEV_ID("i2c-sh_mobile.1",	&mstp_clks[MSTP323]),
+diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
+index 8f3c681..f88856e 100644
+--- a/arch/arm/mach-shmobile/setup-r8a7740.c
++++ b/arch/arm/mach-shmobile/setup-r8a7740.c
+@@ -237,35 +237,32 @@ R8A7740_SCIF(PORT_SCIFA, 7, 0xe6cd0000, gic_spi(107));
+ R8A7740_SCIF(PORT_SCIFB, 8, 0xe6c30000, gic_spi(108));
+ 
+ /* CMT */
+-static struct sh_timer_config cmt10_platform_data = {
+-	.name = "CMT10",
+-	.channel_offset = 0x10,
+-	.timer_bit = 0,
+-	.clockevent_rating = 125,
+-	.clocksource_rating = 125,
++static struct sh_timer_channel_config cmt1_channels[] = {
++	{
++		.index = 0,
++		.clockevent_rating = 125,
++		.clocksource_rating = 125,
++	},
+ };
+ 
+-static struct resource cmt10_resources[] = {
+-	[0] = {
+-		.name	= "CMT10",
+-		.start	= 0xe6138010,
+-		.end	= 0xe613801b,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[1] = {
+-		.start	= gic_spi(58),
+-		.flags	= IORESOURCE_IRQ,
+-	},
++static struct sh_timer_config cmt1_platform_data = {
++	.channels = cmt1_channels,
++	.num_channels = ARRAY_SIZE(cmt1_channels),
+ };
+ 
+-static struct platform_device cmt10_device = {
+-	.name		= "sh_cmt",
+-	.id		= 10,
++static struct resource cmt1_resources[] = {
++	DEFINE_RES_MEM(0xe6138000, 0x170),
++	DEFINE_RES_IRQ(gic_spi(58)),
++};
 +
-+/**
-  * memblock_virt_alloc_try_nid - allocate boot memory block with panicking
-  * @size: size of memory block to be allocated in bytes
-  * @align: alignment of the region and block's size
++static struct platform_device cmt1_device = {
++	.name		= "sh-cmt-48",
++	.id		= 1,
+ 	.dev = {
+-		.platform_data	= &cmt10_platform_data,
++		.platform_data	= &cmt1_platform_data,
+ 	},
+-	.resource	= cmt10_resources,
+-	.num_resources	= ARRAY_SIZE(cmt10_resources),
++	.resource	= cmt1_resources,
++	.num_resources	= ARRAY_SIZE(cmt1_resources),
+ };
+ 
+ /* TMU */
+@@ -400,7 +397,7 @@ static struct platform_device *r8a7740_devices_dt[] __initdata = {
+ 	&scif6_device,
+ 	&scif7_device,
+ 	&scif8_device,
+-	&cmt10_device,
++	&cmt1_device,
+ };
+ 
+ static struct platform_device *r8a7740_early_devices[] __initdata = {
 -- 
-1.8.1.4
+1.8.3.2
 
