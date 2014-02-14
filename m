@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaBNTQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 14:16:52 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:59920 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102AbaBNTQu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 14:16:50 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrew Vagin <avagin@gmail.com>, Aditya Kali <adityakali@google.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, criu@openvz.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-References: <1392387209-330-1-git-send-email-avagin@openvz.org>
-	<1392387209-330-2-git-send-email-avagin@openvz.org>
-	<874n41znl5.fsf@xmission.com> <20140214174314.GA5518@gmail.com>
-	<20140214180129.GK13358@moon>
-Date: Fri, 14 Feb 2014 11:16:41 -0800
-In-Reply-To: <20140214180129.GK13358@moon> (Cyrill Gorcunov's message of "Fri,
-	14 Feb 2014 22:01:29 +0400")
-Message-ID: <8761ohqzc6.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+ASTaQGDzWEfoyDTgZB01PnffRhbgKGPs=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2515]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;Cyrill Gorcunov <gorcunov@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change boundaries of data, brk and stack
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1752661AbaBNTTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 14:19:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838AbaBNTTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 14:19:51 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulmck@linux.vnet.ibm.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140214095011.GG27965@twins.programming.kicks-ass.net>
+References: <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+	 <20140207165028.GO4250@linux.vnet.ibm.com>
+	 <20140207165548.GR5976@mudshark.cambridge.arm.com>
+	 <20140207180216.GP4250@linux.vnet.ibm.com>
+	 <1391992071.18779.99.camel@triegel.csb>
+	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	 <20140211155941.GU4250@linux.vnet.ibm.com>
+	 <1392185194.18779.2239.camel@triegel.csb>
+	 <20140212091907.GA3545@laptop.programming.kicks-ass.net>
+	 <1392354475.18779.3849.camel@triegel.csb>
+	 <20140214095011.GG27965@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Feb 2014 11:19:13 -0800
+Message-ID: <1392405553.18779.4373.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov <gorcunov@gmail.com> writes:
+On Fri, 2014-02-14 at 10:50 +0100, Peter Zijlstra wrote:
+> On Thu, Feb 13, 2014 at 09:07:55PM -0800, Torvald Riegel wrote:
+> > That depends on what your goal is.
 
-> On Fri, Feb 14, 2014 at 09:43:14PM +0400, Andrew Vagin wrote:
->> > My brain hurts just looking at this patch and how you are justifying it.
->> > 
->> > For the resources you are mucking with below all you have to do is to
->> > verify that you are below the appropriate rlimit at all times and no
->> > CAP_SYS_RESOURCE check is needed.  You only need CAP_SYS_RESOURCE
->> > to exceed your per process limits.
->> > 
->> > All you have to do is to fix the current code to properly enforce the
->> > limits.
->> 
->> I'm afraid what you are suggesting doesn't work.
->> 
->> The first reason is that we can not change both boundaries in one call.
->> But when we are restoring these attributes, we may need to move their
->> too far.
->
-> When this code was introduced, there were no user-namespace implementation,
-> if I remember correctly, so CAP_SYS_RESOURCE was enough barrier point
-> to prevent modifying this values by anyone. Now user-ns brings a limit --
-> we need somehow to provide a way to modify these mm fields having no
-> CAP_SYS_RESOURCE set. "Verifying rlimit" not an option here because
-> we're modifying members one by one (looking back I think this was not
-> a good idea to modify the fields in this manner).
->
-> Maybe we could improve this api and provide argument as a pointer
-> to a structure, which would have all the fields we're going to
-> modify, which in turn would allow us to verify that all new values
-> are sane and fit rlimits, then we could (probably) deprecate old
-> api if noone except c/r camp is using it (I actually can't imagine
-> who else might need this api). Then CAP_SYS_RESOURCE requirement
-> could be ripped off. Hm? (sure touching api is always "no-no"
-> case, but maybe...)
+First, I don't know why you quoted that, but without the context,
+quoting it doesn't make sense.  Let me repeat the point.  The standard
+is the rule set for the compiler.  Period.  The compiler does not just
+serve the semantics that you might have in your head.  It does have to
+do something meaningful for all of its users.  Thus, the goal for the
+compiler is to properly compile programs in the language as specified.
 
-Hmm.  Let me rewind this a little bit.
+If there is a deficiency in the standard (bug or missing feature) -- and
+thus the specification, we need to have a patch for the standard that
+fixes this deficiency.  If you think that this is the case, that's where
+you fix it.
 
-I want to be very stupid and ask the following.
+If your goal is to do wishful thinking, imagine some kind of semantics
+in your head, and then assume that magically, implementations will do
+just that, then that's bound to fail.
 
-Why can't you have the process of interest do:
-	ptrace(PTRACE_ATTACHME);
-	execve(executable, args, ...);
-        
-        /* Have the ptracer inject the recovery/fixup code */
-	/* Fix up the mostly correct process to look like it has been
-         * executing for a while.
-         */
+> A compiler that we don't need to fight in order to generate sane code
+> would be nice. But as Linus said; we can continue to ignore you lot and
+> go on as we've done.
 
-That should work, set all of the interesting fields, and works as
-non-root today.  My gut feel says do that and we can just
-deprecate/remove prctl_set_mm.
+I don't see why it's so hard to understand that you need to specify
+semantics, and the place (or at least the base) for that is the
+standard.  Aren't you guys the ones replying "send a patch"? :)
 
-I am hoping we can move this conversation what makes sense from oh ick
-checkpoint/restort does not work with user namespaces.
+This isn't any different.  If you're uncomfortable working with the
+standard, then say so, and reach out to people that aren't.
 
-Eric
+You can surely ignore the specification of the language(s) that you are
+depending on.  But that won't help you.  If you want a change, get
+involved.  (Oh, and claiming that the other side doesn't get it doesn't
+count as getting involved.)
+
+There's no fight between people here.  It's just a technical problem
+that we have to solve in the right way.
+
