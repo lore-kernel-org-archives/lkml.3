@@ -1,41 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaBOKKD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 05:10:03 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60665 "EHLO
+	id S1753467AbaBOKKM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 05:10:12 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60686 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaBOKJ6 (ORCPT
+	with ESMTP id S1753413AbaBOKKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 05:09:58 -0500
-Date: Fri, 14 Feb 2014 21:05:02 +0000
+	Sat, 15 Feb 2014 05:10:07 -0500
+Date: Fri, 14 Feb 2014 21:11:57 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Tomasz Figa <t.figa@samsung.com>
-Message-ID: <20140214210502.GX4451@sirena.org.uk>
-References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
- <1392282847-25444-12-git-send-email-k.kozlowski@samsung.com>
- <CAKew6eWcwVm1EAUAdFu48y_O5puu+eGvGW3k6923MdXfMa3UAw@mail.gmail.com>
- <1392383156.12506.20.camel@AMDC1943>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140214211157.GD4451@sirena.org.uk>
+References: <1392378602-32302-1-git-send-email-sachin.kamat@linaro.org>
+ <1392378602-32302-6-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/Kwy1es1GwkEJhNg"
+	protocol="application/pgp-signature"; boundary="DvpQYQy10PodzGf7"
 Content-Disposition: inline
-In-Reply-To: <1392383156.12506.20.camel@AMDC1943>
+In-Reply-To: <1392378602-32302-6-git-send-email-sachin.kamat@linaro.org>
 X-Cookie: Your lucky color has faded.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 175.45.49.105
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 11/14] regulator: s2mps11: Add opmode for S2MPS14
- regulators
+Subject: Re: [PATCH 06/16] regulator: max8997: Use of_get_child_by_name
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,52 +31,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---/Kwy1es1GwkEJhNg
+--DvpQYQy10PodzGf7
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Feb 14, 2014 at 02:05:56PM +0100, Krzysztof Kozlowski wrote:
-> On Thu, 2014-02-13 at 17:46 +0530, Yadwinder Singh Brar wrote:
+On Fri, Feb 14, 2014 at 05:19:52PM +0530, Sachin Kamat wrote:
+> of_find_node_by_name walks the allnodes list, and can thus walk
+> outside of the parent node. Use of_get_child_by_name instead.
 
->  - low-power mode;
->  - low-power mode controlled by PWREN;
-> Although not all are present for each regulator.
+Applied, thanks.
 
-What exactly is low power mode and how does it interact with the enable?
-The name suggests it's a more efficient mode for use with low current
-drain, is that right?
-
-> A generic solution for operating mode of regulators (not only s2mps11
-> and s5m8767) could cover all of these above or just a subset, for
-> example regulator bindings could look like:
->  - regulator-mode-suspend; /* PWR controls: on/off or low-power mode */
->  - regulator-mode-low-power; /* Low power mode */
-
-Those properties have awfully generic names and part of what I was
-wondering above is if the low power mode maps onto the idle or standby
-modes that the API defines?  We don't cover those in the bindings yet
-since they are unfortunately fuzzy but perhaps we need to do so.
-
---/Kwy1es1GwkEJhNg
+--DvpQYQy10PodzGf7
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS/oT7AAoJELSic+t+oim99lcP/2kFSZ61Z4yz77nEn7NV5oSy
-GngIymNi8N76RIDELr+jN0U4a0ijjgSx+sZqiap1B0IoKpGl6lTs2fOKeFMzPUBY
-HAEQF3pPPz70O7AQ9uI4YkuDBXh3vhhaQV+3M/ZXr39EqWySjrjVW21M/Et87FDh
-tQ6VbbBmXq7N0DdXI4FhYJjtdsa6WgWhbEyVK0GDxKKl7lGyayZ+UJ9ntV4u+z30
-t2EztL2xT9GtPaxIAXs//Tc6ltkxlVZR13G8OYyTUVDc7YaDljbuGJHFUdt6tn/1
-TpFxkpqqPZ/FO7uoOpUTrzj6BAxejl44HPmDPBtPjHYdfXzy9XUUEAGBCG2wa1qX
-sQzKPYk5GVVaAi0T2YAWGDqmCEU3DjuiUAPmmI67RIMTxrxyxJJviW+8kuvWrP9o
-NYP0XbRJfrhc1MoG+/TeLu3kI4cZ/aMvhS/j7xmLXS7rt4WSSN0b0qURJEB9E5Gi
-TZq1ykVwPTGiAy57Eu4jbvW8kDPEUHRNqJCb0dOjVJp8AP0+NTxhOCOPiXruVDUE
-K19AB68UVj2CHnPgwYRmARwJsZpjBch7ykEkk6QgbgXdOhmWZ1PzpYrSCIzo5Chb
-Z9KG2UnaRCXaq5+ImEK9VwpCnElUsOlQJWfSpq0jpo6rZvpeos6LdtMzmC+VVG/Q
-p0d8Zw2DX92wSQJxj04v
-=Cd9B
+iQIcBAEBAgAGBQJS/oaaAAoJELSic+t+oim99egP/iMQX7X5P0r3c0SFXJd/FzSE
+J59BLb5EKBEYyjuhiGLH+vYD2pf9Kp7c0WYfOkzefDz+APkPS1Igmt8wIkint8m1
+zn3CQnF7GaU3NxFa+9pd6gAUBUOlVCw6i0u40dzB8areUNvGW03rMfjbt2JtUyav
+uyNVSdDeTy1NrX+eZLLttGa2btTorBUM0z8OZYt1SH+NHd3NDZWcJ+ZjG8MUhICD
+HrxCUabt8qDCDhZhUyld9wPSaWECjCur6Z46jBQOV1BDqqOPkZScto1hM59waAHC
+MKjKhN//pWdn0txT2UYZLsbrXIZqiVU9WQ2yHiPC7rMp4kKigOQ2+ClOzTY60VjE
+fWVLwLn5ErSeyhLXaqx6Xk/sVIIvWNPJ+ymky11OcGA0cTN3WKQYlq8H3FdxpyZD
+RbLSPGOH4ZiwzCStDYnU8z1o3mtdBVy4qpUhSJFDxys321h24MGnUrZuDRHbtvFq
+beRIdQ4zfgU/mash479nI/x+DJZHZBok/yPo8+ySRa1u/Rac/KIUB8/z+JzOdsKf
+5DO6HPK2E15IQDVCtu6uubjPWhS7gc2M8d5/txgRdd0X6sXLKN+1imvNb+bMBEAx
+AIoMQTfab/XgddaHtn+UAM5i0IDiXqCNbakFCKjXEfULR+xHnn14iPUzu6hyeitc
+WwYjVoLKC/HS2bqymRWB
+=SmHz
 -----END PGP SIGNATURE-----
 
---/Kwy1es1GwkEJhNg--
+--DvpQYQy10PodzGf7--
