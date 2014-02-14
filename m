@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaBNLtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 06:49:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42738 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275AbaBNLtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 06:49:40 -0500
-Date: Fri, 14 Feb 2014 12:49:26 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: Re: Another preempt folding issue?
-Message-ID: <20140214114926.GB15586@twins.programming.kicks-ass.net>
-References: <52FA6D4B.7020709@canonical.com>
- <20140211194553.GZ9987@twins.programming.kicks-ass.net>
- <52FB2EC8.4080602@canonical.com>
- <20140212103713.GE3545@laptop.programming.kicks-ass.net>
- <20140212104017.GA5121@pd.tnic>
- <52FB5669.7090506@canonical.com>
- <20140212115412.GW27965@twins.programming.kicks-ass.net>
- <52FCFA23.4060701@canonical.com>
- <20140213182522.GB14089@laptop.programming.kicks-ass.net>
- <52FDFCFA.906@canonical.com>
+	id S1752267AbaBNLu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 06:50:29 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:32891 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752171AbaBNLuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 06:50:03 -0500
+Message-ID: <52FE02D9.1090205@mev.co.uk>
+Date: Fri, 14 Feb 2014 11:49:45 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FDFCFA.906@canonical.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Hartley Sweeten <HartleyS@visionengravers.com>,
+        Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: comedi: clean up conditional statement in addi_apci_3xxx.c
+References: <1392262167-4073-1-git-send-email-chase.southwood@yahoo.com> <DC148C5AA1CEBA4E87973D432B1C2D8817EBF5B2@P3PWEX4MB008.ex4.secureserver.net>
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8817EBF5B2@P3PWEX4MB008.ex4.secureserver.net>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 12:24:42PM +0100, Stefan Bader wrote:
-> Oh and one thing I was wondering. Not sure I do understand it right... When
-> initially converting to percpu counts, you changed the 32bit assembly like that:
-> 
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -362,12 +362,9 @@ END(ret_from_exception)
->  #ifdef CONFIG_PREEMPT
->  ENTRY(resume_kernel)
->         DISABLE_INTERRUPTS(CLBR_ANY)
-> -       cmpl $0,TI_preempt_count(%ebp)  # non-zero preempt_count ?
-> -       jnz restore_all
->  need_resched:
-> -       movl TI_flags(%ebp), %ecx       # need_resched set ?
-> -       testb $_TIF_NEED_RESCHED, %cl
-> -       jz restore_all
-> +       cmpl $0,PER_CPU_VAR(__preempt_count)
-> +       jnz restore_all
->         testl $X86_EFLAGS_IF,PT_EFLAGS(%esp)    # interrupts off (exception path
->         jz restore_all
->         call preempt_schedule_irq
-> 
-> This seems to say if preempt_count was 0 then then if the thread flag was set
-> and interrupts were not off(?) it would do a preempt ipi and then come back to
-> re-check the thread flag.
+On 2014-02-13 18:25, Hartley Sweeten wrote:
+> On Wednesday, February 12, 2014 8:29 PM, Chase Southwood wrote:
+>> In this if-else conditional statement, if (chan < 16), but
+>> (data[0] == INSN_CONFIG_DIO_QUERY), the function does not return early,
+>> but the else-branch does not get executed either.  As a result, mask
+>> would be used uninitialized in the next line.  What we want here is if
+>> (chan < 16) and (data[0] != INSN_CONFIG_DIO_QUERY), return an error, but
+>> in every other case, initialize mask and then proceed.  Found by a static
+>> checker.
+>>
+>> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+>> ---
+>>   drivers/staging/comedi/drivers/addi_apci_3xxx.c | 12 +++++-------
+>>   1 file changed, 5 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/staging/comedi/drivers/addi_apci_3xxx.c b/drivers/staging/comedi/drivers/addi_apci_3xxx.c
+>> index ceadf8e..04c5153 100644
+>> --- a/drivers/staging/comedi/drivers/addi_apci_3xxx.c
+>> +++ b/drivers/staging/comedi/drivers/addi_apci_3xxx.c
+>> @@ -688,13 +688,11 @@ static int apci3xxx_dio_insn_config(struct comedi_device *dev,
+>>   	 * Port 1 (channels 8-15) are always outputs
+>>   	 * Port 2 (channels 16-23) are programmable i/o
+>>   	 */
+>> -	if (chan < 16) {
+>> -		if (data[0] != INSN_CONFIG_DIO_QUERY)
+>> -			return -EINVAL;
+>> -	} else {
+>> -		/* changing any channel in port 2 changes the entire port */
+>> -		mask = 0xff0000;
+>> -	}
+>> +	if ((chan < 16) && (data[0] != INSN_CONFIG_DIO_QUERY))
+>> +		return -EINVAL;
+>> +
+>> +	/* changing any channel in port 2 changes the entire port */
+>> +	mask = 0xff0000;
+>>
+>>   	ret = comedi_dio_insn_config(dev, s, insn, data, mask);
+>>   	if (ret)
+>
+> The uninitialized mask when chan < 16 is an issue. But your patch is not quite correct.
+>
+> The original code was intending to limit the valid instructions for channels < 16 to only
+> INSN_CONFIG_DIO_QUERY. These channels have fixed directions: 0-7 (port 0) are
+> always inputs and 8-15 (port 1) are always outputs. Channels 16-23 (port 2) have
+> programmable direction but changing any channel effects the entire port, that's
+> what the 0xff0000 mask is for.
+>
+> Changing the mask to 0xff0000 for any chanspec will result in the INSN_CONFIG_DIO_QUERY
+> instruction returning the direction of port 2 regardless of what the chanspec is.
+>
+> The "right" fix would be:
+> 1) Default the mask to 0 so that comedi_dio_insn_config() will use a chan_mask
+> based on the chanspec for the INSN_CONFIG_DIO_QUERY instruction.
+> 2) Ignore all instructions except INSN_CONFIG_DIO_QUERY when the chan < 16.
+> 3) Modify the mask for chan >= 16 when the instruction is not INSN_CONFIG_DIO_QUERY
+> so that the INSN_CONFIG_DIO_{INPUT,OUTPUT} instructions update the entire
+> port.
 
-No not an IPI; it would reschedule.
+Agreed, but another question is why does comedi_dio_insn_config() in 
+drivers.c need to look at the supplied mask at all for 
+INSN_CONFIG_DIO_QUERY?
 
-So the old code:
-
-  if preempt_count != 0; continue out
-  if !TIF_NEED_RESCHED; continue out
-  if IRQs-off in calling context; continue out
-  preempt_schedule_irq
-
-The new code:
-
-  if preempt_count != 0; continue out
-  if IRQs-off in calling context; continue out
-  preempt_schedule_irq
-
-> This would now be if preempt_count is 0 only... and I wonder whether that would
-> change from doing that loop...
-
-We can do away with the TIF_NEED_RESCHED test because that state is
-folded into the preempt_count by means of PREEMPT_NEED_RESCHED.
-
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
