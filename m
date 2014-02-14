@@ -1,49 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210AbaBNJC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 04:02:26 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:59821 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaBNJCV (ORCPT
+	id S1752271AbaBNJCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 04:02:49 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:51876 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010AbaBNJCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 04:02:21 -0500
+	Fri, 14 Feb 2014 04:02:24 -0500
+Date: Fri, 14 Feb 2014 09:02:17 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [lm-sensors] [RFC PATCH] hwmon: (max6650) Convert to be a
+ platform driver
+Message-ID: <20140214090217.GD3403@lee--X1>
+References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
+ <20140213095817.GD32508@lee--X1>
+ <20140213111530.2a2b4982@endymion.delvare>
+ <CAOMwXhML8LvDCzmk1ZVT+7cARj9C3VtxERWBgOPM9vTc6qQXZQ@mail.gmail.com>
+ <CAOMwXhOv-as1W69wcSno49jEXsXWZZ7odnu8og-vgnDwRTJ4sA@mail.gmail.com>
+ <20140213113313.GL32508@lee--X1>
+ <CAOMwXhMNHqXnzR0YHF9rx710JbaL3YFn=3cLf_WdNkCx7hbZug@mail.gmail.com>
+ <20140213124002.GA3403@lee--X1>
+ <CAOMwXhPwppZ6Ne4TjR9Ys+ttST2r85j1GsLdxfq67svZSuVHFg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140212175018.GJ28112@sirena.org.uk>
-References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
-	<20140212175018.GJ28112@sirena.org.uk>
-Date: Fri, 14 Feb 2014 09:02:20 +0000
-X-Google-Sender-Auth: r4jLbzJKeyZCKfrz6vJLyJSo_Gc
-Message-ID: <CAOMwXhNd69KMDcBLjfiw16T3bWWki-Dvxbz+zhgNe6OESnVaSw@mail.gmail.com>
-Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOMwXhPwppZ6Ne4TjR9Ys+ttST2r85j1GsLdxfq67svZSuVHFg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 5:50 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Feb 12, 2014 at 04:02:40AM +0000, Laszlo Papp wrote:
->
->> +const struct regmap_config max665x_regmap_config = {
->> +     .reg_bits = 5,
->> +};
->
-> This would normally be static too, and I'd *really* expect to see a
-> val_bits set here.  I'm a bit surprised this works without one.
+> >> http://comments.gmane.org/gmane.linux.kernel/1645251
+> >>
+> >> Step 2 did not happen. I did not get any review for my change. I
+> >> literally submitted that within a couple of hours after the request.
+> >>
+> >> Could you please tell me what was wrong with that change, and why I
+> >> did not get any respect not to "xargs rm -rf" my work in that area? I
+> >> believe I was ignored instead of improving the change, and someone
+> >> else tried to address the same thing. There was no argument in that
+> >> thread. It was a technical change. I personally do not feel happy
+> >> about it.
+> >
+> > Let's start again.
+> >
+> > Rebase your work on top of the HWMON tree on kernel.org and resubmit
+> > the entire set. If rebasing takes you more than 20 mins, you're
+> > probably doing it wrong.
+> 
+> I tried, but I could not manage it within 20 minutes, so I guess I am
+> doing something wrong. Can you please provide some pointers how not to
+> do it wrong? Perhaps, I am not aware of some tricks.
 
-Makes sense, thanks. Shall I also set the .max_register or any other
-mandatory variables in here?
+One question, are you still working on this stuff or not? I'm confused
+by the disparity in your messages. I'm going to guess that you're in
+for now.
 
->> +     mutex_init(&max665x->iolock);
->
-> What is this needed for?
+Do:
+  `git rebase -i <base> --onto <newbase>`
+Where:
+  <base> is the SHA1 of the first patch below your changes in `git log`
+  <new_base> is Guenter's staging tree on kernel.org
 
-It was done for consistency with the other mfd drivers (maxim), e.g.
-8997 or 8998 as the closest resemblence in this family. Would you
-prefer me removing this mutex locker?
+Ensure you're rebasing all of your patches (and patches that aren't
+yours) when your $EDITOR pops up. If they are wrong, delete all the
+lines in the file and the rebase will be aborted. If they're correct
+save and close your $EDITOR.
+
+You'll receive conflicts. You can see the state of the conflicts using
+`git status` Open the file, find the conflict markers and make a choice
+from the HEAD section or the section from your patch. Sometimes
+you'll need to manually merge the two, if there are changes from both
+refs that you want to keep. Once you're happy `git commit -a` and `git
+rebase --continue`. Each conflict should not take you long, but if it
+does, keep at it, as it's good practice. After a time of doing it,
+you'll be able to fix merge conflicts in no time at all.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
