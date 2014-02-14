@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606AbaBNE0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:26:06 -0500
-Received: from ozlabs.org ([203.10.76.45]:43523 "EHLO ozlabs.org"
+	id S1751833AbaBNE1B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:27:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48089 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050AbaBNE0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:26:04 -0500
-Date: Fri, 14 Feb 2014 15:25:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: linux-next: manual merge of the akpm-current tree with the cgroup
- tree
-Message-Id: <20140214152557.cf6e5b5b0961dc47f800fe4d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Feb_2014_15_25_57_+1100_L.Zeo8H1L.qERp1c"
+	id S1751630AbaBNE07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 23:26:59 -0500
+Message-ID: <52FD9B0A.8030309@zytor.com>
+Date: Thu, 13 Feb 2014 20:26:50 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 12/17] Kbuild, lto: Set TMPDIR for LTO
+References: <1391846481-31491-1-git-send-email-ak@linux.intel.com> <1391846481-31491-12-git-send-email-ak@linux.intel.com>
+In-Reply-To: <1391846481-31491-12-git-send-email-ak@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Feb_2014_15_25_57_+1100_L.Zeo8H1L.qERp1c
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/08/2014 12:01 AM, Andi Kleen wrote:
+> LTO gcc puts a lot of data into $TMPDIR, essentially another copy
+> of the object directory to pass the repartitioned object files
+> to the code generation processes.
+> 
+> TMPDIR defaults to /tmp With /tmp as tmpfs it's easy to drive systems to
+> out of memory, because they will compete with the already high anonymous
+> memory consumption of the wpa LTO pass.
+> 
+> When LTO is set always set TMPDIR to the object directory. This could
+> be slightly slower, but is far safer and eliminates another parameter
+> the LTO user would need to set manually.
+> 
+> I made it conditional on LTO for now.
 
-Hi Andrew,
+I think this really ought to use ?= so it doesn't override a TMPDIR
+explicitly set by the user.
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-kernel/cpuset.c between commit d66393e54e0a ("cpuset: use
-css_task_iter_start/next/end() instead of css_scan_tasks()") from the
-cgroup tree and commit a82211b06d6e ("cpusets: allocate heap only when
-required") from the akpm-current tree.
+	-hpa
 
-I fixed it up (the former removed the need for the heap, so I effectively
-remove the latter) and can carry the fix as necessary (no action is
-required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__14_Feb_2014_15_25_57_+1100_L.Zeo8H1L.qERp1c
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS/ZrZAAoJEMDTa8Ir7ZwVKUIP/16S636I2rElzD4w3VdWrKHu
-1rfsN6mH/UQw9xbaDyVLqORc/RMruisG6ZrGFIXIxQrhR3TgCgWRVqExpJCoIhkO
-N4ujdZC5cPu27wRHsexUg8z/78KwKfjpvmOSAsKXV+oudMZMXslMc+A+AdcjVy4b
-E2VQhQImo2RBtvkxDm3l4oIT5JLDvjtqh+L+lG7zsH1l5ii6iCd/84JCisdYNYAU
-lrRXTpQEy5+dZ7J1mXlpwakind64Ra/34Zc72Odl0v6PIY+tu8Ym5uO/LKp1bZKA
-ctQ2lza6MJ8ISnYYmFXXumwJiCVGkqTY0QVDkTvDmsgdAUxKBVm+NfZn0uFFk7S3
-ZQEzzRQktpMuN1FBriZzbrEhUgqvQlfbtAoAQ9LE7qNpkDGSH7KsZMZ1NUxphCCV
-uUvsP9eR11OnEmnF0ran6uJ0Jnk2mR+JpSQRmOtQRHRtk9VSkf20WKkvZi9crI1a
-dHUU/amYHYIV+wyhLlu4HJnVH4dDge3geAwxQmVM4Cu6RMLi5oYvw8yVJ4bgeeTc
-w+Fm+vOuJZjOT/SyajcLSXyRFMJhPRd1+oT/trvdt5u8ViZTGb+AuJwV3xUSkG44
-rTm5azMRrdzYyb0urw+oujDKzNxVF1qWu7moiH9ebtDA9lNmAjXpAIZkyoRGPhgQ
-SvjTWbIDNyJgBCV4CBml
-=VEaB
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Feb_2014_15_25_57_+1100_L.Zeo8H1L.qERp1c--
