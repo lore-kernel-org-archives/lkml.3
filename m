@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaBNJFA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 04:05:00 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39089 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaBNJE5 (ORCPT
+	id S1752619AbaBNJGP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 04:06:15 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:39217 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaBNJGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 04:04:57 -0500
-Message-ID: <52FDDC24.8070805@pengutronix.de>
-Date: Fri, 14 Feb 2014 10:04:36 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Fri, 14 Feb 2014 04:06:10 -0500
+Date: Fri, 14 Feb 2014 10:06:01 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: stefan.sorensen@spectralink.com, grant.likely@linaro.org,
+        robh+dt@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] dp83640: Get pin and master/slave configuration
+ from DT
+Message-ID: <20140214090601.GA3906@netboy>
+References: <1392302129-24947-1-git-send-email-stefan.sorensen@spectralink.com>
+ <20140213.173957.2126489785330496380.davem@davemloft.net>
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
-        michal.simek@xilinx.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v2] can: xilinx CAN controller support.
-References: <\> <0dc128ac-e5cd-47bd-9ab1-3a545c3e2043@CO9EHSMHS012.ehs.local> <52FD1B16.6020600@pengutronix.de> <52FDD9FE.8040908@monstr.eu>
-In-Reply-To: <52FDD9FE.8040908@monstr.eu>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="QhcbUJm1L074aQpAKcGGCRCkpNnfCnO7s"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140213.173957.2126489785330496380.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---QhcbUJm1L074aQpAKcGGCRCkpNnfCnO7s
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 13, 2014 at 05:39:57PM -0500, David Miller wrote:
 
-On 02/14/2014 09:55 AM, Michal Simek wrote:
-> Hi Marc,
->=20
->>> +	int waiting_ech_skb_num;
->>> +	int xcan_echo_skb_max_tx;
->>> +	int xcan_echo_skb_max_rx;
->>> +	struct napi_struct napi;
->>> +	spinlock_t ech_skb_lock;
->>> +	u32 (*read_reg)(const struct xcan_priv *priv, int reg);
->>> +	void (*write_reg)(const struct xcan_priv *priv, int reg, u32 val);
->>
->> Please remove read_reg, write_reg, as long as there isn't any BE suppo=
-rt
->> in the driver, call them directly.
->=20
-> That's not entirely truth. If you look at Microblaze then you will see
-> that Microblaze can be BE and LE.
-> There is just missing endian detection which we will add to the next ve=
-rsion.
+> You'll have to code this in a way such that people who currently specify
+> this parameter keep working.
 
-As far as I know the endianess of the kernel is fixed and known during
-compile time. Correct me if I'm wrong. So there is no need for a runtime
-detection of the endianess and so no need for {read,write}_reg function
-pointers.
+So, do module parameters count as user land ABI?
 
-> But because MB io helper functions are broken for a while you should be=
+[ In any case, for this module, there must be a way to retain the
+  parameters and still offer DT, and letting DT have precedence. ]
 
-> able to use this driver on both endianess.
->=20
-> btw: I would prefer to use ioread32 and ioread32be instead of readl.
-> Is it OK for you?
+People want to be able to configure the auxiliary functions on the
+pins of their PTP devices. My preference for supporting this is:
 
-Make it so. :)
+1. additional ioctl on the PTP character device
+2. ethtool ioctl
+3. DT and/or ACPI
 
-Marc
+The first option seems best because that is how you activate the
+auxiliary functions. I am working on something in this direction.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Can't we just drop the DT idea altogther?
 
+> If you don't like it, be angry at whoever added this module parameter
+> in the first place, not me.  Module parameters are 99 times out of 100
+> not the right way to configure something, really.
 
---QhcbUJm1L074aQpAKcGGCRCkpNnfCnO7s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Yeah, I am the one, be angry with me.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlL93CQACgkQjTAFq1RaXHPgUgCaAxkVSdTX0cNtvohBtAgv42pR
-Ue0An3otnOhoPcqnhLS2Zv6TrAQDRA0N
-=RVq8
------END PGP SIGNATURE-----
-
---QhcbUJm1L074aQpAKcGGCRCkpNnfCnO7s--
+Sorry,
+Richard
