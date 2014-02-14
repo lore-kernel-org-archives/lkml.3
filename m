@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009AbaBNGb2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 01:31:28 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:39340 "EHLO comal.ext.ti.com"
+	id S1752047AbaBNGbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 01:31:41 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48232 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751741AbaBNGbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 01:31:24 -0500
+	id S1751538AbaBNGbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 01:31:38 -0500
 From: Milo Kim <milo.kim@ti.com>
 To: Lee Jones <lee.jones@linaro.org>, Jingoo Han <jg1.han@samsung.com>,
         Bryan Wu <cooloney@gmail.com>, Mark Brown <broonie@kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Milo Kim <milo.kim@ti.com>
-Subject: [PATCH 02/10] backlight: Add TI LMU backlight common driver
-Date: Fri, 14 Feb 2014 15:31:08 +0900
-Message-ID: <1392359468-6925-1-git-send-email-milo.kim@ti.com>
+Subject: [PATCH 03/10] backlight: ti-lmu-backlight: Add LM3532 driver
+Date: Fri, 14 Feb 2014 15:31:20 +0900
+Message-ID: <1392359480-6960-1-git-send-email-milo.kim@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -21,68 +21,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TI LMU backlight driver provides common driver features.
-Chip specific configuration is handled by each backlight driver such like
-LM3532, LM3631, LM3633, LM3695 and LM3697.
+LM3532 has 3 backlight strings and 8 bit dimming is supported.
+PWM brightness control is also supported.
 
-It supports common features as below.
-  - Consistent device control flow
-  - Control bank assignment from the platform data
-  - Backlight subsystem control
-  - PWM brightness control
-  - Shared device tree node
+Common backlight driver is controlled by TI LMU backlight driver.
+Only LM3532 specific code is implemented here.
 
 Cc: Jingoo Han <jg1.han@samsung.com>
 Cc: Bryan Wu <cooloney@gmail.com>
 Cc: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Milo Kim <milo.kim@ti.com>
 ---
- drivers/video/backlight/Kconfig            |    7 +
- drivers/video/backlight/Makefile           |    1 +
- drivers/video/backlight/ti-lmu-backlight.c |  369 ++++++++++++++++++++++++++++
- drivers/video/backlight/ti-lmu-backlight.h |   78 ++++++
- 4 files changed, 455 insertions(+)
- create mode 100644 drivers/video/backlight/ti-lmu-backlight.c
- create mode 100644 drivers/video/backlight/ti-lmu-backlight.h
+ drivers/video/backlight/Kconfig     |    9 ++
+ drivers/video/backlight/Makefile    |    1 +
+ drivers/video/backlight/lm3532_bl.c |  240 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 250 insertions(+)
+ create mode 100644 drivers/video/backlight/lm3532_bl.c
 
 diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index 5a3eb2e..3641698 100644
+index 3641698..d841057 100644
 --- a/drivers/video/backlight/Kconfig
 +++ b/drivers/video/backlight/Kconfig
-@@ -384,6 +384,13 @@ config BACKLIGHT_LM3639
+@@ -384,6 +384,15 @@ config BACKLIGHT_LM3639
  	help
  	  This supports TI LM3639 Backlight + 1.5A Flash LED Driver
  
-+config TI_LMU_BACKLIGHT
-+	tristate "Backlight driver for TI LMU"
-+	depends on BACKLIGHT_LM3532 || BACKLIGHT_LM3631 || BACKLIGHT_LM3633 || BACKLIGHT_LM3695 || BACKLIGHT_LM3697
++config BACKLIGHT_LM3532
++	tristate "Backlight driver for TI LM3532"
++	depends on BACKLIGHT_CLASS_DEVICE && MFD_TI_LMU
++	select TI_LMU_BACKLIGHT
 +	help
-+	  TI LMU backlight driver provides common driver features.
-+	  Chip specific configuration is handled by each backlight driver.
++	  Say Y to enable the backlight driver for TI LM3532.
++	  Up to 3 backlight strings and 8 bit dimming is supported.
++	  PWM brightness control is also supported.
 +
- config BACKLIGHT_LP855X
- 	tristate "Backlight driver for TI LP855X"
- 	depends on BACKLIGHT_CLASS_DEVICE && I2C
+ config TI_LMU_BACKLIGHT
+ 	tristate "Backlight driver for TI LMU"
+ 	depends on BACKLIGHT_LM3532 || BACKLIGHT_LM3631 || BACKLIGHT_LM3633 || BACKLIGHT_LM3695 || BACKLIGHT_LM3697
 diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-index bb82002..f80e046 100644
+index f80e046..51354d1 100644
 --- a/drivers/video/backlight/Makefile
 +++ b/drivers/video/backlight/Makefile
 @@ -39,6 +39,7 @@ obj-$(CONFIG_BACKLIGHT_HP700)		+= jornada720_bl.o
  obj-$(CONFIG_BACKLIGHT_LM3533)		+= lm3533_bl.o
  obj-$(CONFIG_BACKLIGHT_LM3630A)		+= lm3630a_bl.o
  obj-$(CONFIG_BACKLIGHT_LM3639)		+= lm3639_bl.o
-+obj-$(CONFIG_TI_LMU_BACKLIGHT)		+= ti-lmu-backlight.o
++obj-$(CONFIG_BACKLIGHT_LM3532)		+= lm3532_bl.o
+ obj-$(CONFIG_TI_LMU_BACKLIGHT)		+= ti-lmu-backlight.o
  obj-$(CONFIG_BACKLIGHT_LOCOMO)		+= locomolcd.o
  obj-$(CONFIG_BACKLIGHT_LP855X)		+= lp855x_bl.o
- obj-$(CONFIG_BACKLIGHT_LP8788)		+= lp8788_bl.o
-diff --git a/drivers/video/backlight/ti-lmu-backlight.c b/drivers/video/backlight/ti-lmu-backlight.c
+diff --git a/drivers/video/backlight/lm3532_bl.c b/drivers/video/backlight/lm3532_bl.c
 new file mode 100644
-index 0000000..5ceb5e8
+index 0000000..c4cf636
 --- /dev/null
-+++ b/drivers/video/backlight/ti-lmu-backlight.c
-@@ -0,0 +1,369 @@
++++ b/drivers/video/backlight/lm3532_bl.c
+@@ -0,0 +1,240 @@
 +/*
-+ * TI LMU Backlight Common Driver
++ * TI LM3532 Backlight Driver
 + *
 + * Copyright 2014 Texas Instruments
 + *
@@ -92,34 +87,25 @@ index 0000000..5ceb5e8
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * LMU backlight driver supports common features as below.
++ * LM3532 backlight driver consists of three parts
 + *
-+ *   - Consistent device control flow by using ti_lmu_bl_ops
-+ *   - Control bank assignment from the platform data
-+ *   - Backlight subsystem control
-+ *   - PWM brightness control
-+ *   - Shared device tree node
++ *   1) LM3532 chip specific part: this file
++ *      Define device specific operations
++ *      Register LMU backlight driver
 + *
-+ * Sequence of LMU backlight control
++ *   2) LMU backlight common driver: ti-lmu-backlight
++ *      General backlight subsystem control
 + *
-+ *   (Chip dependent backlight driver)            (TI LMU Backlight Common)
-+ *
-+ *     Operation configuration
-+ *     ti_lmu_backlight_init_device()   --->
-+ *     Initialization                   <---        ops->init()
-+ *
-+ *     ti_lmu_backlight_register()      --->
-+ *     Backlight configuration          <---        ops->configure()
-+ *
-+ *                                                  Runtime brightness control
-+ *     Enable register control          <---        ops->bl_enable()
-+ *     Brightness register control      <---        ops->update_brightness()
++ *   3) LMU effect driver
++ *      Backlight ramp time configuration
 + *
 + */
 +
 +#include <linux/backlight.h>
 +#include <linux/err.h>
 +#include <linux/mfd/ti-lmu.h>
++#include <linux/mfd/ti-lmu-effect.h>
++#include <linux/mfd/ti-lmu-register.h>
 +#include <linux/module.h>
 +#include <linux/of.h>
 +#include <linux/platform_device.h>
@@ -128,412 +114,208 @@ index 0000000..5ceb5e8
 +
 +#include "ti-lmu-backlight.h"
 +
-+#define DEFAULT_BL_NAME			"lcd-backlight"
++#define LM3532_PWM1			0
++#define LM3532_PWM2			1
++#define LM3532_BL_MAX_STRINGS		3
++#define LM3532_MAX_ZONE_CFG		3
++#define LM3532_MAX_BRIGHTNESS		255
 +
-+static int ti_lmu_backlight_enable(struct ti_lmu_bl *lmu_bl, int enable)
++static int lm3532_bl_init(struct ti_lmu_bl_chip *chip)
 +{
-+	const struct ti_lmu_bl_ops *ops = lmu_bl->chip->ops;
-+
-+	if (ops->bl_enable)
-+		return ops->bl_enable(lmu_bl, enable);
-+
-+	return 0;
-+}
-+
-+static void ti_lmu_backlight_pwm_ctrl(struct ti_lmu_bl *lmu_bl, int br,
-+				      int max_br)
-+{
-+	struct pwm_device *pwm;
-+	unsigned int duty, period;
-+
-+	/* Request a PWM device with the consumer name */
-+	if (!lmu_bl->pwm) {
-+		pwm = devm_pwm_get(lmu_bl->chip->dev, lmu_bl->pwm_name);
-+		if (IS_ERR(pwm)) {
-+			dev_err(lmu_bl->chip->dev,
-+				"Can not get PWM device: %s\n",
-+				lmu_bl->pwm_name);
-+			return;
-+		}
-+		lmu_bl->pwm = pwm;
-+	}
-+
-+	period = lmu_bl->bl_pdata->pwm_period;
-+	duty = br * period / max_br;
-+
-+	pwm_config(lmu_bl->pwm, duty, period);
-+	if (duty)
-+		pwm_enable(lmu_bl->pwm);
-+	else
-+		pwm_disable(lmu_bl->pwm);
-+}
-+
-+static int ti_lmu_backlight_update_status(struct backlight_device *bl_dev)
-+{
-+	struct ti_lmu_bl *lmu_bl = bl_get_data(bl_dev);
-+	const struct ti_lmu_bl_ops *ops = lmu_bl->chip->ops;
-+	int ret = 0;
-+	int brt;
-+
-+	if (bl_dev->props.state & BL_CORE_SUSPENDED)
-+		bl_dev->props.brightness = 0;
-+
-+	brt = bl_dev->props.brightness;
-+	if (brt > 0)
-+		ret = ti_lmu_backlight_enable(lmu_bl, 1);
-+	else
-+		ret = ti_lmu_backlight_enable(lmu_bl, 0);
-+
-+	if (ret)
-+		return ret;
-+
-+	if (lmu_bl->mode == BL_PWM_BASED)
-+		ti_lmu_backlight_pwm_ctrl(lmu_bl, brt,
-+					  bl_dev->props.max_brightness);
++	int i, ret;
++	u8 lm3532_regs[] = { LM3532_REG_ZONE_CFG_A, LM3532_REG_ZONE_CFG_B,
++			     LM3532_REG_ZONE_CFG_C, };
 +
 +	/*
-+	 * In some devices, additional handling is required after PWM control.
-+	 * So, just call device-specific brightness function.
++	 * Assign zone targets as below.
++	 *   Zone target 0 for control A
++	 *   Zone target 1 for control B
++	 *   Zone target 2 for control C
 +	 */
-+	if (ops->update_brightness)
-+		return ops->update_brightness(lmu_bl, brt);
++
++	for (i = 0; i < LM3532_MAX_ZONE_CFG; i++) {
++		ret = ti_lmu_update_bits(chip->lmu, lm3532_regs[i],
++					 LM3532_ZONE_CFG_MASK,
++					 i << LM3532_ZONE_CFG_SHIFT);
++		if (ret)
++			return ret;
++	}
 +
 +	return 0;
 +}
 +
-+static int ti_lmu_backlight_get_brightness(struct backlight_device *bl_dev)
++static int lm3532_bl_enable(struct ti_lmu_bl *lmu_bl, int enable)
 +{
-+	return bl_dev->props.brightness;
++	return ti_lmu_update_bits(lmu_bl->chip->lmu, LM3532_REG_ENABLE,
++				  BIT(lmu_bl->bank_id),
++				  enable << lmu_bl->bank_id);
 +}
 +
-+static const struct backlight_ops lmu_bl_common_ops = {
-+	.options = BL_CORE_SUSPENDRESUME,
-+	.update_status = ti_lmu_backlight_update_status,
-+	.get_brightness = ti_lmu_backlight_get_brightness,
-+};
-+
-+static int ti_lmu_backlight_parse_dt(struct device *dev, struct ti_lmu *lmu)
++static int lm3532_bl_set_brightness(struct ti_lmu_bl *lmu_bl, int brightness)
 +{
-+	struct ti_lmu_backlight_platform_data *pdata;
-+	struct device_node *node = dev->of_node;
-+	struct device_node *child;
-+	int num_backlights;
-+	int i = 0;
-+	u8 imax_mA;
++	u8 reg[] = { LM3532_REG_BRT_A, LM3532_REG_BRT_B, LM3532_REG_BRT_C, };
 +
-+	if (!node) {
-+		dev_err(dev, "No device node exists\n");
-+		return -ENODEV;
++	return ti_lmu_write_byte(lmu_bl->chip->lmu, reg[lmu_bl->bank_id],
++				 brightness);
++}
++
++static int lm3532_bl_select_pwm_bank(struct ti_lmu_bl *lmu_bl, int bank_id)
++{
++	struct ti_lmu *lmu = lmu_bl->chip->lmu;
++	static int num_pwms;
++	u8 pwm_sel;
++	u8 mask[]  = { LM3532_PWM_SEL_A_MASK, LM3532_PWM_SEL_B_MASK,
++		       LM3532_PWM_SEL_C_MASK, };
++	u8 shift[] = { LM3532_PWM_SEL_A_SHIFT, LM3532_PWM_SEL_B_SHIFT,
++		       LM3532_PWM_SEL_C_SHIFT, };
++
++	if (num_pwms > 0)
++		pwm_sel = LM3532_PWM2;
++	else
++		pwm_sel = LM3532_PWM1;
++
++	num_pwms++;
++
++	snprintf(lmu_bl->pwm_name, sizeof(lmu_bl->pwm_name), "%s:%d",
++		 LMU_BL_DEFAULT_PWM_NAME, pwm_sel);
++
++	return ti_lmu_update_bits(lmu, LM3532_REG_PWM_CFG_BASE + bank_id,
++				  mask[bank_id],
++				  (1 << shift[bank_id]) | pwm_sel);
++}
++
++static int lm3532_bl_string_configure(struct ti_lmu_bl *lmu_bl)
++{
++	struct ti_lmu *lmu = lmu_bl->chip->lmu;
++	int bank_id = lmu_bl->bank_id;
++	int is_detected = 0;
++	int i, ret;
++	u8 mask[]  = { LM3532_ILED1_CFG_MASK, LM3532_ILED2_CFG_MASK,
++		       LM3532_ILED3_CFG_MASK, };
++	u8 shift[]  = { LM3532_ILED1_CFG_SHIFT, LM3532_ILED2_CFG_SHIFT,
++			LM3532_ILED3_CFG_SHIFT, };
++
++	/* Assign control bank from backlight string configuration */
++	for (i = 0; i < LM3532_BL_MAX_STRINGS; i++) {
++		if (test_bit(i, &lmu_bl->bl_pdata->bl_string)) {
++			ret = ti_lmu_update_bits(lmu, LM3532_REG_OUTPUT_CFG,
++						 mask[i], bank_id << shift[i]);
++			if (ret)
++				return ret;
++
++			is_detected = 1;
++		}
 +	}
 +
-+	num_backlights = of_get_child_count(node);
-+	if (num_backlights == 0) {
-+		dev_err(dev, "No backlight strings\n");
++	if (!is_detected) {
++		dev_err(lmu_bl->chip->dev, "No backlight string found\n");
 +		return -EINVAL;
 +	}
 +
-+	pdata = devm_kzalloc(dev, sizeof(*pdata) * num_backlights, GFP_KERNEL);
-+	if (!pdata)
-+		return -ENOMEM;
-+
-+	for_each_child_of_node(node, child) {
-+		of_property_read_string(child, "bl-name", &pdata[i].name);
-+
-+		/* Make backlight strings */
-+		pdata[i].bl_string = 0;
-+		if (of_find_property(child, "hvled1-used", NULL))
-+			pdata[i].bl_string |= LMU_HVLED1;
-+		if (of_find_property(child, "hvled2-used", NULL))
-+			pdata[i].bl_string |= LMU_HVLED2;
-+		if (of_find_property(child, "hvled3-used", NULL))
-+			pdata[i].bl_string |= LMU_HVLED3;
-+
-+		of_property_read_u8(child, "max-current-milliamp", &imax_mA);
-+		pdata[i].imax = ti_lmu_get_current_code(imax_mA);
-+
-+		of_property_read_u8(child, "initial-brightness",
-+				    &pdata[i].init_brightness);
-+
-+		/* Light effect */
-+		of_property_read_u32(child, "ramp-up", &pdata[i].ramp_up_ms);
-+		of_property_read_u32(child, "ramp-down",
-+				     &pdata[i].ramp_down_ms);
-+
-+		/* PWM mode */
-+		of_property_read_u32(child, "pwm-period", &pdata[i].pwm_period);
-+
-+		i++;
-+	}
-+
-+	lmu->pdata->bl_pdata = pdata;
-+	lmu->pdata->num_backlights = num_backlights;
++	if (lmu_bl->mode == BL_PWM_BASED)
++		return lm3532_bl_select_pwm_bank(lmu_bl, bank_id);
 +
 +	return 0;
 +}
 +
-+struct ti_lmu_bl_chip *
-+ti_lmu_backlight_init_device(struct device *dev, struct ti_lmu *lmu,
-+			     const struct ti_lmu_bl_ops *ops)
++static int lm3532_bl_set_current(struct ti_lmu_bl *lmu_bl)
 +{
-+	struct ti_lmu_bl_chip *chip;
++	u8 reg[] = { LM3532_REG_IMAX_A, LM3532_REG_IMAX_B, LM3532_REG_IMAX_C };
++
++	return ti_lmu_write_byte(lmu_bl->chip->lmu, reg[lmu_bl->bank_id],
++				 lmu_bl->bl_pdata->imax);
++}
++
++static void lm3532_bl_effect_request(struct ti_lmu_bl *lmu_bl)
++{
++	int i;
++	const char *name[] = {
++		[BL_EFFECT_RAMPUP] = LM3532_EFFECT_RAMPUP,
++		[BL_EFFECT_RAMPDN] = LM3532_EFFECT_RAMPDOWN,
++	};
++
++	for (i = BL_EFFECT_RAMPUP; i <= BL_EFFECT_RAMPDN; i++)
++		ti_lmu_effect_request(name[i],
++				      ti_lmu_backlight_effect_callback,
++				      i, lmu_bl);
++}
++
++static int lm3532_bl_configure(struct ti_lmu_bl *lmu_bl)
++{
 +	int ret;
 +
-+	chip = devm_kzalloc(dev, sizeof(*chip), GFP_KERNEL);
-+	if (!chip)
-+		return ERR_PTR(-ENOMEM);
++	ret = lm3532_bl_string_configure(lmu_bl);
++	if (ret)
++		return ret;
 +
-+	chip->dev = dev;
-+	chip->lmu = lmu;
-+	chip->ops = ops;
++	ret = lm3532_bl_set_current(lmu_bl);
++	if (ret)
++		return ret;
 +
-+	if (!lmu->pdata->bl_pdata) {
-+		if (IS_ENABLED(CONFIG_OF))
-+			ret = ti_lmu_backlight_parse_dt(dev, lmu);
-+		else
-+			return ERR_PTR(-ENODEV);
-+
-+		if (ret)
-+			return ERR_PTR(ret);
-+	}
-+
-+	if (chip->ops->init) {
-+		ret = chip->ops->init(chip);
-+		if (ret)
-+			return ERR_PTR(ret);
-+	}
-+
-+	return chip;
-+}
-+EXPORT_SYMBOL_GPL(ti_lmu_backlight_init_device);
-+
-+static void ti_lmu_backlight_set_ctrl_mode(struct ti_lmu_bl *lmu_bl)
-+{
-+	struct ti_lmu_backlight_platform_data *pdata = lmu_bl->bl_pdata;
-+
-+	if (pdata->pwm_period > 0)
-+		lmu_bl->mode = BL_PWM_BASED;
-+	else
-+		lmu_bl->mode = BL_REGISTER_BASED;
-+}
-+
-+static int ti_lmu_backlight_configure(struct ti_lmu_bl *lmu_bl)
-+{
-+	const struct ti_lmu_bl_ops *ops = lmu_bl->chip->ops;
-+
-+	if (ops->configure)
-+		return ops->configure(lmu_bl);
++	/* LMU effect is optional, checking return value is not required */
++	lm3532_bl_effect_request(lmu_bl);
 +
 +	return 0;
 +}
 +
-+static int ti_lmu_backlight_add_device(struct ti_lmu_bl *lmu_bl)
++static const struct ti_lmu_bl_ops lm3532_lmu_ops = {
++	.init              = lm3532_bl_init,
++	.configure         = lm3532_bl_configure,
++	.update_brightness = lm3532_bl_set_brightness,
++	.bl_enable         = lm3532_bl_enable,
++	.max_brightness    = LM3532_MAX_BRIGHTNESS,
++};
++
++static int lm3532_bl_probe(struct platform_device *pdev)
 +{
-+	struct backlight_device *bl_dev;
-+	struct backlight_properties props;
-+	struct ti_lmu_backlight_platform_data *pdata = lmu_bl->bl_pdata;
-+	int max_brightness = lmu_bl->chip->ops->max_brightness;
-+	char name[20];
++	struct ti_lmu *lmu = dev_get_drvdata(pdev->dev.parent);
++	struct ti_lmu_bl_chip *chip;
++	struct ti_lmu_bl *lmu_bl;
 +
-+	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_PLATFORM;
-+	props.brightness = pdata ? pdata->init_brightness : 0;
-+	props.max_brightness = max_brightness;
++	chip = ti_lmu_backlight_init_device(&pdev->dev, lmu, &lm3532_lmu_ops);
++	if (IS_ERR(chip))
++		return PTR_ERR(chip);
 +
-+	/* Backlight device name */
-+	if (!pdata->name)
-+		snprintf(name, sizeof(name), "%s:%d", DEFAULT_BL_NAME,
-+			 lmu_bl->bank_id);
-+	else
-+		snprintf(name, sizeof(name), "%s", pdata->name);
++	lmu_bl = ti_lmu_backlight_register(chip, lmu->pdata->bl_pdata,
++					   lmu->pdata->num_backlights);
++	if (IS_ERR(lmu_bl))
++		return PTR_ERR(lmu_bl);
 +
-+	bl_dev = backlight_device_register(name, lmu_bl->chip->dev, lmu_bl,
-+					   &lmu_bl_common_ops, &props);
-+	if (IS_ERR(bl_dev))
-+		return PTR_ERR(bl_dev);
-+
-+	lmu_bl->bl_dev = bl_dev;
++	platform_set_drvdata(pdev, lmu_bl);
 +
 +	return 0;
 +}
 +
-+struct ti_lmu_bl *
-+ti_lmu_backlight_register(struct ti_lmu_bl_chip *chip,
-+			  struct ti_lmu_backlight_platform_data *pdata,
-+			  int num_backlights)
++static int lm3532_bl_remove(struct platform_device *pdev)
 +{
-+	struct ti_lmu_bl *lmu_bl, *each;
-+	int i, ret;
++	struct ti_lmu_bl *lmu_bl = platform_get_drvdata(pdev);
 +
-+	lmu_bl = devm_kzalloc(chip->dev, sizeof(*lmu_bl) * num_backlights,
-+			      GFP_KERNEL);
-+	if (!lmu_bl)
-+		return ERR_PTR(-ENOMEM);
-+
-+	for (i = 0; i < num_backlights; i++) {
-+		each = lmu_bl + i;
-+		each->bank_id = i;
-+		each->chip = chip;
-+		each->bl_pdata = pdata + i;
-+
-+		ti_lmu_backlight_set_ctrl_mode(lmu_bl);
-+
-+		ret = ti_lmu_backlight_configure(each);
-+		if (ret) {
-+			dev_err(chip->dev, "Backlight config err: %d\n", ret);
-+			goto err;
-+		}
-+
-+		ret = ti_lmu_backlight_add_device(each);
-+		if (ret) {
-+			dev_err(chip->dev, "Backlight device err: %d\n", ret);
-+			goto cleanup_backlights;
-+		}
-+
-+		backlight_update_status(each->bl_dev);
-+	}
-+
-+	chip->num_backlights = num_backlights;
-+
-+	return lmu_bl;
-+
-+cleanup_backlights:
-+	while (--i >= 0) {
-+		each = lmu_bl + i;
-+		backlight_device_unregister(each->bl_dev);
-+	}
-+err:
-+	return ERR_PTR(ret);
++	return ti_lmu_backlight_unregister(lmu_bl);
 +}
-+EXPORT_SYMBOL_GPL(ti_lmu_backlight_register);
 +
-+int ti_lmu_backlight_unregister(struct ti_lmu_bl *lmu_bl)
-+{
-+	struct ti_lmu_bl *each;
-+	struct backlight_device *bl_dev;
-+	int num_backlights = lmu_bl->chip->num_backlights;
-+	int i;
++#ifdef CONFIG_OF
++static const struct of_device_id lm3532_bl_of_match[] = {
++	{ .compatible = "ti,lm3532-backlight", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, lm3532_bl_of_match);
++#endif
 +
-+	for (i = 0; i < num_backlights; i++) {
-+		each = lmu_bl + i;
++static struct platform_driver lm3532_bl_driver = {
++	.probe = lm3532_bl_probe,
++	.remove = lm3532_bl_remove,
++	.driver = {
++		.name = "lm3532-backlight",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(lm3532_bl_of_match),
++	},
++};
++module_platform_driver(lm3532_bl_driver);
 +
-+		bl_dev = each->bl_dev;
-+		bl_dev->props.brightness = 0;
-+		backlight_update_status(bl_dev);
-+		backlight_device_unregister(bl_dev);
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(ti_lmu_backlight_unregister);
-+
-+/*
-+ * This callback function is invoked in case the LMU effect driver is
-+ * requested successfully.
-+ */
-+void ti_lmu_backlight_effect_callback(struct ti_lmu_effect *lmu_effect,
-+				      int req_id, void *data)
-+{
-+	struct ti_lmu_bl *lmu_bl = data;
-+	unsigned int ramp_time;
-+
-+	if (req_id == BL_EFFECT_RAMPUP)
-+		ramp_time = lmu_bl->bl_pdata->ramp_up_ms;
-+	else if (req_id == BL_EFFECT_RAMPDN)
-+		ramp_time = lmu_bl->bl_pdata->ramp_down_ms;
-+	else
-+		return;
-+
-+	ti_lmu_effect_set_ramp(lmu_effect, ramp_time);
-+}
-+EXPORT_SYMBOL_GPL(ti_lmu_backlight_effect_callback);
-+
-+MODULE_DESCRIPTION("TI LMU Backlight Common Driver");
++MODULE_DESCRIPTION("TI LM3532 Backlight Driver");
 +MODULE_AUTHOR("Milo Kim");
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/video/backlight/ti-lmu-backlight.h b/drivers/video/backlight/ti-lmu-backlight.h
-new file mode 100644
-index 0000000..7dd2fa5d
---- /dev/null
-+++ b/drivers/video/backlight/ti-lmu-backlight.h
-@@ -0,0 +1,78 @@
-+/*
-+ * TI LMU Backlight Common Driver
-+ *
-+ * Copyright 2014 Texas Instruments
-+ *
-+ * Author: Milo Kim <milo.kim@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef __TI_LMU_BACKLIGHT_H__
-+#define __TI_LMU_BACKLIGHT_H__
-+
-+#include <linux/mfd/ti-lmu.h>
-+#include <linux/mfd/ti-lmu-effect.h>
-+
-+#define LMU_BL_DEFAULT_PWM_NAME		"lmu-backlight"
-+
-+enum ti_lmu_bl_ctrl_mode {
-+	BL_REGISTER_BASED,
-+	BL_PWM_BASED,
-+};
-+
-+struct ti_lmu_bl;
-+struct ti_lmu_bl_chip;
-+
-+/*
-+ * struct ti_lmu_bl_ops
-+ * @init: Device specific initialization
-+ * @configure: Device specific string configuration
-+ * @update_brightness: Device specific brightness control
-+ * @bl_enable: Device specific backlight enable/disable control
-+ * @max_brightness: Max brightness value of backlight device
-+ */
-+struct ti_lmu_bl_ops {
-+	int (*init)(struct ti_lmu_bl_chip *lmu_chip);
-+	int (*configure)(struct ti_lmu_bl *lmu_bl);
-+	int (*update_brightness)(struct ti_lmu_bl *lmu_bl, int brightness);
-+	int (*bl_enable)(struct ti_lmu_bl *lmu_bl, int enable);
-+	const int max_brightness;
-+};
-+
-+/* One backlight chip can have multiple backlight strings */
-+struct ti_lmu_bl_chip {
-+	struct device *dev;
-+	struct ti_lmu *lmu;
-+	const struct ti_lmu_bl_ops *ops;
-+	int num_backlights;
-+};
-+
-+/* Backlight string structure */
-+struct ti_lmu_bl {
-+	int bank_id;
-+	struct backlight_device *bl_dev;
-+	struct ti_lmu_bl_chip *chip;
-+	struct ti_lmu_backlight_platform_data *bl_pdata;
-+	enum ti_lmu_bl_ctrl_mode mode;
-+	struct pwm_device *pwm;
-+	char pwm_name[20];
-+};
-+
-+struct ti_lmu_bl_chip *
-+ti_lmu_backlight_init_device(struct device *dev, struct ti_lmu *lmu,
-+			     const struct ti_lmu_bl_ops *ops);
-+
-+struct ti_lmu_bl *
-+ti_lmu_backlight_register(struct ti_lmu_bl_chip *chip,
-+			  struct ti_lmu_backlight_platform_data *pdata,
-+			  int num_backlights);
-+
-+int ti_lmu_backlight_unregister(struct ti_lmu_bl *lmu_bl);
-+
-+void ti_lmu_backlight_effect_callback(struct ti_lmu_effect *lmu_effect,
-+				      int req_id, void *data);
-+#endif
++MODULE_ALIAS("platform:lm3532-backlight");
 -- 
 1.7.9.5
 
