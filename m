@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaBNTWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 14:22:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5806 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752724AbaBNTWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 14:22:37 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <20140214172920.GQ4250@linux.vnet.ibm.com>
-References: <20140207180216.GP4250@linux.vnet.ibm.com>
-	 <1391992071.18779.99.camel@triegel.csb>
-	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	 <1392183564.18779.2187.camel@triegel.csb>
-	 <20140212180739.GB4250@linux.vnet.ibm.com>
-	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	 <20140213002355.GI4250@linux.vnet.ibm.com>
-	 <1392321837.18779.3249.camel@triegel.csb>
-	 <20140214020144.GO4250@linux.vnet.ibm.com>
-	 <1392352981.18779.3800.camel@triegel.csb>
-	 <20140214172920.GQ4250@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Feb 2014 11:21:59 -0800
-Message-ID: <1392405719.18779.4380.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752843AbaBNTXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 14:23:33 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37043 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752036AbaBNTXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 14:23:32 -0500
+Date: Fri, 14 Feb 2014 19:23:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: mm: report both sections from PMD
+Message-ID: <20140214192322.GJ30257@n2100.arm.linux.org.uk>
+References: <20140213195230.GA15275@www.outflux.net> <20140214101724.GC10590@arm.com> <CAGXu5jKYq=0Ud-A6bdD2zMe=+r0S7nja8Rg+OxeT+JHzdpwTKg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jKYq=0Ud-A6bdD2zMe=+r0S7nja8Rg+OxeT+JHzdpwTKg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-14 at 09:29 -0800, Paul E. McKenney wrote:
-> On Thu, Feb 13, 2014 at 08:43:01PM -0800, Torvald Riegel wrote:
-> > On Thu, 2014-02-13 at 18:01 -0800, Paul E. McKenney wrote:
+On Fri, Feb 14, 2014 at 11:13:53AM -0800, Kees Cook wrote:
+> On Fri, Feb 14, 2014 at 2:17 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > On Thu, Feb 13, 2014 at 07:52:30PM +0000, Kees Cook wrote:
+> >> On 2-level page table systems, the PMD has 2 section entries. Report
+> >> these, otherwise ARM_PTDUMP will miss reporting permission changes on
+> >> odd section boundaries.
+> >>
+> >> Signed-off-by: Kees Cook <keescook@chromium.org>
+> >
+> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 > 
-> [ . . . ]
+> On Fri, Feb 14, 2014 at 9:05 AM, Steve Capper <steve.capper@linaro.org> wrote:
+> > Tested-by: Steve Capper <steve.capper@linaro.org>
 > 
-> > > Another option would be to flag the conditional expression, prohibiting
-> > > the compiler from optimizing out any conditional branches.  Perhaps
-> > > something like this:
-> > > 
-> > > 	r1 = atomic_load(x, memory_order_control);
-> > > 	if (control_dependency(r1))
-> > > 		atomic_store(y, memory_order_relaxed);
-> > 
-> > That's the one I had in mind and talked to you about earlier today.  My
-> > gut feeling is that this is preferably over the other because it "marks"
-> > the if-statement, so the compiler knows exactly which branches matter.
-> > I'm not sure one would need the other memory order for that, if indeed
-> > all you want is relaxed -> branch -> relaxed.  But maybe there are
-> > corner cases (see the weaker-than-relaxed discussion in SG1 today).
+> Thanks to both of you! If you have a moment can you check this other
+> patch which has additional fixes for the dump code?
 > 
-> Linus, Peter, any objections to marking places where we are relying on
-> ordering from control dependencies against later stores?  This approach
-> seems to me to have significant documentation benefits.
+> https://lkml.org/lkml/2014/2/12/662
 
-Let me note that at least as I'm concerned, that's just a quick idea.
-At least I haven't looked at (1) how to properly specify the semantics
-of this, (2) whether it has any bad effects on unrelated code, (3) and
-whether there are pitfalls for compiler implementations.  It looks not
-too bad at first glance, though.
+It's not that simple, because APX in section descriptors doesn't exist
+on pre-v6 ARMs.  This needs to be conditional upon the CPU arch.
 
-
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
