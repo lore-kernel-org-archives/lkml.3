@@ -1,475 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaBNKAN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 05:00:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58814 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaBNKAL (ORCPT
+	id S1751632AbaBNKGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 05:06:55 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61631 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751108AbaBNKGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 05:00:11 -0500
-Message-ID: <52FDE913.30106@pengutronix.de>
-Date: Fri, 14 Feb 2014 10:59:47 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
-MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Fri, 14 Feb 2014 05:06:45 -0500
+Date: Fri, 14 Feb 2014 10:06:21 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Milo Kim <milo.kim@ti.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Jingoo Han <jg1.han@samsung.com>,
+        Bryan Wu <cooloney@gmail.com>, Mark Brown <broonie@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2] can: xilinx CAN controller support.
-References: <\> <0dc128ac-e5cd-47bd-9ab1-3a545c3e2043@CO9EHSMHS012.ehs.local> <52FD1B16.6020600@pengutronix.de> <ad62e4f0-fe91-4dac-9a74-ffe9c9128cb2@CH1EHSMHS024.ehs.local>
-In-Reply-To: <ad62e4f0-fe91-4dac-9a74-ffe9c9128cb2@CH1EHSMHS024.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="8oWLaN1ltHdkBnqJaKV6s3wSEnOFtmPKa"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 10/10] Documentation: Add device tree bindings for TI
+ LMU devices
+Message-ID: <20140214100620.GD25107@e106331-lin.cambridge.arm.com>
+References: <1392359564-7205-1-git-send-email-milo.kim@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392359564-7205-1-git-send-email-milo.kim@ti.com>
+Thread-Topic: [PATCH 10/10] Documentation: Add device tree bindings for TI
+ LMU devices
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---8oWLaN1ltHdkBnqJaKV6s3wSEnOFtmPKa
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, Feb 14, 2014 at 06:32:44AM +0000, Milo Kim wrote:
+> Bindings for TI LMU, backlight, LM3631 regulator and LM3633 LED are added.
+> 
+> Cc: devicetree@vger.kernel.org
+> Cc: Bryan Wu <cooloney@gmail.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+>  .../devicetree/bindings/leds/leds-lm3633.txt       |   39 +++++
+>  Documentation/devicetree/bindings/mfd/ti-lmu.txt   |  182 ++++++++++++++++++++
+>  .../bindings/regulator/lm3631-regulator.txt        |   49 ++++++
+>  .../bindings/video/backlight/ti-lmu-backlight.txt  |  127 ++++++++++++++
+>  4 files changed, 397 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/leds/leds-lm3633.txt
+>  create mode 100644 Documentation/devicetree/bindings/mfd/ti-lmu.txt
+>  create mode 100644 Documentation/devicetree/bindings/regulator/lm3631-regulator.txt
+>  create mode 100644 Documentation/devicetree/bindings/video/backlight/ti-lmu-backlight.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/leds/leds-lm3633.txt b/Documentation/devicetree/bindings/leds/leds-lm3633.txt
+> new file mode 100644
+> index 0000000..4adeb62
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/leds/leds-lm3633.txt
+> @@ -0,0 +1,39 @@
+> +TI LMU LM3633 LED device tree bindings
+> +
+> +Required properties:
+> +  - compatible: "ti,lm3633-leds"
+> +  - lvled1-used, lvled2-used, lvled3-used, lvled4-used, lvled5-used, lvled6-used
+> +    : LED string configuration. Each child node should include this information
+> +      about which LED string is used.
 
-On 02/14/2014 10:36 AM, Appana Durga Kedareswara Rao wrote:
->>> +/* CAN register bit masks - XCAN_<REG>_<BIT>_MASK */
->>> +#define XCAN_SRR_CEN_MASK          0x00000002 /* CAN enable */
->>> +#define XCAN_SRR_RESET_MASK                0x00000001 /* Soft Reset =
-the
->> CAN core */
->>> +#define XCAN_MSR_LBACK_MASK                0x00000002 /* Loop back
->> mode select */
->>> +#define XCAN_MSR_SLEEP_MASK                0x00000001 /* Sleep mode
->> select */
->>> +#define XCAN_BRPR_BRP_MASK         0x000000FF /* Baud rate
->> prescaler */
->>> +#define XCAN_BTR_SJW_MASK          0x00000180 /* Synchronous
->> jump width */
->>> +#define XCAN_BTR_TS2_MASK          0x00000070 /* Time segment
->> 2 */
->>> +#define XCAN_BTR_TS1_MASK          0x0000000F /* Time segment
->> 1 */
->>> +#define XCAN_ECR_REC_MASK          0x0000FF00 /* Receive error
->> counter */
->>> +#define XCAN_ECR_TEC_MASK          0x000000FF /* Transmit error
->> counter */
->>> +#define XCAN_ESR_ACKER_MASK                0x00000010 /* ACK error *=
-/
->>> +#define XCAN_ESR_BERR_MASK         0x00000008 /* Bit error */
->>> +#define XCAN_ESR_STER_MASK         0x00000004 /* Stuff error */
->>> +#define XCAN_ESR_FMER_MASK         0x00000002 /* Form error */
->>> +#define XCAN_ESR_CRCER_MASK                0x00000001 /* CRC error *=
-/
->>> +#define XCAN_SR_TXFLL_MASK         0x00000400 /* TX FIFO is full
->> */
->>> +#define XCAN_SR_ESTAT_MASK         0x00000180 /* Error status */
->>> +#define XCAN_SR_ERRWRN_MASK                0x00000040 /* Error warni=
-ng
->> */
->>> +#define XCAN_SR_NORMAL_MASK                0x00000008 /* Normal mode=
+Which child nodes? They weren't mentioned until this point.
 
->> */
->>> +#define XCAN_SR_LBACK_MASK         0x00000002 /* Loop back
->> mode */
->>> +#define XCAN_SR_CONFIG_MASK                0x00000001 /* Configurati=
-on
->> mode */
->>> +#define XCAN_IXR_TXFEMP_MASK               0x00004000 /* TX FIFO Emp=
-ty
->> */
->>> +#define XCAN_IXR_WKUP_MASK         0x00000800 /* Wake up
->> interrupt */
->>> +#define XCAN_IXR_SLP_MASK          0x00000400 /* Sleep
->> interrupt */
->>> +#define XCAN_IXR_BSOFF_MASK                0x00000200 /* Bus off
->> interrupt */
->>> +#define XCAN_IXR_ERROR_MASK                0x00000100 /* Error inter=
-rupt
->> */
->>> +#define XCAN_IXR_RXNEMP_MASK               0x00000080 /* RX FIFO
->> NotEmpty intr */
->>> +#define XCAN_IXR_RXOFLW_MASK               0x00000040 /* RX FIFO
->> Overflow intr */
->>> +#define XCAN_IXR_RXOK_MASK         0x00000010 /* Message
->> received intr */
->>> +#define XCAN_IXR_TXOK_MASK         0x00000002 /* TX successful
->> intr */
->>> +#define XCAN_IXR_ARBLST_MASK               0x00000001 /* Arbitration=
+If properties need to be in a child node, mention the child node first,
+and make it clear where the properties are expected to be.
 
->> lost intr */
->>> +#define XCAN_IDR_ID1_MASK          0xFFE00000 /* Standard msg
->> identifier */
->>> +#define XCAN_IDR_SRR_MASK          0x00100000 /* Substitute
->> remote TXreq */
->>> +#define XCAN_IDR_IDE_MASK          0x00080000 /* Identifier
->> extension */
->>> +#define XCAN_IDR_ID2_MASK          0x0007FFFE /* Extended
->> message ident */
->>> +#define XCAN_IDR_RTR_MASK          0x00000001 /* Remote TX
->> request */
->>> +#define XCAN_DLCR_DLC_MASK         0xF0000000 /* Data length
->> code */
->>> +
->=20
-> Need to use BIT() Macro for the Masks?
+> +
+> +Optional properties:
+> +  - chan-name: LED channel name
 
-You can, but it IMHO only makes sense where only a single bit is set.
+Any reason to abbreviate "channel" to "chan"?
+
+What's this for?
+
+> +  - max-current-milliamp: Max current setting. Unit is mA.
+
+The code and examples treat this as an 8-bit value, but this fact isn't
+mentioned here.
+
+> +
+> +Example:
+> +
+> +lm3633@36 {
+> +	compatible = "ti,lm3633";
+
+It wasn't mentioned that this had to be a sub-node of a "ti,lm3633"
+node. Please describe above and refer to the document for the
+"ti,lm3633" binding.
 
 [...]
 
->>> +   int waiting_ech_skb_num;
->>> +   int xcan_echo_skb_max_tx;
->>> +   int xcan_echo_skb_max_rx;
->>> +   struct napi_struct napi;
->>> +   spinlock_t ech_skb_lock;
->>> +   u32 (*read_reg)(const struct xcan_priv *priv, int reg);
->>> +   void (*write_reg)(const struct xcan_priv *priv, int reg, u32 val)=
-;
->>
->> Please remove read_reg, write_reg, as long as there isn't any BE suppo=
-rt in
->> the driver, call them directly.
->>
->=20
->=20
-> As per yours and Michal discussion I am keeping this here (endianess
-> of the IP is not fixed at compile time).
+> diff --git a/Documentation/devicetree/bindings/mfd/ti-lmu.txt b/Documentation/devicetree/bindings/mfd/ti-lmu.txt
+> new file mode 100644
+> index 0000000..2b3ecca
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/ti-lmu.txt
+> @@ -0,0 +1,182 @@
+> +TI LMU(Lighting Management Unit) device tree bindings
+> +
+> +TI LMU driver supports lighting devices belows.
+> +
+> +   Name        Device tree properties
+> +  ------      ------------------------
+> +  LM3532       Backlight
+> +  LM3631       Backlight and regulator
+> +  LM3633       Backlight and LED
+> +  LM3695       Backlight
+> +  LM3697       Backlight
+> +
+> +Those have shared device tree properties.
+> +
+> +Required properties:
+> +  - compatible: "ti,lm3532", "ti,lm3631", "ti,lm3633", "ti,lm3695", "ti,lm3697"
 
-Ok.
+Should be one of, rather than all at once?
 
-[...]
+> +  - reg: I2C slave address.
+> +    0x38 is LM3532
+> +    0x29 is LM3631
+> +    0x36 is LM3633, LM3697
+> +    0x63 is LM3695
+> +  - ti,enable-gpio: GPIO number of hardware enable pin
 
->>> +/**
->>> + * xcan_start_xmit - Starts the transmission
->>> + * @skb:   sk_buff pointer that contains data to be Txed
->>> + * @ndev:  Pointer to net_device structure
->>> + *
->>> + * This function is invoked from upper layers to initiate
->>> +transmission. This
->>> + * function uses the next available free txbuff and populates their
->>> +fields to
->>> + * start the transmission.
->>> + *
->>> + * Return: 0 on success and failure value on error  */ static int
->>> +xcan_start_xmit(struct sk_buff *skb, struct net_device *ndev) {
->>> +   struct xcan_priv *priv =3D netdev_priv(ndev);
->>> +   struct net_device_stats *stats =3D &ndev->stats;
->>> +   struct can_frame *cf =3D (struct can_frame *)skb->data;
->>> +   u32 id, dlc, data[2] =3D {0, 0}, rtr =3D 0;
->>
->> I think you can drop the rtr varibale and use cf->can_id & CAN_RTR_FLA=
-G
->> instead.
->>
->=20
-> OK
->>> +   unsigned long flags;
->>> +
->>> +   if (can_dropped_invalid_skb(ndev, skb))
->>> +           return NETDEV_TX_OK;
->>> +
->>> +   /* Watch carefully on the bit sequence */
->>> +   if (cf->can_id & CAN_EFF_FLAG) {
->>> +           /* Extended CAN ID format */
->>> +           id =3D ((cf->can_id & CAN_EFF_MASK) << XCAN_IDR_ID2_SHIFT=
-)
->> &
->>> +                   XCAN_IDR_ID2_MASK;
->>> +           id |=3D (((cf->can_id & CAN_EFF_MASK) >>
->>> +                   (CAN_EFF_ID_BITS-CAN_SFF_ID_BITS)) <<
->>> +                   XCAN_IDR_ID1_SHIFT) & XCAN_IDR_ID1_MASK;
->>> +
->>> +           /* The substibute remote TX request bit should be "1"
->>> +            * for extended frames as in the Xilinx CAN datasheet
->>> +            */
->>> +           id |=3D XCAN_IDR_IDE_MASK | XCAN_IDR_SRR_MASK;
->>> +
->>> +           if (cf->can_id & CAN_RTR_FLAG) {
->>> +                   /* Extended frames remote TX request */
->>> +                   id |=3D XCAN_IDR_RTR_MASK;
->>> +                   rtr =3D 1;
->>> +           }
->>> +   } else {
->>> +           /* Standard CAN ID format */
->>> +           id =3D ((cf->can_id & CAN_SFF_MASK) << XCAN_IDR_ID1_SHIFT=
-)
->> &
->>> +                   XCAN_IDR_ID1_MASK;
->>> +
->>> +           if (cf->can_id & CAN_RTR_FLAG) {
->>> +                   /* Extended frames remote TX request */
->>> +                   id |=3D XCAN_IDR_SRR_MASK;
->>> +                   rtr =3D 1;
->>> +           }
->>> +   }
->>> +
->>> +   dlc =3D (cf->can_dlc & 0xf) << XCAN_DLCR_DLC_SHIFT;
->>
->> No need to mask dlc, it's valid.
->>
-> OK
->=20
->>> +
->>> +   if (dlc > 0)
->>
->> You've copied my speudo code :)
->> But you have to use (cf->can_dlc > 0) here, as dlc is the shifted valu=
-e.
->=20
-> Yes :) I missed it will change
->=20
->>
->>> +           data[0] =3D be32_to_cpup((__be32 *)(cf->data + 0));
->>> +   if (dlc > 4)
->>> +           data[1] =3D be32_to_cpup((__be32 *)(cf->data + 4));
->>> +
->>> +   can_put_echo_skb(skb, ndev, priv->ech_skb_next);
->>
->>       can_put_echo_skb(skb, ndev,
->>               priv->tx_head % priv->xcan_echo_skb_max_tx);
->>
->>       priv->tx_head++;
->>
->=20
-> Ok
->>> +
->>> +   /* Write the Frame to Xilinx CAN TX FIFO */
->>> +   priv->write_reg(priv, XCAN_TXFIFO_ID_OFFSET, id);
->>> +   priv->write_reg(priv, XCAN_TXFIFO_DLC_OFFSET, dlc);
->>> +   if (!rtr) {
->>> +           priv->write_reg(priv, XCAN_TXFIFO_DW1_OFFSET, data[0]);
->>> +           priv->write_reg(priv, XCAN_TXFIFO_DW2_OFFSET, data[1]);
->>> +           stats->tx_bytes +=3D cf->can_dlc;
->>
->> Please add a comment which write triggers the tx. What in case of the =
-rtr?
->> Which write triggers the tx then?
->>
->=20
-> Ok  Will Add
->=20
->  In RTR Case  the below write triggers the trasmission
-> priv->write_reg(priv, XCAN_TXFIFO_DLC_OFFSET, dlc);
-> In Normal case  this write
-> priv->write_reg(priv, XCAN_TXFIFO_DW2_OFFSET, data[1]);
-> Triggers the transmission.
->=20
-> In Btw: Due to the limitations in the IP( Tx DLC register is a write on=
-ly Register)
-> I can't put this stats->tx_bytes +=3D cf->can_dlc; in the tx interrupt =
-routine.
+We refer to GPIOs with more than a number...
 
-No problem.
+> +
+> +For the TI LMU backlight properties, please refer to:
+> +Documentation/devicetree/bindings/video/backlight/ti-lmu-backlight.txt
+> +
+> +For the LM3631 regulator properties, please refer to:
+> +Documentation/devicetree/bindings/regulator/lm3631-regulator.txt
+> +
+> +For the LM3633 LED properties, please refer to:
+> +Documentation/devicetree/bindings/leds/leds-lm3633.txt
+
+Are these expected as subnodes?
+
+> +
+> +Examples:
+> +
+> +lm3532@38 {
+> +	compatible = "ti,lm3532";
+> +	reg = <0x38>;
+> +
+> +	/* GPIO134 for HWEN pin */
+> +	ti,enable-gpio = <&gpio5 6 GPIO_ACTIVE_HIGH>;
+> +
+> +	backlight {
+> +		compatible = "ti,lmu-backlight", "ti,lm3532-backlight";
+
+This looks backwards. The most general string should be later in the
+list. This applies elsewhere too.
 
 [...]
 
->>> +   if (work_done < quota) {
->>> +           napi_complete(napi);
->>> +           ier =3D priv->read_reg(priv, XCAN_IER_OFFSET);
->>> +           ier |=3D (XCAN_IXR_RXOK_MASK |
->> XCAN_IXR_RXNEMP_MASK);
->>> +           priv->write_reg(priv, XCAN_IER_OFFSET, ier);
->>
->> Is this a read-modify-write register? I mean will an interrupt get dis=
-abled, if
->> you write a 0-bit in the IER register? What does the ICR register?
->=20
-> ISR- Interrupt Status Register (Read only register)
-> IER- Interrupt Enable Register(R/w register)
-> ICR- Interrupt Clear Register.(write only register)
->=20
->=20
-> The Interrupt Status Register (ISR) contains bits that are set when a p=
-articular interrupt condition occurs. If
-> the corresponding mask bit in the Interrupt Enable Register is set, an =
-interrupt is generated.
-> Interrupt bits in the ISR can be cleared by writing to the Interrupt Cl=
-ear Register
+> diff --git a/Documentation/devicetree/bindings/video/backlight/ti-lmu-backlight.txt b/Documentation/devicetree/bindings/video/backlight/ti-lmu-backlight.txt
+> new file mode 100644
+> index 0000000..554ddca
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/video/backlight/ti-lmu-backlight.txt
+> @@ -0,0 +1,127 @@
+> +TI LMU backlight device tree bindings
+> +
+> +Required properties:
+> +  - compatible: One of lists below with "ti,lmu-backlight" should be set.
+> +    "ti,lm3532-backlight"
+> +    "ti,lm3631-backlight"
+> +    "ti,lm3633-backlight"
+> +    "ti,lm3695-backlight"
+> +    "ti,lm3697-backlight"
 
-Thanks.
+Do you mean that "ti,lmu-backlight" should be a fallback entry in the
+compatible list?
 
-[...]
+> +  - hvled1-used, hvled2-used, hvled3-used: Backlight string configuration.
+> +    Each backlight child node should include this information about
+> +    which backlight string is used.
+> +
+> +Optional properties
+> +  - bl-name: Backlight device name
 
->>> +/**
->>> + * xcan_open - Driver open routine
->>> + * @ndev:  Pointer to net_device structure
->>> + *
->>> + * This is the driver open routine.
->>> + * Return: 0 on success and failure value on error  */ static int
->>> +xcan_open(struct net_device *ndev) {
->>> +   struct xcan_priv *priv =3D netdev_priv(ndev);
->>> +   int ret;
->>> +
->>> +   ret =3D request_irq(ndev->irq, xcan_interrupt, priv->irq_flags,
->>> +                   ndev->name, (void *)ndev);
->>> +   if (ret < 0) {
->>> +           netdev_err(ndev, "Irq allocation for CAN failed\n");
->>> +           return ret;
->>> +   }
->>> +
->>> +   /* Set chip into reset mode */
->>> +   ret =3D set_reset_mode(ndev);
->>> +   if (ret < 0)
->>> +           netdev_err(ndev, "mode resetting failed failed!\n");
->>
->> Is this critical?
->=20
-> This condition usually won't fail.
-> But if the controller has a problems at the h/w level in that case putt=
-ed this err print.
-> If you want me to change it as a warning will do
+Why bother abbreviating backlight to bl?
 
-If there is a hardware level problem, is it better to return here with
-an error (and free the IRQ)?
+What's this for anyway? Surely something else has to link to the
+backlight node, and a meaningful name should be implied.
 
-[...]
+> +  - max-current-milliamp: Max current setting. Unit is mA.
 
->>> +/**
->>> + * xcan_probe - Platform registration call
->>> + * @pdev:  Handle to the platform device structure
->>> + *
->>> + * This function does all the memory allocation and registration for=
+Type?
 
->>> +the CAN
->>> + * device.
->>> + *
->>> + * Return: 0 on success and failure value on error  */ static int
->>> +xcan_probe(struct platform_device *pdev) {
->>> +   struct resource *res; /* IO mem resources */
->>> +   struct net_device *ndev;
->>> +   struct xcan_priv *priv;
->>> +   int ret, fifodep;
->>> +
->>> +   /* Create a CAN device instance */
->>> +   ndev =3D alloc_candev(sizeof(struct xcan_priv),
->> XCAN_ECHO_SKB_MAX);
->>> +   if (!ndev)
->>> +           return -ENOMEM;
->>> +
->>> +   priv =3D netdev_priv(ndev);
->>> +   priv->dev =3D ndev;
->>> +   priv->can.bittiming_const =3D &xcan_bittiming_const;
->>> +   priv->can.do_set_bittiming =3D xcan_set_bittiming;
->>> +   priv->can.do_set_mode =3D xcan_do_set_mode;
->>> +   priv->can.do_get_berr_counter =3D xcan_get_berr_counter;
->>> +   priv->can.ctrlmode_supported =3D CAN_CTRLMODE_LOOPBACK |
->>> +                                   CAN_CTRLMODE_BERR_REPORTING;
->>> +
->>> +   /* Get IRQ for the device */
->>> +   ndev->irq =3D platform_get_irq(pdev, 0);
->>> +
->>> +   spin_lock_init(&priv->ech_skb_lock);
->>> +   ndev->flags |=3D IFF_ECHO;        /* We support local echo */
->>> +
->>> +   platform_set_drvdata(pdev, ndev);
->>> +   SET_NETDEV_DEV(ndev, &pdev->dev);
->>> +   ndev->netdev_ops =3D &xcan_netdev_ops;
->>> +
->>> +   /* Get the virtual base address for the device */
->>> +   res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>> +   priv->reg_base =3D devm_ioremap_resource(&pdev->dev, res);
->>> +   if (IS_ERR(priv->reg_base)) {
->>> +           ret =3D PTR_ERR(priv->reg_base);
->>> +           goto err_free;
->>> +   }
->>> +   ndev->mem_start =3D res->start;
->>> +   ndev->mem_end =3D res->end;
->>> +
->>> +   priv->write_reg =3D xcan_write_reg;
->>> +   priv->read_reg =3D xcan_read_reg;
->>> +
->>> +   ret =3D of_property_read_u32(pdev->dev.of_node, "tx-fifo-depth",
->>> +                           &fifodep);
->>> +   if (ret < 0)
->>> +           goto err_free;
->>> +   priv->xcan_echo_skb_max_tx =3D fifodep;
->>> +
->>> +   ret =3D of_property_read_u32(pdev->dev.of_node, "rx-fifo-depth",
->>> +                           &fifodep);
->>> +   if (ret < 0)
->>> +           goto err_free;
->>> +   priv->xcan_echo_skb_max_rx =3D fifodep;
->>> +
->>> +   /* Getting the CAN devclk info */
->>> +   priv->devclk =3D devm_clk_get(&pdev->dev, "ref_clk");
->>> +   if (IS_ERR(priv->devclk)) {
->>> +           dev_err(&pdev->dev, "Device clock not found.\n");
->>> +           ret =3D PTR_ERR(priv->devclk);
->>> +           goto err_free;
->>> +   }
->>> +
->>> +   /* Check for type of CAN device */
->>> +   if (of_device_is_compatible(pdev->dev.of_node,
->>> +                               "xlnx,zynq-can-1.00.a")) {
->>> +           priv->aperclk =3D devm_clk_get(&pdev->dev, "aper_clk");
->>> +           if (IS_ERR(priv->aperclk)) {
->>> +                   dev_err(&pdev->dev, "aper clock not found\n");
->>> +                   ret =3D PTR_ERR(priv->aperclk);
->>> +                   goto err_free;
->>> +           }
->>> +   } else {
->>> +           priv->aperclk =3D priv->devclk;
->>> +   }
->>> +
->>> +   ret =3D clk_prepare_enable(priv->devclk);
->>> +   if (ret) {
->>> +           dev_err(&pdev->dev, "unable to enable device clock\n");
->>> +           goto err_free;
->>> +   }
->>> +
->>> +   ret =3D clk_prepare_enable(priv->aperclk);
->>> +   if (ret) {
->>> +           dev_err(&pdev->dev, "unable to enable aper clock\n");
->>> +           goto err_unprepar_disabledev;
->>> +   }
->>
->> Can you keep your clocks disaled if the interface is not up?
->=20
-> I didn't get it will you please explain?
+> +  - initial-brightness: Backlight initial brightness
 
-This feature s optional, but a a good practice.
+Type? Units?
 
-This function gets called when the driver is loaded, i.e. during boot.
-So the complete CAN core will be enabled and powered, even if the
-interface is down. To reduce power consumption it's better to enable the
-clocks in the open() function and disable in close(). If you access some
-CAN registers during probe you have to enable the clock and you probably
-have to enable it in the do_get_berr_counter callback, as it may be
-called if the interface is still down.
+> +  - ramp-up: Light effect for ramp up rate. Unit is msec.
+> +  - ramp-down: Light effect for ramp down rate. Unit is msec.
+> +  - pwm-period: PWM period. Only valid for PWM brightness control mode.
 
-Marc
+Type? Units?
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+> +  - pwms, pwm-names: For the PWM user nodes, please refer to
 
+How many do you expect?
 
---8oWLaN1ltHdkBnqJaKV6s3wSEnOFtmPKa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+What are each of them for?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+What are they named?
 
-iEYEARECAAYFAlL96RMACgkQjTAFq1RaXHP6tACfToORlMnusDyxxT07+wUD6Mgw
-m24AoJMllHtcDNX3YBtIyD2Vq7pyHGXk
-=l2f8
------END PGP SIGNATURE-----
-
---8oWLaN1ltHdkBnqJaKV6s3wSEnOFtmPKa--
+Thanks,
+Mark.
