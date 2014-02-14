@@ -1,101 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaBNUPM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:15:12 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:11196 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751790AbaBNUPJ (ORCPT
+	id S1752421AbaBNURl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:17:41 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:44594 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaBNURj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:15:09 -0500
-Date: Fri, 14 Feb 2014 12:16:52 -0800
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robherring2@gmail.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "s-anna@ti.com" <s-anna@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "omar.ramirez@copitl.com" <omar.ramirez@copitl.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>
-Subject: Re: [RFC 1/6] mailbox: add core framework
-Message-ID: <20140214201652.GI1706@sonymobile.com>
-References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com>
- <1765844.1kjKsO2Rzo@wuerfel>
- <20140212183143.GD1706@sonymobile.com>
- <201402142048.25456.arnd@arndb.de>
+	Fri, 14 Feb 2014 15:17:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201402142048.25456.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52FE51E9.8000203@redhat.com>
+References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
+	<52F3670D.5090608@redhat.com>
+	<CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
+	<52FD2908.8000009@redhat.com>
+	<CAMEtUuySNdj4_YBxQtaGu3qJ6TZhp65mSBy7DbhzL_Lvn9YiPw@mail.gmail.com>
+	<52FE51E9.8000203@redhat.com>
+Date: Fri, 14 Feb 2014 12:17:37 -0800
+Message-ID: <CAMEtUux0K6xTy=wtoutny+HXv8yrTMurPWB6q_LVf7KAOAkzhw@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 08:48:25PM +0100, Arnd Bergmann wrote:
-> On Wednesday 12 February 2014, Courtney Cavin wrote:
-> > On Tue, Feb 11, 2014 at 09:35:01AM +0100, Arnd Bergmann wrote:
-> > > On Monday 10 February 2014 16:23:48 Courtney Cavin wrote:
-> 
-> > Then again, I think that the context management stuff is the exception as well,
-> > and I think that can/should also be handled in a higher level.  Regardless, I
-> > went ahead and drafted the async flags idea out anyway, so here's some
-> > pseudo-code.  I also tried to shoe-horn in 'peek', and you can see how that
-> > turns out.  Let me know if this is something like what you had in mind.
-> 
-> The async implementation looks good to me, assuming we actually need both
-> sync and async operations, which I can't tell for sure.
+On Fri, Feb 14, 2014 at 9:27 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 02/14/2014 05:47 AM, Alexei Starovoitov wrote:
+> ...
+>>>
+>>> Do you see a possibility to integrate your work step by step? That is,
+>>
+>>
+>> Sure. let's see how we can do it.
+>>
+>>> to first integrate the interpreter part only; meaning, to detect "old"
+>>> BPF programs e.g. coming from SO_ATTACH_FILTER et al and run them in
+>>> compatibility mode while extended BPF is fully integrated and replaces
+>>> the old engine in net/core/filter.c. Maybe, "old" programs can be
+>>
+>>
+>> do you mean drop bfp64_jit, checker and just have bpf32->bpf64 converter
+>> and bpf64 interpreter as phase 1 ?
+>> Checking is done by old bpf32,
+>> all existing bpf32 jits, if available, can convert bpf32 to native,
+>> but interpreter will be running on bpf64 ?
+>> phase 2 to introduce bpf64_x86 jit and so on?
+>> Sounds fine.
+>
+>
+> If that's possible, so first step would be to migrate bpf_run() from patch1
+> into sk_run_filter() form net/core/filter.c, and also bring in related
+> include file into include/linux/filter.h resp. include/uapi/linux/filter.h.
+> Plus code that is needed to verify the image in new (and old) format e.g.
+> bpf_load_image() et al, and to either convert old programs into the new
+> format, for example; generally, to find a way to still handle them
+> (bpf/seccomp)
+> while having the new code included and leaving new JITs aside. That I think
+> could be phase 1. Phase 2 would be to successively replace current JITs,
+> etc.
 
-Yea, I would like some further input on that specifically.  I have added
-Linus Walleij and Jassi Brar, who have had good input on mailboxes in
-the past, and somehow I missed in this series.
+Sounds good.
+Let me rephrase.
+step 1:
+sk_attach_filter() -> __sk_prepare_filter() -> sk_chk_filter() all stays as-is.
+sk_chk_filter() calls new bpf_convert() that converts old bpf to new bpf insns.
+Old sk_run_filter() is gone and replaced with bpf_run() that iterates
+over new insns.
+Here would need to make sure that all sk_run_filter() users (seccomp,
+ppp, isdn, team)
+are unaffected.
 
-> For the peek operation, it wouldn't work for the ethernet case, which
-> has to call it from atomic context in net_rx_action.
+step 2:
+use 'len' field of 'struct sock_fprog' to differentiate between old and new bpf.
+len < 4096 -> old bpf insns, go to step 1
+len > 4096 -> new bpf insns, verify them through new bpf_check()
+and run them via the same new sk_run_filter()==bpf_run()
+This way all current users of bpf can load new programs through the
+same interfaces.
 
-It wouldn't work if the mbox is not requested with MBOX_ASYNC, but
-otherwise that should be fine, as it would just peek into the kfifo.
-That doesn't seem like a desirable method for ethernet use-case though,
-as it ends up being two extra copies.
+step 3:
+replace bpf32_x86 jit with bpf64_jit.
 
-> > 	/**
-> > 	 * so this is where this lock makes things difficult, as this function
-> > 	 * might_sleep(), but only really because of the lock.  Either we can
-> > 	 * remove the lock and force the adapter to do its own locking
-> > 	 * spinlock-style, or we can accept the sleep here, which seems a bit
-> > 	 * stupid in a peek function.  Neither option is good.  Additionally,
-> > 	 * there's no guarantee that the adapter doesn't operate over a bus
-> > 	 * which itself might_sleep(), exacerbating the problem.
-> > 	 */
-> > 	mutex_lock(&mbox->adapter->lock);
-> > 	rc = mbox->adapter->ops->peek_message(mbox->adapter, mbox->chan, msg);
-> > 	mutex_lock(&mbox->adapter->lock);
-> 
-> If we decide that peek() must not sleep, any driver that operates on a
-> slow bus could just always report "no data" here.
+step 4:
+old filter attach interfaces do not allow the most interesting bpf64 programs
+with bpf_tables (like the one for kernel tracing), extend them or add new
 
-Yes indeed, or it could just not implement peek, which seems reasonable.
+Initially I extended include/uapi/linux/filter.h, but then decided
+it's too aggressive
+to change uapi header and split it into include/linux/bpf.h instead.
+It's definitely cleaner to have one. I guess with a comment that bpf64 insn set
+may change, it should be ok. I'll go back to single filter.h
 
-> Moving the locking into the mbox driver here sounds appropriate.
+As far as making bpf64 interpreter to perform at bpf32 speeds on i386 and arm32,
+I think I have to reconsider 32-bit subregs. Peter Anvin should be happy :)
+If old bpf is like 8086, bpf64 with 32-bit subregs and 64-bit
+registers is like x86-64 with x32.
 
-I don't really like doing that for the entirety of the mbox core, as it
-makes the simple adapters harder to write properly.  Since peek is not
-a typical use-case, perhaps we could remove the locking for just peek,
-and have a Big Fat Warning in the description of how to properly
-implement it?
+Sounds like we're converging. What other stake holders have to say?
 
-> 	Arnd
-
-Thanks for the input!
-
--Courtney
+Thanks
+Alexei
