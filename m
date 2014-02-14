@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaBNMnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 07:43:51 -0500
-Received: from relay.parallels.com ([195.214.232.42]:33078 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840AbaBNMnu (ORCPT
+	id S1752071AbaBNMx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 07:53:28 -0500
+Received: from www.linutronix.de ([62.245.132.108]:41536 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbaBNMx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 07:43:50 -0500
-Message-ID: <1392381841.5384.43.camel@tkhai>
-Subject: Re: [PATCH] sched/core: Create new task with twice disabled
- preemption
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, <tkhai@yandex.ru>
-Date: Fri, 14 Feb 2014 16:44:01 +0400
-In-Reply-To: <20140214123536.GA12304@arm.com>
-References: <1392306716.5384.3.camel@tkhai> <20140214123536.GA12304@arm.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Fri, 14 Feb 2014 07:53:27 -0500
+Date: Fri, 14 Feb 2014 13:53:25 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: linux-rt-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Platschek <platschek@ict.tuwien.ac.at>
+Subject: Re: [PATCH RT 2/5] allow preemption in alloc and free _buffer_head
+Message-ID: <20140214125325.GD28438@linutronix.de>
+References: <20140210153759.GC20017@opentech.at>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140210153759.GC20017@opentech.at>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Птн, 14/02/2014 в 12:35 +0000, Catalin Marinas пишет:
-> On Thu, Feb 13, 2014 at 07:51:56PM +0400, Kirill Tkhai wrote:
-> > Preemption state on enter in finish_task_switch() is different
-> > in cases of context_switch() and schedule_tail().
-> > 
-> > In the first case we have it twice disabled: at the start of
-> > schedule() and during spin locking. In the second it is only
-> > once: the value which was set in init_task_preempt_count().
-> > 
-> > For archs without __ARCH_WANT_UNLOCKED_CTXSW set this means
-> > that all newly created tasks execute finish_arch_post_lock_switch()
-> > and post_schedule() with preemption enabled.
-> > 
-> > It seems there is possible a problem in rare situations on arm64,
-> > when one freshly created thread preempts another before
-> > finish_arch_post_lock_switch() has finished. If mm is the same,
-> > then TIF_SWITCH_MM on the second won't be set.
-> > 
-> > The second rare but possible issue is zeroing of post_schedule()
-> > on a wrong cpu.
-> > 
-> > So, lets fix this and unify preempt_count state.
-> 
-> An alternative to your patch:
+* Nicholas Mc Guire | 2014-02-10 16:37:59 [+0100]:
 
-It looks better, than the initial.
+>2a) premption induced race in __this_cpu_dec
+>  T1 dec:start
+>               T2 dec
+>  T1 dec:end
+>
+>__this_cpu_dec 
+>  -> __this_cpu_sub 
+>    -> __this_cpu_add
+>      -> __this_cpu_add_#
+>        -> __this_cpu_generic_to_op
+>         -> __this_cpu_ptr += val
+>
+>
+>so we end up with the possibilities of
+>  T1 load
+>          T2 load
+>          T2 store
+>  T1 store
+>and the increment provided by T2 would be lost. The result of which
+>is that reaching the buffer_heads_over_limit threshold in recalc_bh_state 
 
-You may add my Acked-by if you want.
+I don't like this very much. __this_cpu_inc() is not atomic as you say
+and without the locking that is provided by preempt_disable() it might
+lose one store in inc or dec direction. This error will never be
+corrected again. That code path looks very short unless you have 4096
+CPUs.
 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b46131ef6aab..b932b6a4c716 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2210,6 +2210,10 @@ asmlinkage void schedule_tail(struct task_struct *prev)
->  {
->  	struct rq *rq = this_rq();
->  
-> +#ifndef __ARCH_WANT_UNLOCKED_CTXSW
-> +	/* In this case, finish_task_switch reenables preemption */
-> +	preempt_disable();
-> +#endif
->  	finish_task_switch(rq, prev);
->  
->  	/*
-> @@ -2218,10 +2222,7 @@ asmlinkage void schedule_tail(struct task_struct *prev)
->  	 */
->  	post_schedule(rq);
->  
-> -#ifdef __ARCH_WANT_UNLOCKED_CTXSW
-> -	/* In this case, finish_task_switch does not reenable preemption */
->  	preempt_enable();
-> -#endif
->  	if (current->set_child_tid)
->  		put_user(task_pid_vnr(current), current->set_child_tid);
->  }
-> 
-
-
+Sebastian
