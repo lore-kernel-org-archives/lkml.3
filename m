@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981AbaBNWRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 17:17:31 -0500
-Received: from mga02.intel.com ([134.134.136.20]:5483 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034AbaBNWR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 17:17:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,847,1384329600"; 
-   d="scan'208";a="483706174"
-From: "Dugger, Donald D" <donald.d.dugger@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 0/3] Quirk Intel PCH root ports for ACS-like features
-Thread-Topic: [PATCH v2 0/3] Quirk Intel PCH root ports for ACS-like features
-Thread-Index: AQHPKc4fLt21Vk+Fj0iazmGjRXcegJq1TzKg
-Date: Fri, 14 Feb 2014 22:17:02 +0000
-Message-ID: <6AF484C0160C61439DE06F17668F3BCB5285C7EC@ORSMSX102.amr.corp.intel.com>
-References: <20140203212216.8607.68273.stgit@bling.home>
- <CAErSpo5D55RcaSASGrU8hEcg+BYvGKOQHFjor8k1gSzfZKWy2g@mail.gmail.com>
-In-Reply-To: <CAErSpo5D55RcaSASGrU8hEcg+BYvGKOQHFjor8k1gSzfZKWy2g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752992AbaBNWU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 17:20:26 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:38875 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746AbaBNWUY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 17:20:24 -0500
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH v9 0/1] hibernation related patches
+Date: Fri, 14 Feb 2014 14:19:54 -0800
+Message-Id: <1392416395-26032-1-git-send-email-sebastian.capella@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1EMHbbi006124
 
-In re: Feature vs. bug fix
+Patchset related to hibernation resume:
+  - enhancement to make the use of an existing resume file more general
 
-At the risk of trying to arguing about the meaning of `is' I would argue that this is more a bug fix than a feature.  We're not adding a new capability, we are trying to work around deficient HW (no argument that we should have implemented ACS on all platforms).
+  Patch is based on the 3.13 tag.  This was tested on a Beaglebone black
+  with partial hibernation support, also compiled for x86_64.
 
-Having said that, although I would obviously prefer to see this in v3.14 we can live with this hitting v3.15.
+[PATCH v9 1/1] PM / Hibernate: use name_to_dev_t to parse resume
+  kernel/power/hibernate.c |   22 ++++++++++++----------
+  1 file changed, 12 insertions(+), 10 deletions(-)
 
---
-Don Dugger
-"Censeo Toto nos in Kansa esse decisse." - D. Gale
-Ph: 303/443-3786
+  Use name_to_dev_t to parse the /sys/power/resume file making the
+  syntax more flexible.  It supports the previous use syntax
+  and additionally can support other formats such as
+  /dev/devicenode and UUID= formats.
 
------Original Message-----
-From: Bjorn Helgaas [mailto:bhelgaas@google.com] 
-Sent: Friday, February 14, 2014 2:43 PM
-To: Alex Williamson
-Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Dugger, Donald D
-Subject: Re: [PATCH v2 0/3] Quirk Intel PCH root ports for ACS-like features
+  By changing /sys/debug/resume to accept the same syntax as
+  the resume=device parameter, we can parse the resume=device
+  in the initrd init script and use the resume device directly
+  from the kernel command line.
 
-[+cc Don]
+Changes in v9:
+--------------
+* Dropped util changes based on feedback
+* Reverted to special newline handling in resume_store
 
-On Mon, Feb 03, 2014 at 02:27:27PM -0700, Alex Williamson wrote:
-> v2:
->  - Remove bus #0 bug in filtering matching
->  - Add 2/3 introducing PCI_DEV_FLAGS_ACS_ENABLED_QUIRK, this gives
->    is better tracking and addresses the theoretical hotplug issue
->  - Update 3/3 for PCI_DEV_FLAGS_ACS_ENABLED_QUIRK
->  - Add dev_info to print regardless of whether we changes bits
->  - Add Intel cc
->
-> As described in 3/3 many Intel root ports lack PCIe ACS capabilities 
-> which results in excessively large IOMMU groups.  Many of these root 
-> ports do provide isolation capabilities, we just need to use device 
-> specific mechanisms to enable and verify.  Long term, I hope we can 
-> round out this list (particularly to include X79 root ports) and more 
-> importantly, encourage proper PCIe ACS support in future products.  
-> I'm really hoping we can get this in during the 3.14 cycle.
-> Thanks,
->
-> Alex
-> ---
->
-> Alex Williamson (3):
->       pci: Add device specific PCI ACS enable
->       pci: Add pci_dev_flag for ACS enable quirks
->       pci/quirks: Enable quirks for PCIe ACS on Intel PCH root ports
+Changes in v8:
+--------------
+* Dropped cleanup checkpatch warnings in hibernate.c file
+* Review comments for more compact checking in hibernate.c
 
-I applied these (with Don's ack for 3/3) to pci/virtualization.
+Changes in v7:
+--------------
+* Switch to trim only one trailing newline if present using kstrdup_trimnl
+* remove kstrimdup patch
+* add kstrdup_trimnl patch
+* Add clean up patch for kernel/power/hibernate.c checkpatch warnings
 
-I tried to figure out how to handle post-merge window patches.  Per Documentation/development-process/2.Process, "[after -rc1], only patches which fix problems should be submitted to the mainline," so one might conclude that a fix for any sort of problem is allowed.  However, Documentation/networking/netdev-FAQ.txt says "No new features get mainlined after this [-rc1] -- only fixes to the rc1 content are expected," which is how I've been operating.
+Changes in v6:
+--------------
+* Revert tricky / confusing while loop indexing
 
-In any case, these patches look more like new functionality (enabling a non-standard ACS feature) than a bug fix to me, so my preference is to merge them during the v3.15 merge window.
+Changes in v5:
+--------------
+* Change kstrimdup to minimize allocated memory.  Now allocates only
+  the memory needed for the string instead of using strim.
 
-I understand the desire for v3.14, namely, "lots of Intel devices don't support ACS, and that makes it hard for users to expose devices to userspace with fine granularity, and waiting for v3.15 will mean another two months."  But this problem is really of Intel's own making: if they'd used standard ACS, or if they'd documented their non-standard mechanism, this wouldn't be an issue.
+Changes in v4:
+--------------
+* Dropped name_to_dev_t rework in favor of adding kstrimdup
+* adjusted resume_store
 
-Bjorn
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Changes in v3:
+--------------
+* Dropped documentation patch as it went in through trivial
+* Added patch for name_to_dev_t to support directly parsing userspace
+  buffer
+
+Changes in v2:
+--------------
+* Added check for null return of kstrndup in hibernate.c
+
+
+Thanks,
+
+Sebastian
+
