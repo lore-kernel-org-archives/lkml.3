@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaBNQu0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 11:50:26 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:59636 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101AbaBNQuX (ORCPT
+	id S1752097AbaBNQyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 11:54:11 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63153 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790AbaBNQyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 11:50:23 -0500
-Date: Fri, 14 Feb 2014 11:50:19 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH cgroup/for-3.14-fixes] cgroup: update
- cgroup_enable_task_cg_lists() to grab siglock
-Message-ID: <20140214165019.GI31544@htj.dyndns.org>
-References: <20140213182931.GB17608@htj.dyndns.org>
- <52FD9256.1080801@huawei.com>
+	Fri, 14 Feb 2014 11:54:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd: dbx500/abx500: root out hardcoded IRQ assignments
+Date: Fri, 14 Feb 2014 17:54:01 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+References: <1392114599-481-1-git-send-email-linus.walleij@linaro.org> <20140213131720.GC3403@lee--X1> <CACRpkdaoqwiy0n-oN0gKqgX_enGXw+BggRQy9yz8eQNyJ3MvsA@mail.gmail.com>
+In-Reply-To: <CACRpkdaoqwiy0n-oN0gKqgX_enGXw+BggRQy9yz8eQNyJ3MvsA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FD9256.1080801@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402141754.02159.arnd@arndb.de>
+X-Provags-ID: V02:K0:wGSNe79hKOqU+L2V6oh0whEPwMRR8AqtaRZaB5bLZQc
+ Ye5vFxrJdqd1tcAPTqgIsn+DBdRfV7miwIivMBvGd/+CcKZSiW
+ TE8MH69JrXmTWfuZmTprQdbRENI8eKU1t0P/6DTntiEQ+YZXHj
+ Q2eiYl+oxCNIFb6xX+NW3GkoW/8D+XAr96P3HK4kETezKzI6r2
+ yuWdQdubs+Y8UHIU3w1FUlRwK6rRB+qDR0bBGRF/LN0288EuFT
+ MBfWz7W8Hq7kfzcbdk7dFKpsMGbxCf9d7VX9N/+EAfxX4nCmy2
+ +pXcuvzJVuJFTSTm8dFcqOlE70YZ1Sbq47Y3jS2YWxmzfg5HMb
+ M8nx+BnLQtafXSwzEWiQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Friday 14 February 2014, Linus Walleij wrote:
+> On Thu, Feb 13, 2014 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> <linus.walleij@linaro.org> wrote:
+> >>
+> >> > The DBx500 and ABx500 should be getting their IRQs from the
+> >> > device tree and nowhere else. Get rid of all the static assignments
+> >> > everywhere, delete it from the driver, platform data and the
+> >> > board files in one swift strike.
+> >> >
+> >> > Lots of cross-dependencies in the MFD drivers for PRCMU and
+> >> > AB8500 makes it necessary to strike everywhere at once to
+> >> > eradicate IRQs passed as resources and platform data to the left
+> >> > and right around the platform.
+> >> >
+> >> > Cc: Mark Brown <broonie@kernel.org>
+> >> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> >> > Cc: Lee Jones <lee.jones@linaro.org>
+> >> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> >>
+> >> OK no major complaints, Lee can you queue this in the MFD tree
+> >> so we get some Linux-next rotation? If we need an immutable
+> >> branch remains to be seen, maybe we can merge this throug MFD
+> >> exclusively.
+> >
+> > I'm happy to do either, but the latter will require an ARM-SoC Ack.
+> 
+> OK Olof/Arnd/Kevin: can you ACK this patch for queueing
+> through MFD? It only hits arch/arm/mach-ux500/*
 
-On Fri, Feb 14, 2014 at 11:49:42AM +0800, Li Zefan wrote:
-> Now the only race I see is caused by checking tsk->cg_list without locking
-> in cgroup_exit():
+Sounds good. Great job at cleaning up that stuff!
 
-Yeah, that's the one I was trying to fix.
-
-> Your patch can fix this race, but after diving into the code I don't think
-> the race exists, because exit_mm() locks&unlocks task_lock, and exit_mm()
-> is called after exit_signal() and before cgroup_exit(), and task_lock is
-> also taken by cgroup_enable_task_cg_lists().
-
-Ah, okay, so there's a task_lock somewhere in the exit path.
-Extremely fragile, but not broken.
-
-> I totally agree the code is fragile and we should take your patch. I just
-> want to make it clear if the bug exists in real life or not, and then we
-> can write better changelog and decide to queue the patch for 3.14 or 3.15
-> and decide to mark it for stable or not.
-
-Yeap, no reason to mark it for -stable if it doesn't actually happen.
-I'll update the description and respin it for for-3.15.
-
-Thanks!
-
--- 
-tejun
+	Arnd
