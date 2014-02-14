@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaBNEue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:50:34 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:57429 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970AbaBNEud (ORCPT
+	id S1751854AbaBNEx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:53:29 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:65003 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaBNEx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:50:33 -0500
-X-AuditID: 9c93017e-b7cf9ae000004b4b-e5-52fda096c1ba
-From: Namhyung Kim <namhyung@kernel.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip RESEND 2/2] ftrace: Introduce nr_saved_cmdlines I/F
-References: <20140213012852.15283.50473.stgit@yunodevel>
-	<20140213012858.15283.93302.stgit@yunodevel>
-Date: Fri, 14 Feb 2014 13:50:30 +0900
-In-Reply-To: <20140213012858.15283.93302.stgit@yunodevel> (Yoshihiro YUNOMAE's
-	message of "Thu, 13 Feb 2014 10:28:58 +0900")
-Message-ID: <878utez4a1.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 13 Feb 2014 23:53:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CAKYAXd_EYrfF0iQVw5FJRHkGCeMTUoQdx+BogV+-g9vqXeGZdw@mail.gmail.com>
+References: <1387953065-2726-1-git-send-email-linkinjeon@gmail.com>
+	<87mwi8x27b.fsf@devron.myhome.or.jp>
+	<CAKYAXd_EYrfF0iQVw5FJRHkGCeMTUoQdx+BogV+-g9vqXeGZdw@mail.gmail.com>
+Date: Fri, 14 Feb 2014 13:53:26 +0900
+Message-ID: <CAKYAXd80BFUMGYrON22Ui4xSMaxNJaHD1ss8bMVgdQqC4xG48A@mail.gmail.com>
+Subject: Re: [PATCH v3 2/6] fat: add fat_fallocate operation
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yoshihiro,
+>> [...]
+>>
+>>> +		/* Release unwritten fallocated blocks on inode eviction. */
+>>> +		if (MSDOS_I(inode)->mmu_private < MSDOS_I(inode)->i_disksize) {
+>>> +			int err;
+>>> +			fat_truncate_blocks(inode, MSDOS_I(inode)->mmu_private);
+>>> +			/* Fallocate results in updating the i_start/iogstart
+>>> +			 * for the zero byte file. So, make it return to
+>>> +			 * original state during evict and commit it
+>>> +			 * synchrnously to avoid any corruption on the next
+>>> +			 * access to the cluster chain for the file.
+>>> +			 */
+>>> +			err = fat_sync_inode(inode);
+>>
+>> Ah, good catch. We have to update i_size. I was forgetting about this.
+>> Well, sync inode unconditionally would not be good. Maybe, we better to
+>> use __fat_write_inode() with inode_needs_sync() or such.
+> Okay, I will change it.
+Hi OGAWA
 
-On Thu, 13 Feb 2014 10:28:58 +0900, Yoshihiro YUNOMAE wrote:
-> Introduce nr_saved_cmdlines I/F for changing the number of pid-comm list.
-> saved_cmdlines can store 128 command names using SAVED_CMDLINES now, but
-> 'no-existing processes' names are often lost in saved_cmdlines when we
-> read trace data. So, by introducing nr_saved_cmdlines I/F, the rule storing
-> 128 command names is changed to the command numbers defined users.
->
-> When we write a value to nr_saved_cmdlines, the number of the value will
-> be stored in pid-comm list:
->
-> 	# echo 1024 > /sys/kernel/debug/tracing/nr_saved_cmdlines
->
-> Here, 1024 command names are stored. The default number is 128 and the maximum
-> number is PID_MAX_DEFAULT (=32768 if CONFIG_BASE_SMALL is not set). So, if we
-> want to avoid to lose command names, we need to set 32768 to nr_saved_cmdlines.
->
-> We can read the maximum number of the list:
->
-> 	# cat /sys/kernel/debug/tracing/nr_saved_cmdlines
-> 	128
+When I checked more, we should wait till inode is sync. Because in the
+eviction it will leave the inode/buffers being marked dirty.
+Not waiting for it get sync over here. It will leave cluster chain
+corrupted when remounting.
+It mean we cannot use __fat_write_inode with inode_needs_sync() conditionally.
 
-[SNIP]
-> @@ -3685,7 +3760,8 @@ static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
->  
->  	(*pos)++;
->  
-> -	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
-> +	for (; ptr < &savedcmd->map_cmdline_to_pid[savedcmd->cmdline_num];
-> +	     ptr++) {
->  		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
->  			continue;
->  
-> @@ -3700,7 +3776,7 @@ static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
->  	void *v;
->  	loff_t l = 0;
->  
-> -	v = &map_cmdline_to_pid[0];
-> +	v = &savedcmd->map_cmdline_to_pid[0];
->  	while (l <= *pos) {
->  		v = saved_cmdlines_next(m, v, &l);
->  		if (!v)
-
-Are you accessing the savecmd without trace_cmdline_lock?
-
-Thanks,
-Namhyung
+Thanks.
+>
+> Thanks.
+>> --
+>> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>>
+>
