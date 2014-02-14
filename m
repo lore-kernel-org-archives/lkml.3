@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbaBNKjf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 05:39:35 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34726 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaBNKjd (ORCPT
+	id S1752159AbaBNKm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 05:42:57 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:43218 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaBNKmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 05:39:33 -0500
-Date: Fri, 14 Feb 2014 11:39:30 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Petr =?utf-8?B?UMOtc2HFmQ==?= <petr.pisar@atlas.cz>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?iso-8859-1?Q?Jean-Fran=E7ois?= Moine <moinejf@free.fr>
-Subject: Re: [PATCH] vt: Fix secure clear screen
-Message-ID: <20140214103929.GA3933@amd.pavel.ucw.cz>
-References: <1391716883-31383-1-git-send-email-petr.pisar@atlas.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1391716883-31383-1-git-send-email-petr.pisar@atlas.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 Feb 2014 05:42:55 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-cd-52fdf32d2dcf
+Message-id: <52FDF32A.1040809@samsung.com>
+Date: Fri, 14 Feb 2014 11:42:50 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [PATCH v2 4/6] ARM: firmware: add prepare_idle() operation
+References: <1391747706-1847-1-git-send-email-acourbot@nvidia.com>
+ <1391747706-1847-5-git-send-email-acourbot@nvidia.com>
+ <52FCA5FC.80504@samsung.com> <52FDA6B4.6070404@nvidia.com>
+In-reply-to: <52FDA6B4.6070404@nvidia.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t/xa7q6n/8GGTR3qll8f3iK1eLcq0cs
+	FpseX2O1uLxrDptF55dZbBa3L/NanLr+mc3i1cE2Foufu+axOHB6tDT3sHnsnHWX3WPzknqP
+	KyeaWD16m9+xeXzeJOexcW5oAHsUl01Kak5mWWqRvl0CV8aDz/uZCjZxV0x91czcwNjP2cXI
+	ySEhYCKxsWc7K4QtJnHh3nq2LkYuDiGBpYwS3U/vM0M4nxklmia2ADkcHLwCWhL7vpqANLAI
+	qEo83bGBCcRmE1CT+NzwiA3EFhWIkPg7bz0jiM0rICjxY/I9FhBbRGA1o8Tn92EgM5kF5jJJ
+	TPnfAtYgLOAusbDnL1iDkMAORomLm41BdnEC7Vrf4wgSZhawllg5aRsjhC0vsXnNW+YJjAKz
+	kKyYhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFC4uDrDsalx6wOMQpwMCrx
+	8H64+ydIiDWxrLgy9xCjBAezkgiv+/6/QUK8KYmVValF+fFFpTmpxYcYmTg4pRoYva2kfsZk
+	TF1yvOhU+eWp7u/6v309xr3oZbDwtFOsBgmZLAZrLaS/rVZ4fZTHSJejvi2IqzLQ8rO44KeL
+	m1knzxD9Jq3zXp/9vPYGw+sa00Jqd734sOTNw4zXbxft/vbn0uYZt2coP1xxWLCXa/fGp4v/
+	9/KcuHheVCSeW24D24a6fvPLoT8nZCqxFGckGmoxFxUnAgCJL7ykYQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 14.02.2014 06:16, Alexandre Courbot wrote:
+> On 02/13/2014 08:01 PM, Tomasz Figa wrote:
+>> Hi Alexandre,
+>>
+>> On 07.02.2014 05:35, Alexandre Courbot wrote:
+>>> Some firmwares do not put the CPU into idle mode themselves, but still
+>>> need to be informed that the CPU is about to enter idle mode before this
+>>> happens. Add a prepare_idle() operation to the firmware_ops structure to
+>>> handle such cases.
+>>>
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>> ---
+>>>    arch/arm/include/asm/firmware.h | 4 ++++
+>>>    1 file changed, 4 insertions(+)
+>>
+>> I wonder if .do_idle() couldn't simply return an appropriate error code
+>> to let the upper layer know that it should proceed with normal CPU idle
+>> activation, while still letting the firmware know that the CPU is going
+>> to idle.
+>
+> In our particular case I agree it would be enough to use do_idle() to
+> let the firmware know about the operation and have it return -ENOSYS so
+> the kernel actually performs it. I'm afraid this might not fulfill all
+> needs though (e.g. one can imagine a firmware where the OS needs to take
+> action between the notification and the actual shutdown), and as Stephen
+> pointed out that would make the name of the function ambiguous at best.
+> I'd rather keep it the current way for clarity.
+>
 
-> \E[3J console code (secure clear screen) needs to update_screen(vc)
-> in order to write-through blanks into off-screen video memory.
+OK. I'm not strongly against this, just wanted some more thought on 
+this, so please move on.
 
-I guess it is also suitable for stable, right?
-
-Thanks,
-								Pavel
-
-> This has been removed accidentally in 3.6 by:
-> 
-> commit 81732c3b2fede049a692e58a7ceabb6d18ffb18c
-> Author: Jean-François Moine <moinejf@free.fr>
-> Date:   Thu Sep 6 19:24:13 2012 +0200
-> 
->     tty vt: Fix line garbage in virtual console on command line edition
-> 
-> Signed-off-by: Petr Písař <petr.pisar@atlas.cz>
-> ---
->  drivers/tty/vt/vt.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-> index 61b1137..23b5d32 100644
-> --- a/drivers/tty/vt/vt.c
-> +++ b/drivers/tty/vt/vt.c
-> @@ -1164,6 +1164,8 @@ static void csi_J(struct vc_data *vc, int vpar)
->  			scr_memsetw(vc->vc_screenbuf, vc->vc_video_erase_char,
->  				    vc->vc_screenbuf_size >> 1);
->  			set_origin(vc);
-> +			if (CON_IS_VISIBLE(vc))
-> +				update_screen(vc);
->  			/* fall through */
->  		case 2: /* erase whole display */
->  			count = vc->vc_cols * vc->vc_rows;
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Best regards,
+Tomasz
