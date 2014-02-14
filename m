@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046AbaBNOZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 09:25:52 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:41725 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaBNOZs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 09:25:48 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        jic23@kernel.org
-Cc: pmeerw@pmeerw.net, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, hns@goldelico.com,
-        Marek Belisko <marek@goldelico.com>
-Subject: [PATCH 2/2] Documentation: iio: Extend documentation for hmc5843 bindings.
-Date: Fri, 14 Feb 2014 15:25:29 +0100
-Message-Id: <1392387929-31491-2-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392387929-31491-1-git-send-email-marek@goldelico.com>
-References: <1392387929-31491-1-git-send-email-marek@goldelico.com>
+	id S1752925AbaBNO1m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 09:27:42 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55739 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751511AbaBNO1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 09:27:41 -0500
+Date: Fri, 14 Feb 2014 15:27:32 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: ChaosEsque Team <chaosesqueteam@yahoo.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Honestly, f__k systemd and f__k lennart, and f__k the fans of
+ them. Where's linus in all of this?
+Message-ID: <20140214142732.GB26664@pd.tnic>
+References: <1392383941.45561.YahooMailBasic@web141704.mail.bf1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1392383941.45561.YahooMailBasic@web141704.mail.bf1.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- Documentation/devicetree/bindings/iio/magnetometer/hmc5843.txt | 3 +++
- 1 file changed, 3 insertions(+)
+On Fri, Feb 14, 2014 at 05:19:01AM -0800, ChaosEsque Team wrote:
+> Honestly, f__k systemd and f__k lennart, and f__k the fans of them.
+> Where's linus in all of this?
+> 
+> The systemd fans ban anyone who say f__k-that to systemd.
+> 
+> What can we do?
+> Can we fork debian? (Why do we have to...)
+> Why do 4 people get to decide to send thousands and thousands of people into the systemd waters?
+> This is not fair.
+> 
+> This is not-pro choice. And YES, linux, and especially debian IS about choice.
 
-diff --git a/Documentation/devicetree/bindings/iio/magnetometer/hmc5843.txt b/Documentation/devicetree/bindings/iio/magnetometer/hmc5843.txt
-index 90d5f34..b8cbdd5 100644
---- a/Documentation/devicetree/bindings/iio/magnetometer/hmc5843.txt
-+++ b/Documentation/devicetree/bindings/iio/magnetometer/hmc5843.txt
-@@ -3,6 +3,9 @@
- Required properties:
- 
-   - compatible : should be "honeywell,hmc5843"
-+  Other models which are supported with driver are:
-+	"honeywell,hmc5883"
-+	"honeywell,hmc5883l"
-   - reg : the I2C address of the magnetometer - typically 0x1e
- 
- Optional properties:
+I don't know if you're trolling for a useless discussion or this is
+really your opinion but if it were, I have to say that I agree with you
+about the choice aspect. I don't like that systemd-or-die XOR-morality
+either.
+
+I'm sure systemd might have its merits and all but I think, too, people
+should have a choice on any distro.
+
+Just my 2c.
+
 -- 
-1.8.3.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
