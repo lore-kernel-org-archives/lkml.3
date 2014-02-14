@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbaBNFrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 00:47:37 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39879 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760AbaBNFrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 00:47:36 -0500
-Date: Thu, 13 Feb 2014 21:47:24 -0800
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-Message-ID: <20140214054724.GA24329@linux.vnet.ibm.com>
-References: <52F4B8A4.70405@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402071239301.4212@chino.kir.corp.google.com>
- <52F88C16.70204@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
- <52F8C556.6090006@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
- <52FC6F2A.30905@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
- <52FC98A6.1000701@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
-X-Operating-System: Linux 3.11.0-15-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021405-5806-0000-0000-0000242246D9
+	id S1751585AbaBNGFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 01:05:05 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:27746 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaBNGFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 01:05:03 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-84-52fdb20cbe85
+From: Weijie Yang <weijie.yang@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: anton.vorontsov@linaro.org, rientjes@google.com, weijie.yang.kh@gmail.com,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: [PATCH RESEND] staging: android: lowmemorykiller: set TIF_MEMDIE
+ before send kill sig
+Date: Fri, 14 Feb 2014 14:03:56 +0800
+Message-id: <000001cf294a$b1bebd60$153c3820$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8pSot/olrst5TiS7mdfP2z2YbGbQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jQV2eTX+DDFbvVbS42HqbxaJ58Xo2
+	i8u75rBZtC3ZyGTx5MR/FgdWj52z7rJ7LNhU6nHn2h42j/1z17B7fN4kF8AaxWWTkpqTWZZa
+	pG+XwJWxaHsbS8E+9op9G9+wNTDOZ+ti5OSQEDCR6P2/khXCFpO4cG89UJyLQ0hgOqPEjb+v
+	oJw/jBK3P29kAaliE9CWuNu/EaxDREBO4sntP8wgNrNAnUTLxJVANRwcwgIJEofOR4CEWQRU
+	JTYdmMMOYvMK2EmcWzCVCcIWlPgx+R4LRKu6xKR5i6DGyEtsXvOWGWSMBFD80V9diE16Etdm
+	vGGEKBGX2HjkFssERoFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yf
+	u4kRHOTPpHYwrmywOMQowMGoxMPr8eBPkBBrYllxZe4hRgkOZiURXqa0v0FCvCmJlVWpRfnx
+	RaU5qcWHGKU5WJTEeQ+0WgcKCaQnlqRmp6YWpBbBZJk4OKUaGFNuGl5KYNkm5Ll9R4XYrFsn
+	618YRVftXLPbb/ZVr/wpWxIii85ltdar780u8lWY8Ddyy7VL3+OXsYXfVS7+czJyUdkpl4Zj
+	u66sZ09aIL3F88G9m3Z/s8NqNz9cnFP6wKSyXu3JxhmThW7xFRjvUj206enTeVtyJigumT3L
+	6Pel3SfnygdIPt2kxFKckWioxVxUnAgAFRcE9W4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.02.2014 [14:41:04 -0800], David Rientjes wrote:
-> On Thu, 13 Feb 2014, Raghavendra K T wrote:
-> 
-> > Thanks David, unfortunately even after applying that patch, I do not see
-> > the improvement.
-> > 
-> > Interestingly numa_mem_id() seem to still return the value of a
-> > memoryless node.
-> > May be  per cpu _numa_mem_ values are not set properly. Need to dig out ....
-> > 
-> 
-> I believe ppc will be relying on __build_all_zonelists() to set 
-> numa_mem_id() to be the proper node, and that relies on the ordering of 
-> the zonelist built for the memoryless node.  It would be very strange if 
-> local_memory_node() is returning a memoryless node because it is the first 
-> zone for node_zonelist(GFP_KERNEL) (why would a memoryless node be on the 
-> zonelist at all?).
-> 
-> I think the real problem is that build_all_zonelists() is only called at 
-> init when the boot cpu is online so it's only setting numa_mem_id() 
-> properly for the boot cpu.  Does it return a node with memory if you 
-> toggle /proc/sys/vm/numa_zonelist_order?  Do
-> 
-> 	echo node > /proc/sys/vm/numa_zonelist_order
-> 	echo zone > /proc/sys/vm/numa_zonelist_order
-> 	echo default > /proc/sys/vm/numa_zonelist_order
-> 
-> and check if it returns the proper value at either point.  This will force 
-> build_all_zonelists() and numa_mem_id() to point to the proper node since 
-> all cpus are now online.
+Set TIF_MEMDIE tsk_thread flag before send kill signal to the
+selected thread. This is to fit a usual code sequence and avoid
+potential race issue.
 
-Yep, after massaging the code to allow CONFIG_USE_PERCPU_NUMA_NODE_ID,
-you're right that the memory node is wrong. The cpu node is right (they
-are all on node 0), but that could be lucky. The memory node is right
-for the boot cpu. I did notice that some CPUs now think the cpu node is
-1, which is wrong.
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+---
+ drivers/staging/android/lowmemorykiller.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> So the prerequisite for CONFIG_HAVE_MEMORYLESS_NODES is that there is an 
-> arch-specific set_numa_mem() that makes this mapping correct like ia64 
-> does.  If that's the case, then it's (1) completely undocumented and (2) 
-> Nishanth's patch is incomplete because anything that adds 
-> CONFIG_HAVE_MEMORYLESS_NODES needs to do the proper set_numa_mem() for it 
-> to be any different than numa_node_id().
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 6f094b3..4bcf00a
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -159,8 +159,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
+ 			     selected->pid, selected->comm,
+ 			     selected_oom_score_adj, selected_tasksize);
+ 		lowmem_deathpending_timeout = jiffies + HZ;
+-		send_sig(SIGKILL, selected, 0);
+ 		set_tsk_thread_flag(selected, TIF_MEMDIE);
++		send_sig(SIGKILL, selected, 0);
+ 		rem += selected_tasksize;
+ 	}
+ 
+-- 
+1.7.10.4
 
-I'll work on getting the set_numa_mem() and set_numa_node() correct for
-powerpc.
-
-Thanks,
-Nish
 
