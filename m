@@ -1,146 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaBNLVZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 06:21:25 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53741 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbaBNLVW (ORCPT
+	id S1752265AbaBNLYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 06:24:14 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:64423 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbaBNLYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 06:21:22 -0500
-Message-ID: <52FDFB4C.7010607@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 16:47:32 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
-References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org>
-In-Reply-To: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021411-0260-0000-0000-0000045C1961
+	Fri, 14 Feb 2014 06:24:11 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: alexandre.torgue@st.com, Lee Jones <lee.jones@linaro.org>,
+        devicetree@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the MiPHY365x
+Date: Fri, 14 Feb 2014 11:23:53 +0000
+Message-Id: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+devices. It has 2 ports which it can use for either; both SATA, both
+PCIe or one of each in any configuration.
 
-You will have to include the below patch with yours. You
-could squash the two I guess, I have added the changelog
-just for clarity. And you also might want to change the subject to
-cpuidle/powernv. It gives a better picture.
-
-Thanks
-
-Regards
-Preeti U Murthy
-
-
-cpuidle/powernv: Add ppc64_runlatch_off/on() to idle routines
-
-Following moving of cpuidle_idle_call() to the generic idle loop, we need to
-add the runlatch functions to the idle routines on powernv which was earlier
-taken care of by the arch specific idle routine.
-
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: devicetree@vger.kernel.org
+Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/cpuidle/cpuidle-powernv.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ .../devicetree/bindings/phy/phy-miphy365x.txt      | 54 ++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
 
-diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
-index 78fd174..f48607c 100644
---- a/drivers/cpuidle/cpuidle-powernv.c
-+++ b/drivers/cpuidle/cpuidle-powernv.c
-@@ -14,6 +14,7 @@
- 
- #include <asm/machdep.h>
- #include <asm/firmware.h>
-+#include <asm/runlatch.h>
- 
- struct cpuidle_driver powernv_idle_driver = {
- 	.name             = "powernv_idle",
-@@ -30,12 +31,14 @@ static int snooze_loop(struct cpuidle_device *dev,
- 	local_irq_enable();
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- 
-+	ppc64_runlatch_off();
- 	while (!need_resched()) {
- 		HMT_low();
- 		HMT_very_low();
- 	}
- 
- 	HMT_medium();
-+	ppc64_runlatch_on();
- 	clear_thread_flag(TIF_POLLING_NRFLAG);
- 	smp_mb();
- 	return index;
-@@ -45,7 +48,9 @@ static int nap_loop(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv,
- 			int index)
- {
-+	ppc64_runlatch_off();
- 	power7_idle();
-+	ppc64_runlatch_on();
- 	return index;
- }
-
- 
-On 02/06/2014 07:46 PM, Nicolas Pitre wrote:
-> The core idle loop now takes care of it.
-> 
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> ---
->  arch/powerpc/platforms/powernv/setup.c | 13 +------------
->  1 file changed, 1 insertion(+), 12 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
-> index 21166f65c9..a932feb290 100644
-> --- a/arch/powerpc/platforms/powernv/setup.c
-> +++ b/arch/powerpc/platforms/powernv/setup.c
-> @@ -26,7 +26,6 @@
->  #include <linux/of_fdt.h>
->  #include <linux/interrupt.h>
->  #include <linux/bug.h>
-> -#include <linux/cpuidle.h>
-> 
->  #include <asm/machdep.h>
->  #include <asm/firmware.h>
-> @@ -217,16 +216,6 @@ static int __init pnv_probe(void)
->  	return 1;
->  }
-> 
-> -void powernv_idle(void)
-> -{
-> -	/* Hook to cpuidle framework if available, else
-> -	 * call on default platform idle code
-> -	 */
-> -	if (cpuidle_idle_call()) {
-> -		power7_idle();
-> -	}
-> -}
-> -
->  define_machine(powernv) {
->  	.name			= "PowerNV",
->  	.probe			= pnv_probe,
-> @@ -236,7 +225,7 @@ define_machine(powernv) {
->  	.show_cpuinfo		= pnv_show_cpuinfo,
->  	.progress		= pnv_progress,
->  	.machine_shutdown	= pnv_shutdown,
-> -	.power_save             = powernv_idle,
-> +	.power_save             = power7_idle,
->  	.calibrate_decr		= generic_calibrate_decr,
->  #ifdef CONFIG_KEXEC
->  	.kexec_cpu_down		= pnv_kexec_cpu_down,
-> 
+diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+new file mode 100644
+index 0000000..96f269f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+@@ -0,0 +1,54 @@
++STMicroelectronics STi MIPHY365x PHY binding
++============================================
++
++This binding describes a miphy device that is used to control PHY hardware
++for SATA and PCIe.
++
++Required properties:
++- compatible: Should be "st,miphy365x-phy"
++- #phy-cells: Should be 2 (See second example)
++		First cell is the port number; MIPHY_PORT_{0,1}
++		Second cell is device type; MIPHY_TYPE_{SATA,PCI}
++- reg:	      Address and length of the register set for the device
++- reg-names:  The names of the register addresses corresponding to the
++	      registers filled in "reg"
++		Options are; sata{0,1} and pcie{0,1} (See first example)
++- st,syscfg : Should be a phandle of the system configuration register group
++	      which contain the SATA, PCIe mode setting bits
++
++Optional properties:
++- st,sata-gen	     : Generation of locally attached SATA IP. Expected values
++		       are {1,2,3). If not supplied generation 1 hardware will
++		       be expected
++- st,pcie-tx-pol-inv : Bool property to invert the polarity PCIe Tx (Txn/Txp)
++- st,sata-tx-pol-inv : Bool property to invert the polarity SATA Tx (Txn/Txp)
++
++Example:
++
++	miphy365x_phy: miphy365x@0 {
++		compatible = "st,miphy365x-phy";
++		#phy-cells = <2>;
++		reg =	<0xfe382000 0x100>,
++			<0xfe38a000 0x100>,
++			<0xfe394000 0x100>,
++			<0xfe804000 0x100>;
++		reg-names = "sata0", "sata1", "pcie0", "pcie1";
++		st,syscfg= <&syscfg_rear>;
++	};
++
++Specifying phy control of devices
++=================================
++
++Device nodes should specify the configuration required in their "phys"
++property, containing a phandle to the miphy device node, a port number
++and a device type.
++
++Example:
++
++#include <dt-bindings/phy/phy-miphy365x.h>
++
++	sata0: sata@fe380000 {
++		...
++		phys	  = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
++		...
++	};
+-- 
+1.8.3.2
 
