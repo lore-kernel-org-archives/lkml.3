@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaBNMbq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 07:31:46 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:50229 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932AbaBNMbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 07:31:44 -0500
-Message-ID: <52FE0C9C.6090905@ti.com>
-Date: Fri, 14 Feb 2014 14:31:24 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
+	id S1752129AbaBNMdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 07:33:12 -0500
+Received: from relay.parallels.com ([195.214.232.42]:57673 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbaBNMdK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 07:33:10 -0500
+Message-ID: <1392381205.5384.39.camel@tkhai>
+Subject: Re: [PATCH] sched/core: Create new task with twice disabled
+ preemption
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        David Airlie <airlied@linux.ie>
-Subject: Re: [PATCH RFC 2/3] fbdev: move fbdev core files to separate directory
-References: <1392376711-11290-1-git-send-email-tomi.valkeinen@ti.com>	<1392376711-11290-2-git-send-email-tomi.valkeinen@ti.com> <CAMuHMdWWOUVe-16VBZ098-OfB21X9Wz1wO8gmSUy4PsFvQoX1A@mail.gmail.com>
-In-Reply-To: <CAMuHMdWWOUVe-16VBZ098-OfB21X9Wz1wO8gmSUy4PsFvQoX1A@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="H0fDMKj3Um9qoHsuRgn0hO7GjHmd1oDLF"
+        Ingo Molnar <mingo@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Date: Fri, 14 Feb 2014 16:33:25 +0400
+In-Reply-To: <20140214122152.GD10590@arm.com>
+References: <1392306716.5384.3.camel@tkhai>
+	 <20140213160013.GE6835@laptop.programming.kicks-ass.net>
+	 <52FD01A6.8060404@yandex.ru> <20140214105255.GA10596@arm.com>
+	 <1392376569.5384.25.camel@tkhai> <20140214122152.GD10590@arm.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---H0fDMKj3Um9qoHsuRgn0hO7GjHmd1oDLF
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+В Птн, 14/02/2014 в 12:21 +0000, Catalin Marinas пишет:
+> On Fri, Feb 14, 2014 at 11:16:09AM +0000, Kirill Tkhai wrote:
+> > В Птн, 14/02/2014 в 10:52 +0000, Catalin Marinas пишет:
+> > > On Thu, Feb 13, 2014 at 09:32:22PM +0400, Kirill Tkhai wrote:
+> > > > Look at ARM64's finish_arch_post_lock_switch(). It looks a task
+> > > > must to not be preempted between switch_mm() and this function.
+> > > > But in case of new task this is possible.
+> > > 
+> > > We had a thread about this at the end of last year:
+> > > 
+> > > https://lkml.org/lkml/2013/11/15/82
+> > >
+> > > There is indeed a problem on arm64, something like this (and I think
+> > > s390 also needs a fix):
+> > > 
+> > > 1. switch_mm() via check_and_switch_context() defers the actual mm
+> > >    switch by setting TIF_SWITCH_MM
+> > > 2. the context switch is considered 'done' by the kernel before
+> > >    finish_arch_post_lock_switch() and therefore we can be preempted to a
+> > >    new thread before finish_arch_post_lock_switch()
+> > > 3. The new thread has the same mm as the preempted thread but we
+> > >    actually missed the mm switching in finish_arch_post_lock_switch()
+> > >    because TIF_SWITCH_MM is per thread rather than mm
+> > > 
+> > > > This is the problem I tried to solve. I don't know arm64, and I can't
+> > > > say how it is serious.
+> > > 
+> > > Have you managed to reproduce this? I don't say it doesn't exist, but I
+> > > want to make sure that any patch actually fixes it.
+> > 
+> > No, I have not tried. I found this place while analysing scheduler code.
+> > But it seems with the RT technics suggested previous message it's quite
+> > possible.
+> 
+> Now I think I confused myself. Looking through the __schedule() code,
+> context_switch() and therefore finish_arch_post_lock_switch() are called
+> with preemption disabled. So the scenario above cannot exist since the
+> current thread cannot be preempted between switch_mm() and
+> finish_arch_post_lock_switch(). Do I miss anything?
 
-On 14/02/14 14:27, Geert Uytterhoeven wrote:
-> Hi Tomi,
->=20
-> Thanks for doing this!
->=20
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
->=20
-> On Fri, Feb 14, 2014 at 12:18 PM, Tomi Valkeinen <tomi.valkeinen@ti.com=
-> wrote:
->> --- a/drivers/video/fbdev/fbmon.c
->> +++ b/drivers/video/fbdev/core/fbmon.c
->> @@ -37,7 +37,7 @@
->>  #include <asm/prom.h>
->>  #include <asm/>
->>  /*
->>   * EDID parserpci-bridge.h>
->>  #endif
->> -#include "edid.h"
->> +#include "../edid.h"
->=20
-> This looks a bit asymmetrical ...
->=20
->> --- a/drivers/video/fbdev/wmt_ge_rops.c
->> +++ b/drivers/video/fbdev/wmt_ge_rops.c
->> @@ -18,7 +18,7 @@
->>  #include <linux/module.h>
->>  #include <linux/fb.h>
->>  #include <linux/platform_device.h>
->> -#include "fb_draw.h"
->> +#include "core/fb_draw.h"
->=20
-> ... to this.
->=20
-> Perhaps (the content of) edid.h belongs in include/video/edid.h?
+Everything is right, the only case, which we have to worry, is
+schedule_tail()
 
-Yes, I thought the same, but I didn't want to start messing around too
-much in this series. I also noticed some odd Kconfig options (for
-example, HAVE_FB_ATMEL, SH_MIPI_DSI, SH_LCD_MIPI_DSI at the beginning of
-drivers/video/Kconfig), which I almost started cleaning up, but decided
-to just concentrate on the main reorganization.
+> Now I get your point about schedule_tail() which calls
+> finish_task_switch() with a preempt count of 0. I'll get back to your
+> original patch.
+> 
+> Thanks.
+> 
 
- Tomi
+Kirill
 
-
-
---H0fDMKj3Um9qoHsuRgn0hO7GjHmd1oDLF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJS/gyjAAoJEPo9qoy8lh715ugQAIUwVqQC15qPyjBynI7AsFEi
-JerkdL7p+vQvPquO/p0T/aBqjalZszWBxDw+VdC5ilo4ekqA8TIiGrmSYmKpSQuB
-IG0dnOo3wg3bZpZrTUPp8gKqN60olta3HmT89nUGuCdHJxtlC8BOcN+7NV0/Lix8
-9Pw/OCug4pufvGxeCnJoGGL4fle+pKyxa5YsEdHdz0qic86SKs/tGy5+s/0xzsyA
-jr0U74LmNQMEuJzEd4/krCacRDFmoUj+29uWOaYhxIAshlqkIo0Ou2JY7U7V8ozP
-A06HE6nBLHAd3hLsjZYEG68mOuYmkBKEvJipaSzm9Q8+YU6dgjxyAaZtjl8KLdPc
-I4dBtsYKsURe8D7AJ0irK9M2VU2rCgc1UzMF0StwuNQDou79jTsPn7gg3m/BCQN3
-Ig7xUXcoCYxe3rSBJEYWyzzVqe8rXuhMEJ8Bx7xCJabWSaYPPhgRP4jAgVe8TcvS
-rFI9Fz1LQO5cJA8A/eR4PG5wXZz9T6jEiukqkSglBe3EL8OkU7DqJvgCw+sh7dm5
-ta8aMWQ9EohM0sgIXCSQxCwVdM1vri5mAyiDZ/sE0qVP31Zphrq8pgWAa5kkpxP9
-Pc4zsq5BjrsdKn7as2c3JPK75u0lL8ZFrBhsuF3PQtvhiv13268EdHEI/aLOw2FN
-j1UUt44XjK5jvvB0CcEP
-=ja7q
------END PGP SIGNATURE-----
-
---H0fDMKj3Um9qoHsuRgn0hO7GjHmd1oDLF--
