@@ -1,87 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaBNJCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 04:02:49 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:51876 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010AbaBNJCY (ORCPT
+	id S1752373AbaBNJC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 04:02:57 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:53241 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaBNJCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 04:02:24 -0500
-Date: Fri, 14 Feb 2014 09:02:17 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org, Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [lm-sensors] [RFC PATCH] hwmon: (max6650) Convert to be a
- platform driver
-Message-ID: <20140214090217.GD3403@lee--X1>
-References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
- <20140213095817.GD32508@lee--X1>
- <20140213111530.2a2b4982@endymion.delvare>
- <CAOMwXhML8LvDCzmk1ZVT+7cARj9C3VtxERWBgOPM9vTc6qQXZQ@mail.gmail.com>
- <CAOMwXhOv-as1W69wcSno49jEXsXWZZ7odnu8og-vgnDwRTJ4sA@mail.gmail.com>
- <20140213113313.GL32508@lee--X1>
- <CAOMwXhMNHqXnzR0YHF9rx710JbaL3YFn=3cLf_WdNkCx7hbZug@mail.gmail.com>
- <20140213124002.GA3403@lee--X1>
- <CAOMwXhPwppZ6Ne4TjR9Ys+ttST2r85j1GsLdxfq67svZSuVHFg@mail.gmail.com>
+	Fri, 14 Feb 2014 04:02:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhPwppZ6Ne4TjR9Ys+ttST2r85j1GsLdxfq67svZSuVHFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 14 Feb 2014 14:32:47 +0530
+Message-ID: <CA+G9fYuT4TSs=3j6K9zztsTgFNVp2YG6JT-2Q_L==1P5G+SBew@mail.gmail.com>
+Subject: How to get the Linux kernel coverage data on ARM arch when I run LTP test?
+From: Naresh Kamboju <naresh.kamboju@linaro.org>
+To: Arnd Bergmann <arnd.bergmann@linaro.org>, fhrbata@redhat.com,
+        oberpar@linux.vnet.ibm.com, Paul Larson <paul.larson@canonical.com>
+Cc: Deepak Saxena <dsaxena@linaro.org>, Mark Brown <mark.brown@linaro.org>,
+        Milosz Wasilewski <milosz.wasilewski@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ltp-coverage <ltp-coverage@lists.sourceforge.net>,
+        ltp-list <ltp-list@lists.sourceforge.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> http://comments.gmane.org/gmane.linux.kernel/1645251
-> >>
-> >> Step 2 did not happen. I did not get any review for my change. I
-> >> literally submitted that within a couple of hours after the request.
-> >>
-> >> Could you please tell me what was wrong with that change, and why I
-> >> did not get any respect not to "xargs rm -rf" my work in that area? I
-> >> believe I was ignored instead of improving the change, and someone
-> >> else tried to address the same thing. There was no argument in that
-> >> thread. It was a technical change. I personally do not feel happy
-> >> about it.
-> >
-> > Let's start again.
-> >
-> > Rebase your work on top of the HWMON tree on kernel.org and resubmit
-> > the entire set. If rebasing takes you more than 20 mins, you're
-> > probably doing it wrong.
-> 
-> I tried, but I could not manage it within 20 minutes, so I guess I am
-> doing something wrong. Can you please provide some pointers how not to
-> do it wrong? Perhaps, I am not aware of some tricks.
+Hi All,
 
-One question, are you still working on this stuff or not? I'm confused
-by the disparity in your messages. I'm going to guess that you're in
-for now.
+Sorry for the wide distribution:
 
-Do:
-  `git rebase -i <base> --onto <newbase>`
-Where:
-  <base> is the SHA1 of the first patch below your changes in `git log`
-  <new_base> is Guenter's staging tree on kernel.org
+According to LTP page info,
+http://ltp.sourceforge.net/coverage/gcov.php
+http://ltp.sourceforge.net/coverage/lcov.php
 
-Ensure you're rebasing all of your patches (and patches that aren't
-yours) when your $EDITOR pops up. If they are wrong, delete all the
-lines in the file and the rebase will be aborted. If they're correct
-save and close your $EDITOR.
+My question is
+How to get kernel coverage when I run LTP test?
 
-You'll receive conflicts. You can see the state of the conflicts using
-`git status` Open the file, find the conflict markers and make a choice
-from the HEAD section or the section from your patch. Sometimes
-you'll need to manually merge the two, if there are changes from both
-refs that you want to keep. Once you're happy `git commit -a` and `git
-rebase --continue`. Each conflict should not take you long, but if it
-does, keep at it, as it's good practice. After a time of doing it,
-you'll be able to fix merge conflicts in no time at all.
+Since we do not have direct GCOV support on ARM I have enabled ( just
+for experiment)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+$ git diff  kernel/gcov/Kconfig
+diff --git a/kernel/gcov/Kconfig b/kernel/gcov/Kconfig
+index d4da55d..fceac85 100644
+--- a/kernel/gcov/Kconfig
++++ b/kernel/gcov/Kconfig
+@@ -35,7 +35,7 @@ config GCOV_KERNEL
+ config GCOV_PROFILE_ALL
+        bool "Profile entire Kernel"
+        depends on GCOV_KERNEL
+-       depends on SUPERH || S390 || X86 || PPC || MICROBLAZE
++       depends on SUPERH || S390 || X86 || PPC || MICROBLAZE || ARM
+        default n
+        ---help---
+        This options activates profiling for the entire kernel.
+
+I have enabled below kernel config and built the kernel.
+CONFIG_GCOV_KERNEL=y
+CONFIG_GCOV_PROFILE_ALL=y
+CONFIG_GCOV_FORMAT_AUTODETECT=y
+
+of course I have disabled gcov on below folders and files, because
+since it is an experiment i would like to be on safe side
+- arch/arm/mm/
+- arch/arm/kernel/
+- arch/arm/boot/
+- arch/arm/boot/compressed/
+- arch/arm/boot/bootp/
+- arch/arm/boot/dts
+
+Arndale booted with this configuration successfully.
+Took more than 65 seconds to finish boot.
+
+gcov related files are found under /sys/ similer to X86 machine.
+And  gcov supporting files filename.gcda are having links to kernel source
+root@linaro-developer:~# ls /sys/kernel/debug/gcov/
+reset  tmp
+root@linaro-developer:~#
+
+root@linaro-developer:~# ls /sys/kernel/debug/gcov/tmp/
+linux-linaro-3.13-2014.01
+root@linaro-developer:~# ls
+/sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/
+arch  block  crypto  drivers  fs  init  ipc  kernel  lib  mm  security  virt
+root@linaro-developer:~# ls
+/sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/time.* -l
+-rw------- 1 root root 0 Jan  1  1970
+/sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/time.gcda
+lrwxrwxrwx 1 root root 0 Jan  1  1970
+/sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/time.gcno
+-> /tmp/linux-linaro-3.13-2014.01/kernel/time.gcno
+root@linaro-developer:~#
+
+Source are placed under /tmp/
+root@linaro-developer:/tmp/linux-linaro-3.13-2014.01# ls  kernel/time.* -l
+-rw-rw-r-- 1 linaro linaro  19233 Jan 24  2014 kernel/time.c
+-rw-rw-r-- 1 linaro linaro  12768 Feb 13  2014 kernel/time.gcno
+-rw-rw-r-- 1 linaro linaro 136444 Feb 13  2014 kernel/time.o
+root@linaro-developer:/tmp/linux-linaro-3.13-2014.01#
+
+
+root@linaro-developer:/tmp/linux-linaro-3.13-2014.01# gcov kernel/gcov/base.c -o
+ /sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/gcov/
+File 'kernel/gcov/base.c'
+Lines executed:43.18% of 44
+Creating 'base.c.gcov'
+
+root@linaro-developer:/tmp/linux-linaro-3.13-2014.01#
+
+The above experiment gives coverage of a single file base.c when i run
+gcov manually.
+Is there any way to get Linux kernel coverage of all files after
+running LTP test cases ?
+
+Thanks in advance.
+
+Best regards
+Naresh Kamboju
