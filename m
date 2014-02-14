@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaBNTbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 14:31:23 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:49615 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772AbaBNTbV (ORCPT
+	id S1752583AbaBNTeJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 14:34:09 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:44609 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBNTeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 14:31:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140214192322.GJ30257@n2100.arm.linux.org.uk>
-References: <20140213195230.GA15275@www.outflux.net>
-	<20140214101724.GC10590@arm.com>
-	<CAGXu5jKYq=0Ud-A6bdD2zMe=+r0S7nja8Rg+OxeT+JHzdpwTKg@mail.gmail.com>
-	<20140214192322.GJ30257@n2100.arm.linux.org.uk>
-Date: Fri, 14 Feb 2014 11:31:21 -0800
-X-Google-Sender-Auth: EdOs1EdR78r7eUa_HXUKRLi-hy0
-Message-ID: <CAGXu5jK6Ro+u1VBsnQvNMZz4+iUZPLSRsd98oBgXCQAx=vW2YA@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: mm: report both sections from PMD
-From: Kees Cook <keescook@chromium.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 14 Feb 2014 14:34:06 -0500
+From: Olof Johansson <olof@lixom.net>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, stable@vger.kernel.org
+Subject: [PATCH] ARM64: unwind: Fix PC calculation
+Date: Fri, 14 Feb 2014 11:35:15 -0800
+Message-Id: <1392406515-27835-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 11:23 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
->> https://lkml.org/lkml/2014/2/12/662
->
-> It's not that simple, because APX in section descriptors doesn't exist
-> on pre-v6 ARMs.  This needs to be conditional upon the CPU arch.
+The frame PC value in the unwind code used to just take the saved LR
+value and use that.  That's incorrect as a stack trace, since it shows
+the return path stack, not the call path stack.
 
-Ah! Okay, do we need a single #define to describe the expected masks
-and values? What should it look like for pre-v6 ARMs?
+In particular, it shows faulty information in case the bl is done as
+the very last instruction of one label, since the return point will be
+in the next label. That can easily be seen with tail calls to panic(),
+which is marked __noreturn and thus doesn't have anything useful after it.
 
--Kees
+Easiest here is to just correct the unwind code and do a -4, to get the
+actual call site for the backtrace instead of the return site.
 
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Cc: stable@vger.kernel.org
+
+---
+ arch/arm64/kernel/stacktrace.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/kernel/stacktrace.c b/arch/arm64/kernel/stacktrace.c
+index c3b6c63..463a757 100644
+--- a/arch/arm64/kernel/stacktrace.c
++++ b/arch/arm64/kernel/stacktrace.c
+@@ -48,7 +48,11 @@ int unwind_frame(struct stackframe *frame)
+ 
+ 	frame->sp = fp + 0x10;
+ 	frame->fp = *(unsigned long *)(fp);
+-	frame->pc = *(unsigned long *)(fp + 8);
++	/*
++	 * -4 here because we care about the PC at time of bl,
++	 * not where the return will go.
++	 */
++	frame->pc = *(unsigned long *)(fp + 8) - 4;
+ 
+ 	return 0;
+ }
 -- 
-Kees Cook
-Chrome OS Security
+1.7.10.4
+
