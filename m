@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaBNPiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 10:38:11 -0500
-Received: from plane.gmane.org ([80.91.229.3]:44553 "EHLO plane.gmane.org"
+	id S1752276AbaBNPoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 10:44:21 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51684 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065AbaBNPiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 10:38:09 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 12/17] Kbuild, lto: Set TMPDIR for LTO
-Date: Fri, 14 Feb 2014 07:37:49 -0800
-Message-ID: <87a9dtemcy.fsf@tassilo.jf.intel.com>
-References: <1391846481-31491-1-git-send-email-ak@linux.intel.com>
-	<1391846481-31491-12-git-send-email-ak@linux.intel.com>
-	<52FD9B0A.8030309@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: jfdmzpr01-ext.jf.intel.com
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Cancel-Lock: sha1:NBySk4xn/SdYpr1NWoG7OugKo60=
-Cc: linux-kbuild@vger.kernel.org
+	id S1751525AbaBNPoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 10:44:19 -0500
+Date: Fri, 14 Feb 2014 16:44:10 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: Another preempt folding issue? (maybe bisect)
+Message-ID: <20140214154410.GC26664@pd.tnic>
+References: <52FB5669.7090506@canonical.com>
+ <20140212115412.GW27965@twins.programming.kicks-ass.net>
+ <52FCFA23.4060701@canonical.com>
+ <20140213173852.GH6835@laptop.programming.kicks-ass.net>
+ <52FD090C.7010408@canonical.com>
+ <20140213182605.GC14089@laptop.programming.kicks-ass.net>
+ <20140214133428.GB26356@pd.tnic>
+ <52FE2709.3050505@canonical.com>
+ <20140214152132.GD26356@pd.tnic>
+ <52FE3610.8040300@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52FE3610.8040300@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
->
-> I think this really ought to use ?= so it doesn't override a TMPDIR
-> explicitly set by the user.
+On Fri, Feb 14, 2014 at 04:28:16PM +0100, Stefan Bader wrote:
+> Oh yeah, bisection is nearly as entertaining as doing my tax records.
+> Hm, on the other hand those will have to be done at some point too...
+> :-P
 
-Done. Thanks.
--andi
+Ah, tax records, crap, I have those lying around in the corner since
+forever... I need to do those too :-(
+
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
