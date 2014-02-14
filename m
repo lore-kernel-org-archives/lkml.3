@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaBNGFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 01:05:55 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:57694 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaBNGFy (ORCPT
+	id S1751638AbaBNG06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 01:26:58 -0500
+Received: from smtp3.Stanford.EDU ([171.67.219.83]:54029 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751089AbaBNG05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 01:05:54 -0500
-X-Nat-Received: from [202.181.97.72]:61509 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1392357941.28680
-Message-Id: <201402140605.s1E65fBl044127@www262.sakura.ne.jp>
-Subject: Re: [patch 00/10] mm: thrash detection-based file cache sizing v9
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: hannes@cmpxchg.org
-Cc: sfr@canb.auug.org.au, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
+	Fri, 14 Feb 2014 01:26:57 -0500
+Message-ID: <52FDB71F.2020000@ccrma.stanford.edu>
+Date: Thu, 13 Feb 2014 22:26:39 -0800
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: nando@ccrma.Stanford.EDU, linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, John Kacur <jkacur@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12.9-rt13: BUG: soft lockup
+References: <52FBF2F1.8040504@localhost> <alpine.DEB.2.02.1402132324230.21991@ionos.tec.linutronix.de> <52FD4D89.2000207@localhost> <alpine.DEB.2.02.1402140053000.21991@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402140053000.21991@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Fri, 14 Feb 2014 15:05:41 +0900
-References: <1391475222-1169-1-git-send-email-hannes@cmpxchg.org> <201402130321.s1D3LH41073563@www262.sakura.ne.jp> <20140213221126.GP6963@cmpxchg.org> <20140213142407.f2c41f5c6561e708f2453e93@linux-foundation.org> <20140214112935.4df6f8ace56725331614556a@canb.auug.org.au>
-In-Reply-To: <20140214112935.4df6f8ace56725331614556a@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 14022014 #7427480, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner wrote:
-> Thanks for the report.  There is already a fix for this in -mm:
-> http://marc.info/?l=linux-mm-commits&m=139180637114625&w=2
-> 
-> It was merged on the 7th, so it should show up in -next... any day
-> now?
+On 02/13/2014 03:55 PM, Thomas Gleixner wrote:
+> On Thu, 13 Feb 2014, Fernando Lopez-Lezcano wrote:
+>
+>> On 02/13/2014 02:25 PM, Thomas Gleixner wrote:
+>>> On Wed, 12 Feb 2014, Fernando Lopez-Lezcano wrote:
+>>>> [771508.546449] RIP: 0010:[<ffffffff810dc60a>]  [<ffffffff810dc60a>]
+>>>> smp_call_function_many+0x2ca/0x330
+>>>
+>>> Can you decode the exact location inside of smp_call_function_many via
+>>> addr2line please ?
+>>
+>> Hope this is useful (adding 0x2ce/0x330 as offsets does not make any
+>> difference, don't know if it should)...
+>>
+>> # grep smp_call_function /var/log/messages|tail -1
+>> Feb 12 14:18:21 cmn27 kernel: [771840.224419] RIP: 0010:[<ffffffff810dc60e>]
+>> [<ffffffff810dc60e>] smp_call_function_many+0x2ce/0x330
+>> # addr2line -e
+>> /usr/lib/debug/lib/modules/3.12.10-300.rt15.1.fc20.ccrma.x86_64+rt/vmlinux
+>> ffffffff810dc60e
+>> /usr/src/debug/kernel-3.12.fc20.ccrma/linux-3.12.10-300.rt15.1.fc20.ccrma.x86_64/kernel/rtmutex.c:1295
+>
+> I can't see how the kernel decoder thinks it's smp_call_function_many
+> but addr2line looks at rtmutex.c
+>
+> That doesn't make any sense at all. Version mismatch?
 
-That patch solved this bproblem but breaks build instead.
+Indeed, sorry for the mixup... here I go again, hopefully this one will 
+make sense:
 
-  ERROR: \"list_lru_init_key\" [fs/xfs/xfs.ko] undefined!
-  ERROR: \"list_lru_init_key\" [fs/gfs2/gfs2.ko] undefined!
-  make[1]: *** [__modpost] Error 1
+# addr2line -e 
+/usr/lib/debug/lib/modules/3.12.9-301.rt13.1.fc20.ccrma.x86_64+rt/vmlinux ffffffff810dc60e
+/usr/src/debug/kernel-3.12.fc20.ccrma/linux-3.12.9-301.rt13.1.fc20.ccrma.x86_64/kernel/smp.c:108
 
-diff --git a/mm/list_lru.c b/mm/list_lru.c
-index 2a5b8fd..f1a0db1 100644
---- a/mm/list_lru.c
-+++ b/mm/list_lru.c
-@@ -143,7 +143,7 @@ int list_lru_init_key(struct list_lru *lru, struct lock_class_key *key)
- 	}
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(list_lru_init);
-+EXPORT_SYMBOL_GPL(list_lru_init_key);
- 
- void list_lru_destroy(struct list_lru *lru)
- {
-
+-- Fernando
