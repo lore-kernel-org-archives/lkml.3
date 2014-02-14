@@ -1,85 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731AbaBNUcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:32:52 -0500
+	id S1752902AbaBNUTW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:19:22 -0500
 Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:34014
 	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752822AbaBNUTX (ORCPT
+	by vger.kernel.org with ESMTP id S1752822AbaBNUTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:19:23 -0500
-Message-Id: <20140214201904.652936915@linux.com>
-Date: Fri, 14 Feb 2014 14:18:48 -0600
+	Fri, 14 Feb 2014 15:19:18 -0500
+Message-Id: <20140214201904.443470635@linux.com>
+Date: Fri, 14 Feb 2014 14:18:46 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH 07/48] tracing: Replace __get_cpu_var uses with this_cpu_ptr
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 05/48] percpu: Add preemption checks to __this_cpu ops
 References: <20140214201841.826179349@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_trace
+Content-Disposition: inline; filename=preempt_check_this_cpu_ops
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace uses of &__get_cpu_var for address calculation with this_cpu_ptr.
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+We define a check function in order to avoid trouble with the
+include files. Then the higher level __this_cpu macros are
+modified to invoke the preemption check.
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/include/linux/kprobes.h
+Index: linux/include/linux/percpu.h
 ===================================================================
---- linux.orig/include/linux/kprobes.h	2014-01-30 14:39:56.047604482 -0600
-+++ linux/include/linux/kprobes.h	2014-01-30 14:39:56.037604677 -0600
-@@ -355,7 +355,7 @@
+--- linux.orig/include/linux/percpu.h	2014-01-30 14:40:50.936519233 -0600
++++ linux/include/linux/percpu.h	2014-01-30 14:40:50.936519233 -0600
+@@ -173,6 +173,12 @@
  
- static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
+ extern void __bad_size_call_parameter(void);
+ 
++#ifdef CONFIG_DEBUG_PREEMPT
++extern void __this_cpu_preempt_check(const char *op);
++#else
++static inline void __this_cpu_preempt_check(const char *op) { }
++#endif
++
+ #define __pcpu_size_call_return(stem, variable)				\
+ ({	typeof(variable) pscr_ret__;					\
+ 	__verify_pcpu_ptr(&(variable));					\
+@@ -725,18 +731,24 @@
+ 
+ /*
+  * Generic percpu operations for context that are safe from preemption/interrupts.
+- * Checks will be added here soon.
+  */
+ #ifndef __this_cpu_read
+-# define __this_cpu_read(pcp)	__pcpu_size_call_return(raw_cpu_read_, (pcp))
++# define __this_cpu_read(pcp) \
++	(__this_cpu_preempt_check("read"),__pcpu_size_call_return(raw_cpu_read_, (pcp)))
+ #endif
+ 
+ #ifndef __this_cpu_write
+-# define __this_cpu_write(pcp, val)	__pcpu_size_call(raw_cpu_write_, (pcp), (val))
++# define __this_cpu_write(pcp, val)					\
++do { __this_cpu_preempt_check("write");					\
++     __pcpu_size_call(raw_cpu_write_, (pcp), (val));			\
++} while (0)
+ #endif
+ 
+ #ifndef __this_cpu_add
+-# define __this_cpu_add(pcp, val)	__pcpu_size_call(raw_cpu_add_, (pcp), (val))
++# define __this_cpu_add(pcp, val)					 \
++do { __this_cpu_preempt_check("add");					\
++	__pcpu_size_call(raw_cpu_add_, (pcp), (val));			\
++} while (0)
+ #endif
+ 
+ #ifndef __this_cpu_sub
+@@ -752,16 +764,23 @@
+ #endif
+ 
+ #ifndef __this_cpu_and
+-# define __this_cpu_and(pcp, val)	__pcpu_size_call(raw_cpu_and_, (pcp), (val))
++# define __this_cpu_and(pcp, val)					\
++do { __this_cpu_preempt_check("and");					\
++	__pcpu_size_call(raw_cpu_and_, (pcp), (val));			\
++} while (0)
++
+ #endif
+ 
+ #ifndef __this_cpu_or
+-# define __this_cpu_or(pcp, val)	__pcpu_size_call(raw_cpu_or_, (pcp), (val))
++# define __this_cpu_or(pcp, val)					\
++do { __this_cpu_preempt_check("or");					\
++	__pcpu_size_call(raw_cpu_or_, (pcp), (val));			\
++} while (0)
+ #endif
+ 
+ #ifndef __this_cpu_add_return
+ # define __this_cpu_add_return(pcp, val)	\
+-	__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val)
++	(__this_cpu_preempt_check("add_return"),__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val))
+ #endif
+ 
+ #define __this_cpu_sub_return(pcp, val)	__this_cpu_add_return(pcp, -(typeof(pcp))(val))
+@@ -770,17 +789,17 @@
+ 
+ #ifndef __this_cpu_xchg
+ # define __this_cpu_xchg(pcp, nval)	\
+-	__pcpu_size_call_return2(raw_cpu_xchg_, (pcp), nval)
++	(__this_cpu_preempt_check("xchg"),__pcpu_size_call_return2(raw_cpu_xchg_, (pcp), nval))
+ #endif
+ 
+ #ifndef __this_cpu_cmpxchg
+ # define __this_cpu_cmpxchg(pcp, oval, nval)	\
+-	__pcpu_size_call_return2(raw_cpu_cmpxchg_, pcp, oval, nval)
++	(__this_cpu_preempt_check("cmpxchg"),__pcpu_size_call_return2(raw_cpu_cmpxchg_, pcp, oval, nval))
+ #endif
+ 
+ #ifndef __this_cpu_cmpxchg_double
+ # define __this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+-	__pcpu_double_call_return_bool(raw_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
++	(__this_cpu_preempt_check("cmpxchg_double"),__pcpu_double_call_return_bool(raw_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2)))
+ #endif
+ 
+ #endif /* __LINUX_PERCPU_H */
+Index: linux/lib/smp_processor_id.c
+===================================================================
+--- linux.orig/lib/smp_processor_id.c	2014-01-30 14:40:50.936519233 -0600
++++ linux/lib/smp_processor_id.c	2014-01-30 14:40:50.936519233 -0600
+@@ -7,7 +7,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/sched.h>
+ 
+-notrace unsigned int debug_smp_processor_id(void)
++notrace static unsigned int check_preemption_disabled(char *what)
  {
--	return (&__get_cpu_var(kprobe_ctlblk));
-+	return this_cpu_ptr(&kprobe_ctlblk);
+ 	int this_cpu = raw_smp_processor_id();
+ 
+@@ -38,9 +38,9 @@
+ 	if (!printk_ratelimit())
+ 		goto out_enable;
+ 
+-	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
+-			"code: %s/%d\n",
+-			preempt_count() - 1, current->comm, current->pid);
++	printk(KERN_ERR "BUG: using %s in preemptible [%08x] code: %s/%d\n",
++		what, preempt_count() - 1, current->comm, current->pid);
++
+ 	print_symbol("caller is %s\n", (long)__builtin_return_address(0));
+ 	dump_stack();
+ 
+@@ -50,5 +50,17 @@
+ 	return this_cpu;
  }
  
- int register_kprobe(struct kprobe *p);
-Index: linux/kernel/trace/ftrace.c
-===================================================================
---- linux.orig/kernel/trace/ftrace.c	2014-01-30 14:39:56.047604482 -0600
-+++ linux/kernel/trace/ftrace.c	2014-01-30 14:39:56.037604677 -0600
-@@ -898,7 +898,7 @@
++notrace unsigned int debug_smp_processor_id(void)
++{
++	return check_preemption_disabled("smp_processor_id()");
++}
+ EXPORT_SYMBOL(debug_smp_processor_id);
  
- 	local_irq_save(flags);
- 
--	stat = &__get_cpu_var(ftrace_profile_stats);
-+	stat = this_cpu_ptr(&ftrace_profile_stats);
- 	if (!stat->hash || !ftrace_profile_enabled)
- 		goto out;
- 
-@@ -929,7 +929,7 @@
- 	unsigned long flags;
- 
- 	local_irq_save(flags);
--	stat = &__get_cpu_var(ftrace_profile_stats);
-+	stat = this_cpu_ptr(&ftrace_profile_stats);
- 	if (!stat->hash || !ftrace_profile_enabled)
- 		goto out;
- 
-Index: linux/kernel/trace/trace.c
-===================================================================
---- linux.orig/kernel/trace/trace.c	2014-01-30 14:39:56.047604482 -0600
-+++ linux/kernel/trace/trace.c	2014-01-30 14:39:56.037604677 -0600
-@@ -1718,7 +1718,7 @@
- 	 */
- 	barrier();
- 	if (use_stack == 1) {
--		trace.entries		= &__get_cpu_var(ftrace_stack).calls[0];
-+		trace.entries		= this_cpu_ptr(ftrace_stack.calls);
- 		trace.max_entries	= FTRACE_STACK_MAX_ENTRIES;
- 
- 		if (regs)
++notrace void __this_cpu_preempt_check(const char *op)
++{
++	char text[40];
++
++	snprintf(text, sizeof(text), "__this_cpu_%s()", op);
++	check_preemption_disabled(text);
++}
++EXPORT_SYMBOL(__this_cpu_preempt_check);
 
