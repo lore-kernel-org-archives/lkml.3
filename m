@@ -1,44 +1,1031 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaBNPEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 10:04:04 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:63423 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaBNPED (ORCPT
+	id S1752092AbaBNPGg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 10:06:36 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:41717 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaBNPGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 10:04:03 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Christian Daudt <bcm@fixthebug.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] MAINTAINERS: add additional ARM BCM281xx/BCM11xxx maintainer
-Date: Fri, 14 Feb 2014 10:03:55 -0500
-Message-Id: <1392390235-19116-1-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
+	Fri, 14 Feb 2014 10:06:34 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: [PATCH RFC 1/3] video: move fbdev to drivers/video/fbdev
+Date: Fri, 14 Feb 2014 16:07:38 +0100
+Message-ID: <2311824.Vln1AILYhr@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAF6AEGvGBhBVQQ3_M-N=XhM+kOh_VZ=7QUQ3gUxJ8-ept7++cQ@mail.gmail.com>
+References: <1392376711-11290-1-git-send-email-tomi.valkeinen@ti.com> <CAF6AEGvGBhBVQQ3_M-N=XhM+kOh_VZ=7QUQ3gUxJ8-ept7++cQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add myself as an additional maintainer for the Broadcom mobile
-SoCs.
----
- MAINTAINERS | 1 +
- 1 file changed, 1 insertion(+)
+Hi Tomi,
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b2cf5cf..9d6fbfd 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1860,6 +1860,7 @@ F:	drivers/net/ethernet/broadcom/bnx2x/
- 
- BROADCOM BCM281XX/BCM11XXX ARM ARCHITECTURE
- M:	Christian Daudt <bcm@fixthebug.org>
-+M:	Matt Porter <mporter@linaro.org>
- L:	bcm-kernel-feedback-list@broadcom.com
- T:	git git://git.github.com/broadcom/bcm11351
- S:	Maintained
+On Friday 14 February 2014 07:02:22 Rob Clark wrote:
+> On Fri, Feb 14, 2014 at 6:18 AM, Tomi Valkeinen wrote:
+> > The drivers/video directory is a mess. It contains generic video related
+> > files, directories for backlight, console, linux logo, lots of fbdev
+> > device drivers, fbdev framework files.
+> > 
+> > Make some order into the chaos by creating drivers/video/fbdev
+> > directory, and move all fbdev related files there.
+> > 
+> > No functionality is changed, although I guess it is possible that some
+> > subtle Makefile build order related issue could be created by this
+> > patch.
+> 
+> +1 for the series.. I could go either way on #2/3, but either way,
+> consolidating all the fbdev stuff is a nice cleanup
+
+Ditto. Thanks for the patches.
+
+Regarding the edid.h issue I believe it would be a good idea to move at least 
+part of that file to include/video/, and possibly to share the definitions 
+with DRM. That should come as another patch on top of this.
+
+So, for the whole series,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+Now I wonder who will submit a 'git mv drivers/gpu/drm drivers/video/' patch 
+;-)
+
+> > Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> > ---
+> > 
+> >  drivers/Makefile                                   |    4 +-
+> >  drivers/video/Kconfig                              | 2483 +--------------
+> >  drivers/video/Makefile                             |  168 +-
+> >  drivers/video/{ => fbdev}/68328fb.c                |    0
+> >  drivers/video/fbdev/Kconfig                        | 2481 +++++++++++++++
+> >  drivers/video/fbdev/Makefile                       |  167 ++
+> >  drivers/video/{ => fbdev}/acornfb.c                |    0
+> >  drivers/video/{ => fbdev}/acornfb.h                |    0
+> >  drivers/video/{ => fbdev}/amba-clcd.c              |    0
+> >  drivers/video/{ => fbdev}/amifb.c                  |    0
+> >  drivers/video/{ => fbdev}/arcfb.c                  |    0
+> >  drivers/video/{ => fbdev}/arkfb.c                  |    0
+> >  drivers/video/{ => fbdev}/asiliantfb.c             |    0
+> >  drivers/video/{ => fbdev}/atafb.c                  |    0
+> >  drivers/video/{ => fbdev}/atafb.h                  |    0
+> >  drivers/video/{ => fbdev}/atafb_iplan2p2.c         |    0
+> >  drivers/video/{ => fbdev}/atafb_iplan2p4.c         |    0
+> >  drivers/video/{ => fbdev}/atafb_iplan2p8.c         |    0
+> >  drivers/video/{ => fbdev}/atafb_mfb.c              |    0
+> >  drivers/video/{ => fbdev}/atafb_utils.h            |    0
+> >  drivers/video/{ => fbdev}/atmel_lcdfb.c            |    0
+> >  drivers/video/{ => fbdev}/aty/Makefile             |    0
+> >  drivers/video/{ => fbdev}/aty/ati_ids.h            |    0
+> >  drivers/video/{ => fbdev}/aty/aty128fb.c           |    0
+> >  drivers/video/{ => fbdev}/aty/atyfb.h              |    0
+> >  drivers/video/{ => fbdev}/aty/atyfb_base.c         |    0
+> >  drivers/video/{ => fbdev}/aty/mach64_accel.c       |    0
+> >  drivers/video/{ => fbdev}/aty/mach64_ct.c          |    0
+> >  drivers/video/{ => fbdev}/aty/mach64_cursor.c      |    0
+> >  drivers/video/{ => fbdev}/aty/mach64_gx.c          |    0
+> >  drivers/video/{ => fbdev}/aty/radeon_accel.c       |    0
+> >  drivers/video/{ => fbdev}/aty/radeon_backlight.c   |    0
+> >  drivers/video/{ => fbdev}/aty/radeon_base.c        |    0
+> >  drivers/video/{ => fbdev}/aty/radeon_i2c.c         |    0
+> >  drivers/video/{ => fbdev}/aty/radeon_monitor.c     |    0
+> >  drivers/video/{ => fbdev}/aty/radeon_pm.c          |    0
+> >  drivers/video/{ => fbdev}/aty/radeonfb.h           |    0
+> >  drivers/video/{ => fbdev}/au1100fb.c               |    0
+> >  drivers/video/{ => fbdev}/au1100fb.h               |    0
+> >  drivers/video/{ => fbdev}/au1200fb.c               |    0
+> >  drivers/video/{ => fbdev}/au1200fb.h               |    0
+> >  drivers/video/{ => fbdev}/auo_k1900fb.c            |    0
+> >  drivers/video/{ => fbdev}/auo_k1901fb.c            |    0
+> >  drivers/video/{ => fbdev}/auo_k190x.c              |    0
+> >  drivers/video/{ => fbdev}/auo_k190x.h              |    0
+> >  drivers/video/{ => fbdev}/bf537-lq035.c            |    0
+> >  drivers/video/{ => fbdev}/bf54x-lq043fb.c          |    0
+> >  drivers/video/{ => fbdev}/bfin-lq035q1-fb.c        |    0
+> >  drivers/video/{ => fbdev}/bfin-t350mcqb-fb.c       |    0
+> >  drivers/video/{ => fbdev}/bfin_adv7393fb.c         |    0
+> >  drivers/video/{ => fbdev}/bfin_adv7393fb.h         |    0
+> >  drivers/video/{ => fbdev}/broadsheetfb.c           |    0
+> >  drivers/video/{ => fbdev}/bt431.h                  |    0
+> >  drivers/video/{ => fbdev}/bt455.h                  |    0
+> >  drivers/video/{ => fbdev}/bw2.c                    |    0
+> >  drivers/video/{ => fbdev}/c2p.h                    |    0
+> >  drivers/video/{ => fbdev}/c2p_core.h               |    0
+> >  drivers/video/{ => fbdev}/c2p_iplan2.c             |    0
+> >  drivers/video/{ => fbdev}/c2p_planar.c             |    0
+> >  drivers/video/{ => fbdev}/carminefb.c              |    0
+> >  drivers/video/{ => fbdev}/carminefb.h              |    0
+> >  drivers/video/{ => fbdev}/carminefb_regs.h         |    0
+> >  drivers/video/{ => fbdev}/cfbcopyarea.c            |    0
+> >  drivers/video/{ => fbdev}/cfbfillrect.c            |    0
+> >  drivers/video/{ => fbdev}/cfbimgblt.c              |    0
+> >  drivers/video/{ => fbdev}/cg14.c                   |    0
+> >  drivers/video/{ => fbdev}/cg3.c                    |    0
+> >  drivers/video/{ => fbdev}/cg6.c                    |    0
+> >  drivers/video/{ => fbdev}/chipsfb.c                |    0
+> >  drivers/video/{ => fbdev}/cirrusfb.c               |    0
+> >  drivers/video/{ => fbdev}/clps711xfb.c             |    0
+> >  drivers/video/{ => fbdev}/cobalt_lcdfb.c           |    0
+> >  drivers/video/{ => fbdev}/controlfb.c              |    0
+> >  drivers/video/{ => fbdev}/controlfb.h              |    0
+> >  drivers/video/{ => fbdev}/cyber2000fb.c            |    0
+> >  drivers/video/{ => fbdev}/cyber2000fb.h            |    0
+> >  drivers/video/{ => fbdev}/da8xx-fb.c               |    0
+> >  drivers/video/{ => fbdev}/dnfb.c                   |    0
+> >  drivers/video/{ => fbdev}/edid.h                   |    0
+> >  drivers/video/{ => fbdev}/efifb.c                  |    0
+> >  drivers/video/{ => fbdev}/ep93xx-fb.c              |    0
+> >  drivers/video/{ => fbdev}/exynos/Kconfig           |    0
+> >  drivers/video/{ => fbdev}/exynos/Makefile          |    0
+> >  drivers/video/{ => fbdev}/exynos/exynos_dp_core.c  |    0
+> >  drivers/video/{ => fbdev}/exynos/exynos_dp_core.h  |    0
+> >  drivers/video/{ => fbdev}/exynos/exynos_dp_reg.c   |    0
+> >  drivers/video/{ => fbdev}/exynos/exynos_dp_reg.h   |    0
+> >  drivers/video/{ => fbdev}/exynos/exynos_mipi_dsi.c |    0
+> >  .../{ => fbdev}/exynos/exynos_mipi_dsi_common.c    |    0
+> >  .../{ => fbdev}/exynos/exynos_mipi_dsi_common.h    |    0
+> >  .../{ => fbdev}/exynos/exynos_mipi_dsi_lowlevel.c  |    0
+> >  .../{ => fbdev}/exynos/exynos_mipi_dsi_lowlevel.h  |    0
+> >  .../{ => fbdev}/exynos/exynos_mipi_dsi_regs.h      |    0
+> >  drivers/video/{ => fbdev}/exynos/s6e8ax0.c         |    0
+> >  drivers/video/{ => fbdev}/fb-puv3.c                |    0
+> >  drivers/video/{ => fbdev}/fb_ddc.c                 |    0
+> >  drivers/video/{ => fbdev}/fb_defio.c               |    0
+> >  drivers/video/{ => fbdev}/fb_draw.h                |    0
+> >  drivers/video/{ => fbdev}/fb_notify.c              |    0
+> >  drivers/video/{ => fbdev}/fb_sys_fops.c            |    0
+> >  drivers/video/{ => fbdev}/fbcmap.c                 |    0
+> >  drivers/video/{ => fbdev}/fbcvt.c                  |    0
+> >  drivers/video/{ => fbdev}/fbmem.c                  |    0
+> >  drivers/video/{ => fbdev}/fbmon.c                  |    0
+> >  drivers/video/{ => fbdev}/fbsysfs.c                |    0
+> >  drivers/video/{ => fbdev}/ffb.c                    |    0
+> >  drivers/video/{ => fbdev}/fm2fb.c                  |    0
+> >  drivers/video/{ => fbdev}/fsl-diu-fb.c             |    0
+> >  drivers/video/{ => fbdev}/g364fb.c                 |    0
+> >  drivers/video/{ => fbdev}/gbefb.c                  |    0
+> >  drivers/video/{ => fbdev}/geode/Kconfig            |    0
+> >  drivers/video/{ => fbdev}/geode/Makefile           |    0
+> >  drivers/video/{ => fbdev}/geode/display_gx.c       |    0
+> >  drivers/video/{ => fbdev}/geode/display_gx1.c      |    0
+> >  drivers/video/{ => fbdev}/geode/display_gx1.h      |    0
+> >  drivers/video/{ => fbdev}/geode/geodefb.h          |    0
+> >  drivers/video/{ => fbdev}/geode/gx1fb_core.c       |    0
+> >  drivers/video/{ => fbdev}/geode/gxfb.h             |    0
+> >  drivers/video/{ => fbdev}/geode/gxfb_core.c        |    0
+> >  drivers/video/{ => fbdev}/geode/lxfb.h             |    0
+> >  drivers/video/{ => fbdev}/geode/lxfb_core.c        |    0
+> >  drivers/video/{ => fbdev}/geode/lxfb_ops.c         |    0
+> >  drivers/video/{ => fbdev}/geode/suspend_gx.c       |    0
+> >  drivers/video/{ => fbdev}/geode/video_cs5530.c     |    0
+> >  drivers/video/{ => fbdev}/geode/video_cs5530.h     |    0
+> >  drivers/video/{ => fbdev}/geode/video_gx.c         |    0
+> >  drivers/video/{ => fbdev}/goldfishfb.c             |    0
+> >  drivers/video/{ => fbdev}/grvga.c                  |    0
+> >  drivers/video/{ => fbdev}/gxt4500.c                |    0
+> >  drivers/video/{ => fbdev}/hecubafb.c               |    0
+> >  drivers/video/{ => fbdev}/hgafb.c                  |    0
+> >  drivers/video/{ => fbdev}/hitfb.c                  |    0
+> >  drivers/video/{ => fbdev}/hpfb.c                   |    0
+> >  drivers/video/{ => fbdev}/hyperv_fb.c              |    0
+> >  drivers/video/{ => fbdev}/i740_reg.h               |    0
+> >  drivers/video/{ => fbdev}/i740fb.c                 |    0
+> >  drivers/video/{ => fbdev}/i810/Makefile            |    0
+> >  drivers/video/{ => fbdev}/i810/i810-i2c.c          |    0
+> >  drivers/video/{ => fbdev}/i810/i810.h              |    0
+> >  drivers/video/{ => fbdev}/i810/i810_accel.c        |    0
+> >  drivers/video/{ => fbdev}/i810/i810_dvt.c          |    0
+> >  drivers/video/{ => fbdev}/i810/i810_gtf.c          |    0
+> >  drivers/video/{ => fbdev}/i810/i810_main.c         |    0
+> >  drivers/video/{ => fbdev}/i810/i810_main.h         |    0
+> >  drivers/video/{ => fbdev}/i810/i810_regs.h         |    0
+> >  drivers/video/{ => fbdev}/igafb.c                  |    0
+> >  drivers/video/{ => fbdev}/imsttfb.c                |    0
+> >  drivers/video/{ => fbdev}/imxfb.c                  |    0
+> >  drivers/video/{ => fbdev}/intelfb/Makefile         |    0
+> >  drivers/video/{ => fbdev}/intelfb/intelfb.h        |    0
+> >  drivers/video/{ => fbdev}/intelfb/intelfb_i2c.c    |    0
+> >  drivers/video/{ => fbdev}/intelfb/intelfbdrv.c     |    0
+> >  drivers/video/{ => fbdev}/intelfb/intelfbhw.c      |    0
+> >  drivers/video/{ => fbdev}/intelfb/intelfbhw.h      |    0
+> >  drivers/video/{ => fbdev}/jz4740_fb.c              |    0
+> >  drivers/video/{ => fbdev}/kyro/Makefile            |    0
+> >  drivers/video/{ => fbdev}/kyro/STG4000InitDevice.c |    0
+> >  drivers/video/{ => fbdev}/kyro/STG4000Interface.h  |    0
+> >  .../video/{ => fbdev}/kyro/STG4000OverlayDevice.c  |    0
+> >  drivers/video/{ => fbdev}/kyro/STG4000Ramdac.c     |    0
+> >  drivers/video/{ => fbdev}/kyro/STG4000Reg.h        |    0
+> >  drivers/video/{ => fbdev}/kyro/STG4000VTG.c        |    0
+> >  drivers/video/{ => fbdev}/kyro/fbdev.c             |    0
+> >  drivers/video/{ => fbdev}/leo.c                    |    0
+> >  drivers/video/{ => fbdev}/macfb.c                  |    0
+> >  drivers/video/{ => fbdev}/macmodes.c               |    0
+> >  drivers/video/{ => fbdev}/macmodes.h               |    0
+> >  drivers/video/{ => fbdev}/matrox/Makefile          |    0
+> >  drivers/video/{ => fbdev}/matrox/g450_pll.c        |    0
+> >  drivers/video/{ => fbdev}/matrox/g450_pll.h        |    0
+> >  drivers/video/{ => fbdev}/matrox/i2c-matroxfb.c    |    0
+> >  .../video/{ => fbdev}/matrox/matroxfb_DAC1064.c    |    0
+> >  .../video/{ => fbdev}/matrox/matroxfb_DAC1064.h    |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_Ti3026.c |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_Ti3026.h |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_accel.c  |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_accel.h  |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_base.c   |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_base.h   |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_crtc2.c  |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_crtc2.h  |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_g450.c   |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_g450.h   |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_maven.c  |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_maven.h  |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_misc.c   |    0
+> >  drivers/video/{ => fbdev}/matrox/matroxfb_misc.h   |    0
+> >  drivers/video/{ => fbdev}/maxinefb.c               |    0
+> >  drivers/video/{ => fbdev}/mb862xx/Makefile         |    0
+> >  drivers/video/{ => fbdev}/mb862xx/mb862xx-i2c.c    |    0
+> >  drivers/video/{ => fbdev}/mb862xx/mb862xx_reg.h    |    0
+> >  drivers/video/{ => fbdev}/mb862xx/mb862xxfb.h      |    0
+> >  .../video/{ => fbdev}/mb862xx/mb862xxfb_accel.c    |    0
+> >  .../video/{ => fbdev}/mb862xx/mb862xxfb_accel.h    |    0
+> >  drivers/video/{ => fbdev}/mb862xx/mb862xxfbdrv.c   |    0
+> >  drivers/video/{ => fbdev}/mbx/Makefile             |    0
+> >  drivers/video/{ => fbdev}/mbx/mbxdebugfs.c         |    0
+> >  drivers/video/{ => fbdev}/mbx/mbxfb.c              |    0
+> >  drivers/video/{ => fbdev}/mbx/reg_bits.h           |    0
+> >  drivers/video/{ => fbdev}/mbx/regs.h               |    0
+> >  drivers/video/{ => fbdev}/metronomefb.c            |    0
+> >  drivers/video/{ => fbdev}/mmp/Kconfig              |    6 +-
+> >  drivers/video/{ => fbdev}/mmp/Makefile             |    0
+> >  drivers/video/{ => fbdev}/mmp/core.c               |    0
+> >  drivers/video/{ => fbdev}/mmp/fb/Kconfig           |    0
+> >  drivers/video/{ => fbdev}/mmp/fb/Makefile          |    0
+> >  drivers/video/{ => fbdev}/mmp/fb/mmpfb.c           |    0
+> >  drivers/video/{ => fbdev}/mmp/fb/mmpfb.h           |    0
+> >  drivers/video/{ => fbdev}/mmp/hw/Kconfig           |    0
+> >  drivers/video/{ => fbdev}/mmp/hw/Makefile          |    0
+> >  drivers/video/{ => fbdev}/mmp/hw/mmp_ctrl.c        |    0
+> >  drivers/video/{ => fbdev}/mmp/hw/mmp_ctrl.h        |    0
+> >  drivers/video/{ => fbdev}/mmp/hw/mmp_spi.c         |    0
+> >  drivers/video/{ => fbdev}/mmp/panel/Kconfig        |    0
+> >  drivers/video/{ => fbdev}/mmp/panel/Makefile       |    0
+> >  .../video/{ => fbdev}/mmp/panel/tpo_tj032md01bw.c  |    0
+> >  drivers/video/{ => fbdev}/modedb.c                 |    0
+> >  drivers/video/{ => fbdev}/msm/Makefile             |    0
+> >  drivers/video/{ => fbdev}/msm/mddi.c               |    0
+> >  drivers/video/{ => fbdev}/msm/mddi_client_dummy.c  |    0
+> >  .../video/{ => fbdev}/msm/mddi_client_nt35399.c    |    0
+> >  .../video/{ => fbdev}/msm/mddi_client_toshiba.c    |    0
+> >  drivers/video/{ => fbdev}/msm/mddi_hw.h            |    0
+> >  drivers/video/{ => fbdev}/msm/mdp.c                |    0
+> >  drivers/video/{ => fbdev}/msm/mdp_csc_table.h      |    0
+> >  drivers/video/{ => fbdev}/msm/mdp_hw.h             |    0
+> >  drivers/video/{ => fbdev}/msm/mdp_ppp.c            |    0
+> >  drivers/video/{ => fbdev}/msm/mdp_scale_tables.c   |    0
+> >  drivers/video/{ => fbdev}/msm/mdp_scale_tables.h   |    0
+> >  drivers/video/{ => fbdev}/msm/msm_fb.c             |    0
+> >  drivers/video/{ => fbdev}/mx3fb.c                  |    0
+> >  drivers/video/{ => fbdev}/mxsfb.c                  |    0
+> >  drivers/video/{ => fbdev}/n411.c                   |    0
+> >  drivers/video/{ => fbdev}/neofb.c                  |    0
+> >  drivers/video/{ => fbdev}/nuc900fb.c               |    0
+> >  drivers/video/{ => fbdev}/nuc900fb.h               |    0
+> >  drivers/video/{ => fbdev}/nvidia/Makefile          |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_accel.c        |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_backlight.c    |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_dma.h          |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_hw.c           |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_i2c.c          |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_local.h        |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_of.c           |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_proto.h        |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_setup.c        |    0
+> >  drivers/video/{ => fbdev}/nvidia/nv_type.h         |    0
+> >  drivers/video/{ => fbdev}/nvidia/nvidia.c          |    0
+> >  drivers/video/{ => fbdev}/ocfb.c                   |    0
+> >  drivers/video/{ => fbdev}/offb.c                   |    0
+> >  drivers/video/{ => fbdev}/omap/Kconfig             |    0
+> >  drivers/video/{ => fbdev}/omap/Makefile            |    0
+> >  drivers/video/{ => fbdev}/omap/hwa742.c            |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_ams_delta.c     |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_h3.c            |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_htcherald.c     |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_inn1510.c       |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_inn1610.c       |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_mipid.c         |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_osk.c           |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_palmte.c        |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_palmtt.c        |    0
+> >  drivers/video/{ => fbdev}/omap/lcd_palmz71.c       |    0
+> >  drivers/video/{ => fbdev}/omap/lcdc.c              |    0
+> >  drivers/video/{ => fbdev}/omap/lcdc.h              |    0
+> >  drivers/video/{ => fbdev}/omap/omapfb.h            |    0
+> >  drivers/video/{ => fbdev}/omap/omapfb_main.c       |    0
+> >  drivers/video/{ => fbdev}/omap/sossi.c             |    0
+> >  drivers/video/fbdev/omap2/Kconfig                  |   10 +
+> >  drivers/video/{ => fbdev}/omap2/Makefile           |    0
+> >  .../video/{ => fbdev}/omap2/displays-new/Kconfig   |    0
+> >  .../video/{ => fbdev}/omap2/displays-new/Makefile  |    0
+> >  .../omap2/displays-new/connector-analog-tv.c       |    0
+> >  .../{ => fbdev}/omap2/displays-new/connector-dvi.c |    0
+> >  .../omap2/displays-new/connector-hdmi.c            |    0
+> >  .../omap2/displays-new/encoder-tfp410.c            |    0
+> >  .../omap2/displays-new/encoder-tpd12s015.c         |    0
+> >  .../{ => fbdev}/omap2/displays-new/panel-dpi.c     |    0
+> >  .../{ => fbdev}/omap2/displays-new/panel-dsi-cm.c  |    0
+> >  .../omap2/displays-new/panel-lgphilips-lb035q02.c  |    0
+> >  .../omap2/displays-new/panel-nec-nl8048hl11.c      |    0
+> >  .../omap2/displays-new/panel-sharp-ls037v7dw01.c   |    0
+> >  .../omap2/displays-new/panel-sony-acx565akm.c      |    0
+> >  .../omap2/displays-new/panel-tpo-td028ttec1.c      |    0
+> >  .../omap2/displays-new/panel-tpo-td043mtea1.c      |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/Kconfig        |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/Makefile       |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/apply.c        |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/core.c         |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dispc-compat.c |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dispc-compat.h |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dispc.c        |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dispc.h        |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dispc_coefs.c  |    0
+> >  .../video/{ => fbdev}/omap2/dss/display-sysfs.c    |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/display.c      |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dpi.c          |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dsi.c          |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dss.c          |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dss.h          |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dss_features.c |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/dss_features.h |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/hdmi.h         |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/hdmi4.c        |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/hdmi4_core.c   |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/hdmi4_core.h   |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/hdmi_common.c  |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/hdmi_phy.c     |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/hdmi_pll.c     |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/hdmi_wp.c      |    0
+> >  .../video/{ => fbdev}/omap2/dss/manager-sysfs.c    |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/manager.c      |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/output.c       |    0
+> >  .../video/{ => fbdev}/omap2/dss/overlay-sysfs.c    |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/overlay.c      |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/rfbi.c         |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/sdi.c          |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/venc.c         |    0
+> >  drivers/video/{ => fbdev}/omap2/dss/venc_panel.c   |    0
+> >  drivers/video/{ => fbdev}/omap2/omapfb/Kconfig     |    0
+> >  drivers/video/{ => fbdev}/omap2/omapfb/Makefile    |    0
+> >  .../video/{ => fbdev}/omap2/omapfb/omapfb-ioctl.c  |    0
+> >  .../video/{ => fbdev}/omap2/omapfb/omapfb-main.c   |    0
+> >  .../video/{ => fbdev}/omap2/omapfb/omapfb-sysfs.c  |    0
+> >  drivers/video/{ => fbdev}/omap2/omapfb/omapfb.h    |    0
+> >  drivers/video/{ => fbdev}/omap2/vrfb.c             |    0
+> >  drivers/video/{ => fbdev}/p9100.c                  |    0
+> >  drivers/video/{ => fbdev}/platinumfb.c             |    0
+> >  drivers/video/{ => fbdev}/platinumfb.h             |    0
+> >  drivers/video/{ => fbdev}/pm2fb.c                  |    0
+> >  drivers/video/{ => fbdev}/pm3fb.c                  |    0
+> >  drivers/video/{ => fbdev}/pmag-aa-fb.c             |    0
+> >  drivers/video/{ => fbdev}/pmag-ba-fb.c             |    0
+> >  drivers/video/{ => fbdev}/pmagb-b-fb.c             |    0
+> >  drivers/video/{ => fbdev}/ps3fb.c                  |    0
+> >  drivers/video/{ => fbdev}/pvr2fb.c                 |    0
+> >  drivers/video/{ => fbdev}/pxa168fb.c               |    0
+> >  drivers/video/{ => fbdev}/pxa168fb.h               |    0
+> >  drivers/video/{ => fbdev}/pxa3xx-gcu.c             |    0
+> >  drivers/video/{ => fbdev}/pxa3xx-gcu.h             |    0
+> >  drivers/video/{ => fbdev}/pxafb.c                  |    0
+> >  drivers/video/{ => fbdev}/pxafb.h                  |    0
+> >  drivers/video/{ => fbdev}/q40fb.c                  |    0
+> >  drivers/video/{ => fbdev}/riva/Makefile            |    0
+> >  drivers/video/{ => fbdev}/riva/fbdev.c             |    0
+> >  drivers/video/{ => fbdev}/riva/nv_driver.c         |    0
+> >  drivers/video/{ => fbdev}/riva/nv_type.h           |    0
+> >  drivers/video/{ => fbdev}/riva/nvreg.h             |    0
+> >  drivers/video/{ => fbdev}/riva/riva_hw.c           |    0
+> >  drivers/video/{ => fbdev}/riva/riva_hw.h           |    0
+> >  drivers/video/{ => fbdev}/riva/riva_tbl.h          |    0
+> >  drivers/video/{ => fbdev}/riva/rivafb-i2c.c        |    0
+> >  drivers/video/{ => fbdev}/riva/rivafb.h            |    0
+> >  drivers/video/{ => fbdev}/s1d13xxxfb.c             |    0
+> >  drivers/video/{ => fbdev}/s3c-fb.c                 |    0
+> >  drivers/video/{ => fbdev}/s3c2410fb.c              |    0
+> >  drivers/video/{ => fbdev}/s3c2410fb.h              |    0
+> >  drivers/video/{ => fbdev}/s3fb.c                   |    0
+> >  drivers/video/{ => fbdev}/sa1100fb.c               |    0
+> >  drivers/video/{ => fbdev}/sa1100fb.h               |    0
+> >  drivers/video/{ => fbdev}/savage/Makefile          |    0
+> >  drivers/video/{ => fbdev}/savage/savagefb-i2c.c    |    0
+> >  drivers/video/{ => fbdev}/savage/savagefb.h        |    0
+> >  drivers/video/{ => fbdev}/savage/savagefb_accel.c  |    0
+> >  drivers/video/{ => fbdev}/savage/savagefb_driver.c |    0
+> >  drivers/video/{ => fbdev}/sbuslib.c                |    0
+> >  drivers/video/{ => fbdev}/sbuslib.h                |    0
+> >  drivers/video/{ => fbdev}/sgivwfb.c                |    0
+> >  drivers/video/{ => fbdev}/sh7760fb.c               |    0
+> >  drivers/video/{ => fbdev}/sh_mipi_dsi.c            |    0
+> >  drivers/video/{ => fbdev}/sh_mobile_hdmi.c         |    0
+> >  drivers/video/{ => fbdev}/sh_mobile_lcdcfb.c       |    0
+> >  drivers/video/{ => fbdev}/sh_mobile_lcdcfb.h       |    0
+> >  drivers/video/{ => fbdev}/sh_mobile_meram.c        |    0
+> >  drivers/video/{ => fbdev}/simplefb.c               |    0
+> >  drivers/video/{ => fbdev}/sis/300vtbl.h            |    0
+> >  drivers/video/{ => fbdev}/sis/310vtbl.h            |    0
+> >  drivers/video/{ => fbdev}/sis/Makefile             |    0
+> >  drivers/video/{ => fbdev}/sis/init.c               |    0
+> >  drivers/video/{ => fbdev}/sis/init.h               |    0
+> >  drivers/video/{ => fbdev}/sis/init301.c            |    0
+> >  drivers/video/{ => fbdev}/sis/init301.h            |    0
+> >  drivers/video/{ => fbdev}/sis/initdef.h            |    0
+> >  drivers/video/{ => fbdev}/sis/initextlfb.c         |    0
+> >  drivers/video/{ => fbdev}/sis/oem300.h             |    0
+> >  drivers/video/{ => fbdev}/sis/oem310.h             |    0
+> >  drivers/video/{ => fbdev}/sis/sis.h                |    0
+> >  drivers/video/{ => fbdev}/sis/sis_accel.c          |    0
+> >  drivers/video/{ => fbdev}/sis/sis_accel.h          |    0
+> >  drivers/video/{ => fbdev}/sis/sis_main.c           |    0
+> >  drivers/video/{ => fbdev}/sis/sis_main.h           |    0
+> >  drivers/video/{ => fbdev}/sis/vgatypes.h           |    0
+> >  drivers/video/{ => fbdev}/sis/vstruct.h            |    0
+> >  drivers/video/{ => fbdev}/skeletonfb.c             |    0
+> >  drivers/video/{ => fbdev}/sm501fb.c                |    0
+> >  drivers/video/{ => fbdev}/smscufx.c                |    0
+> >  drivers/video/{ => fbdev}/ssd1307fb.c              |    0
+> >  drivers/video/{ => fbdev}/sstfb.c                  |    0
+> >  drivers/video/{ => fbdev}/sticore.h                |    0
+> >  drivers/video/{ => fbdev}/stifb.c                  |    0
+> >  drivers/video/{ => fbdev}/sunxvr1000.c             |    0
+> >  drivers/video/{ => fbdev}/sunxvr2500.c             |    0
+> >  drivers/video/{ => fbdev}/sunxvr500.c              |    0
+> >  drivers/video/{ => fbdev}/svgalib.c                |    0
+> >  drivers/video/{ => fbdev}/syscopyarea.c            |    0
+> >  drivers/video/{ => fbdev}/sysfillrect.c            |    0
+> >  drivers/video/{ => fbdev}/sysimgblt.c              |    0
+> >  drivers/video/{ => fbdev}/tcx.c                    |    0
+> >  drivers/video/{ => fbdev}/tdfxfb.c                 |    0
+> >  drivers/video/{ => fbdev}/tgafb.c                  |    0
+> >  drivers/video/{ => fbdev}/tmiofb.c                 |    0
+> >  drivers/video/{ => fbdev}/tridentfb.c              |    0
+> >  drivers/video/{ => fbdev}/udlfb.c                  |    0
+> >  drivers/video/{ => fbdev}/uvesafb.c                |    0
+> >  drivers/video/{ => fbdev}/valkyriefb.c             |    0
+> >  drivers/video/{ => fbdev}/valkyriefb.h             |    0
+> >  drivers/video/{ => fbdev}/vermilion/Makefile       |    0
+> >  drivers/video/{ => fbdev}/vermilion/cr_pll.c       |    0
+> >  drivers/video/{ => fbdev}/vermilion/vermilion.c    |    0
+> >  drivers/video/{ => fbdev}/vermilion/vermilion.h    |    0
+> >  drivers/video/{ => fbdev}/vesafb.c                 |    0
+> >  drivers/video/{ => fbdev}/vfb.c                    |    0
+> >  drivers/video/{ => fbdev}/vga16fb.c                |    0
+> >  drivers/video/{ => fbdev}/via/Makefile             |    0
+> >  drivers/video/{ => fbdev}/via/accel.c              |    0
+> >  drivers/video/{ => fbdev}/via/accel.h              |    0
+> >  drivers/video/{ => fbdev}/via/chip.h               |    0
+> >  drivers/video/{ => fbdev}/via/debug.h              |    0
+> >  drivers/video/{ => fbdev}/via/dvi.c                |    0
+> >  drivers/video/{ => fbdev}/via/dvi.h                |    0
+> >  drivers/video/{ => fbdev}/via/global.c             |    0
+> >  drivers/video/{ => fbdev}/via/global.h             |    0
+> >  drivers/video/{ => fbdev}/via/hw.c                 |    0
+> >  drivers/video/{ => fbdev}/via/hw.h                 |    0
+> >  drivers/video/{ => fbdev}/via/ioctl.c              |    0
+> >  drivers/video/{ => fbdev}/via/ioctl.h              |    0
+> >  drivers/video/{ => fbdev}/via/lcd.c                |    0
+> >  drivers/video/{ => fbdev}/via/lcd.h                |    0
+> >  drivers/video/{ => fbdev}/via/share.h              |    0
+> >  drivers/video/{ => fbdev}/via/tblDPASetting.c      |    0
+> >  drivers/video/{ => fbdev}/via/tblDPASetting.h      |    0
+> >  drivers/video/{ => fbdev}/via/via-core.c           |    0
+> >  drivers/video/{ => fbdev}/via/via-gpio.c           |    0
+> >  drivers/video/{ => fbdev}/via/via_aux.c            |    0
+> >  drivers/video/{ => fbdev}/via/via_aux.h            |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_ch7301.c     |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_edid.c       |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_sii164.c     |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_vt1621.c     |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_vt1622.c     |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_vt1625.c     |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_vt1631.c     |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_vt1632.c     |    0
+> >  drivers/video/{ => fbdev}/via/via_aux_vt1636.c     |    0
+> >  drivers/video/{ => fbdev}/via/via_clock.c          |    0
+> >  drivers/video/{ => fbdev}/via/via_clock.h          |    0
+> >  drivers/video/{ => fbdev}/via/via_i2c.c            |    0
+> >  drivers/video/{ => fbdev}/via/via_modesetting.c    |    0
+> >  drivers/video/{ => fbdev}/via/via_modesetting.h    |    0
+> >  drivers/video/{ => fbdev}/via/via_utility.c        |    0
+> >  drivers/video/{ => fbdev}/via/via_utility.h        |    0
+> >  drivers/video/{ => fbdev}/via/viafbdev.c           |    0
+> >  drivers/video/{ => fbdev}/via/viafbdev.h           |    0
+> >  drivers/video/{ => fbdev}/via/viamode.c            |    0
+> >  drivers/video/{ => fbdev}/via/viamode.h            |    0
+> >  drivers/video/{ => fbdev}/via/vt1636.c             |    0
+> >  drivers/video/{ => fbdev}/via/vt1636.h             |    0
+> >  drivers/video/{ => fbdev}/vt8500lcdfb.c            |    0
+> >  drivers/video/{ => fbdev}/vt8500lcdfb.h            |    0
+> >  drivers/video/{ => fbdev}/vt8623fb.c               |    0
+> >  drivers/video/{ => fbdev}/w100fb.c                 |    0
+> >  drivers/video/{ => fbdev}/w100fb.h                 |    0
+> >  drivers/video/{ => fbdev}/wm8505fb.c               |    0
+> >  drivers/video/{ => fbdev}/wm8505fb_regs.h          |    0
+> >  drivers/video/{ => fbdev}/wmt_ge_rops.c            |    0
+> >  drivers/video/{ => fbdev}/wmt_ge_rops.h            |    0
+> >  drivers/video/{ => fbdev}/xen-fbfront.c            |    0
+> >  drivers/video/{ => fbdev}/xilinxfb.c               |    0
+> >  drivers/video/omap2/Kconfig                        |   10 -
+> >  479 files changed, 2670 insertions(+), 2659 deletions(-)
+> >  rename drivers/video/{ => fbdev}/68328fb.c (100%)
+> >  create mode 100644 drivers/video/fbdev/Kconfig
+> >  create mode 100644 drivers/video/fbdev/Makefile
+> >  rename drivers/video/{ => fbdev}/acornfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/acornfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/amba-clcd.c (100%)
+> >  rename drivers/video/{ => fbdev}/amifb.c (100%)
+> >  rename drivers/video/{ => fbdev}/arcfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/arkfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/asiliantfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/atafb.c (100%)
+> >  rename drivers/video/{ => fbdev}/atafb.h (100%)
+> >  rename drivers/video/{ => fbdev}/atafb_iplan2p2.c (100%)
+> >  rename drivers/video/{ => fbdev}/atafb_iplan2p4.c (100%)
+> >  rename drivers/video/{ => fbdev}/atafb_iplan2p8.c (100%)
+> >  rename drivers/video/{ => fbdev}/atafb_mfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/atafb_utils.h (100%)
+> >  rename drivers/video/{ => fbdev}/atmel_lcdfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/aty/ati_ids.h (100%)
+> >  rename drivers/video/{ => fbdev}/aty/aty128fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/atyfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/aty/atyfb_base.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/mach64_accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/mach64_ct.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/mach64_cursor.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/mach64_gx.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/radeon_accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/radeon_backlight.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/radeon_base.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/radeon_i2c.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/radeon_monitor.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/radeon_pm.c (100%)
+> >  rename drivers/video/{ => fbdev}/aty/radeonfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/au1100fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/au1100fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/au1200fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/au1200fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/auo_k1900fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/auo_k1901fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/auo_k190x.c (100%)
+> >  rename drivers/video/{ => fbdev}/auo_k190x.h (100%)
+> >  rename drivers/video/{ => fbdev}/bf537-lq035.c (100%)
+> >  rename drivers/video/{ => fbdev}/bf54x-lq043fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/bfin-lq035q1-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/bfin-t350mcqb-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/bfin_adv7393fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/bfin_adv7393fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/broadsheetfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/bt431.h (100%)
+> >  rename drivers/video/{ => fbdev}/bt455.h (100%)
+> >  rename drivers/video/{ => fbdev}/bw2.c (100%)
+> >  rename drivers/video/{ => fbdev}/c2p.h (100%)
+> >  rename drivers/video/{ => fbdev}/c2p_core.h (100%)
+> >  rename drivers/video/{ => fbdev}/c2p_iplan2.c (100%)
+> >  rename drivers/video/{ => fbdev}/c2p_planar.c (100%)
+> >  rename drivers/video/{ => fbdev}/carminefb.c (100%)
+> >  rename drivers/video/{ => fbdev}/carminefb.h (100%)
+> >  rename drivers/video/{ => fbdev}/carminefb_regs.h (100%)
+> >  rename drivers/video/{ => fbdev}/cfbcopyarea.c (100%)
+> >  rename drivers/video/{ => fbdev}/cfbfillrect.c (100%)
+> >  rename drivers/video/{ => fbdev}/cfbimgblt.c (100%)
+> >  rename drivers/video/{ => fbdev}/cg14.c (100%)
+> >  rename drivers/video/{ => fbdev}/cg3.c (100%)
+> >  rename drivers/video/{ => fbdev}/cg6.c (100%)
+> >  rename drivers/video/{ => fbdev}/chipsfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/cirrusfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/clps711xfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/cobalt_lcdfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/controlfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/controlfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/cyber2000fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/cyber2000fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/da8xx-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/dnfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/edid.h (100%)
+> >  rename drivers/video/{ => fbdev}/efifb.c (100%)
+> >  rename drivers/video/{ => fbdev}/ep93xx-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_dp_core.c (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_dp_core.h (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_dp_reg.c (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_dp_reg.h (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_mipi_dsi.c (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_mipi_dsi_common.c (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_mipi_dsi_common.h (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_mipi_dsi_lowlevel.c (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_mipi_dsi_lowlevel.h (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/exynos_mipi_dsi_regs.h (100%)
+> >  rename drivers/video/{ => fbdev}/exynos/s6e8ax0.c (100%)
+> >  rename drivers/video/{ => fbdev}/fb-puv3.c (100%)
+> >  rename drivers/video/{ => fbdev}/fb_ddc.c (100%)
+> >  rename drivers/video/{ => fbdev}/fb_defio.c (100%)
+> >  rename drivers/video/{ => fbdev}/fb_draw.h (100%)
+> >  rename drivers/video/{ => fbdev}/fb_notify.c (100%)
+> >  rename drivers/video/{ => fbdev}/fb_sys_fops.c (100%)
+> >  rename drivers/video/{ => fbdev}/fbcmap.c (100%)
+> >  rename drivers/video/{ => fbdev}/fbcvt.c (100%)
+> >  rename drivers/video/{ => fbdev}/fbmem.c (100%)
+> >  rename drivers/video/{ => fbdev}/fbmon.c (100%)
+> >  rename drivers/video/{ => fbdev}/fbsysfs.c (100%)
+> >  rename drivers/video/{ => fbdev}/ffb.c (100%)
+> >  rename drivers/video/{ => fbdev}/fm2fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/fsl-diu-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/g364fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/gbefb.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/geode/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/geode/display_gx.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/display_gx1.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/display_gx1.h (100%)
+> >  rename drivers/video/{ => fbdev}/geode/geodefb.h (100%)
+> >  rename drivers/video/{ => fbdev}/geode/gx1fb_core.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/gxfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/geode/gxfb_core.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/lxfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/geode/lxfb_core.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/lxfb_ops.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/suspend_gx.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/video_cs5530.c (100%)
+> >  rename drivers/video/{ => fbdev}/geode/video_cs5530.h (100%)
+> >  rename drivers/video/{ => fbdev}/geode/video_gx.c (100%)
+> >  rename drivers/video/{ => fbdev}/goldfishfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/grvga.c (100%)
+> >  rename drivers/video/{ => fbdev}/gxt4500.c (100%)
+> >  rename drivers/video/{ => fbdev}/hecubafb.c (100%)
+> >  rename drivers/video/{ => fbdev}/hgafb.c (100%)
+> >  rename drivers/video/{ => fbdev}/hitfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/hpfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/hyperv_fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/i740_reg.h (100%)
+> >  rename drivers/video/{ => fbdev}/i740fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/i810/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/i810/i810-i2c.c (100%)
+> >  rename drivers/video/{ => fbdev}/i810/i810.h (100%)
+> >  rename drivers/video/{ => fbdev}/i810/i810_accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/i810/i810_dvt.c (100%)
+> >  rename drivers/video/{ => fbdev}/i810/i810_gtf.c (100%)
+> >  rename drivers/video/{ => fbdev}/i810/i810_main.c (100%)
+> >  rename drivers/video/{ => fbdev}/i810/i810_main.h (100%)
+> >  rename drivers/video/{ => fbdev}/i810/i810_regs.h (100%)
+> >  rename drivers/video/{ => fbdev}/igafb.c (100%)
+> >  rename drivers/video/{ => fbdev}/imsttfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/imxfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/intelfb/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/intelfb/intelfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/intelfb/intelfb_i2c.c (100%)
+> >  rename drivers/video/{ => fbdev}/intelfb/intelfbdrv.c (100%)
+> >  rename drivers/video/{ => fbdev}/intelfb/intelfbhw.c (100%)
+> >  rename drivers/video/{ => fbdev}/intelfb/intelfbhw.h (100%)
+> >  rename drivers/video/{ => fbdev}/jz4740_fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/kyro/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/kyro/STG4000InitDevice.c (100%)
+> >  rename drivers/video/{ => fbdev}/kyro/STG4000Interface.h (100%)
+> >  rename drivers/video/{ => fbdev}/kyro/STG4000OverlayDevice.c (100%)
+> >  rename drivers/video/{ => fbdev}/kyro/STG4000Ramdac.c (100%)
+> >  rename drivers/video/{ => fbdev}/kyro/STG4000Reg.h (100%)
+> >  rename drivers/video/{ => fbdev}/kyro/STG4000VTG.c (100%)
+> >  rename drivers/video/{ => fbdev}/kyro/fbdev.c (100%)
+> >  rename drivers/video/{ => fbdev}/leo.c (100%)
+> >  rename drivers/video/{ => fbdev}/macfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/macmodes.c (100%)
+> >  rename drivers/video/{ => fbdev}/macmodes.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/g450_pll.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/g450_pll.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/i2c-matroxfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_DAC1064.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_DAC1064.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_Ti3026.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_Ti3026.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_accel.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_base.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_base.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_crtc2.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_crtc2.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_g450.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_g450.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_maven.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_maven.h (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_misc.c (100%)
+> >  rename drivers/video/{ => fbdev}/matrox/matroxfb_misc.h (100%)
+> >  rename drivers/video/{ => fbdev}/maxinefb.c (100%)
+> >  rename drivers/video/{ => fbdev}/mb862xx/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/mb862xx/mb862xx-i2c.c (100%)
+> >  rename drivers/video/{ => fbdev}/mb862xx/mb862xx_reg.h (100%)
+> >  rename drivers/video/{ => fbdev}/mb862xx/mb862xxfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/mb862xx/mb862xxfb_accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/mb862xx/mb862xxfb_accel.h (100%)
+> >  rename drivers/video/{ => fbdev}/mb862xx/mb862xxfbdrv.c (100%)
+> >  rename drivers/video/{ => fbdev}/mbx/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/mbx/mbxdebugfs.c (100%)
+> >  rename drivers/video/{ => fbdev}/mbx/mbxfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/mbx/reg_bits.h (100%)
+> >  rename drivers/video/{ => fbdev}/mbx/regs.h (100%)
+> >  rename drivers/video/{ => fbdev}/metronomefb.c (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/Kconfig (61%)
+> >  rename drivers/video/{ => fbdev}/mmp/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/core.c (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/fb/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/fb/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/fb/mmpfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/fb/mmpfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/hw/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/hw/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/hw/mmp_ctrl.c (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/hw/mmp_ctrl.h (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/hw/mmp_spi.c (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/panel/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/panel/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/mmp/panel/tpo_tj032md01bw.c (100%)
+> >  rename drivers/video/{ => fbdev}/modedb.c (100%)
+> >  rename drivers/video/{ => fbdev}/msm/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mddi.c (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mddi_client_dummy.c (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mddi_client_nt35399.c (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mddi_client_toshiba.c (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mddi_hw.h (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mdp.c (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mdp_csc_table.h (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mdp_hw.h (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mdp_ppp.c (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mdp_scale_tables.c (100%)
+> >  rename drivers/video/{ => fbdev}/msm/mdp_scale_tables.h (100%)
+> >  rename drivers/video/{ => fbdev}/msm/msm_fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/mx3fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/mxsfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/n411.c (100%)
+> >  rename drivers/video/{ => fbdev}/neofb.c (100%)
+> >  rename drivers/video/{ => fbdev}/nuc900fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/nuc900fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_backlight.c (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_dma.h (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_hw.c (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_i2c.c (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_local.h (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_of.c (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_proto.h (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_setup.c (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nv_type.h (100%)
+> >  rename drivers/video/{ => fbdev}/nvidia/nvidia.c (100%)
+> >  rename drivers/video/{ => fbdev}/ocfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/offb.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/omap/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/omap/hwa742.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_ams_delta.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_h3.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_htcherald.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_inn1510.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_inn1610.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_mipid.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_osk.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_palmte.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_palmtt.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcd_palmz71.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcdc.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/lcdc.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap/omapfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap/omapfb_main.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap/sossi.c (100%)
+> >  create mode 100644 drivers/video/fbdev/omap2/Kconfig
+> >  rename drivers/video/{ => fbdev}/omap2/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/displays-new/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/displays-new/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/displays-new/connector-analog-tv.c
+> >  (100%) rename drivers/video/{ =>
+> >  fbdev}/omap2/displays-new/connector-dvi.c (100%) rename drivers/video/{
+> >  => fbdev}/omap2/displays-new/connector-hdmi.c (100%) rename
+> >  drivers/video/{ => fbdev}/omap2/displays-new/encoder-tfp410.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/displays-new/encoder-tpd12s015.c
+> >  (100%) rename drivers/video/{ => fbdev}/omap2/displays-new/panel-dpi.c
+> >  (100%) rename drivers/video/{ =>
+> >  fbdev}/omap2/displays-new/panel-dsi-cm.c (100%) rename drivers/video/{
+> >  => fbdev}/omap2/displays-new/panel-lgphilips-lb035q02.c (100%) rename
+> >  drivers/video/{ => fbdev}/omap2/displays-new/panel-nec-nl8048hl11.c
+> >  (100%) rename drivers/video/{ =>
+> >  fbdev}/omap2/displays-new/panel-sharp-ls037v7dw01.c (100%) rename
+> >  drivers/video/{ => fbdev}/omap2/displays-new/panel-sony-acx565akm.c
+> >  (100%) rename drivers/video/{ =>
+> >  fbdev}/omap2/displays-new/panel-tpo-td028ttec1.c (100%) rename
+> >  drivers/video/{ => fbdev}/omap2/displays-new/panel-tpo-td043mtea1.c
+> >  (100%) rename drivers/video/{ => fbdev}/omap2/dss/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/apply.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/core.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dispc-compat.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dispc-compat.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dispc.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dispc.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dispc_coefs.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/display-sysfs.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/display.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dpi.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dsi.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dss.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dss.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dss_features.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/dss_features.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/hdmi.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/hdmi4.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/hdmi4_core.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/hdmi4_core.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/hdmi_common.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/hdmi_phy.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/hdmi_pll.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/hdmi_wp.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/manager-sysfs.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/manager.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/output.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/overlay-sysfs.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/overlay.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/rfbi.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/sdi.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/venc.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/dss/venc_panel.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/omapfb/Kconfig (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/omapfb/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/omapfb/omapfb-ioctl.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/omapfb/omapfb-main.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/omapfb/omapfb-sysfs.c (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/omapfb/omapfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/omap2/vrfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/p9100.c (100%)
+> >  rename drivers/video/{ => fbdev}/platinumfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/platinumfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/pm2fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/pm3fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/pmag-aa-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/pmag-ba-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/pmagb-b-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/ps3fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/pvr2fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/pxa168fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/pxa168fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/pxa3xx-gcu.c (100%)
+> >  rename drivers/video/{ => fbdev}/pxa3xx-gcu.h (100%)
+> >  rename drivers/video/{ => fbdev}/pxafb.c (100%)
+> >  rename drivers/video/{ => fbdev}/pxafb.h (100%)
+> >  rename drivers/video/{ => fbdev}/q40fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/riva/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/riva/fbdev.c (100%)
+> >  rename drivers/video/{ => fbdev}/riva/nv_driver.c (100%)
+> >  rename drivers/video/{ => fbdev}/riva/nv_type.h (100%)
+> >  rename drivers/video/{ => fbdev}/riva/nvreg.h (100%)
+> >  rename drivers/video/{ => fbdev}/riva/riva_hw.c (100%)
+> >  rename drivers/video/{ => fbdev}/riva/riva_hw.h (100%)
+> >  rename drivers/video/{ => fbdev}/riva/riva_tbl.h (100%)
+> >  rename drivers/video/{ => fbdev}/riva/rivafb-i2c.c (100%)
+> >  rename drivers/video/{ => fbdev}/riva/rivafb.h (100%)
+> >  rename drivers/video/{ => fbdev}/s1d13xxxfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/s3c-fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/s3c2410fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/s3c2410fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/s3fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sa1100fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sa1100fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/savage/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/savage/savagefb-i2c.c (100%)
+> >  rename drivers/video/{ => fbdev}/savage/savagefb.h (100%)
+> >  rename drivers/video/{ => fbdev}/savage/savagefb_accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/savage/savagefb_driver.c (100%)
+> >  rename drivers/video/{ => fbdev}/sbuslib.c (100%)
+> >  rename drivers/video/{ => fbdev}/sbuslib.h (100%)
+> >  rename drivers/video/{ => fbdev}/sgivwfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sh7760fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sh_mipi_dsi.c (100%)
+> >  rename drivers/video/{ => fbdev}/sh_mobile_hdmi.c (100%)
+> >  rename drivers/video/{ => fbdev}/sh_mobile_lcdcfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sh_mobile_lcdcfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/sh_mobile_meram.c (100%)
+> >  rename drivers/video/{ => fbdev}/simplefb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sis/300vtbl.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/310vtbl.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/sis/init.c (100%)
+> >  rename drivers/video/{ => fbdev}/sis/init.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/init301.c (100%)
+> >  rename drivers/video/{ => fbdev}/sis/init301.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/initdef.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/initextlfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sis/oem300.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/oem310.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/sis.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/sis_accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/sis/sis_accel.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/sis_main.c (100%)
+> >  rename drivers/video/{ => fbdev}/sis/sis_main.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/vgatypes.h (100%)
+> >  rename drivers/video/{ => fbdev}/sis/vstruct.h (100%)
+> >  rename drivers/video/{ => fbdev}/skeletonfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sm501fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/smscufx.c (100%)
+> >  rename drivers/video/{ => fbdev}/ssd1307fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sstfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sticore.h (100%)
+> >  rename drivers/video/{ => fbdev}/stifb.c (100%)
+> >  rename drivers/video/{ => fbdev}/sunxvr1000.c (100%)
+> >  rename drivers/video/{ => fbdev}/sunxvr2500.c (100%)
+> >  rename drivers/video/{ => fbdev}/sunxvr500.c (100%)
+> >  rename drivers/video/{ => fbdev}/svgalib.c (100%)
+> >  rename drivers/video/{ => fbdev}/syscopyarea.c (100%)
+> >  rename drivers/video/{ => fbdev}/sysfillrect.c (100%)
+> >  rename drivers/video/{ => fbdev}/sysimgblt.c (100%)
+> >  rename drivers/video/{ => fbdev}/tcx.c (100%)
+> >  rename drivers/video/{ => fbdev}/tdfxfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/tgafb.c (100%)
+> >  rename drivers/video/{ => fbdev}/tmiofb.c (100%)
+> >  rename drivers/video/{ => fbdev}/tridentfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/udlfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/uvesafb.c (100%)
+> >  rename drivers/video/{ => fbdev}/valkyriefb.c (100%)
+> >  rename drivers/video/{ => fbdev}/valkyriefb.h (100%)
+> >  rename drivers/video/{ => fbdev}/vermilion/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/vermilion/cr_pll.c (100%)
+> >  rename drivers/video/{ => fbdev}/vermilion/vermilion.c (100%)
+> >  rename drivers/video/{ => fbdev}/vermilion/vermilion.h (100%)
+> >  rename drivers/video/{ => fbdev}/vesafb.c (100%)
+> >  rename drivers/video/{ => fbdev}/vfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/vga16fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/Makefile (100%)
+> >  rename drivers/video/{ => fbdev}/via/accel.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/accel.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/chip.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/debug.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/dvi.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/dvi.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/global.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/global.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/hw.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/hw.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/ioctl.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/ioctl.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/lcd.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/lcd.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/share.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/tblDPASetting.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/tblDPASetting.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/via-core.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via-gpio.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_ch7301.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_edid.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_sii164.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_vt1621.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_vt1622.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_vt1625.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_vt1631.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_vt1632.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_aux_vt1636.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_clock.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_clock.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_i2c.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_modesetting.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_modesetting.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_utility.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/via_utility.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/viafbdev.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/viafbdev.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/viamode.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/viamode.h (100%)
+> >  rename drivers/video/{ => fbdev}/via/vt1636.c (100%)
+> >  rename drivers/video/{ => fbdev}/via/vt1636.h (100%)
+> >  rename drivers/video/{ => fbdev}/vt8500lcdfb.c (100%)
+> >  rename drivers/video/{ => fbdev}/vt8500lcdfb.h (100%)
+> >  rename drivers/video/{ => fbdev}/vt8623fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/w100fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/w100fb.h (100%)
+> >  rename drivers/video/{ => fbdev}/wm8505fb.c (100%)
+> >  rename drivers/video/{ => fbdev}/wm8505fb_regs.h (100%)
+> >  rename drivers/video/{ => fbdev}/wmt_ge_rops.c (100%)
+> >  rename drivers/video/{ => fbdev}/wmt_ge_rops.h (100%)
+> >  rename drivers/video/{ => fbdev}/xen-fbfront.c (100%)
+> >  rename drivers/video/{ => fbdev}/xilinxfb.c (100%)
+> >  delete mode 100644 drivers/video/omap2/Kconfig
+
 -- 
-1.8.4
+Regards,
+
+Laurent Pinchart
 
