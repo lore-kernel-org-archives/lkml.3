@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829AbaBNErX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:47:23 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49117 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaBNErV (ORCPT
+	id S1751946AbaBNEuE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:50:04 -0500
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:50578 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751492AbaBNEuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:47:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <52FD2908.8000009@redhat.com>
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
-	<52F3670D.5090608@redhat.com>
-	<CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
-	<52FD2908.8000009@redhat.com>
-Date: Thu, 13 Feb 2014 20:47:17 -0800
-Message-ID: <CAMEtUuySNdj4_YBxQtaGu3qJ6TZhp65mSBy7DbhzL_Lvn9YiPw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Feb 2014 23:50:02 -0500
+X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 23:50:02 EST
+From: Debabrata Banerjee <dbanerje@akamai.com>
+To: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dbavatar@gmail.com, johunt@akamai.com,
+        Debabrata Banerjee <dbanerje@akamai.com>, stable@vger.kernel.org
+Subject: [PATCH] printk: Fix discarding of records
+Date: Thu, 13 Feb 2014 23:42:34 -0500
+Message-Id: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
+X-Mailer: git-send-email 1.8.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 12:20 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 02/07/2014 02:20 AM, Alexei Starovoitov wrote:
-> ...
->>
->> Hi Daniel,
->
->
-> Thanks for your answer and sorry for the late reply.
->
->
->> Thank you for taking a look. Good questions. I had the same concerns.
->> Old BPF was carefully extended in specific places.
->> End result may look big at first glance, but every extension has specific
->> reason behind it. I tried to explain the reasoning in
->> Documentation/bpf_jit.txt
->>
->> I'm planning to write an on-the-fly converter from old BPF to BPF64
->> when BPF64 manages to demonstrate that it is equally safe.
->> It is straight forward to convert. Encoding is very similar.
->> Core concepts are the same.
->> Try diff include/uapi/linux/filter.h include/linux/bpf.h
->> to see how much is reused.
->>
->> I believe that old BPF outlived itself and BPF64 should
->> replace it in all current use cases plus a lot more.
->> It just cannot happen at once.
->> BPF64 can come in. bpf32->bpf64 converter functioning.
->> JIT from bpf64->aarch64 and may be sparc64 needs to be in place.
->> Then old bpf can fade away.
->
->
-> Do you see a possibility to integrate your work step by step? That is,
+Found another buffer overflow in this code that was introduced by
+e3756477aec028427fec767957c0d4b6cfb87208 trying to solve a related overflow.
 
-Sure. let's see how we can do it.
+strace still shows a problem:
 
-> to first integrate the interpreter part only; meaning, to detect "old"
-> BPF programs e.g. coming from SO_ATTACH_FILTER et al and run them in
-> compatibility mode while extended BPF is fully integrated and replaces
-> the old engine in net/core/filter.c. Maybe, "old" programs can be
+	syslog(0x3, 0x7fffd65375d0, 0x1000)     = 4107
 
-do you mean drop bfp64_jit, checker and just have bpf32->bpf64 converter
-and bpf64 interpreter as phase 1 ?
-Checking is done by old bpf32,
-all existing bpf32 jits, if available, can convert bpf32 to native,
-but interpreter will be running on bpf64 ?
-phase 2 to introduce bpf64_x86 jit and so on?
-Sounds fine.
+The first record output was in the middle of a LOG_CONT line:
 
-Today I didn't try to optimize bpf64 interpreter, since insn set is designed
-for eventual JITing and interpreter is there to support archs that don't
-have jit yet.
-I guess I have to tweak it to perform at bpf32 interpreter speeds.
+	<4>[    2.974999] 0x0000000000000500-0x000000000000052f SystemIO conflicts with Region \GPIO 1 (20130328/utaddress-251)
 
-> transformed transparently to the new representation and then would be
-> good to execute in eBPF. If possible, in such a way that in the first
-> step JIT compilers won't need any upgrades. Once that is resolved,
-> JIT compilers could successively migrate, arch by arch, to compile the
-> new code? And last but not least the existing tools as well for handling
-> eBPF. I think, if possible, that would be great. Also, I unfortunately
-> haven't looked into your code too deeply yet due to time constraints,
-> but I'm wondering e.g. for accessing some skb fields we currently use
-> the "hack" to "overload" load instructions with negative arguments. Do
-> we have a sort of "meta" instruction that is extendible in eBPF to avoid
-> such things in future?
+This happens because when discarding records to be less than len, every line it
+subtracts should be the first line which means prev should be 0. Otherwise for
+example it won't include the prefix len if the last line was a LOG_CONT
+record, which however will be printed because there won't be a previous line.
+This patch makes sure enough records are discarded to be under len.
 
-Exactly.
-This 'negative offset' hack of bpf32 isn't very clean, since jits for all archs
-need to change when new offsets added.
-For bpf64 I'm proposing a customizable 'bpf_context' and variable set
-of bpf-callable functions, so JITs don't need to change and verifier
-stays the same.
-That's the idea behind 'bpf_callbacks' in include/linux/bpf_jit.h
+CC: stable@vger.kernel.org
+Signed-off-by: Debabrata Banerjee <dbanerje@akamai.com>
+---
+ kernel/printk/printk.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-Some meta data makes sense to pass as input into bpf program.
-Like for seccomp 'bpf_context' can be 'struct seccomp_data'
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index b1d255f..c1722d5 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1067,7 +1067,6 @@ static int syslog_print_all(char __user *buf, int size, bool clear)
+ 			struct printk_log *msg = log_from_idx(idx);
+ 
+ 			len -= msg_print_text(msg, prev, true, NULL, 0);
+-			prev = msg->flags;
+ 			idx = log_next(idx);
+ 			seq++;
+ 		}
+@@ -2780,7 +2779,6 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
+ 		l -= msg_print_text(msg, prev, true, NULL, 0);
+ 		idx = log_next(idx);
+ 		seq++;
+-		prev = msg->flags;
+ 	}
+ 
+ 	/* last message in next interation */
+-- 
+1.8.3.4
 
-For networking, bpf_context can be 'skb',
-then bpf_s_anc_protocol becomes a normal 2-byte bpf64 load
-from skb->protocol field. Allowing access to other fields of skb
-is just a matter of defining permissions of 'struct bpf_context' in
-bpf_callback->get_context_access()
-
-Some other meta data and extensions are cleaner when defined
-as function calls from bpf, since calls are free.
-I think bpf_table_lookup() is a fundamental one that allows to define
-arbitrary tables within bpf and access them from the program.
-(here I need feedback the most whether to access tables
-via netlink from userspace or via debugfs...)
-
-It probably will be easier to read the code of bpf32-bpf64 converter
-to understand the differences between the two.
-I guess I have to start working on the converter sooner than I thought...
-
-Thanks
-Alexei
