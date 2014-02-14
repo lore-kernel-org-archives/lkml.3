@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaBNNrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:47:41 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:41311 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201AbaBNNrk (ORCPT
+	id S1752849AbaBNNrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:47:43 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:55060 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573AbaBNNrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:47:40 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
+	Fri, 14 Feb 2014 08:47:41 -0500
+Message-ID: <52FE1E81.2040101@cogentembedded.com>
+Date: Fri, 14 Feb 2014 17:47:45 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-sh@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 26/27] ARM: shmobile: lager-reference: Enable CMT0 in device tree
-Date: Fri, 14 Feb 2014 14:48:44 +0100
-Message-ID: <2244047.l1cecWDdMU@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <52FE1E14.5090400@cogentembedded.com>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1392339605-20691-27-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <52FE1E14.5090400@cogentembedded.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Subject: Re: [PATCH 27/27] ARM: shmobile: koelsch-reference: Enable CMT0 in
+ device tree
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1392339605-20691-28-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+In-Reply-To: <1392339605-20691-28-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+Hello.
 
-Thank you for the review.
+On 14-02-2014 5:00, Laurent Pinchart wrote:
 
-On Friday 14 February 2014 17:45:56 Sergei Shtylyov wrote:
-> On 14-02-2014 5:00, Laurent Pinchart wrote:
-> > Enable the CMT0 device and configure channel 0 as a clock event
-> > provider.
-> > 
-> > Signed-off-by: Laurent Pinchart
-> > <laurent.pinchart+renesas@ideasonboard.com>
-> > 
-> > diff --git a/arch/arm/mach-shmobile/include/mach/r8a7790.h
-> > b/arch/arm/mach-shmobile/include/mach/r8a7790.h index 0b95bab..62b31f3
-> > 100644
-> > --- a/arch/arm/mach-shmobile/include/mach/r8a7790.h
-> > +++ b/arch/arm/mach-shmobile/include/mach/r8a7790.h
-> > @@ -29,7 +29,6 @@ enum {
-> >  };
-> >   
-> >  void r8a7790_add_standard_devices(void);
-> > -void r8a7790_add_dt_devices(void);
-> >  void r8a7790_clock_init(void);
-> >  void r8a7790_pinmux_init(void);
-> >  void r8a7790_pm_init(void);
-> > diff --git a/arch/arm/mach-shmobile/setup-r8a7790.c
-> > b/arch/arm/mach-shmobile/setup-r8a7790.c index 3e5813f..462c81f 100644
-> > --- a/arch/arm/mach-shmobile/setup-r8a7790.c
-> > +++ b/arch/arm/mach-shmobile/setup-r8a7790.c
-> > @@ -294,11 +294,6 @@ static struct resource cmt0_resources[] = {
-> >   					  &cmt##idx##_platform_data,	\
-> >   					  sizeof(struct sh_timer_config))
-> > 
-> > -void __init r8a7790_add_dt_devices(void)
-> > -{
-> > -	r8a7790_register_cmt(0);
-> > -}
-> > -
-> >  void __init r8a7790_add_standard_devices(void)
-> >  {
-> >   	r8a7790_register_scif(0);
-> > @@ -311,7 +306,7 @@ void __init r8a7790_add_standard_devices(void)
-> >   	r8a7790_register_scif(7);
-> >   	r8a7790_register_scif(8);
-> >   	r8a7790_register_scif(9);
-> > -	r8a7790_add_dt_devices();
-> > +	r8a7790_register_cmt(0);
-> >   	r8a7790_register_irqc(0);
-> >   	r8a7790_register_thermal();
-> >  }
-> 
->     IMHO, these 2 files should be split into a separate patch.
+> Enable the CMT0 device and configure channel 0 as a clock event
+> provider.
 
-That could easily be done, but why ?
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+> ---
+>   arch/arm/boot/dts/r8a7791-koelsch.dts            |  9 +++++++++
+>   arch/arm/mach-shmobile/board-koelsch-reference.c | 15 +--------------
+>   arch/arm/mach-shmobile/include/mach/r8a7791.h    |  1 -
+>   arch/arm/mach-shmobile/setup-r8a7791.c           |  7 +------
 
--- 
-Regards,
+    The latter 2 files are worth splitting into a separate patch as well...
 
-Laurent Pinchart
+>   4 files changed, 11 insertions(+), 21 deletions(-)
+
+WBR, Sergei
 
