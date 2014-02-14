@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaBNUrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:47:16 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51818 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367AbaBNUrO (ORCPT
+	id S1752676AbaBNUs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:48:57 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37800 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaBNUs4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:47:14 -0500
-Date: Fri, 14 Feb 2014 15:47:09 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 cgroup/for-3.15] cgroup: make
- cgroup_enable_task_cg_lists() to grab siglock
-Message-ID: <20140214204709.GB2851@mtj.dyndns.org>
-References: <20140213182931.GB17608@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140213182931.GB17608@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Feb 2014 15:48:56 -0500
+Date: Fri, 14 Feb 2014 15:48:53 -0500 (EST)
+Message-Id: <20140214.154853.1291869116525546930.davem@davemloft.net>
+To: emilgoode@gmail.com
+Cc: ming.lei@canonical.com, broonie@linaro.org, jeffrey.t.kirsher@intel.com,
+        gdt@gdt.id.au, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH Resend] net: asix: add missing flag to struct
+ driver_info
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1392316239-17335-1-git-send-email-emilgoode@gmail.com>
+References: <1392316239-17335-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 14 Feb 2014 12:48:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there's nothing explicitly preventing
-cgroup_enable_task_cg_lists() from missing set PF_EXITING and race
-against cgroup_exit(), and, depending on the timing, cgroup_exit()
-seemingly may finish with the task still linked on css_set leading to
-list corruption because cgroup_enable_task_cg_lists() can end up
-linking it after list_empty(&tsk->cg_list) test in cgroup_exit().
+From: Emil Goode <emilgoode@gmail.com>
+Date: Thu, 13 Feb 2014 19:30:39 +0100
 
-This can't really happen because exit_mm() grabs and release
-task_lock() between setting of PF_EXITING and cgroup_exit(), and
-cgroup_enable_task_cg_lists() synchronizes against task_lock too;
-however, this is fragile and more of a happy accident.  Let's make the
-synchronization explicit by making cgroup_enable_task_cg_lists() grab
-siglock around PF_EXITING testing.
+> The struct driver_info ax88178_info is assigned the function
+> asix_rx_fixup_common as it's rx_fixup callback. This means that
+> FLAG_MULTI_PACKET must be set as this function is cloning the
+> data and calling usbnet_skb_return. Not setting this flag leads
+> to usbnet_skb_return beeing called a second time from within
+> the rx_process function in the usbnet module.
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> Reported-by: Bjørn Mork <bjorn@mork.no>
 
-This whole on-demand cg_list optimization is extremely fragile and has
-ample possibility to lead to bugs which can cause things like
-once-a-year oops during boot.  I'm wondering whether the better
-approach would be just adding "cgroup_disable=all" handling which
-disables the whole cgroup rather than tempting fate with this dynamic
-optimization craziness.
+Applied and queued up for -stable.
 
-v2: Li pointed out that the race condition can't actually happen due
-    to task_lock locking in exit_mm().  Updated the patch description
-    accordingly and dropped -stable cc.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1331,9 +1331,13 @@ static void cgroup_enable_task_cg_lists(
- 		 * We should check if the process is exiting, otherwise
- 		 * it will race with cgroup_exit() in that the list
- 		 * entry won't be deleted though the process has exited.
-+		 * Do it while holding siglock so that we don't end up
-+		 * racing against cgroup_exit().
- 		 */
-+		spin_lock_irq(&p->sighand->siglock);
- 		if (!(p->flags & PF_EXITING))
- 			list_add(&p->cg_list, &task_css_set(p)->tasks);
-+		spin_unlock_irq(&p->sighand->siglock);
- 
- 		task_unlock(p);
- 	} while_each_thread(g, p);
+It would be great if there were some way to validate these
+callback flags requirements and catch such errors.
