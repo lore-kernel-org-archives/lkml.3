@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaBNLRE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 06:17:04 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:19507 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751664AbaBNLRB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 06:17:01 -0500
-Date: Fri, 14 Feb 2014 19:14:47 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: use {readl|writel}_relaxed instead of readl/writel in
- i2c-designware-core ?
-Message-ID: <20140214191447.7b283568@xhacker>
-In-Reply-To: <8705989.qzo882Ldx0@wuerfel>
-References: <20140214155438.4f749a79@xhacker>
-	<8705989.qzo882Ldx0@wuerfel>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1752379AbaBNLTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 06:19:11 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48370 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751584AbaBNLTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 06:19:09 -0500
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: <linux-fbdev@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        David Airlie <airlied@linux.ie>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH RFC 3/3] video: Kconfig: move drm and fb into separate menus
+Date: Fri, 14 Feb 2014 13:18:31 +0200
+Message-ID: <1392376711-11290-3-git-send-email-tomi.valkeinen@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392376711-11290-1-git-send-email-tomi.valkeinen@ti.com>
+References: <1392376711-11290-1-git-send-email-tomi.valkeinen@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-02-14_03:2014-02-14,2014-02-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1402140028
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Arnd,
+At the moment the "Device Drivers / Graphics support" kernel config page
+looks rather messy, with DRM and fbdev driver selections on the same
+page, some on the top level Graphics support page, some under their
+respective subsystems.
 
-On Fri, 14 Feb 2014 01:09:44 -0800
-Arnd Bergmann <arnd@arndb.de> wrote:
+If I'm not mistaken, this is caused by the drivers depending on other
+things than DRM or FB, which causes Kconfig to arrange the options in
+not-so-neat manner.
 
-> On Friday 14 February 2014 15:54:38 Jisheng Zhang wrote:
-> > Hi all,
-> > 
-> > The writel/readl is too expensive especially on Cortex A9 w/ outer L2
-> > cache. This introduce i2c read/write error on Marvell Berlin SoCs when
-> > there are L2 cache maintenance operations at the same time.
-> > 
-> > In our internal berlin bsp, we just replaced readl/writel with the relaxed
-> > version. But AFAIK, the "relaxed" version doesn't exist on all
-> > architectures. How to handle this issue? 
-> 
-> In case of i2c-designware, this is safe because that driver does not perform
-> DMA. In other drivers, you may have to be more careful, to ensure that all
-> MMIO is serialized with DMA operations performed by the driver.
-> 
-> > Any suggestions are appreciated.
-> 
-> I would definitely welcome a patch that adds a default  _relaxed
-> implementation to include/linux/io.h, like this:
-> 
-> #ifndef readb_relaxed
-> #define readb_relaxed(p) readb(p)
-> #endif
-> 
-> and then adds "#define readb_relaxed(p) readb_relaxed(p)" etc. to all
-> architectures that have a non-macro definition for readb.
+Both DRM and FB have a main menuconfig option for the whole DRM or FB
+subsystem. Optimally, this would be enough to arrange all DRM and FB
+options under the respective subsystem, but for whatever reason this
+doesn't work reliably.
 
-Thanks for the suggestions. I'll try to send out one RFC patch.
+This patch adds an explicit submenu for DRM and FB, making it much
+clearer which options are related to FB, and which to DRM.
 
-Thanks,
-Jisheng
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+---
+ drivers/video/Kconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index f0f26a0b746e..70d174090a54 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -21,9 +21,13 @@ source "drivers/gpu/vga/Kconfig"
+ 
+ source "drivers/gpu/host1x/Kconfig"
+ 
++menu "Direct Rendering Manager"
+ source "drivers/gpu/drm/Kconfig"
++endmenu
+ 
++menu "Framebuffer Devices"
+ source "drivers/video/fbdev/Kconfig"
++endmenu
+ 
+ source "drivers/video/backlight/Kconfig"
+ 
+-- 
+1.8.3.2
+
