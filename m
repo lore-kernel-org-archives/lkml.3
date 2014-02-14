@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009AbaBNHdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 02:33:46 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:27379 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaBNHdo (ORCPT
+	id S1751956AbaBNHnG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:43:06 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:19923 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751638AbaBNHnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 02:33:44 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-d3-52fdc6d55d6f
-Message-id: <1392363220.29133.4.camel@AMDC1943>
-Subject: Re: [PATCH v2 09/14] regulator: s2mps11: Add support for S2MPS14
- regulators
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Date: Fri, 14 Feb 2014 08:33:40 +0100
-In-reply-to: <20140213191028.GC28112@sirena.org.uk>
-References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
- <1392282847-25444-10-git-send-email-k.kozlowski@samsung.com>
- <20140213191028.GC28112@sirena.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xq7pXj/0NMnjXZWmxccZ6VoupD5+w
-	WZxtesNucf/rUUaLb1c6mCwu75rDZjHj/D4mi7VH7rJbnO5mtbi44guTA5fHzll32T02repk
-	87hzbQ+bx7yTgR59W1YxenzeJBfAFsVlk5Kak1mWWqRvl8CV8fHsFqaCTWwVC9t2Mjcw9rF2
-	MXJwSAiYSFxcqt/FyAlkiklcuLeerYuRi0NIYCmjxOUdTYwgCSGBz4wSE54qgdTzCuhLzNjN
-	ARIWFgiTuHS6kR3EZhMwlti8fAkbiC0ioCxx9fteFpA5zAJvmCRWzd7OCpJgEVCVmNp+jAXE
-	5gRqeL/wDCPEsvWMEgsWPQLrZhZQl5g0bxEzxEVKErvbO9kh4vISm9e8BYvzCghK/Jh8j2UC
-	o8AsJC2zkJTNQlK2gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIJHzZwbj4mNUhRgEO
-	RiUe3g93/wQJsSaWFVfmHmKU4GBWEuF13/83SIg3JbGyKrUoP76oNCe1+BAjEwenVAOjRHzU
-	9FCOo37XLXw8t/6/KC7G0sMVXfn7wcnA6zpLRIQzPnDvWfM35d/LxQfknCRSTF7tC42ZEP9V
-	RW/hE6Gq5DDlpLP52fMatX77pL6Zm/I+8vmOo3YrXasKPuywNdwx58zCp50vZ3yOjLsQGj+7
-	880JFd+HMTaqcklnWWYv+lu4yszcyUhYiaU4I9FQi7moOBEATcKblGICAAA=
+	Fri, 14 Feb 2014 02:43:04 -0500
+Message-ID: <52FDC8F3.50100@marvell.com>
+Date: Fri, 14 Feb 2014 15:42:43 +0800
+From: Jane Li <jiel@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "joe@perches.com" <joe@perches.com>, "tj@kernel.org" <tj@kernel.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] printk: fix one circular lockdep warning about console_lock
+References: <1392101400-14550-1-git-send-email-jiel@marvell.com> <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
+In-Reply-To: <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-14_02:2014-02-13,2014-02-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402130246
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-13 at 19:10 +0000, Mark Brown wrote:
-> On Thu, Feb 13, 2014 at 10:14:02AM +0100, Krzysztof Kozlowski wrote:
-> > Add support for S2MPS14 PMIC regulators to s2mps11 driver. The S2MPS14
-> > has fewer BUCK-s and LDO-s than S2MPS11. It also does not support
-> > controlling the BUCK ramp delay.
-> 
-> How different are the other Samsung PMICs?  They share the core driver
-> code and this makes the driver more parameterisable so perhaps it means
-> the others could be merged in here too.
+On 02/12/2014 05:19 AM, Andrew Morton wrote:
 
-With some effort the s2mps11 and s5m8767 regulator drivers can be
-merged. The s5m8767 shares most of the features with s2mps11 and adds
-some new stuff (i.e. GPIO control over BUCK DVS, low power mode for
-opmode). Anyway it was easier to add support for S2MPS14 to S2MPS11 than
-to merge everything now.
+>> There are three locks involved in two sequence:
+>> a) pm suspend:
+>> 	console_lock (@suspend_console())
+>> 	cpu_add_remove_lock (@disable_nonboot_cpus())
+>> 	cpu_hotplug.lock (@_cpu_down())
+> But but but.  suspend_console() releases console_sem again.
+
+Console_lock does not refer to console_sem but console_lock_dep_map. Its name is console_lock. Suspend_console() does not release console_lock_dep_map.
+
+> So the
+> sequence is actually
+>
+>   	down(&console_sem) (@suspend_console())
+
+	   acquire(&console_lock_dep_map) (&suspend_console())
+
+>   	up(&console_sem) (@suspend_console())
+>   	cpu_add_remove_lock (@disable_nonboot_cpus())
+>   	cpu_hotplug.lock (@_cpu_down())
+>
+> So console_sem *doesn't* nest outside cpu_add_remove_lock and
+> cpu_hotplug.lock.
+
+Add console_lock in the sequence.
+
+>
+>> b) Plug-out CPUx:
+>> 	cpu_add_remove_lock (@(cpu_down())
+>> 	cpu_hotplug.lock (@_cpu_down())
+>> 	console_lock (@console_cpu_notify()) => Lockdeps prints warning log.
+>>
+>> There should be not real deadlock, as flag of console_suspended can
+>> protect this.
+> console_lock() does down(&console_sem) *before* testing
+> console_suspended, so I don't understand this sentence - a more
+> detailed description would help.
+
+After suspend_console(), console_sem is unlocked, but console_lock_dep_map has been acquired.
+
+
+Best Regards,
+Jane
 
