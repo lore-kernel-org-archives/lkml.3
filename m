@@ -1,111 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831AbaBNCTZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 21:19:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42186 "EHLO mx1.redhat.com"
+	id S1751590AbaBNCad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 21:30:33 -0500
+Received: from mout.gmx.net ([74.208.4.201]:63736 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758AbaBNCTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 21:19:24 -0500
-Message-ID: <52FD7D1F.2030102@redhat.com>
-Date: Fri, 14 Feb 2014 10:19:11 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751050AbaBNCac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 21:30:32 -0500
+Content-Type: text/plain; charset="utf-8"
+Date: Thu, 13 Feb 2014 21:30:28 -0500
+From: "Nadine Weiss" <Nadine55856@socialworker.net>
+Message-ID: <20140214023029.246050@gmx.com>
 MIME-Version: 1.0
-To: Haiyang Zhang <haiyangz@microsoft.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Subject: Re: [PATCH net,v3] hyperv: Fix the carrier status setting
-References: <1392252867-21146-1-git-send-email-haiyangz@microsoft.com> <52FC4147.7060803@redhat.com> <900caa9031c345a6a21604ca7bb02174@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-In-Reply-To: <900caa9031c345a6a21604ca7bb02174@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: =?iso-8859-1?Q?Haben_Sie_ein_Kredit_Problem____=23=23__Jetzt_langfristig_zinsg=FCnstig_und_ohne_bankm=E4ssige_Schikanen_neue_Finanzmittel_bekommen?=
+To: linux-kernel@vger.kernel.org
+X-Flags: 0001
+X-Mailer: GMX.com Web Mailer
+x-registered: 0
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: khqPcnkB3zOl2OaCgn8hJfZ+IGRvb8Aj
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 11:04 PM, Haiyang Zhang wrote:
->
->> -----Original Message-----
->> From: Jason Wang [mailto:jasowang@redhat.com]
->> Sent: Wednesday, February 12, 2014 10:52 PM
->> To: Haiyang Zhang; davem@davemloft.net; netdev@vger.kernel.org
->> Cc: KY Srinivasan; olaf@aepfle.de; linux-kernel@vger.kernel.org; driverdev-
->> devel@linuxdriverproject.org
->> Subject: Re: [PATCH net,v3] hyperv: Fix the carrier status setting
->>
->> On 02/13/2014 08:54 AM, Haiyang Zhang wrote:
->>> Without this patch, the "cat /sys/class/net/ethN/operstate" shows
->>> "unknown", and "ethtool ethN" shows "Link detected: yes", when VM
->>> boots up with or without vNIC connected.
->>>
->>> This patch fixed the problem.
->>>
->>> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
->>> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
->>> ---
->>>  drivers/net/hyperv/netvsc_drv.c |   53
->> ++++++++++++++++++++++++++++-----------
->>>  1 files changed, 38 insertions(+), 15 deletions(-)
->>>
->>> diff --git a/drivers/net/hyperv/netvsc_drv.c
->>> b/drivers/net/hyperv/netvsc_drv.c index 7756118..7141a19 100644
->>> --- a/drivers/net/hyperv/netvsc_drv.c
->>> +++ b/drivers/net/hyperv/netvsc_drv.c
->>> @@ -88,8 +88,12 @@ static int netvsc_open(struct net_device *net)  {
->>>  	struct net_device_context *net_device_ctx = netdev_priv(net);
->>>  	struct hv_device *device_obj = net_device_ctx->device_ctx;
->>> +	struct netvsc_device *nvdev;
->>> +	struct rndis_device *rdev;
->>>  	int ret = 0;
->>>
->>> +	netif_carrier_off(net);
->>> +
->>>  	/* Open up the device */
->>>  	ret = rndis_filter_open(device_obj);
->>>  	if (ret != 0) {
->>> @@ -99,6 +103,11 @@ static int netvsc_open(struct net_device *net)
->>>
->>>  	netif_start_queue(net);
->>>
->>> +	nvdev = hv_get_drvdata(device_obj);
->>> +	rdev = nvdev->extension;
->>> +	if (!rdev->link_state)
->>> +		netif_carrier_on(net);
->>> +
->> Maybe you can just schedule the work here and then you can drop the
->> rtnl_lock in netvsc_link_change() ?
-> The rtnl_lock will still be necessary in the netvsc_link_change(), because 
-> we want to prevent it getting wrong rdev pointer when netvsc_change_mtu
-> is removing/adding rndis device.
+Guten Tag,
 
-Ok.
->>> +
->>> +	if (notify)
->>> +		netdev_notify_peers(net);
->>>  }
->>>
->> Looks like this forces arp_notify here. Is it expected?
-> Yes, this is expected. It's required after live migration.
->
-> Thanks,
-> - Haiyang
+hat Ihre Hausbank Ihnen die Kreditlinie gestrichen? 
+Gehen Sie doch dorthin, wo man Sie als Kunden noch anständig behandelt.
 
-Yes, this does not change the current behaviour. (arp_notify is
-meaningless for netvsc).
+Auch bei schlechter Auskunft und bereits von Ihrer eigenen Bank abgelehntem Antrag können wir Ihnen frisches Geld vermitteln zu optimalen Bedingungen -ab 1,8% Zinsen p.a.- und langer Laufzeit. 
 
-Acked-by: Jason Wang <jasowang@redhat.com>
+Ihren Kredit bekommen Sie jetzt aus Belize ohne viele Unterlagen, ohne Auskunft und schnell. 
+Unsere Kooperationspartner sind mehr als 30 Banken, und wir kümmern uns um alle Details.
 
-The patch is also needed for stable.
+Also ideal für Selbständige, Angestellte und Pensionäre. Denken Sie global und machen Sie Schluß mit den Restriktionen in Europa. Worauf warten Sie?
 
-Thanks
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Hier können Sie alles nachlesen:   NIEDRIGZINSKREDIT und ergänzen Sie ohne die Füllzeichen:
+c*0*m
+
+Holen Sie sich Kapital dort, wo die Geldspeicher voll sind, die Zinsen absolut im Keller und die Laufzeiten lang sind. 
+
+Wir wünschen noch einen schönen Tag
+
+Alfred Wagner
 
