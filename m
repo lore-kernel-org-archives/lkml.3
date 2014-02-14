@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaBNCad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 21:30:33 -0500
-Received: from mout.gmx.net ([74.208.4.201]:63736 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050AbaBNCac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 21:30:32 -0500
-Content-Type: text/plain; charset="utf-8"
-Date: Thu, 13 Feb 2014 21:30:28 -0500
-From: "Nadine Weiss" <Nadine55856@socialworker.net>
-Message-ID: <20140214023029.246050@gmx.com>
+	id S1751626AbaBNCh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 21:37:58 -0500
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:34180 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750987AbaBNCh4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 21:37:56 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchd2iz1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <lars@metafoo.de>
+CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <b47053@freescale.com>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH v3 0/3] Add TDM slot info OF parsing supports
+Date: Fri, 14 Feb 2014 09:34:33 +0800
+Message-ID: <1392341676-4143-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Subject: =?iso-8859-1?Q?Haben_Sie_ein_Kredit_Problem____=23=23__Jetzt_langfristig_zinsg=FCnstig_und_ohne_bankm=E4ssige_Schikanen_neue_Finanzmittel_bekommen?=
-To: linux-kernel@vger.kernel.org
-X-Flags: 0001
-X-Mailer: GMX.com Web Mailer
-x-registered: 0
-Content-Transfer-Encoding: 8bit
-X-GMX-UID: khqPcnkB3zOl2OaCgn8hJfZ+IGRvb8Aj
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Tag,
+Change in v3:
+   - Add .of_xlate_tdm_slot_mask().
+   - Add snd_soc_of_xlate_tdm_slot_mask().
+   - Remove TDM slot masks OF parsing...
+   - Split the TDM infomation into two properties.
 
-hat Ihre Hausbank Ihnen die Kreditlinie gestrichen? 
-Gehen Sie doch dorthin, wo man Sie als Kunden noch anständig behandelt.
 
-Auch bei schlechter Auskunft und bereits von Ihrer eigenen Bank abgelehntem Antrag können wir Ihnen frisches Geld vermitteln zu optimalen Bedingungen -ab 1,8% Zinsen p.a.- und langer Laufzeit. 
 
-Ihren Kredit bekommen Sie jetzt aus Belize ohne viele Unterlagen, ohne Auskunft und schnell. 
-Unsere Kooperationspartner sind mehr als 30 Banken, und wir kümmern uns um alle Details.
+Xiubo Li (3):
+  ASoC: binding: add tdm-slot.txt
+  ASoC: core: add TDM slot parsing from DT supports
+  ASoC: simple-card: add slot information parsing supports
 
-Also ideal für Selbständige, Angestellte und Pensionäre. Denken Sie global und machen Sie Schluß mit den Restriktionen in Europa. Worauf warten Sie?
+ .../devicetree/bindings/sound/simple-card.txt      |  5 ++
+ .../devicetree/bindings/sound/tdm-slot.txt         | 20 ++++++++
+ include/sound/simple_card.h                        |  2 +
+ include/sound/soc-dai.h                            |  2 +
+ include/sound/soc.h                                |  3 ++
+ sound/soc/generic/simple-card.c                    | 18 +++++++
+ sound/soc/soc-core.c                               | 59 ++++++++++++++++++++++
+ 7 files changed, 109 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/tdm-slot.txt
 
-Hier können Sie alles nachlesen:   NIEDRIGZINSKREDIT und ergänzen Sie ohne die Füllzeichen:
-c*0*m
+-- 
+1.8.4
 
-Holen Sie sich Kapital dort, wo die Geldspeicher voll sind, die Zinsen absolut im Keller und die Laufzeiten lang sind. 
-
-Wir wünschen noch einen schönen Tag
-
-Alfred Wagner
 
