@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaBNOGU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 09:06:20 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:38170 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334AbaBNOGS (ORCPT
+	id S1752869AbaBNOHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 09:07:36 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42120 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436AbaBNOHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 09:06:18 -0500
-Date: Fri, 14 Feb 2014 09:06:13 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        trinity@vger.kernel.org
-Subject: Re: [PATCH ] workqueue: add args to workqueue lockdep name
-Message-ID: <20140214140613.GA29516@htj.dyndns.org>
-References: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
- <20140210192846.GF27965@twins.programming.kicks-ass.net>
- <20140210215224.GB25350@mtj.dyndns.org>
- <20140211110036.GT9987@twins.programming.kicks-ass.net>
- <20140211152741.GA24490@htj.dyndns.org>
- <1392266124.4974.35.camel@ThinkPad-T5421.cn.ibm.com>
- <20140213212645.GG17608@htj.dyndns.org>
- <20140213213253.GF27965@twins.programming.kicks-ass.net>
- <20140213221515.GL17608@htj.dyndns.org>
- <1392346377.4744.8.camel@ThinkPad-T5421.cn.ibm.com>
+	Fri, 14 Feb 2014 09:07:35 -0500
+Date: Fri, 14 Feb 2014 15:07:29 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: linux-rt-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Platschek <platschek@ict.tuwien.ac.at>
+Subject: Re: [PATCH RT 5/5] allow preemption in slab_alloc_node and slab_free
+Message-ID: <20140214140729.GI28438@linutronix.de>
+References: <20140210154016.GF20017@opentech.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1392346377.4744.8.camel@ThinkPad-T5421.cn.ibm.com>
+In-Reply-To: <20140210154016.GF20017@opentech.at>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 10:52:57AM +0800, Li Zhong wrote:
-> Tommi noticed a 'funny' lock class name: "%s#5" from a lock acquired in
-> process_one_work().
-> 
-> Maybe #fmt plus #args could be used as the lock_name to give some more
-> information for some fmt string like the above. 
-> 
-> __builtin_constant_p() check is removed (as there seems no good way to
-> check all the variables in args list). However, by removing the check,
-> it only adds two additional "s for those constants.
-> 
-> Some lockdep name examples printed out after the change:
-> 
-> lockdep name                    wq->name
-> 
-> "events_long"                   events_long
-> "%s"("khelper")                 khelper
-> "xfs-data/%s"mp->m_fsname       xfs-data/dm-3
-> 
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+* Nicholas Mc Guire | 2014-02-10 16:40:16 [+0100]:
 
-Applied to wq/for-3.14-fixes.
+>__slab_alloc is only called from slub.c:slab_alloc_node
+>it runs with local irqs disabled so it can't be pushed off this CPU
+>asynchronously, the preempt_disable/enable is thus not needed.
+>Aside from that the later this_cpu_cmpxchg_double would catch such a 
+>migration event anyay.
 
-Thanks.
+Not sure what to do with this one. You do write a longer chapter why it
+is okay to drop the preemption disable section and that
+this_cpu_cmpxchg_double() would catch it. And I didn't figure out so
+far why need to keep preemption disabled while looking at c->tid but not
+at c->page.
+However, it seems that Christoph Lameter found it important to add a
+note in the comment that this preemption disable here is important.
+Looking at commit 7cccd80 ("slub: tid must be retrieved from the percpu
+area of the current processor") it seems that Steven Rostedt run into
+trouble and now we have that preemption_disable() here.
 
--- 
-tejun
+So if you really get better performance and you haven't seen anything
+bad happen then you might want to check with Lameter & Rostedt about
+your patch and getting it merged upstream.
+The commit I mentioned is upstream since v3.11-rc1 and I can see it in
+v3.8-RT tree so it looks serious.
+I fail to see it in v3.2-RT, Steven, isn't this something we want there,
+too?
+
+Sebastian
