@@ -1,196 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaBNNYb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:24:31 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64179 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210AbaBNNY3 (ORCPT
+	id S1752608AbaBNNZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:25:14 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:32837 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaBNNZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:24:29 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        dbaryshkov@gmail.com, dwmw2@infradead.org, grant.likely@linaro.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hns@goldelico.com,
-        Marek Belisko <marek@goldelico.com>
-Subject: [PATCH] power: twl4030_madc_battery: Add device tree support.
-Date: Fri, 14 Feb 2014 14:24:19 +0100
-Message-Id: <1392384259-14311-1-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 14 Feb 2014 08:25:12 -0500
+Date: Fri, 14 Feb 2014 05:25:03 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140214132503.GA23265@infradead.org>
+References: <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+ <20140212054043.GB13997@dastard>
+ <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+ <20140212113928.GO18016@ZenIV.linux.org.uk>
+ <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
+ <20140212211421.GP18016@ZenIV.linux.org.uk>
+ <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com>
+ <20140212214411.GQ18016@ZenIV.linux.org.uk>
+ <20140213205146.GS18016@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140213205146.GS18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- .../bindings/power_supply/twl4030_madc_battery.txt |  15 +++
- drivers/power/twl4030_madc_battery.c               | 109 +++++++++++++++++++++
- 2 files changed, 124 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
+On Thu, Feb 13, 2014 at 08:51:46PM +0000, Al Viro wrote:
+> On Wed, Feb 12, 2014 at 09:44:11PM +0000, Al Viro wrote:
+> 
+> > I'll try to put something along those lines together, if you or Oleg don't
+> > do it first.
+> 
+> OK, having looked at that stuff...
+> 
+> 1) things become much more compact if we finish conversion to get_signal()
+> first.
 
-diff --git a/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
-new file mode 100644
-index 0000000..bebc876
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
-@@ -0,0 +1,15 @@
-+twl4030_madc_battery
-+
-+Required properties:
-+ - compatible : "ti,twl4030-madc-battery"
-+ - capacity : battery capacity in uAh
-+ - charging-calibration-data : list of voltage(mV):level(%) values for charging calibration (see example)
-+ - discharging-calibration-data : list of voltage(mV):level(%) values for discharging calibration (see example)
-+
-+Example:
-+	madc-battery {
-+		compatible = "ti,twl4030-madc-battery";
-+		capacity = <1200000>;
-+		charging-calibration-data = <4200 100 4100 75 4000 55 3900 25 3800 5 3700 2 3600 1 3300 0>;
-+		discharging-calibration-data = <4200 100 4100 95 4000 70 3800 50 3700 10 3600 5 3300 0>;
-+	};
-diff --git a/drivers/power/twl4030_madc_battery.c b/drivers/power/twl4030_madc_battery.c
-index 7ef445a..2843382 100644
---- a/drivers/power/twl4030_madc_battery.c
-+++ b/drivers/power/twl4030_madc_battery.c
-@@ -19,6 +19,7 @@
- #include <linux/sort.h>
- #include <linux/i2c/twl4030-madc.h>
- #include <linux/power/twl4030_madc_battery.h>
-+#include <linux/of.h>
- 
- struct twl4030_madc_battery {
- 	struct power_supply psy;
-@@ -188,6 +189,110 @@ static int twl4030_cmp(const void *a, const void *b)
- 		((struct twl4030_madc_bat_calibration *)a)->voltage;
- }
- 
-+#ifdef CONFIG_OF
-+static struct twl4030_madc_bat_platform_data *
-+	twl4030_madc_dt_probe(struct platform_device *pdev)
-+{
-+	struct twl4030_madc_bat_platform_data *pdata;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct property *prop;
-+	int ret;
-+	int sz, i, j = 0;
-+
-+	pdata = devm_kzalloc(&pdev->dev,
-+			sizeof(struct twl4030_madc_bat_platform_data),
-+			GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ret = of_property_read_u32(np, "capacity", &pdata->capacity);
-+	if (ret != 0)
-+		return ERR_PTR(-EINVAL);
-+
-+	/* parse and prepare charging data */
-+	prop = of_find_property(np, "charging-calibration-data", &sz);
-+	if (!prop)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (sz % 2) {
-+		dev_warn(&pdev->dev, "Count of charging-calibration-data must be even!\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	sz /= sizeof(u32);
-+
-+	{
-+		u32 data[sz];
-+
-+		ret = of_property_read_u32_array(np,
-+				"charging-calibration-data", &data[0], sz);
-+		if (ret)
-+			return ERR_PTR(ret);
-+
-+		pdata->charging = devm_kzalloc(&pdev->dev,
-+				sizeof(struct twl4030_madc_bat_calibration) * (sz / 2),
-+				GFP_KERNEL);
-+
-+		for (i = 0; i < sz; i += 2) {
-+			pdata->charging[j].voltage = data[i];
-+			pdata->charging[j].level = data[i+1];
-+			j++;
-+		}
-+
-+		pdata->charging_size = sz / 2;
-+	}
-+
-+	/* parse and prepare discharging data */
-+	prop = of_find_property(np, "discharging-calibration-data", &sz);
-+	if (!prop)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (sz % 2) {
-+		dev_warn(&pdev->dev, "Count of discharging-calibration-data must be even!\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	sz /= sizeof(u32);
-+
-+	{
-+		u32 data[sz];
-+
-+		ret = of_property_read_u32_array(np,
-+				"discharging-calibration-data", &data[0], sz);
-+		if (ret)
-+			return ERR_PTR(ret);
-+
-+		j = 0;
-+
-+		pdata->discharging = devm_kzalloc(&pdev->dev,
-+				sizeof(struct twl4030_madc_bat_calibration) * (sz / 2),
-+				GFP_KERNEL);
-+
-+		for (i = 0; i < sz; i += 2) {
-+			pdata->discharging[j].voltage = data[i];
-+			pdata->discharging[j].level = data[i+1];
-+			j++;
-+		}
-+
-+		pdata->discharging_size = sz / 2;
-+	}
-+
-+	return pdata;
-+}
-+
-+static const struct of_device_id of_twl4030_madc_match[] = {
-+	{ .compatible = "ti,twl4030-madc-battery", },
-+	{},
-+};
-+
-+#else
-+static struct twl4030_madc_bat_platform_data *
-+	twl4030_madc_dt_probe(struct platform_device *pdev)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+#endif
-+
- static int twl4030_madc_battery_probe(struct platform_device *pdev)
- {
- 	struct twl4030_madc_battery *twl4030_madc_bat;
-@@ -197,6 +302,9 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
- 	if (!twl4030_madc_bat)
- 		return -ENOMEM;
- 
-+	if (!pdata)
-+		pdata = twl4030_madc_dt_probe(pdev);
-+
- 	twl4030_madc_bat->psy.name = "twl4030_battery";
- 	twl4030_madc_bat->psy.type = POWER_SUPPLY_TYPE_BATTERY;
- 	twl4030_madc_bat->psy.properties = twl4030_madc_bat_props;
-@@ -234,6 +342,7 @@ static int twl4030_madc_battery_remove(struct platform_device *pdev)
- static struct platform_driver twl4030_madc_battery_driver = {
- 	.driver = {
- 		.name = "twl4030_madc_battery",
-+		.of_match_table = of_match_ptr(of_twl4030_madc_match),
- 	},
- 	.probe  = twl4030_madc_battery_probe,
- 	.remove = twl4030_madc_battery_remove,
--- 
-1.8.3.2
+I have vague memories that Richard sent out a series to convert over all
+architectures a while ago.  Hopefully he has better memory than I do.
 
