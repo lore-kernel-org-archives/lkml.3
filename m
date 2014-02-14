@@ -1,68 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaBNI4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:56:25 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:55035 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaBNI4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:56:20 -0500
-Message-ID: <52FDDA24.6080204@huawei.com>
-Date: Fri, 14 Feb 2014 16:56:04 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752762AbaBNI5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:57:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50896 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752569AbaBNI5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 03:57:07 -0500
+Date: Fri, 14 Feb 2014 09:57:05 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the akpm-current tree with the
+ cgroup tree
+Message-ID: <20140214085705.GB29814@dhcp22.suse.cz>
+References: <20140214153414.b15e54bf5aa61d0e75bacc90@canb.auug.org.au>
+ <20140214083345.GA29814@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 3/3] cgroup: deal with dummp_top in cgroup_name() and cgroup_path()
-References: <52FDD9C4.1070001@huawei.com>
-In-Reply-To: <52FDD9C4.1070001@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140214083345.GA29814@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My kernel fails to boot, because blkcg calls cgroup_path() while
-cgroupfs is not mounted.
+On Fri 14-02-14 09:33:45, Michal Hocko wrote:
+[...]
+> I do not see spin_unlock -> mutex_unlock at the very end of this function.
 
-Fix both cgroup_name() and cgroup_path().
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- include/linux/cgroup.h | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index ef0b3af..8c283a9 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -487,13 +487,21 @@ struct cgroup_subsys_state *seq_css(struct seq_file *seq);
- 
- static inline int cgroup_name(struct cgroup *cgrp, char *buf, size_t buflen)
- {
--	return kernfs_name(cgrp->kn, buf, buflen);
-+	/* dummy_top doesn't have a kn associated */
-+	if (cgrp->kn)
-+		return kernfs_name(cgrp->kn, buf, buflen);
-+	else
-+		return strlcpy(buf, "/", buflen);
- }
- 
- static inline char * __must_check cgroup_path(struct cgroup *cgrp, char *buf,
- 					      size_t buflen)
- {
--	return kernfs_path(cgrp->kn, buf, buflen);
-+	/* dummy_top doesn't have a kn associated */
-+	if (cgrp->kn)
-+		return kernfs_path(cgrp->kn, buf, buflen);
-+	strlcpy(buf, "/", buflen);
-+	return (buflen <= 2) ? NULL : buf;
- }
- 
- static inline void pr_cont_cgroup_name(struct cgroup *cgrp)
+Scratch that. That part apparently didn't conflict so it wasn't in the
+merge commit. Sorry about the noise
 -- 
-1.8.0.2
-
+Michal Hocko
+SUSE Labs
