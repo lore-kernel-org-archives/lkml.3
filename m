@@ -1,436 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaBNUUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:20:45 -0500
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:48303 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753321AbaBNUUm (ORCPT
+	id S1753514AbaBNUWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:22:31 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46787 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaBNUW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:20:42 -0500
-Message-Id: <20140214201908.432763541@linux.com>
-Date: Fri, 14 Feb 2014 14:19:23 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH 42/48] tile: Replace __get_cpu_var uses
-References: <20140214201841.826179349@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_tile
+	Fri, 14 Feb 2014 15:22:27 -0500
+Message-ID: <52FE7AFD.2040203@wwwdotorg.org>
+Date: Fri, 14 Feb 2014 13:22:21 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@rjwysocki.net
+CC: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, nm@ti.com,
+        kgene.kim@samsung.com, jinchoi@broadcom.com, tianyu.lan@intel.com,
+        sebastian.capella@linaro.org, jhbird.choi@samsung.com
+Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+References: <cover.1392273722.git.viresh.kumar@linaro.org> <52FE71BD.3020103@wwwdotorg.org>
+In-Reply-To: <52FE71BD.3020103@wwwdotorg.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Patch depends on another patch in this series that introduces raw_cpu_ops]
+On 02/14/2014 12:42 PM, Stephen Warren wrote:
+> On 02/12/2014 11:50 PM, Viresh Kumar wrote:
+>> This patchset creates/calls cpufreq suspend/resume callbacks from dpm_{suspend|resume}()
+>> for handling suspend/resume of cpufreq governors and core.
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of
-them is address calculation via the form &__get_cpu_var(x).  This calculates
-the address for the instance of the percpu variable of the current processor
-based on an offset.
+BTW, I also happened to test these on a Tegra114 system, on which there
+is no cpufreq driver, and this series (applied on top of commit
+9398a10cd964 Merge tag 'regulator-v3.14-rc2') causes the following
+during suspend:
 
-Other use cases are for storing and retrieving data from the current
-processors percpu area.  __get_cpu_var() can be used as an lvalue when
-writing data or on the right side of an assignment.
-
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does an address determination. However, store
-and retrieve operations could use a segment prefix (or global register on
-other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a
-percpu area and use optimized assembly code to read and write per cpu
-variables.
-
-
-This patch converts __get_cpu_var into either an explicit address
-calculation using this_cpu_ptr() or into a use of this_cpu operations that
-use the offset.  Thereby address calculations are avoided and less registers
-are used when code is generated.
-
-At the end of the patch set all uses of __get_cpu_var have been removed so
-the macro is removed too.
-
-The patch set includes passes over all arches as well. Once these operations
-are used throughout then specialized macros can be defined in non -x86
-arches as well in order to optimize per cpu access by f.e.  using a global
-register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu
-variable.
-
-	DEFINE_PER_CPU(int, y);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	__this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	__this_cpu_inc(y)
-
-
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/arch/tile/include/asm/mmu_context.h
-===================================================================
---- linux.orig/arch/tile/include/asm/mmu_context.h	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/include/asm/mmu_context.h	2013-12-18 13:40:08.322514483 -0600
-@@ -84,7 +84,7 @@ static inline void enter_lazy_tlb(struct
- 	 * clear any pending DMA interrupts.
- 	 */
- 	if (current->thread.tile_dma_state.enabled)
--		install_page_table(mm->pgd, __get_cpu_var(current_asid));
-+		install_page_table(mm->pgd, __this_cpu_read(current_asid));
- #endif
- }
- 
-@@ -96,12 +96,12 @@ static inline void switch_mm(struct mm_s
- 		int cpu = smp_processor_id();
- 
- 		/* Pick new ASID. */
--		int asid = __get_cpu_var(current_asid) + 1;
-+		int asid = __this_cpu_read(current_asid) + 1;
- 		if (asid > max_asid) {
- 			asid = min_asid;
- 			local_flush_tlb();
- 		}
--		__get_cpu_var(current_asid) = asid;
-+		__this_cpu_write(current_asid, asid);
- 
- 		/* Clear cpu from the old mm, and set it in the new one. */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
-Index: linux/arch/tile/kernel/irq.c
-===================================================================
---- linux.orig/arch/tile/kernel/irq.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/irq.c	2013-12-18 13:40:08.322514483 -0600
-@@ -79,7 +79,7 @@ static DEFINE_SPINLOCK(available_irqs_lo
-  */
- void tile_dev_intr(struct pt_regs *regs, int intnum)
- {
--	int depth = __get_cpu_var(irq_depth)++;
-+	int depth = __this_cpu_inc_return(irq_depth);
- 	unsigned long original_irqs;
- 	unsigned long remaining_irqs;
- 	struct pt_regs *old_regs;
-@@ -126,7 +126,7 @@ void tile_dev_intr(struct pt_regs *regs,
- 
- 		/* Count device irqs; Linux IPIs are counted elsewhere. */
- 		if (irq != IRQ_RESCHEDULE)
--			__get_cpu_var(irq_stat).irq_dev_intr_count++;
-+			__this_cpu_inc(irq_stat.irq_dev_intr_count);
- 
- 		generic_handle_irq(irq);
- 	}
-@@ -136,10 +136,10 @@ void tile_dev_intr(struct pt_regs *regs,
- 	 * including any that were reenabled during interrupt
- 	 * handling.
- 	 */
--	if (depth == 0)
--		unmask_irqs(~__get_cpu_var(irq_disable_mask));
-+	if (depth == 1)
-+		unmask_irqs(~__this_cpu_read(irq_disable_mask));
- 
--	__get_cpu_var(irq_depth)--;
-+	__this_cpu_dec(irq_depth);
- 
- 	/*
- 	 * Track time spent against the current process again and
-@@ -157,7 +157,7 @@ void tile_dev_intr(struct pt_regs *regs,
- static void tile_irq_chip_enable(struct irq_data *d)
- {
- 	get_cpu_var(irq_disable_mask) &= ~(1UL << d->irq);
--	if (__get_cpu_var(irq_depth) == 0)
-+	if (__this_cpu_read(irq_depth) == 0)
- 		unmask_irqs(1UL << d->irq);
- 	put_cpu_var(irq_disable_mask);
- }
-@@ -203,7 +203,7 @@ static void tile_irq_chip_ack(struct irq
-  */
- static void tile_irq_chip_eoi(struct irq_data *d)
- {
--	if (!(__get_cpu_var(irq_disable_mask) & (1UL << d->irq)))
-+	if (!(__this_cpu_read(irq_disable_mask) & (1UL << d->irq)))
- 		unmask_irqs(1UL << d->irq);
- }
- 
-Index: linux/arch/tile/kernel/messaging.c
-===================================================================
---- linux.orig/arch/tile/kernel/messaging.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/messaging.c	2013-12-18 13:40:08.322514483 -0600
-@@ -28,7 +28,7 @@ static DEFINE_PER_CPU(HV_MsgState, msg_s
- void init_messaging(void)
- {
- 	/* Allocate storage for messages in kernel space */
--	HV_MsgState *state = &__get_cpu_var(msg_state);
-+	HV_MsgState *state = this_cpu_ptr(&msg_state);
- 	int rc = hv_register_message_state(state);
- 	if (rc != HV_OK)
- 		panic("hv_register_message_state: error %d", rc);
-@@ -68,7 +68,7 @@ void hv_message_intr(struct pt_regs *reg
- #endif
- 
- 	while (1) {
--		rmi = hv_receive_message(__get_cpu_var(msg_state),
-+		rmi = hv_receive_message(__this_cpu_read(msg_state),
- 					 (HV_VirtAddr) message,
- 					 sizeof(message));
- 		if (rmi.msglen == 0)
-@@ -96,7 +96,7 @@ void hv_message_intr(struct pt_regs *reg
- 			struct hv_driver_cb *cb =
- 				(struct hv_driver_cb *)him->intarg;
- 			cb->callback(cb, him->intdata);
--			__get_cpu_var(irq_stat).irq_hv_msg_count++;
-+			__this_cpu_inc(irq_stat.irq_hv_msg_count);
- 		}
- 	}
- 
-Index: linux/arch/tile/kernel/process.c
-===================================================================
---- linux.orig/arch/tile/kernel/process.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/process.c	2013-12-18 13:40:08.322514483 -0600
-@@ -64,7 +64,7 @@ early_param("idle", idle_setup);
- 
- void arch_cpu_idle(void)
- {
--	__get_cpu_var(irq_stat).idle_timestamp = jiffies;
-+	__this_cpu_write(irq_stat.idle_timestamp, jiffies);
- 	_cpu_idle();
- }
- 
-Index: linux/arch/tile/kernel/setup.c
-===================================================================
---- linux.orig/arch/tile/kernel/setup.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/setup.c	2013-12-18 13:40:08.322514483 -0600
-@@ -1220,7 +1220,8 @@ static void __init validate_hv(void)
- 	 * various asid variables to their appropriate initial states.
- 	 */
- 	asid_range = hv_inquire_asid(0);
--	__get_cpu_var(current_asid) = min_asid = asid_range.start;
-+	min_asid = asid_range.start;
-+	__this_cpu_write(current_asid, min_asid);
- 	max_asid = asid_range.start + asid_range.size - 1;
- 
- 	if (hv_confstr(HV_CONFSTR_CHIP_MODEL, (HV_VirtAddr)chip_model,
-Index: linux/arch/tile/kernel/single_step.c
-===================================================================
---- linux.orig/arch/tile/kernel/single_step.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/single_step.c	2013-12-18 13:40:08.322514483 -0600
-@@ -740,7 +740,7 @@ static DEFINE_PER_CPU(unsigned long, ss_
- 
- void gx_singlestep_handle(struct pt_regs *regs, int fault_num)
- {
--	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long *ss_pc = this_cpu_ptr(&ss_saved_pc);
- 	struct thread_info *info = (void *)current_thread_info();
- 	int is_single_step = test_ti_thread_flag(info, TIF_SINGLESTEP);
- 	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
-@@ -766,7 +766,7 @@ void gx_singlestep_handle(struct pt_regs
- 
- void single_step_once(struct pt_regs *regs)
- {
--	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long *ss_pc = this_cpu_ptr(&ss_saved_pc);
- 	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
- 
- 	*ss_pc = regs->pc;
-Index: linux/arch/tile/kernel/smp.c
-===================================================================
---- linux.orig/arch/tile/kernel/smp.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/smp.c	2013-12-18 13:40:08.322514483 -0600
-@@ -188,7 +188,7 @@ void flush_icache_range(unsigned long st
- /* Called when smp_send_reschedule() triggers IRQ_RESCHEDULE. */
- static irqreturn_t handle_reschedule_ipi(int irq, void *token)
- {
--	__get_cpu_var(irq_stat).irq_resched_count++;
-+	__this_cpu_inc(irq_stat.irq_resched_count);
- 	scheduler_ipi();
- 
- 	return IRQ_HANDLED;
-Index: linux/arch/tile/kernel/smpboot.c
-===================================================================
---- linux.orig/arch/tile/kernel/smpboot.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/smpboot.c	2013-12-18 13:40:08.322514483 -0600
-@@ -41,7 +41,7 @@ void __init smp_prepare_boot_cpu(void)
- 	int cpu = smp_processor_id();
- 	set_cpu_online(cpu, 1);
- 	set_cpu_present(cpu, 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
-+	__this_cpu_write(cpu_state, CPU_ONLINE);
- 
- 	init_messaging();
- }
-@@ -158,7 +158,7 @@ static void start_secondary(void)
- 	/* printk(KERN_DEBUG "Initializing CPU#%d\n", cpuid); */
- 
- 	/* Initialize the current asid for our first page table. */
--	__get_cpu_var(current_asid) = min_asid;
-+	__this_cpu_write(current_asid, min_asid);
- 
- 	/* Set up this thread as another owner of the init_mm */
- 	atomic_inc(&init_mm.mm_count);
-@@ -201,7 +201,7 @@ void online_secondary(void)
- 	notify_cpu_starting(smp_processor_id());
- 
- 	set_cpu_online(smp_processor_id(), 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
-+	__this_cpu_write(cpu_state, CPU_ONLINE);
- 
- 	/* Set up tile-specific state for this cpu. */
- 	setup_cpu(0);
-Index: linux/arch/tile/kernel/time.c
-===================================================================
---- linux.orig/arch/tile/kernel/time.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/kernel/time.c	2013-12-18 13:40:08.322514483 -0600
-@@ -162,7 +162,7 @@ static DEFINE_PER_CPU(struct clock_event
- 
- void setup_tile_timer(void)
- {
--	struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-+	struct clock_event_device *evt = this_cpu_ptr(&tile_timer);
- 
- 	/* Fill in fields that are speed-specific. */
- 	clockevents_calc_mult_shift(evt, cycles_per_sec, TILE_MINSEC);
-@@ -182,7 +182,7 @@ void setup_tile_timer(void)
- void do_timer_interrupt(struct pt_regs *regs, int fault_num)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
--	struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-+	struct clock_event_device *evt = this_cpu_ptr(&tile_timer);
- 
- 	/*
- 	 * Mask the timer interrupt here, since we are a oneshot timer
-@@ -194,7 +194,7 @@ void do_timer_interrupt(struct pt_regs *
- 	irq_enter();
- 
- 	/* Track interrupt count. */
--	__get_cpu_var(irq_stat).irq_timer_count++;
-+	__this_cpu_inc(irq_stat.irq_timer_count);
- 
- 	/* Call the generic timer handler */
- 	evt->event_handler(evt);
-@@ -235,7 +235,7 @@ cycles_t ns2cycles(unsigned long nsecs)
- 	 * We do not have to disable preemption here as each core has the same
- 	 * clock frequency.
- 	 */
--	struct clock_event_device *dev = &__raw_get_cpu_var(tile_timer);
-+	struct clock_event_device *dev = raw_cpu_ptr(&tile_timer);
- 	return ((u64)nsecs * dev->mult) >> dev->shift;
- }
- 
-Index: linux/arch/tile/mm/highmem.c
-===================================================================
---- linux.orig/arch/tile/mm/highmem.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/mm/highmem.c	2013-12-18 13:40:08.322514483 -0600
-@@ -103,7 +103,7 @@ static void kmap_atomic_register(struct
- 	spin_lock(&amp_lock);
- 
- 	/* With interrupts disabled, now fill in the per-cpu info. */
--	amp = &__get_cpu_var(amps).per_type[type];
-+	amp = this_cpu_ptr(&amps.per_type[type]);
- 	amp->page = page;
- 	amp->cpu = smp_processor_id();
- 	amp->va = va;
-Index: linux/arch/tile/mm/init.c
-===================================================================
---- linux.orig/arch/tile/mm/init.c	2013-12-18 13:40:08.322514483 -0600
-+++ linux/arch/tile/mm/init.c	2013-12-18 13:40:08.322514483 -0600
-@@ -593,14 +593,14 @@ static void __init kernel_physical_mappi
- 	interrupt_mask_set_mask(-1ULL);
- 	rc = flush_and_install_context(__pa(pgtables),
- 				       init_pgprot((unsigned long)pgtables),
--				       __get_cpu_var(current_asid),
-+				       __this_cpu_read(current_asid),
- 				       cpumask_bits(my_cpu_mask));
- 	interrupt_mask_restore_mask(irqmask);
- 	BUG_ON(rc != 0);
- 
- 	/* Copy the page table back to the normal swapper_pg_dir. */
- 	memcpy(pgd_base, pgtables, sizeof(pgtables));
--	__install_page_table(pgd_base, __get_cpu_var(current_asid),
-+	__install_page_table(pgd_base, __this_cpu_read(current_asid),
- 			     swapper_pgprot);
- 
- 	/*
-Index: linux/arch/tile/include/asm/irqflags.h
-===================================================================
---- linux.orig/arch/tile/include/asm/irqflags.h	2013-12-18 13:37:21.000000000 -0600
-+++ linux/arch/tile/include/asm/irqflags.h	2013-12-18 13:40:24.781984237 -0600
-@@ -140,12 +140,12 @@ extern unsigned int debug_smp_processor_
- 
- /*
-  * Read the set of maskable interrupts.
-- * We avoid the preemption warning here via __this_cpu_ptr since even
-+ * We avoid the preemption warning here via raw_cpu_ptr since even
-  * if irqs are already enabled, it's harmless to read the wrong cpu's
-  * enabled mask.
-  */
- #define arch_local_irqs_enabled() \
--	(*__this_cpu_ptr(&interrupts_enabled_mask))
-+	(*raw_cpu_ptr(&interrupts_enabled_mask))
- 
- /* Re-enable all maskable interrupts. */
- #define arch_local_irq_enable() \
+> [  196.666799] PM: Syncing filesystems ... done.
+> [  196.692824] Freezing user space processes ... (elapsed 0.002 seconds) done.
+> [  196.694265] Freezing remaining freezable tasks ... (elapsed 0.001 seconds) done.
+> [  196.695377] Unable to handle kernel NULL pointer dereference at virtual address 00000024
+> [  196.695380] pgd = ec454000
+> [  196.695390] [00000024] *pgd=acb0c831, *pte=00000000, *ppte=00000000
+> [  196.695398] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+> [  196.695405] Modules linked in:
+> [  196.695413] CPU: 0 PID: 892 Comm: test-rtc-resume Not tainted 3.14.0-rc2-00266-gca91b201c563-dirty #41
+> [  196.695418] task: ecb86e00 ti: ec692000 task.ti: ec692000
+> [  196.695432] PC is at cpufreq_suspend+0xc/0xc8
+> [  196.695440] LR is at dpm_suspend+0x30/0x214
+> [  196.695447] pc : [<c038f6c0>]    lr : [<c02c3208>]    psr: 60000113
+> [  196.695447] sp : ec693e60  ip : 00000018  fp : 000aa2b8
+> [  196.695451] r10: c07dcfec  r9 : ec975808  r8 : c07f4a28
+> [  196.695455] r7 : c08642c8  r6 : c08658a0  r5 : 00000003  r4 : c081f690
+> [  196.695459] r3 : 00000000  r2 : cbf0c52d  r1 : 3b9aca00  r0 : ec693e80
+> [  196.695465] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> [  196.695470] Control: 10c5387d  Table: ac45406a  DAC: 00000015
+> [  196.695475] Process test-rtc-resume (pid: 892, stack limit = 0xec692240)
+> [  196.695479] Stack: (0xec693e60 to 0xec694000)
+> [  196.695488] 3e60: c081f690 00000003 c07f49ec c02c3208 c07f4a20 00000002 cbf0c52d 0000002d
+> [  196.695495] 3e80: cbf0c52d 0000002d 00000003 c081f690 00000003 00000003 00000003 ec88bcc0
+> [  196.695503] 3ea0: ec975808 00000004 000aa2b8 c006324c 000aa2b8 c056cb70 c070a0a4 ec693ed4
+> [  196.695509] 3ec0: 00000003 ec693ed4 00000003 00000000 00000003 c0577bc4 00000003 ec88bcc0
+> [  196.695516] 3ee0: 00000004 c0063654 0000006d 00000003 c06b8040 c00624e0 00000004 ed13b4c8
+> [  196.695523] 3f00: ec88bcc0 00000004 ec693f80 ec88bcc0 ec975800 c01fc200 00000004 c0126e50
+> [  196.695530] 3f20: c0126e0c 00000000 00000000 c012a274 00000000 00000000 ec4f3ec0 00000004
+> [  196.695536] 3f40: 000ac408 ec693f80 00000000 ec692000 00000004 c00d4818 ec9c6d40 00000001
+> [  196.695543] 3f60: 0000000a 00000000 00000000 ec4f3ec0 000ac408 00000000 00000004 c00d4bb8
+> [  196.695550] 3f80: 00000000 00000000 ec4f3ec0 b6f17a78 00000004 000ac408 00000004 c000e7a4
+> [  196.695556] 3fa0: 00000000 c000e620 b6f17a78 00000004 00000001 000ac408 00000004 00000000
+> [  196.695563] 3fc0: b6f17a78 00000004 000ac408 00000004 beca645c 000a6094 00000000 000aa2b8
+> [  196.695570] 3fe0: 00000000 beca63dc b6e86747 b6ebe60c 400f0010 00000001 941e9002 3000f8d9
+> [  196.695585] [<c038f6c0>] (cpufreq_suspend) from [<c02c3208>] (dpm_suspend+0x30/0x214)
+> [  196.695601] [<c02c3208>] (dpm_suspend) from [<c006324c>] (suspend_devices_and_enter+0x48/0x2dc)
+> [  196.695613] [<c006324c>] (suspend_devices_and_enter) from [<c0063654>] (pm_suspend+0x174/0x1e8)
+> [  196.695623] [<c0063654>] (pm_suspend) from [<c00624e0>] (state_store+0x6c/0xbc)
+> [  196.695634] [<c00624e0>] (state_store) from [<c01fc200>] (kobj_attr_store+0x14/0x20)
+> [  196.695650] [<c01fc200>] (kobj_attr_store) from [<c0126e50>] (sysfs_kf_write+0x44/0x48)
+> [  196.695663] [<c0126e50>] (sysfs_kf_write) from [<c012a274>] (kernfs_fop_write+0xb4/0x14c)
+> [  196.695677] [<c012a274>] (kernfs_fop_write) from [<c00d4818>] (vfs_write+0xa8/0x180)
+> [  196.695691] [<c00d4818>] (vfs_write) from [<c00d4bb8>] (SyS_write+0x3c/0x70)
+> [  196.695705] [<c00d4bb8>] (SyS_write) from [<c000e620>] (ret_fast_syscall+0x0/0x30)
+> [  196.695716] Code: e12fff1e e92d4070 e59f60a8 e5963000 (e5932024) 
+> [  196.695722] ---[ end trace 606f168631f0e32f ]---
 
