@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaBNXel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 18:34:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57381 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaBNXej (ORCPT
+	id S1752938AbaBNXrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 18:47:46 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52421 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134AbaBNXro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 18:34:39 -0500
-Message-ID: <52FEA807.9040100@infradead.org>
-Date: Fri, 14 Feb 2014 15:34:31 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 14 Feb 2014 18:47:44 -0500
+Date: Sat, 15 Feb 2014 00:47:41 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH v9] PM / Hibernate: use name_to_dev_t to parse resume
+Message-ID: <20140214234741.GA9104@amd.pavel.ucw.cz>
+References: <1392418376-30060-1-git-send-email-sebastian.capella@linaro.org>
+ <1392418376-30060-2-git-send-email-sebastian.capella@linaro.org>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>, Rob Landley <rob@landley.net>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [patch] Documentation/SubmittingPatches: Reported-by tags and
- permission
-References: <20140214093001.GA15933@elgon.mountain>
-In-Reply-To: <20140214093001.GA15933@elgon.mountain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392418376-30060-2-git-send-email-sebastian.capella@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 01:30 AM, Dan Carpenter wrote:
-> The reported-by text says you have to ask for permission, but that's
-> only if the bug was reported in private.  These days the standard is to
-> always give reported-by credit or it's considered a bit rude.
+Hi!
+
+> Use the name_to_dev_t call to parse the device name echo'd to
+> to /sys/power/resume.  This imitates the method used in hibernate.c
+> in software_resume, and allows the resume partition to be specified
+> using other equivalent device formats as well.  By allowing
+> /sys/debug/resume to accept the same syntax as the resume=device
+> parameter, we can parse the resume=device in the init script and
+> use the resume device directly from the kernel command line.
 > 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+Acked-by: Pavel Machek <pavel@ucw.cz>
 
-Thanks.
-
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index 26b1e31d5a13..f72ce7803b71 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -432,12 +432,9 @@ have been included in the discussion
+> @@ -972,16 +972,20 @@ static ssize_t resume_show(struct kobject *kobj, struct kobj_attribute *attr,
+>  static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  			    const char *buf, size_t n)
+>  {
+> -	unsigned int maj, min;
+>  	dev_t res;
+> -	int ret = -EINVAL;
+> +	int len = n;
+> +	char *name;
 >  
->  14) Using Reported-by:, Tested-by:, Reviewed-by: and Suggested-by:
->  
-> -If this patch fixes a problem reported by somebody else, consider adding a
-> -Reported-by: tag to credit the reporter for their contribution.  Please
-> -note that this tag should not be added without the reporter's permission,
-> -especially if the problem was not reported in a public forum.  That said,
-> -if we diligently credit our bug reporters, they will, hopefully, be
-> -inspired to help us again in the future.
-> +The Reported-by tag is to give credit to people who find bugs and report them.
-> +Please note that if the bug was reported in private, then ask for permission
-> +first before using the Reported-by tag.
->  
->  A Tested-by: tag indicates that the patch has been successfully tested (in
->  some environment) by the person named.  This tag informs maintainers that
-> --
+> -	if (sscanf(buf, "%u:%u", &maj, &min) != 2)
+> -		goto out;
+> +	if (len && buf[len-1] == '\n')
+> +		len--;
+> +	name = kstrndup(buf, len, GFP_KERNEL);
+> +	if (!name)
+> +		return -ENOMEM;
 
+And yes, it seems to do right thing even if "\n" is passed to it.
+
+> -	res = MKDEV(maj,min);
+> -	if (maj != MAJOR(res) || min != MINOR(res))
+> -		goto out;
+> +	res = name_to_dev_t(name);
+> +	kfree(name);
 
 -- 
-~Randy
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
