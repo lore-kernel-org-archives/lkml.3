@@ -1,119 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373AbaBNJC5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 04:02:57 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:53241 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221AbaBNJCs (ORCPT
+	id S1752436AbaBNJFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 04:05:00 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39089 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaBNJE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 04:02:48 -0500
+	Fri, 14 Feb 2014 04:04:57 -0500
+Message-ID: <52FDDC24.8070805@pengutronix.de>
+Date: Fri, 14 Feb 2014 10:04:36 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
 MIME-Version: 1.0
-Date: Fri, 14 Feb 2014 14:32:47 +0530
-Message-ID: <CA+G9fYuT4TSs=3j6K9zztsTgFNVp2YG6JT-2Q_L==1P5G+SBew@mail.gmail.com>
-Subject: How to get the Linux kernel coverage data on ARM arch when I run LTP test?
-From: Naresh Kamboju <naresh.kamboju@linaro.org>
-To: Arnd Bergmann <arnd.bergmann@linaro.org>, fhrbata@redhat.com,
-        oberpar@linux.vnet.ibm.com, Paul Larson <paul.larson@canonical.com>
-Cc: Deepak Saxena <dsaxena@linaro.org>, Mark Brown <mark.brown@linaro.org>,
-        Milosz Wasilewski <milosz.wasilewski@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ltp-coverage <ltp-coverage@lists.sourceforge.net>,
-        ltp-list <ltp-list@lists.sourceforge.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: monstr@monstr.eu
+CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
+        michal.simek@xilinx.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v2] can: xilinx CAN controller support.
+References: <\> <0dc128ac-e5cd-47bd-9ab1-3a545c3e2043@CO9EHSMHS012.ehs.local> <52FD1B16.6020600@pengutronix.de> <52FDD9FE.8040908@monstr.eu>
+In-Reply-To: <52FDD9FE.8040908@monstr.eu>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="QhcbUJm1L074aQpAKcGGCRCkpNnfCnO7s"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--QhcbUJm1L074aQpAKcGGCRCkpNnfCnO7s
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for the wide distribution:
+On 02/14/2014 09:55 AM, Michal Simek wrote:
+> Hi Marc,
+>=20
+>>> +	int waiting_ech_skb_num;
+>>> +	int xcan_echo_skb_max_tx;
+>>> +	int xcan_echo_skb_max_rx;
+>>> +	struct napi_struct napi;
+>>> +	spinlock_t ech_skb_lock;
+>>> +	u32 (*read_reg)(const struct xcan_priv *priv, int reg);
+>>> +	void (*write_reg)(const struct xcan_priv *priv, int reg, u32 val);
+>>
+>> Please remove read_reg, write_reg, as long as there isn't any BE suppo=
+rt
+>> in the driver, call them directly.
+>=20
+> That's not entirely truth. If you look at Microblaze then you will see
+> that Microblaze can be BE and LE.
+> There is just missing endian detection which we will add to the next ve=
+rsion.
 
-According to LTP page info,
-http://ltp.sourceforge.net/coverage/gcov.php
-http://ltp.sourceforge.net/coverage/lcov.php
+As far as I know the endianess of the kernel is fixed and known during
+compile time. Correct me if I'm wrong. So there is no need for a runtime
+detection of the endianess and so no need for {read,write}_reg function
+pointers.
 
-My question is
-How to get kernel coverage when I run LTP test?
+> But because MB io helper functions are broken for a while you should be=
 
-Since we do not have direct GCOV support on ARM I have enabled ( just
-for experiment)
+> able to use this driver on both endianess.
+>=20
+> btw: I would prefer to use ioread32 and ioread32be instead of readl.
+> Is it OK for you?
 
-$ git diff  kernel/gcov/Kconfig
-diff --git a/kernel/gcov/Kconfig b/kernel/gcov/Kconfig
-index d4da55d..fceac85 100644
---- a/kernel/gcov/Kconfig
-+++ b/kernel/gcov/Kconfig
-@@ -35,7 +35,7 @@ config GCOV_KERNEL
- config GCOV_PROFILE_ALL
-        bool "Profile entire Kernel"
-        depends on GCOV_KERNEL
--       depends on SUPERH || S390 || X86 || PPC || MICROBLAZE
-+       depends on SUPERH || S390 || X86 || PPC || MICROBLAZE || ARM
-        default n
-        ---help---
-        This options activates profiling for the entire kernel.
+Make it so. :)
 
-I have enabled below kernel config and built the kernel.
-CONFIG_GCOV_KERNEL=y
-CONFIG_GCOV_PROFILE_ALL=y
-CONFIG_GCOV_FORMAT_AUTODETECT=y
+Marc
 
-of course I have disabled gcov on below folders and files, because
-since it is an experiment i would like to be on safe side
-- arch/arm/mm/
-- arch/arm/kernel/
-- arch/arm/boot/
-- arch/arm/boot/compressed/
-- arch/arm/boot/bootp/
-- arch/arm/boot/dts
-
-Arndale booted with this configuration successfully.
-Took more than 65 seconds to finish boot.
-
-gcov related files are found under /sys/ similer to X86 machine.
-And  gcov supporting files filename.gcda are having links to kernel source
-root@linaro-developer:~# ls /sys/kernel/debug/gcov/
-reset  tmp
-root@linaro-developer:~#
-
-root@linaro-developer:~# ls /sys/kernel/debug/gcov/tmp/
-linux-linaro-3.13-2014.01
-root@linaro-developer:~# ls
-/sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/
-arch  block  crypto  drivers  fs  init  ipc  kernel  lib  mm  security  virt
-root@linaro-developer:~# ls
-/sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/time.* -l
--rw------- 1 root root 0 Jan  1  1970
-/sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/time.gcda
-lrwxrwxrwx 1 root root 0 Jan  1  1970
-/sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/time.gcno
--> /tmp/linux-linaro-3.13-2014.01/kernel/time.gcno
-root@linaro-developer:~#
-
-Source are placed under /tmp/
-root@linaro-developer:/tmp/linux-linaro-3.13-2014.01# ls  kernel/time.* -l
--rw-rw-r-- 1 linaro linaro  19233 Jan 24  2014 kernel/time.c
--rw-rw-r-- 1 linaro linaro  12768 Feb 13  2014 kernel/time.gcno
--rw-rw-r-- 1 linaro linaro 136444 Feb 13  2014 kernel/time.o
-root@linaro-developer:/tmp/linux-linaro-3.13-2014.01#
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-root@linaro-developer:/tmp/linux-linaro-3.13-2014.01# gcov kernel/gcov/base.c -o
- /sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/gcov/
-File 'kernel/gcov/base.c'
-Lines executed:43.18% of 44
-Creating 'base.c.gcov'
+--QhcbUJm1L074aQpAKcGGCRCkpNnfCnO7s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-root@linaro-developer:/tmp/linux-linaro-3.13-2014.01#
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
-The above experiment gives coverage of a single file base.c when i run
-gcov manually.
-Is there any way to get Linux kernel coverage of all files after
-running LTP test cases ?
+iEYEARECAAYFAlL93CQACgkQjTAFq1RaXHPgUgCaAxkVSdTX0cNtvohBtAgv42pR
+Ue0An3otnOhoPcqnhLS2Zv6TrAQDRA0N
+=RVq8
+-----END PGP SIGNATURE-----
 
-Thanks in advance.
-
-Best regards
-Naresh Kamboju
+--QhcbUJm1L074aQpAKcGGCRCkpNnfCnO7s--
