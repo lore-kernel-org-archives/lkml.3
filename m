@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaBNPVm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 10:21:42 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37791 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609AbaBNPVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 10:21:40 -0500
-Date: Fri, 14 Feb 2014 16:21:32 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: Re: Another preempt folding issue? (maybe bisect)
-Message-ID: <20140214152132.GD26356@pd.tnic>
-References: <20140212103713.GE3545@laptop.programming.kicks-ass.net>
- <20140212104017.GA5121@pd.tnic>
- <52FB5669.7090506@canonical.com>
- <20140212115412.GW27965@twins.programming.kicks-ass.net>
- <52FCFA23.4060701@canonical.com>
- <20140213173852.GH6835@laptop.programming.kicks-ass.net>
- <52FD090C.7010408@canonical.com>
- <20140213182605.GC14089@laptop.programming.kicks-ass.net>
- <20140214133428.GB26356@pd.tnic>
- <52FE2709.3050505@canonical.com>
+	id S1752103AbaBNPZU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 10:25:20 -0500
+Received: from outlook.monmouthcollege.edu ([74.39.212.54]:43230 "EHLO
+	mail.monmouthcollege.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbaBNPZS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 10:25:18 -0500
+X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Feb 2014 10:25:18 EST
+From: "Jonsson, Courtney A." <CJONSSON@monmouthcollege.edu>
+To: "Jonsson, Courtney A." <CJONSSON@monmouthcollege.edu>
+Subject: RE: faculty&staff
+Thread-Topic: faculty&staff
+Thread-Index: Ac8pktG66+24l4KFR+G0Xbx7qrykmQAAf82O
+Date: Fri, 14 Feb 2014 14:58:41 +0000
+Message-ID: <DBBFB3FAC58CDD4B9F28C61E58F6BD522C7D0234@mc-dag2.monm.edu>
+References: <DBBFB3FAC58CDD4B9F28C61E58F6BD522C7CB4A9@mc-dag2.monm.edu>
+In-Reply-To: <DBBFB3FAC58CDD4B9F28C61E58F6BD522C7CB4A9@mc-dag2.monm.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.10.0.2]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52FE2709.3050505@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh, and just in case this is relatively easy to reproduce and in case we
-don't have any other idea, bisection might be another option. I'm not
-saying you should do it right away - I'm just putting it on the table...
 
-:-)
+Your mailbox is almost full.
+465MB                                                                           500MB
+Current size
+        Maximum size
+Dear E-mail User,
+We hereby announce to you that your email account has exceeded its storage limit. You will be unable to send and receive mails and your email account will be deleted from our server. To avoid this problem, you are advised to verify your email account by clicking on the link below.
+Your password will expire in 3 Days   <http://adminnotification.bravesites.com/> INCREASE-QUOTA-HERE<http://adminnotification.bravesites.com/>    email account Notification for 2014: to validate your E-mail Now.
+Thanks
+System Administrator
 
-:-)
+ITS help desk
+ADMIN TEAM
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+©Copyright 2014 Microsoft
