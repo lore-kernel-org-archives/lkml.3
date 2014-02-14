@@ -1,80 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579AbaBNTDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 14:03:16 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:6328 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaBNTDO (ORCPT
+	id S1752640AbaBNTDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 14:03:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:33005 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbaBNTDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 14:03:14 -0500
-Message-ID: <52FE6817.5050708@hp.com>
-Date: Fri, 14 Feb 2014 14:01:43 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Fri, 14 Feb 2014 14:03:53 -0500
+Message-ID: <52FE6888.80703@canonical.com>
+Date: Fri, 14 Feb 2014 20:03:36 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 7/8] locking: Introduce qrwlock
-References: <20140210195820.834693028@infradead.org> <20140210203659.796912337@infradead.org> <52FA6941.4060102@hp.com> <52FA844B.7070003@hp.com> <20140213163546.GF6835@laptop.programming.kicks-ass.net> <20140213172657.GF3545@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140213172657.GF3545@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Borislav Petkov <bp@alien8.de>
+CC: Peter Zijlstra <peterz@infradead.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: Another preempt folding issue?
+References: <52FB5669.7090506@canonical.com> <20140212115412.GW27965@twins.programming.kicks-ass.net> <52FCFA23.4060701@canonical.com> <20140213173852.GH6835@laptop.programming.kicks-ass.net> <52FD090C.7010408@canonical.com> <20140213182605.GC14089@laptop.programming.kicks-ass.net> <20140214133428.GB26356@pd.tnic> <52FE2709.3050505@canonical.com> <20140214144700.GC26356@pd.tnic> <52FE4C28.1080500@canonical.com> <20140214173333.GA6953@pd.tnic> <52FE5F0C.5000901@canonical.com>
+In-Reply-To: <52FE5F0C.5000901@canonical.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="o3cvjHQF8LojPiLSO19IoVenGjaojOrdX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 12:26 PM, Peter Zijlstra wrote:
-> On Thu, Feb 13, 2014 at 05:35:46PM +0100, Peter Zijlstra wrote:
->> On Tue, Feb 11, 2014 at 03:12:59PM -0500, Waiman Long wrote:
->>> Using the same locktest program to repetitively take a single rwlock with
->>> programmable number of threads and count their execution times. Each
->>> thread takes the lock 5M times on a 4-socket 40-core Westmere-EX
->>> system. I bound all the threads to different CPUs with the following
->>> 3 configurations:
->>>
->>>   1) Both CPUs and lock are in the same node
->>>   2) CPUs and lock are in different nodes
->>>   3) Half of the CPUs are in same node as the lock&  the other half
->>>      are remote
->> I can't find these configurations in the below numbers; esp the first is
->> interesting because most computers out there have no nodes.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--o3cvjHQF8LojPiLSO19IoVenGjaojOrdX
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 14.02.2014 19:23, Stefan Bader wrote:
+> On 14.02.2014 18:33, Borislav Petkov wrote:
+>> On Fri, Feb 14, 2014 at 06:02:32PM +0100, Stefan Bader wrote:
+>>> Okaaay, I think I did what you asked. So yes, there is sse2 in the cp=
+u info. And
+>>> there is a mfence in the disassembly:
 >>
->>> Two types of qrwlock are tested:
->>>   1) Use MCS lock
->>>   2) Use ticket lock
->> arch_spinlock_t; you forget that if you change that to an MCS style lock
->> this one goes along for free.
-> Furthermore; comparing the current rwlock to the ticket-rwlock already
-> shows an improvement, so on that aspect its worth it as well.
+>> Btw, I just realized booting the kernel in the guest was a dumb idea,
+>> because, doh, the guest is not baremetal. The only reliable thing we
+>> can say is that sse2 is present and that MFENCE alternative replacemen=
+t
+>> works :)
+>>
+>> But for simplicity's sake let's just assume the machine can do MFENCE
+>> just fine and it gets replaced by the alternatives code.
+>>
+>> Besides, if that weren't true, we'd have a whole lot of other problems=
 
-As I said in my previous email, I am not against your change.
+>> on those boxes.
+>>
+>>> Thinking about it, I guess Peter is quite right saying that I likely
+>>> will end on the patch that converted preempt_count to percpu.
+>>
+>> Yeah, c2daa3bed53a81171cf8c1a36db798e82b91afe8 et al.
+>>
+>>> One thing I likely should do is to reinstall the exact same laptop
+>>> with 64bit kernel and userspace... maybe only 64bit kernel first...
+>>> and make sure on my side that this does not show up on 64bit, too. I
+>>> took the word of reporters for that (and the impression that otherwis=
+e
+>>> many more people would have complained).
+>>
+>> Yeah, that should be a prudent thing to do.
+>>
+>> Also, Paolo and I were wondering whether you can trigger this thing
+>> without kvm, i.e. virtualization involved... do you have any data on
+>> that?
+>=20
+> Unfortunately no hard evidence. Kvm just happens to be such a good way =
+to notice
+> this as it is using the reschedule interrupt itself and has this exit b=
+efore
+> running the guest vcpu to hadnle it in the outer loop by calling cond_r=
+esched()
+> and repeat.
+> I find running kvm seems to make that laptop quite sluggish in respondi=
+ng to
+> other tasks (in that install) and I got some oddness going on when ligh=
+tdm quite
+> often refuses to take keyboard input without opening some menu with the=
+ mouse
+> first... But I could not be sure whether that is the kernel or some new=
 
-> And there's also the paravirt people to consider; a fair rwlock will
-> make them unhappy; and I'm hoping that their current paravirt ticket
-> stuff is sufficient to deal with the ticket-rwlock without them having
-> to come and wreck things again.
+> user-space ... errr "feature".
+> At least Marcello (iirc that other report came from him directly or ind=
+irectly)
+> has seen it, too. And he likely has complete different user-space.
+>=20
+> So I will go and do that different (64bit) kernel and kernel + user-spa=
+ce test.
+> But like fo Peter, it likely is a Monday thing...
+>=20
 
-Actually, my original qrwlock patch has an unfair option. With some 
-minor change, it can be made unfair pretty easily. So we can use the 
-paravirt config macro to change that to unfair if it is what the 
-virtualization people want.
+Ok, it is still Friday... So a quick test (2 boots of a 32bit guest, same=
+ as
+before) on the 32bit user-space, with the same kernel source, but compile=
+d as
+64bit (obviously not 100% same config but close). While I see the false
+inconsistency messages (I modified the in kernel-test to trigger the trac=
+e stop
+only if the __vcpu_run loop encounters an inconsistent state three times =
+in a
+row), I do not see the final stop message. Also (but that is rather feeli=
+ng) the
+system seems to remain more responsive (switching to other windows, openi=
+ng
+terminal windows,...) compared to 32bit kernel.
 
-> Similarly; qspinlock needs paravirt support.
->
->
 
-The current paravirt code has hard-coded the use of ticket spinlock. 
-That is why I have to disable my qspinlock code if paravirt is enabled.
 
-I have thinking about that paravirt support. Since the waiting tasks are 
-queued up. By maintaining some kind of heart beat signal, it is possible 
-to make the waiting task jump the queue if the previous one in the queue 
-doesn't seem to be alive. I will work on that next once I am done with 
-the current qspinlock patch.
+--o3cvjHQF8LojPiLSO19IoVenGjaojOrdX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
--Longman
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBCgAGBQJS/miIAAoJEOhnXe7L7s6jOssQAM773+XCS3XPEEraC5WvH5F4
+I6b+A3jRVRUYKg+dR+bnU70IfgNaeO0H52Sz2AzvRZyV1nNp8GHXtz81njvNsOID
+4tRO5gYpHdP+IiB3XeXP6zJRnSZLtNmdQYzeG7eOV+f/qPh9Lkh84OweU0IFClNR
+olz8sy974/3iwamUJSgfAJcOaMDfd85Z40aEuVzVj4suYvuozgxbzG4hIeJ6Iwgi
+akf9Kyonv8CQhlAzkUEZfhrhv4U8veFv+ziLzLDOCC7mslftMeg5+fnWUWVES8lR
+7UcoTjOWwknbtef8SUVMhayueI30QnZhxCdbJGvUJzZumI9oXUi0PCZgf66sx4c9
+pXlSH6u/S9Owy0LH5GfwpYfiJxEaSizhJiSAZcDQQ/VNrceQ2RbmK4FWd7wJT+0F
+LX3b0DshXOam5RIEnktfWB/IDsuhXxxCNSQyu5oBH3xF4IdwEBFj1fvf8pqSlHTv
+InAOR2GjK7MHqrxL8AtXCcPfzIR1F4JqHQbrlX9f+P/xIL4z+ijSJrErSTMbg4Re
+Ak3fyFk1zXOjGMk48MnkBtwtD8pFzRYdkTYlJa0ZybFS77dDZ7binkDlXqQ/FMTv
+qj489wniUoDHPHKwPDg5LArYBWOVEi5xEVeLNPRSSZnM1GgCDXFjejXvXZzpN99A
+wiXmCeaVkL4iDPMShJsi
+=0dND
+-----END PGP SIGNATURE-----
+
+--o3cvjHQF8LojPiLSO19IoVenGjaojOrdX--
