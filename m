@@ -1,119 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaBNGyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 01:54:09 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:44298 "EHLO
+	id S1752121AbaBNGzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 01:55:36 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:53657 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaBNGyH (ORCPT
+	with ESMTP id S1751630AbaBNGyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 01:54:07 -0500
-X-AuditID: 9c93017e-b7cf9ae000004b4b-fe-52fdbd8c8015
+	Fri, 14 Feb 2014 01:54:08 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-01-52fdbd8c7989
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
         Joonsoo Kim <js1304@gmail.com>, Rik van Riel <riel@redhat.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 0/5] compaction related commits
-Date: Fri, 14 Feb 2014 15:53:58 +0900
-Message-Id: <1392360843-22261-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 3/5] mm/compaction: change the timing to check to drop the spinlock
+Date: Fri, 14 Feb 2014 15:54:01 +0900
+Message-Id: <1392360843-22261-4-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392360843-22261-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1392360843-22261-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-changes for v2
-o include more experiment data in cover letter
-o deal with vlastimil's comments mostly about commit description on 4/5
+It is odd to drop the spinlock when we scan (SWAP_CLUSTER_MAX - 1) th pfn
+page. This may results in below situation while isolating migratepage.
 
-This patchset is related to the compaction.
+1. try isolate 0x0 ~ 0x200 pfn pages.
+2. When low_pfn is 0x1ff, ((low_pfn+1) % SWAP_CLUSTER_MAX) == 0, so drop
+the spinlock.
+3. Then, to complete isolating, retry to aquire the lock.
 
-patch 1 fixes contrary implementation of the purpose of compaction.
-patch 2~4 are for optimization.
-patch 5 is just for clean-up.
+I think that it is better to use SWAP_CLUSTER_MAX th pfn for checking
+the criteria about dropping the lock. This has no harm 0x0 pfn, because,
+at this time, locked variable would be false.
 
-I tested this patchset with stress-highalloc benchmark on Mel's mmtest
-and cannot find any regression in terms of success rate. And I find
-much reduced(9%) elapsed time.
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Below is the average result of 10 runs on my 4GB quad core system.
-
-compaction-base+ is based on 3.13.0 with Vlastimil's recent fixes.
-compaction-fix+ has this patch series on top of compaction-base+.
-
-Thanks.
-
-
-stress-highalloc	
-			3.13.0			3.13.0
-			compaction-base+	compaction-fix+
-Success 1		14.10				15.00
-Success 2		20.20				20.00
-Success 3		68.30				73.40
-																			
-			3.13.0			3.13.0
-			compaction-base+	compaction-fix+
-User			3486.02				3437.13
-System			757.92				741.15
-Elapsed			1638.52				1488.32
-
-			3.13.0			3.13.0
-			compaction-base+	compaction-fix+
-Minor Faults 			172591561		167116621
-Major Faults 			     984		     859
-Swap Ins 			     743		     653
-Swap Outs 			    3657		    3535
-Direct pages scanned 		  129742		  127344
-Kswapd pages scanned 		 1852277		 1817825
-Kswapd pages reclaimed 		 1838000		 1804212
-Direct pages reclaimed 		  129719		  127327
-Kswapd efficiency 		     98%		     98%
-Kswapd velocity 		1130.066		1221.296
-Direct efficiency 		     99%		     99%
-Direct velocity 		  79.367		  85.585
-Percentage direct scans 	      6%		      6%
-Zone normal velocity 		 231.829		 246.097
-Zone dma32 velocity 		 972.589		1055.158
-Zone dma velocity 		   5.015		   5.626
-Page writes by reclaim 		    6287		    6534
-Page writes file 		    2630		    2999
-Page writes anon 		    3657		    3535
-Page reclaim immediate 		    2187		    2080
-Sector Reads 			 2917808		 2877336
-Sector Writes 			11477891		11206722
-Page rescued immediate 		       0		       0
-Slabs scanned 			 2214118		 2168524
-Direct inode steals 		   12181		    9788
-Kswapd inode steals 		  144830		  132109
-Kswapd skipped wait 		       0		       0
-THP fault alloc 		       0		       0
-THP collapse alloc 		       0		       0
-THP splits 			       0		       0
-THP fault fallback 		       0		       0
-THP collapse fail 		       0		       0
-Compaction stalls 		     738		     714
-Compaction success 		     194		     207
-Compaction failures 		     543		     507
-Page migrate success 		 1806083		 1464014
-Page migrate failure 		       0		       0
-Compaction pages isolated 	 3873329	 	 3162974
-Compaction migrate scanned 	74594862	 	59874420
-Compaction free scanned 	125888854	 	110868637
-Compaction cost 		    2469		    1998
-
-
-
-Joonsoo Kim (5):
-  mm/compaction: disallow high-order page for migration target
-  mm/compaction: do not call suitable_migration_target() on every page
-  mm/compaction: change the timing to check to drop the spinlock
-  mm/compaction: check pageblock suitability once per pageblock
-  mm/compaction: clean-up code on success of ballon isolation
-
- mm/compaction.c |   75 ++++++++++++++++++++++++++++---------------------------
- 1 file changed, 38 insertions(+), 37 deletions(-)
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 0d821a2..b1ba297 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -481,7 +481,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 	cond_resched();
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		/* give a chance to irqs before checking need_resched() */
+-		if (locked && !((low_pfn+1) % SWAP_CLUSTER_MAX)) {
++		if (locked && !(low_pfn % SWAP_CLUSTER_MAX)) {
+ 			if (should_release_lock(&zone->lru_lock)) {
+ 				spin_unlock_irqrestore(&zone->lru_lock, flags);
+ 				locked = false;
 -- 
 1.7.9.5
 
