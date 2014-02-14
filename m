@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449AbaBNN3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:29:41 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751792AbaBNN3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:29:40 -0500
-Message-ID: <52FE1A3A.9090301@nod.at>
-Date: Fri, 14 Feb 2014 14:29:30 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752622AbaBNNar (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:30:47 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55038 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752557AbaBNNaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 08:30:46 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Josh Cartwright <joshc@codeaurora.org>, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / platform: drop redundant ACPI_HANDLE check
+Date: Fri, 14 Feb 2014 14:45:29 +0100
+Message-ID: <1746200.FR6bSit96i@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392350443-20074-1-git-send-email-joshc@codeaurora.org>
+References: <1392350443-20074-1-git-send-email-joshc@codeaurora.org>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-References: <20140212040358.GA25327@redhat.com> <20140212042215.GN18016@ZenIV.linux.org.uk> <20140212054043.GB13997@dastard> <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com> <20140212113928.GO18016@ZenIV.linux.org.uk> <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com> <20140212211421.GP18016@ZenIV.linux.org.uk> <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com> <20140212214411.GQ18016@ZenIV.linux.org.uk> <20140213205146.GS18016@ZenIV.linux.org.uk> <20140214132503.GA23265@infradead.org>
-In-Reply-To: <20140214132503.GA23265@infradead.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.02.2014 14:25, schrieb Christoph Hellwig:
-> On Thu, Feb 13, 2014 at 08:51:46PM +0000, Al Viro wrote:
->> On Wed, Feb 12, 2014 at 09:44:11PM +0000, Al Viro wrote:
->>
->>> I'll try to put something along those lines together, if you or Oleg don't
->>> do it first.
->>
->> OK, having looked at that stuff...
->>
->> 1) things become much more compact if we finish conversion to get_signal()
->> first.
+On Thursday, February 13, 2014 10:00:43 PM Josh Cartwright wrote:
+> The acpi_dev_pm_attach/_detach functions perform their own checks to
+> ensure the device has an ACPI companion.  It is not necessary for the
+> caller to do so.
 > 
-> I have vague memories that Richard sent out a series to convert over all
-> architectures a while ago.  Hopefully he has better memory than I do.
+> This mirrors what other busses with ACPI dev PM support do (i2c, spi,
+> sdio).
+> 
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 
-Yeah. Sending v2 of that series is on my overflowing TODO list. :-\
-I think this is a good reason for me to start working on that series again.
-Stay tuned.
+Hi Greg,
 
-Thanks,
-//richard
+If you want to take this, please feel free to add:
 
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+to it.  If you want me to take it, please let me know.
+
+Rafael
+
+
+> ---
+>  drivers/base/platform.c | 11 ++++-------
+>  1 file changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index bc78848..e714709 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -481,11 +481,10 @@ static int platform_drv_probe(struct device *_dev)
+>  	struct platform_device *dev = to_platform_device(_dev);
+>  	int ret;
+>  
+> -	if (ACPI_HANDLE(_dev))
+> -		acpi_dev_pm_attach(_dev, true);
+> +	acpi_dev_pm_attach(_dev, true);
+>  
+>  	ret = drv->probe(dev);
+> -	if (ret && ACPI_HANDLE(_dev))
+> +	if (ret)
+>  		acpi_dev_pm_detach(_dev, true);
+>  
+>  	if (drv->prevent_deferred_probe && ret == -EPROBE_DEFER) {
+> @@ -508,8 +507,7 @@ static int platform_drv_remove(struct device *_dev)
+>  	int ret;
+>  
+>  	ret = drv->remove(dev);
+> -	if (ACPI_HANDLE(_dev))
+> -		acpi_dev_pm_detach(_dev, true);
+> +	acpi_dev_pm_detach(_dev, true);
+>  
+>  	return ret;
+>  }
+> @@ -520,8 +518,7 @@ static void platform_drv_shutdown(struct device *_dev)
+>  	struct platform_device *dev = to_platform_device(_dev);
+>  
+>  	drv->shutdown(dev);
+> -	if (ACPI_HANDLE(_dev))
+> -		acpi_dev_pm_detach(_dev, true);
+> +	acpi_dev_pm_detach(_dev, true);
+>  }
+>  
+>  /**
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
