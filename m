@@ -1,47 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaBNKT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 05:19:56 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:35781 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaBNKTz (ORCPT
+	id S1751962AbaBNKVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 05:21:09 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45113 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135AbaBNKVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 05:19:55 -0500
-Date: Fri, 14 Feb 2014 10:19:49 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Mark Brown <broonie@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
-Message-ID: <20140214101949.GD9462@lee--X1>
-References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
- <20140212175018.GJ28112@sirena.org.uk>
- <CAOMwXhNd69KMDcBLjfiw16T3bWWki-Dvxbz+zhgNe6OESnVaSw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhNd69KMDcBLjfiw16T3bWWki-Dvxbz+zhgNe6OESnVaSw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Feb 2014 05:21:07 -0500
+Message-ID: <1392373259.3937.8.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v3 1/2] Documentation: Add GPIO reset binding to reset
+ binding documentation
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Roger Quadros <rogerq@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Date: Fri, 14 Feb 2014 11:20:59 +0100
+In-Reply-To: <1391701458.5008.15.camel@pizza.hi.pengutronix.de>
+References: <1389179464-11963-1-git-send-email-p.zabel@pengutronix.de>
+	 <201401081708.26679.arnd@arndb.de>
+	 <1389353136.5854.13.camel@pizza.hi.pengutronix.de>
+	 <1391701458.5008.15.camel@pizza.hi.pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> +     mutex_init(&max665x->iolock);
-> >
-> > What is this needed for?
+Am Donnerstag, den 06.02.2014, 16:44 +0100 schrieb Philipp Zabel:
+> Hi Arnd,
 > 
-> It was done for consistency with the other mfd drivers (maxim), e.g.
-> 8997 or 8998 as the closest resemblence in this family. Would you
-> prefer me removing this mutex locker?
+> Am Freitag, den 10.01.2014, 12:25 +0100 schrieb Philipp Zabel:
+> > Hi Arnd,
+> > 
+> > Am Mittwoch, den 08.01.2014, 17:08 +0100 schrieb Arnd Bergmann:
+> > > On Wednesday 08 January 2014, Philipp Zabel wrote:
+> > > > += GPIO Reset consumers =
+> > > > +
+> > > > +For the common case of reset lines controlled by GPIOs, the GPIO binding
+> > > > +documented in devicetree/bindings/gpio/gpio.txt should be used:
+> > > > +
+> > > > +Required properties:
+> > > > +reset-gpios or         Reset GPIO using standard GPIO bindings,
+> > > > +<name>-reset-gpios:    optionally named to specify the reset line
+> > > > +
+> > > > +Optional properties:
+> > > > +reset-boot-asserted or         Boolean. If set, the corresponding reset is
+> > > > +<name>-reset-boot-asserted:    initially asserted and should be kept that way
+> > > > +                               until released by the driver.
+> > > 
+> > > I don't get this one. Why would you use a different reset binding for the case
+> > > where the reset line is connected to the gpio controller rather than a
+> > > specialized reset controller?
+> > > 
+> > > I was expecting to see the definition of a generic reset controller that
+> > > in turn uses gpio lines, like
+> > > 
+> > > 
+> > >         reset { 
+> > >                 compatible = "gpio-reset";
+> > >                 /* provides three reset lines through these GPIOs */
+> > >                 gpios = <&gpioA 1 &gpioB 7 <gpioD 17>;
+> > >                 #reset-cells = <1>;
+> > >         };
+> > > 
+> > >         foo {
+> > >                 ...
+> > >                 resets = <&reset 0>; /* uses first reset line of the gpio-reset controller */
+> > >         };
+> > 
+> > That is what I initially proposed...
+> > 
+> > > I realize it would be a little more verbose, but it also seems more
+> > > regular and wouldn't stand out from the rest of the reset interfaces.
+> > 
+> > ... but it can also be argued that GPIO resets shouldn't stand out from
+> > other GPIOs.
+> > 
+> > Mark Rutland spoke out against having a 'GPIO reset device' node in the
+> > device tree:
+> > 
+> > http://comments.gmane.org/gmane.linux.drivers.devicetree/41596
+> > 
+> > and I see his point. Using different bindings for reset controller IPs
+> > and for single GPIOs better describes the actual hardware and it is less
+> > Linux specific: it still allows an OS without gpio-reset framework to
+> > let each driver handle the GPIO itself.
+> > 
+> > Also Stephen Warren pointed out that we'll have to support the existing
+> > GPIO bindings anyway: in the meantime there are a lot of GPIO resets in
+> > various device trees that use the GPIO bindings.
+> > 
+> > regards
+> > Philipp
+> 
+> do you have further comments on this?
 
-If you're not using mutexes, why would you need to initialise it?
+Yes? No? Maybe later?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> I'd like to request a pull of the changes in
+> http://git.pengutronix.de/?p=pza/linux.git;a=shortlog;h=refs/heads/reset/for_v3.15
+> and I wonder whether I should submit that now without the GPIO patches
+> or hold it back a bit and add them on top.
+
+regards
+Philipp
+
