@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaBNBAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:00:19 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:37462 "EHLO
+	id S1753127AbaBNBAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 20:00:33 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37461 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043AbaBNA7Q (ORCPT
+	with ESMTP id S1751492AbaBNA7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 19:59:16 -0500
+	Thu, 13 Feb 2014 19:59:08 -0500
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 To: linux-sh@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 21/27] ARM: shmobile: r8a7791: Switch to new style CMT device
-Date: Fri, 14 Feb 2014 01:59:59 +0100
-Message-Id: <1392339605-20691-22-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Subject: [PATCH 02/27] clocksource: sh_cmt: Rename struct sh_cmt_priv to sh_cmt_device
+Date: Fri, 14 Feb 2014 01:59:40 +0100
+Message-Id: <1392339605-20691-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
@@ -22,92 +22,253 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CMT (Compare Match Timer) driver implements a new style of platform
-data that handles the timer as a single device with multiple channel.
-Switch from the old-style platform data to the new-style platform data.
+Channel data is private as well, rename priv to device to make the
+distrinction between the core device and the channels clearer.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- arch/arm/mach-shmobile/board-koelsch-reference.c |  2 +-
- arch/arm/mach-shmobile/clock-r8a7791.c           |  2 +-
- arch/arm/mach-shmobile/setup-r8a7791.c           | 26 +++++++++++++++---------
- 3 files changed, 18 insertions(+), 12 deletions(-)
+ drivers/clocksource/sh_cmt.c | 116 +++++++++++++++++++++----------------------
+ 1 file changed, 58 insertions(+), 58 deletions(-)
 
-diff --git a/arch/arm/mach-shmobile/board-koelsch-reference.c b/arch/arm/mach-shmobile/board-koelsch-reference.c
-index 46879d6..e67a4be7 100644
---- a/arch/arm/mach-shmobile/board-koelsch-reference.c
-+++ b/arch/arm/mach-shmobile/board-koelsch-reference.c
-@@ -39,7 +39,7 @@ static void __init koelsch_add_standard_devices(void)
+diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
+index 12ccd11..68cca0a 100644
+--- a/drivers/clocksource/sh_cmt.c
++++ b/drivers/clocksource/sh_cmt.c
+@@ -35,10 +35,10 @@
+ #include <linux/pm_domain.h>
+ #include <linux/pm_runtime.h>
  
- 	clk = clk_get(NULL, "cmt0");
- 	if (!IS_ERR(clk)) {
--		clk_register_clkdev(clk, NULL, "sh_cmt.0");
-+		clk_register_clkdev(clk, NULL, "sh-cmt-48-gen2.0");
- 		clk_put(clk);
- 	}
- #else
-diff --git a/arch/arm/mach-shmobile/clock-r8a7791.c b/arch/arm/mach-shmobile/clock-r8a7791.c
-index fc9248d..4dac973 100644
---- a/arch/arm/mach-shmobile/clock-r8a7791.c
-+++ b/arch/arm/mach-shmobile/clock-r8a7791.c
-@@ -224,7 +224,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_DEV_ID("sh-sci.12", &mstp_clks[MSTP1105]), /* SCIFA3 */
- 	CLKDEV_DEV_ID("sh-sci.13", &mstp_clks[MSTP1106]), /* SCIFA4 */
- 	CLKDEV_DEV_ID("sh-sci.14", &mstp_clks[MSTP1107]), /* SCIFA5 */
--	CLKDEV_DEV_ID("sh_cmt.0", &mstp_clks[MSTP124]),
-+	CLKDEV_DEV_ID("sh-cmt-48-gen2.0", &mstp_clks[MSTP124]),
- 	CLKDEV_DEV_ID("qspi.0", &mstp_clks[MSTP917]),
- 	CLKDEV_DEV_ID("e61f0000.thermal", &mstp_clks[MSTP522]),
- 	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
-diff --git a/arch/arm/mach-shmobile/setup-r8a7791.c b/arch/arm/mach-shmobile/setup-r8a7791.c
-index 605f4cf..a17ebb8 100644
---- a/arch/arm/mach-shmobile/setup-r8a7791.c
-+++ b/arch/arm/mach-shmobile/setup-r8a7791.c
-@@ -128,20 +128,26 @@ R8A7791_SCIFA(14, 0xe6c80000, gic_spi(31)); /* SCIFA5 */
- 					  &scif##index##_platform_data,	       \
- 					  sizeof(scif##index##_platform_data))
+-struct sh_cmt_priv;
++struct sh_cmt_device;
  
--static const struct sh_timer_config cmt00_platform_data __initconst = {
--	.name = "CMT00",
--	.timer_bit = 0,
--	.clockevent_rating = 80,
-+static struct sh_timer_channel_config cmt0_channels[] = {
-+	{
-+		.index = 0,
-+		.clockevent_rating = 80,
-+	},
+ struct sh_cmt_channel {
+-	struct sh_cmt_priv *cmt;
++	struct sh_cmt_device *cmt;
+ 
+ 	struct irqaction irqaction;
+ 
+@@ -54,7 +54,7 @@ struct sh_cmt_channel {
+ 	bool cs_enabled;
  };
  
--static const struct resource cmt00_resources[] __initconst = {
--	DEFINE_RES_MEM(0xffca0510, 0x0c),
--	DEFINE_RES_MEM(0xffca0500, 0x04),
--	DEFINE_RES_IRQ(gic_spi(142)), /* CMT0_0 */
-+static struct sh_timer_config cmt0_platform_data = {
-+	.channels = cmt0_channels,
-+	.num_channels = ARRAY_SIZE(cmt0_channels),
-+	.channels_mask = 0x1f,
-+};
-+
-+static struct resource cmt0_resources[] = {
-+	DEFINE_RES_MEM(0xffca0000, 0x1004),
-+	DEFINE_RES_IRQ(gic_spi(142)),
- };
+-struct sh_cmt_priv {
++struct sh_cmt_device {
+ 	struct platform_device *pdev;
  
- #define r8a7791_register_cmt(idx)					\
--	platform_device_register_resndata(&platform_bus, "sh_cmt",	\
-+	platform_device_register_resndata(&platform_bus, "sh-cmt-48-gen2", \
- 					  idx, cmt##idx##_resources,	\
- 					  ARRAY_SIZE(cmt##idx##_resources), \
- 					  &cmt##idx##_platform_data,	\
-@@ -185,7 +191,7 @@ static const struct resource thermal_resources[] __initconst = {
- 
- void __init r8a7791_add_dt_devices(void)
- {
--	r8a7791_register_cmt(00);
-+	r8a7791_register_cmt(0);
+ 	void __iomem *mapbase;
+@@ -695,136 +695,136 @@ static int sh_cmt_register(struct sh_cmt_channel *ch, char *name,
+ 	return 0;
  }
  
- void __init r8a7791_add_standard_devices(void)
+-static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
++static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
+ {
+ 	struct sh_timer_config *cfg = pdev->dev.platform_data;
+-	struct sh_cmt_channel *ch = &p->channel;
++	struct sh_cmt_channel *ch = &cmt->channel;
+ 	struct resource *res, *res2;
+ 	int irq, ret;
+ 	ret = -ENXIO;
+ 
+-	memset(p, 0, sizeof(*p));
+-	p->pdev = pdev;
++	memset(cmt, 0, sizeof(*cmt));
++	cmt->pdev = pdev;
+ 
+ 	if (!cfg) {
+-		dev_err(&p->pdev->dev, "missing platform data\n");
++		dev_err(&cmt->pdev->dev, "missing platform data\n");
+ 		goto err0;
+ 	}
+ 
+-	res = platform_get_resource(p->pdev, IORESOURCE_MEM, 0);
++	res = platform_get_resource(cmt->pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+-		dev_err(&p->pdev->dev, "failed to get I/O memory\n");
++		dev_err(&cmt->pdev->dev, "failed to get I/O memory\n");
+ 		goto err0;
+ 	}
+ 
+ 	/* optional resource for the shared timer start/stop register */
+-	res2 = platform_get_resource(p->pdev, IORESOURCE_MEM, 1);
++	res2 = platform_get_resource(cmt->pdev, IORESOURCE_MEM, 1);
+ 
+-	irq = platform_get_irq(p->pdev, 0);
++	irq = platform_get_irq(cmt->pdev, 0);
+ 	if (irq < 0) {
+-		dev_err(&p->pdev->dev, "failed to get irq\n");
++		dev_err(&cmt->pdev->dev, "failed to get irq\n");
+ 		goto err0;
+ 	}
+ 
+ 	/* map memory, let mapbase point to our channel */
+-	p->mapbase = ioremap_nocache(res->start, resource_size(res));
+-	if (p->mapbase == NULL) {
+-		dev_err(&p->pdev->dev, "failed to remap I/O memory\n");
++	cmt->mapbase = ioremap_nocache(res->start, resource_size(res));
++	if (cmt->mapbase == NULL) {
++		dev_err(&cmt->pdev->dev, "failed to remap I/O memory\n");
+ 		goto err0;
+ 	}
+ 
+ 	/* map second resource for CMSTR */
+-	p->mapbase_str = ioremap_nocache(res2 ? res2->start :
+-					 res->start - cfg->channel_offset,
+-					 res2 ? resource_size(res2) : 2);
+-	if (p->mapbase_str == NULL) {
+-		dev_err(&p->pdev->dev, "failed to remap I/O second memory\n");
++	cmt->mapbase_str = ioremap_nocache(res2 ? res2->start :
++					   res->start - cfg->channel_offset,
++					   res2 ? resource_size(res2) : 2);
++	if (cmt->mapbase_str == NULL) {
++		dev_err(&cmt->pdev->dev, "failed to remap I/O second memory\n");
+ 		goto err1;
+ 	}
+ 
+ 	/* request irq using setup_irq() (too early for request_irq()) */
+-	ch->irqaction.name = dev_name(&p->pdev->dev);
++	ch->irqaction.name = dev_name(&cmt->pdev->dev);
+ 	ch->irqaction.handler = sh_cmt_interrupt;
+ 	ch->irqaction.dev_id = ch;
+ 	ch->irqaction.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING;
+ 
+ 	/* get hold of clock */
+-	p->clk = clk_get(&p->pdev->dev, "cmt_fck");
+-	if (IS_ERR(p->clk)) {
+-		dev_err(&p->pdev->dev, "cannot get clock\n");
+-		ret = PTR_ERR(p->clk);
++	cmt->clk = clk_get(&cmt->pdev->dev, "cmt_fck");
++	if (IS_ERR(cmt->clk)) {
++		dev_err(&cmt->pdev->dev, "cannot get clock\n");
++		ret = PTR_ERR(cmt->clk);
+ 		goto err2;
+ 	}
+ 
+-	ret = clk_prepare(p->clk);
++	ret = clk_prepare(cmt->clk);
+ 	if (ret < 0)
+ 		goto err3;
+ 
+ 	if (res2 && (resource_size(res2) == 4)) {
+ 		/* assume both CMSTR and CMCSR to be 32-bit */
+-		p->read_control = sh_cmt_read32;
+-		p->write_control = sh_cmt_write32;
++		cmt->read_control = sh_cmt_read32;
++		cmt->write_control = sh_cmt_write32;
+ 	} else {
+-		p->read_control = sh_cmt_read16;
+-		p->write_control = sh_cmt_write16;
++		cmt->read_control = sh_cmt_read16;
++		cmt->write_control = sh_cmt_write16;
+ 	}
+ 
+ 	if (resource_size(res) == 6) {
+-		p->width = 16;
+-		p->read_count = sh_cmt_read16;
+-		p->write_count = sh_cmt_write16;
+-		p->overflow_bit = 0x80;
+-		p->clear_bits = ~0x80;
++		cmt->width = 16;
++		cmt->read_count = sh_cmt_read16;
++		cmt->write_count = sh_cmt_write16;
++		cmt->overflow_bit = 0x80;
++		cmt->clear_bits = ~0x80;
+ 	} else {
+-		p->width = 32;
+-		p->read_count = sh_cmt_read32;
+-		p->write_count = sh_cmt_write32;
+-		p->overflow_bit = 0x8000;
+-		p->clear_bits = ~0xc000;
++		cmt->width = 32;
++		cmt->read_count = sh_cmt_read32;
++		cmt->write_count = sh_cmt_write32;
++		cmt->overflow_bit = 0x8000;
++		cmt->clear_bits = ~0xc000;
+ 	}
+ 
+-	if (p->width == (sizeof(ch->max_match_value) * 8))
++	if (cmt->width == (sizeof(ch->max_match_value) * 8))
+ 		ch->max_match_value = ~0;
+ 	else
+-		ch->max_match_value = (1 << p->width) - 1;
++		ch->max_match_value = (1 << cmt->width) - 1;
+ 
+-	ch->cmt = p;
++	ch->cmt = cmt;
+ 	ch->match_value = ch->max_match_value;
+ 	raw_spin_lock_init(&ch->lock);
+ 
+-	ret = sh_cmt_register(ch, (char *)dev_name(&p->pdev->dev),
++	ret = sh_cmt_register(ch, (char *)dev_name(&cmt->pdev->dev),
+ 			      cfg->clockevent_rating,
+ 			      cfg->clocksource_rating);
+ 	if (ret) {
+-		dev_err(&p->pdev->dev, "registration failed\n");
++		dev_err(&cmt->pdev->dev, "registration failed\n");
+ 		goto err4;
+ 	}
+ 	ch->cs_enabled = false;
+ 
+ 	ret = setup_irq(irq, &ch->irqaction);
+ 	if (ret) {
+-		dev_err(&p->pdev->dev, "failed to request irq %d\n", irq);
++		dev_err(&cmt->pdev->dev, "failed to request irq %d\n", irq);
+ 		goto err4;
+ 	}
+ 
+-	platform_set_drvdata(pdev, p);
++	platform_set_drvdata(pdev, cmt);
+ 
+ 	return 0;
+ err4:
+-	clk_unprepare(p->clk);
++	clk_unprepare(cmt->clk);
+ err3:
+-	clk_put(p->clk);
++	clk_put(cmt->clk);
+ err2:
+-	iounmap(p->mapbase_str);
++	iounmap(cmt->mapbase_str);
+ err1:
+-	iounmap(p->mapbase);
++	iounmap(cmt->mapbase);
+ err0:
+ 	return ret;
+ }
+ 
+ static int sh_cmt_probe(struct platform_device *pdev)
+ {
+-	struct sh_cmt_priv *p = platform_get_drvdata(pdev);
++	struct sh_cmt_device *cmt = platform_get_drvdata(pdev);
+ 	struct sh_timer_config *cfg = pdev->dev.platform_data;
+ 	int ret;
+ 
+@@ -833,20 +833,20 @@ static int sh_cmt_probe(struct platform_device *pdev)
+ 		pm_runtime_enable(&pdev->dev);
+ 	}
+ 
+-	if (p) {
++	if (cmt) {
+ 		dev_info(&pdev->dev, "kept as earlytimer\n");
+ 		goto out;
+ 	}
+ 
+-	p = kmalloc(sizeof(*p), GFP_KERNEL);
+-	if (p == NULL) {
++	cmt = kmalloc(sizeof(*cmt), GFP_KERNEL);
++	if (cmt == NULL) {
+ 		dev_err(&pdev->dev, "failed to allocate driver data\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	ret = sh_cmt_setup(p, pdev);
++	ret = sh_cmt_setup(cmt, pdev);
+ 	if (ret) {
+-		kfree(p);
++		kfree(cmt);
+ 		pm_runtime_idle(&pdev->dev);
+ 		return ret;
+ 	}
 -- 
 1.8.3.2
 
