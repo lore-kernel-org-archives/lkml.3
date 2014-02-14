@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbaBNIA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:00:26 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58174 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895AbaBNIAW (ORCPT
+	id S1752938AbaBNIAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:00:37 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:38765 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752895AbaBNIAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:00:22 -0500
+	Fri, 14 Feb 2014 03:00:32 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 25/52] x86, amd,
- uncore: Fix CPU hotplug callback registration
+Subject: [PATCH v2 26/52] x86, hpet: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        srivatsa.bhat@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         x86@kernel.org, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:24:51 +0530
-Message-ID: <20140214075451.22701.46990.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:25:02 +0530
+Message-ID: <20140214075501.22701.65312.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,7 +27,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021408-8256-0000-0000-00000B767925
+x-cbid: 14021408-5564-0000-0000-00000C03E4A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -67,42 +63,34 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the amd-uncore code in x86 by using this latter form of callback
-registration.
+Fix the hpet code in x86 by using this latter form of callback registration.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kernel/cpu/perf_event_amd_uncore.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/hpet.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-index 754291a..3bbdf4c 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-@@ -531,15 +531,16 @@ static int __init amd_uncore_init(void)
- 	if (ret)
- 		return -ENODEV;
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index da85a8e..d89382b 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -943,12 +943,14 @@ static __init int hpet_late_init(void)
+ 	if (boot_cpu_has(X86_FEATURE_ARAT))
+ 		return 0;
  
--	get_online_cpus();
 +	cpu_notifier_register_begin();
-+
- 	/* init cpus already online before registering for hotplug notifier */
  	for_each_online_cpu(cpu) {
- 		amd_uncore_cpu_up_prepare(cpu);
- 		smp_call_function_single(cpu, init_cpu_already_online, NULL, 1);
+ 		hpet_cpuhp_notify(NULL, CPU_ONLINE, (void *)(long)cpu);
  	}
  
--	register_cpu_notifier(&amd_uncore_cpu_notifier_block);
--	put_online_cpus();
-+	__register_cpu_notifier(&amd_uncore_cpu_notifier_block);
+ 	/* This notifier should be called after workqueue is ready */
+-	hotcpu_notifier(hpet_cpuhp_notify, -20);
++	__hotcpu_notifier(hpet_cpuhp_notify, -20);
 +	cpu_notifier_register_done();
  
  	return 0;
