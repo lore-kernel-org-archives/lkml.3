@@ -1,159 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaBNSEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:04:38 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:57180 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbaBNSD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752267AbaBNSD5 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 14 Feb 2014 13:03:57 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:51604 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbaBNSDz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 13:03:55 -0500
 From: Peter Wu <lekensteyn@gmail.com>
 To: Larry Finger <Larry.Finger@lwfinger.net>,
         Chaoming_Li <chaoming_li@realsil.com.cn>
 Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
         lekensteyn@gmail.com
-Subject: [PATCH 2/3] rtlwifi: properly apply filter flags
-Date: Fri, 14 Feb 2014 19:03:45 +0100
-Message-Id: <1392401026-18417-3-git-send-email-lekensteyn@gmail.com>
+Subject: [PATCH 0/3] rtlwifi promiscious mode fix and cleanup
+Date: Fri, 14 Feb 2014 19:03:43 +0100
+Message-Id: <1392401026-18417-1-git-send-email-lekensteyn@gmail.com>
 X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1392401026-18417-1-git-send-email-lekensteyn@gmail.com>
-References: <1392401026-18417-1-git-send-email-lekensteyn@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 0baa0fd76f3f5a134461d6cf30294f6bb1bb824c
-("rtlwifi: Convert core routines for addition of rtl8192se and
-rtl8192de") removed setting HW_VAR_RCR, HW_VAR_MGT_FILTER and
-HW_VAR_CTRL_FILTER. The last two are probably done because some hardware
-does not support them. The first is probably a mistake. This patch adds
-the missing set_hw_reg call.
+Hi,
 
-For PCI support, rx_conf is not touched directly. Instead, get_hw_reg is
-used to abstract between receive_config (for PCI) and rx_conf (for USB).
+While investigating bug 60713[1] which is about the inability to connect
+with RTL8192CE hardware, I noticed that the monitor mode only shows
+broadcast and multicast frames. The cause is described next.
 
-This was tested on a 10ec:8176 Realtek RTL8188CE (according to the
-label on the mini-PCIe card). Before this patch, `iw wlan0 set monitor
-otherbss` did not capture frames from other BSS's. After this patch, it
-does print packets.
+`rtlpci->receive_config` seems to contain the current value of REG_RCR.
+It gets initialized in rtl*_init_sw_vars. It is returned by
+rtl*_get_hw_reg and set by rtl*_set_hw_reg (after writing to REG_RCR).
 
-Tested-by: Peter Wu <lekensteyn@gmail.com>
-Signed-off-by: Peter Wu <lekensteyn@gmail.com>
+`mac->rx_conf` is initialized in rtl_init_rx_config. For PCIe drivers,
+it gets inited from `receive_config` via get_hw_reg (one of the
+functions from the previous section).
+
+When monitor mode is enabled with otherbss set, rtl_op_configure_filter
+is called. This has a problem:
+
+(1) The rtl_op_configure_filter function only sets mac->rx_conf.
+(2) rx_conf is only written to register REG_RCR by rtl8192cu and besides
+    that driver, it is only read by rtl_init_rx_config in base.c.
+
+Patch 2/3 fixes the above issue. 1/2 makes accessing RCR more consistent
+and 3/3 removes unused functions (yay, less code!). Similar
+modifications (3 and probably 1) need to be done for staging.
+
+I have tested these patches on top of v3.14-rc2-267-g9398a10, but it
+unfortunately does not improve the connectivity problem. It got even
+stranger, when I run `iw wlan0 set monitor fcsfail`, I do not see a
+"Enable receive FCS error frame" message with debug=5. Instead I see
+"Enable receive control frame". More testing will be done later this
+day. For example, only the first and second EAPOL frame of a second test
+device got captured, others got lost somehow. Hopefully it is not a
+memory corruption issue somewhere.
+
+Related question for a Realtek engineer (or someone with access to the
+specs): the rx_ctrl_filter and rx_data_filter fields are only *read* in
+the rtl8192cu driver. Besides that they are unused. Can this be removed?
+Otherwise, what about moving them to rtl_init_rx_config() and updating
+the *_get_hw_reg() functions to ignore/process the vars? After doing so,
+_update_mac_setting can be removed from rtl8192cu/hw.c.
+
+Regards,
+Peter
+
+ [1]: https://bugzilla.kernel.org/show_bug.cgi?id=60713
 ---
- drivers/net/wireless/rtlwifi/core.c | 52 +++++++++++++++++++++----------------
- 1 file changed, 30 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
-index 2d337a0..6df4df0 100644
---- a/drivers/net/wireless/rtlwifi/core.c
-+++ b/drivers/net/wireless/rtlwifi/core.c
-@@ -475,20 +475,40 @@ static void rtl_op_configure_filter(struct ieee80211_hw *hw,
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
-+	u32 rx_conf;
- 
- 	*new_flags &= RTL_SUPPORTED_FILTERS;
- 	if (!changed_flags)
- 		return;
- 
-+	/* if ssid not set to hw don't check bssid
-+	 * here just used for linked scanning, & linked
-+	 * and nolink check bssid is set in set network_type */
-+	if ((changed_flags & FIF_BCN_PRBRESP_PROMISC) &&
-+		(mac->link_state >= MAC80211_LINKED)) {
-+		if (mac->opmode != NL80211_IFTYPE_AP &&
-+		    mac->opmode != NL80211_IFTYPE_MESH_POINT) {
-+			if (*new_flags & FIF_BCN_PRBRESP_PROMISC) {
-+				rtlpriv->cfg->ops->set_chk_bssid(hw, false);
-+			} else {
-+				rtlpriv->cfg->ops->set_chk_bssid(hw, true);
-+			}
-+		}
-+	}
-+
-+	/* must be called after set_chk_bssid since that function modifies the
-+	 * RCR register too. */
-+	rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_RCR, (u8 *)(&rx_conf));
-+
- 	/*TODO: we disable broadcase now, so enable here */
- 	if (changed_flags & FIF_ALLMULTI) {
- 		if (*new_flags & FIF_ALLMULTI) {
--			mac->rx_conf |= rtlpriv->cfg->maps[MAC_RCR_AM] |
-+			rx_conf |= rtlpriv->cfg->maps[MAC_RCR_AM] |
- 			    rtlpriv->cfg->maps[MAC_RCR_AB];
- 			RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
- 				 "Enable receive multicast frame\n");
- 		} else {
--			mac->rx_conf &= ~(rtlpriv->cfg->maps[MAC_RCR_AM] |
-+			rx_conf &= ~(rtlpriv->cfg->maps[MAC_RCR_AM] |
- 					  rtlpriv->cfg->maps[MAC_RCR_AB]);
- 			RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
- 				 "Disable receive multicast frame\n");
-@@ -497,39 +517,25 @@ static void rtl_op_configure_filter(struct ieee80211_hw *hw,
- 
- 	if (changed_flags & FIF_FCSFAIL) {
- 		if (*new_flags & FIF_FCSFAIL) {
--			mac->rx_conf |= rtlpriv->cfg->maps[MAC_RCR_ACRC32];
-+			rx_conf |= rtlpriv->cfg->maps[MAC_RCR_ACRC32];
- 			RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
- 				 "Enable receive FCS error frame\n");
- 		} else {
--			mac->rx_conf &= ~rtlpriv->cfg->maps[MAC_RCR_ACRC32];
-+			rx_conf &= ~rtlpriv->cfg->maps[MAC_RCR_ACRC32];
- 			RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
- 				 "Disable receive FCS error frame\n");
- 		}
- 	}
- 
--	/* if ssid not set to hw don't check bssid
--	 * here just used for linked scanning, & linked
--	 * and nolink check bssid is set in set network_type */
--	if ((changed_flags & FIF_BCN_PRBRESP_PROMISC) &&
--		(mac->link_state >= MAC80211_LINKED)) {
--		if (mac->opmode != NL80211_IFTYPE_AP &&
--		    mac->opmode != NL80211_IFTYPE_MESH_POINT) {
--			if (*new_flags & FIF_BCN_PRBRESP_PROMISC) {
--				rtlpriv->cfg->ops->set_chk_bssid(hw, false);
--			} else {
--				rtlpriv->cfg->ops->set_chk_bssid(hw, true);
--			}
--		}
--	}
- 
- 	if (changed_flags & FIF_CONTROL) {
- 		if (*new_flags & FIF_CONTROL) {
--			mac->rx_conf |= rtlpriv->cfg->maps[MAC_RCR_ACF];
-+			rx_conf |= rtlpriv->cfg->maps[MAC_RCR_ACF];
- 
- 			RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
- 				 "Enable receive control frame\n");
- 		} else {
--			mac->rx_conf &= ~rtlpriv->cfg->maps[MAC_RCR_ACF];
-+			rx_conf &= ~rtlpriv->cfg->maps[MAC_RCR_ACF];
- 			RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
- 				 "Disable receive control frame\n");
- 		}
-@@ -537,15 +543,17 @@ static void rtl_op_configure_filter(struct ieee80211_hw *hw,
- 
- 	if (changed_flags & FIF_OTHER_BSS) {
- 		if (*new_flags & FIF_OTHER_BSS) {
--			mac->rx_conf |= rtlpriv->cfg->maps[MAC_RCR_AAP];
-+			rx_conf |= rtlpriv->cfg->maps[MAC_RCR_AAP];
- 			RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
- 				 "Enable receive other BSS's frame\n");
- 		} else {
--			mac->rx_conf &= ~rtlpriv->cfg->maps[MAC_RCR_AAP];
-+			rx_conf &= ~rtlpriv->cfg->maps[MAC_RCR_AAP];
- 			RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
- 				 "Disable receive other BSS's frame\n");
- 		}
- 	}
-+
-+	rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR, (u8 *)(&rx_conf));
- }
- static int rtl_op_sta_add(struct ieee80211_hw *hw,
- 			 struct ieee80211_vif *vif,
+Peter Wu (3):
+  rtlwifi: avoid accessing RCR directly
+  rtlwifi: properly apply filter flags
+  rtlwifi: remove unused allow_all_destaddr functions
+
+ drivers/net/wireless/rtlwifi/core.c         | 52 +++++++++++++++++------------
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.c | 25 ++------------
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.h |  2 --
+ drivers/net/wireless/rtlwifi/rtl8188ee/sw.c |  1 -
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c | 25 ++------------
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.h |  2 --
+ drivers/net/wireless/rtlwifi/rtl8192ce/sw.c |  1 -
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |  4 ++-
+ drivers/net/wireless/rtlwifi/rtl8192de/hw.c |  6 ++--
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.c | 25 ++------------
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.h |  2 --
+ drivers/net/wireless/rtlwifi/rtl8192se/sw.c |  1 -
+ drivers/net/wireless/rtlwifi/rtl8723ae/hw.c | 26 ++-------------
+ drivers/net/wireless/rtlwifi/rtl8723ae/hw.h |  2 --
+ drivers/net/wireless/rtlwifi/rtl8723ae/sw.c |  1 -
+ drivers/net/wireless/rtlwifi/wifi.h         |  2 --
+ 16 files changed, 49 insertions(+), 128 deletions(-)
+
 -- 
 1.8.5.4
 
