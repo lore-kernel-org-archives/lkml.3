@@ -1,109 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaBNDuf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 22:50:35 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:20892 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440AbaBNDud (ORCPT
+	id S1752073AbaBNDv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 22:51:58 -0500
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:36528 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbaBNDv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 22:50:33 -0500
-Message-ID: <52FD9256.1080801@huawei.com>
-Date: Fri, 14 Feb 2014 11:49:42 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH cgroup/for-3.14-fixes] cgroup: update cgroup_enable_task_cg_lists()
- to grab siglock
-References: <20140213182931.GB17608@htj.dyndns.org>
-In-Reply-To: <20140213182931.GB17608@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	Thu, 13 Feb 2014 22:51:57 -0500
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Laurent Chavey <chavey@google.com>, linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] tracing: Fix array size mismatch in format string
+Date: Thu, 13 Feb 2014 19:51:48 -0800
+Message-Id: <1392349908-29685-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.9.0.rc1.175.g0b1dcb5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/14 2:29, Tejun Heo wrote:
-> Currently, there's nothing preventing cgroup_enable_task_cg_lists()
-> from missing set PF_EXITING and race against cgroup_exit().  Depending
-> on the timing, cgroup_exit() may finish with the task still linked on
-> css_set leading to list corruption.  Fix it by grabbing siglock in
-> cgroup_enable_task_cg_lists() so that PF_EXITING is guaranteed to be
-> visible.
-> 
-> This whole on-demand cg_list optimization is extremely fragile and has
-> ample possibility to lead to bugs which can cause things like
-> once-a-year oops during boot.
+In event format strings, the array size is reported in two locations.
+One in array subscript and then via the "size:" attribute. The values
+reported there have a mismatch.
 
-I added the PF_EXITING check years ago:
+For e.g., in sched:sched_switch the prev_comm and next_comm character
+arrays have subscript values as [32] where as the actual field size is
+16.
 
-commit 0e04388f0189fa1f6812a8e1cb6172136eada87e
-Author: Li Zefan <lizf@cn.fujitsu.com>
-Date:   Thu Apr 17 11:37:15 2008 +0800
+name: sched_switch
+ID: 301
+format:
+        field:unsigned short common_type;       offset:0;       size:2; signed:0;
+        field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+        field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
+        field:int common_pid;   offset:4;       size:4; signed:1;
 
-    cgroup: fix a race condition in manipulating tsk->cg_list
+        field:char prev_comm[32];       offset:8;       size:16;        signed:1;
+        field:pid_t prev_pid;   offset:24;      size:4; signed:1;
+        field:int prev_prio;    offset:28;      size:4; signed:1;
+        field:long prev_state;  offset:32;      size:8; signed:1;
+        field:char next_comm[32];       offset:40;      size:16;        signed:1;
+        field:pid_t next_pid;   offset:56;      size:4; signed:1;
+        field:int next_prio;    offset:60;      size:4; signed:1;
 
-Now the only race I see is caused by checking tsk->cg_list without locking
-in cgroup_exit():
+After bisection, the following commit was blamed:
+92edca0 tracing: Use direct field, type and system names
 
-cgroup_enable_task_cg_lists()
-  ...
-  if (!p->flags & PF_EXITING) && list_empty(p->cg_list))
-								exit_signal(tsk)  <-- set PF_EXTING;
-								...
-								if (!list_empty(&tsk->cg_list)) {
-								        down_write(&css_set_rwsem);
-								        if (!list_empty(&tsk->cg_list))
-								                list_del_init(&tsk->cg_list);
-								        up_write(&css_set_rwsem);
-								}
-  	list_add(p->cg_list, ...);
+This commit removes the duplication of strings for field->name and
+field->type assuming that all the strings passed in
+__trace_define_field() are immutable. This is not true for arrays, where
+the type string is created in event_storage variable and field->type for
+all array fields points to event_storage.
 
-Your patch can fix this race, but after diving into the code I don't think
-the race exists, because exit_mm() locks&unlocks task_lock, and exit_mm()
-is called after exit_signal() and before cgroup_exit(), and task_lock is
-also taken by cgroup_enable_task_cg_lists().
+Use __stringify() to create a string constant for the type string.
 
-I totally agree the code is fragile and we should take your patch. I just
-want to make it clear if the bug exists in real life or not, and then we
-can write better changelog and decide to queue the patch for 3.14 or 3.15
-and decide to mark it for stable or not.
+Also, get rid of event_storage and event_storage_mutex that are not
+needed anymore.
 
-> I'm wondering whether the better
-> approach would be just adding "cgroup_disable=all" handling which
-> disables the whole cgroup rather than tempting fate with this
-> on-demand craziness.
-> 
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+* Fix warning from previous version about mixed declarations.
 
-:)
+ include/linux/ftrace_event.h | 4 ----
+ include/trace/ftrace.h       | 7 ++-----
+ kernel/trace/trace_events.c  | 6 ------
+ kernel/trace/trace_export.c  | 7 ++-----
+ 4 files changed, 4 insertions(+), 20 deletions(-)
 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: stable@vger.kernel.org
-> ---
->  kernel/cgroup.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 68d8710..105f273 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -2905,9 +2905,14 @@ static void cgroup_enable_task_cg_lists(void)
->  		 * We should check if the process is exiting, otherwise
->  		 * it will race with cgroup_exit() in that the list
->  		 * entry won't be deleted though the process has exited.
-> +		 * Do it while holding siglock so that we don't end up
-> +		 * racing against cgroup_exit().
->  		 */
-> +		spin_lock_irq(&p->sighand->siglock);
->  		if (!(p->flags & PF_EXITING) && list_empty(&p->cg_list))
->  			list_add(&p->cg_list, &task_css_set(p)->tasks);
-> +		spin_unlock_irq(&p->sighand->siglock);
-> +
->  		task_unlock(p);
->  	} while_each_thread(g, p);
->  	read_unlock(&tasklist_lock);
-> 
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4e4cc28..4cdb3a1 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -495,10 +495,6 @@ enum {
+ 	FILTER_TRACE_FN,
+ };
+ 
+-#define EVENT_STORAGE_SIZE 128
+-extern struct mutex event_storage_mutex;
+-extern char event_storage[EVENT_STORAGE_SIZE];
+-
+ extern int trace_event_raw_init(struct ftrace_event_call *call);
+ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
+ 			      const char *name, int offset, int size,
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 1a8b28d..1ee19a2 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -310,15 +310,12 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
+ #undef __array
+ #define __array(type, item, len)					\
+ 	do {								\
+-		mutex_lock(&event_storage_mutex);			\
++		char *type_str = #type"["__stringify(len)"]";		\
+ 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
+-		snprintf(event_storage, sizeof(event_storage),		\
+-			 "%s[%d]", #type, len);				\
+-		ret = trace_define_field(event_call, event_storage, #item, \
++		ret = trace_define_field(event_call, type_str, #item,	\
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+ 				 is_signed_type(type), FILTER_OTHER);	\
+-		mutex_unlock(&event_storage_mutex);			\
+ 		if (ret)						\
+ 			return ret;					\
+ 	} while (0);
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index e71ffd4..22826c7 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -27,12 +27,6 @@
+ 
+ DEFINE_MUTEX(event_mutex);
+ 
+-DEFINE_MUTEX(event_storage_mutex);
+-EXPORT_SYMBOL_GPL(event_storage_mutex);
+-
+-char event_storage[EVENT_STORAGE_SIZE];
+-EXPORT_SYMBOL_GPL(event_storage);
+-
+ LIST_HEAD(ftrace_events);
+ static LIST_HEAD(ftrace_common_fields);
+ 
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 7c3e3e7..ee0a509 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -95,15 +95,12 @@ static void __always_unused ____ftrace_check_##name(void)		\
+ #undef __array
+ #define __array(type, item, len)					\
+ 	do {								\
++		char *type_str = #type"["__stringify(len)"]";		\
+ 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
+-		mutex_lock(&event_storage_mutex);			\
+-		snprintf(event_storage, sizeof(event_storage),		\
+-			 "%s[%d]", #type, len);				\
+-		ret = trace_define_field(event_call, event_storage, #item, \
++		ret = trace_define_field(event_call, type_str, #item,	\
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+ 				 is_signed_type(type), filter_type);	\
+-		mutex_unlock(&event_storage_mutex);			\
+ 		if (ret)						\
+ 			return ret;					\
+ 	} while (0);
+-- 
+1.9.0.rc1.175.g0b1dcb5
 
