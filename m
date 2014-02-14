@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaBNNUD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:20:03 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41709 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584AbaBNNUA convert rfc822-to-8bit (ORCPT
+	id S1752737AbaBNNV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:21:27 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:56240 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaBNNVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:20:00 -0500
-Date: Fri, 14 Feb 2014 14:19:59 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: linux-rt-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>
-Subject: Re: [PATCH RT 4/5] allow preemption in
- mem_cgroup_move_account_page_stat
-Message-ID: <20140214131959.GG28438@linutronix.de>
-References: <20140210153933.GE20017@opentech.at>
- <20140214131705.GF28438@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140214131705.GF28438@linutronix.de>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Feb 2014 08:21:25 -0500
+From: Marek Belisko <marek@goldelico.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        jdelvare@suse.de, linux@roeck-us.net, grant.likely@linaro.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        hns@goldelico.com, Marek Belisko <marek@goldelico.com>
+Subject: [PATCH] hwmon: twl4030-madc-hwmon: Add device tree support.
+Date: Fri, 14 Feb 2014 14:20:58 +0100
+Message-Id: <1392384058-14240-1-git-send-email-marek@goldelico.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Andrzej Siewior | 2014-02-14 14:17:05 [+0100]:
+Signed-off-by: Marek Belisko <marek@goldelico.com>
+---
+ Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt |  9 +++++++++
+ drivers/hwmon/twl4030-madc-hwmon.c                             | 10 ++++++++++
+ 2 files changed, 19 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
 
->Now, that I look at it again. Isn't it more efficient to keep preemption
->disabled for this very short time instead instead of invoking
->migrate_disable() which includes preempt_disable()/enable() and a few
->more opcodes…
->Therefore, I drop it again.
+diff --git a/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt b/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
+new file mode 100644
+index 0000000..e8016d1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
+@@ -0,0 +1,9 @@
++TWL4030 MADC hwmon.
++
++Required properties:
++- compatible: "ti,twl4030-madc-hwmon"
++
++Example:
++madc-hwmon {
++	compatible = "ti,twl4030-madc-hwmon";
++};
+diff --git a/drivers/hwmon/twl4030-madc-hwmon.c b/drivers/hwmon/twl4030-madc-hwmon.c
+index 6c6d440..05fb572 100644
+--- a/drivers/hwmon/twl4030-madc-hwmon.c
++++ b/drivers/hwmon/twl4030-madc-hwmon.c
+@@ -96,6 +96,15 @@ static const struct attribute_group twl4030_madc_group = {
+ 	.attrs = twl4030_madc_attributes,
+ };
+ 
++#ifdef CONFIG_OF
++
++static const struct of_device_id of_twl4030_madc_hwmon_match[] = {
++	{ .compatible = "ti,twl4030-madc-hwmon", },
++	{},
++};
++
++#endif
++
+ static int twl4030_madc_hwmon_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+@@ -134,6 +143,7 @@ static struct platform_driver twl4030_madc_hwmon_driver = {
+ 	.driver = {
+ 		   .name = "twl4030_madc_hwmon",
+ 		   .owner = THIS_MODULE,
++		   .of_match_table = of_match_ptr(of_twl4030_madc_hwmon_match),
+ 		   },
+ };
+ 
+-- 
+1.8.3.2
 
-I think doing the same for the 1/5 of this series since it also disables
-migration for a handfull of asm opcodes.
-
-Sebastian
