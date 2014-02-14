@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaBNVqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 16:46:34 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:64869 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481AbaBNVqc (ORCPT
+	id S1752982AbaBNVra (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 16:47:30 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45000 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354AbaBNVr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 16:46:32 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: Chaoming_Li <chaoming_li@realsil.com.cn>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] rtlwifi: avoid accessing RCR directly
-Date: Fri, 14 Feb 2014 22:46:28 +0100
-Message-ID: <3888493.2VXzEtRsP2@al>
-User-Agent: KMail/4.12.2 (Linux/3.13.2-custom; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <52FE8A8C.6040407@lwfinger.net>
-References: <1392401026-18417-1-git-send-email-lekensteyn@gmail.com> <1392401026-18417-2-git-send-email-lekensteyn@gmail.com> <52FE8A8C.6040407@lwfinger.net>
+	Fri, 14 Feb 2014 16:47:29 -0500
+Date: Fri, 14 Feb 2014 22:47:32 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Conrad Kostecki <ck@conrad-kostecki.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Renninger <trenn@suse.de>
+Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+In-Reply-To: <52FE8817.4000504@zytor.com>
+Message-ID: <alpine.DEB.2.02.1402142220150.21991@ionos.tec.linutronix.de>
+References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <52FE5D91.6060005@zytor.com> <alpine.DEB.2.02.1402141917320.21991@ionos.tec.linutronix.de> <52FE5ED4.4040508@zytor.com> <alpine.DEB.2.02.1402141924170.21991@ionos.tec.linutronix.de> <a1204336-ad8d-4f2f-8078-24f043f123e6@email.android.com>
+ <alpine.DEB.2.02.1402142013150.21991@ionos.tec.linutronix.de> <52FE6DEF.1050607@zytor.com> <alpine.DEB.2.02.1402142030240.21991@ionos.tec.linutronix.de> <52FE7738.6040009@zytor.com> <alpine.DEB.2.02.1402142140430.21991@ionos.tec.linutronix.de>
+ <52FE8817.4000504@zytor.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 February 2014 15:28:44 Larry Finger wrote:
-> On 02/14/2014 12:03 PM, Peter Wu wrote:
-> > The rtl*_set_check_bssid functions are mostly the same, but access the
-> > RCR register in different ways. Use the get_hw_reg abstraction layer
-> > (which reads rtlpci->receive_config for PCI devices and mac->rx_conf for
-> > USB).
+On Fri, 14 Feb 2014, H. Peter Anvin wrote:
+
+> On 02/14/2014 01:16 PM, Thomas Gleixner wrote:
+> >>
+> >> Well, the RSDP and RSDT/XSDT are nothing but pointers to other tables,
+> >> so if explicitly overridden I'm not sure if one actually would need
+> >> them.  That doesn't mean our current code will work without them, though.
 > > 
-> > There is no functional change for cases where receive_config was
-> > accessed directly. For rtl8192ce, there is still no change because
-> > nothing modifies REG_RCR or receive_config. For rtl8192cu, it now also
-> > applies changes to rx_conf from configure_filter, but that can be
-> > considered a bug which is fixed later.
+> > I tried once to overload all of the tables, but failed miserably in
+> > the ACPI dungeon. RSDP was the major pain point IIRC.
 > > 
-> > Signed-off-by: Peter Wu <lekensteyn@gmail.com>
 > 
-> Acked-by: Larry Finger <Larry.Finger@lwfinger>
+> I suspect we need to handle the RSDP and RSDT/XSDT specially, since,
+> again, they are really just pointers to where to find the other tables.
+>  They are part of the discovery, not the data.
 
-TLD is missing ;)
-
-> With this change it will not take much work to move all the
-> *_set_check_bssid  functions into a common version in rtlwifi. But that
-> will have to wait as I have one new driver submitted, but not merged, and
-> two others that are not quite ready for submission.
-
-There are three variants of the set_check_bssid functions:
-- four that modify the beacon filter (through _rtl*_set_bcn_ctrl_reg)
-- one (rtl8192se) that does not modify the beacon filter and writes
-  less bits (just RCR_BSSID instead of RCR_BSSID_{DATA,BCN})
-- one (rtl8192cu) that modifies the beacon filter, and depending on
-  the chip version, sets the same bits as rtl8192se, or the other four.
-
-I was not sure where to move the set_bcn_ctrl_reg functions, these
-depend on a value from rtl*/reg.h. Perhaps the [gs]et_hw_reg functions
-can be extended with these registers?
+I'm aware of that and I tried to hack around it but failed miserably
+due to lack of masochism. It was simpler to abuse the DT stuff to get
+things done. :)
 
 Thanks,
-Peter
+
+	tglx
+
 
