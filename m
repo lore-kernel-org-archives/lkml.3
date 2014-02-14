@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaBNU1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:27:41 -0500
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:54326 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753251AbaBNUUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753256AbaBNUUK (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 14 Feb 2014 15:20:10 -0500
-Message-Id: <20140214201906.908615911@linux.com>
-Date: Fri, 14 Feb 2014 14:19:09 -0600
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:40276 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753160AbaBNUUD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 15:20:03 -0500
+Message-Id: <20140214201906.598482740@linux.com>
+Date: Fri, 14 Feb 2014 14:19:06 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, nicolas.pitre@linaro.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 28/48] irqchips: Replace __this_cpu_ptr uses
+        Thomas Gleixner <tglx@linutronix.de>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org
+Subject: [PATCH 25/48] watchdog: Replace __raw_get_cpu_var uses
 References: <20140214201841.826179349@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_irqchip
+Content-Disposition: inline; filename=this_watchdog
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 [Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-These are generally replaced with raw_cpu_ptr. However, in
-gic_get_percpu_base() we immediately dereference the pointer. This is
-equivalent to a raw_cpu_read. So use that operation there.
+Most of these are the uses of &__raw_get_cpu_var for address calculation.
 
-Cc: nicolas.pitre@linaro.org
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+touch_softlockup_watchdog_sync() uses __raw_get_cpu_var to write to
+per cpu variables. Use __this_cpu_write instead.
+
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/drivers/irqchip/irq-gic.c
+Index: linux/kernel/watchdog.c
 ===================================================================
---- linux.orig/drivers/irqchip/irq-gic.c	2013-12-02 16:07:55.564473217 -0600
-+++ linux/drivers/irqchip/irq-gic.c	2013-12-02 16:07:55.554473493 -0600
-@@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
- #ifdef CONFIG_GIC_NON_BANKED
- static void __iomem *gic_get_percpu_base(union gic_base *base)
+--- linux.orig/kernel/watchdog.c	2013-12-02 16:07:54.234510172 -0600
++++ linux/kernel/watchdog.c	2013-12-02 16:07:54.234510172 -0600
+@@ -174,8 +174,8 @@ EXPORT_SYMBOL(touch_nmi_watchdog);
+ 
+ void touch_softlockup_watchdog_sync(void)
  {
--	return *__this_cpu_ptr(base->percpu_base);
-+	return raw_cpu_read(base->percpu_base);
+-	__raw_get_cpu_var(softlockup_touch_sync) = true;
+-	__raw_get_cpu_var(watchdog_touch_ts) = 0;
++	__this_cpu_write(softlockup_touch_sync, true);
++	__this_cpu_write(watchdog_touch_ts, 0);
  }
  
- static void __iomem *gic_get_common_base(union gic_base *base)
-@@ -552,11 +552,11 @@ static void gic_cpu_save(unsigned int gi
- 	if (!dist_base || !cpu_base)
- 		return;
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+@@ -341,7 +341,7 @@ static void watchdog_set_prio(unsigned i
  
--	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
-+	ptr = raw_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
- 	for (i = 0; i < DIV_ROUND_UP(32, 32); i++)
- 		ptr[i] = readl_relaxed(dist_base + GIC_DIST_ENABLE_SET + i * 4);
- 
--	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
-+	ptr = raw_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
- 	for (i = 0; i < DIV_ROUND_UP(32, 16); i++)
- 		ptr[i] = readl_relaxed(dist_base + GIC_DIST_CONFIG + i * 4);
- 
-@@ -578,11 +578,11 @@ static void gic_cpu_restore(unsigned int
- 	if (!dist_base || !cpu_base)
- 		return;
- 
--	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
-+	ptr = raw_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
- 	for (i = 0; i < DIV_ROUND_UP(32, 32); i++)
- 		writel_relaxed(ptr[i], dist_base + GIC_DIST_ENABLE_SET + i * 4);
- 
--	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
-+	ptr = raw_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
- 	for (i = 0; i < DIV_ROUND_UP(32, 16); i++)
- 		writel_relaxed(ptr[i], dist_base + GIC_DIST_CONFIG + i * 4);
- 
-Index: linux/kernel/irq/chip.c
-===================================================================
---- linux.orig/kernel/irq/chip.c	2013-12-02 16:07:55.564473217 -0600
-+++ linux/kernel/irq/chip.c	2013-12-02 16:07:55.554473493 -0600
-@@ -638,7 +638,7 @@ void handle_percpu_devid_irq(unsigned in
+ static void watchdog_enable(unsigned int cpu)
  {
- 	struct irq_chip *chip = irq_desc_get_chip(desc);
- 	struct irqaction *action = desc->action;
--	void *dev_id = __this_cpu_ptr(action->percpu_dev_id);
-+	void *dev_id = raw_cpu_ptr(action->percpu_dev_id);
- 	irqreturn_t res;
+-	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
++	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
  
- 	kstat_incr_irqs_this_cpu(irq, desc);
+ 	/* kick off the timer for the hardlockup detector */
+ 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+@@ -361,7 +361,7 @@ static void watchdog_enable(unsigned int
+ 
+ static void watchdog_disable(unsigned int cpu)
+ {
+-	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
++	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
+ 
+ 	watchdog_set_prio(SCHED_NORMAL, 0);
+ 	hrtimer_cancel(hrtimer);
+@@ -488,7 +488,7 @@ static struct smp_hotplug_thread watchdo
+ 
+ static void restart_watchdog_hrtimer(void *info)
+ {
+-	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
++	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
+ 	int ret;
+ 
+ 	/*
 
