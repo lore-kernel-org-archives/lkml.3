@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582AbaBNCN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 21:13:58 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43657 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaBNCN4 (ORCPT
+	id S1751615AbaBNCSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 21:18:15 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:49165 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaBNCSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 21:13:56 -0500
-Message-ID: <52FD7BDC.7020509@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 10:13:48 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched: Push down pre_schedule() and idle_balance
- ()
-References: <tip-a8k6vvaebtn64nie345kx1je@git.kernel.org> <52FB1411.1040305@linux.vnet.ibm.com> <20140212102251.GD3545@laptop.programming.kicks-ass.net> <52FC3D5B.7000808@linux.vnet.ibm.com>
-In-Reply-To: <52FC3D5B.7000808@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Feb 2014 21:18:14 -0500
+Subject: Re: OMAP: clock DT conversion issues with omap36xx
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, pali.rohar@gmail.com, pavel@ucw.cz,
+        Nishanth Menon <nm@ti.com>
+In-Reply-To: <52FC98FF.20800@ti.com>
+References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>
+	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>
+	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>
+	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>
+	 <52F10C3D.7000507@ti.com> <1391767923.4937.110.camel@mars>
+	 <52FB748E.6050007@ti.com> <52FC8A78.1050500@ti.com> <52FC98FF.20800@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Feb 2014 03:18:07 +0100
+Message-ID: <1392344287.4893.11.camel@mars>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021402-2000-0000-0000-00000FB94548
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2014 11:34 AM, Michael wang wrote:
-> On 02/12/2014 06:22 PM, Peter Zijlstra wrote:
-> [snip]
->>
->> Yes I think there might be a problem here because of how we re-arranged
->> things. Let me brew of pot of tea and try to actually wake up.
->>
->> I suspect we might be good if we clear the need_resched flags before
->> calling pick_next_task. Then any RT/DL task that gets moved here will
->> set need resched, and we'll retry the pick_next_task loop.
+On Thu, 2014-02-13 at 12:05 +0200, Tomi Valkeinen wrote:
+> On 13/02/14 11:03, Tomi Valkeinen wrote:
+> > On 12/02/14 15:18, Tomi Valkeinen wrote:
+> > 
+> >> However, I hacked together the patch below, which "fixes" the issue for
+> >> 96m and dss fclk. It sets the clock parents so that the x2 clocks are
+> >> skipped, and makes the x2 clock nodes compatible with "unused", making
+> >> them effectively disappear. I only verified dss fclk, so Christoph, can
+> >> you verify the 96m clock?
+> > 
+> > Aaand the hack patch I sent is crap... We can't skip the x2 clock path,
+> > as the dpll4_mNx2_ck clock nodes handle enable/disable bit, which is
+> > present on 3630 also.
+> > 
+> > I think the best and simplest way to fix this is by setting the
+> > multiplier in the dpll4_mNx2_mul_ck nodes to 1. I don't know why I
+> > didn't think of it yesterday.
+> > 
+> > I have a bunch of other patches needed to get the clocks right, so I'll
+> > send a series separately a bit later today.
 > 
-> That sounds better, some thing like this?
+> I just sent the "OMAP: OMAP3 DSS related clock patches" series to l-o
+> and arm lists, which hopefully solves issues discussed in this thread.
 
-Hmm... need a little adjustments, will post formal patch with some test
-later.
+Yes, thanks Tomi. I tested your patch series on a83x board. 96m clock
+and DSS-clocks are fine now. If you want, you can add my:
 
-Regards,
-Michael Wang
+ Tested-by: Christoph Fritz <chf.fritz@googlemail.com>
 
-> 
-> 
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index fb9764f..56a2e1f 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2688,8 +2688,8 @@ need_resched:
->  	if (prev->on_rq || rq->skip_clock_update < 0)
->  		update_rq_clock(rq);
->  
-> -	next = pick_next_task(rq, prev);
->  	clear_tsk_need_resched(prev);
-> +	next = pick_next_task(rq, prev);
->  	clear_preempt_need_resched();
->  	rq->skip_clock_update = 0;
->  
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 235cfa7..48a9500 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4784,7 +4784,18 @@ idle:
->  	rq->idle_stamp = rq_clock(rq);
->  	if (idle_balance(rq)) { /* drops rq->lock */
->  		rq->idle_stamp = 0;
-> -		goto again;
-> +		/*
-> +		 * Before we start to pick one of the pulled fair entities, take
-> +		 * care if some RT/DL tasks has been enqueued during the time
-> +		 * we release rq-lock inside idle_balance().
-> +		 *
-> +		 * In such cases, since clear_tsk_need_resched() was done
-> +		 * already, need_resched() will imply the request to sched-in
-> +		 * the enqueued RT/DL tasks, so don't 'goto again' to make sure
-> +		 * the priority.
-> +		 */
-> +		if (rq->nr_running == rq->cfs.h_nr_running || !need_resched())
-> +			goto again;
-> 
-> 
-> 
-> I like tea BTW, drink every day :)
-> 
-> Regards,
-> Michael Wang
-> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
+to your series "OMAP: OMAP3 DSS related clock patches".
+
+The only issue left on current mainline for a83x board is that twl4030
+(tps65920) doesn't set VIO as on next-20140120.
+
+ Thanks
+  -- Christoph
 
