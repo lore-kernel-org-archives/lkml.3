@@ -1,120 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaBNQIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 11:08:38 -0500
-Received: from n3-vm2.bullet.mail.bf1.yahoo.com ([72.30.235.214]:41745 "EHLO
-	n3-vm2.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751609AbaBNQIg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 11:08:36 -0500
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Feb 2014 11:08:36 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 582586.58959.bm@omp1039.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=E+DwmF0v3T0kvc1a/wCayopSwcbWQ8IPKszpqSrIDkw8aLvergnE22fNOsoCpXWptUjQKT9J8HIzYovunKPwyEqB1G4K6MqO86s3fAV/2w6vfiw35wetIZTeM06GCGFTq9ZNiR0m4Kkp7I6nGfjCLuKtlKTebwT2QBsyK9aeHZ0=;
-X-YMail-OSG: EehywawVM1l.KxK4xvBFX63r1WaXNxe01rHktewUZaDWGs6
- CRO3krONFpufLWwKA9YlpEYMz0GoIejn3wsT9OxDJZHWBkk3WLdBOHEC0KuL
- PBGZOMjY_tUXBEXCKfN7kZ4YmTDbuLMFmctIqEgycGAC.FpRVpHFo.ZlOnq.
- Od.YlodLT9zVHjr8TtJgIXVnegTfW0VIFmZMwy1yJ3BQFIKnH3sXOLFYgLJ9
- fB2ylZfMra2um4Y6oTJqJnmrk1c01UBPMN8WO287WQokj3rNBn4y_corLqzE
- Ks4izebuQe3RbZ8MhKn1grLB6i7ddfQfYP.d7xR6n5YZlOO7x8aJAyZyNh7f
- cFQktGF7m7TebKUsWjRwcRr66I6X0F_QlS4wgwiV0miV40aSQ84x7DrZx29Q
- 8rrSPK9Qkh.Tz1JRe5bXuuZfRPemWtAMQvc5Kfl2LZPiK3bF3RwkybCMMF4T
- G7WSXQJtGtjosSgBqW58y3Ii0jpDwsV75miXt_KRgQrFoJeZ6hsQAj_GLI09
- kRwTK2BmDOVgFyUbfR.1hN3t6tQD9f8hseb0Fze8VkI0ZEOoI9D4P5s_6wA2
- 1qw46PCAHhdVzdTSTWuDgQERoDXwLsdQwY9GMaSgpc.58cAfyQQ--
-X-Rocket-MIMEInfo: 002.001,QXMgSSBzYWlkLCBJIGRpZCBub3Qgd2FudCB0byBoZWFyIHRoYXQgImxpbnV4IGlzIG5vdCBhYm91dCBjaG9pY2UiIHRyaXBlLg0KTGludXggYW5kIGRlYmlhbiBJUyBhYm91dCBjaG9pY2UuDQoNClRoaXMgaXMgTk9UIHJlZGhhdC4NCg0KV2hlbiBzb21ldGhpbmcgaXMgY29ycmVjdCwgcHJvdmVuLCByZWxpYWJsZSwgYW5kIHNpbXBseSB3b3JrcyB0aGVyZQ0KaXMgbm8gcmVxdWlyZW1lbnQgZm9yIGEgdGVhbSBvZiBldmFuZ2lsaXN0cy4NCg0KU3lzViBpcyBwcm92ZW4uIEl0IGlzIHJlbGlhYmxlIChkb2VzIG4BMAEBAQE-
-X-Mailer: YahooMailClassic/424 YahooMailWebService/0.8.177.636
-Message-ID: <1392393752.86822.YahooMailBasic@web141705.mail.bf1.yahoo.com>
-Date: Fri, 14 Feb 2014 08:02:32 -0800 (PST)
-From: ChaosEsque Team <chaosesqueteam@yahoo.com>
-Subject: Re: Honestly, f__k systemd and f__k lennart, and f__k the fans of them. This is NOT Redhat. Linux, Debian IS about choice.
-To: Josselin Mouette <joss@debian.org>
-Cc: debian-devel@lists.debian.org, debian-project@lists.debian.org,
-        debian-vote@lists.debian.org, debian-hurd@lists.debian.org,
-        debian-kfreebsd@lists.debian.org, esr@thyrsus.com, rms@gnu.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1392386396.26492.365.camel@dsp0698014>
+	id S1752700AbaBNQJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 11:09:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48797 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBNQJd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 11:09:33 -0500
+Date: Fri, 14 Feb 2014 17:09:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: Subject: Warning in workqueue.c
+Message-ID: <20140214160923.GK27965@twins.programming.kicks-ass.net>
+References: <52F4F01C.1070800@linux.vnet.ibm.com>
+ <20140207165113.GD3304@htj.dyndns.org>
+ <52F51E10.8050208@linux.vnet.ibm.com>
+ <20140207193604.GA8833@htj.dyndns.org>
+ <52F8F0FB.3080206@linux.vnet.ibm.com>
+ <20140210231742.GK25350@mtj.dyndns.org>
+ <52FB90C6.4010701@linux.vnet.ibm.com>
+ <52FC3C83.8020303@cn.fujitsu.com>
+ <52FD07B2.5080402@linux.vnet.ibm.com>
+ <20140213204102.GC17608@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140213204102.GC17608@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I said, I did not want to hear that "linux is not about choice" tripe.
-Linux and debian IS about choice.
+On Thu, Feb 13, 2014 at 03:41:02PM -0500, Tejun Heo wrote:
+> Hello,
+> 
+> (cc'ing Ingo and Peter)
+> 
+> On Thu, Feb 13, 2014 at 12:58:10PM -0500, Jason J. Herne wrote:
+> > [ 5779.795687] ------------[ cut here ]------------
+> > [ 5779.795695] WARNING: at kernel/workqueue.c:2159
+> ....
+> > [ 5779.795844] XXX: worker->flags=0x1 pool->flags=0x0 cpu=4 pool->cpu=5(1) rescue_wq=          (null)
+> > [ 5779.795848] XXX: last_unbind=-44 last_rebind=0 last_rebound_clear=0 nr_exected_after_rebound_clear=0
+> > [ 5779.795852] XXX: sleep=-39 wakeup=0
+> > [ 5779.795855] XXX: cpus_allowed=5
+> > [ 5779.795857] XXX: cpus_allowed_after_rebinding=5
+> > [ 5779.795861] XXX: after schedule(), cpu=4
+> > 
+> > You had asked about reproducing this. This is on the S390 platform,
+> > I'm not sure if that makes any difference.
+> > 
+> > The workload is:
+> > 2 processes onlining random cpus in a tight loop by using 'echo 1 > /sys/bus/cpu.../online'
+> > 2 processes offlining random cpus in a tight loop by using 'echo 0 > /sys/bus/cpu.../online'
+> > Otherwise, fairly idle system. load average: 5.82, 6.27, 6.27
+> > 
+> > The machine has 10 processors.
+> > The warning message some times hits within a few minutes on starting
+> > the workload. Other times it takes several hours.
+> 
+> Ingo, Peter, Jason is reporting workqueue triggering warning because a
+> worker is running on the wrong CPU, which is relatively reliably
+> reproducible with the above workload on s390. 
 
-This is NOT redhat.
+Wasn't that a feature of workqueues? You know we've had arguments about
+that behaviour -- I'm strongly in favour of flushing and killing workers
+on unplug, but you let them run on the wrong cpu.
 
-When something is correct, proven, reliable, and simply works there
-is no requirement for a team of evangilists.
+So strongly in fact, I'd call the current behaviour quite insane and
+broken :-)
 
-SysV is proven. It is reliable (does not ever crash, systemd does, that is a fact).
-It is old: stable.
+> The weird thing is that
+> everything looks correct from workqueue side.  The worker has proper
+> cpus_allowed set and the CPU it's supposed to run on is online and yet
+> the worker is on the wrong CPU and even doing explicit schedule()
+> after detecting the condition doesn't change the situation.
 
-No one needs to speak for a rock. It is just there, it is self evident.
-That is SystemV.
+Yeah, just calling schedule() won't fix placement, you need to actually
+block and wake-up. But given you've called things like
+set_cpus_allowed_ptr() and such to set the mask back to 5..
 
-Your systemd needs teams and teams of people always spouting on and on
-about how great systemd is. And then you have your guys who try to make
-sure that we all run your systemd. No matter what. No matter our opinions
-or experiance.
+You can try something like the below which makes it slightly more
+aggressive about moving tasks about.
 
-SystemV stands alone.
-systemd is and must be supported by a mountain of writhing enthusiastic
-true believers.
+> Any ideas?
 
-Many of us want no part of that shifting sand.
-We like our rock, and that is what SysV is, and debian was*.
+Not really; s390 doesn't have NUMA, so all those changes are out.
 
-*Untill you came along
+---
+ kernel/sched/core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Keep that linux isn't about choice url to yourself.
-It proves about as much as that other url that's part of the systemd lovers bible.
-
-
---------------------------------------------
-On Fri, 2/14/14, Josselin Mouette <joss@debian.org> wrote:
-
- Subject: Re: Honestly, f__k systemd and f__k lennart, and f__k the fans of them. Where's linus in all of this?
- To: "ChaosEsque Team" <chaosesqueteam@yahoo.com>
- Date: Friday, February 14, 2014, 5:59 AM
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index fb9764fbc537..20bd4de44bb3 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4504,7 +4504,8 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
  
- Le vendredi 14 février 2014 à 03:42
- -0800, ChaosEsque Team a écrit : 
- > Why do 4 people get to decide to send thousands and
- thousands of people into the systemd waters?
- > This is not fair.
+ 	rq = task_rq_lock(p, &flags);
  
- 19 people contributed actively to the position statement
- asking Debian
- to pick systemd:
- https://wiki.debian.org/Debate/initsystem/systemd
- This only lists people who wanted the change enough to
- contribute
- actively, not those who sympathize with this position.
+-	if (cpumask_equal(&p->cpus_allowed, new_mask))
++	if (cpumask_equal(&p->cpus_allowed, new_mask) && 
++	    cpumask_test_cpu(rq->cpu, &p->cpus_allowed))
+ 		goto out;
  
- Only 4 contributed to the sysvinit statement (including the
- anonymous
- and bloodthirsty yourself), and only one to the upstart
- one.
- 
- > This is not-pro choice. And YES, linux, and especially
- debian IS about choice.
- > No matter what redhat and lennart fans say.
- 
- http://islinuxaboutchoice.com/
- There is not a single argument listed by ajax which does not
- apply here.
- 
- Cheers,
- -- 
-  .''`.        Josselin Mouette
- : :' :
- `. `'
-   `-
- 
- 
+ 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
+
