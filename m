@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbaBNOeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 09:34:50 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:41548 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaBNOes (ORCPT
+	id S1752996AbaBNOgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 09:36:10 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:50273 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaBNOgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 09:34:48 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Fri, 14 Feb 2014 09:36:08 -0500
+Message-ID: <52FE29DB.2010304@cogentembedded.com>
+Date: Fri, 14 Feb 2014 18:36:11 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
-Date: Fri, 14 Feb 2014 15:35:54 +0100
-Message-ID: <3333792.lJWG6KWxgS@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMuHMdUPJ_Wz85AJeYF8vnkOfjd8A7fHb45bL5-B0bAPqNHnhw@mail.gmail.com>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1392339605-20691-24-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <CAMuHMdUPJ_Wz85AJeYF8vnkOfjd8A7fHb45bL5-B0bAPqNHnhw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Subject: Re: [PATCH 26/27] ARM: shmobile: lager-reference: Enable CMT0 in
+ device tree
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <2244047.l1cecWDdMU@avalon> <52FE2498.8040609@cogentembedded.com> <2354725.yUCM3gQqXi@avalon>
+In-Reply-To: <2354725.yUCM3gQqXi@avalon>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+Hello.
 
-Thank you for the review.
+On 14-02-2014 18:22, Laurent Pinchart wrote:
 
-On Friday 14 February 2014 10:18:58 Geert Uytterhoeven wrote:
-> On Fri, Feb 14, 2014 at 2:00 AM, Laurent Pinchart wrote:
-> > +++ b/Documentation/devicetree/bindings/timer/renesas,cmt.txt
-> > @@ -0,0 +1,75 @@
-> > +* Renesas R-Car Compare Match Timer (CMT)
-> > +
-> > +The CMT is a multi-channel 16/32/48-bit timer/counter with configurable
-> > clock
-> 16-bit is mentioned here ...
-> 
-> > +inputs and programmable compare match.
-> > +
-> > +Channels share hadware resources but their counter and compare match
-> > value are
->
-> hardware
-> 
-> > +independent. A particular CMT instance can implement only a subset of the
-> > +channels supported by the CMT model. Channels indices start from 0 and
-> > are
-> 
-> Channel indices
-> 
-> > +consecutive.
-> > +
-> > +Required Properties:
-> > +
-> > +  - compatible: must contain one of the following.
-> 
-> ... why not add "renesas,cmt-16" here (and one extra line in the actual
-> driver), while you're at it?
+>>>>> Enable the CMT0 device and configure channel 0 as a clock event
+>>>>> provider.
 
-Because the 16-bit variant is only used on SuperH SoCs, so there's not much 
-point in adding DT bindings for it.
+>>>>> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-> > +    - "renesas,cmt-32" for the 32-bit CMT
-> > +               (CMT0 on sh7372, sh73a0 and r8a7740)
-> > +    - "renesas,cmt-32-fast" for the 32-bit CMT with fast clock support
-> > +               (CMT[234] on sh7372, sh73a0 and r8a7740)
-> > +    - "renasas,cmt-48" for the 48-bit CMT
-> > +               (CMT1 on sh7372, sh73a0 and r8a7740)
-> > +    - "renesas,cmt-48-gen2" for the second generation 48-bit CMT
-> > +               (CMT[01] on r8a73a4, r8a7790 and r8a7791)
+>>>>> diff --git a/arch/arm/mach-shmobile/include/mach/r8a7790.h
+>>>>> b/arch/arm/mach-shmobile/include/mach/r8a7790.h index 0b95bab..62b31f3
+>>>>> 100644 --- a/arch/arm/mach-shmobile/include/mach/r8a7790.h
+>>>>> +++ b/arch/arm/mach-shmobile/include/mach/r8a7790.h
+>>>>> @@ -29,7 +29,6 @@ enum {
+>>>>>   };
+>>>>>
+>>>>>   void r8a7790_add_standard_devices(void);
+>>>>> -void r8a7790_add_dt_devices(void);
+>>>>>   void r8a7790_clock_init(void);
+>>>>>   void r8a7790_pinmux_init(void);
+>>>>>   void r8a7790_pm_init(void);
+>>>>> diff --git a/arch/arm/mach-shmobile/setup-r8a7790.c
+>>>>> b/arch/arm/mach-shmobile/setup-r8a7790.c index 3e5813f..462c81f 100644
+>>>>> --- a/arch/arm/mach-shmobile/setup-r8a7790.c
+>>>>> +++ b/arch/arm/mach-shmobile/setup-r8a7790.c
+>>>>> @@ -294,11 +294,6 @@ static struct resource cmt0_resources[] = {
+>>>>>     					  &cmt##idx##_platform_data,	\
+>>>>>     					  sizeof(struct sh_timer_config))
+>>>>>
+>>>>> -void __init r8a7790_add_dt_devices(void)
+>>>>> -{
+>>>>> -	r8a7790_register_cmt(0);
+>>>>> -}
+>>>>> -
+>>>>>   void __init r8a7790_add_standard_devices(void)
+>>>>>   {
+>>>>>     	r8a7790_register_scif(0);
+>>>>> @@ -311,7 +306,7 @@ void __init r8a7790_add_standard_devices(void)
+>>>>>     	r8a7790_register_scif(7);
+>>>>>     	r8a7790_register_scif(8);
+>>>>>     	r8a7790_register_scif(9);
+>>>>> -	r8a7790_add_dt_devices();
+>>>>> +	r8a7790_register_cmt(0);
+>>>>>     	r8a7790_register_irqc(0);
+>>>>>     	r8a7790_register_thermal();
+>>>>>   }
+>>>>>
+>>>> IMHO, these 2 files should be split into a separate patch.
+>>>
+>>> That could easily be done, but why ?
+>>
+>> It does not seem necessary to combine these changes in one patch. Remember,
+>> Simon has separate branches for boards and SoCs. So finally it's up to him
+>> to decide on this...
 
--- 
-Regards,
+> Right, but in this case I need to remove the CMT platform device registration
+> from r8a7790_add_dt_devices()
 
-Laurent Pinchart
+    You're not removing anything in these 2 files, you're just replacing 
+"indirect" call to r8a7790_register_cmt(0) with direct.
+
+WBR, Sergei
+
