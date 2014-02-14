@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaBNTuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 14:50:52 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:58303 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaBNTut (ORCPT
+	id S1752194AbaBNT7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 14:59:16 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44281 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaBNT7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 14:50:49 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-Subject: Re: [RFC 1/6] mailbox: add core framework
-Date: Fri, 14 Feb 2014 20:48:25 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Rob Herring <robherring2@gmail.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "s-anna@ti.com" <s-anna@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "omar.ramirez@copitl.com" <omar.ramirez@copitl.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com> <1765844.1kjKsO2Rzo@wuerfel> <20140212183143.GD1706@sonymobile.com>
-In-Reply-To: <20140212183143.GD1706@sonymobile.com>
+	Fri, 14 Feb 2014 14:59:15 -0500
+Date: Fri, 14 Feb 2014 20:59:17 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Conrad Kostecki <ck@conrad-kostecki.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+In-Reply-To: <52FE6DEF.1050607@zytor.com>
+Message-ID: <alpine.DEB.2.02.1402142030240.21991@ionos.tec.linutronix.de>
+References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <52FE5D91.6060005@zytor.com> <alpine.DEB.2.02.1402141917320.21991@ionos.tec.linutronix.de> <52FE5ED4.4040508@zytor.com> <alpine.DEB.2.02.1402141924170.21991@ionos.tec.linutronix.de> <a1204336-ad8d-4f2f-8078-24f043f123e6@email.android.com>
+ <alpine.DEB.2.02.1402142013150.21991@ionos.tec.linutronix.de> <52FE6DEF.1050607@zytor.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402142048.25456.arnd@arndb.de>
-X-Provags-ID: V02:K0:r0k/7AS9Lgo6EgI9sl/+svIyf+PQtkVIDjZ1IqfaIJJ
- VOLX21ERpAw9g9l4kM70inxIe8Q600ti2s9fk6HI/H9aXIbiCx
- UTn2rfppGZzKb4xJ3eBiB1ew7ST8DSue4I8hq+cRo7NOXMcsIq
- uVg7ppDS6zp0QV+4e8FgBQdZ1qML/C5OlA7H4eF30SswvsvZH5
- sWiibzb4bD/DOO2M4FQZrbWkJJThQB16p8tEz3F18U0KRC41wj
- XeXWOvatuAjKcuqT7iedso6NKDKEIpK78ZOoSYomw6LJgqOAtB
- De9xni7ht3+yEtZBno6QQ4idfIB77aySsUFqpll0Z0ucvkDGwc
- z1OdSQ87l/BzoSMkP4zc=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 February 2014, Courtney Cavin wrote:
-> On Tue, Feb 11, 2014 at 09:35:01AM +0100, Arnd Bergmann wrote:
-> > On Monday 10 February 2014 16:23:48 Courtney Cavin wrote:
+On Fri, 14 Feb 2014, H. Peter Anvin wrote:
+> On 02/14/2014 11:15 AM, Thomas Gleixner wrote:
+> > I'm fine with ACPI tables if we can provide simple means for embedded
+> > users to load one via grub or just attach it to the kernel image.
+> 
+> That already exists, see Documentation/acpi/initrd_table_override.txt.
 
-> Then again, I think that the context management stuff is the exception as well,
-> and I think that can/should also be handled in a higher level.  Regardless, I
-> went ahead and drafted the async flags idea out anyway, so here's some
-> pseudo-code.  I also tried to shoe-horn in 'peek', and you can see how that
-> turns out.  Let me know if this is something like what you had in mind.
+That requires, that you have already ACPI tables.
 
-The async implementation looks good to me, assuming we actually need both
-sync and async operations, which I can't tell for sure.
+ACPI_SIG_RSDP cannot be overridden and that's the base table you need
+to get ACPI going in the first place. So we need support for that and
+probably for storing the tables at some non canonical place.
 
-For the peek operation, it wouldn't work for the ethernet case, which
-has to call it from atomic context in net_rx_action.
+Thanks,
 
-> 	/**
-> 	 * so this is where this lock makes things difficult, as this function
-> 	 * might_sleep(), but only really because of the lock.  Either we can
-> 	 * remove the lock and force the adapter to do its own locking
-> 	 * spinlock-style, or we can accept the sleep here, which seems a bit
-> 	 * stupid in a peek function.  Neither option is good.  Additionally,
-> 	 * there's no guarantee that the adapter doesn't operate over a bus
-> 	 * which itself might_sleep(), exacerbating the problem.
-> 	 */
-> 	mutex_lock(&mbox->adapter->lock);
-> 	rc = mbox->adapter->ops->peek_message(mbox->adapter, mbox->chan, msg);
-> 	mutex_lock(&mbox->adapter->lock);
+	tglx
 
-If we decide that peek() must not sleep, any driver that operates on a
-slow bus could just always report "no data" here.
- 
-Moving the locking into the mbox driver here sounds appropriate.
 
-	Arnd
