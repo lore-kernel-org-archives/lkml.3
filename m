@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624AbaBNQbW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 11:31:22 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53829 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751606AbaBNQbU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 11:31:20 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+PmHhnzk99T+85uA+OUQ3j
-Date: Fri, 14 Feb 2014 08:31:03 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Balaji T K <balajitk@ti.com>, Chris Ball <chris@printf.net>,
-        linux-mmc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH V2 1/2] mmc: omap_hsmmc: Add support for quirky omap3
- hsmmc controller
-Message-ID: <20140214163102.GA21592@atomide.com>
-References: <1392356749-32091-1-git-send-email-nm@ti.com>
- <1392356749-32091-2-git-send-email-nm@ti.com>
+	id S1752883AbaBNQcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 11:32:05 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:59851 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692AbaBNQcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 11:32:03 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Loseing my patience with libata and sata_nv
+Date: Fri, 14 Feb 2014 11:31:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392356749-32091-2-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402141131.48157.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140213 21:48]:
-> When device is booted using devicetree, platforms impacted by Erratum
-> 2.1.1.128 is not detected easily in the mmc driver. This erratum
-> indicates that the module cannot do multi-block transfers. Platforms
-> such as LDP which use OMAP3 ES revision prior to ES3.0 are impacted by
-> this.
-> 
-> Provide a new compatible property "ti,omap3-pre-es3-hsmmc" to allow
-> driver to determine if driver needs to implement quirks associated
-> with the specific module version (primarily because the IP revision
-> information is not sufficient for the same).
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+Which is required for my $290 ASUS M2n-SLI Deluxe motherboard to boot.
 
-Looks good to me, would be good to get this into the -rc cycle
-as LDP is one of the automated boot testing boards for us.
+Not finding the option in any kernel tree that exists on my system, 
+except it appears its been replaced or something.
 
-If you guys want me to pick up both of the patches let me know,
-otherwise feel free to add my ack.
+This once in a lifetime boot, to 3.12.9, shows from an lsmod:
+libata                146855  2 sata_nv,pata_amd
+scsi_mod              153579  4 sr_mod,sg,sd_mod,libata
 
-Regards,
+I haven't a clue how I got it in this boot, and I built it.  And 
+apparently a make oldconfig, carefully done by hand (takes about an hour
+30 to do) is not capable of adding it to a .config BECAUSE it does NOT 
+exist in any of the arch/x86/configs/i386_defconfig's present on this machine.
 
-Tony
+Here is how I searched:
+
+gene@coyote:~/src/linux-3.0.69$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.0.69$ cd ../linux-3.2.40
+gene@coyote:~/src/linux-3.2.40$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.2.40$ cd ../linux-3.4.36
+gene@coyote:~/src/linux-3.4.36$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.4.36$ cd ../linux-3.8.2
+gene@coyote:~/src/linux-3.8.2$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.8.2$ cd ../linux-3.8.3
+gene@coyote:~/src/linux-3.8.3$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.8.3$ cd ../linux-3.12.0
+gene@coyote:~/src/linux-3.12.0$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.12.0$ cd ../linux-3.12.6
+gene@coyote:~/src/linux-3.12.6$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.12.6$ cd ../linux-3.12.9
+gene@coyote:~/src/linux-3.12.9$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.12.9$ cd ../linux-3.13.1
+gene@coyote:~/src/linux-3.13.1$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.13.1$ cd ../linux-3.13.2
+gene@coyote:~/src/linux-3.13.2$ grep SATA_NV arch/x86/configs/i386_defconfig 
+gene@coyote:~/src/linux-3.13.2$ 
+
+I've been fighting with this, intermittently for about 6 months.  Except 
+for this 3.12.9 where I must have been holding my mouth right, all the
+rest are boot failures because it can't find the boot drive with so-and-so
+for a UUID. sata_nv is on the missing list, even in this WORKing boots defconfig.
+"Working" however is a miss-statement, no multimedia stuff was built.
+
+There has to be a rule I am violating, but even with Randy's D's help, it is
+not becoming obvious.  FWIW libata references also can't be found, but as 
+can be seen, its in memory right now.
+
+So please guys, what is the magic dependency that causes libata and 
+sata_nv to be included in a .config?
+
+Thanks & Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
