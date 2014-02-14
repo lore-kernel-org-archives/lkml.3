@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaBNHnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 02:43:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49896 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751638AbaBNHnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 02:43:07 -0500
-Date: Fri, 14 Feb 2014 08:43:05 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-Message-ID: <20140214074305.GF5160@quack.suse.cz>
-References: <52F88C16.70204@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
- <52F8C556.6090006@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
- <52FC6F2A.30905@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
- <52FC98A6.1000701@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
- <20140214001438.GB1651@linux.vnet.ibm.com>
- <CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752114AbaBNHrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:47:06 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:27911 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaBNHrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 02:47:03 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-84-52fdc9f5e593
+Message-id: <1392364019.29133.11.camel@AMDC1943>
+Subject: Re: [PATCH v2 07/14] regulator: s2mps11: Copy supported regulators
+ from initconst
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Date: Fri, 14 Feb 2014 08:46:59 +0100
+In-reply-to: <20140213190730.GB28112@sirena.org.uk>
+References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
+ <1392282847-25444-8-git-send-email-k.kozlowski@samsung.com>
+ <20140213190730.GB28112@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xy7pfT/4NMmiYwm6xccZ6VoupD5+w
+	WVz/8pzV4mzTG3aL+1+PMlp8u9LBZHF51xw2ixnn9zFZrD1yl93idDerxcUVX5gs5v5uZHXg
+	8dg56y67x6ZVnWwed67tYfOYdzLQo2/LKkaPz5vkAtiiuGxSUnMyy1KL9O0SuDJ272xgKzjI
+	UdF6dQljA+MVti5GTg4JAROJT02rmSBsMYkL99YDxbk4hASWMkpM6pnACuF8ZpTYvPkTSxcj
+	OwevgIFEqxtIvbBAjMT5F7NYQWw2AWOJzcuXgM0UEVCWuPp9LwtIK7PAIWaJ778PsIMkWARU
+	JVbP28sMYnMCNezdsZsdYv46oGVtU8CuYBZQl5g0bxEzxEVKErvbO9kh4vISm9e8BYvzCghK
+	/Jh8j2UCo8AsJC2zkJTNQlK2gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIfHzZwbj4
+	mNUhRgEORiUe3g93/wQJsSaWFVfmHmKU4GBWEuF13/83SIg3JbGyKrUoP76oNCe1+BAjEwen
+	VAOjLQODKNPGkGUvfA9W/9E5cl3OZfqauoPWXPOei4hxy5lqfrx+QOK9/VlBhpD6E/73a7zS
+	Gv/ZnfCbI+r6dk/b0+7mqZ2cpjHz9PoEzxilH27+Ubcn9VhTw5JtQm62LTpi1utqaiuKJKt/
+	it9VPfbSP7l57qOLX1Ja47lttruI7GDqMj+y9roSS3FGoqEWc1FxIgA2qbHFbQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-02-14 16:37:53, Linus Torvalds wrote:
-> Is this whole thread still just for the crazy and pointless
-> "max_sane_readahead()"?
+On Thu, 2014-02-13 at 19:07 +0000, Mark Brown wrote:
+> On Thu, Feb 13, 2014 at 10:14:00AM +0100, Krzysztof Kozlowski wrote:
 > 
-> Or is there some *real* reason we should care?
+> > -	for (i = 0; i < S2MPS11_REGULATOR_CNT; i++)
+> > +	s2mps11->rdev = devm_kzalloc(&pdev->dev,
+> > +			sizeof(*s2mps11->rdev)*rdev_num, GFP_KERNEL);
+> > +	if (!s2mps11->rdev)
+> > +		return -ENOMEM;
 > 
-> Because if it really is just for max_sane_readahead(), then for the
-> love of God, let us just do this
-> 
->  unsigned long max_sane_readahead(unsigned long nr)
->  {
->         return min(nr, 128);
->  }
-> 
-> and bury this whole idiotic thread.
-  max_sane_readahead() is also used for limiting amount of readahead for
-[fm]advice(2) WILLNEED and that is used e.g. by a dynamic linker to preload
-shared libraries into memory. So I'm convinced this usecase *will* notice
-the change - effectively we limit preloading of shared libraries to the
-first 512KB in the file but libraries get accessed in a rather random manner.
+> If we're using managed allocations do we actually need to keep the rdev
+> table at all?  We only normally use it to free.
 
-Maybe limits for WILLNEED and for standard readahead should be different.
-It makes sence to me and people seem to keep forgetting that
-max_sane_readahead() limits also WILLNEED preloading.
+You're right, the "s2mps11->rdev" is not needed at all.
 
-								Honza
+> 
+> > +	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata)*rdev_num, GFP_KERNEL);
+> > +	if (!rdata)
+> > +		return -ENOMEM;
+> > +
+> 
+> > +	/* rdata was needed only for of_regulator_match() during probe */
+> > +	if (rdata)
+> > +		devm_kfree(&pdev->dev, rdata);
+> > +
+> 
+> If this is always going to be freed within the probe path (in the same
+> function indeed) why is it a managed allocaton at all?
 
-> On Thu, Feb 13, 2014 at 4:14 PM, Nishanth Aravamudan
-> <nacc@linux.vnet.ibm.com> wrote:
-> >
-> > I'm working on this latter bit now. I tried to mirror ia64, but it looks
-> > like they have CONFIG_USER_PERCPU_NUMA_NODE_ID, which powerpc doesn't.
-> > It seems like CONFIG_USER_PERCPU_NUMA_NODE_ID and
-> > CONFIG_HAVE_MEMORYLESS_NODES should be tied together in Kconfig?
-> >
-> > I'll keep working, but would appreciate any further insight.
-> >
-> > -Nish
-> >
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Actually no good reason, simplifies a little the return statements on
+error conditions. I'll use kzalloc() and kfree().
+
+Best regards,
+Krzysztof
+
