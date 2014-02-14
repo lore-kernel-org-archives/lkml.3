@@ -1,102 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305AbaBNIdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:33:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50514 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751538AbaBNIdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:33:49 -0500
-Date: Fri, 14 Feb 2014 09:33:45 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the akpm-current tree with the
- cgroup tree
-Message-ID: <20140214083345.GA29814@dhcp22.suse.cz>
-References: <20140214153414.b15e54bf5aa61d0e75bacc90@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140214153414.b15e54bf5aa61d0e75bacc90@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752184AbaBNIwP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:52:15 -0500
+Received: from www84.your-server.de ([213.133.104.84]:34701 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbaBNIwI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 03:52:08 -0500
+From: Stefani Seibold <stefani@seibold.net>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v16 0/10] Add 32 bit VDSO time function support
+Date: Fri, 14 Feb 2014 09:52:34 +0100
+Message-Id: <1392367964-32118-1-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.5.4
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 14-02-14 15:34:14, Stephen Rothwell wrote:
-[...]
-> diff --cc mm/memcontrol.c
-> index d9c6ac1532e6,de1a2aed4954..000000000000
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@@ -1683,25 -1683,54 +1683,25 @@@ static void move_unlock_mem_cgroup(stru
->    */
->   void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->   {
->  -	/*
->  -	 * protects memcg_name and makes sure that parallel ooms do not
->  -	 * interleave
->  -	 */
->  +	/* oom_info_lock ensures that parallel ooms do not interleave */
-> - 	static DEFINE_SPINLOCK(oom_info_lock);
-> + 	static DEFINE_MUTEX(oom_info_lock);
->  -	struct cgroup *task_cgrp;
->  -	struct cgroup *mem_cgrp;
->  -	static char memcg_name[PATH_MAX];
->  -	int ret;
->   	struct mem_cgroup *iter;
->   	unsigned int i;
->   
->   	if (!p)
->   		return;
->   
-> - 	spin_lock(&oom_info_lock);
-> + 	mutex_lock(&oom_info_lock);
->   	rcu_read_lock();
->   
->  -	mem_cgrp = memcg->css.cgroup;
->  -	task_cgrp = task_cgroup(p, mem_cgroup_subsys_id);
->  -
->  -	ret = cgroup_path(task_cgrp, memcg_name, PATH_MAX);
->  -	if (ret < 0) {
->  -		/*
->  -		 * Unfortunately, we are unable to convert to a useful name
->  -		 * But we'll still print out the usage information
->  -		 */
->  -		rcu_read_unlock();
->  -		goto done;
->  -	}
->  -	rcu_read_unlock();
->  -
->  -	pr_info("Task in %s killed", memcg_name);
->  +	pr_info("Task in ");
->  +	pr_cont_cgroup_path(task_cgroup(p, memory_cgrp_id));
->  +	pr_info(" killed as a result of limit of ");
->  +	pr_cont_cgroup_path(memcg->css.cgroup);
->  +	pr_info("\n");
->   
->  -	rcu_read_lock();
->  -	ret = cgroup_path(mem_cgrp, memcg_name, PATH_MAX);
->  -	if (ret < 0) {
->  -		rcu_read_unlock();
->  -		goto done;
->  -	}
->   	rcu_read_unlock();
->   
->  -	/*
->  -	 * Continues from above, so we don't need an KERN_ level
->  -	 */
->  -	pr_cont(" as a result of limit of %s\n", memcg_name);
->  -done:
->  -
->   	pr_info("memory: usage %llukB, limit %llukB, failcnt %llu\n",
->   		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
->   		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
+This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
+and vdso_time() to the 32 bit VDSO.
 
-I do not see spin_unlock -> mutex_unlock at the very end of this function.
+The reason to do this was to get a fast reliable time stamp. Many developers
+uses TSC to get a fast time stamp, without knowing the pitfalls. VDSO
+time functions a fast and a reliable way, because the kernel knows the
+best time source and the P- and C-state of the CPU.
 
+The helper library to use the VDSO functions can be download at
+http://http://seibold.net/vdso.c
+The libary is very small, only 228 lines of code. Compile it with
+gcc -Wall -O3 -fpic vdso.c -lrt -shared -o libvdso.so
+and use it with LD_PRELOAD=<path>/libvdso.so
 
--- 
-Michal Hocko
-SUSE Labs
+This kind of helper must be integrated into glibc, for x86 64 bit and
+PowerPC it is already there.
+
+Some linux 32 bit kernel benchmark results (all measurements are in nano
+seconds):
+
+Intel(R) Celeron(TM) CPU 400MHz
+
+Average time kernel call:
+ gettimeofday(): 1039
+ clock_gettime(): 1578
+ time(): 526
+Average time VDSO call:
+ gettimeofday(): 378
+ clock_gettime(): 303
+ time(): 60
+
+Celeron(R) Dual-Core CPU T3100 1.90GHz
+
+Average time kernel call:
+ gettimeofday(): 209
+ clock_gettime(): 406
+ time(): 135
+Average time VDSO call:
+ gettimeofday(): 51
+ clock_gettime(): 43
+ time(): 10
+
+So you can see a performance increase between 4 and 13, depending on the
+CPU and the function.
+
+The address layout of the VDSO has changed, because there is no fixed
+address space available on a x86 32 bit kernel, despite the name. Because
+someone decided to add an offset to the __FIXADDR_TOP for virtualization.
+
+Also the IA32 Emulation uses the whole 4 GB address space, so there is no
+fixed address available.
+
+This was the reason not depend on this kind of address and change the layout
+of the VDSO. The VDSO for a 32 bit application has now three pages:
+
+^ Higher Address
+|
++----------------------------------------+
++ VDSO page (includes code) ro+x         +
++----------------------------------------+
++ VVAR page (export kernel variables) ro +
++----------------------------------------+
++ HPET page (mapped registers) ro 
++----------------------------------------+
+|
+^ Lower Address
+
+The VDSO page for a 32 bit resided still on 0xffffe000, the the VVAR and
+HPET page are mapped before.
+
+In the non compat mode the VMA of the VDSO is now 3 pages for a 32 bit kernel.
+So this decrease the available logical address room by 2 pages.
+
+The patch is against kernel 3.14 (e7651b819e90da924991d727d3c007200a18670d)
+
+Changelog:
+25.11.2012 - first release and proof of concept for linux 3.4
+11.12.2012 - Port to linux 3.7 and code cleanup
+12.12.2012 - fixes suggested by Andy Lutomirski
+           - fixes suggested by John Stultz
+           - use call VDSO32_vsyscall instead of int 80
+           - code cleanup
+17.12.2012 - support for IA32_EMULATION, this includes
+             - code cleanup
+             - include cleanup to fix compile warnings and errors
+             - move out seqcount from seqlock, enable use in VDSO
+             - map FIXMAP and HPET into the 32 bit address space
+18.12.2012 - split into separate patches
+30.01.2014 - revamp the code
+             - code clean up
+             - VDSO layout changed
+             - no fixed addresses
+             - port to 3.14
+01.02.2014 - code cleanup
+02.02.2014 - code cleanup
+             - split into more patches
+             - use HPET_COUNTER instead of hard coded value
+             - fix changelog to the right year ;-)
+02.02.2014 - reverse the mapping, this make the new VDSO 32 bit support
+             full compatible.
+03.02.2014 - code cleanup
+             - fix comment
+             - fix ABI break in vdso32.lds.S
+04.02.2014 - revamp IA32 emulation support
+             - introduce VVAR macro
+             - rearranged vsyscall_gtod_data struture for IA32 emulation support
+	     - code cleanup
+05.02.2014 - revamp IA32 emulation support
+             - replace seqcount_t by an unsigned, to make the vsyscall_gtod_data
+               structure independed of kernel config and functions.
+08.02.2014 - revamp IA32 emulation support
+             - replace all internal structures by fix size elements
+10.02.2014 - code cleanup
+             - add commets
+	     - revamp inline assembly
+12.02.2014 - add conditional fixmap of vvar and hpet pages for 32 bit kernel
+14.02.2014 - fix CONFIG_PARAVIRT_CLOCK, which is not supported in 32 bit VDSO
