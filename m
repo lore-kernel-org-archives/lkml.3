@@ -1,87 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaBNWid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 17:38:33 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:60028 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825AbaBNWic (ORCPT
+	id S1753065AbaBNWkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 17:40:35 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:50767 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825AbaBNWkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 17:38:32 -0500
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Cc: Sebastian Capella <sebastian.capella@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [PATCH v9] PM / Hibernate: use name_to_dev_t to parse resume
-Date: Fri, 14 Feb 2014 14:19:55 -0800
-Message-Id: <1392416395-26032-2-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392416395-26032-1-git-send-email-sebastian.capella@linaro.org>
-References: <1392416395-26032-1-git-send-email-sebastian.capella@linaro.org>
+	Fri, 14 Feb 2014 17:40:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392367964-32118-1-git-send-email-stefani@seibold.net>
+References: <1392367964-32118-1-git-send-email-stefani@seibold.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 14 Feb 2014 14:40:12 -0800
+Message-ID: <CALCETrWhpmixwh4z6D1vBQVWvuNvg8-iTX9Vvi1J9-YMajrDdQ@mail.gmail.com>
+Subject: Re: [PATCH v16 0/10] Add 32 bit VDSO time function support
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the name_to_dev_t call to parse the device name echo'd to
-to /sys/power/resume.  This imitates the method used in hibernate.c
-in software_resume, and allows the resume partition to be specified
-using other equivalent device formats as well.  By allowing
-/sys/debug/resume to accept the same syntax as the resume=device
-parameter, we can parse the resume=device in the init script and
-use the resume device directly from the kernel command line.
+On Fri, Feb 14, 2014 at 12:52 AM, Stefani Seibold <stefani@seibold.net> wrote:
+> This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
+> and vdso_time() to the 32 bit VDSO.
 
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
----
- kernel/power/hibernate.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+Is there any chance you can shove this in a git tree somewhere for the
+next version (in addition to sending patches)?  I don't have magic
+scripts to make pulling these things in from gmail easy.
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 0121dab..a5f702a 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -972,16 +972,20 @@ static ssize_t resume_show(struct kobject *kobj, struct kobj_attribute *attr,
- static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
- 			    const char *buf, size_t n)
- {
--	unsigned int maj, min;
- 	dev_t res;
--	int ret = -EINVAL;
-+	int len = n;
-+	char *name;
- 
--	if (sscanf(buf, "%u:%u", &maj, &min) != 2)
--		goto out;
-+	if (len && buf[len-1] == '\n')
-+		len--;
-+	name = kstrndup(buf, len, GFP_KERNEL);
-+	if (!name)
-+		return -ENOMEM;
- 
--	res = MKDEV(maj,min);
--	if (maj != MAJOR(res) || min != MINOR(res))
--		goto out;
-+	res = name_to_dev_t(name);
-+	kfree(name);
-+	if (!res)
-+		return -EINVAL;
- 
- 	lock_system_sleep();
- 	swsusp_resume_device = res;
-@@ -989,9 +993,7 @@ static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
- 	printk(KERN_INFO "PM: Starting manual resume from disk\n");
- 	noresume = 0;
- 	software_resume();
--	ret = n;
-- out:
--	return ret;
-+	return n;
- }
- 
- power_attr(resume);
+--Andy
+
+>
+> The reason to do this was to get a fast reliable time stamp. Many developers
+> uses TSC to get a fast time stamp, without knowing the pitfalls. VDSO
+> time functions a fast and a reliable way, because the kernel knows the
+> best time source and the P- and C-state of the CPU.
+>
+> The helper library to use the VDSO functions can be download at
+> http://http://seibold.net/vdso.c
+> The libary is very small, only 228 lines of code. Compile it with
+> gcc -Wall -O3 -fpic vdso.c -lrt -shared -o libvdso.so
+> and use it with LD_PRELOAD=<path>/libvdso.so
+>
+> This kind of helper must be integrated into glibc, for x86 64 bit and
+> PowerPC it is already there.
+>
+> Some linux 32 bit kernel benchmark results (all measurements are in nano
+> seconds):
+>
+> Intel(R) Celeron(TM) CPU 400MHz
+>
+> Average time kernel call:
+>  gettimeofday(): 1039
+>  clock_gettime(): 1578
+>  time(): 526
+> Average time VDSO call:
+>  gettimeofday(): 378
+>  clock_gettime(): 303
+>  time(): 60
+>
+> Celeron(R) Dual-Core CPU T3100 1.90GHz
+>
+> Average time kernel call:
+>  gettimeofday(): 209
+>  clock_gettime(): 406
+>  time(): 135
+> Average time VDSO call:
+>  gettimeofday(): 51
+>  clock_gettime(): 43
+>  time(): 10
+>
+> So you can see a performance increase between 4 and 13, depending on the
+> CPU and the function.
+>
+> The address layout of the VDSO has changed, because there is no fixed
+> address space available on a x86 32 bit kernel, despite the name. Because
+> someone decided to add an offset to the __FIXADDR_TOP for virtualization.
+>
+> Also the IA32 Emulation uses the whole 4 GB address space, so there is no
+> fixed address available.
+>
+> This was the reason not depend on this kind of address and change the layout
+> of the VDSO. The VDSO for a 32 bit application has now three pages:
+>
+> ^ Higher Address
+> |
+> +----------------------------------------+
+> + VDSO page (includes code) ro+x         +
+> +----------------------------------------+
+> + VVAR page (export kernel variables) ro +
+> +----------------------------------------+
+> + HPET page (mapped registers) ro
+> +----------------------------------------+
+> |
+> ^ Lower Address
+>
+> The VDSO page for a 32 bit resided still on 0xffffe000, the the VVAR and
+> HPET page are mapped before.
+>
+> In the non compat mode the VMA of the VDSO is now 3 pages for a 32 bit kernel.
+> So this decrease the available logical address room by 2 pages.
+>
+> The patch is against kernel 3.14 (e7651b819e90da924991d727d3c007200a18670d)
+>
+> Changelog:
+> 25.11.2012 - first release and proof of concept for linux 3.4
+> 11.12.2012 - Port to linux 3.7 and code cleanup
+> 12.12.2012 - fixes suggested by Andy Lutomirski
+>            - fixes suggested by John Stultz
+>            - use call VDSO32_vsyscall instead of int 80
+>            - code cleanup
+> 17.12.2012 - support for IA32_EMULATION, this includes
+>              - code cleanup
+>              - include cleanup to fix compile warnings and errors
+>              - move out seqcount from seqlock, enable use in VDSO
+>              - map FIXMAP and HPET into the 32 bit address space
+> 18.12.2012 - split into separate patches
+> 30.01.2014 - revamp the code
+>              - code clean up
+>              - VDSO layout changed
+>              - no fixed addresses
+>              - port to 3.14
+> 01.02.2014 - code cleanup
+> 02.02.2014 - code cleanup
+>              - split into more patches
+>              - use HPET_COUNTER instead of hard coded value
+>              - fix changelog to the right year ;-)
+> 02.02.2014 - reverse the mapping, this make the new VDSO 32 bit support
+>              full compatible.
+> 03.02.2014 - code cleanup
+>              - fix comment
+>              - fix ABI break in vdso32.lds.S
+> 04.02.2014 - revamp IA32 emulation support
+>              - introduce VVAR macro
+>              - rearranged vsyscall_gtod_data struture for IA32 emulation support
+>              - code cleanup
+> 05.02.2014 - revamp IA32 emulation support
+>              - replace seqcount_t by an unsigned, to make the vsyscall_gtod_data
+>                structure independed of kernel config and functions.
+> 08.02.2014 - revamp IA32 emulation support
+>              - replace all internal structures by fix size elements
+> 10.02.2014 - code cleanup
+>              - add commets
+>              - revamp inline assembly
+> 12.02.2014 - add conditional fixmap of vvar and hpet pages for 32 bit kernel
+> 14.02.2014 - fix CONFIG_PARAVIRT_CLOCK, which is not supported in 32 bit VDSO
+
+
+
 -- 
-1.7.9.5
-
+Andy Lutomirski
+AMA Capital Management, LLC
