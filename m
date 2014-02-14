@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaBNLPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 06:15:54 -0500
-Received: from relay.parallels.com ([195.214.232.42]:42695 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaBNLPx (ORCPT
+	id S1752334AbaBNLRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 06:17:04 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:19507 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751664AbaBNLRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 06:15:53 -0500
-Message-ID: <1392376569.5384.25.camel@tkhai>
-Subject: Re: [PATCH] sched/core: Create new task with twice disabled
- preemption
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "Martin Schwidefsky" <schwidefsky@de.ibm.com>
-Date: Fri, 14 Feb 2014 15:16:09 +0400
-In-Reply-To: <20140214105255.GA10596@arm.com>
-References: <1392306716.5384.3.camel@tkhai>
-	 <20140213160013.GE6835@laptop.programming.kicks-ass.net>
-	 <52FD01A6.8060404@yandex.ru> <20140214105255.GA10596@arm.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Fri, 14 Feb 2014 06:17:01 -0500
+Date: Fri, 14 Feb 2014 19:14:47 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: use {readl|writel}_relaxed instead of readl/writel in
+ i2c-designware-core ?
+Message-ID: <20140214191447.7b283568@xhacker>
+In-Reply-To: <8705989.qzo882Ldx0@wuerfel>
+References: <20140214155438.4f749a79@xhacker>
+	<8705989.qzo882Ldx0@wuerfel>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-14_03:2014-02-14,2014-02-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402140028
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Птн, 14/02/2014 в 10:52 +0000, Catalin Marinas пишет:
-> On Thu, Feb 13, 2014 at 09:32:22PM +0400, Kirill Tkhai wrote:
-> > On 13.02.2014 20:00, Peter Zijlstra wrote:
-> > > On Thu, Feb 13, 2014 at 07:51:56PM +0400, Kirill Tkhai wrote:
-> > >> For archs without __ARCH_WANT_UNLOCKED_CTXSW set this means
-> > >> that all newly created tasks execute finish_arch_post_lock_switch()
-> > >> and post_schedule() with preemption enabled.
-> > > 
-> > > That's IA64 and MIPS; do they have a 'good' reason to use this?
-> > 
-> > It seems my description misleads reader, I'm sorry if so.
-> > 
-> > I mean all architectures *except* IA64 and MIPS. All, which
-> > has no __ARCH_WANT_UNLOCKED_CTXSW defined.
-> > 
-> > IA64 and MIPS already have preempt_enable() in schedule_tail():
-> > 
-> > #ifdef __ARCH_WANT_UNLOCKED_CTXSW
-> >         /* In this case, finish_task_switch does not reenable preemption */
-> >         preempt_enable();
-> > #endif
-> > 
-> > Their initial preemption is not decremented in finish_lock_switch().
-> > 
-> > So, we speak about x86, ARM64 etc.
-> > 
-> > Look at ARM64's finish_arch_post_lock_switch(). It looks a task
-> > must to not be preempted between switch_mm() and this function.
-> > But in case of new task this is possible.
-> 
-> We had a thread about this at the end of last year:
-> 
-> https://lkml.org/lkml/2013/11/15/82
->
-> There is indeed a problem on arm64, something like this (and I think
-> s390 also needs a fix):
-> 
-> 1. switch_mm() via check_and_switch_context() defers the actual mm
->    switch by setting TIF_SWITCH_MM
-> 2. the context switch is considered 'done' by the kernel before
->    finish_arch_post_lock_switch() and therefore we can be preempted to a
->    new thread before finish_arch_post_lock_switch()
-> 3. The new thread has the same mm as the preempted thread but we
->    actually missed the mm switching in finish_arch_post_lock_switch()
->    because TIF_SWITCH_MM is per thread rather than mm
-> 
-> > This is the problem I tried to solve. I don't know arm64, and I can't
-> > say how it is serious.
-> 
-> Have you managed to reproduce this? I don't say it doesn't exist, but I
-> want to make sure that any patch actually fixes it.
+Dear Arnd,
 
-No, I have not tried. I found this place while analysing scheduler code.
-But it seems with the RT technics suggested previous message it's quite
-possible.
+On Fri, 14 Feb 2014 01:09:44 -0800
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-> So we have more solutions, one of the first two suitable for stable:
+> On Friday 14 February 2014 15:54:38 Jisheng Zhang wrote:
+> > Hi all,
+> > 
+> > The writel/readl is too expensive especially on Cortex A9 w/ outer L2
+> > cache. This introduce i2c read/write error on Marvell Berlin SoCs when
+> > there are L2 cache maintenance operations at the same time.
+> > 
+> > In our internal berlin bsp, we just replaced readl/writel with the relaxed
+> > version. But AFAIK, the "relaxed" version doesn't exist on all
+> > architectures. How to handle this issue? 
 > 
-> 1. Propagate the TIF_SWITCH_MM to the next thread (suggested by Martin)
-> 2. Get rid of TIF_SWITCH_MM and use mm_cpumask for tracking (I already
->    have the patch, it just needs a lot more testing)
-> 3. Re-write the ASID allocation algorithm to no longer require IPIs and
->    therefore drop finish_arch_post_lock_switch() (this can be done, so
->    pretty intrusive for stable)
-> 4. Replace finish_arch_post_lock_switch() with finish_mm_switch() as per
->    Martin's patch and I think this would guarantee a call always, we can
->    move the mm switching from switch_mm() to finish_mm_switch() and no
->    need for flags to mark deferred mm switching
+> In case of i2c-designware, this is safe because that driver does not perform
+> DMA. In other drivers, you may have to be more careful, to ensure that all
+> MMIO is serialized with DMA operations performed by the driver.
 > 
-> For arm64, we'll most likely go with 2 for stable and move to 3 shortly
-> after, no need for other deferred mm switching.
+> > Any suggestions are appreciated.
 > 
+> I would definitely welcome a patch that adds a default  _relaxed
+> implementation to include/linux/io.h, like this:
+> 
+> #ifndef readb_relaxed
+> #define readb_relaxed(p) readb(p)
+> #endif
+> 
+> and then adds "#define readb_relaxed(p) readb_relaxed(p)" etc. to all
+> architectures that have a non-macro definition for readb.
 
-It's good, but one of architectures is a corner case. It seems to me
-it's better to have the same enviroment/preemption for the first schedule
-and for others.
+Thanks for the suggestions. I'll try to send out one RFC patch.
 
-This minimises the number of rare errors and this may help in the future.
-The first schedule happens rare and it's tested worse.
-
-Kirill
-
+Thanks,
+Jisheng
