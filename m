@@ -1,57 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaBNNRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:17:09 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41655 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584AbaBNNRG convert rfc822-to-8bit (ORCPT
+	id S1752619AbaBNNRz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:17:55 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:55783 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584AbaBNNRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:17:06 -0500
-Date: Fri, 14 Feb 2014 14:17:05 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: linux-rt-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>
-Subject: Re: [PATCH RT 4/5] allow preemption in
- mem_cgroup_move_account_page_stat
-Message-ID: <20140214131705.GF28438@linutronix.de>
-References: <20140210153933.GE20017@opentech.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140210153933.GE20017@opentech.at>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Feb 2014 08:17:53 -0500
+From: Marek Belisko <marek@goldelico.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux@arm.linux.org.uk, grant.likely@linaro.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        hns@goldelico.com, Marek Belisko <marek@goldelico.com>
+Subject: [PATCH 1/2] mfd: twl4030-madc: Add devicetree support.
+Date: Fri, 14 Feb 2014 14:17:40 +0100
+Message-Id: <1392383861-14169-1-git-send-email-marek@goldelico.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nicholas Mc Guire | 2014-02-10 16:39:33 [+0100]:
+Signed-off-by: Marek Belisko <marek@goldelico.com>
+---
+ .../devicetree/bindings/mfd/twl4030-madc.txt       | 18 +++++++++++++
+ drivers/mfd/twl4030-madc.c                         | 31 ++++++++++++++++++++--
+ 2 files changed, 47 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl4030-madc.txt
 
->index a67e630f..e7cc35a 100644
->--- a/mm/memcontrol.c
->+++ b/mm/memcontrol.c
->@@ -3784,10 +3784,10 @@ void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
-> 					enum mem_cgroup_stat_index idx)
-> {
-> 	/* Update stat data for mem_cgroup */
->-	preempt_disable();
->+	migrate_disable();
-> 	__this_cpu_sub(from->stat->count[idx], nr_pages);
-> 	__this_cpu_add(to->stat->count[idx], nr_pages);
->-	preempt_enable();
->+	migrate_enable();
-> }
+diff --git a/Documentation/devicetree/bindings/mfd/twl4030-madc.txt b/Documentation/devicetree/bindings/mfd/twl4030-madc.txt
+new file mode 100644
+index 0000000..9df66ab
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/twl4030-madc.txt
+@@ -0,0 +1,18 @@
++Texas Instruments TWL family (twl4030) analog signal conversion monitor module
++
++Required properties:
++- compatible : must be "ti,twl4030-madc"
++- interrupts : interrupt number
++
++Example:
++twl: twl@48 {
++	reg = <0x48>;
++	interrupts = <7>; /* SYS_NIRQ cascaded to intc */
++	interrupt-parent = <&intc>;
++
++	twl_madc: madc {
++		compatible = "ti,twl4030-madc";
++		interrupts = <1>;
++	};
++};
++
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+index 4c583e4..9a2bbcf 100644
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -695,6 +695,29 @@ static int twl4030_madc_set_power(struct twl4030_madc_data *madc, int on)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static struct twl4030_madc_platform_data *
++	twl4030_madc_of_parse(struct platform_device *pdev)
++{
++	struct twl4030_madc_platform_data *pdata;
++
++	pdata = devm_kzalloc(&pdev->dev,
++			sizeof(struct twl4030_madc_platform_data), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	pdata->irq_line = platform_get_irq(pdev, 0);
++
++	return pdata;
++}
++
++static const struct of_device_id twl4030_madc_dt_match_table[] = {
++	{ .compatible = "ti,twl4030-madc" },
++	{},
++};
++
++#endif
++
+ /*
+  * Initialize MADC and request for threaded irq
+  */
+@@ -706,8 +729,11 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+ 	u8 regval;
+ 
+ 	if (!pdata) {
+-		dev_err(&pdev->dev, "platform_data not available\n");
+-		return -EINVAL;
++		pdata = twl4030_madc_of_parse(pdev);
++		if (!pdata) {
++			dev_err(&pdev->dev, "platform_data not available\n");
++			return -EINVAL;
++		}
+ 	}
+ 	madc = kzalloc(sizeof(*madc), GFP_KERNEL);
+ 	if (!madc)
+@@ -807,6 +833,7 @@ static struct platform_driver twl4030_madc_driver = {
+ 	.driver = {
+ 		   .name = "twl4030_madc",
+ 		   .owner = THIS_MODULE,
++		   .of_match_table = of_match_ptr(twl4030_madc_dt_match_table),
+ 		   },
+ };
+ 
+-- 
+1.8.3.2
 
-Now, that I look at it again. Isn't it more efficient to keep preemption
-disabled for this very short time instead instead of invoking
-migrate_disable() which includes preempt_disable()/enable() and a few
-more opcodes…
-Therefore, I drop it again.
-
-Sebastian
