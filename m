@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaBNEbW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:31:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48166 "EHLO
+	id S1752214AbaBNEbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:31:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48177 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512AbaBNEbU (ORCPT
+	with ESMTP id S1751512AbaBNEba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:31:20 -0500
-Date: Thu, 13 Feb 2014 20:31:09 -0800
+	Thu, 13 Feb 2014 23:31:30 -0500
+Date: Thu, 13 Feb 2014 20:31:20 -0800
 From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-58edae3aac9f2ccd1afb12ea08127e840a0a706c@git.kernel.org>
+Message-ID: <tip-77ab21adae509c5540956729e2d03bc1a59bc82a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1391846481-31491-6-git-send-email-ak@linux.intel.com>
-References: <1391846481-31491-6-git-send-email-ak@linux.intel.com>
+In-Reply-To: <1391846481-31491-7-git-send-email-ak@linux.intel.com>
+References: <1391846481-31491-7-git-send-email-ak@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asmlinkage] lto: Disable LTO for sys_ni
-Git-Commit-ID: 58edae3aac9f2ccd1afb12ea08127e840a0a706c
+Subject: [tip:x86/asmlinkage] Kbuild, lto, workaround: Don'
+ t warn for initcall_reference in modpost
+Git-Commit-ID: 77ab21adae509c5540956729e2d03bc1a59bc82a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,41 +28,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 13 Feb 2014 20:31:15 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 13 Feb 2014 20:31:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  58edae3aac9f2ccd1afb12ea08127e840a0a706c
-Gitweb:     http://git.kernel.org/tip/58edae3aac9f2ccd1afb12ea08127e840a0a706c
+Commit-ID:  77ab21adae509c5540956729e2d03bc1a59bc82a
+Gitweb:     http://git.kernel.org/tip/77ab21adae509c5540956729e2d03bc1a59bc82a
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Sat, 8 Feb 2014 09:01:10 +0100
+AuthorDate: Sat, 8 Feb 2014 09:01:11 +0100
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 13 Feb 2014 20:24:53 -0800
+CommitDate: Thu, 13 Feb 2014 20:24:56 -0800
 
-lto: Disable LTO for sys_ni
+Kbuild, lto, workaround: Don't warn for initcall_reference in modpost
 
-The assembler alias code in cond_syscall does not work
-when compiled for LTO. Just disable LTO for that file.
+This reference is discarded, but can cause warnings when it refers to
+exit. Ignore for now.
+
+This is a workaround and can be removed once we get rid of
+-fno-toplevel-reorder
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1391846481-31491-6-git-send-email-ak@linux.intel.com
+Link: http://lkml.kernel.org/r/1391846481-31491-7-git-send-email-ak@linux.intel.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- kernel/Makefile | 3 +++
- 1 file changed, 3 insertions(+)
+ scripts/mod/modpost.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index bc010ee..31c26c6 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -18,6 +18,9 @@ CFLAGS_REMOVE_cgroup-debug.o = -pg
- CFLAGS_REMOVE_irq_work.o = -pg
- endif
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 4061098..1f1b154 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -1455,6 +1455,10 @@ static void check_section_mismatch(const char *modname, struct elf_info *elf,
+ 		to = find_elf_symbol(elf, r->r_addend, sym);
+ 		tosym = sym_name(elf, to);
  
-+# cond_syscall is currently not LTO compatible
-+CFLAGS_sys_ni.o = $(DISABLE_LTO)
++		if (!strncmp(fromsym, "reference___initcall",
++				sizeof("reference___initcall")-1))
++			return;
 +
- obj-y += sched/
- obj-y += locking/
- obj-y += power/
+ 		/* check whitelist - we may ignore it */
+ 		if (secref_whitelist(mismatch,
+ 					fromsec, fromsym, tosec, tosym)) {
