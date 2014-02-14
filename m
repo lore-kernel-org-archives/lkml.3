@@ -1,104 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669AbaBNU04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:26:56 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:44974 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691AbaBNU0w (ORCPT
+	id S1753476AbaBNU0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:26:38 -0500
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:47242 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753280AbaBNUUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:26:52 -0500
-Date: Fri, 14 Feb 2014 13:26:43 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Tony Luck <tony.luck@intel.com>, Dave Airlie <airlied@redhat.com>,
-        Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-        "linux-pci @ vger . kernel . org" <linux-pci@vger.kernel.org>,
-        linux-ia64@vger.kernel.org
-Subject: Re: [PATCH v2] Setting the IORESOURCE_ROM_SHADOW flag on a VGA card
- other than the primary prevents it from reading it's own rom. It will get
- the content of the shadowrom at C000 instead, which is of the primary VGA
- card and the driver of the secondary card will bail out.
-Message-ID: <20140214202643.GF31093@google.com>
-References: <20140130000831.GJ16825@google.com>
- <1391160503-11122-1-git-send-email-linux@eikelenboom.it>
- <20140203145205.GB2992@phenom.dumpdata.com>
- <939539486.20140213104824@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <939539486.20140213104824@eikelenboom.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Feb 2014 15:20:19 -0500
+Message-Id: <20140214201907.330335883@linux.com>
+Date: Fri, 14 Feb 2014 14:19:13 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 32/48] arm: Replace __this_cpu_ptr with raw_cpu_ptr
+References: <20140214201841.826179349@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=this_arm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 10:48:24AM +0100, Sander Eikelenboom wrote:
-> Hi Bjorn,
-> 
-> I have given it another email and another week, but without gaining any reviewed or acked-by's.
-> It seems the only way forward is to shovel it in linux-next earlier, give it a good soak and see if
-> anyone starts to squeal .. or that everything seems to be ok :-)
-> 
-> Would you need a v3 with the acked and reviewed-by from Konrad for x86 in it ?
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-No need, I applied this to my pci/misc branch for v3.15.
+__this_cpu_ptr is being phased out. So replace with raw_cpu_ptr.
 
-Tony, let me know if you have any issues with this.
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+CC: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Bjorn
+Index: linux/arch/arm/kernel/smp_twd.c
+===================================================================
+--- linux.orig/arch/arm/kernel/smp_twd.c	2013-12-02 16:07:57.604416529 -0600
++++ linux/arch/arm/kernel/smp_twd.c	2013-12-02 16:07:57.604416529 -0600
+@@ -92,7 +92,7 @@ static int twd_timer_ack(void)
+ 
+ static void twd_timer_stop(void)
+ {
+-	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
++	struct clock_event_device *clk = raw_cpu_ptr(twd_evt);
+ 
+ 	twd_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
+ 	disable_percpu_irq(clk->irq);
+@@ -108,7 +108,7 @@ static void twd_update_frequency(void *n
+ {
+ 	twd_timer_rate = *((unsigned long *) new_rate);
+ 
+-	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
++	clockevents_update_freq(raw_cpu_ptr(twd_evt), twd_timer_rate);
+ }
+ 
+ static int twd_rate_change(struct notifier_block *nb,
+@@ -134,7 +134,7 @@ static struct notifier_block twd_clk_nb
+ 
+ static int twd_clk_init(void)
+ {
+-	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
++	if (twd_evt && raw_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
+ 		return clk_notifier_register(twd_clk, &twd_clk_nb);
+ 
+ 	return 0;
+@@ -153,7 +153,7 @@ static void twd_update_frequency(void *d
+ {
+ 	twd_timer_rate = clk_get_rate(twd_clk);
+ 
+-	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
++	clockevents_update_freq(raw_cpu_ptr(twd_evt), twd_timer_rate);
+ }
+ 
+ static int twd_cpufreq_transition(struct notifier_block *nb,
+@@ -179,7 +179,7 @@ static struct notifier_block twd_cpufreq
+ 
+ static int twd_cpufreq_init(void)
+ {
+-	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
++	if (twd_evt && raw_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
+ 		return cpufreq_register_notifier(&twd_cpufreq_nb,
+ 			CPUFREQ_TRANSITION_NOTIFIER);
+ 
+@@ -269,7 +269,7 @@ static void twd_get_clock(struct device_
+  */
+ static void twd_timer_setup(void)
+ {
+-	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
++	struct clock_event_device *clk = raw_cpu_ptr(twd_evt);
+ 	int cpu = smp_processor_id();
+ 
+ 	/*
+Index: linux/arch/arm/mach-msm/timer.c
+===================================================================
+--- linux.orig/arch/arm/mach-msm/timer.c	2013-12-02 16:07:57.604416529 -0600
++++ linux/arch/arm/mach-msm/timer.c	2013-12-02 16:07:57.604416529 -0600
+@@ -221,7 +221,7 @@ static void __init msm_timer_init(u32 dg
+ 		}
+ 
+ 		/* Immediately configure the timer on the boot CPU */
+-		msm_local_timer_setup(__this_cpu_ptr(msm_evt));
++		msm_local_timer_setup(raw_cpu_ptr(msm_evt));
+ 	}
+ 
+ err:
 
-> Monday, February 3, 2014, 3:52:05 PM, you wrote:
-> 
-> > On Fri, Jan 31, 2014 at 10:28:22AM +0100, Sander Eikelenboom wrote:
-> >> Hi Bjorn / Tony,
-> >> 
-> >> I fixed up ia64 as well and brought it inline again with the x86 code,
-> >> but i don't have a ia64 machine, so that part is untested.
-> >> Perhaps Tony is able to review/test it ?
-> >> 
-> >> Sander
-> >> 
-> >> 
-> >> 
-> >> Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary
-> >> prevents it from reading it's own rom. It will get the content of the shadowrom
-> >> at C000 instead, which is of the primary VGA card and the driver of the
-> >> secondary card will bail out.
-> >> 
-> >> Fix this by checking if the arch code or vga-arbitration has already
-> >> determined the vga_default_device, if so only apply the fix to this
-> >> primary video device and let the comment reflect this.
-> >> 
-> >> v2:
-> >>     - Fix pci_fixup_video both in x86 and ia64
-> >> 
-> >> 
-> >> Sander Eikelenboom (1):
-> >>   Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the
-> >>     primary     prevents it from reading it's own rom. It will get the
-> >>     content of the shadowrom     at C000 instead, which is of the
-> >>     primary VGA card and the driver of the     secondary card will bail
-> >>     out.
-> 
-> > Your editor mutilated your subject line. It ought to have been just
-> > one line.
-> 
-> > Anyhow, you can also add 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com'
-> > on the patch for the x86 part.
-> 
-> > The ia64 "looks" OK to me, but my ia64 box won't boot v3.11 or later
-> > so I can't give it a 'Tested-by' yet.
-> 
-> >> 
-> >>  arch/ia64/pci/fixup.c |   24 +++++++++++++-----------
-> >>  arch/x86/pci/fixup.c  |   18 ++++++++++--------
-> >>  2 files changed, 23 insertions(+), 19 deletions(-)
-> >> 
-> >> -- 
-> >> 1.7.10.4
-> >> 
-> 
-> 
