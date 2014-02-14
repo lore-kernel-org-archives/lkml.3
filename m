@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687AbaBNCmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 21:42:25 -0500
-Received: from ozlabs.org ([203.10.76.45]:33090 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987AbaBNCmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 21:42:24 -0500
-Date: Fri, 14 Feb 2014 13:42:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the mfd-lj tree
-Message-Id: <20140214134217.aa7e1994b4cab7ee563c8307@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Feb_2014_13_42_17_+1100_fXIOBl3zUsoz8i+L"
+	id S1751538AbaBNCvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 21:51:20 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:62895 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089AbaBNCvT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 21:51:19 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52FD84A6.9000400@roeck-us.net>
+Date: Thu, 13 Feb 2014 18:51:18 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>, Jean Delvare <jdelvare@suse.de>
+CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon: (ntc_thermistor): Avoid overflow
+References: <1392331174-12271-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1392331174-12271-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Feb_2014_13_42_17_+1100_fXIOBl3zUsoz8i+L
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/13/2014 02:39 PM, Doug Anderson wrote:
+> The ntc thermistor code was doing math whose temporary result might
+> have overflowed 32-bits.  We need some casts in there to make it safe.
+>
+> In one example I found:
+> - pullup_uV: 1800000
+> - result of iio_read_channel_raw: 3226
+> - 1800000 * 3226 => 0x15a1cbc80
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Hi Lee,
+Nice catch. Applied.
 
-After merging the mfd-lj tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Thanks,
+Guenter
 
-In file included from drivers/mfd/max665x.c:19:0:
-include/linux/mfd/max665x-private.h:31:1: error: expected ';', identifier o=
-r '(' before 'struct'
- struct max665x_dev {
- ^
 
-Caused by commit e77bb5297293 ("mfd: max665x: Differentiate between
-MAX665X devices").  Clearly never built by anyone :-(
-
-I have used the mfd-lj tree from next-20140210 again for today (since the
-other version had other problems).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__14_Feb_2014_13_42_17_+1100_fXIOBl3zUsoz8i+L
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS/YKNAAoJEMDTa8Ir7ZwVxmgP/A7QEEAcIiSSDFvxD3SHjDve
-xM64gPzTH7jQ5l+9wmxfeSx9YVn51nm3ySF3K29elvPfGHHQC65kd2B2sYeayTq7
-4cnWWLDuKmYkfFpCIWOUd+NGIaO7FkYReP5YnXwsJ/QdwnVU9q0jjfFfa3WoO6I0
-Aq+N/LhMKMmYQEMuf/2/0p9qLJT3NU8sQn03bsRRctCWNCIU3+bDBzafjw+Eqo3f
-il6NbnNDMHjcZwJ+guDWs3XvU/12N1eQMoHVEC3dgRuo1MAg5RGHt+IRP+4uQVUm
-z5/63AuIWcCz00r8NEfnROMfmac4rrFvnZKIv4obsIsBCpOtP3q5VsxQCzFMwbf1
-SVsgjcayEdJu4eVMdTykky7UyGHiPQ1r4LLihCK/6pr8vOpeuExHtQt/mMkWFhVn
-4+emwB8qRzxp9jmWfraLkc3tl2u9iKNPiMZXT6YxCibN473wxMlXS+2XR6DVRne2
-PAOlVvfNM771FR6uotO1DiafXPxgH89jHTzQ4/8e1k4+joy5N3/AVFeYMvIDRFqo
-pGAo6S9y2GW0EFQIoUZDIj9OnkDkEG8ac86Ut7FetnmGNxU+DAS6y3CXIHPzdaS4
-HFQCq/afyQ4kp8p7lePZUl1WMbxQuR1BsXK1k9TNYarLzTp4Aubfpkh5fLqdIj7F
-wM+ROgx1xhzMK0XP7rnF
-=9wxA
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Feb_2014_13_42_17_+1100_fXIOBl3zUsoz8i+L--
