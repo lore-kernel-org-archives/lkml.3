@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbaBNG7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 01:59:45 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:46386 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaBNG51 (ORCPT
+	id S1751824AbaBNHDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:03:30 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:58320 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135AbaBNHD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 01:57:27 -0500
-X-AuditID: 9c93017d-b7c89ae000006ae1-e0-52fdbe54da98
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 3/9] slab: move up code to get kmem_cache_node in free_block()
-Date: Fri, 14 Feb 2014 15:57:17 +0900
-Message-Id: <1392361043-22420-4-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392361043-22420-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1392361043-22420-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 14 Feb 2014 02:03:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140213124002.GA3403@lee--X1>
+References: <1392281438-31836-1-git-send-email-lpapp@kde.org>
+	<20140213095817.GD32508@lee--X1>
+	<20140213111530.2a2b4982@endymion.delvare>
+	<CAOMwXhML8LvDCzmk1ZVT+7cARj9C3VtxERWBgOPM9vTc6qQXZQ@mail.gmail.com>
+	<CAOMwXhOv-as1W69wcSno49jEXsXWZZ7odnu8og-vgnDwRTJ4sA@mail.gmail.com>
+	<20140213113313.GL32508@lee--X1>
+	<CAOMwXhMNHqXnzR0YHF9rx710JbaL3YFn=3cLf_WdNkCx7hbZug@mail.gmail.com>
+	<20140213124002.GA3403@lee--X1>
+Date: Fri, 14 Feb 2014 07:03:28 +0000
+X-Google-Sender-Auth: e4ao23iAKKgr8b7lkEgOmRb75hk
+Message-ID: <CAOMwXhPwppZ6Ne4TjR9Ys+ttST2r85j1GsLdxfq67svZSuVHFg@mail.gmail.com>
+Subject: Re: [lm-sensors] [RFC PATCH] hwmon: (max6650) Convert to be a
+ platform driver
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, Guenter Roeck <linux@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-node isn't changed, so we don't need to retreive this structure
-everytime we move the object. Maybe compiler do this optimization,
-but making it explicitly is better.
+On Thu, Feb 13, 2014 at 12:40 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> http://comments.gmane.org/gmane.linux.kernel/1645251
+>>
+>> Step 2 did not happen. I did not get any review for my change. I
+>> literally submitted that within a couple of hours after the request.
+>>
+>> Could you please tell me what was wrong with that change, and why I
+>> did not get any respect not to "xargs rm -rf" my work in that area? I
+>> believe I was ignored instead of improving the change, and someone
+>> else tried to address the same thing. There was no argument in that
+>> thread. It was a technical change. I personally do not feel happy
+>> about it.
+>
+> Let's start again.
+>
+> Rebase your work on top of the HWMON tree on kernel.org and resubmit
+> the entire set. If rebasing takes you more than 20 mins, you're
+> probably doing it wrong.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 6d17cad..53d1a36 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3361,6 +3361,7 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
- 	int i;
- 	struct kmem_cache_node *n;
- 
-+	n = cachep->node[node];
- 	for (i = 0; i < nr_objects; i++) {
- 		void *objp;
- 		struct page *page;
-@@ -3368,7 +3369,6 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
- 		objp = clear_obj_pfmemalloc(objpp[i]);
- 
- 		page = virt_to_head_page(objp);
--		n = cachep->node[node];
- 		list_del(&page->lru);
- 		check_spinlock_acquired_node(cachep, node);
- 		slab_put_obj(cachep, page, objp, node);
--- 
-1.7.9.5
-
+I tried, but I could not manage it within 20 minutes, so I guess I am
+doing something wrong. Can you please provide some pointers how not to
+do it wrong? Perhaps, I am not aware of some tricks.
