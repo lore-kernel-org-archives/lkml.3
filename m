@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854AbaBNEx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:53:29 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:65003 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaBNEx1 (ORCPT
+	id S1752045AbaBNEyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:54:47 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:39547 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaBNEyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:53:27 -0500
+	Thu, 13 Feb 2014 23:54:46 -0500
+Message-ID: <52FDA18D.40100@linux.vnet.ibm.com>
+Date: Fri, 14 Feb 2014 12:54:37 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAKYAXd_EYrfF0iQVw5FJRHkGCeMTUoQdx+BogV+-g9vqXeGZdw@mail.gmail.com>
-References: <1387953065-2726-1-git-send-email-linkinjeon@gmail.com>
-	<87mwi8x27b.fsf@devron.myhome.or.jp>
-	<CAKYAXd_EYrfF0iQVw5FJRHkGCeMTUoQdx+BogV+-g9vqXeGZdw@mail.gmail.com>
-Date: Fri, 14 Feb 2014 13:53:26 +0900
-Message-ID: <CAKYAXd80BFUMGYrON22Ui4xSMaxNJaHD1ss8bMVgdQqC4xG48A@mail.gmail.com>
-Subject: Re: [PATCH v3 2/6] fat: add fat_fallocate operation
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] sched: make sure sched-priority after invoke idle_balance()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021404-2674-0000-0000-00000CB688CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> [...]
->>
->>> +		/* Release unwritten fallocated blocks on inode eviction. */
->>> +		if (MSDOS_I(inode)->mmu_private < MSDOS_I(inode)->i_disksize) {
->>> +			int err;
->>> +			fat_truncate_blocks(inode, MSDOS_I(inode)->mmu_private);
->>> +			/* Fallocate results in updating the i_start/iogstart
->>> +			 * for the zero byte file. So, make it return to
->>> +			 * original state during evict and commit it
->>> +			 * synchrnously to avoid any corruption on the next
->>> +			 * access to the cluster chain for the file.
->>> +			 */
->>> +			err = fat_sync_inode(inode);
->>
->> Ah, good catch. We have to update i_size. I was forgetting about this.
->> Well, sync inode unconditionally would not be good. Maybe, we better to
->> use __fat_write_inode() with inode_needs_sync() or such.
-> Okay, I will change it.
-Hi OGAWA
+Since idle_balance() will release rq-lock for a while, there is a chance that
+RT/DL tasks will be enqueued and ask for the resched, the func used to be
+invoked ahead of pick_next_task(), which will make sure we drop into the
+bottom-half inside pick_next_task().
 
-When I checked more, we should wait till inode is sync. Because in the
-eviction it will leave the inode/buffers being marked dirty.
-Not waiting for it get sync over here. It will leave cluster chain
-corrupted when remounting.
-It mean we cannot use __fat_write_inode with inode_needs_sync() conditionally.
+Now since idle_balance() was done inside pick_next_task_fair(), pick_next_task()
+can no longer make sure the priority, the worst case is that we will going to
+pick the pulled fair task while there is RT/DL on rq which actually should be
+picked up.
 
-Thanks.
->
-> Thanks.
->> --
->> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->>
->
+This patch will prevent this happen by some rechecking after idle_balance(), it
+utilize the resched-flag for the case when RT/DL task was enqueued but don't ask
+for resched (will that ever happened?).
+
+CC: Ingo Molnar <mingo@kernel.org>
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ kernel/sched/fair.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 235cfa7..ce67514 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4776,6 +4776,16 @@ simple:
+ 
+ idle:
+ #ifdef CONFIG_SMP
++	/*
++	 * We came here only when there is no more tasks on rq (top-half of
++	 * pick_next_task()), and we are now going to pull some fair entities.
++	 *
++	 * Since prev is still the current on rq, clear it's resched-flag so
++	 * we would be able to know when we got a new resched-request during
++	 * idle_balance(), check below for more details.
++	 */
++	clear_tsk_need_resched(prev);
++
+ 	idle_enter_fair(rq);
+ 	/*
+ 	 * We must set idle_stamp _before_ calling idle_balance(), such that we
+@@ -4784,7 +4794,18 @@ idle:
+ 	rq->idle_stamp = rq_clock(rq);
+ 	if (idle_balance(rq)) { /* drops rq->lock */
+ 		rq->idle_stamp = 0;
+-		goto again;
++		/*
++		 * Before we start to pick one of the pulled fair entities, take
++		 * care if some RT/DL tasks has been enqueued during the time
++		 * we release rq-lock inside idle_balance().
++		 *
++		 * In such cases, since clear_tsk_need_resched() was done
++		 * already, need_resched() will imply the request to sched-in
++		 * the enqueued RT/DL tasks, so don't 'goto again' to make sure
++		 * the priority.
++		 */
++		if (rq->nr_running == rq->cfs.h_nr_running || !need_resched())
++			goto again;
+ 	}
+ #endif
+ 
+-- 
+1.7.9.5
+
