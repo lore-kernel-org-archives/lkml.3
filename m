@@ -1,174 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832AbaBNVSC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 16:18:02 -0500
-Received: from mga09.intel.com ([134.134.136.24]:52266 "EHLO mga09.intel.com"
+	id S1752939AbaBNVSq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 16:18:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58942 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779AbaBNVR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 16:17:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,847,1384329600"; 
-   d="scan'208";a="475471036"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-kbuild@vger.kernel.org, mmarek@suse.cz,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/6] kbuild: Remove relocations from kallsyms table
-Date: Fri, 14 Feb 2014 22:17:04 +0100
-Message-Id: <1392412629-25666-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1392412629-25666-1-git-send-email-andi@firstfloor.org>
-References: <1392412629-25666-1-git-send-email-andi@firstfloor.org>
+	id S1752800AbaBNVSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 16:18:43 -0500
+Message-ID: <52FE8817.4000504@zytor.com>
+Date: Fri, 14 Feb 2014 13:18:15 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Conrad Kostecki <ck@conrad-kostecki.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Renninger <trenn@suse.de>
+Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5D91.6060005@zytor.com> <alpine.DEB.2.02.1402141917320.21991@ionos.tec.linutronix.de> <52FE5ED4.4040508@zytor.com> <alpine.DEB.2.02.1402141924170.21991@ionos.tec.linutronix.de> <a1204336-ad8d-4f2f-8078-24f043f123e6@email.android.com> <alpine.DEB.2.02.1402142013150.21991@ionos.tec.linutronix.de> <52FE6DEF.1050607@zytor.com> <alpine.DEB.2.02.1402142030240.21991@ionos.tec.linutronix.de> <52FE7738.6040009@zytor.com> <alpine.DEB.2.02.1402142140430.21991@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402142140430.21991@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 02/14/2014 01:16 PM, Thomas Gleixner wrote:
+>>
+>> Well, the RSDP and RSDT/XSDT are nothing but pointers to other tables,
+>> so if explicitly overridden I'm not sure if one actually would need
+>> them.  That doesn't mean our current code will work without them, though.
+> 
+> I tried once to overload all of the tables, but failed miserably in
+> the ACPI dungeon. RSDP was the major pain point IIRC.
+> 
 
-Remove the ELF relocations from the kallsyms_address[] table.
-Instead we just store offsets to _text and relocate that while
-accessing the kallsyms table. This is done with a new
-kallsyms_offsets[] table. With these changes .tmp_kallsyms*.o
-becomes relocation free.
+I suspect we need to handle the RSDP and RSDT/XSDT specially, since,
+again, they are really just pointers to where to find the other tables.
+ They are part of the discovery, not the data.
 
-In theory this would also allow to shrink the kallsyms table
-on 64bit by using offsets.
+	-hpa
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- kernel/kallsyms.c  | 27 ++++++++++++++++-----------
- scripts/kallsyms.c | 18 ++++++------------
- 2 files changed, 22 insertions(+), 23 deletions(-)
-
-diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-index 3127ad5..e7d7844 100644
---- a/kernel/kallsyms.c
-+++ b/kernel/kallsyms.c
-@@ -36,7 +36,7 @@
-  * These will be re-linked against their real values
-  * during the second link stage.
-  */
--extern const unsigned long kallsyms_addresses[] __attribute__((weak));
-+extern const long kallsyms_offsets[] __attribute__((weak));
- extern const u8 kallsyms_names[] __attribute__((weak));
- 
- /*
-@@ -51,6 +51,11 @@ extern const u16 kallsyms_token_index[] __attribute__((weak));
- 
- extern const unsigned long kallsyms_markers[] __attribute__((weak));
- 
-+static inline unsigned long kallsyms_address(int ind)
-+{
-+	return (unsigned long)RELOC_HIDE(&_text, kallsyms_offsets[ind]);
-+}
-+
- static inline int is_kernel_inittext(unsigned long addr)
- {
- 	if (addr >= (unsigned long)_sinittext
-@@ -186,7 +191,7 @@ unsigned long kallsyms_lookup_name(const char *name)
- 		off = kallsyms_expand_symbol(off, namebuf, ARRAY_SIZE(namebuf));
- 
- 		if (strcmp(namebuf, name) == 0)
--			return kallsyms_addresses[i];
-+			return kallsyms_address(i);
- 	}
- 	return module_kallsyms_lookup_name(name);
- }
-@@ -203,7 +208,7 @@ int kallsyms_on_each_symbol(int (*fn)(void *, const char *, struct module *,
- 
- 	for (i = 0, off = 0; i < kallsyms_num_syms; i++) {
- 		off = kallsyms_expand_symbol(off, namebuf, ARRAY_SIZE(namebuf));
--		ret = fn(data, namebuf, NULL, kallsyms_addresses[i]);
-+		ret = fn(data, namebuf, NULL, kallsyms_address(i));
- 		if (ret != 0)
- 			return ret;
- 	}
-@@ -219,15 +224,15 @@ static unsigned long get_symbol_pos(unsigned long addr,
- 	unsigned long i, low, high, mid;
- 
- 	/* This kernel should never had been booted. */
--	BUG_ON(!kallsyms_addresses);
-+	BUG_ON(!kallsyms_offsets);
- 
--	/* Do a binary search on the sorted kallsyms_addresses array. */
-+	/* Do a binary search on the sorted kallsyms_offsets array. */
- 	low = 0;
- 	high = kallsyms_num_syms;
- 
- 	while (high - low > 1) {
- 		mid = low + (high - low) / 2;
--		if (kallsyms_addresses[mid] <= addr)
-+		if (kallsyms_address(mid) <= addr)
- 			low = mid;
- 		else
- 			high = mid;
-@@ -237,15 +242,15 @@ static unsigned long get_symbol_pos(unsigned long addr,
- 	 * Search for the first aliased symbol. Aliased
- 	 * symbols are symbols with the same address.
- 	 */
--	while (low && kallsyms_addresses[low-1] == kallsyms_addresses[low])
-+	while (low && kallsyms_address(low - 1) == kallsyms_address(low))
- 		--low;
- 
--	symbol_start = kallsyms_addresses[low];
-+	symbol_start = kallsyms_address(low);
- 
- 	/* Search for next non-aliased symbol. */
- 	for (i = low + 1; i < kallsyms_num_syms; i++) {
--		if (kallsyms_addresses[i] > symbol_start) {
--			symbol_end = kallsyms_addresses[i];
-+		if (kallsyms_address(i) > symbol_start) {
-+			symbol_end = kallsyms_address(i);
- 			break;
- 		}
- 	}
-@@ -469,7 +474,7 @@ static unsigned long get_ksymbol_core(struct kallsym_iter *iter)
- 	unsigned off = iter->nameoff;
- 
- 	iter->module_name[0] = '\0';
--	iter->value = kallsyms_addresses[iter->pos];
-+	iter->value = kallsyms_address(iter->pos);
- 
- 	iter->type = kallsyms_get_symbol_type(off);
- 
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 10085de..56f5986 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -190,7 +190,7 @@ static int symbol_valid(struct sym_entry *s)
- 	 * specified so exclude them to get a stable symbol list.
- 	 */
- 	static char *special_symbols[] = {
--		"kallsyms_addresses",
-+		"kallsyms_offsets",
- 		"kallsyms_num_syms",
- 		"kallsyms_names",
- 		"kallsyms_markers",
-@@ -322,19 +322,13 @@ static void write_src(void)
- 	 * symbols that are declared static and are private to their
- 	 * .o files.  This prevents .tmp_kallsyms.o or any other
- 	 * object from referencing them.
-+	 *
-+	 * We do the offsets to _text now in kallsyms.c at runtime,
-+	 * to get a relocationless symbol table.
- 	 */
--	output_label("kallsyms_addresses");
-+	output_label("kallsyms_offsets");
- 	for (i = 0; i < table_cnt; i++) {
--		if (toupper(table[i].sym[0]) != 'A') {
--			if (_text <= table[i].addr)
--				printf("\tPTR\t_text + %#llx\n",
--					table[i].addr - _text);
--			else
--				printf("\tPTR\t_text - %#llx\n",
--					_text - table[i].addr);
--		} else {
--			printf("\tPTR\t%#llx\n", table[i].addr);
--		}
-+		printf("\tPTR\t%#llx\n", table[i].addr - _text);
- 	}
- 	printf("\n");
- 
--- 
-1.8.5.2
 
