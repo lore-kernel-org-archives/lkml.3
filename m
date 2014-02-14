@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470AbaBNSRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:17:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56814 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951AbaBNSRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 13:17:06 -0500
-Message-ID: <52FE5D91.6060005@zytor.com>
-Date: Fri, 14 Feb 2014 10:16:49 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752276AbaBNSUq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:20:46 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:35583 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBNSUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 13:20:44 -0500
+Message-ID: <52FE5E74.6000509@gmail.com>
+Date: Fri, 14 Feb 2014 19:20:36 +0100
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Conrad Kostecki <ck@conrad-kostecki.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
-References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com>
-In-Reply-To: <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-ide@vger.kernel.org,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>,
+        Gerard Roudier <groudier@club-internet.fr>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Josh Boyer <jwboyer@redhat.com>,
+        "Justin M. Forbes" <jforbes@redhat.com>,
+        Chris Murphy <lists@colorremedies.com>
+Subject: =?UTF-8?B?UmU6IFtkbWEtZGVidWcuYyAtIERNQS1BUEldIGV4Y2VlZGVkIG92ZXI=?=
+ =?UTF-8?B?bGFwcGluZyDigKYgJiBzeW01M2M4eHgg4oCmIHRyaWVzIHRvIGZyZWUgRE1BIOKApg==?=
+References: <52FDD955.4000701@gmail.com> <20140214091639.GB1782@redhat.com>
+In-Reply-To: <20140214091639.GB1782@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 10:13 AM, Conrad Kostecki wrote:
+On 14.02.2014 10:16, Stanislaw Gruszka wrote:
+> On Fri, Feb 14, 2014 at 09:52:37AM +0100, poma wrote:
 >>
->> Does it have DMI?
+>> Ahoy!
+>>
+>> Perhaps this is already solved, but I made ​​the effort to test & record
+>> all of this, therefore here you are. :)
+>>
+>> https://bugzilla.redhat.com/show_bug.cgi?id=1062833
 > 
-> Unfortunately not.
+> There is patch posted for this problem
+> http://marc.info/?l=linux-kernel&m=139233546223338&w=2
+> It is under review currently, if there will be no complains it will be
+> applied.
 > 
-> # dmidecode 2.12
-> # No SMBIOS nor DMI entry point found, sorry.
+> Stanislaw
 > 
 
-Sigh.  Does anyone have contacts at Soekris who can complain about this
-stuff?
+Thanks!
+I have a few questions but the weekend begins, so we'll leave it for
+later. :)
+See ya!
 
-	-hpa
+
+poma
 
 
