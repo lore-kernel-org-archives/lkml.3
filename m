@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaBNKHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 05:07:40 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:52720 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaBNKHf (ORCPT
+	id S1751998AbaBNKJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 05:09:25 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:50125 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaBNKJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 05:07:35 -0500
-Date: Fri, 14 Feb 2014 10:07:01 +0000
+	Fri, 14 Feb 2014 05:09:22 -0500
+Date: Fri, 14 Feb 2014 10:09:15 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: Roger Quadros <rogerq@ti.com>
 Cc: tony@atomide.com, bcousson@baylibre.com, balbi@ti.com, nm@ti.com,
@@ -15,95 +15,63 @@ Cc: tony@atomide.com, bcousson@baylibre.com, balbi@ti.com, nm@ti.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
         Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v7 02/12] mfd: omap-usb-host: Get clocks based on
- hardware revision
-Message-ID: <20140214100701.GC7380@lee--X1>
+Subject: Re: [PATCH v7 03/12] mfd: omap-usb-host: Use clock names as per
+ function for reference clocks
+Message-ID: <20140214100915.GD7380@lee--X1>
 References: <1392200333-28397-1-git-send-email-rogerq@ti.com>
- <1392200333-28397-3-git-send-email-rogerq@ti.com>
+ <1392200333-28397-4-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392200333-28397-3-git-send-email-rogerq@ti.com>
+In-Reply-To: <1392200333-28397-4-git-send-email-rogerq@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Not all revisions have all the clocks so get the necessary clocks
-> based on hardware revision.
+> Use a meaningful name for the reference clocks so that it indicates the function.
 > 
-> This should avoid un-necessary clk_get failure messages that were
-> observed earlier.
-> 
-> Be more strict and always fail on clk_get() error.
-
-It might have been clearer if you'd broken these two pieces of
-functionality changes into two different patches. In future it would
-be preferred.
-
 > CC: Lee Jones <lee.jones@linaro.org>
 > CC: Samuel Ortiz <sameo@linux.intel.com>
 > Signed-off-by: Roger Quadros <rogerq@ti.com>
 > ---
->  drivers/mfd/omap-usb-host.c | 92 +++++++++++++++++++++++++++++++--------------
->  1 file changed, 64 insertions(+), 28 deletions(-)
+>  drivers/mfd/omap-usb-host.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
 > diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-> index 0c3c9a0..60a3bed 100644
+> index 60a3bed..ce620a8 100644
 > --- a/drivers/mfd/omap-usb-host.c
 > +++ b/drivers/mfd/omap-usb-host.c
-> @@ -665,22 +665,41 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+> @@ -714,21 +714,21 @@ static int usbhs_omap_probe(struct platform_device *pdev)
 >  		goto err_mem;
 >  	}
 >  
-> -	need_logic_fck = false;
-> +	/* Set all clocks as invalid to begin with */
-> +	omap->ehci_logic_fck = omap->init_60m_fclk = ERR_PTR(-ENODEV);
-> +	omap->utmi_p1_gfclk = omap->utmi_p2_gfclk = ERR_PTR(-ENODEV);
-> +	omap->xclk60mhsp1_ck = omap->xclk60mhsp2_ck = ERR_PTR(-ENODEV);
-> +
+> -	omap->xclk60mhsp1_ck = devm_clk_get(dev, "xclk60mhsp1_ck");
+> +	omap->xclk60mhsp1_ck = devm_clk_get(dev, "refclk_60m_ext_p1");
 
-For readability you should probably do these one per line.
+You can't do that. These changes will have to be in the same patch as
+the core change i.e. where they are initialised.
 
->  	for (i = 0; i < omap->nports; i++) {
-> -		if (is_ehci_phy_mode(i) || is_ehci_tll_mode(i) ||
-> -			is_ehci_hsic_mode(i))
-> -				need_logic_fck |= true;
-> +		omap->utmi_clk[i] = ERR_PTR(-ENODEV);
-> +		omap->hsic480m_clk[i] = ERR_PTR(-ENODEV);
-> +		omap->hsic60m_clk[i] = ERR_PTR(-ENODEV);
+>  	if (IS_ERR(omap->xclk60mhsp1_ck)) {
+>  		ret = PTR_ERR(omap->xclk60mhsp1_ck);
+>  		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
+>  		goto err_mem;
 >  	}
 >  
-> -	omap->ehci_logic_fck = ERR_PTR(-EINVAL);
-> -	if (need_logic_fck) {
-> -		omap->ehci_logic_fck = devm_clk_get(dev, "ehci_logic_fck");
-
-Has this clock been renamed, or is it no longer required?
-
-Perhaps you should be explicit in the commit log as to which clocks
-you're removing.
-
-> -		if (IS_ERR(omap->ehci_logic_fck)) {
-> -			ret = PTR_ERR(omap->ehci_logic_fck);
-> -			dev_dbg(dev, "ehci_logic_fck failed:%d\n", ret);
-> +	/* for OMAP3 i.e. USBHS REV1 */
-> +	if (omap->usbhs_rev == OMAP_USBHS_REV1) {
-> +		need_logic_fck = false;
-> +		for (i = 0; i < omap->nports; i++) {
-> +			if (is_ehci_phy_mode(pdata->port_mode[i]) ||
-> +			    is_ehci_tll_mode(pdata->port_mode[i]) ||
-> +			    is_ehci_hsic_mode(pdata->port_mode[i]))
-> +
-> +				need_logic_fck |= true;
-> +		}
-> +
-> +		if (need_logic_fck) {
-> +			omap->ehci_logic_fck = clk_get(dev, "usbhost_120m_fck");
-
-devm_clk_get()?
-
-<snip>
+> -	omap->xclk60mhsp2_ck = devm_clk_get(dev, "xclk60mhsp2_ck");
+> +	omap->xclk60mhsp2_ck = devm_clk_get(dev, "refclk_60m_ext_p2");
+>  	if (IS_ERR(omap->xclk60mhsp2_ck)) {
+>  		ret = PTR_ERR(omap->xclk60mhsp2_ck);
+>  		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
+>  		goto err_mem;
+>  	}
+>  
+> -	omap->init_60m_fclk = devm_clk_get(dev, "init_60m_fclk");
+> +	omap->init_60m_fclk = devm_clk_get(dev, "refclk_60m_int");
+>  	if (IS_ERR(omap->init_60m_fclk)) {
+>  		ret = PTR_ERR(omap->init_60m_fclk);
+>  		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
 
 -- 
 Lee Jones
