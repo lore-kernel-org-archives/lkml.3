@@ -1,309 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaBNBAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:00:21 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:37461 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044AbaBNA7R (ORCPT
+	id S1753258AbaBNBCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 20:02:33 -0500
+Received: from nm10-vm3.bullet.mail.gq1.yahoo.com ([98.136.218.94]:26890 "EHLO
+	nm10-vm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752978AbaBNBCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 19:59:17 -0500
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: linux-sh@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 22/27] clocksource: sh_cmt: Drop support for legacy platform data
-Date: Fri, 14 Feb 2014 02:00:00 +0100
-Message-Id: <1392339605-20691-23-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	Thu, 13 Feb 2014 20:02:31 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=gcom1024; d=yahoo.com;
+	b=I/direJ5AZtI2HDS7T1nmnSD5dc7kC/zMPVcjL1HHAxD5Qq7+xU70wzT1612VMVExbma8ADHqQ/wh60AbY+q/L4i6hN+72qiqXFRS5G7zqBnDOOpkW5HbbxacNilohjLBw5eeN4h9YYWSeqYWWyWR91j6Qjyf9bktYK/7pBgzsI=;
+X-Yahoo-Newman-Id: 648649.92642.bm@smtp207.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 5grW9XwVM1l5.6TWL2EWUYulYBaZK3MCvYND55VP_wrjaTr
+ H8wNEaaztADRIjZpmhdXC_ZLRnWd16iqyhrrZNTUx7TzOXgzzgTDTPKDJHQW
+ _EPp9_goC9ogSmSBLnIN7TDfqslY2gr516EoqvfcSzd32niXtP18hcHYQmuV
+ BPihc3kirCDLxXOlLIMTHkqq0khpAU1h1.CthkD._Bk.5Hx1mYGa1NzIma.s
+ vyXW1f7cuyl1J8RW.8ziTudsG.Wh2DovRdtzZlQ2HIJtKqbsGffUUfAk53GJ
+ exfGfysocKTQp8061nuL.IlhO.Sg7CviEHjLzH_Tt8qkhLZAe64CcXOitVIr
+ ojTbbfwEUP6AqeOtQXjM_U8ExPSAGsyCYw6mAqnXMGxX2hwP0CurGYjn0fDj
+ N1F_CIsZEqZWyCF3.hHmtSEV3zCoskbw3jXstqgmShvLnlHWDVBt79D_JILo
+ I9DqR4lAw99TTtGvUahFg7tpggmHbo2xQJzxsBzXBAfqy5Gmc26bE_K1wPRn
+ u4mOO1Kxt4ZZkhED.gkJwSnYJmcx3mgjdhFt0XzF7G.1F_omV
+X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
+X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.138.105.21])
+        by smtp207.mail.gq1.yahoo.com with SMTP; 13 Feb 2014 17:02:30 -0800 PST
+From: Chase Southwood <chase.southwood@yahoo.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@yahoo.com>
+Subject: [PATCH v2] Staging: comedi: clean up conditional statement in addi_apci_3xxx.c
+Date: Thu, 13 Feb 2014 19:02:26 -0600
+Message-Id: <1392339746-3901-1-git-send-email-chase.southwood@yahoo.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392262167-4073-1-git-send-email-chase.southwood@yahoo.com>
+References: <1392262167-4073-1-git-send-email-chase.southwood@yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all platforms have switched to the new-style platform data,
-drop support for the legacy version.
+In this conditional statement, if (chan < 16), but the instruction passed
+in data[0] is INSN_CONFIG_DIO_QUERY, the function does not return early,
+but the else-branch does not get executed either.  As a result, mask
+would be used uninitialized in the next line.  We want
+comedi_dio_insn_config() to use a chan_mask based on the chanspec for the
+INSN_CONFIG_DIO_QUERY instruction, so mask should be initialized to 0.
+Then, if instead the instruction is INSN_CONFIG_DIO_{INPUT,OUTPUT}, we
+return an error if (chan < 16) as these are invalid instructions for
+ports 0 and 1, or update the mask otherwise, so all the io_bits are
+modified for port 2.  This ensures that mask is always initialized by the
+time it is used.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
 ---
- drivers/clocksource/sh_cmt.c | 174 ++++++++++---------------------------------
- 1 file changed, 39 insertions(+), 135 deletions(-)
 
-diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index 077879b..fe9694b 100644
---- a/drivers/clocksource/sh_cmt.c
-+++ b/drivers/clocksource/sh_cmt.c
-@@ -115,9 +115,7 @@ struct sh_cmt_device {
- 	struct platform_device *pdev;
- 
- 	const struct sh_cmt_info *info;
--	bool legacy;
- 
--	void __iomem *mapbase_ch;
- 	void __iomem *mapbase;
- 	struct clk *clk;
- 
-@@ -824,58 +822,45 @@ static int sh_cmt_register(struct sh_cmt_channel *ch, char *name,
- 	return 0;
- }
- 
--static int sh_cmt_setup_channel(struct sh_cmt_channel *ch, unsigned int index,
-+static int sh_cmt_setup_channel(struct sh_cmt_channel *ch,
- 				const struct sh_timer_channel_config *ch_cfg,
- 				unsigned int hwidx, struct sh_cmt_device *cmt)
+2: Addressed all of the comments provided by Hartley regarding correct
+structure of this patch.
+
+Hopefully everything looks better!
+
+ drivers/staging/comedi/drivers/addi_apci_3xxx.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/addi_apci_3xxx.c b/drivers/staging/comedi/drivers/addi_apci_3xxx.c
+index ceadf8e..1f3b668 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_3xxx.c
++++ b/drivers/staging/comedi/drivers/addi_apci_3xxx.c
+@@ -680,7 +680,7 @@ static int apci3xxx_dio_insn_config(struct comedi_device *dev,
+ 				    unsigned int *data)
  {
--	unsigned long clockevent_rating;
--	unsigned long clocksource_rating;
- 	int irq;
+ 	unsigned int chan = CR_CHAN(insn->chanspec);
+-	unsigned int mask;
++	unsigned int mask = 0;
  	int ret;
- 
- 	ch->cmt = cmt;
--	ch->index = ch_cfg ? ch_cfg->index : index;
-+	ch->index = ch_cfg->index;
- 	ch->hwidx = hwidx;
  
  	/*
- 	 * Compute the address of the channel control register block. For the
- 	 * timers with a per-channel start/stop register, compute its address
- 	 * as well.
--	 *
--	 * For legacy configuration the address has been mapped explicitly.
+@@ -688,12 +688,13 @@ static int apci3xxx_dio_insn_config(struct comedi_device *dev,
+ 	 * Port 1 (channels 8-15) are always outputs
+ 	 * Port 2 (channels 16-23) are programmable i/o
  	 */
--	if (cmt->legacy) {
--		ch->ioctrl = cmt->mapbase_ch;
+-	if (chan < 16) {
+-		if (data[0] != INSN_CONFIG_DIO_QUERY)
++	if (data[0] != INSN_CONFIG_DIO_QUERY) {
++		/* ignore all other instructions for ports 0 and 1 */
++		if (chan < 16)
+ 			return -EINVAL;
 -	} else {
--		switch (cmt->info->model) {
--		case SH_CMT_16BIT:
--			ch->ioctrl = cmt->mapbase + 2 + ch->hwidx * 6;
--			break;
--		case SH_CMT_32BIT:
--		case SH_CMT_48BIT:
--			ch->ioctrl = cmt->mapbase + 0x10 + ch->hwidx * 0x10;
--			break;
--		case SH_CMT_32BIT_FAST:
--			/*
--			 * The 32-bit "fast" timer has a single channel at hwidx
--			 * 5 but is located at offset 0x40 instead of 0x60 for
--			 * some reason.
--			 */
--			ch->ioctrl = cmt->mapbase + 0x40;
--			break;
--		case SH_CMT_48BIT_GEN2:
--			ch->iostart = cmt->mapbase + ch->hwidx * 0x100;
--			ch->ioctrl = ch->iostart + 0x10;
--			break;
--		}
-+	switch (cmt->info->model) {
-+	case SH_CMT_16BIT:
-+		ch->ioctrl = cmt->mapbase + 2 + ch->hwidx * 6;
-+		break;
-+	case SH_CMT_32BIT:
-+	case SH_CMT_48BIT:
-+		ch->ioctrl = cmt->mapbase + 0x10 + ch->hwidx * 0x10;
-+		break;
-+	case SH_CMT_32BIT_FAST:
-+		/*
-+		 * The 32-bit "fast" timer has a single channel at hwidx 5 but
-+		 * is located at offset 0x40 instead of 0x60 for some reason.
-+		 */
-+		ch->ioctrl = cmt->mapbase + 0x40;
-+		break;
-+	case SH_CMT_48BIT_GEN2:
-+		ch->iostart = cmt->mapbase + ch->hwidx * 0x100;
-+		ch->ioctrl = ch->iostart + 0x10;
-+		break;
+-		/* changing any channel in port 2 changes the entire port */
+-		mask = 0xff0000;
++		else
++			/* changing any channel in port 2 changes the entire port */
++			mask = 0xff0000;
  	}
  
- 	/* Request irq using setup_irq() (too early for request_irq()). */
--	if (cmt->legacy)
--		irq = platform_get_irq(cmt->pdev, 0);
--	else
--		irq = platform_get_irq(cmt->pdev, ch->index);
--
-+	irq = platform_get_irq(cmt->pdev, ch->index);
- 	if (irq < 0) {
- 		dev_err(&cmt->pdev->dev, "failed to get irq\n");
- 		return irq;
-@@ -894,20 +879,11 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch, unsigned int index,
- 	ch->match_value = ch->max_match_value;
- 	raw_spin_lock_init(&ch->lock);
- 
--	if (ch_cfg) {
--		ch->timer_bit = cmt->info->model == SH_CMT_48BIT_GEN2
--			      ? 0 : ch->hwidx;
--		clockevent_rating = ch_cfg->clockevent_rating;
--		clocksource_rating = ch_cfg->clocksource_rating;
--	} else {
--		struct sh_timer_config *cfg = cmt->pdev->dev.platform_data;
--		ch->timer_bit = cfg->timer_bit;
--		clockevent_rating = cfg->clockevent_rating;
--		clocksource_rating = cfg->clocksource_rating;
--	}
-+	ch->timer_bit = cmt->info->model == SH_CMT_48BIT_GEN2 ? 0 : ch->hwidx;
- 
- 	ret = sh_cmt_register(ch, (char *)dev_name(&cmt->pdev->dev),
--			      clockevent_rating, clocksource_rating);
-+			      ch_cfg->clockevent_rating,
-+			      ch_cfg->clocksource_rating);
- 	if (ret) {
- 		dev_err(&cmt->pdev->dev, "registration failed\n");
- 		return ret;
-@@ -942,59 +918,12 @@ static int sh_cmt_map_memory(struct sh_cmt_device *cmt)
- 	return 0;
- }
- 
--static int sh_cmt_map_memory_legacy(struct sh_cmt_device *cmt)
--{
--	struct sh_timer_config *cfg = cmt->pdev->dev.platform_data;
--	struct resource *res, *res2;
--
--	/* map memory, let mapbase_ch point to our channel */
--	res = platform_get_resource(cmt->pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&cmt->pdev->dev, "failed to get I/O memory\n");
--		return -ENXIO;
--	}
--
--	cmt->mapbase_ch = ioremap_nocache(res->start, resource_size(res));
--	if (cmt->mapbase_ch == NULL) {
--		dev_err(&cmt->pdev->dev, "failed to remap I/O memory\n");
--		return -ENXIO;
--	}
--
--	/* optional resource for the shared timer start/stop register */
--	res2 = platform_get_resource(cmt->pdev, IORESOURCE_MEM, 1);
--
--	/* map second resource for CMSTR */
--	cmt->mapbase = ioremap_nocache(res2 ? res2->start :
--				       res->start - cfg->channel_offset,
--				       res2 ? resource_size(res2) : 2);
--	if (cmt->mapbase == NULL) {
--		dev_err(&cmt->pdev->dev, "failed to remap I/O second memory\n");
--		iounmap(cmt->mapbase_ch);
--		return -ENXIO;
--	}
--
--	/* identify the model based on the resources */
--	if (resource_size(res) == 6)
--		cmt->info = &sh_cmt_info[SH_CMT_16BIT];
--	else if (res2 && (resource_size(res2) == 4))
--		cmt->info = &sh_cmt_info[SH_CMT_48BIT_GEN2];
--	else
--		cmt->info = &sh_cmt_info[SH_CMT_32BIT];
--
--	return 0;
--}
--
--static void sh_cmt_unmap_memory(struct sh_cmt_device *cmt)
--{
--	iounmap(cmt->mapbase);
--	if (cmt->mapbase_ch)
--		iounmap(cmt->mapbase_ch);
--}
--
- static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
- {
- 	struct sh_timer_config *cfg = pdev->dev.platform_data;
- 	const struct platform_device_id *id = pdev->id_entry;
-+	unsigned int mask;
-+	unsigned int i;
- 	int ret;
- 
- 	memset(cmt, 0, sizeof(*cmt));
-@@ -1006,10 +935,9 @@ static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
- 	}
- 
- 	cmt->info = (const struct sh_cmt_info *)id->driver_data;
--	cmt->legacy = cmt->info ? false : true;
- 
- 	/* Get hold of clock. */
--	cmt->clk = clk_get(&cmt->pdev->dev, cmt->legacy ? "cmt_fck" : NULL);
-+	cmt->clk = clk_get(&cmt->pdev->dev, NULL);
- 	if (IS_ERR(cmt->clk)) {
- 		dev_err(&cmt->pdev->dev, "cannot get clock\n");
- 		return PTR_ERR(cmt->clk);
-@@ -1019,26 +947,14 @@ static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
- 	if (ret < 0)
- 		goto err_clk_put;
- 
--	/*
--	 * Map the memory resource(s). We need to support both the legacy
--	 * platform device configuration (with one device per channel) and the
--	 * new version (with multiple channels per device).
--	 */
--	if (cmt->legacy)
--		ret = sh_cmt_map_memory_legacy(cmt);
--	else
--		ret = sh_cmt_map_memory(cmt);
--
-+	/* Map the memory resource(s). */
-+	ret = sh_cmt_map_memory(cmt);
- 	if (ret < 0)
- 		goto err_clk_unprepare;
- 
- 	/* Allocate and setup the channels. */
--	if (cmt->legacy) {
--		cmt->num_channels = 1;
--	} else {
--		cmt->num_channels = cfg->num_channels;
--		cmt->hw_channels = ~cfg->channels_mask;
--	}
-+	cmt->num_channels = cfg->num_channels;
-+	cmt->hw_channels = ~cfg->channels_mask;
- 
- 	cmt->channels = kzalloc(cmt->num_channels * sizeof(*cmt->channels),
- 				GFP_KERNEL);
-@@ -1047,26 +963,15 @@ static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
- 		goto err_unmap;
- 	}
- 
--	if (cmt->legacy) {
--		ret = sh_cmt_setup_channel(&cmt->channels[0], cfg->timer_bit,
--					   NULL, cfg->timer_bit, cmt);
-+	for (i = 0, mask = cmt->hw_channels; i < cmt->num_channels; ++i) {
-+		unsigned int hwidx = ffs(mask) - 1;
-+
-+		ret = sh_cmt_setup_channel(&cmt->channels[i], &cfg->channels[i],
-+					   hwidx, cmt);
- 		if (ret < 0)
- 			goto err_unmap;
--	} else {
--		const struct sh_timer_channel_config *ch_cfg = cfg->channels;
--		unsigned int mask = cmt->hw_channels;
--		unsigned int i;
--
--		for (i = 0; i < cmt->num_channels; ++i) {
--			unsigned int hwidx = ffs(mask) - 1;
- 
--			ret = sh_cmt_setup_channel(&cmt->channels[i], 0, ch_cfg,
--						   hwidx, cmt);
--			if (ret < 0)
--				goto err_unmap;
--
--			mask &= ~(1 << hwidx);
--		}
-+		mask &= ~(1 << hwidx);
- 	}
- 
- 	platform_set_drvdata(pdev, cmt);
-@@ -1075,7 +980,7 @@ static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
- 
- err_unmap:
- 	kfree(cmt->channels);
--	sh_cmt_unmap_memory(cmt);
-+	iounmap(cmt->mapbase);
- err_clk_unprepare:
- 	clk_unprepare(cmt->clk);
- err_clk_put:
-@@ -1128,7 +1033,6 @@ static int sh_cmt_remove(struct platform_device *pdev)
- }
- 
- static const struct platform_device_id sh_cmt_id_table[] = {
--	{ "sh_cmt", 0 },
- 	{ "sh-cmt-16", (kernel_ulong_t)&sh_cmt_info[SH_CMT_16BIT] },
- 	{ "sh-cmt-32", (kernel_ulong_t)&sh_cmt_info[SH_CMT_32BIT] },
- 	{ "sh-cmt-32-fast", (kernel_ulong_t)&sh_cmt_info[SH_CMT_32BIT_FAST] },
+ 	ret = comedi_dio_insn_config(dev, s, insn, data, mask);
 -- 
-1.8.3.2
+1.8.5.3
 
