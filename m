@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaBNV0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 16:26:31 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:37161 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712AbaBNV0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 16:26:25 -0500
-Message-ID: <52FE89FF.4020700@gmail.com>
-Date: Fri, 14 Feb 2014 13:26:23 -0800
-From: Rajat Jain <rajatxjain@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: rajatjain@juniper.net, groeck@juniper.net,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH] pciehp: Display the link state change reporting capability
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753241AbaBNVWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 16:22:32 -0500
+Received: from mga11.intel.com ([192.55.52.93]:38604 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753183AbaBNVW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 16:22:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,847,1384329600"; 
+   d="scan'208";a="481803160"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-kbuild@vger.kernel.org, mmarek@suse.cz,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 07/19] lto: Don't let LATENCYTOP and LOCKDEP select KALLSYMS_ALL
+Date: Fri, 14 Feb 2014 22:21:31 +0100
+Message-Id: <1392412903-25733-8-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1392412903-25733-1-git-send-email-andi@firstfloor.org>
+References: <1392412903-25733-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent addition of Link state change based hot-plug, it makes
-sense to display this capability in dbg_ctrl() addition to others.
+From: Andi Kleen <ak@linux.intel.com>
 
-(Also move the call to dbg_ctrl() further down untill after the value
-is populated in ctrl->link_active_reporting)
+KALLSYMS_ALL enables including data variables into KALLSYMS.
+With plain KALLSYMS only functions are included.
 
-Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
+LATENCYTOP and LOCKDEP select KALLSYMS_ALL in addition to KALLSYMS.
+It's unclear what they actually need _ALL for; they should
+only need function backtraces and afaik never touch variables.
+
+LTO currently does not support KALLSYMS_ALL, which prevents
+LATENCYTOP and LOCKDEP from working and gives Kconfig errors.
+Disable the requirement for KALLSYMS_ALL for them, just use
+KALLSYMS.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/pci/hotplug/pciehp_hpc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ lib/Kconfig.debug | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index da4b020..cbe8e924 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -747,6 +747,8 @@ static inline void dbg_ctrl(struct controller *ctrl)
- 		  EMI(ctrl)        ? "yes" : "no");
- 	ctrl_info(ctrl, "  Command Completed    : %3s\n",
- 		  NO_CMD_CMPL(ctrl) ? "no" : "yes");
-+	ctrl_info(ctrl, "  Link Change Reporting: %3s\n",
-+		  ctrl->link_active_reporting ? "yes" : "no");
- 	pcie_capability_read_word(pdev, PCI_EXP_SLTSTA, &reg16);
- 	ctrl_info(ctrl, "Slot Status            : 0x%04x\n", reg16);
- 	pcie_capability_read_word(pdev, PCI_EXP_SLTCTL, &reg16);
-@@ -771,7 +773,6 @@ struct controller *pcie_init(struct pcie_device *dev)
- 	ctrl->slot_cap = slot_cap;
- 	mutex_init(&ctrl->ctrl_lock);
- 	init_waitqueue_head(&ctrl->queue);
--	dbg_ctrl(ctrl);
- 	/*
- 	 * Controller doesn't notify of command completion if the "No
- 	 * Command Completed Support" bit is set in Slot Capability
-@@ -784,10 +785,9 @@ struct controller *pcie_init(struct pcie_device *dev)
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a48abea..5cbf0c5 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -928,7 +928,6 @@ config LOCKDEP
+ 	select STACKTRACE
+ 	select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390 && !MICROBLAZE && !ARC
+ 	select KALLSYMS
+-	select KALLSYMS_ALL
  
-         /* Check if Data Link Layer Link Active Reporting is implemented */
-         pcie_capability_read_dword(pdev, PCI_EXP_LNKCAP, &link_cap);
--        if (link_cap & PCI_EXP_LNKCAP_DLLLARC) {
--                ctrl_dbg(ctrl, "Link Active Reporting supported\n");
-+	if (link_cap & PCI_EXP_LNKCAP_DLLLARC)
-                 ctrl->link_active_reporting = 1;
--        }
-+	dbg_ctrl(ctrl);
- 
- 	/* Clear all remaining event bits in Slot Status register */
- 	pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
+ config LOCK_STAT
+ 	bool "Lock usage statistics"
+@@ -1396,7 +1395,6 @@ config LATENCYTOP
+ 	depends on PROC_FS
+ 	select FRAME_POINTER if !MIPS && !PPC && !S390 && !MICROBLAZE && !ARM_UNWIND && !ARC
+ 	select KALLSYMS
+-	select KALLSYMS_ALL
+ 	select STACKTRACE
+ 	select SCHEDSTATS
+ 	select SCHED_DEBUG
 -- 
-1.7.9.5
+1.8.5.2
 
