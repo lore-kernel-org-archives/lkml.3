@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaBNP2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 10:28:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60158 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299AbaBNP2s (ORCPT
+	id S1752264AbaBNP2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 10:28:47 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:45183 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBNP2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 10:28:48 -0500
-Message-ID: <52FE3610.8040300@canonical.com>
-Date: Fri, 14 Feb 2014 16:28:16 +0100
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 14 Feb 2014 10:28:45 -0500
+Date: Fri, 14 Feb 2014 15:28:38 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] mfd: twl4030-madc: Add devicetree support.
+Message-ID: <20140214152838.GA30687@lee--X1>
+References: <1392383861-14169-1-git-send-email-marek@goldelico.com>
+ <20140214134815.GD13293@lee--X1>
+ <CAAfyv36FH364OPnktx_Qh6sUfwYe7hynqrc3Xs_tY4gPXqQWvA@mail.gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Peter Zijlstra <peterz@infradead.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: Re: Another preempt folding issue? (maybe bisect)
-References: <20140212103713.GE3545@laptop.programming.kicks-ass.net> <20140212104017.GA5121@pd.tnic> <52FB5669.7090506@canonical.com> <20140212115412.GW27965@twins.programming.kicks-ass.net> <52FCFA23.4060701@canonical.com> <20140213173852.GH6835@laptop.programming.kicks-ass.net> <52FD090C.7010408@canonical.com> <20140213182605.GC14089@laptop.programming.kicks-ass.net> <20140214133428.GB26356@pd.tnic> <52FE2709.3050505@canonical.com> <20140214152132.GD26356@pd.tnic>
-In-Reply-To: <20140214152132.GD26356@pd.tnic>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="9VPNUU0RUvi5oVBvxNKFrdvwhJpm6DNnS"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAfyv36FH364OPnktx_Qh6sUfwYe7hynqrc3Xs_tY4gPXqQWvA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---9VPNUU0RUvi5oVBvxNKFrdvwhJpm6DNnS
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+> >> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> >> ---
+> >>  .../devicetree/bindings/mfd/twl4030-madc.txt       | 18 +++++++++++++
+> >>  drivers/mfd/twl4030-madc.c                         | 31
+> >> ++++++++++++++++++++--
+> >
+<snip>
 
-On 14.02.2014 16:21, Borislav Petkov wrote:
-> Oh, and just in case this is relatively easy to reproduce and in case w=
-e
-> don't have any other idea, bisection might be another option. I'm not
-> saying you should do it right away - I'm just putting it on the table..=
-=2E
->=20
-> :-)
->=20
-> :-)
->=20
+> >> +static struct twl4030_madc_platform_data *
+> >> +     twl4030_madc_of_parse(struct platform_device *pdev)
+> >> +{
+> >> +     struct twl4030_madc_platform_data *pdata;
+> >> +
+> >> +     pdata = devm_kzalloc(&pdev->dev,
+> >> +                     sizeof(struct twl4030_madc_platform_data), GFP_KERNEL);
+> >
+> > s/struct twl4030_madc_platform_data/*pdata/
+> Right typo.
 
-Oh yeah, bisection is nearly as entertaining as doing my tax records. Hm,=
- on the
-other hand those will have to be done at some point too... :-P
+Sorry, my comment of ambiguous.
 
+I mean do this:
 
---9VPNUU0RUvi5oVBvxNKFrdvwhJpm6DNnS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+  sizeof(*pdata)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+... instead of this:
 
-iQIcBAEBCgAGBQJS/jYQAAoJEOhnXe7L7s6jL50QAJT4eK3bAjq+kBLc+ESfuqDA
-spDrQpP3P8lY7rsZJWI9BtOxglK0+E6wKy3C9MZFFxUd05GoVJ6vdcmva1jVBQ6A
-HsYH+BTD17KWxwk4E1+m9oyxM+ZQ+CjLZBSVyS1LUb4ACJ2AyVxiscIIYteztWV2
-CfMsrd+RA7wDU6Y573TkELAnBFOcoqZvIRfBhbEpgWpZqTe0Fs1rs6ihB5HzUdAX
-dposKrFxqLdrDEK+TDK/hy4E4c0fgfcefOPBj4FfTVUu+tITEKFiRuF7ugh3Zjuy
-hFm2Nlh6lKRvC0c1tIpZPSv2s+LBvGcVA8PffLjTcwu6IpvpItOCOKcLE2LXkkas
-g2J9plnI55VxHkANaqsLoOr6aYfc6ryPLcQBE1+GtpHZM+6XDPhPpFym6QOKUltQ
-3rzfTbNmzEkifCFMEUujiBrdxcBtQpseJYnR+ecf/Sf0+pJSqEMpkpZxYioMcRKF
-jGkdCmpq42SBT/SQmRIVo52Ca+0k4XiRPc/kCyNKflxs9uBexl0qujshCpo1F7c5
-sjDyrGsr6ttmE6s+peywTXus4+AIkHagh6Ln9mRf3R6Rwz6TG6BPrazaE/iZHl4q
-3N2MVjsyXH3cgyT/qrbZPflSskBLOhe+P7g3KkL/JgLT/u4ppk9ivwcSJrkltW/Y
-aJlK2hU0NBm9PD4wOrTX
-=vBjs
------END PGP SIGNATURE-----
+  sizeof(struct twl4030_madc_platform_data)
 
---9VPNUU0RUvi5oVBvxNKFrdvwhJpm6DNnS--
+> >> +     if (!pdata)
+> >> +             return ERR_PTR(-ENOMEM);
+> >> +
+> >> +     pdata->irq_line = platform_get_irq(pdev, 0);
+> >
+> > Why weren't 'resources' used in the original implementation?
+> Not sure I'm not an author :). It's passed in platform data.
+
+Yes, I saw that. It should be changed.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
