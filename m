@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaBNNar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:30:47 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55038 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752557AbaBNNaq (ORCPT
+	id S1752541AbaBNNbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:31:07 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33148 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751288AbaBNNbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:30:46 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Josh Cartwright <joshc@codeaurora.org>, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / platform: drop redundant ACPI_HANDLE check
-Date: Fri, 14 Feb 2014 14:45:29 +0100
-Message-ID: <1746200.FR6bSit96i@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1392350443-20074-1-git-send-email-joshc@codeaurora.org>
-References: <1392350443-20074-1-git-send-email-joshc@codeaurora.org>
+	Fri, 14 Feb 2014 08:31:04 -0500
+Date: Fri, 14 Feb 2014 13:31:01 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Marek Belisko <marek@goldelico.com>
+Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "jdelvare@suse.de" <jdelvare@suse.de>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "hns@goldelico.com" <hns@goldelico.com>
+Subject: Re: [PATCH] hwmon: twl4030-madc-hwmon: Add device tree support.
+Message-ID: <20140214133101.GA17796@e106331-lin.cambridge.arm.com>
+References: <1392384058-14240-1-git-send-email-marek@goldelico.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392384058-14240-1-git-send-email-marek@goldelico.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 13, 2014 10:00:43 PM Josh Cartwright wrote:
-> The acpi_dev_pm_attach/_detach functions perform their own checks to
-> ensure the device has an ACPI companion.  It is not necessary for the
-> caller to do so.
-> 
-> This mirrors what other busses with ACPI dev PM support do (i2c, spi,
-> sdio).
-> 
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-
-Hi Greg,
-
-If you want to take this, please feel free to add:
-
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
-to it.  If you want me to take it, please let me know.
-
-Rafael
-
-
+On Fri, Feb 14, 2014 at 01:20:58PM +0000, Marek Belisko wrote:
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
 > ---
->  drivers/base/platform.c | 11 ++++-------
->  1 file changed, 4 insertions(+), 7 deletions(-)
+>  Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt |  9 +++++++++
+>  drivers/hwmon/twl4030-madc-hwmon.c                             | 10 ++++++++++
+>  2 files changed, 19 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
 > 
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index bc78848..e714709 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -481,11 +481,10 @@ static int platform_drv_probe(struct device *_dev)
->  	struct platform_device *dev = to_platform_device(_dev);
->  	int ret;
->  
-> -	if (ACPI_HANDLE(_dev))
-> -		acpi_dev_pm_attach(_dev, true);
-> +	acpi_dev_pm_attach(_dev, true);
->  
->  	ret = drv->probe(dev);
-> -	if (ret && ACPI_HANDLE(_dev))
-> +	if (ret)
->  		acpi_dev_pm_detach(_dev, true);
->  
->  	if (drv->prevent_deferred_probe && ret == -EPROBE_DEFER) {
-> @@ -508,8 +507,7 @@ static int platform_drv_remove(struct device *_dev)
->  	int ret;
->  
->  	ret = drv->remove(dev);
-> -	if (ACPI_HANDLE(_dev))
-> -		acpi_dev_pm_detach(_dev, true);
-> +	acpi_dev_pm_detach(_dev, true);
->  
->  	return ret;
->  }
-> @@ -520,8 +518,7 @@ static void platform_drv_shutdown(struct device *_dev)
->  	struct platform_device *dev = to_platform_device(_dev);
->  
->  	drv->shutdown(dev);
-> -	if (ACPI_HANDLE(_dev))
-> -		acpi_dev_pm_detach(_dev, true);
-> +	acpi_dev_pm_detach(_dev, true);
->  }
->  
->  /**
-> 
+> diff --git a/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt b/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
+> new file mode 100644
+> index 0000000..e8016d1
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
+> @@ -0,0 +1,9 @@
+> +TWL4030 MADC hwmon.
+> +
+> +Required properties:
+> +- compatible: "ti,twl4030-madc-hwmon"
+> +
+> +Example:
+> +madc-hwmon {
+> +	compatible = "ti,twl4030-madc-hwmon";
+> +};
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Huh?
+
+What is this a binding for? From a look at the driver in mainline this
+just calls into functions from the twl4030 madc driver (which doesn't
+seem to have a binding).
+
+This doesn't look like a description of hardware, but rather a hack to
+get a Linux driver to probe. As far as I can see, no useful information
+is given by this binding.
+
+Thanks,
+Mark.
