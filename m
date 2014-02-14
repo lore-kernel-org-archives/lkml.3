@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaBNRDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 12:03:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436AbaBNRDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 12:03:14 -0500
-Message-ID: <52FE4C0C.1090008@redhat.com>
-Date: Fri, 14 Feb 2014 18:02:04 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751938AbaBNRGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 12:06:09 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:52917 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaBNRGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 12:06:07 -0500
+Date: Fri, 14 Feb 2014 17:05:59 +0000
+From: Steve Capper <steve.capper@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ARM: mm: report both sections from PMD
+Message-ID: <20140214170558.GA13608@linaro.org>
+References: <20140213195230.GA15275@www.outflux.net>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com> <52F3670D.5090608@redhat.com> <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com> <52FD2908.8000009@redhat.com> <52FD458D.6020107@redhat.com> <CAMEtUuwfSYr=7+_8jKryUMUTL1NE-wRV_h=PX7uKdkUebgGiPg@mail.gmail.com>
-In-Reply-To: <CAMEtUuwfSYr=7+_8jKryUMUTL1NE-wRV_h=PX7uKdkUebgGiPg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140213195230.GA15275@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 01:59 AM, Alexei Starovoitov wrote:
-...
->> I'm very curious, do you also have any performance numbers, e.g. for
->> networking by taking JIT'ed/non-JIT'ed BPF filters and compare them against
->> JIT'ed/non-JIT'ed eBPF filters to see how many pps we gain or loose e.g.
->> for a scenario with a middle box running cls_bpf .. or some other macro/
->> micro benchmark just to get a picture where both stand in terms of
->> performance? Who knows, maybe it would outperform nftables engine as
->> well? ;-) How would that look on a 32bit arch with eBPF that is 64bit?
->
-> I don't have jited/non-jited numbers, but I suspect for micro-benchmarks
-> the gap should be big. I was shooting for near native performance after JIT.
+On Thu, Feb 13, 2014 at 11:52:30AM -0800, Kees Cook wrote:
+> On 2-level page table systems, the PMD has 2 section entries. Report
+> these, otherwise ARM_PTDUMP will miss reporting permission changes on
+> odd section boundaries.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+> v3:
+>  - re-reorganize, drop use of pmd_sect; suggested by Catalin Marinas.
+> v2:
+>  - reorganize, suggested by Catalin Marinas.
+> ---
+>  arch/arm/mm/dump.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
+> index 2b342177f5de..61cc78ae9f21 100644
+> --- a/arch/arm/mm/dump.c
+> +++ b/arch/arm/mm/dump.c
+> @@ -264,6 +264,9 @@ static void walk_pmd(struct pg_state *st, pud_t *pud, unsigned long start)
+>  			note_page(st, addr, 3, pmd_val(*pmd));
+>  		else
+>  			walk_pte(st, pmd, addr);
+> +
+> +		if (SECTION_SIZE < PMD_SIZE && pmd_large(pmd[1]))
+> +			note_page(st, addr + SECTION_SIZE, 3, pmd_val(pmd[1]));
+>  	}
+>  }
+>  
+> -- 
+> 1.7.9.5
 
-Ohh, I meant it would be interesting to see a comparison of e.g. common libpcap
-high-level filters that are in 32bit BPF + JIT (current code) vs 64bit BPF + JIT
-(new code). I'm wondering how 32bit-only archs should be handled to not regress
-in evaluation performance to the current code.
+This picks up an odd megabyte aligned section on my Arndale board with
+short descriptors on 3.14-rc2. Behaves as expected with long descriptors
+too (does nothing).
 
-> So I took flow_dissector() function, tweaked it a bit and compiled into BPF.
-> x86_64 skb_flow_dissect() same skb (all cached)          -  42 nsec per call
-> x86_64 skb_flow_dissect() different skbs (cache misses)  - 141 nsec per call
-> bpf_jit skb_flow_dissect() same skb (all cached)         -  51 nsec per call
-> bpf_jit skb_flow_dissect() different skbs (cache misses) - 135 nsec per call
->
-> C->BPF64->x86_64 is slower than C->x86_64 when all data is in cache,
-> but presence of cache misses hide extra insns.
->
-> For gre flow_dissector() looks into inner packet, but for vxlan it does not,
-> since it needs to know udp port number. We can extend it with if (static_key)
-> and walk the list of udp_offload_base->offload->port like we do in
-> udp_gro_receive(),
-> but for RPS we just need a hash. I think custom loadable
-> flow_dissector() is the way to go.
-> If we know that majority of the traffic on the given machine is vxlan to port N
-> we can hard code this into BPF program. Don't need to walk outer packet either.
-> Just pick ip/port from inner. It's doable with old BPF too.
->
-> What we used to think as dynamic, with BPF can be hard coded.
->
-> As soon as I have time I'm thinking to play with nftables. The idea is:
-> rules are changed rarely, but a lot of traffic goes through them,
-> so we can spend time optimizing them.
->
-> Either user input or nft program can be converted to C, then LLVM invoked
-> to optimize the whole thing, generate BPF and load it.
-> Adding a rule will take time, but if execution of such ip/nftables
-> will be faster
-> the end user will benefit.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+FWIW:
+Tested-by: Steve Capper <steve.capper@linaro.org>
+
+Cheers,
+-- 
+Steve
+
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
