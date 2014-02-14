@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbaBNUC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:02:28 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37085 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625AbaBNUCZ (ORCPT
+	id S1752400AbaBNUG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:06:27 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:55688 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBNUGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:02:25 -0500
+	Fri, 14 Feb 2014 15:06:25 -0500
+Date: Sat, 15 Feb 2014 00:06:22 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Vagin <avagin@gmail.com>, Aditya Kali <adityakali@google.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change
+ boundaries of data, brk and stack
+Message-ID: <20140214200622.GN13358@moon>
+References: <1392387209-330-1-git-send-email-avagin@openvz.org>
+ <1392387209-330-2-git-send-email-avagin@openvz.org>
+ <874n41znl5.fsf@xmission.com>
+ <20140214174314.GA5518@gmail.com>
+ <20140214180129.GK13358@moon>
+ <8761ohqzc6.fsf@xmission.com>
+ <52FE72C1.9090100@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-References: <20140207180216.GP4250@linux.vnet.ibm.com>
-	<1391992071.18779.99.camel@triegel.csb>
-	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	<1392183564.18779.2187.camel@triegel.csb>
-	<20140212180739.GB4250@linux.vnet.ibm.com>
-	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	<20140213002355.GI4250@linux.vnet.ibm.com>
-	<1392321837.18779.3249.camel@triegel.csb>
-	<20140214020144.GO4250@linux.vnet.ibm.com>
-	<1392352981.18779.3800.camel@triegel.csb>
-	<20140214172920.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-Date: Fri, 14 Feb 2014 12:02:23 -0800
-X-Google-Sender-Auth: vS09ErzWeLMpAgW1I1ZKGGpuzYA
-Message-ID: <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52FE72C1.9090100@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 11:50 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Why are we still discussing this idiocy? It's irrelevant. If the
-> standard really allows random store speculation, the standard doesn't
-> matter, and sane people shouldn't waste their time arguing about it.
+On Fri, Feb 14, 2014 at 11:47:13PM +0400, Pavel Emelyanov wrote:
+> >> Maybe we could improve this api and provide argument as a pointer
+> >> to a structure, which would have all the fields we're going to
+> >> modify, which in turn would allow us to verify that all new values
+> >> are sane and fit rlimits, then we could (probably) deprecate old
+> >> api if noone except c/r camp is using it (I actually can't imagine
+> >> who else might need this api). Then CAP_SYS_RESOURCE requirement
+> >> could be ripped off. Hm? (sure touching api is always "no-no"
+> >> case, but maybe...)
+> > 
+> > Hmm.  Let me rewind this a little bit.
+> > 
+> > I want to be very stupid and ask the following.
+> > 
+> > Why can't you have the process of interest do:
+> > 	ptrace(PTRACE_ATTACHME);
+> > 	execve(executable, args, ...);
+> >         
+> >         /* Have the ptracer inject the recovery/fixup code */
+> > 	    /* Fix up the mostly correct process to look like it has been
+> >          * executing for a while.
+> >          */
 
-Btw, the other part of this coin is that our manual types (using
-volatile and various architecture-specific stuff) and our manual
-barriers and inline asm accesses are generally *fine*.
+Erik, it seems I don't understand how it will help us to restore
+the mm fields mentioned above?
 
-The C11 stuff doesn't buy us anything. The argument that "new
-architectures might want to use it" is prue and utter bollocks, since
-unless the standard gets the thing *right*, nobody sane would ever use
-it for some new architecture, when the sane thing to do is to just
-fill in the normal barriers and inline asms.
+> Let's imagine we do that.
+> 
+> This means, that the whole memory contents should be restored _after_
+> the execve() call, since the execve() flushes old mappings. In
+> that case we lose the ability to preserve any shared memory regions
+> between any two processes. This "shared" can be either regular
+> MAP_SHARED mappings or MAP_ANONYMOUS but still not COW-ed ones.
+> 
+> > That should work, set all of the interesting fields, and works as
+> > non-root today.  My gut feel says do that and we can just
+> > deprecate/remove prctl_set_mm.
+> > 
+> > I am hoping we can move this conversation what makes sense from oh ick
+> > checkpoint/restort does not work with user namespaces.
 
-So I'm very very serious: either the compiler and the standard gets
-things right, or we don't use it. There is no middle ground where "we
-might use it for one or two architectures and add random hints".
-That's just stupid.
-
-The only "middle ground" is about which compiler version we end up
-trusting _if_ it turns out that the compiler and standard do get
-things right. From Torvald's explanations (once I don't mis-read them
-;), my take-away so far has actually been that the standard *does* get
-things right, but I do know from over-long personal experience that
-compiler people sometimes want to be legalistic and twist the
-documentation to the breaking point, at which point we just go "we'd
-be crazy do use that".
-
-See our use of "-fno-strict-aliasing", for example. The C standard
-aliasing rules are a mistake, stupid, and wrong, and gcc uses those
-stupid type-based alias rules even when statically *proving* the
-aliasing gives the opposite result. End result: we turn the shit off.
-
-Exact same deal wrt atomics. We are *not* going to add crazy "this
-here is a control dependency" crap. There's a test, the compiler
-*sees* the control dependency for chrissake, and it still generates
-crap, we turn that broken "optimization" off. It really is that
-simple.
-
-            Linus
+I fear you've got a wrong impression that we're "ick'ing" about user-ns ;)
+Actually it's "must have" feature for containers thus we would _really_
+love to be able to c/r them.
