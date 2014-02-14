@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbaBNSb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:31:56 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:35191 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996AbaBNSbx (ORCPT
+	id S1752477AbaBNSdz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:33:55 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52536 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaBNSdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 13:31:53 -0500
-Date: Fri, 14 Feb 2014 13:31:47 -0500 (EST)
-Message-Id: <20140214.133147.1908176449942033339.davem@davemloft.net>
-To: srivatsa.bhat@linux.vnet.ibm.com
-Cc: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
-        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
-        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        ursula.braun@de.ibm.com, linux-s390@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 52/52] net/iucv/iucv.c: Fix CPU hotplug callback
- registration
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140214080057.22701.94737.stgit@srivatsabhat.in.ibm.com>
-References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
-	<20140214080057.22701.94737.stgit@srivatsabhat.in.ibm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 14 Feb 2014 13:33:54 -0500
+Message-ID: <52FE618F.4060501@infradead.org>
+Date: Fri, 14 Feb 2014 10:33:51 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Holger Waechtler <holger@convergence.de>,
+        Oliver Endriss <o.endriss@gmx.de>,
+        linux-media <linux-media@vger.kernel.org>
+Subject: Re: linux-next: Tree for Feb 14 (media/pci/ttpci/av7110_ir.c)
+References: <20140214162823.0bc09e910a7d1adaaf1c17e6@canb.auug.org.au>
+In-Reply-To: <20140214162823.0bc09e910a7d1adaaf1c17e6@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 14 Feb 2014 10:31:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:30:58 +0530
-
-> Subsystems that want to register CPU hotplug callbacks, as well as perform
-> initialization for the CPUs that are already online, often do it as shown
-> below:
- ...
-> This is wrong, since it is prone to ABBA deadlocks involving the
-> cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
-> with CPU hotplug operations).
+On 02/13/2014 09:28 PM, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Instead, the correct and race-free way of performing the callback
-> registration is:
- ...
-> Fix the code in net/iucv/iucv.c by using this latter form of callback
-> registration. Also, provide helper functions to perform the common memory
-> allocations and frees, to condense repetitive code.
+> If you see failures in building this tree due to missing declarations of
+> k..alloc/free, then it may be caused by commit 2bd59d48ebfb ("cgroup:
+> convert to kernfs").  Please send Tejun Heo <tj@kernel.org> a patch
+> adding an inclusion of linux/slab.h to the appropriate file(s).
 > 
-> Cc: Ursula Braun <ursula.braun@de.ibm.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: linux-s390@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> This tree fails (more than usual) the powerpc allyesconfig build.
+> 
+> Changes since 20140213:
+> 
 
-Acked-by: David S. Miller <davem@davemloft.net>
+on i386:
+
+when
+CONFIG_DVB_AV7110=y
+CONFIG_INPUT=m
+CONFIG_INPUT_EVDEV=m
+
+
+drivers/built-in.o: In function `input_sync':
+av7110_ir.c:(.text+0x247276): undefined reference to `input_event'
+drivers/built-in.o: In function `av7110_emit_key':
+av7110_ir.c:(.text+0x247308): undefined reference to `input_event'
+av7110_ir.c:(.text+0x24731e): undefined reference to `input_event'
+av7110_ir.c:(.text+0x247384): undefined reference to `input_event'
+av7110_ir.c:(.text+0x247399): undefined reference to `input_event'
+drivers/built-in.o:av7110_ir.c:(.text+0x2473da): more undefined references to `input_event' follow
+drivers/built-in.o: In function `av7110_ir_init':
+(.text+0x2475b7): undefined reference to `input_allocate_device'
+drivers/built-in.o: In function `av7110_ir_init':
+(.text+0x247738): undefined reference to `input_register_device'
+drivers/built-in.o: In function `av7110_ir_init':
+(.text+0x247748): undefined reference to `input_free_device'
+drivers/built-in.o: In function `av7110_ir_exit':
+(.text+0x24780a): undefined reference to `input_unregister_device'
+
+
+
+-- 
+~Randy
