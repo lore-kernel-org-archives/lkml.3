@@ -1,213 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaBNFSo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 00:18:44 -0500
-Received: from mail.efficios.com ([78.47.125.74]:40255 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895AbaBNFSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 00:18:43 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-Date: Fri, 14 Feb 2014 00:18:26 -0500
-Message-Id: <1392355106-26104-1-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751914AbaBNFTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 00:19:17 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46488 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaBNFTQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 00:19:16 -0500
+X-AuditID: 9c93016f-b7c65ae000004a2a-aa-52fda751967a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "mingo\@elte.hu" <mingo@elte.hu>
+Subject: Re: [BUG] perf report/annotate: consuming too many file descriptors
+In-Reply-To: <CABPqkBRMZV_5XH0C5EDD547XcFy=qbREwx8ZA+KWVQxK0nrnug@mail.gmail.com>
+	(Stephane Eranian's message of "Thu, 13 Feb 2014 17:26:30 +0100")
+References: <CABPqkBSzttXoe3f_jC=Fv+ieN7_TNxLMDs4CH1C0TLYRq+Oz7g@mail.gmail.com>
+	<52FC12E3.9060300@lge.com>
+	<CABPqkBRMZV_5XH0C5EDD547XcFy=qbREwx8ZA+KWVQxK0nrnug@mail.gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Date: Fri, 14 Feb 2014 14:19:13 +0900
+Message-ID: <871tz6z2y6.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users have reported being unable to trace non-signed modules loaded
-within a kernel supporting module signature.
+Hi Stephane,
 
-This is caused by tracepoint.c:tracepoint_module_coming() refusing to
-take into account tracepoints sitting within force-loaded modules
-(TAINT_FORCED_MODULE). The reason for this check, in the first place, is
-that a force-loaded module may have a struct module incompatible with
-the layout expected by the kernel, and can thus cause a kernel crash
-upon forced load of that module on a kernel with CONFIG_TRACEPOINTS=y.
+On Thu, 13 Feb 2014 17:26:30 +0100, Stephane Eranian wrote:
+> Hi,
+>
+> Your patch does solve the file consumption problem on my test case.
+> We still open and do the ELF read 5 times.
 
-Tracepoints, however, specifically accept TAINT_OOT_MODULE and
-TAINT_CRAP, since those modules do not lead to the "very likely system
-crash" issue cited above for force-loaded modules.
+Cool.  Could you also confirm what's the problem case - whether it's
+stripped or static linked?
 
-With kernels having CONFIG_MODULE_SIG=y (signed modules), a non-signed
-module is tainted re-using the TAINT_FORCED_MODULE taint flag.
-Unfortunately, this means that Tracepoints treat that module as a
-force-loaded module, and thus silently refuse to consider any tracepoint
-within this module.
+>
+> Now, if on top of your patch, we also add the following, we save one
+> open().
 
-Since an unsigned module does not fit within the "very likely system
-crash" category of tainting, add a new TAINT_UNSIGNED_MODULE taint flag
-to specifically address this taint behavior, and accept those modules
-within Tracepoints. We use the letter 'X' as a taint flag character for
-a module being loaded that doesn't know how to sign its name (proposed
-by Steven Rostedt).
+I think you need one more patch below on top of yours since the
+filename__read_debuglink() always return -1.
 
-Also add the missing 'O' entry to trace event show_module_flags() list
-for the sake of completeness.
+Thanks,
+Namhyung
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: David Howells <dhowells@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/ABI/testing/sysfs-module |    1 +
- Documentation/module-signing.txt       |    3 ++-
- Documentation/oops-tracing.txt         |    3 +++
- Documentation/sysctl/kernel.txt        |    2 ++
- include/linux/kernel.h                 |    1 +
- include/trace/events/module.h          |    4 +++-
- kernel/module.c                        |    4 +++-
- kernel/panic.c                         |    2 ++
- kernel/tracepoint.c                    |    5 +++--
- 9 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-module b/Documentation/ABI/testing/sysfs-module
-index 47064c2..b9a29cd 100644
---- a/Documentation/ABI/testing/sysfs-module
-+++ b/Documentation/ABI/testing/sysfs-module
-@@ -49,3 +49,4 @@ Description:	Module taint flags:
- 			O - out-of-tree module
- 			F - force-loaded module
- 			C - staging driver module
-+			X - unsigned module
-diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
-index 2b40e04..b6af42e 100644
---- a/Documentation/module-signing.txt
-+++ b/Documentation/module-signing.txt
-@@ -53,7 +53,8 @@ This has a number of options available:
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 3e9f336740fa..8ac4a4fe2abd 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -506,6 +506,8 @@ int filename__read_debuglink(const char *filename, char *debuglink,
+ 	/* the start of this section is a zero-terminated string */
+ 	strncpy(debuglink, data->d_buf, size);
  
-      If this is off (ie. "permissive"), then modules for which the key is not
-      available and modules that are unsigned are permitted, but the kernel will
--     be marked as being tainted.
-+     be marked as being tainted, and the concerned modules will be marked as
-+     tainted, shown with the character 'X'.
- 
-      If this is on (ie. "restrictive"), only modules that have a valid
-      signature that can be verified by a public key in the kernel's possession
-diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
-index 13032c0..879abe2 100644
---- a/Documentation/oops-tracing.txt
-+++ b/Documentation/oops-tracing.txt
-@@ -265,6 +265,9 @@ characters, each representing a particular tainted value.
- 
-  13: 'O' if an externally-built ("out-of-tree") module has been loaded.
- 
-+ 14: 'X' if an unsigned module has been loaded in a kernel supporting
-+     module signature.
++	err = 0;
 +
- The primary reason for the 'Tainted: ' string is to tell kernel
- debuggers if this is a clean kernel or if anything unusual has
- occurred.  Tainting is permanent: even if an offending module is
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index e55124e..8ebe1c0 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -792,6 +792,8 @@ can be ORed together:
- 1024 - A module from drivers/staging was loaded.
- 2048 - The system is working around a severe firmware bug.
- 4096 - An out-of-tree module has been loaded.
-+8192 - An unsigned module has been loaded in a kernel supporting module
-+       signature.
- 
- ==============================================================
- 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 196d1ea..4710900 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -469,6 +469,7 @@ extern enum system_states {
- #define TAINT_CRAP			10
- #define TAINT_FIRMWARE_WORKAROUND	11
- #define TAINT_OOT_MODULE		12
-+#define TAINT_UNSIGNED_MODULE		13
- 
- extern const char hex_asc[];
- #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
-diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-index 1619327..11fd51b 100644
---- a/include/trace/events/module.h
-+++ b/include/trace/events/module.h
-@@ -22,8 +22,10 @@ struct module;
- 
- #define show_module_flags(flags) __print_flags(flags, "",	\
- 	{ (1UL << TAINT_PROPRIETARY_MODULE),	"P" },		\
-+	{ (1UL << TAINT_OOT_MODULE),		"O" },		\
- 	{ (1UL << TAINT_FORCED_MODULE),		"F" },		\
--	{ (1UL << TAINT_CRAP),			"C" })
-+	{ (1UL << TAINT_CRAP),			"C" },		\
-+	{ (1UL << TAINT_UNSIGNED_MODULE),	"X" })
- 
- TRACE_EVENT(module_load,
- 
-diff --git a/kernel/module.c b/kernel/module.c
-index d24fcf2..4d7d25e 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1013,6 +1013,8 @@ static size_t module_flags_taint(struct module *mod, char *buf)
- 		buf[l++] = 'F';
- 	if (mod->taints & (1 << TAINT_CRAP))
- 		buf[l++] = 'C';
-+	if (mod->taints & (1 << TAINT_UNSIGNED_MODULE))
-+		buf[l++] = 'X';
- 	/*
- 	 * TAINT_FORCED_RMMOD: could be added.
- 	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
-@@ -3214,7 +3216,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
- 		pr_notice_once("%s: module verification failed: signature "
- 			       "and/or  required key missing - tainting "
- 			       "kernel\n", mod->name);
--		add_taint_module(mod, TAINT_FORCED_MODULE, LOCKDEP_STILL_OK);
-+		add_taint_module(mod, TAINT_UNSIGNED_MODULE, LOCKDEP_STILL_OK);
- 	}
- #endif
- 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 6d63003..0e25fe1 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -210,6 +210,7 @@ static const struct tnt tnts[] = {
- 	{ TAINT_CRAP,			'C', ' ' },
- 	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
- 	{ TAINT_OOT_MODULE,		'O', ' ' },
-+	{ TAINT_UNSIGNED_MODULE,	'X', ' ' },
- };
- 
- /**
-@@ -228,6 +229,7 @@ static const struct tnt tnts[] = {
-  *  'C' - modules from drivers/staging are loaded.
-  *  'I' - Working around severe firmware bug.
-  *  'O' - Out-of-tree module has been loaded.
-+ *  'X' - Unsigned module has been loaded.
-  *
-  *	The string is overwritten by the next call to print_tainted().
-  */
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 29f2654..9bb887d 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -639,9 +639,10 @@ static int tracepoint_module_coming(struct module *mod)
- 	/*
- 	 * We skip modules that taint the kernel, especially those with different
- 	 * module headers (for forced load), to make sure we don't cause a crash.
--	 * Staging and out-of-tree GPL modules are fine.
-+	 * Staging, out-of-tree, and unsigned GPL modules are fine.
- 	 */
--	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
-+	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP) |
-+			(1 << TAINT_UNSIGNED_MODULE)))
- 		return 0;
- 	mutex_lock(&tracepoints_mutex);
- 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
--- 
-1.7.10.4
+ out_elf_end:
+ 	elf_end(elf);
+ out_close:
 
