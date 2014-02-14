@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379AbaBNJKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 04:10:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53299 "EHLO bear.ext.ti.com"
+	id S1752474AbaBNJLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 04:11:22 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41418 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246AbaBNJK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 04:10:27 -0500
-Message-ID: <52FDDD7A.7070806@ti.com>
-Date: Fri, 14 Feb 2014 11:10:18 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752286AbaBNJKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 04:10:33 -0500
+Date: Fri, 14 Feb 2014 10:10:24 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Cc: linux-tip-commits@vger.kernel.org, Tim Chen <tim.c.chen@linux.intel.com>
+Subject: Re: [tip:x86/asmlinkage] lto: Make asmlinkage __visible
+Message-ID: <20140214091024.GA26664@pd.tnic>
+References: <1391846481-31491-3-git-send-email-ak@linux.intel.com>
+ <tip-128ea04a9885af9629059e631ddf0cab4815b589@git.kernel.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [GIT PULL] fbdev fixes for 3.14
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="8qAPbhfSagkkd19kIVnpwotTGP0H8odVT"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <tip-128ea04a9885af9629059e631ddf0cab4815b589@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8qAPbhfSagkkd19kIVnpwotTGP0H8odVT
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 13, 2014 at 08:30:37PM -0800, tip-bot for Andi Kleen wrote:
+> Commit-ID:  128ea04a9885af9629059e631ddf0cab4815b589
+> Gitweb:     http://git.kernel.org/tip/128ea04a9885af9629059e631ddf0cab4815b589
+> Author:     Andi Kleen <ak@linux.intel.com>
+> AuthorDate: Sat, 8 Feb 2014 09:01:07 +0100
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Thu, 13 Feb 2014 20:21:59 -0800
+> 
+> lto: Make asmlinkage __visible
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Link: http://lkml.kernel.org/r/1391846481-31491-3-git-send-email-ak@linux.intel.com
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> ---
+>  include/linux/linkage.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+> index a6a42dd..34a513a 100644
+> --- a/include/linux/linkage.h
+> +++ b/include/linux/linkage.h
+> @@ -12,9 +12,9 @@
+>  #endif
+>  
+>  #ifdef __cplusplus
+> -#define CPP_ASMLINKAGE extern "C"
+> +#define CPP_ASMLINKAGE extern "C" __visible
+>  #else
+> -#define CPP_ASMLINKAGE
+> +#define CPP_ASMLINKAGE __visible
+>  #endif
+>  
+>  #ifndef asmlinkage
+> --
 
-Hi Linus,
-
-Please pull a few minor fbdev fixes for 3.14.
-
- Tomi
-
-The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9=
-ed:
-
-  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
-v-fixes-3.14
-
-for you to fetch changes up to b359bb0d9c5132abb6fec1ef555c48daf267de59:
-
-  video: Kconfig: Allow more broad selection of the imxfb framebuffer dri=
-ver. (2014-02-14 10:44:52 +0200)
-
-----------------------------------------------------------------
-Minor fbdev fixes for 3.14.
-
-----------------------------------------------------------------
-Denis Carikli (1):
-      video: Kconfig: Allow more broad selection of the imxfb framebuffer=
- driver.
-
-Sachin Kamat (1):
-      video: exynos: Fix S6E8AX0 LCD driver build error
-
-Tomi Valkeinen (2):
-      OMAPDSS: DISPC: decimation rounding fix
-      OMAPDSS: fix fck field types
-
- drivers/video/Kconfig           |  2 +-
- drivers/video/exynos/Kconfig    |  3 ++-
- drivers/video/omap2/dss/dispc.c | 16 ++++++++--------
- drivers/video/omap2/dss/dpi.c   |  2 +-
- drivers/video/omap2/dss/sdi.c   |  2 +-
- 5 files changed, 13 insertions(+), 12 deletions(-)
+arch/x86/crypto/sha256_ssse3_glue.c:56:1: warning: ‘externally_visible’ attribute have effect only on public objects [-Wattributes]
+ static asmlinkage void (*sha256_transform_asm)(const char *, u32 *, u64);
+ ^
+arch/x86/crypto/sha512_ssse3_glue.c:55:1: warning: ‘externally_visible’ attribute have effect only on public objects [-Wattributes]
+ static asmlinkage void (*sha512_transform_asm)(const char *, u64 *, u64);
 
 
---8qAPbhfSagkkd19kIVnpwotTGP0H8odVT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+I guess it is trying to tell me that static function pointers cannot be
+__visible:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+static asmlinkage void (*sha256_transform_asm)(const char *, u32 *, u64);
 
-iQIcBAEBAgAGBQJS/d16AAoJEPo9qoy8lh71ko4P/iA53mAne0Tn1SCTTi2i4rvF
-PETOH9sGNaZxIwVD/4thL+kOigDzaqNneJ0gOeF0HRK0TH4Xi4UsffgTRYhGP7MM
-N4Y7mU6mY8kshe/wavqj5M6/8J89rx4iynEY0GPhdT87YA3g25a+n6p4v/5GpirF
-JaLSqDtNtpsyaGQsSYpotgWA1LGXsm7oAF6QgOMlpP84ET5CZs2/Tbs4OX7aLh9T
-1VTctWdevRsX5DzN2zmiWrDzNdrjzkn/lUPf653BTMZNqFPoDDleRSgC+eV6Yhx/
-ix+AKyXJpgqLS91aITZ+4qBbQ+WNW42Eef9tMEqRJFtF8s4ESNz1uudxLBvPgWgj
-T1K4JBjPYqzzMSOEgkRJb0ZyQQDB/+N7uZOzmOKnh2YhR4I1moDuhGpKg2bmPe3p
-o4rmsEeXceBMGIdu6uh8xadB4qjXNTN7BdQpuTJ87FfN9UdxRfhceiMD5BAlUQJ7
-eGoxHXSNKvMjkBF1AHYEj+ZKjHnMRUhoWnVbKjmOSKihQlmhK45ht3QFwwtV/uSf
-FCszXUoXhn8IQAguKP6Mo0NXcuGd31OIT4G5Ovom4hFDxYEfgIsG60V7Lb9Dsr2B
-Cc9cPa0FtXqqOIFAH8dQlifxc/F3fOeV0Cyiyae4cXdc492A4gWPxceaLWIPRgvJ
-VRJbSAJ3i8ktPuoAXkKv
-=HED0
------END PGP SIGNATURE-----
+and
 
---8qAPbhfSagkkd19kIVnpwotTGP0H8odVT--
+static asmlinkage void (*sha512_transform_asm)(const char *, u64 *, u64);
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
