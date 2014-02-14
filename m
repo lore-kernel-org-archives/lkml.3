@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaBNH64 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 02:58:56 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:41510 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010AbaBNH6x (ORCPT
+	id S1752744AbaBNH6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:58:39 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39953 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701AbaBNH6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 02:58:53 -0500
+	Fri, 14 Feb 2014 02:58:36 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 18/52] x86, intel,
- uncore: Fix CPU hotplug callback registration
+Subject: [PATCH v2 16/52] x86, cpuid: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        srivatsa.bhat@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         x86@kernel.org, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:23:16 +0530
-Message-ID: <20140214075315.22701.33395.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:22:44 +0530
+Message-ID: <20140214075244.22701.7001.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,7 +27,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021407-2674-0000-0000-00000CB72134
+x-cbid: 14021407-5140-0000-0000-0000048EE379
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -67,45 +63,65 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the uncore code in intel-x86 by using this latter form of callback
-registration.
+Fix the cpuid code in x86 by using this latter form of callback registration.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: x86@kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpuid.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 29c2487..83c3c8b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -3808,7 +3808,7 @@ static int __init uncore_cpu_init(void)
- 	if (ret)
- 		return ret;
+diff --git a/arch/x86/kernel/cpuid.c b/arch/x86/kernel/cpuid.c
+index 7d9481c..3225ae6c 100644
+--- a/arch/x86/kernel/cpuid.c
++++ b/arch/x86/kernel/cpuid.c
+@@ -198,14 +198,15 @@ static int __init cpuid_init(void)
+ 		goto out_chrdev;
+ 	}
+ 	cpuid_class->devnode = cpuid_devnode;
+-	get_online_cpus();
++
++	cpu_notifier_register_begin();
+ 	for_each_online_cpu(i) {
+ 		err = cpuid_device_create(i);
+ 		if (err != 0)
+ 			goto out_class;
+ 	}
+-	register_hotcpu_notifier(&cpuid_class_cpu_notifier);
+-	put_online_cpus();
++	__register_hotcpu_notifier(&cpuid_class_cpu_notifier);
++	cpu_notifier_register_done();
+ 
+ 	err = 0;
+ 	goto out;
+@@ -215,7 +216,7 @@ out_class:
+ 	for_each_online_cpu(i) {
+ 		cpuid_device_destroy(i);
+ 	}
+-	put_online_cpus();
++	cpu_notifier_register_done();
+ 	class_destroy(cpuid_class);
+ out_chrdev:
+ 	__unregister_chrdev(CPUID_MAJOR, 0, NR_CPUS, "cpu/cpuid");
+@@ -227,13 +228,13 @@ static void __exit cpuid_exit(void)
+ {
+ 	int cpu = 0;
  
 -	get_online_cpus();
 +	cpu_notifier_register_begin();
- 
- 	for_each_online_cpu(cpu) {
- 		int i, phys_id = topology_physical_package_id(cpu);
-@@ -3827,9 +3827,9 @@ static int __init uncore_cpu_init(void)
- 	}
- 	on_each_cpu(uncore_cpu_setup, NULL, 1);
- 
--	register_cpu_notifier(&uncore_cpu_nb);
-+	__register_cpu_notifier(&uncore_cpu_nb);
- 
+ 	for_each_online_cpu(cpu)
+ 		cpuid_device_destroy(cpu);
+ 	class_destroy(cpuid_class);
+ 	__unregister_chrdev(CPUID_MAJOR, 0, NR_CPUS, "cpu/cpuid");
+-	unregister_hotcpu_notifier(&cpuid_class_cpu_notifier);
 -	put_online_cpus();
++	__unregister_hotcpu_notifier(&cpuid_class_cpu_notifier);
 +	cpu_notifier_register_done();
- 
- 	return 0;
  }
+ 
+ module_init(cpuid_init);
 
