@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaBNEyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:54:47 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:39547 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaBNEyq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:54:46 -0500
-Message-ID: <52FDA18D.40100@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 12:54:37 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] sched: make sure sched-priority after invoke idle_balance()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021404-2674-0000-0000-00000CB688CF
+	id S1751992AbaBNEzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:55:25 -0500
+Received: from ozlabs.org ([203.10.76.45]:47742 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089AbaBNEzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 23:55:24 -0500
+Date: Fri, 14 Feb 2014 15:55:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Mark Brown <broonie@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the akpm tree with the spi tree
+Message-Id: <20140214155515.3f3eab9f398dd5293eff0788@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__14_Feb_2014_15_55_15_+1100_2zsRs/LQ56NKHwNm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since idle_balance() will release rq-lock for a while, there is a chance that
-RT/DL tasks will be enqueued and ask for the resched, the func used to be
-invoked ahead of pick_next_task(), which will make sure we drop into the
-bottom-half inside pick_next_task().
+--Signature=_Fri__14_Feb_2014_15_55_15_+1100_2zsRs/LQ56NKHwNm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Now since idle_balance() was done inside pick_next_task_fair(), pick_next_task()
-can no longer make sure the priority, the worst case is that we will going to
-pick the pulled fair task while there is RT/DL on rq which actually should be
-picked up.
+Hi Andrew,
 
-This patch will prevent this happen by some rechecking after idle_balance(), it
-utilize the resched-flag for the case when RT/DL task was enqueued but don't ask
-for resched (will that ever happened?).
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/spi/spi.c between commit 513273538a6c ("spi: Make max_tx and
+max_rx the same type") from the spi tree and commit "drivers/spi/spi.c:
+fix max() warning" from the akpm tree.
 
-CC: Ingo Molnar <mingo@kernel.org>
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/sched/fair.c |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+I fixed it up (I used the version from the akpm tree giving the patch
+below) and can carry the fix as necessary (no action is required).
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 235cfa7..ce67514 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4776,6 +4776,16 @@ simple:
- 
- idle:
- #ifdef CONFIG_SMP
-+	/*
-+	 * We came here only when there is no more tasks on rq (top-half of
-+	 * pick_next_task()), and we are now going to pull some fair entities.
-+	 *
-+	 * Since prev is still the current on rq, clear it's resched-flag so
-+	 * we would be able to know when we got a new resched-request during
-+	 * idle_balance(), check below for more details.
-+	 */
-+	clear_tsk_need_resched(prev);
-+
- 	idle_enter_fair(rq);
- 	/*
- 	 * We must set idle_stamp _before_ calling idle_balance(), such that we
-@@ -4784,7 +4794,18 @@ idle:
- 	rq->idle_stamp = rq_clock(rq);
- 	if (idle_balance(rq)) { /* drops rq->lock */
- 		rq->idle_stamp = 0;
--		goto again;
-+		/*
-+		 * Before we start to pick one of the pulled fair entities, take
-+		 * care if some RT/DL tasks has been enqueued during the time
-+		 * we release rq-lock inside idle_balance().
-+		 *
-+		 * In such cases, since clear_tsk_need_resched() was done
-+		 * already, need_resched() will imply the request to sched-in
-+		 * the enqueued RT/DL tasks, so don't 'goto again' to make sure
-+		 * the priority.
-+		 */
-+		if (rq->nr_running == rq->cfs.h_nr_running || !need_resched())
-+			goto again;
- 	}
- #endif
- 
--- 
-1.7.9.5
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index a7c3691456dd..99bc9c513b70 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -644,12 +644,11 @@ static int spi_map_msg(struct spi_master *master, str=
+uct spi_message *msg)
+ 	struct device *tx_dev, *rx_dev;
+ 	struct spi_transfer *xfer;
+ 	void *tmp;
+-	unsigned int max_tx, max_rx;
+ 	int ret;
+=20
+ 	if (master->flags & (SPI_MASTER_MUST_RX | SPI_MASTER_MUST_TX)) {
+-		max_tx =3D 0;
+-		max_rx =3D 0;
++		unsigned max_tx =3D 0;
++		unsigned max_rx =3D 0;
+=20
+ 		list_for_each_entry(xfer, &msg->transfers, transfer_list) {
+ 			if ((master->flags & SPI_MASTER_MUST_TX) &&
+
+--Signature=_Fri__14_Feb_2014_15_55_15_+1100_2zsRs/LQ56NKHwNm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS/aG3AAoJEMDTa8Ir7ZwVE4oP/iSKWpxiRRFJviqjzNGWKSx7
+3NhOOivWnH+7iyVhngVpZlcik9YHzWljfmsYlPT9wt+qdyTR0Nek/1MFurlW6qnw
+PBiNBIGGBZ/nm5yO90kMckG4P+tQ3V3RPiFdkAWgw9a/8cvW6hAvHkRAg3D3iyGM
+saiIqjmvglkWyimiT3dPEt1goeNrTkZKBZt8yXNiC+7fgkg2LiGIN6iLkiXK0EDJ
+Y3ba1wWzeBaWICwxk5ScbY9Pv3YbZ30PAvU1/Yo9D/E3dOxZMS0VBCCT3GsMOhJc
+6nE/w+p9H7Ep1lB+S5xjbcjqRy0gsXj9kJ7yqitu75VODqpkGlUG909EC1xnmlnl
+lf1FX4xY2KXbQfWh5K+1w8ALiB9ErniyDpmfgNBWgHKCsypQK92SWdBlF4rRSOl3
+lUNVrXx+u4+rtPVQVTTV5SIkXvw4HJIYo76O/dkyG8qZtOOjtsgcuBXey8LKhPNj
+1h5iJXGhZt+yjDCy5Poeht94EjJavT6+muUf9b1bLmGZV7mULBkIbWLEIV5Omo2r
+OV4SfKDoOqnFQmfpQgxD4i59S/g6fuYJK1061uGkpYDbZclNpa5JJdBZ6Zj1+tvB
+JyPFRzc38kaO7AGl13wN9d/r6sdEendL8DF9tOUFNoskg+XvsVITF4n74etvmdFR
+Hb8UdfueJ0jNPya8/DGL
+=+/BO
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__14_Feb_2014_15_55_15_+1100_2zsRs/LQ56NKHwNm--
