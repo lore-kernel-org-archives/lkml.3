@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaBNVMG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 16:12:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845AbaBNVME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 16:12:04 -0500
-Message-ID: <1392412322.2760.21.camel@localhost>
-Subject: Re: [PATCH] audit: add arch field to seccomp event log
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Steve Grubb <sgrubb@redhat.com>
-Date: Fri, 14 Feb 2014 16:12:02 -0500
-In-Reply-To: <20140214205218.GG18807@madcap2.tricolour.ca>
-References: <4bc8c03bda84e004c331546e228b334811b03254.1392409147.git.rgb@redhat.com>
-	 <1392410961.2760.17.camel@localhost>
-	 <20140214205057.GF18807@madcap2.tricolour.ca>
-	 <20140214205218.GG18807@madcap2.tricolour.ca>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752647AbaBNVQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 16:16:40 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44833 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaBNVQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 16:16:39 -0500
+Date: Fri, 14 Feb 2014 22:16:41 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Conrad Kostecki <ck@conrad-kostecki.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Renninger <trenn@suse.de>
+Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+In-Reply-To: <52FE7738.6040009@zytor.com>
+Message-ID: <alpine.DEB.2.02.1402142140430.21991@ionos.tec.linutronix.de>
+References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <52FE5D91.6060005@zytor.com> <alpine.DEB.2.02.1402141917320.21991@ionos.tec.linutronix.de> <52FE5ED4.4040508@zytor.com> <alpine.DEB.2.02.1402141924170.21991@ionos.tec.linutronix.de> <a1204336-ad8d-4f2f-8078-24f043f123e6@email.android.com>
+ <alpine.DEB.2.02.1402142013150.21991@ionos.tec.linutronix.de> <52FE6DEF.1050607@zytor.com> <alpine.DEB.2.02.1402142030240.21991@ionos.tec.linutronix.de> <52FE7738.6040009@zytor.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-14 at 15:52 -0500, Richard Guy Briggs wrote:
-> On 14/02/14, Richard Guy Briggs wrote:
-> > On 14/02/14, Eric Paris wrote:
-> > > On Fri, 2014-02-14 at 15:23 -0500, Richard Guy Briggs wrote:
-> > > > The AUDIT_SECCOMP record looks something like this:
-> > > > 
-> > > > type=SECCOMP msg=audit(1373478171.953:32775): auid=4325 uid=4325 gid=4325 ses=1 subj=unconfined_u:unconfined_r:unconfined_t:s0 pid=12381 comm="test" sig=31 syscall=231 compat=0 ip=0x39ea8bca89 code=0x0
-> > > > 
-> > > > In order to determine what syscall 231 maps to, we need to have the arch= field right before it.
-> > > > 
-> > > > To see the event, compile this test.c program:
-> > > > 
-> > > > =====
-> > > > int main(void)
-> > > > {
-> > > >         return seccomp_load(seccomp_init(SCMP_ACT_KILL));
-> > > > }
-> > > > =====
-> > > > 
-> > > > gcc -g test.c -o test -lseccomp
-> > > > 
-> > > > After running the program, find the record by:  ausearch --start recent -m SECCOMP -i
-> > > > ---
-> > > >  kernel/auditsc.c |    1 +
-> > > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> > > > index 6874c1f..c464d44 100644
-> > > > --- a/kernel/auditsc.c
-> > > > +++ b/kernel/auditsc.c
-> > > > @@ -2412,6 +2412,7 @@ void __audit_seccomp(unsigned long syscall, long signr, int code)
-> > > >  		return;
-> > > >  	audit_log_task(ab);
-> > > >  	audit_log_format(ab, " sig=%ld", signr);
-> > > > +	audit_log_format(ab, " arch=%x", current->audit_context->arch);
-> > > 
-> > > 
-> > > What happens if the task does not have current->audit_context allocated?
-> > > Seems possible if signr is non-zero...
+On Fri, 14 Feb 2014, H. Peter Anvin wrote:
+> On 02/14/2014 11:59 AM, Thomas Gleixner wrote:
+> > On Fri, 14 Feb 2014, H. Peter Anvin wrote:
+> >> On 02/14/2014 11:15 AM, Thomas Gleixner wrote:
+> >>> I'm fine with ACPI tables if we can provide simple means for embedded
+> >>> users to load one via grub or just attach it to the kernel image.
+> >>
+> >> That already exists, see Documentation/acpi/initrd_table_override.txt.
 > > 
-> > I had assumed that since we got this far, that there was an audit
-> > context.  This was my first patch:
+> > That requires, that you have already ACPI tables.
+> > 
+> > ACPI_SIG_RSDP cannot be overridden and that's the base table you need
+> > to get ACPI going in the first place. So we need support for that and
+> > probably for storing the tables at some non canonical place.
+> > 
 > 
-> Sorry, pulled the trigger too fast:
-> 
-> ---
->  kernel/auditsc.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> index 6874c1f..3023d03 100644
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@ -2406,12 +2406,18 @@ void audit_core_dumps(long signr)
->  void __audit_seccomp(unsigned long syscall, long signr, int code)
->  {
->         struct audit_buffer *ab;
-> +       struct audit_context *context audit_get_context(current, 0, 0);
+> Well, the RSDP and RSDT/XSDT are nothing but pointers to other tables,
+> so if explicitly overridden I'm not sure if one actually would need
+> them.  That doesn't mean our current code will work without them, though.
 
-missing '='   but this isn't what audit_get_context() does...   it's
-crappy naming...    I'd think a combo of audit_dummy_context() and
-current->audit_context would be most appropriate.
+I tried once to overload all of the tables, but failed miserably in
+the ACPI dungeon. RSDP was the major pain point IIRC.
 
->         ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
->         if (unlikely(!ab))
->                 return;
->         audit_log_task(ab);
->         audit_log_format(ab, " sig=%ld", signr);
-> +       audit_log_format(ab, " arch=");
-> +       if (context)
-> +               audit_log_format(ab, "(null)");
-> +       else
-> +               audit_log_format(ab, "%x", context->arch);
->         audit_log_format(ab, " syscall=%ld", syscall);
->         audit_log_format(ab, " compat=%d", is_compat_task());
->         audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
+Thanks,
 
+	tglx
 
