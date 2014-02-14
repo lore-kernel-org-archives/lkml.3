@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaBNTNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 14:13:55 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:56431 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaBNTNy (ORCPT
+	id S1752799AbaBNTPg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 14:15:36 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44129 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938AbaBNTPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 14:13:54 -0500
+	Fri, 14 Feb 2014 14:15:35 -0500
+Date: Fri, 14 Feb 2014 20:15:39 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Conrad Kostecki <ck@conrad-kostecki.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+In-Reply-To: <a1204336-ad8d-4f2f-8078-24f043f123e6@email.android.com>
+Message-ID: <alpine.DEB.2.02.1402142013150.21991@ionos.tec.linutronix.de>
+References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <52FE5D91.6060005@zytor.com> <alpine.DEB.2.02.1402141917320.21991@ionos.tec.linutronix.de> <52FE5ED4.4040508@zytor.com> <alpine.DEB.2.02.1402141924170.21991@ionos.tec.linutronix.de> <a1204336-ad8d-4f2f-8078-24f043f123e6@email.android.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140214101724.GC10590@arm.com>
-References: <20140213195230.GA15275@www.outflux.net>
-	<20140214101724.GC10590@arm.com>
-Date: Fri, 14 Feb 2014 11:13:53 -0800
-X-Google-Sender-Auth: fT_8rhP_heYjE22pgF2I5Byo3uc
-Message-ID: <CAGXu5jKYq=0Ud-A6bdD2zMe=+r0S7nja8Rg+OxeT+JHzdpwTKg@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: mm: report both sections from PMD
-From: Kees Cook <keescook@chromium.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Steve Capper <steve.capper@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 2:17 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Thu, Feb 13, 2014 at 07:52:30PM +0000, Kees Cook wrote:
->> On 2-level page table systems, the PMD has 2 section entries. Report
->> these, otherwise ARM_PTDUMP will miss reporting permission changes on
->> odd section boundaries.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-On Fri, Feb 14, 2014 at 9:05 AM, Steve Capper <steve.capper@linaro.org> wrote:
-> Tested-by: Steve Capper <steve.capper@linaro.org>
 
-Thanks to both of you! If you have a moment can you check this other
-patch which has additional fixes for the dump code?
+On Fri, 14 Feb 2014, H. Peter Anvin wrote:
 
-https://lkml.org/lkml/2014/2/12/662
+> We could also just add an ACPI table... same concept.  Still need to find it.
+
+I'm fine with ACPI tables if we can provide simple means for embedded
+users to load one via grub or just attach it to the kernel image.
+
+Sure, the user needs to know how to prepare one, but for similar
+platforms, e.g. e6xx based stuff the tables would look all the
+same. We probably could just recycle those from the BLDK.
 
 Thanks,
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+	tglx
