@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaBNVSq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 16:18:46 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58942 "EHLO mail.zytor.com"
+	id S1752996AbaBNVTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 16:19:00 -0500
+Received: from mga02.intel.com ([134.134.136.20]:10900 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752800AbaBNVSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 16:18:43 -0500
-Message-ID: <52FE8817.4000504@zytor.com>
-Date: Fri, 14 Feb 2014 13:18:15 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Conrad Kostecki <ck@conrad-kostecki.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
-References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5D91.6060005@zytor.com> <alpine.DEB.2.02.1402141917320.21991@ionos.tec.linutronix.de> <52FE5ED4.4040508@zytor.com> <alpine.DEB.2.02.1402141924170.21991@ionos.tec.linutronix.de> <a1204336-ad8d-4f2f-8078-24f043f123e6@email.android.com> <alpine.DEB.2.02.1402142013150.21991@ionos.tec.linutronix.de> <52FE6DEF.1050607@zytor.com> <alpine.DEB.2.02.1402142030240.21991@ionos.tec.linutronix.de> <52FE7738.6040009@zytor.com> <alpine.DEB.2.02.1402142140430.21991@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1402142140430.21991@ionos.tec.linutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752811AbaBNVSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 16:18:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,847,1384329600"; 
+   d="scan'208";a="455750357"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-kbuild@vger.kernel.org, mmarek@suse.cz,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/6] kbuild: Put kallsyms into own section
+Date: Fri, 14 Feb 2014 22:17:05 +0100
+Message-Id: <1392412629-25666-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1392412629-25666-1-git-send-email-andi@firstfloor.org>
+References: <1392412629-25666-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 01:16 PM, Thomas Gleixner wrote:
->>
->> Well, the RSDP and RSDT/XSDT are nothing but pointers to other tables,
->> so if explicitly overridden I'm not sure if one actually would need
->> them.  That doesn't mean our current code will work without them, though.
-> 
-> I tried once to overload all of the tables, but failed miserably in
-> the ACPI dungeon. RSDP was the major pain point IIRC.
-> 
+From: Andi Kleen <ak@linux.intel.com>
 
-I suspect we need to handle the RSDP and RSDT/XSDT specially, since,
-again, they are really just pointers to where to find the other tables.
- They are part of the discovery, not the data.
+Put the kallsyms information into an own .kallsyms section.
+This makes it easier to patch the kallsyms inside the executable.
+Otherwise it shouldn't change anything.
 
-	-hpa
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/asm-generic/vmlinux.lds.h | 4 ++++
+ scripts/kallsyms.c                | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index bc2121f..6214f18 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -280,6 +280,10 @@
+ 									\
+ 	TRACEDATA							\
+ 									\
++	.kallsyms          : AT(ADDR(.kallsyms) - LOAD_OFFSET) {	\
++		*(.kallsyms)						\
++	}								\
++									\
+ 	/* Kernel symbol table: Normal symbols */			\
+ 	__ksymtab         : AT(ADDR(__ksymtab) - LOAD_OFFSET) {		\
+ 		VMLINUX_SYMBOL(__start___ksymtab) = .;			\
+diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+index 56f5986..ceef756 100644
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -314,7 +314,7 @@ static void write_src(void)
+ 	printf("#define ALGN .align 4\n");
+ 	printf("#endif\n");
+ 
+-	printf("\t.section .rodata, \"a\"\n");
++	printf("\t.section .kallsyms, \"a\"\n");
+ 
+ 	/* Provide proper symbols relocatability by their '_text'
+ 	 * relativeness.  The symbol names cannot be used to construct
+-- 
+1.8.5.2
 
