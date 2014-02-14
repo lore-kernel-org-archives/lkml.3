@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaBNVkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 16:40:11 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44794 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487AbaBNVkJ (ORCPT
+	id S1752807AbaBNVno (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 16:43:44 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:37974 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaBNVnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 16:40:09 -0500
+	Fri, 14 Feb 2014 16:43:42 -0500
 MIME-Version: 1.0
-Reply-To: rajatxjain@gmail.com
-In-Reply-To: <CAErSpo4YwCaS+zc50L8PMO5nx9XscEua7nHXqM3eR3XzG4TtJQ@mail.gmail.com>
-References: <52FE89FF.4020700@gmail.com>
-	<CAErSpo4YwCaS+zc50L8PMO5nx9XscEua7nHXqM3eR3XzG4TtJQ@mail.gmail.com>
-Date: Fri, 14 Feb 2014 13:40:08 -0800
-Message-ID: <CAA93t1oWguvHkSuUqgBSjV7tgrvU2wgfBrnpRUZ_U7rqED6cUQ@mail.gmail.com>
-Subject: Re: [PATCH] pciehp: Display the link state change reporting capability
-From: Rajat Jain <rajatxjain@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
+In-Reply-To: <20140203212216.8607.68273.stgit@bling.home>
+References: <20140203212216.8607.68273.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 14 Feb 2014 14:43:20 -0700
+Message-ID: <CAErSpo5D55RcaSASGrU8hEcg+BYvGKOQHFjor8k1gSzfZKWy2g@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] Quirk Intel PCH root ports for ACS-like features
+To: Alex Williamson <alex.williamson@redhat.com>
 Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kees Cook <keescook@chromium.org>
+        Don Dugger <donald.d.dugger@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bjorn,
+[+cc Don]
 
-On Fri, Feb 14, 2014 at 1:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Feb 14, 2014 at 2:26 PM, Rajat Jain <rajatxjain@gmail.com> wrote:
->> With recent addition of Link state change based hot-plug, it makes
->> sense to display this capability in dbg_ctrl() addition to others.
->>
->> (Also move the call to dbg_ctrl() further down untill after the value
->> is populated in ctrl->link_active_reporting)
->>
->> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
->> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
->> Signed-off-by: Guenter Roeck <groeck@juniper.net>
+On Mon, Feb 03, 2014 at 02:27:27PM -0700, Alex Williamson wrote:
+> v2:
+>  - Remove bus #0 bug in filtering matching
+>  - Add 2/3 introducing PCI_DEV_FLAGS_ACS_ENABLED_QUIRK, this gives
+>    is better tracking and addresses the theoretical hotplug issue
+>  - Update 3/3 for PCI_DEV_FLAGS_ACS_ENABLED_QUIRK
+>  - Add dev_info to print regardless of whether we changes bits
+>  - Add Intel cc
 >
-> This is fine as it is, but I'd like to get rid of dbg_ctrl()
-> altogether someday.  I made pcie_init() more verbose with afe2478f2e3f
-> ("PCI: pciehp: Announce slot capabilities (slot #, button, LEDs,
-> etc)"), and it does include the PCI_EXP_LNKCAP_DLLLARC info.
+> As described in 3/3 many Intel root ports lack PCIe ACS capabilities
+> which results in excessively large IOMMU groups.  Many of these root
+> ports do provide isolation capabilities, we just need to use device
+> specific mechanisms to enable and verify.  Long term, I hope we can
+> round out this list (particularly to include X79 root ports) and
+> more importantly, encourage proper PCIe ACS support in future
+> products.  I'm really hoping we can get this in during the 3.14 cycle.
+> Thanks,
 >
-> Is there anything important left in dbg_ctrl() that we don't already
-> print elsewhere?  The PCI core prints the vendor/device and BAR info.
-> Of course, we don't print the entire capabilities/status/control words
-> anywhere else.  Is that important?
-
-No, there doesn't seem a good use for it today. It all changes a short
-while after it gets printed anyway.
-
-
+> Alex
+> ---
 >
->> ---
->>  drivers/pci/hotplug/pciehp_hpc.c |    8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
->> index da4b020..cbe8e924 100644
->> --- a/drivers/pci/hotplug/pciehp_hpc.c
->> +++ b/drivers/pci/hotplug/pciehp_hpc.c
->> @@ -747,6 +747,8 @@ static inline void dbg_ctrl(struct controller *ctrl)
->>                   EMI(ctrl)        ? "yes" : "no");
->>         ctrl_info(ctrl, "  Command Completed    : %3s\n",
->>                   NO_CMD_CMPL(ctrl) ? "no" : "yes");
->> +       ctrl_info(ctrl, "  Link Change Reporting: %3s\n",
->> +                 ctrl->link_active_reporting ? "yes" : "no");
->>         pcie_capability_read_word(pdev, PCI_EXP_SLTSTA, &reg16);
->>         ctrl_info(ctrl, "Slot Status            : 0x%04x\n", reg16);
->>         pcie_capability_read_word(pdev, PCI_EXP_SLTCTL, &reg16);
->> @@ -771,7 +773,6 @@ struct controller *pcie_init(struct pcie_device *dev)
->>         ctrl->slot_cap = slot_cap;
->>         mutex_init(&ctrl->ctrl_lock);
->>         init_waitqueue_head(&ctrl->queue);
->> -       dbg_ctrl(ctrl);
->>         /*
->>          * Controller doesn't notify of command completion if the "No
->>          * Command Completed Support" bit is set in Slot Capability
->> @@ -784,10 +785,9 @@ struct controller *pcie_init(struct pcie_device *dev)
->>
->>          /* Check if Data Link Layer Link Active Reporting is implemented */
->>          pcie_capability_read_dword(pdev, PCI_EXP_LNKCAP, &link_cap);
->> -        if (link_cap & PCI_EXP_LNKCAP_DLLLARC) {
->> -                ctrl_dbg(ctrl, "Link Active Reporting supported\n");
->> +       if (link_cap & PCI_EXP_LNKCAP_DLLLARC)
->>                  ctrl->link_active_reporting = 1;
->> -        }
->> +       dbg_ctrl(ctrl);
->>
->>         /* Clear all remaining event bits in Slot Status register */
->>         pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
->> --
->> 1.7.9.5
->>
+> Alex Williamson (3):
+>       pci: Add device specific PCI ACS enable
+>       pci: Add pci_dev_flag for ACS enable quirks
+>       pci/quirks: Enable quirks for PCIe ACS on Intel PCH root ports
+
+I applied these (with Don's ack for 3/3) to pci/virtualization.
+
+I tried to figure out how to handle post-merge window patches.  Per
+Documentation/development-process/2.Process, "[after -rc1], only patches
+which fix problems should be submitted to the mainline," so one might
+conclude that a fix for any sort of problem is allowed.  However,
+Documentation/networking/netdev-FAQ.txt says "No new features get mainlined
+after this [-rc1] -- only fixes to the rc1 content are expected," which is
+how I've been operating.
+
+In any case, these patches look more like new functionality (enabling a
+non-standard ACS feature) than a bug fix to me, so my preference is to
+merge them during the v3.15 merge window.
+
+I understand the desire for v3.14, namely, "lots of Intel devices don't
+support ACS, and that makes it hard for users to expose devices to
+userspace with fine granularity, and waiting for v3.15 will mean another
+two months."  But this problem is really of Intel's own making: if they'd
+used standard ACS, or if they'd documented their non-standard mechanism,
+this wouldn't be an issue.
+
+Bjorn
