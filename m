@@ -1,110 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517AbaBNEct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:32:49 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:56523 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181AbaBNEcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:32:46 -0500
-Date: Thu, 13 Feb 2014 20:32:35 -0800
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-Message-ID: <20140214043235.GA21999@linux.vnet.ibm.com>
-References: <52F88C16.70204@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
- <52F8C556.6090006@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
- <52FC6F2A.30905@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
- <52FC98A6.1000701@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
- <20140214001438.GB1651@linux.vnet.ibm.com>
- <CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
-X-Operating-System: Linux 3.11.0-15-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021404-9332-0000-0000-0000031A7717
+	id S1752337AbaBNEeX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:34:23 -0500
+Received: from ozlabs.org ([203.10.76.45]:38114 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323AbaBNEeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 23:34:21 -0500
+Date: Fri, 14 Feb 2014 15:34:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>
+Subject: linux-next: manual merge of the akpm-current tree with the cgroup
+ tree
+Message-Id: <20140214153414.b15e54bf5aa61d0e75bacc90@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__14_Feb_2014_15_34_14_+1100_U5A81uSflaRJ.7Of"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Fri__14_Feb_2014_15_34_14_+1100_U5A81uSflaRJ.7Of
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 13.02.2014 [16:37:53 -0800], Linus Torvalds wrote:
-> Is this whole thread still just for the crazy and pointless
-> "max_sane_readahead()"?
-> 
-> Or is there some *real* reason we should care?
+Hi Andrew,
 
-There is an open issue on powerpc with memoryless nodes (inasmuch as we
-can have them, but the kernel doesn't support it properly). There is a
-separate discussion going on on linuxppc-dev about what is necessary for
-CONFIG_HAVE_MEMORYLESS_NODES to be supported.
+Today's linux-next merge of the akpm-current tree got a conflict in
+mm/memcontrol.c between commit e61734c55c24 ("cgroup: remove
+cgroup->name") from the cgroup tree and commit 05d3a02a1a0d ("memcg:
+change oom_info_lock to mutex") from the akpm-current tree.
 
-> Because if it really is just for max_sane_readahead(), then for the
-> love of God, let us just do this
-> 
->  unsigned long max_sane_readahead(unsigned long nr)
->  {
->         return min(nr, 128);
->  }
-> 
-> and bury this whole idiotic thread.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Agreed that for the readahead case the above is probably more than
-sufficient.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Apologies for hijacking the thread, my comments below were purely about
-the memoryless node support, not about readahead specifically.
+diff --cc mm/memcontrol.c
+index d9c6ac1532e6,de1a2aed4954..000000000000
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@@ -1683,25 -1683,54 +1683,25 @@@ static void move_unlock_mem_cgroup(stru
+   */
+  void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_stru=
+ct *p)
+  {
+ -	/*
+ -	 * protects memcg_name and makes sure that parallel ooms do not
+ -	 * interleave
+ -	 */
+ +	/* oom_info_lock ensures that parallel ooms do not interleave */
+- 	static DEFINE_SPINLOCK(oom_info_lock);
++ 	static DEFINE_MUTEX(oom_info_lock);
+ -	struct cgroup *task_cgrp;
+ -	struct cgroup *mem_cgrp;
+ -	static char memcg_name[PATH_MAX];
+ -	int ret;
+  	struct mem_cgroup *iter;
+  	unsigned int i;
+ =20
+  	if (!p)
+  		return;
+ =20
+- 	spin_lock(&oom_info_lock);
++ 	mutex_lock(&oom_info_lock);
+  	rcu_read_lock();
+ =20
+ -	mem_cgrp =3D memcg->css.cgroup;
+ -	task_cgrp =3D task_cgroup(p, mem_cgroup_subsys_id);
+ -
+ -	ret =3D cgroup_path(task_cgrp, memcg_name, PATH_MAX);
+ -	if (ret < 0) {
+ -		/*
+ -		 * Unfortunately, we are unable to convert to a useful name
+ -		 * But we'll still print out the usage information
+ -		 */
+ -		rcu_read_unlock();
+ -		goto done;
+ -	}
+ -	rcu_read_unlock();
+ -
+ -	pr_info("Task in %s killed", memcg_name);
+ +	pr_info("Task in ");
+ +	pr_cont_cgroup_path(task_cgroup(p, memory_cgrp_id));
+ +	pr_info(" killed as a result of limit of ");
+ +	pr_cont_cgroup_path(memcg->css.cgroup);
+ +	pr_info("\n");
+ =20
+ -	rcu_read_lock();
+ -	ret =3D cgroup_path(mem_cgrp, memcg_name, PATH_MAX);
+ -	if (ret < 0) {
+ -		rcu_read_unlock();
+ -		goto done;
+ -	}
+  	rcu_read_unlock();
+ =20
+ -	/*
+ -	 * Continues from above, so we don't need an KERN_ level
+ -	 */
+ -	pr_cont(" as a result of limit of %s\n", memcg_name);
+ -done:
+ -
+  	pr_info("memory: usage %llukB, limit %llukB, failcnt %llu\n",
+  		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
+  		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
 
-Thanks,
-Nish
+--Signature=_Fri__14_Feb_2014_15_34_14_+1100_U5A81uSflaRJ.7Of
+Content-Type: application/pgp-signature
 
-> Seriously, if your IO subsystem needs more than 512kB of read-ahead to
-> get full performance, your IO subsystem is just bad, and has latencies
-> that are long enough that you should just replace it. There's no real
-> reason to bend over backwards for that, and the whole complexity and
-> fragility of the insane "let's try to figure out how much memory this
-> node has" is just not worth it. The read-ahead should be small enough
-> that we should never need to care, and large enough that you get
-> reasonable IO throughput. The above does that.
-> 
-> Goddammit, there's a reason the whole "Gordian knot" parable is
-> famous. We're making this all too damn complicated FOR NO GOOD REASON.
-> 
-> Just cut the rope, people. Our aim is not to generate some kind of job
-> security by making things as complicated as possible.
-> 
->                  Linus
-> 
-> On Thu, Feb 13, 2014 at 4:14 PM, Nishanth Aravamudan
-> <nacc@linux.vnet.ibm.com> wrote:
-> >
-> > I'm working on this latter bit now. I tried to mirror ia64, but it looks
-> > like they have CONFIG_USER_PERCPU_NUMA_NODE_ID, which powerpc doesn't.
-> > It seems like CONFIG_USER_PERCPU_NUMA_NODE_ID and
-> > CONFIG_HAVE_MEMORYLESS_NODES should be tied together in Kconfig?
-> >
-> > I'll keep working, but would appreciate any further insight.
-> >
-> > -Nish
-> >
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBCAAGBQJS/ZzLAAoJEMDTa8Ir7ZwVIzIP/iuRClF7TxQ9RhjfxEqzhq1w
+VZFOavW/zMC+w0Yfq1T53Jib8eEPlpSlqtZXHXtKPLeTfiuF3iZTj+6ZmJ7+A03r
+I7kW6fveSLRYchzgkkYFU++Ebz5gy825jp3aK6wDNk4LHOmbMCNlSjuKOakEHotE
+bpY0L5TGgPgTbQYR6TA0kCKH0sDklfttc0b6lm3P6h71Nt7QMjhdmbTZNfDAom7Y
+jaYM8Xe/een7xti0SiT3PtcbBc15EB3RHtqDJRW5CHn7Xxj63t8wiBw6NdM5HwSa
+420juYyo5ZfWUlG/V6zVx4jE/cga6XgbnPOopJkG4mjI/JD2wHxTk01pR63BTQTw
+cH+Gp0KHZppV3x95sf9/JvYmTXEFjkhoepTt0nEgs7YN9k47xlcV1ga1rpIJKD3T
+KreSHI5f+CSZ4afBVLpp/Ul/RuF+52qKJpzpBl/IdI45g6DMQNcKXY6t2kh5BSYD
+v2goyuhaa8iTEXHeHcgXWS0oQp5knmizq6ai3dKPpN1/PAgKyL+n3ELhQ6rP5koK
+k+zyIalNSD1DYpzUS5P00eFjJplLrbnk/+/XH9NuUBzV4Qgw0FI1E58ouSEvv0NT
+g47FDBlq5WSTBqQE+pX8rveD0P9g4mkj0heIvFpH5aF7/GcfdSS5Tnj7JsGX6BCY
++7L6xRM1Q15I+U/W/0ru
+=An/1
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__14_Feb_2014_15_34_14_+1100_U5A81uSflaRJ.7Of--
