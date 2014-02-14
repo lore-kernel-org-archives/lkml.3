@@ -1,118 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaBNURl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:17:41 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:44594 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692AbaBNURj (ORCPT
+	id S1752737AbaBNURx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:17:53 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:44971 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496AbaBNURv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:17:39 -0500
+	Fri, 14 Feb 2014 15:17:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <52FE51E9.8000203@redhat.com>
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
-	<52F3670D.5090608@redhat.com>
-	<CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
-	<52FD2908.8000009@redhat.com>
-	<CAMEtUuySNdj4_YBxQtaGu3qJ6TZhp65mSBy7DbhzL_Lvn9YiPw@mail.gmail.com>
-	<52FE51E9.8000203@redhat.com>
-Date: Fri, 14 Feb 2014 12:17:37 -0800
-Message-ID: <CAMEtUux0K6xTy=wtoutny+HXv8yrTMurPWB6q_LVf7KAOAkzhw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CALCETrUOm7uRb1eUctPS5WCQkZDRZjOxyGyYb0BkGu+W-J0zpg@mail.gmail.com>
+References: <20140212201709.GB6835@laptop.programming.kicks-ass.net>
+ <218b548b69479baa005af8a7b04a3abbea8ed6fa.1392252790.git.luto@amacapital.net>
+ <20140213145016.GA15586@twins.programming.kicks-ass.net> <CALCETrUOm7uRb1eUctPS5WCQkZDRZjOxyGyYb0BkGu+W-J0zpg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 14 Feb 2014 12:17:27 -0800
+Message-ID: <CALCETrUuC1t-SB1tRNBmH_=RhkRT5uprtAUQy82by5QZBJWiwA@mail.gmail.com>
+Subject: Re: [RFC] sched: Add a new lockless wake-from-idle implementation
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=089e01160d32e287fd04f2637f17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 9:27 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 02/14/2014 05:47 AM, Alexei Starovoitov wrote:
-> ...
+--089e01160d32e287fd04f2637f17
+Content-Type: text/plain; charset=ISO-8859-1
+
+On Fri, Feb 14, 2014 at 12:01 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Feb 13, 2014 at 6:50 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Wed, Feb 12, 2014 at 05:40:12PM -0800, Andy Lutomirski wrote:
+>>> This is a strawman proposal to simplify the idle implementation, eliminate
+>>> a race
 >>>
->>> Do you see a possibility to integrate your work step by step? That is,
+>>> Benefits over current code:
+>>>  - ttwu_queue_remote doesn't use an IPI unless needed
+>>>  - The diffstat should speak for itself :)
+>>>  - Less racy.  Spurious IPIs are possible, but only in narrow windows or
+>>>    when two wakeups occur in rapid succession.
+>>>  - Seems to work (?)
+>>>
+>>> Issues:
+>>>  - Am I doing the percpu stuff right?
+>>>  - Needs work on non-x86 architectures
+>>>  - The !CONFIG_SMP case needs to be checked
+>>>  - Is "idlepoll" a good name for the new code?  It doesn't have *that*
+>>>    much to do with the idle state.  Maybe cpukick?
+>>>
+>>> If this turns out okay, TIF_NEED_RESCHED could possibly be deleted as well.
 >>
+>> No, we can't do away with that; its used in some fairly critical paths
+>> (return to userspace) and adding a second cacheline load there would be
+>> unfortunate.
 >>
->> Sure. let's see how we can do it.
+>> I also don't really like how the polling state is an atomic; its a cpu
+>> local property.
 >>
->>> to first integrate the interpreter part only; meaning, to detect "old"
->>> BPF programs e.g. coming from SO_ATTACH_FILTER et al and run them in
->>> compatibility mode while extended BPF is fully integrated and replaces
->>> the old engine in net/core/filter.c. Maybe, "old" programs can be
+>> Now given we can't get rid of TIF_NEED_RESCHED, and we need an atomic op
+>> on a remote cacheline anyhow; the simplest solution would be to convert
+>> all TS_POLLING users to TIF_POLLING_NRFLAG and use an atomic_or_return()
+>> like construct to do:
 >>
+>>   atomic_or_return(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG
 >>
->> do you mean drop bfp64_jit, checker and just have bpf32->bpf64 converter
->> and bpf64 interpreter as phase 1 ?
->> Checking is done by old bpf32,
->> all existing bpf32 jits, if available, can convert bpf32 to native,
->> but interpreter will be running on bpf64 ?
->> phase 2 to introduce bpf64_x86 jit and so on?
->> Sounds fine.
+>> and avoid the IPI if that is false.
+>>
+>> Something a little like this; it does require a lot of auditing; but it
+>> boots on my x86_64.
 >
+> On further consideration, I think I like this approach.  It's a
+> simpler change than mine and it appears to work (unlike mine, and I
+> still haven't figured out what I'm doing wrong).  If anyone wants to
+> get rid of the cmpxchg loop, a trick like would likely work well built
+> on top of this.
 >
-> If that's possible, so first step would be to migrate bpf_run() from patch1
-> into sk_run_filter() form net/core/filter.c, and also bring in related
-> include file into include/linux/filter.h resp. include/uapi/linux/filter.h.
-> Plus code that is needed to verify the image in new (and old) format e.g.
-> bpf_load_image() et al, and to either convert old programs into the new
-> format, for example; generally, to find a way to still handle them
-> (bpf/seccomp)
-> while having the new code included and leaving new JITs aside. That I think
-> could be phase 1. Phase 2 would be to successively replace current JITs,
-> etc.
+> That being said, I can't really test this, because I can't seem to
+> boot any recent 3.14-based kernel on real hardware, and they die
+> before they produce any output.  They work fine in QEMU.
 
-Sounds good.
-Let me rephrase.
-step 1:
-sk_attach_filter() -> __sk_prepare_filter() -> sk_chk_filter() all stays as-is.
-sk_chk_filter() calls new bpf_convert() that converts old bpf to new bpf insns.
-Old sk_run_filter() is gone and replaced with bpf_run() that iterates
-over new insns.
-Here would need to make sure that all sk_run_filter() users (seccomp,
-ppp, isdn, team)
-are unaffected.
+Either you have a bug or I rebased it wrong.  With the attached
+rebased version, I hit WARN_ON_ONCE(irqs_disabled()) in
+cpu_idle_loop() on a semi-regular basis when I boot with:
 
-step 2:
-use 'len' field of 'struct sock_fprog' to differentiate between old and new bpf.
-len < 4096 -> old bpf insns, go to step 1
-len > 4096 -> new bpf insns, verify them through new bpf_check()
-and run them via the same new sk_run_filter()==bpf_run()
-This way all current users of bpf can load new programs through the
-same interfaces.
+virtme-runkernel arch/x86/boot/bzImage -smp 2 -cpu host
 
-step 3:
-replace bpf32_x86 jit with bpf64_jit.
+It also sometimes hangs after starting a shell.
 
-step 4:
-old filter attach interfaces do not allow the most interesting bpf64 programs
-with bpf_tables (like the one for kernel tracing), extend them or add new
+(shameless plug: this is virtme from
+https://git.kernel.org/cgit/utils/kernel/virtme/virtme.git  )
 
-Initially I extended include/uapi/linux/filter.h, but then decided
-it's too aggressive
-to change uapi header and split it into include/linux/bpf.h instead.
-It's definitely cleaner to have one. I guess with a comment that bpf64 insn set
-may change, it should be ok. I'll go back to single filter.h
+--Andy
 
-As far as making bpf64 interpreter to perform at bpf32 speeds on i386 and arm32,
-I think I have to reconsider 32-bit subregs. Peter Anvin should be happy :)
-If old bpf is like 8086, bpf64 with 32-bit subregs and 64-bit
-registers is like x86-64 with x32.
+--089e01160d32e287fd04f2637f17
+Content-Type: text/x-diff; charset=US-ASCII; name="peterz2.patch"
+Content-Disposition: attachment; filename="peterz2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hrnw4pxs0
 
-Sounds like we're converging. What other stake holders have to say?
-
-Thanks
-Alexei
+Y29tbWl0IGJkZjMzM2UwZWJiNGJkMzNlYTIwZWUxODI1MzE0MzgxNjgxMjA4YjAKQXV0aG9yOiBQ
+ZXRlciBaaWpsc3RyYSA8cGV0ZXJ6QGluZnJhZGVhZC5vcmc+CkRhdGU6ICAgVGh1IEZlYiAxMyAx
+NTo1MDoxNiAyMDE0ICswMTAwCgogICAgcGV0ZXJ6J3MgSVBJIHBhdGNoLCByZWJhc2VkIGJ5IEFu
+ZHkgdG8gLWxpbnVzCgpkaWZmIC0tZ2l0IGEvYXJjaC94ODYvaW5jbHVkZS9hc20vbXdhaXQuaCBi
+L2FyY2gveDg2L2luY2x1ZGUvYXNtL213YWl0LmgKaW5kZXggMWRhMjVhNS4uZDZhN2I3YyAxMDA2
+NDQKLS0tIGEvYXJjaC94ODYvaW5jbHVkZS9hc20vbXdhaXQuaAorKysgYi9hcmNoL3g4Ni9pbmNs
+dWRlL2FzbS9td2FpdC5oCkBAIC00MiwxOCArNDIsMTUgQEAgc3RhdGljIGlubGluZSB2b2lkIF9f
+bXdhaXQodW5zaWduZWQgbG9uZyBlYXgsIHVuc2lnbmVkIGxvbmcgZWN4KQogICovCiBzdGF0aWMg
+aW5saW5lIHZvaWQgbXdhaXRfaWRsZV93aXRoX2hpbnRzKHVuc2lnbmVkIGxvbmcgZWF4LCB1bnNp
+Z25lZCBsb25nIGVjeCkKIHsKLQlpZiAoIWN1cnJlbnRfc2V0X3BvbGxpbmdfYW5kX3Rlc3QoKSkg
+ewotCQlpZiAoc3RhdGljX2NwdV9oYXMoWDg2X0ZFQVRVUkVfQ0xGTFVTSF9NT05JVE9SKSkgewot
+CQkJbWIoKTsKLQkJCWNsZmx1c2goKHZvaWQgKikmY3VycmVudF90aHJlYWRfaW5mbygpLT5mbGFn
+cyk7Ci0JCQltYigpOwotCQl9Ci0KLQkJX19tb25pdG9yKCh2b2lkICopJmN1cnJlbnRfdGhyZWFk
+X2luZm8oKS0+ZmxhZ3MsIDAsIDApOwotCQlpZiAoIW5lZWRfcmVzY2hlZCgpKQotCQkJX19td2Fp
+dChlYXgsIGVjeCk7CisJaWYgKHN0YXRpY19jcHVfaGFzKFg4Nl9GRUFUVVJFX0NMRkxVU0hfTU9O
+SVRPUikpIHsKKwkJbWIoKTsKKwkJY2xmbHVzaCgodm9pZCAqKSZjdXJyZW50X3RocmVhZF9pbmZv
+KCktPmZsYWdzKTsKKwkJbWIoKTsKIAl9Ci0JY3VycmVudF9jbHJfcG9sbGluZygpOworCisJX19t
+b25pdG9yKCh2b2lkICopJmN1cnJlbnRfdGhyZWFkX2luZm8oKS0+ZmxhZ3MsIDAsIDApOworCWlm
+ICghbmVlZF9yZXNjaGVkKCkpCisJCV9fbXdhaXQoZWF4LCBlY3gpOwogfQogCiAjZW5kaWYgLyog
+X0FTTV9YODZfTVdBSVRfSCAqLwpkaWZmIC0tZ2l0IGEvYXJjaC94ODYvaW5jbHVkZS9hc20vdGhy
+ZWFkX2luZm8uaCBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3RocmVhZF9pbmZvLmgKaW5kZXggZTE5
+NDBjMC4uMWYyZmU1NyAxMDA2NDQKLS0tIGEvYXJjaC94ODYvaW5jbHVkZS9hc20vdGhyZWFkX2lu
+Zm8uaAorKysgYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS90aHJlYWRfaW5mby5oCkBAIC04OCw2ICs4
+OCw3IEBAIHN0cnVjdCB0aHJlYWRfaW5mbyB7CiAjZGVmaW5lIFRJRl9GT1JLCQkxOAkvKiByZXRf
+ZnJvbV9mb3JrICovCiAjZGVmaW5lIFRJRl9OT0haCQkxOQkvKiBpbiBhZGFwdGl2ZSBub2h6IG1v
+ZGUgKi8KICNkZWZpbmUgVElGX01FTURJRQkJMjAJLyogaXMgdGVybWluYXRpbmcgZHVlIHRvIE9P
+TSBraWxsZXIgKi8KKyNkZWZpbmUgVElGX1BPTExJTkdfTlJGTEFHCTIxCiAjZGVmaW5lIFRJRl9J
+T19CSVRNQVAJCTIyCS8qIHVzZXMgSS9PIGJpdG1hcCAqLwogI2RlZmluZSBUSUZfRk9SQ0VEX1RG
+CQkyNAkvKiB0cnVlIGlmIFRGIGluIGVmbGFncyBhcnRpZmljaWFsbHkgKi8KICNkZWZpbmUgVElG
+X0JMT0NLU1RFUAkJMjUJLyogc2V0IHdoZW4gd2Ugd2FudCBERUJVR0NUTE1TUl9CVEYgKi8KQEAg
+LTExMSw2ICsxMTIsNyBAQCBzdHJ1Y3QgdGhyZWFkX2luZm8gewogI2RlZmluZSBfVElGX0lBMzIJ
+CSgxIDw8IFRJRl9JQTMyKQogI2RlZmluZSBfVElGX0ZPUksJCSgxIDw8IFRJRl9GT1JLKQogI2Rl
+ZmluZSBfVElGX05PSFoJCSgxIDw8IFRJRl9OT0haKQorI2RlZmluZSBfVElGX1BPTExJTkdfTlJG
+TEFHCSgxIDw8IFRJRl9QT0xMSU5HX05SRkxBRykKICNkZWZpbmUgX1RJRl9JT19CSVRNQVAJCSgx
+IDw8IFRJRl9JT19CSVRNQVApCiAjZGVmaW5lIF9USUZfRk9SQ0VEX1RGCQkoMSA8PCBUSUZfRk9S
+Q0VEX1RGKQogI2RlZmluZSBfVElGX0JMT0NLU1RFUAkJKDEgPDwgVElGX0JMT0NLU1RFUCkKQEAg
+LTIzNCw4ICsyMzYsNiBAQCBzdGF0aWMgaW5saW5lIHN0cnVjdCB0aHJlYWRfaW5mbyAqY3VycmVu
+dF90aHJlYWRfaW5mbyh2b2lkKQogICogaGF2ZSB0byB3b3JyeSBhYm91dCBhdG9taWMgYWNjZXNz
+ZXMuCiAgKi8KICNkZWZpbmUgVFNfQ09NUEFUCQkweDAwMDIJLyogMzJiaXQgc3lzY2FsbCBhY3Rp
+dmUgKDY0QklUKSovCi0jZGVmaW5lIFRTX1BPTExJTkcJCTB4MDAwNAkvKiBpZGxlIHRhc2sgcG9s
+bGluZyBuZWVkX3Jlc2NoZWQsCi0JCQkJCSAgIHNraXAgc2VuZGluZyBpbnRlcnJ1cHQgKi8KICNk
+ZWZpbmUgVFNfUkVTVE9SRV9TSUdNQVNLCTB4MDAwOAkvKiByZXN0b3JlIHNpZ25hbCBtYXNrIGlu
+IGRvX3NpZ25hbCgpICovCiAKICNpZm5kZWYgX19BU1NFTUJMWV9fCmRpZmYgLS1naXQgYS9hcmNo
+L3g4Ni9rZXJuZWwvcHJvY2Vzcy5jIGIvYXJjaC94ODYva2VybmVsL3Byb2Nlc3MuYwppbmRleCAz
+ZmI4ZDk1Li40OTM5ZWI3IDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9rZXJuZWwvcHJvY2Vzcy5jCisr
+KyBiL2FyY2gveDg2L2tlcm5lbC9wcm9jZXNzLmMKQEAgLTMwOSw5ICszMDksMTEgQEAgdm9pZCBh
+cmNoX2NwdV9pZGxlKHZvaWQpCiAgKi8KIHZvaWQgZGVmYXVsdF9pZGxlKHZvaWQpCiB7Ci0JdHJh
+Y2VfY3B1X2lkbGVfcmN1aWRsZSgxLCBzbXBfcHJvY2Vzc29yX2lkKCkpOwotCXNhZmVfaGFsdCgp
+OwotCXRyYWNlX2NwdV9pZGxlX3JjdWlkbGUoUFdSX0VWRU5UX0VYSVQsIHNtcF9wcm9jZXNzb3Jf
+aWQoKSk7CisJaWYgKCFjdXJyZW50X2Nscl9wb2xsaW5nX2FuZF90ZXN0KCkpIHsKKwkJdHJhY2Vf
+Y3B1X2lkbGVfcmN1aWRsZSgxLCBzbXBfcHJvY2Vzc29yX2lkKCkpOworCQlzYWZlX2hhbHQoKTsK
+KwkJdHJhY2VfY3B1X2lkbGVfcmN1aWRsZShQV1JfRVZFTlRfRVhJVCwgc21wX3Byb2Nlc3Nvcl9p
+ZCgpKTsKKwl9CiB9CiAjaWZkZWYgQ09ORklHX0FQTV9NT0RVTEUKIEVYUE9SVF9TWU1CT0woZGVm
+YXVsdF9pZGxlKTsKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvc2NoZWQuaCBiL2luY2x1ZGUv
+bGludXgvc2NoZWQuaAppbmRleCBhNzgxZGVjLi5jYWUyMjQ5IDEwMDY0NAotLS0gYS9pbmNsdWRl
+L2xpbnV4L3NjaGVkLmgKKysrIGIvaW5jbHVkZS9saW51eC9zY2hlZC5oCkBAIC0yNjY3LDg1ICsy
+NjY3LDI2IEBAIHN0YXRpYyBpbmxpbmUgaW50IHNwaW5fbmVlZGJyZWFrKHNwaW5sb2NrX3QgKmxv
+Y2spCiAgKiB0aHJlYWRfaW5mby5zdGF0dXMgYW5kIG9uZSBiYXNlZCBvbiBUSUZfUE9MTElOR19O
+UkZMQUcgaW4KICAqIHRocmVhZF9pbmZvLmZsYWdzCiAgKi8KLSNpZmRlZiBUU19QT0xMSU5HCi1z
+dGF0aWMgaW5saW5lIGludCB0c2tfaXNfcG9sbGluZyhzdHJ1Y3QgdGFza19zdHJ1Y3QgKnApCi17
+Ci0JcmV0dXJuIHRhc2tfdGhyZWFkX2luZm8ocCktPnN0YXR1cyAmIFRTX1BPTExJTkc7Ci19Ci1z
+dGF0aWMgaW5saW5lIHZvaWQgX19jdXJyZW50X3NldF9wb2xsaW5nKHZvaWQpCi17Ci0JY3VycmVu
+dF90aHJlYWRfaW5mbygpLT5zdGF0dXMgfD0gVFNfUE9MTElORzsKLX0KLQotc3RhdGljIGlubGlu
+ZSBib29sIF9fbXVzdF9jaGVjayBjdXJyZW50X3NldF9wb2xsaW5nX2FuZF90ZXN0KHZvaWQpCi17
+Ci0JX19jdXJyZW50X3NldF9wb2xsaW5nKCk7Ci0KLQkvKgotCSAqIFBvbGxpbmcgc3RhdGUgbXVz
+dCBiZSB2aXNpYmxlIGJlZm9yZSB3ZSB0ZXN0IE5FRURfUkVTQ0hFRCwKLQkgKiBwYWlyZWQgYnkg
+cmVzY2hlZF90YXNrKCkKLQkgKi8KLQlzbXBfbWIoKTsKLQotCXJldHVybiB1bmxpa2VseSh0aWZf
+bmVlZF9yZXNjaGVkKCkpOwotfQotCi1zdGF0aWMgaW5saW5lIHZvaWQgX19jdXJyZW50X2Nscl9w
+b2xsaW5nKHZvaWQpCi17Ci0JY3VycmVudF90aHJlYWRfaW5mbygpLT5zdGF0dXMgJj0gflRTX1BP
+TExJTkc7Ci19Ci0KLXN0YXRpYyBpbmxpbmUgYm9vbCBfX211c3RfY2hlY2sgY3VycmVudF9jbHJf
+cG9sbGluZ19hbmRfdGVzdCh2b2lkKQotewotCV9fY3VycmVudF9jbHJfcG9sbGluZygpOwotCi0J
+LyoKLQkgKiBQb2xsaW5nIHN0YXRlIG11c3QgYmUgdmlzaWJsZSBiZWZvcmUgd2UgdGVzdCBORUVE
+X1JFU0NIRUQsCi0JICogcGFpcmVkIGJ5IHJlc2NoZWRfdGFzaygpCi0JICovCi0Jc21wX21iKCk7
+Ci0KLQlyZXR1cm4gdW5saWtlbHkodGlmX25lZWRfcmVzY2hlZCgpKTsKLX0KLSNlbGlmIGRlZmlu
+ZWQoVElGX1BPTExJTkdfTlJGTEFHKQorI2lmZGVmIENPTkZJR19TTVAKIHN0YXRpYyBpbmxpbmUg
+aW50IHRza19pc19wb2xsaW5nKHN0cnVjdCB0YXNrX3N0cnVjdCAqcCkKIHsKIAlyZXR1cm4gdGVz
+dF90c2tfdGhyZWFkX2ZsYWcocCwgVElGX1BPTExJTkdfTlJGTEFHKTsKIH0KIAotc3RhdGljIGlu
+bGluZSB2b2lkIF9fY3VycmVudF9zZXRfcG9sbGluZyh2b2lkKQorc3RhdGljIGlubGluZSB2b2lk
+IGN1cnJlbnRfc2V0X3BvbGxpbmcodm9pZCkKIHsKIAlzZXRfdGhyZWFkX2ZsYWcoVElGX1BPTExJ
+TkdfTlJGTEFHKTsKIH0KIAotc3RhdGljIGlubGluZSBib29sIF9fbXVzdF9jaGVjayBjdXJyZW50
+X3NldF9wb2xsaW5nX2FuZF90ZXN0KHZvaWQpCi17Ci0JX19jdXJyZW50X3NldF9wb2xsaW5nKCk7
+Ci0KLQkvKgotCSAqIFBvbGxpbmcgc3RhdGUgbXVzdCBiZSB2aXNpYmxlIGJlZm9yZSB3ZSB0ZXN0
+IE5FRURfUkVTQ0hFRCwKLQkgKiBwYWlyZWQgYnkgcmVzY2hlZF90YXNrKCkKLQkgKgotCSAqIFhY
+WDogYXNzdW1lcyBzZXQvY2xlYXIgYml0IGFyZSBpZGVudGljYWwgYmFycmllciB3aXNlLgotCSAq
+LwotCXNtcF9tYl9fYWZ0ZXJfY2xlYXJfYml0KCk7Ci0KLQlyZXR1cm4gdW5saWtlbHkodGlmX25l
+ZWRfcmVzY2hlZCgpKTsKLX0KLQotc3RhdGljIGlubGluZSB2b2lkIF9fY3VycmVudF9jbHJfcG9s
+bGluZyh2b2lkKQorc3RhdGljIGlubGluZSB2b2lkIGN1cnJlbnRfY2xyX3BvbGxpbmcodm9pZCkK
+IHsKIAljbGVhcl90aHJlYWRfZmxhZyhUSUZfUE9MTElOR19OUkZMQUcpOwogfQogCiBzdGF0aWMg
+aW5saW5lIGJvb2wgX19tdXN0X2NoZWNrIGN1cnJlbnRfY2xyX3BvbGxpbmdfYW5kX3Rlc3Qodm9p
+ZCkKIHsKLQlfX2N1cnJlbnRfY2xyX3BvbGxpbmcoKTsKKwljdXJyZW50X2Nscl9wb2xsaW5nKCk7
+CiAKLQkvKgotCSAqIFBvbGxpbmcgc3RhdGUgbXVzdCBiZSB2aXNpYmxlIGJlZm9yZSB3ZSB0ZXN0
+IE5FRURfUkVTQ0hFRCwKLQkgKiBwYWlyZWQgYnkgcmVzY2hlZF90YXNrKCkKLQkgKi8KIAlzbXBf
+bWJfX2FmdGVyX2NsZWFyX2JpdCgpOwogCiAJcmV0dXJuIHVubGlrZWx5KHRpZl9uZWVkX3Jlc2No
+ZWQoKSk7CkBAIC0yNzUzLDM0ICsyNjk0LDE1IEBAIHN0YXRpYyBpbmxpbmUgYm9vbCBfX211c3Rf
+Y2hlY2sgY3VycmVudF9jbHJfcG9sbGluZ19hbmRfdGVzdCh2b2lkKQogCiAjZWxzZQogc3RhdGlj
+IGlubGluZSBpbnQgdHNrX2lzX3BvbGxpbmcoc3RydWN0IHRhc2tfc3RydWN0ICpwKSB7IHJldHVy
+biAwOyB9Ci1zdGF0aWMgaW5saW5lIHZvaWQgX19jdXJyZW50X3NldF9wb2xsaW5nKHZvaWQpIHsg
+fQotc3RhdGljIGlubGluZSB2b2lkIF9fY3VycmVudF9jbHJfcG9sbGluZyh2b2lkKSB7IH0KK3N0
+YXRpYyBpbmxpbmUgdm9pZCBjdXJyZW50X3NldF9wb2xsaW5nKHZvaWQpIHsgfQorc3RhdGljIGlu
+bGluZSB2b2lkIGN1cnJlbnRfY2xyX3BvbGxpbmcodm9pZCkgeyB9CiAKLXN0YXRpYyBpbmxpbmUg
+Ym9vbCBfX211c3RfY2hlY2sgY3VycmVudF9zZXRfcG9sbGluZ19hbmRfdGVzdCh2b2lkKQotewot
+CXJldHVybiB1bmxpa2VseSh0aWZfbmVlZF9yZXNjaGVkKCkpOwotfQogc3RhdGljIGlubGluZSBi
+b29sIF9fbXVzdF9jaGVjayBjdXJyZW50X2Nscl9wb2xsaW5nX2FuZF90ZXN0KHZvaWQpCiB7CiAJ
+cmV0dXJuIHVubGlrZWx5KHRpZl9uZWVkX3Jlc2NoZWQoKSk7CiB9CiAjZW5kaWYKIAotc3RhdGlj
+IGlubGluZSB2b2lkIGN1cnJlbnRfY2xyX3BvbGxpbmcodm9pZCkKLXsKLQlfX2N1cnJlbnRfY2xy
+X3BvbGxpbmcoKTsKLQotCS8qCi0JICogRW5zdXJlIHdlIGNoZWNrIFRJRl9ORUVEX1JFU0NIRUQg
+YWZ0ZXIgd2UgY2xlYXIgdGhlIHBvbGxpbmcgYml0LgotCSAqIE9uY2UgdGhlIGJpdCBpcyBjbGVh
+cmVkLCB3ZSdsbCBnZXQgSVBJcyB3aXRoIGV2ZXJ5IG5ldwotCSAqIFRJRl9ORUVEX1JFU0NIRUQg
+YW5kIHRoZSBJUEkgaGFuZGxlciwgc2NoZWR1bGVyX2lwaSgpLCB3aWxsIGFsc28KLQkgKiBmb2xk
+LgotCSAqLwotCXNtcF9tYigpOyAvKiBwYWlyZWQgd2l0aCByZXNjaGVkX3Rhc2soKSAqLwotCi0J
+cHJlZW1wdF9mb2xkX25lZWRfcmVzY2hlZCgpOwotfQotCiBzdGF0aWMgX19hbHdheXNfaW5saW5l
+IGJvb2wgbmVlZF9yZXNjaGVkKHZvaWQpCiB7CiAJcmV0dXJuIHVubGlrZWx5KHRpZl9uZWVkX3Jl
+c2NoZWQoKSk7CmRpZmYgLS1naXQgYS9rZXJuZWwvY3B1L2lkbGUuYyBiL2tlcm5lbC9jcHUvaWRs
+ZS5jCmluZGV4IDI3N2Y0OTQuLjg4ZDJiNDAgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9jcHUvaWRsZS5j
+CisrKyBiL2tlcm5lbC9jcHUvaWRsZS5jCkBAIC0xMCw2ICsxMCw3IEBACiAjaW5jbHVkZSA8YXNt
+L3RsYi5oPgogCiAjaW5jbHVkZSA8dHJhY2UvZXZlbnRzL3Bvd2VyLmg+CisjaW5jbHVkZSAiLi4v
+c2NoZWQvc2NoZWQuaCIKIAogc3RhdGljIGludCBfX3JlYWRfbW9zdGx5IGNwdV9pZGxlX2ZvcmNl
+X3BvbGw7CiAKQEAgLTcwLDYgKzcxLDggQEAgc3RhdGljIHZvaWQgY3B1X2lkbGVfbG9vcCh2b2lk
+KQogCXdoaWxlICgxKSB7CiAJCXRpY2tfbm9oel9pZGxlX2VudGVyKCk7CiAKKwkJY3VycmVudF9z
+ZXRfcG9sbGluZygpOworCiAJCXdoaWxlICghbmVlZF9yZXNjaGVkKCkpIHsKIAkJCWNoZWNrX3Bn
+dF9jYWNoZSgpOwogCQkJcm1iKCk7CkBAIC05MiwzMCArOTUsMjUgQEAgc3RhdGljIHZvaWQgY3B1
+X2lkbGVfbG9vcCh2b2lkKQogCQkJaWYgKGNwdV9pZGxlX2ZvcmNlX3BvbGwgfHwgdGlja19jaGVj
+a19icm9hZGNhc3RfZXhwaXJlZCgpKSB7CiAJCQkJY3B1X2lkbGVfcG9sbCgpOwogCQkJfSBlbHNl
+IHsKLQkJCQlpZiAoIWN1cnJlbnRfY2xyX3BvbGxpbmdfYW5kX3Rlc3QoKSkgewotCQkJCQlzdG9w
+X2NyaXRpY2FsX3RpbWluZ3MoKTsKLQkJCQkJcmN1X2lkbGVfZW50ZXIoKTsKLQkJCQkJYXJjaF9j
+cHVfaWRsZSgpOwotCQkJCQlXQVJOX09OX09OQ0UoaXJxc19kaXNhYmxlZCgpKTsKLQkJCQkJcmN1
+X2lkbGVfZXhpdCgpOwotCQkJCQlzdGFydF9jcml0aWNhbF90aW1pbmdzKCk7Ci0JCQkJfSBlbHNl
+IHsKLQkJCQkJbG9jYWxfaXJxX2VuYWJsZSgpOwotCQkJCX0KLQkJCQlfX2N1cnJlbnRfc2V0X3Bv
+bGxpbmcoKTsKKwkJCQlzdG9wX2NyaXRpY2FsX3RpbWluZ3MoKTsKKwkJCQlyY3VfaWRsZV9lbnRl
+cigpOworCQkJCWFyY2hfY3B1X2lkbGUoKTsKKwkJCQlXQVJOX09OX09OQ0UoaXJxc19kaXNhYmxl
+ZCgpKTsKKwkJCQlyY3VfaWRsZV9leGl0KCk7CisJCQkJc3RhcnRfY3JpdGljYWxfdGltaW5ncygp
+OwogCQkJfQogCQkJYXJjaF9jcHVfaWRsZV9leGl0KCk7CiAJCX0KIAorCQljdXJyZW50X2Nscl9w
+b2xsaW5nKCk7CisKIAkJLyoKLQkJICogU2luY2Ugd2UgZmVsbCBvdXQgb2YgdGhlIGxvb3AgYWJv
+dmUsIHdlIGtub3cKLQkJICogVElGX05FRURfUkVTQ0hFRCBtdXN0IGJlIHNldCwgcHJvcGFnYXRl
+IGl0IGludG8KLQkJICogUFJFRU1QVF9ORUVEX1JFU0NIRUQuCi0JCSAqCi0JCSAqIFRoaXMgaXMg
+cmVxdWlyZWQgYmVjYXVzZSBmb3IgcG9sbGluZyBpZGxlIGxvb3BzIHdlIHdpbGwKLQkJICogbm90
+IGhhdmUgaGFkIGFuIElQSSB0byBmb2xkIHRoZSBzdGF0ZSBmb3IgdXMuCisJCSAqIFdlIG5lZWQg
+dG8gdGVzdCBhbmQgcHJvcGFnYXRlIHRoZSBUSUZfTkVFRF9SRVNDSEVEIGJpdCBoZXJlCisJCSAq
+IGJlY2F1c2Ugd2UgbWlnaHQgbm90IGhhdmUgc2VuZCB0aGUgcmVzY2hlZHVsZSBJUEkgdG8gaWRs
+ZQorCQkgKiB0YXNrcy4KIAkJICovCi0JCXByZWVtcHRfc2V0X25lZWRfcmVzY2hlZCgpOworCQlz
+ZXRfcHJlZW1wdF9uZWVkX3Jlc2NoZWQoKTsKKwkJc2NoZWRfdHR3dV9wZW5kaW5nKCk7CiAJCXRp
+Y2tfbm9oel9pZGxlX2V4aXQoKTsKIAkJc2NoZWR1bGVfcHJlZW1wdF9kaXNhYmxlZCgpOwogCX0K
+QEAgLTEzOCw3ICsxMzYsNiBAQCB2b2lkIGNwdV9zdGFydHVwX2VudHJ5KGVudW0gY3B1aHBfc3Rh
+dGUgc3RhdGUpCiAJICovCiAJYm9vdF9pbml0X3N0YWNrX2NhbmFyeSgpOwogI2VuZGlmCi0JX19j
+dXJyZW50X3NldF9wb2xsaW5nKCk7CiAJYXJjaF9jcHVfaWRsZV9wcmVwYXJlKCk7CiAJY3B1X2lk
+bGVfbG9vcCgpOwogfQpkaWZmIC0tZ2l0IGEva2VybmVsL3NjaGVkL2NvcmUuYyBiL2tlcm5lbC9z
+Y2hlZC9jb3JlLmMKaW5kZXggYjQ2MTMxZS4uNGI1ZjE2OCAxMDA2NDQKLS0tIGEva2VybmVsL3Nj
+aGVkL2NvcmUuYworKysgYi9rZXJuZWwvc2NoZWQvY29yZS5jCkBAIC01MDQsNDUgKzUwNCw2MyBA
+QCBzdGF0aWMgaW5saW5lIHZvaWQgaW5pdF9ocnRpY2sodm9pZCkKIH0KICNlbmRpZgkvKiBDT05G
+SUdfU0NIRURfSFJUSUNLICovCiAKLS8qCi0gKiByZXNjaGVkX3Rhc2sgLSBtYXJrIGEgdGFzayAn
+dG8gYmUgcmVzY2hlZHVsZWQgbm93Jy4KLSAqCi0gKiBPbiBVUCB0aGlzIG1lYW5zIHRoZSBzZXR0
+aW5nIG9mIHRoZSBuZWVkX3Jlc2NoZWQgZmxhZywgb24gU01QIGl0Ci0gKiBtaWdodCBhbHNvIGlu
+dm9sdmUgYSBjcm9zcy1DUFUgY2FsbCB0byB0cmlnZ2VyIHRoZSBzY2hlZHVsZXIgb24KLSAqIHRo
+ZSB0YXJnZXQgQ1BVLgotICovCi12b2lkIHJlc2NoZWRfdGFzayhzdHJ1Y3QgdGFza19zdHJ1Y3Qg
+KnApCitzdGF0aWMgdm9pZCBfX3Jlc2NoZWRfY3B1KGludCBjcHUpCiB7Ci0JaW50IGNwdTsKKwlz
+dHJ1Y3QgcnEgKnJxID0gY3B1X3JxKGNwdSk7CisJc3RydWN0IHRhc2tfc3RydWN0ICpwOworCXN0
+cnVjdCB0aHJlYWRfaW5mbyAqdGk7CisJdW5zaWduZWQgbG9uZyB2YWwsIG9sZCwgbmV3OworCWJv
+b2wgaXBpOwogCi0JbG9ja2RlcF9hc3NlcnRfaGVsZCgmdGFza19ycShwKS0+bG9jayk7CisJcmN1
+X3JlYWRfbG9jaygpOworCWRvIHsKKwkJcCA9IEFDQ0VTU19PTkNFKHJxLT5jdXJyKTsKKwkJdGkg
+PSB0YXNrX3RocmVhZF9pbmZvKHApOworCisJCXZhbCA9IHRpLT5mbGFnczsKKwkJZm9yICg7Oykg
+eworCQkJbmV3ID0gdmFsIHwgX1RJRl9ORUVEX1JFU0NIRUQ7CisJCQlvbGQgPSBjbXB4Y2hnKCZ0
+aS0+ZmxhZ3MsIHZhbCwgbmV3KTsKKwkJCWlmIChvbGQgPT0gdmFsKQorCQkJCWJyZWFrOworCQkJ
+dmFsID0gb2xkOworCQl9CiAKLQlpZiAodGVzdF90c2tfbmVlZF9yZXNjaGVkKHApKQotCQlyZXR1
+cm47CisJCWlwaSA9ICEob2xkICYgX1RJRl9QT0xMSU5HX05SRkxBRyk7CiAKLQlzZXRfdHNrX25l
+ZWRfcmVzY2hlZChwKTsKKwl9IHdoaWxlIChwICE9IEFDQ0VTU19PTkNFKHJxLT5jdXJyKSk7CisJ
+cmN1X3JlYWRfdW5sb2NrKCk7CiAKLQljcHUgPSB0YXNrX2NwdShwKTsKKwlpZiAoaXBpKQorCQlz
+bXBfc2VuZF9yZXNjaGVkdWxlKGNwdSk7Cit9CisKK3ZvaWQgcmVzY2hlZF9jcHUoaW50IGNwdSkK
+K3sKIAlpZiAoY3B1ID09IHNtcF9wcm9jZXNzb3JfaWQoKSkgeworCQlzZXRfdHNrX25lZWRfcmVz
+Y2hlZChjdXJyZW50KTsKIAkJc2V0X3ByZWVtcHRfbmVlZF9yZXNjaGVkKCk7CiAJCXJldHVybjsK
+IAl9CiAKLQkvKiBORUVEX1JFU0NIRUQgbXVzdCBiZSB2aXNpYmxlIGJlZm9yZSB3ZSB0ZXN0IHBv
+bGxpbmcgKi8KLQlzbXBfbWIoKTsKLQlpZiAoIXRza19pc19wb2xsaW5nKHApKQotCQlzbXBfc2Vu
+ZF9yZXNjaGVkdWxlKGNwdSk7CisJX19yZXNjaGVkX2NwdShjcHUpOwogfQogCi12b2lkIHJlc2No
+ZWRfY3B1KGludCBjcHUpCisvKgorICogcmVzY2hlZF90YXNrIC0gbWFyayBhIHRhc2sgJ3RvIGJl
+IHJlc2NoZWR1bGVkIG5vdycuCisgKgorICogT24gVVAgdGhpcyBtZWFucyB0aGUgc2V0dGluZyBv
+ZiB0aGUgbmVlZF9yZXNjaGVkIGZsYWcsIG9uIFNNUCBpdAorICogbWlnaHQgYWxzbyBpbnZvbHZl
+IGEgY3Jvc3MtQ1BVIGNhbGwgdG8gdHJpZ2dlciB0aGUgc2NoZWR1bGVyIG9uCisgKiB0aGUgdGFy
+Z2V0IENQVS4KKyAqLwordm9pZCByZXNjaGVkX3Rhc2soc3RydWN0IHRhc2tfc3RydWN0ICpwKQog
+ewotCXN0cnVjdCBycSAqcnEgPSBjcHVfcnEoY3B1KTsKLQl1bnNpZ25lZCBsb25nIGZsYWdzOwor
+CWxvY2tkZXBfYXNzZXJ0X2hlbGQoJnRhc2tfcnEocCktPmxvY2spOwogCi0JaWYgKCFyYXdfc3Bp
+bl90cnlsb2NrX2lycXNhdmUoJnJxLT5sb2NrLCBmbGFncykpCisJaWYgKHRlc3RfdHNrX25lZWRf
+cmVzY2hlZChwKSkKIAkJcmV0dXJuOwotCXJlc2NoZWRfdGFzayhjcHVfY3VycihjcHUpKTsKLQly
+YXdfc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmcnEtPmxvY2ssIGZsYWdzKTsKKworCXJlc2NoZWRf
+Y3B1KHRhc2tfY3B1KHApKTsKIH0KIAogI2lmZGVmIENPTkZJR19TTVAKQEAgLTE0NzYsNyArMTQ5
+NCw3IEBAIHN0YXRpYyBpbnQgdHR3dV9yZW1vdGUoc3RydWN0IHRhc2tfc3RydWN0ICpwLCBpbnQg
+d2FrZV9mbGFncykKIH0KIAogI2lmZGVmIENPTkZJR19TTVAKLXN0YXRpYyB2b2lkIHNjaGVkX3R0
+d3VfcGVuZGluZyh2b2lkKQordm9pZCBzY2hlZF90dHd1X3BlbmRpbmcodm9pZCkKIHsKIAlzdHJ1
+Y3QgcnEgKnJxID0gdGhpc19ycSgpOwogCXN0cnVjdCBsbGlzdF9ub2RlICpsbGlzdCA9IGxsaXN0
+X2RlbF9hbGwoJnJxLT53YWtlX2xpc3QpOwpAQCAtMjcwNyw3ICsyNzI1LDcgQEAgbmVlZF9yZXNj
+aGVkOgogCiAJcHV0X3ByZXZfdGFzayhycSwgcHJldik7CiAJbmV4dCA9IHBpY2tfbmV4dF90YXNr
+KHJxKTsKLQljbGVhcl90c2tfbmVlZF9yZXNjaGVkKHByZXYpOworCWNsZWFyX3Rza19uZWVkX3Jl
+c2NoZWQobmV4dCk7CiAJY2xlYXJfcHJlZW1wdF9uZWVkX3Jlc2NoZWQoKTsKIAlycS0+c2tpcF9j
+bG9ja191cGRhdGUgPSAwOwogCmRpZmYgLS1naXQgYS9rZXJuZWwvc2NoZWQvc2NoZWQuaCBiL2tl
+cm5lbC9zY2hlZC9zY2hlZC5oCmluZGV4IGMyMTE5ZmQuLmY0Y2I2M2EgMTAwNjQ0Ci0tLSBhL2tl
+cm5lbC9zY2hlZC9zY2hlZC5oCisrKyBiL2tlcm5lbC9zY2hlZC9zY2hlZC5oCkBAIC0xMTczLDYg
+KzExNzMsNyBAQCBleHRlcm4gY29uc3Qgc3RydWN0IHNjaGVkX2NsYXNzIGlkbGVfc2NoZWRfY2xh
+c3M7CiAKICNpZmRlZiBDT05GSUdfU01QCiAKK2V4dGVybiB2b2lkIHNjaGVkX3R0d3VfcGVuZGlu
+Zyh2b2lkKTsKIGV4dGVybiB2b2lkIHVwZGF0ZV9ncm91cF9wb3dlcihzdHJ1Y3Qgc2NoZWRfZG9t
+YWluICpzZCwgaW50IGNwdSk7CiAKIGV4dGVybiB2b2lkIHRyaWdnZXJfbG9hZF9iYWxhbmNlKHN0
+cnVjdCBycSAqcnEpOwpAQCAtMTE4Myw2ICsxMTg0LDggQEAgZXh0ZXJuIHZvaWQgaWRsZV9leGl0
+X2ZhaXIoc3RydWN0IHJxICp0aGlzX3JxKTsKIAogI2Vsc2UJLyogQ09ORklHX1NNUCAqLwogCitz
+dGF0aWMgaW5saW5lIHZvaWQgc2NoZWRfdHR3dV9wZW5kaW5nKHZvaWQpIHsgfQorCiBzdGF0aWMg
+aW5saW5lIHZvaWQgaWRsZV9iYWxhbmNlKGludCBjcHUsIHN0cnVjdCBycSAqcnEpCiB7CiB9Cg==
+--089e01160d32e287fd04f2637f17--
