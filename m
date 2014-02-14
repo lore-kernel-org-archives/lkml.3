@@ -1,158 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaBNDsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 22:48:05 -0500
-Received: from hapkido.dreamhost.com ([66.33.216.122]:34591 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaBNDsC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 22:48:02 -0500
-Message-ID: <1392349669.10065.70.camel@chiang>
-Subject: [PATCH v8 1/2] ext4: Fix handling of extended tv_sec (bug 23732)
-From: David Turner <novalis@novalis.org>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Mark Harris <mhlk@osj.us>,
-        Jan Kara <jack@suse.cz>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Feb 2014 22:47:49 -0500
-In-Reply-To: <A8F66E63-68C0-4363-BCB5-8CBD1AC777DA@dilger.ca>
-References: <1383808590.23882.13.camel@chiang>
-	 <20131107160341.GA3850@quack.suse.cz> <1383864864.23882.33.camel@chiang>
-	 <20131107231445.GG2054@quack.suse.cz> <1383866807.23882.41.camel@chiang>
-	 <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
-	 <1383981551.8994.27.camel@chiang>
-	 <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
-	 <1384070214.8994.47.camel@chiang> <20131112003018.GA30281@thunk.org>
-	 <20140122062255.GA8973@birch.djwong.org> <1392095546.10065.56.camel@chiang>
-	 <A8F66E63-68C0-4363-BCB5-8CBD1AC777DA@dilger.ca>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752026AbaBNDtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 22:49:05 -0500
+Received: from mail.efficios.com ([78.47.125.74]:39933 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751926AbaBNDtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 22:49:03 -0500
+Date: Fri, 14 Feb 2014 03:49:04 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <1828346046.24803.1392349744601.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140213154507.4040fb06@gandalf.local.home>
+References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com> <20140211072738.GA24232@gmail.com> <20140211234534.6bc34e57@gandalf.local.home> <1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com> <20140213102817.4bfd5eac@gandalf.local.home> <2127052721.24380.1392306090965.JavaMail.zimbra@efficios.com> <20140213154507.4040fb06@gandalf.local.home>
+Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
+ TAINT_UNSIGNED_MODULE
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+Thread-Index: FuGNqshwka/zKdHupEo0YL9/Afj8yA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-against tytso/dev
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: "Ingo Molnar" <mingo@kernel.org>, linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@redhat.com>, "Thomas
+> Gleixner" <tglx@linutronix.de>, "Rusty Russell" <rusty@rustcorp.com.au>, "David Howells" <dhowells@redhat.com>,
+> "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+> Sent: Thursday, February 13, 2014 3:45:07 PM
+> Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+> 
+> On Thu, 13 Feb 2014 15:41:30 +0000 (UTC)
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> 
+> > Yes, exactly, presuming that by "supporting" you mean CONFIG_MODULE_SIG=y.
+> > Loading an unsigned module then taints the kernel, and taints the module
+> > with TAINT_FORCED_MODULE even though "modprobe --force" was never used.
+> 
+> OK, this IS a major bug and needs to be fixed. This explains a couple
+> of reports I received about tracepoints not working, and I never
+> figured out why. Basically, they even did this:
+> 
+> 
+> 	trace_printk("before tracepoint\n");
+> 	trace_some_trace_point();
+> 	trace_printk("after tracepoint\n");
+> 
+> Enabled the tracepoint (it shows up as enabled and working in the
+> tools, but not the trace), but in the trace they would get:
+> 
+> 	before tracepoint
+> 	after tracepoint
+> 
+> and never get the actual tracepoint. But as they were debugging
+> something else, it was just thought that this was their bug. But it
+> baffled me to why that tracepoint wasn't working even though nothing in
+> the dmesg had any errors about tracepoints.
+> 
+> Well, this now explains it. If you compile a kernel with the following
+> options:
+> 
+> CONFIG_MODULE_SIG=y
+> # CONFIG_MODULE_SIG_FORCE is not set
+> # CONFIG_MODULE_SIG_ALL is not set
+> 
+> You now just disabled (silently) all tracepoints in modules. WITH NO
+> FREAKING ERROR MESSAGE!!!
+> 
+> The tracepoints will show up in /sys/kernel/debug/tracing/events, they
+> will show up in perf list, you can enable them in either perf or the
+> debugfs, but they will never actually be executed. You will just get
+> silence even though everything appeared to be working just fine.
+> 
+> I tested this out. I was not able to get any tracepoints in modules
+> working with the above config options.
+> 
+> There's two bugs here. One, the lack of MODULE_SIG_ALL, will
+> make all modules non signed during the build process. That means that
+> all modules when loaded will be tainted as FORCED. As Mathieu stated,
+> you do not need the --force flag here, it just needs to see that the
+> kernel supports signatures but the module is not signed. In this case,
+> it just calls add_taint_module(), tainting the module with
+> FORCED_MODULE. You get a message like this:
+> 
+>  sunrpc: module verification failed: signature and/or required key missing -
+>  tainting kernel
+> 
+> 
+> Now when this module adds its tracepoint, since it is marked with a
+> FORCE_MODULE taint flag, the tracepoint code just ignores it and does
+> not do any processing at all.
+> 
+> Worse yet, the tracepoint code never gives any feedback if a tracepoint
+> was enabled or not. That is, if a tracepoint was never initialized when
+> the module was loaded, the tracepoint will still report success at
+> time of enabling, that it was registered (and tracing) even though it is
+> not.
+> 
+> At the end of this email, I added a patch that fixes that. But I have to
+> concur that Mathieu did find a bug. There is no reason to disable
+> tracepoints in modules if someone simply has the above configs enabled
+> (and disabled)!
+> 
+> Below is the patch that warns if the tracepoint is not enabled for
+> whatever reason.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> -- Steve
+> 
+> 
+> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> index 29f2654..b85f68f 100644
+> --- a/kernel/tracepoint.c
+> +++ b/kernel/tracepoint.c
+> @@ -62,6 +62,7 @@ struct tracepoint_entry {
+>  	struct hlist_node hlist;
+>  	struct tracepoint_func *funcs;
+>  	int refcount;	/* Number of times armed. 0 if disarmed. */
+> +	int enabled;	/* Tracepoint enabled */
+>  	char name[0];
+>  };
+>  
+> @@ -237,6 +238,7 @@ static struct tracepoint_entry *add_tracepoint(const char
+> *name)
+>  	memcpy(&e->name[0], name, name_len);
+>  	e->funcs = NULL;
+>  	e->refcount = 0;
+> +	e->enabled = 0;
+>  	hlist_add_head(&e->hlist, head);
+>  	return e;
+>  }
+> @@ -316,6 +318,7 @@ static void tracepoint_update_probe_range(struct
+> tracepoint * const *begin,
+>  		if (mark_entry) {
+>  			set_tracepoint(&mark_entry, *iter,
+>  					!!mark_entry->refcount);
+> +			mark_entry->enabled = !!mark_entry->refcount;
+>  		} else {
+>  			disable_tracepoint(*iter);
+>  		}
+> @@ -380,6 +383,8 @@ tracepoint_add_probe(const char *name, void *probe, void
+> *data)
+>  int tracepoint_probe_register(const char *name, void *probe, void *data)
+>  {
+>  	struct tracepoint_func *old;
+> +	struct tracepoint_entry *entry;
+> +	int ret = 0;
+>  
+>  	mutex_lock(&tracepoints_mutex);
+>  	old = tracepoint_add_probe(name, probe, data);
+> @@ -388,9 +393,15 @@ int tracepoint_probe_register(const char *name, void
+> *probe, void *data)
+>  		return PTR_ERR(old);
+>  	}
+>  	tracepoint_update_probes();		/* may update entry */
+> +	entry = get_tracepoint(name);
+> +	/* Make sure the entry was enabled */
+> +	if (!entry || !entry->enabled) {
+> +		tracepoint_entry_remove_probe(entry, probe, data);
 
---
-In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
-the {a,c,m}time fields, deferring the year 2038 problem to the year
-2446.
+I'm OK with returning some kind of feedback about whether the tracepoint is
+enabled or not, but there is one use-case I care about this change breaks:
+registering a tracepoint probe for a module that is not yet loaded. The change
+you propose here removes the probe if no tracepoint is found when the probe is
+registered.
 
-When decoding these extended fields, for times whose bottom 32 bits
-would represent a negative number, sign extension causes the 64-bit
-extended timestamp to be negative as well, which is not what's
-intended.  This patch corrects that issue, so that the only negative
-{a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
-timestamps).
+Another way to do this, without requiring changes to the existing
+tracepoint_probe_register() API, is to simply add e.g. (better function
+names welcome):
 
-Some older kernels might have written pre-1970 dates with 1,1 in the
-extra bits.  This patch treats those incorrectly-encoded dates as
-pre-1970, instead of post-2311, until kernel 4.20 is released.
-Hopefully by then e2fsck will have fixed up the bad data.
+int tracepoint_has_callsites(const char *name)
+{
+    struct tracepoint_entry *entry;
+    int ret = 0;
 
-Also add a comment explaining the encoding of ext4's extra {a,c,m}time
-bits.
+    mutex_lock(&tracepoints_mutex);
+    entry = get_tracepoint(name);
+    if (entry && entry->refcount) {
+        ret = 1;
+    }
+    mutex_unlock(&tracepoints_mutex);
+    return ret;
+}
 
-Signed-off-by: David Turner <novalis@novalis.org>
-Reported-by: Mark Harris <mh8928@yahoo.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
----
- fs/ext4/ext4.h | 49 ++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 42 insertions(+), 7 deletions(-)
+So tools which care about providing feedback to their users about the
+fact that tracepoint callsites are not there can call this new function.
+The advantage is that it would not change the return values of the existing
+API. Also, it would be weird to have tracepoint_probe_register() return
+an error value but leave the tracepoint in a registered state. Moving this
+into a separate query function seems more consistent IMHO.
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index ece5556..f9c6d2f 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -26,6 +26,7 @@
- #include <linux/seqlock.h>
- #include <linux/mutex.h>
- #include <linux/timer.h>
-+#include <linux/version.h>
- #include <linux/wait.h>
- #include <linux/blockgroup_lock.h>
- #include <linux/percpu_counter.h>
-@@ -724,19 +725,53 @@ struct move_extent {
- 	<= (EXT4_GOOD_OLD_INODE_SIZE +			\
- 	    (einode)->i_extra_isize))			\
- 
-+/*
-+ * We need is an encoding that preserves the times for extra epoch
-"00":
-+ *
-+ * extra  msb of                         adjust for signed
-+ * epoch  32-bit                         32-bit tv_sec to
-+ * bits   time    decoded 64-bit tv_sec  64-bit tv_sec      valid time
-range
-+ * 0 0    1    -0x80000000..-0x00000001  0x000000000
-1901-12-13..1969-12-31
-+ * 0 0    0    0x000000000..0x07fffffff  0x000000000
-1970-01-01..2038-01-19
-+ * 0 1    1    0x080000000..0x0ffffffff  0x100000000
-2038-01-19..2106-02-07
-+ * 0 1    0    0x100000000..0x17fffffff  0x100000000
-2106-02-07..2174-02-25
-+ * 1 0    1    0x180000000..0x1ffffffff  0x200000000
-2174-02-25..2242-03-16
-+ * 1 0    0    0x200000000..0x27fffffff  0x200000000
-2242-03-16..2310-04-04
-+ * 1 1    1    0x280000000..0x2ffffffff  0x300000000
-2310-04-04..2378-04-22
-+ * 1 1    0    0x300000000..0x37fffffff  0x300000000
-2378-04-22..2446-05-10
-+ *
-+ * Note that previous versions of the kernel on 64-bit systems would
-+ * incorrectly use extra epoch bits 1,1 for dates between 1901 and
-+ * 1970.  e2fsck will correct this, assuming that it is run on the
-+ * affected filesystem before 2242.
-+ */
-+
- static inline __le32 ext4_encode_extra_time(struct timespec *time)
- {
--       return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
--			   (time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
--                          ((time->tv_nsec << EXT4_EPOCH_BITS) &
-EXT4_NSEC_MASK));
-+	u32 extra = sizeof(time->tv_sec) > 4 ?
-+		((time->tv_sec - (s32)time->tv_sec) >> 32) & EXT4_EPOCH_MASK : 0;
-+	return cpu_to_le32(extra | (time->tv_nsec << EXT4_EPOCH_BITS));
- }
- 
- static inline void ext4_decode_extra_time(struct timespec *time, __le32
-extra)
- {
--       if (sizeof(time->tv_sec) > 4)
--	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
--			       << 32;
--       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >>
-EXT4_EPOCH_BITS;
-+	if (unlikely(sizeof(time->tv_sec) > 4 &&
-+			(extra & cpu_to_le32(EXT4_EPOCH_MASK)))) {
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,20,0)
-+		/* Handle legacy encoding of pre-1970 dates with epoch
-+		 * bits 1,1.  We assume that by kernel version 4.20,
-+		 * everyone will have run fsck over the affected
-+		 * filesystems to correct the problem.
-+		 */
-+		u64 extra_bits = le32_to_cpu(extra) & EXT4_EPOCH_MASK;
-+		if (extra_bits == 3)
-+			extra_bits = 0;
-+		time->tv_sec += extra_bits << 32;
-+#else
-+		time->tv_sec += (u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK) << 32;
-+#endif
-+	}
-+	time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >>
-EXT4_EPOCH_BITS;
- }
- 
- #define EXT4_INODE_SET_XTIME(xtime, inode, raw_inode)			       \
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
+
+> +		ret = -ENODEV;
+> +	}
+>  	mutex_unlock(&tracepoints_mutex);
+>  	release_probes(old);
+> -	return 0;
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(tracepoint_probe_register);
+>  
+> 
+
 -- 
-1.8.1.2
-
-
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
