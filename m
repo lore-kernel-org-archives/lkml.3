@@ -1,112 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaBNENg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:13:36 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40107 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaBNENe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:13:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <52FD5615.20508@samsung.com>
-References: <1389095509-14357-6-git-send-email-ch.naveen@samsung.com>
- <1391750695-27447-1-git-send-email-ch.naveen@samsung.com> <52FD552E.8040008@samsung.com>
- <52FD5615.20508@samsung.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 14 Feb 2014 09:43:13 +0530
-Message-ID: <CAHfPSqCAMq+9hitDSYrq++bB5Rrs1tJBT7VAXzeJEPLjxWoGmg@mail.gmail.com>
-Subject: Re: [PATCH 6/9 v6] ARM: dts: exynos5250/5420: add dt node for sss module
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Vladimir Zapolskiy <vzapolskiy@gmail.com>, herbert@gondor.apana.org.au,
-        cpgs@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751606AbaBNE0G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:26:06 -0500
+Received: from ozlabs.org ([203.10.76.45]:43523 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751050AbaBNE0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 23:26:04 -0500
+Date: Fri, 14 Feb 2014 15:25:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: linux-next: manual merge of the akpm-current tree with the cgroup
+ tree
+Message-Id: <20140214152557.cf6e5b5b0961dc47f800fe4d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__14_Feb_2014_15_25_57_+1100_L.Zeo8H1L.qERp1c"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+--Signature=_Fri__14_Feb_2014_15_25_57_+1100_L.Zeo8H1L.qERp1c
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 14 February 2014 05:02, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> On 02/14/14 08:28, Kukjin Kim wrote:
->>
->> On 02/07/14 14:24, Naveen Krishna Chatradhi wrote:
->>>
->>> This patch adds the device tree node for SSS module
->>> found on Exynos5420 and Exynos5250
->>>
->>> Signed-off-by: Naveen Krishna Chatradhi<ch.naveen@samsung.com>
->>> Reviewed-by: Tomasz Figa<t.figa@samsung.com>
->>> TO:<linux-samsung-soc@vger.kernel.org>
->>> CC: Kukjin Kim<kgene.kim@samsung.com>
->>> CC:<linux-crypto@vger.kernel.org>
->>> ---
->>> changes since v5:
->>> 1. Added Reviewed-by: Tomasz Figa<t.figa@samsung.com>
->>>
->>> arch/arm/boot/dts/exynos5250.dtsi | 8 ++++++++
->>> arch/arm/boot/dts/exynos5420.dtsi | 10 ++++++++++
->>> 2 files changed, 18 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
->>> b/arch/arm/boot/dts/exynos5250.dtsi
->>> index b7dec41..46b04e8 100644
->>> --- a/arch/arm/boot/dts/exynos5250.dtsi
->>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
->>> @@ -706,4 +706,12 @@
->>> io-channel-ranges;
->>> status = "disabled";
->>> };
->>> +
->>> + sss@10830000 {
->>> + compatible = "samsung,exynos4210-secss";
->>> + reg =<0x10830000 0x10000>;
->>> + interrupts =<0 112 0>;
->>> + clocks =<&clock 348>;
->>> + clock-names = "secss";
->>> + };
->>> };
->>> diff --git a/arch/arm/boot/dts/exynos5420.dtsi
->>> b/arch/arm/boot/dts/exynos5420.dtsi
->>> index 8db792b..b503e96 100644
->>> --- a/arch/arm/boot/dts/exynos5420.dtsi
->>> +++ b/arch/arm/boot/dts/exynos5420.dtsi
->>> @@ -652,4 +652,14 @@
->>> clocks =<&clock 319>,<&clock 318>;
->>> clock-names = "tmu_apbif", "tmu_triminfo_apbif";
->>> };
->>> +
->>> + sss@10830000 {
->>> + compatible = "samsung,exynos4210-secss";
->>> + reg =<0x10830000 0x10000>;
->>> + interrupts =<0 112 0>;
->>> + clocks =<&clock 471>;
->>> + clock-names = "secss";
->>> + samsung,power-domain =<&g2d_pd>;
->>> + };
->>> +
->>> };
->>
->>
->> Applied, thanks.
->>
->> BTW, I think the numbering is strange...maybe I missed something?
->> [PATCH 5/5], [PATCH 5/6 V2], [PATCH 6/8 V3] and this [PATCH 6/9 V6]
->>
-> Oops, Naveen, where is bindings doc for "samsung,exynos4210-secss"?
-The binding doc patch is along with the driver patch
-https://groups.google.com/forum/#!msg/linux.kernel/9Z02Gg_MzPA/GTc7Csg74L0J
-and
-http://patchwork.ozlabs.org/patch/314946/
->
-> - Kukjin
+Hi Andrew,
 
+Today's linux-next merge of the akpm-current tree got a conflict in
+kernel/cpuset.c between commit d66393e54e0a ("cpuset: use
+css_task_iter_start/next/end() instead of css_scan_tasks()") from the
+cgroup tree and commit a82211b06d6e ("cpusets: allocate heap only when
+required") from the akpm-current tree.
 
+I fixed it up (the former removed the need for the heap, so I effectively
+remove the latter) and can carry the fix as necessary (no action is
+required).
 
--- 
-Shine bright,
-(: Nav :)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__14_Feb_2014_15_25_57_+1100_L.Zeo8H1L.qERp1c
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS/ZrZAAoJEMDTa8Ir7ZwVKUIP/16S636I2rElzD4w3VdWrKHu
+1rfsN6mH/UQw9xbaDyVLqORc/RMruisG6ZrGFIXIxQrhR3TgCgWRVqExpJCoIhkO
+N4ujdZC5cPu27wRHsexUg8z/78KwKfjpvmOSAsKXV+oudMZMXslMc+A+AdcjVy4b
+E2VQhQImo2RBtvkxDm3l4oIT5JLDvjtqh+L+lG7zsH1l5ii6iCd/84JCisdYNYAU
+lrRXTpQEy5+dZ7J1mXlpwakind64Ra/34Zc72Odl0v6PIY+tu8Ym5uO/LKp1bZKA
+ctQ2lza6MJ8ISnYYmFXXumwJiCVGkqTY0QVDkTvDmsgdAUxKBVm+NfZn0uFFk7S3
+ZQEzzRQktpMuN1FBriZzbrEhUgqvQlfbtAoAQ9LE7qNpkDGSH7KsZMZ1NUxphCCV
+uUvsP9eR11OnEmnF0ran6uJ0Jnk2mR+JpSQRmOtQRHRtk9VSkf20WKkvZi9crI1a
+dHUU/amYHYIV+wyhLlu4HJnVH4dDge3geAwxQmVM4Cu6RMLi5oYvw8yVJ4bgeeTc
+w+Fm+vOuJZjOT/SyajcLSXyRFMJhPRd1+oT/trvdt5u8ViZTGb+AuJwV3xUSkG44
+rTm5azMRrdzYyb0urw+oujDKzNxVF1qWu7moiH9ebtDA9lNmAjXpAIZkyoRGPhgQ
+SvjTWbIDNyJgBCV4CBml
+=VEaB
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__14_Feb_2014_15_25_57_+1100_L.Zeo8H1L.qERp1c--
