@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884AbaBNBi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:38:58 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:33478 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbaBNBi5 (ORCPT
+	id S1751516AbaBNBwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 20:52:49 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:46403 "EHLO
+	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750987AbaBNBws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 20:38:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALCETrW_Sij=SaXBKZnOBNWTwS359=_ZU97dsb7_6W6VeXja2Q@mail.gmail.com>
-References: <20140212201709.GB6835@laptop.programming.kicks-ass.net>
- <218b548b69479baa005af8a7b04a3abbea8ed6fa.1392252790.git.luto@amacapital.net>
- <20140213145016.GA15586@twins.programming.kicks-ass.net> <CALCETrW_Sij=SaXBKZnOBNWTwS359=_ZU97dsb7_6W6VeXja2Q@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Feb 2014 17:38:36 -0800
-Message-ID: <CALCETrUWq_gKtiMuJbuxj+RbJ2fbz4TrQARnH8sUDpvqakCURA@mail.gmail.com>
-Subject: Re: [RFC] sched: Add a new lockless wake-from-idle implementation
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Feb 2014 20:52:48 -0500
+From: Feng Kan <fkan@apm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, marc.zyngier@arm.com
+Cc: patches@apm.com, Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
+Subject: [PATCH] gic: change access of gicc_ctrl register to read modify write.
+Date: Thu, 13 Feb 2014 17:48:53 -0800
+Message-Id: <1392342533-23345-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 11:58 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Thu, Feb 13, 2014 at 6:50 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Wed, Feb 12, 2014 at 05:40:12PM -0800, Andy Lutomirski wrote:
->>> This is a strawman proposal to simplify the idle implementation, eliminate
->>> a race
->>>
->>> Benefits over current code:
->>>  - ttwu_queue_remote doesn't use an IPI unless needed
->>>  - The diffstat should speak for itself :)
->>>  - Less racy.  Spurious IPIs are possible, but only in narrow windows or
->>>    when two wakeups occur in rapid succession.
->>>  - Seems to work (?)
->>>
->>> Issues:
->>>  - Am I doing the percpu stuff right?
->>>  - Needs work on non-x86 architectures
->>>  - The !CONFIG_SMP case needs to be checked
->>>  - Is "idlepoll" a good name for the new code?  It doesn't have *that*
->>>    much to do with the idle state.  Maybe cpukick?
->>>
->>> If this turns out okay, TIF_NEED_RESCHED could possibly be deleted as well.
->>
->> No, we can't do away with that; its used in some fairly critical paths
->> (return to userspace) and adding a second cacheline load there would be
->> unfortunate.
->>
->> I also don't really like how the polling state is an atomic; its a cpu
->> local property.
->>
->> Now given we can't get rid of TIF_NEED_RESCHED, and we need an atomic op
->> on a remote cacheline anyhow; the simplest solution would be to convert
->> all TS_POLLING users to TIF_POLLING_NRFLAG and use an atomic_or_return()
->> like construct to do:
->>
->>   atomic_or_return(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG
->>
->> and avoid the IPI if that is false.
->>
->> Something a little like this; it does require a lot of auditing; but it
->> boots on my x86_64.
->>
->> ---
->>  arch/x86/include/asm/mwait.h       | 19 ++++----
->>  arch/x86/include/asm/thread_info.h |  4 +-
->>  arch/x86/kernel/process.c          |  8 ++--
->>  include/linux/sched.h              | 90 +++-----------------------------------
->>  kernel/sched/core.c                | 70 ++++++++++++++++++-----------
->>  kernel/sched/idle.c                | 40 ++++++++---------
->>  kernel/sched/sched.h               |  3 ++
->>  7 files changed, 88 insertions(+), 146 deletions(-)
->
-> This patch changes the default from !polling to polling, right?  If
-> so, doesn't it break every driver that fails to *clear* the polling
-> flag?  (My patch is about to have the same problem.)
+This change is made to preserve the GIC v2 releated bits in the
+GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+The original code only set the enable/disable group bit in this register.
+This code will preserve all other bits configured by the bootload except
+the enable/disable bit. The main reason for this change is to allow the
+bypass bits specified in the v2 spec to remain untouched by the current
+GIC code. In the X-Gene platform, the bypass functionality is not used
+and bypass must be disabled at all time.
 
-I'm playing with making polling be the default and I'm seeing all
-kinds of erratic behavior.  Not sure what's going on.  Adding printks
-just causes *different* weird behavior.  Sigh.
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+Acked-by: Anup Patel <apatel@apm.com>
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+ drivers/irqchip/irq-gic.c |   19 ++++++++++++++++---
+ 1 files changed, 16 insertions(+), 3 deletions(-)
 
-So no updated patch from me today.
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 341c601..4a52a97e2 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+ 	void __iomem *dist_base = gic_data_dist_base(gic);
+ 	void __iomem *base = gic_data_cpu_base(gic);
+ 	unsigned int cpu_mask, cpu = smp_processor_id();
++	unsigned int ctrl_mask;
+ 	int i;
+ 
+ 	/*
+@@ -449,13 +450,21 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+ 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+ 
+ 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, base + GIC_CPU_CTRL);
++
++	ctrl_mask = readl(base + GIC_CPU_CTRL);
++	ctrl_mask |= 0x1;
++	writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
+ }
+ 
+ void gic_cpu_if_down(void)
+ {
++	unsigned int ctrl_mask;
++
+ 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
+-	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
++
++	ctrl_mask = readl(base + GIC_CPU_CTRL);
++	ctrl_mask &= 0xfffffffe;
++	writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ #ifdef CONFIG_CPU_PM
+@@ -566,6 +575,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ {
+ 	int i;
+ 	u32 *ptr;
++	unsigned int ctrl_mask;
+ 	void __iomem *dist_base;
+ 	void __iomem *cpu_base;
+ 
+@@ -590,7 +600,10 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+ 
+ 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
++
++	ctrl_mask = readl(base + GIC_CPU_CTRL);
++	ctrl_mask |= 0x1;
++	writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+-- 
+1.7.6.1
 
---Andy
