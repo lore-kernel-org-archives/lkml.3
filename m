@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322AbaBNIFc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:05:32 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:42718 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101AbaBNIF1 (ORCPT
+	id S1753343AbaBNIFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:05:43 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58536 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaBNIFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:05:27 -0500
+	Fri, 14 Feb 2014 03:05:39 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 47/52] trace,
- ring-buffer: Fix CPU hotplug callback registration
+Subject: [PATCH v2 48/52] profile: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        srivatsa.bhat@linux.vnet.ibm.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:29:53 +0530
-Message-ID: <20140214075953.22701.29061.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:30:07 +0530
+Message-ID: <20140214080006.22701.61064.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,7 +28,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021408-9264-0000-0000-000005741CCE
+x-cbid: 14021408-8256-0000-0000-00000B767DE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -65,75 +64,53 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the tracing ring-buffer code by using this latter form of callback
-registration.
+Fix the profile code by using this latter form of callback registration.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/trace/ring_buffer.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ kernel/profile.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 294b8a2..0893233 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1301,7 +1301,7 @@ struct ring_buffer *__ring_buffer_alloc(unsigned long size, unsigned flags,
- 	 * In that off case, we need to allocate for all possible cpus.
- 	 */
- #ifdef CONFIG_HOTPLUG_CPU
--	get_online_cpus();
-+	cpu_notifier_register_begin();
- 	cpumask_copy(buffer->cpumask, cpu_online_mask);
- #else
- 	cpumask_copy(buffer->cpumask, cpu_possible_mask);
-@@ -1324,10 +1324,10 @@ struct ring_buffer *__ring_buffer_alloc(unsigned long size, unsigned flags,
- #ifdef CONFIG_HOTPLUG_CPU
- 	buffer->cpu_notify.notifier_call = rb_cpu_notify;
- 	buffer->cpu_notify.priority = 0;
--	register_cpu_notifier(&buffer->cpu_notify);
-+	__register_cpu_notifier(&buffer->cpu_notify);
-+	cpu_notifier_register_done();
- #endif
- 
--	put_online_cpus();
- 	mutex_init(&buffer->mutex);
- 
- 	return buffer;
-@@ -1341,7 +1341,9 @@ struct ring_buffer *__ring_buffer_alloc(unsigned long size, unsigned flags,
- 
-  fail_free_cpumask:
- 	free_cpumask_var(buffer->cpumask);
--	put_online_cpus();
-+#ifdef CONFIG_HOTPLUG_CPU
-+	cpu_notifier_register_done();
-+#endif
- 
-  fail_free_buffer:
- 	kfree(buffer);
-@@ -1358,16 +1360,17 @@ ring_buffer_free(struct ring_buffer *buffer)
+diff --git a/kernel/profile.c b/kernel/profile.c
+index 6631e1e..4c0cb95 100644
+--- a/kernel/profile.c
++++ b/kernel/profile.c
+@@ -591,18 +591,28 @@ out_cleanup:
+ int __ref create_proc_profile(void) /* false positive from hotcpu_notifier */
  {
- 	int cpu;
+ 	struct proc_dir_entry *entry;
++	int err = 0;
  
--	get_online_cpus();
--
- #ifdef CONFIG_HOTPLUG_CPU
--	unregister_cpu_notifier(&buffer->cpu_notify);
+ 	if (!prof_on)
+ 		return 0;
+-	if (create_hash_tables())
+-		return -ENOMEM;
++
 +	cpu_notifier_register_begin();
-+	__unregister_cpu_notifier(&buffer->cpu_notify);
- #endif
- 
- 	for_each_buffer_cpu(buffer, cpu)
- 		rb_free_cpu_buffer(buffer->buffers[cpu]);
- 
--	put_online_cpus();
-+#ifdef CONFIG_HOTPLUG_CPU
++
++	if (create_hash_tables()) {
++		err = -ENOMEM;
++		goto out;
++	}
++
+ 	entry = proc_create("profile", S_IWUSR | S_IRUGO,
+ 			    NULL, &proc_profile_operations);
+ 	if (!entry)
+-		return 0;
++		goto out;
+ 	proc_set_size(entry, (1 + prof_len) * sizeof(atomic_t));
+-	hotcpu_notifier(profile_cpu_callback, 0);
+-	return 0;
++	__hotcpu_notifier(profile_cpu_callback, 0);
++
++out:
 +	cpu_notifier_register_done();
-+#endif
- 
- 	kfree(buffer->buffers);
- 	free_cpumask_var(buffer->cpumask);
++	return err;
+ }
+ module_init(create_proc_profile);
+ #endif /* CONFIG_PROC_FS */
 
