@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925AbaBNO1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 09:27:42 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55739 "EHLO mail.skyhub.de"
+	id S1753105AbaBNO1x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 09:27:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7530 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511AbaBNO1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 09:27:41 -0500
-Date: Fri, 14 Feb 2014 15:27:32 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: ChaosEsque Team <chaosesqueteam@yahoo.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Honestly, f__k systemd and f__k lennart, and f__k the fans of
- them. Where's linus in all of this?
-Message-ID: <20140214142732.GB26664@pd.tnic>
-References: <1392383941.45561.YahooMailBasic@web141704.mail.bf1.yahoo.com>
+	id S1753073AbaBNO1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 09:27:51 -0500
+Message-ID: <52FE2785.7090701@redhat.com>
+Date: Fri, 14 Feb 2014 09:26:13 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1392383941.45561.YahooMailBasic@web141704.mail.bf1.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, paulus@samba.org,
+        oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
+CC: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
+        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Toshi Kani <toshi.kani@hp.com>, Dave Hansen <dave@sr71.net>,
+        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH v2 49/52] mm, vmstat: Fix CPU hotplug callback registration
+References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com> <20140214080017.22701.62427.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20140214080017.22701.62427.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 05:19:01AM -0800, ChaosEsque Team wrote:
-> Honestly, f__k systemd and f__k lennart, and f__k the fans of them.
-> Where's linus in all of this?
-> 
-> The systemd fans ban anyone who say f__k-that to systemd.
-> 
-> What can we do?
-> Can we fork debian? (Why do we have to...)
-> Why do 4 people get to decide to send thousands and thousands of people into the systemd waters?
-> This is not fair.
-> 
-> This is not-pro choice. And YES, linux, and especially debian IS about choice.
+On 02/14/2014 03:00 AM, Srivatsa S. Bhat wrote:
+> Subsystems that want to register CPU hotplug callbacks, as well as perform
+> initialization for the CPUs that are already online, often do it as shown
+> below:
 
-I don't know if you're trolling for a useless discussion or this is
-really your opinion but if it were, I have to say that I agree with you
-about the choice aspect. I don't like that systemd-or-die XOR-morality
-either.
+> Fix the vmstat code in the MM subsystem by using this latter form of callback
+> registration.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
+> Cc: Toshi Kani <toshi.kani@hp.com>
+> Cc: Dave Hansen <dave@sr71.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: linux-mm@kvack.org
+> Acked-by: Christoph Lameter <cl@linux.com>
+> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-I'm sure systemd might have its merits and all but I think, too, people
-should have a choice on any distro.
-
-Just my 2c.
+Acked-by: Rik van Riel <riel@redhat.com>
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+All rights reversed
