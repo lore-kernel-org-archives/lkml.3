@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaBNEuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:50:04 -0500
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:50578 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751492AbaBNEuC (ORCPT
+	id S1752015AbaBNEue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:50:34 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:57429 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970AbaBNEud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:50:02 -0500
-X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Feb 2014 23:50:02 EST
-From: Debabrata Banerjee <dbanerje@akamai.com>
-To: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dbavatar@gmail.com, johunt@akamai.com,
-        Debabrata Banerjee <dbanerje@akamai.com>, stable@vger.kernel.org
-Subject: [PATCH] printk: Fix discarding of records
-Date: Thu, 13 Feb 2014 23:42:34 -0500
-Message-Id: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
-X-Mailer: git-send-email 1.8.3.4
+	Thu, 13 Feb 2014 23:50:33 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-e5-52fda096c1ba
+From: Namhyung Kim <namhyung@kernel.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip RESEND 2/2] ftrace: Introduce nr_saved_cmdlines I/F
+References: <20140213012852.15283.50473.stgit@yunodevel>
+	<20140213012858.15283.93302.stgit@yunodevel>
+Date: Fri, 14 Feb 2014 13:50:30 +0900
+In-Reply-To: <20140213012858.15283.93302.stgit@yunodevel> (Yoshihiro YUNOMAE's
+	message of "Thu, 13 Feb 2014 10:28:58 +0900")
+Message-ID: <878utez4a1.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found another buffer overflow in this code that was introduced by
-e3756477aec028427fec767957c0d4b6cfb87208 trying to solve a related overflow.
+Hi Yoshihiro,
 
-strace still shows a problem:
+On Thu, 13 Feb 2014 10:28:58 +0900, Yoshihiro YUNOMAE wrote:
+> Introduce nr_saved_cmdlines I/F for changing the number of pid-comm list.
+> saved_cmdlines can store 128 command names using SAVED_CMDLINES now, but
+> 'no-existing processes' names are often lost in saved_cmdlines when we
+> read trace data. So, by introducing nr_saved_cmdlines I/F, the rule storing
+> 128 command names is changed to the command numbers defined users.
+>
+> When we write a value to nr_saved_cmdlines, the number of the value will
+> be stored in pid-comm list:
+>
+> 	# echo 1024 > /sys/kernel/debug/tracing/nr_saved_cmdlines
+>
+> Here, 1024 command names are stored. The default number is 128 and the maximum
+> number is PID_MAX_DEFAULT (=32768 if CONFIG_BASE_SMALL is not set). So, if we
+> want to avoid to lose command names, we need to set 32768 to nr_saved_cmdlines.
+>
+> We can read the maximum number of the list:
+>
+> 	# cat /sys/kernel/debug/tracing/nr_saved_cmdlines
+> 	128
 
-	syslog(0x3, 0x7fffd65375d0, 0x1000)     = 4107
+[SNIP]
+> @@ -3685,7 +3760,8 @@ static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
+>  
+>  	(*pos)++;
+>  
+> -	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
+> +	for (; ptr < &savedcmd->map_cmdline_to_pid[savedcmd->cmdline_num];
+> +	     ptr++) {
+>  		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
+>  			continue;
+>  
+> @@ -3700,7 +3776,7 @@ static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
+>  	void *v;
+>  	loff_t l = 0;
+>  
+> -	v = &map_cmdline_to_pid[0];
+> +	v = &savedcmd->map_cmdline_to_pid[0];
+>  	while (l <= *pos) {
+>  		v = saved_cmdlines_next(m, v, &l);
+>  		if (!v)
 
-The first record output was in the middle of a LOG_CONT line:
+Are you accessing the savecmd without trace_cmdline_lock?
 
-	<4>[    2.974999] 0x0000000000000500-0x000000000000052f SystemIO conflicts with Region \GPIO 1 (20130328/utaddress-251)
-
-This happens because when discarding records to be less than len, every line it
-subtracts should be the first line which means prev should be 0. Otherwise for
-example it won't include the prefix len if the last line was a LOG_CONT
-record, which however will be printed because there won't be a previous line.
-This patch makes sure enough records are discarded to be under len.
-
-CC: stable@vger.kernel.org
-Signed-off-by: Debabrata Banerjee <dbanerje@akamai.com>
----
- kernel/printk/printk.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index b1d255f..c1722d5 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1067,7 +1067,6 @@ static int syslog_print_all(char __user *buf, int size, bool clear)
- 			struct printk_log *msg = log_from_idx(idx);
- 
- 			len -= msg_print_text(msg, prev, true, NULL, 0);
--			prev = msg->flags;
- 			idx = log_next(idx);
- 			seq++;
- 		}
-@@ -2780,7 +2779,6 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
- 		l -= msg_print_text(msg, prev, true, NULL, 0);
- 		idx = log_next(idx);
- 		seq++;
--		prev = msg->flags;
- 	}
- 
- 	/* last message in next interation */
--- 
-1.8.3.4
-
+Thanks,
+Namhyung
