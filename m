@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaBNTu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 14:50:29 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:64301 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaBNTu1 (ORCPT
+	id S1752757AbaBNTuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 14:50:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58303 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaBNTut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 14:50:27 -0500
+	Fri, 14 Feb 2014 14:50:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+Subject: Re: [RFC 1/6] mailbox: add core framework
+Date: Fri, 14 Feb 2014 20:48:25 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Herring <robherring2@gmail.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "s-anna@ti.com" <s-anna@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "omar.ramirez@copitl.com" <omar.ramirez@copitl.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com> <1765844.1kjKsO2Rzo@wuerfel> <20140212183143.GD1706@sonymobile.com>
+In-Reply-To: <20140212183143.GD1706@sonymobile.com>
 MIME-Version: 1.0
-In-Reply-To: <20140214172920.GQ4250@linux.vnet.ibm.com>
-References: <20140207180216.GP4250@linux.vnet.ibm.com>
-	<1391992071.18779.99.camel@triegel.csb>
-	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	<1392183564.18779.2187.camel@triegel.csb>
-	<20140212180739.GB4250@linux.vnet.ibm.com>
-	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	<20140213002355.GI4250@linux.vnet.ibm.com>
-	<1392321837.18779.3249.camel@triegel.csb>
-	<20140214020144.GO4250@linux.vnet.ibm.com>
-	<1392352981.18779.3800.camel@triegel.csb>
-	<20140214172920.GQ4250@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 11:50:26 -0800
-X-Google-Sender-Auth: vvpFQ-HzAh6U92mQSviUPGV-Jwc
-Message-ID: <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402142048.25456.arnd@arndb.de>
+X-Provags-ID: V02:K0:r0k/7AS9Lgo6EgI9sl/+svIyf+PQtkVIDjZ1IqfaIJJ
+ VOLX21ERpAw9g9l4kM70inxIe8Q600ti2s9fk6HI/H9aXIbiCx
+ UTn2rfppGZzKb4xJ3eBiB1ew7ST8DSue4I8hq+cRo7NOXMcsIq
+ uVg7ppDS6zp0QV+4e8FgBQdZ1qML/C5OlA7H4eF30SswvsvZH5
+ sWiibzb4bD/DOO2M4FQZrbWkJJThQB16p8tEz3F18U0KRC41wj
+ XeXWOvatuAjKcuqT7iedso6NKDKEIpK78ZOoSYomw6LJgqOAtB
+ De9xni7ht3+yEtZBno6QQ4idfIB77aySsUFqpll0Z0ucvkDGwc
+ z1OdSQ87l/BzoSMkP4zc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 9:29 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> Linus, Peter, any objections to marking places where we are relying on
-> ordering from control dependencies against later stores?  This approach
-> seems to me to have significant documentation benefits.
+On Wednesday 12 February 2014, Courtney Cavin wrote:
+> On Tue, Feb 11, 2014 at 09:35:01AM +0100, Arnd Bergmann wrote:
+> > On Monday 10 February 2014 16:23:48 Courtney Cavin wrote:
 
-Quite frankly, I think it's stupid, and the "documentation" is not a
-benefit, it's just wrong.
+> Then again, I think that the context management stuff is the exception as well,
+> and I think that can/should also be handled in a higher level.  Regardless, I
+> went ahead and drafted the async flags idea out anyway, so here's some
+> pseudo-code.  I also tried to shoe-horn in 'peek', and you can see how that
+> turns out.  Let me know if this is something like what you had in mind.
 
-How would you figure out whether your added "documentation" holds true
-for particular branches but not others?
+The async implementation looks good to me, assuming we actually need both
+sync and async operations, which I can't tell for sure.
 
-How could you *ever* trust a compiler that makes the dependency meaningful?
+For the peek operation, it wouldn't work for the ethernet case, which
+has to call it from atomic context in net_rx_action.
 
-Again, let's keep this simple and sane:
+> 	/**
+> 	 * so this is where this lock makes things difficult, as this function
+> 	 * might_sleep(), but only really because of the lock.  Either we can
+> 	 * remove the lock and force the adapter to do its own locking
+> 	 * spinlock-style, or we can accept the sleep here, which seems a bit
+> 	 * stupid in a peek function.  Neither option is good.  Additionally,
+> 	 * there's no guarantee that the adapter doesn't operate over a bus
+> 	 * which itself might_sleep(), exacerbating the problem.
+> 	 */
+> 	mutex_lock(&mbox->adapter->lock);
+> 	rc = mbox->adapter->ops->peek_message(mbox->adapter, mbox->chan, msg);
+> 	mutex_lock(&mbox->adapter->lock);
 
- - if a compiler ever generates code where an atomic store movement is
-"visible" in any way, then that compiler is broken shit.
+If we decide that peek() must not sleep, any driver that operates on a
+slow bus could just always report "no data" here.
+ 
+Moving the locking into the mbox driver here sounds appropriate.
 
-I don't understand why you even argue this. Seriously, Paul, you seem
-to *want* to think that "broken shit" is acceptable, and that we
-should then add magic markers to say "now you need to *not* be broken
-shit".
-
-Here's a magic marker for you: DON'T USE THAT BROKEN COMPILER.
-
-And if a compiler can *prove* that whatever code movement it does
-cannot make a difference, then let it do so. No amount of
-"documentation" should matter.
-
-Seriously, this whole discussion has been completely moronic. I don't
-understand why you even bring shit like this up:
-
-> >     r1 = atomic_load(x, memory_order_control);
-> >     if (control_dependency(r1))
-> >             atomic_store(y, memory_order_relaxed);
-
-I mean, really? Anybody who writes code like that, or any compiler
-where that "control_dependency()" marker makes any difference
-what-so-ever for code generation should just be retroactively aborted.
-
-There is absolutely *zero* reason for that "control_dependency()"
-crap. If you ever find a reason for it, it is either because the
-compiler is buggy, or because the standard is so shit that we should
-never *ever* use the atomics.
-
-Seriously. This thread has devolved into some kind of "just what kind
-of idiotic compiler cesspool crap could we accept". Get away from that
-f*cking mindset. We don't accept *any* crap.
-
-Why are we still discussing this idiocy? It's irrelevant. If the
-standard really allows random store speculation, the standard doesn't
-matter, and sane people shouldn't waste their time arguing about it.
-
-            Linus
+	Arnd
