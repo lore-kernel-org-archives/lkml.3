@@ -1,104 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaBNRWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 12:22:04 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:64580 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaBNRWC (ORCPT
+	id S1752502AbaBNRWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 12:22:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51051 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210AbaBNRWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 12:22:02 -0500
+	Fri, 14 Feb 2014 12:22:16 -0500
+Date: Fri, 14 Feb 2014 18:21:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: Another preempt folding issue?
+Message-ID: <20140214172157.GJ6835@laptop.programming.kicks-ass.net>
+References: <52FB5669.7090506@canonical.com>
+ <20140212115412.GW27965@twins.programming.kicks-ass.net>
+ <52FCFA23.4060701@canonical.com>
+ <20140213173852.GH6835@laptop.programming.kicks-ass.net>
+ <52FD090C.7010408@canonical.com>
+ <20140213182605.GC14089@laptop.programming.kicks-ass.net>
+ <20140214133428.GB26356@pd.tnic>
+ <52FE2709.3050505@canonical.com>
+ <20140214144700.GC26356@pd.tnic>
+ <52FE4C28.1080500@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <1790131.DSZsj6HrSK@avalon>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-	<107109887.afEv2P92gg@avalon>
-	<CANqRtoS-d-CW3XX3_E2dgJ83btRZYWiMCYmWUJAPqh9EeBhLEQ@mail.gmail.com>
-	<1790131.DSZsj6HrSK@avalon>
-Date: Sat, 15 Feb 2014 02:22:00 +0900
-Message-ID: <CANqRtoROALpUqi8rKWRpQk7LGc0BqU14AKg-2MgYBMNoEFGA4Q@mail.gmail.com>
-Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52FE4C28.1080500@canonical.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On Fri, Feb 14, 2014 at 06:02:32PM +0100, Stefan Bader wrote:
+> One thing I likely should do is to reinstall the exact same laptop with 64bit
+> kernel and userspace... maybe only 64bit kernel first... and make sure on my
+> side that this does not show up on 64bit, too. I took the word of reporters for
+> that (and the impression that otherwise many more people would have complained).
 
-On Sat, Feb 15, 2014 at 1:12 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Magnus,
->
-> On Saturday 15 February 2014 01:01:30 Magnus Damm wrote:
->> On Sat, Feb 15, 2014 at 12:53 AM, Laurent Pinchart wrote:
->> > On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
->> >> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
->> >> > +Channels Optional Properties:
->> >> > +
->> >> > +  - clock-source-rating: rating of the timer as a clock source device.
->> >> > +  - clock-event-rating: rating of the timer as a clock event device.
->> >>
->> >> This feels like a leak of Linux internals. Why do you need this?
->> >
->> > You're right, it is. The clock source and clock event ratings are
->> > currently configured through platform data, I'll need to find a way to
->> > compute them in the driver instead.
->>
->> That would be very good!
->
-> Any pointer would be appreciated :-) How did you compute the various ratings
-> used in platform data all over the place ?
+Yeha, I'm going to try and install some 32bit userspace on a usb
+harddisk I've got and see if I can boot my Core2 laptop from that to try
+and reproduce.
 
-Historically we used the rating to select between CMT and TMU. For
-clock sources I suppose you also have the jiffy rating to consider.
-And for the SMP parts we have ARM IP for TWD and arch timers that have
-their ratings too. So you need to check all the timers on a particular
-system and consider what you want to have operating by default. The
-ARM IP timers should be preferred if available. For clock sources the
-rule is probably the higher resolution the better.
-
->> > There's still one piece of Linux-specific data I need though, as I need to
->> > specify for each channel whether to use it as a clock source device, a
->> > clock event device, both of them or none. That's configuration
->> > information that needs to be provided somehow.
->>
->> I think you can decide clock source or clock event assignment based on
->> number of channels available. If you have only a single channel then both
->> clock event and clock source need to be supported. Otherwise use one channel
->> for clock source and the rest for clock events.
->
-> That won't match the current situation. Look at CMT0 in r8a7790 for instance.
-> There's two hardware channels available, and we only use the first one, for
-> clock events only.
-
-You are correct. The reason for that is that the CMT driver today is
-optimized for combined clock event and clock source operation.
-
-Historically the hardware it initially was written for (sh-mobile on
-the SH arch) only had a single timer channel so combined operation was
-required for tickless to work. But since you're asking how to allocate
-channels then I propose checking numbers of channels available and go
-from there. With that the r8a7790 support can only get better. =)
-
->> This is probably out of scope for this DT conversion, but it would be neat
->> if you somehow could specify the CPU affinity for a channel to tie a clock
->> event to an individual CPU core. This would make a a per-cpu timer unless
->> I'm mistaken. But that's more of a software policy than anything else.
->
-> Yes, that's a configuration that needs to be specified somewhere. I don't know
-> where though.
-
-As long as you have per-channel interrupts described in DT you can
-probably handle this in a generic way in the driver.
-
-Thanks,
-
-/ magnus
+But all that is probably going to be Monday :/
