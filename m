@@ -1,103 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaBNTr0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 14:47:26 -0500
-Received: from relay.parallels.com ([195.214.232.42]:43076 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334AbaBNTrY (ORCPT
+	id S1752703AbaBNTu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 14:50:29 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:64301 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580AbaBNTu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 14:47:24 -0500
-Message-ID: <52FE72C1.9090100@parallels.com>
-Date: Fri, 14 Feb 2014 23:47:13 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Fri, 14 Feb 2014 14:50:27 -0500
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, Andrew Vagin <avagin@gmail.com>,
-        Aditya Kali <adityakali@google.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <criu@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change boundaries
- of data, brk and stack
-References: <1392387209-330-1-git-send-email-avagin@openvz.org> <1392387209-330-2-git-send-email-avagin@openvz.org> <874n41znl5.fsf@xmission.com> <20140214174314.GA5518@gmail.com> <20140214180129.GK13358@moon> <8761ohqzc6.fsf@xmission.com>
-In-Reply-To: <8761ohqzc6.fsf@xmission.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
+In-Reply-To: <20140214172920.GQ4250@linux.vnet.ibm.com>
+References: <20140207180216.GP4250@linux.vnet.ibm.com>
+	<1391992071.18779.99.camel@triegel.csb>
+	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	<1392183564.18779.2187.camel@triegel.csb>
+	<20140212180739.GB4250@linux.vnet.ibm.com>
+	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	<20140213002355.GI4250@linux.vnet.ibm.com>
+	<1392321837.18779.3249.camel@triegel.csb>
+	<20140214020144.GO4250@linux.vnet.ibm.com>
+	<1392352981.18779.3800.camel@triegel.csb>
+	<20140214172920.GQ4250@linux.vnet.ibm.com>
+Date: Fri, 14 Feb 2014 11:50:26 -0800
+X-Google-Sender-Auth: vvpFQ-HzAh6U92mQSviUPGV-Jwc
+Message-ID: <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 11:16 PM, Eric W. Biederman wrote:
-> Cyrill Gorcunov <gorcunov@gmail.com> writes:
-> 
->> On Fri, Feb 14, 2014 at 09:43:14PM +0400, Andrew Vagin wrote:
->>>> My brain hurts just looking at this patch and how you are justifying it.
->>>>
->>>> For the resources you are mucking with below all you have to do is to
->>>> verify that you are below the appropriate rlimit at all times and no
->>>> CAP_SYS_RESOURCE check is needed.  You only need CAP_SYS_RESOURCE
->>>> to exceed your per process limits.
->>>>
->>>> All you have to do is to fix the current code to properly enforce the
->>>> limits.
->>>
->>> I'm afraid what you are suggesting doesn't work.
->>>
->>> The first reason is that we can not change both boundaries in one call.
->>> But when we are restoring these attributes, we may need to move their
->>> too far.
->>
->> When this code was introduced, there were no user-namespace implementation,
->> if I remember correctly, so CAP_SYS_RESOURCE was enough barrier point
->> to prevent modifying this values by anyone. Now user-ns brings a limit --
->> we need somehow to provide a way to modify these mm fields having no
->> CAP_SYS_RESOURCE set. "Verifying rlimit" not an option here because
->> we're modifying members one by one (looking back I think this was not
->> a good idea to modify the fields in this manner).
->>
->> Maybe we could improve this api and provide argument as a pointer
->> to a structure, which would have all the fields we're going to
->> modify, which in turn would allow us to verify that all new values
->> are sane and fit rlimits, then we could (probably) deprecate old
->> api if noone except c/r camp is using it (I actually can't imagine
->> who else might need this api). Then CAP_SYS_RESOURCE requirement
->> could be ripped off. Hm? (sure touching api is always "no-no"
->> case, but maybe...)
-> 
-> Hmm.  Let me rewind this a little bit.
-> 
-> I want to be very stupid and ask the following.
-> 
-> Why can't you have the process of interest do:
-> 	ptrace(PTRACE_ATTACHME);
-> 	execve(executable, args, ...);
->         
->         /* Have the ptracer inject the recovery/fixup code */
-> 	/* Fix up the mostly correct process to look like it has been
->          * executing for a while.
->          */
+On Fri, Feb 14, 2014 at 9:29 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> Linus, Peter, any objections to marking places where we are relying on
+> ordering from control dependencies against later stores?  This approach
+> seems to me to have significant documentation benefits.
 
-Let's imagine we do that.
+Quite frankly, I think it's stupid, and the "documentation" is not a
+benefit, it's just wrong.
 
-This means, that the whole memory contents should be restored _after_
-the execve() call, since the execve() flushes old mappings. In
-that case we lose the ability to preserve any shared memory regions
-between any two processes. This "shared" can be either regular
-MAP_SHARED mappings or MAP_ANONYMOUS but still not COW-ed ones.
+How would you figure out whether your added "documentation" holds true
+for particular branches but not others?
 
-> That should work, set all of the interesting fields, and works as
-> non-root today.  My gut feel says do that and we can just
-> deprecate/remove prctl_set_mm.
-> 
-> I am hoping we can move this conversation what makes sense from oh ick
-> checkpoint/restort does not work with user namespaces.
-> 
-> Eric
-> .
+How could you *ever* trust a compiler that makes the dependency meaningful?
 
-Thanks,
-Pavel
+Again, let's keep this simple and sane:
+
+ - if a compiler ever generates code where an atomic store movement is
+"visible" in any way, then that compiler is broken shit.
+
+I don't understand why you even argue this. Seriously, Paul, you seem
+to *want* to think that "broken shit" is acceptable, and that we
+should then add magic markers to say "now you need to *not* be broken
+shit".
+
+Here's a magic marker for you: DON'T USE THAT BROKEN COMPILER.
+
+And if a compiler can *prove* that whatever code movement it does
+cannot make a difference, then let it do so. No amount of
+"documentation" should matter.
+
+Seriously, this whole discussion has been completely moronic. I don't
+understand why you even bring shit like this up:
+
+> >     r1 = atomic_load(x, memory_order_control);
+> >     if (control_dependency(r1))
+> >             atomic_store(y, memory_order_relaxed);
+
+I mean, really? Anybody who writes code like that, or any compiler
+where that "control_dependency()" marker makes any difference
+what-so-ever for code generation should just be retroactively aborted.
+
+There is absolutely *zero* reason for that "control_dependency()"
+crap. If you ever find a reason for it, it is either because the
+compiler is buggy, or because the standard is so shit that we should
+never *ever* use the atomics.
+
+Seriously. This thread has devolved into some kind of "just what kind
+of idiotic compiler cesspool crap could we accept". Get away from that
+f*cking mindset. We don't accept *any* crap.
+
+Why are we still discussing this idiocy? It's irrelevant. If the
+standard really allows random store speculation, the standard doesn't
+matter, and sane people shouldn't waste their time arguing about it.
+
+            Linus
