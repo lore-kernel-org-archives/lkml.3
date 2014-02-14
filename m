@@ -1,78 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaBNPtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 10:49:17 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:34184 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751660AbaBNPtQ (ORCPT
+	id S1752358AbaBNPwH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 10:52:07 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:41964 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaBNPwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 10:49:16 -0500
-Date: Fri, 14 Feb 2014 15:49:07 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "tkhai@yandex.ru" <tkhai@yandex.ru>
-Subject: Re: [PATCH] sched/core: Create new task with twice disabled
- preemption
-Message-ID: <20140214154906.GF10590@arm.com>
-References: <1392306716.5384.3.camel@tkhai>
- <20140214123536.GA12304@arm.com>
- <1392381841.5384.43.camel@tkhai>
+	Fri, 14 Feb 2014 10:52:05 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
+Date: Fri, 14 Feb 2014 16:53:08 +0100
+Message-ID: <107109887.afEv2P92gg@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140214105822.GE9907@e106331-lin.cambridge.arm.com>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1392339605-20691-24-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <20140214105822.GE9907@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392381841.5384.43.camel@tkhai>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 12:44:01PM +0000, Kirill Tkhai wrote:
-> В Птн, 14/02/2014 в 12:35 +0000, Catalin Marinas пишет:
-> > On Thu, Feb 13, 2014 at 07:51:56PM +0400, Kirill Tkhai wrote:
-> > > Preemption state on enter in finish_task_switch() is different
-> > > in cases of context_switch() and schedule_tail().
-> > > 
-> > > In the first case we have it twice disabled: at the start of
-> > > schedule() and during spin locking. In the second it is only
-> > > once: the value which was set in init_task_preempt_count().
-> > > 
-> > > For archs without __ARCH_WANT_UNLOCKED_CTXSW set this means
-> > > that all newly created tasks execute finish_arch_post_lock_switch()
-> > > and post_schedule() with preemption enabled.
-> > > 
-> > > It seems there is possible a problem in rare situations on arm64,
-> > > when one freshly created thread preempts another before
-> > > finish_arch_post_lock_switch() has finished. If mm is the same,
-> > > then TIF_SWITCH_MM on the second won't be set.
-> > > 
-> > > The second rare but possible issue is zeroing of post_schedule()
-> > > on a wrong cpu.
-> > > 
-> > > So, lets fix this and unify preempt_count state.
+Hi Mark,
+
+Thank you for the review.
+
+On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
+> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
+> > Cc: devicetree@vger.kernel.org
+> > Signed-off-by: Laurent Pinchart
+> > <laurent.pinchart+renesas@ideasonboard.com>
+> > ---
 > > 
-> > An alternative to your patch:
+> >  .../devicetree/bindings/timer/renesas,cmt.txt      |  75 +++++++++++++++
+> >  drivers/clocksource/sh_cmt.c                       | 104 +++++++++++++---
+> >  2 files changed, 160 insertions(+), 19 deletions(-)
+> >  create mode 100644
+> >  Documentation/devicetree/bindings/timer/renesas,cmt.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/timer/renesas,cmt.txt
+> > b/Documentation/devicetree/bindings/timer/renesas,cmt.txt new file mode
+> > 100644
+> > index 0000000..28d4ab5
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/timer/renesas,cmt.txt
+> > @@ -0,0 +1,75 @@
+> > +* Renesas R-Car Compare Match Timer (CMT)
+> > +
+> > +The CMT is a multi-channel 16/32/48-bit timer/counter with configurable
+> > clock
+> > +inputs and programmable compare match.
+> > +
+> > +Channels share hadware resources but their counter and compare match
+> > value are
+> > +independent. A particular CMT instance can implement only a subset of the
+> > +channels supported by the CMT model. Channels indices start from 0 and
+> > are
+> > +consecutive.
+> > +
+> > +Required Properties:
+> > +
+> > +  - compatible: must contain one of the following.
+> > +    - "renesas,cmt-32" for the 32-bit CMT
+> > +		(CMT0 on sh7372, sh73a0 and r8a7740)
+> > +    - "renesas,cmt-32-fast" for the 32-bit CMT with fast clock support
+> > +		(CMT[234] on sh7372, sh73a0 and r8a7740)
+> > +    - "renasas,cmt-48" for the 48-bit CMT
+> > +		(CMT1 on sh7372, sh73a0 and r8a7740)
+> > +    - "renesas,cmt-48-gen2" for the second generation 48-bit CMT
+> > +    		(CMT[01] on r8a73a4, r8a7790 and r8a7791)
+> > +
+> > +  - reg: base address and length of the registers block for the timer
+> > module.
+> > +  - interrupt-parent, interrupts: interrupt-specifier for the timer, one
+> > per
+> > +    channel.
 > 
-> It looks better, than the initial.
+> It might make more sense to describe the interrupt on the channel
+> subnode. It makes it far clearer which channel has which interrupt.
+
+That's a good point. I'm relying on platform_get_irq() which won't support 
+that usage, but I can switch to of_irq_to_resource() instead.
+
+> > +  - clocks: phandle and clock-specifier pair for the functional clock.
+> > +  - clock-names: must be "fck".
 > 
-> You may add my Acked-by if you want.
+> It would be nice to define the list once:
+> 
+> - clocks: A list of phandle + clock-specifier pairs, one for each entry
+>   in clock-names.
+> - clock-names: Should contain "fck" for the functional clock.
 
-Thanks for the ack. But apart from arm64, are there any other problems
-with running part of finish_task_switch() and post_schedule() with
-preemption enabled?
+OK.
 
-The finish_arch_post_lock_switch() is currently only used by arm and
-arm64 (the former UP only) and arm no longer has the preemption problem
-(see commit bdae73cd374e2). So I can either disable the preemption
-around schedule_tail() call in arm64 or do it globally as per yours or
-my patch.
+> > +
+> > +  - #address-cells: must be 1
+> > +  - #size-cells: must be 0
+> > +
+> > +  - renesas,channels-mask: integer bitmask of the channels implemented by
+> > the
+> > +    timer instance.
+> 
+> This is implied by the presence of a subnode. Either remove this or the
+> subnodes.
+>
+> > +
+> > +
+> > +Each channel is described by a sub-node named "channel@<idx>", where
+> > <idx> is +the channel index.
+> > +
+> > +Channels Required Properties:
+> > +
+> > +  - reg: the channel index.
+> > +
+> > +Channels Optional Properties:
+> > +
+> > +  - clock-source-rating: rating of the timer as a clock source device.
+> > +  - clock-event-rating: rating of the timer as a clock event device.
+> 
+> This feels like a leak of Linux internals. Why do you need this?
 
-Peter, Ingo, any thoughts? Do we care about preempt count consistency
-across finish_task_switch() and post_schedule()?
+You're right, it is. The clock source and clock event ratings are currently 
+configured through platform data, I'll need to find a way to compute them in 
+the driver instead.
 
-Thanks.
+There's still one piece of Linux-specific data I need though, as I need to 
+specify for each channel whether to use it as a clock source device, a clock 
+event device, both of them or none. That's configuration information that 
+needs to be provided somehow.
+
+> > +
+> > +
+> > +Example: R8A7790 (R-Car H2) CMT0 node
+> > +
+> > +	CMT0 on R8A7790 implements hardware channels 5 and 6 only and names
+> > +	them channels 0 and 1 in the documentation.
+> > +
+> > +	cmt0: timer@ffca0000 {
+> > +		compatible = "renesas,cmt-48-gen2";
+> > +		reg = <0 0xffca0000 0 0x1004>;
+> > +		interrupt-parent = <&gic>;
+> > +		interrupts = <0 142 IRQ_TYPE_LEVEL_HIGH>,
+> > +			     <0 142 IRQ_TYPE_LEVEL_HIGH>;
+> > +		clocks = <&mstp1_clks R8A7790_CLK_CMT0>;
+> > +
+> > +		#address-cells = <1>;
+> > +		#size-cells = <0>;
+> > +
+> > +		renesas,channels-mask = <0x60>;
+> > +
+> > +		channel@0 {
+> > +			reg = <0>;
+> > +			clock-event-rating = <80>;
+> > +		};
+> > +		channel@0 {
+> > +			reg = <0>;
+> > +			clock-source-rating = <80>;
+> > +		};
+> 
+> Aaargh. Use the _real_ channel IDs for the reg proeprties and get rid of
+> the mask. It's pointlessly confusing.
+
+There's two real channel IDs. One of them is the value used in the hardware 
+implementation (5 and 6 in this case, used to compute the channel registers 
+block address) and the other one is the value used throughout the datasheet, 0 
+and 1 in this case.
+
+The later is used by the driver to reference the correct interrupt, which 
+won't be needed anymore when referencing interrupts in the channel subnodes 
+directly. It's also used to print messages to the kernel log and match the 
+channel numbers specified in the datasheets. I could use the hardware channel 
+number instead, but that might become confusing.
 
 -- 
-Catalin
+Regards,
+
+Laurent Pinchart
+
