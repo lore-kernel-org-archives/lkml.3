@@ -1,133 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877AbaBNWQe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 17:16:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56679 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034AbaBNWQd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 17:16:33 -0500
-Message-ID: <52FE95C0.20305@infradead.org>
-Date: Fri, 14 Feb 2014 14:16:32 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752981AbaBNWRb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 17:17:31 -0500
+Received: from mga02.intel.com ([134.134.136.20]:5483 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034AbaBNWR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 17:17:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,847,1384329600"; 
+   d="scan'208";a="483706174"
+From: "Dugger, Donald D" <donald.d.dugger@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 0/3] Quirk Intel PCH root ports for ACS-like features
+Thread-Topic: [PATCH v2 0/3] Quirk Intel PCH root ports for ACS-like features
+Thread-Index: AQHPKc4fLt21Vk+Fj0iazmGjRXcegJq1TzKg
+Date: Fri, 14 Feb 2014 22:17:02 +0000
+Message-ID: <6AF484C0160C61439DE06F17668F3BCB5285C7EC@ORSMSX102.amr.corp.intel.com>
+References: <20140203212216.8607.68273.stgit@bling.home>
+ <CAErSpo5D55RcaSASGrU8hEcg+BYvGKOQHFjor8k1gSzfZKWy2g@mail.gmail.com>
+In-Reply-To: <CAErSpo5D55RcaSASGrU8hEcg+BYvGKOQHFjor8k1gSzfZKWy2g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Gene Heskett <gheskett@wdtv.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Loseing my patience with libata and sata_nv
-References: <201402141131.48157.gheskett@wdtv.com> <52FE639C.2030007@infradead.org> <201402141421.42470.gheskett@wdtv.com>
-In-Reply-To: <201402141421.42470.gheskett@wdtv.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1EMHbbi006124
 
-On 02/14/2014 11:21 AM, Gene Heskett wrote:
-> On Friday 14 February 2014, Randy Dunlap wrote:
->> On 02/14/2014 08:31 AM, Gene Heskett wrote:
->>> Which is required for my $290 ASUS M2n-SLI Deluxe motherboard to boot.
->>>
->>> Not finding the option in any kernel tree that exists on my system,
->>> except it appears its been replaced or something.
->>>
->>> This once in a lifetime boot, to 3.12.9, shows from an lsmod:
->>> libata                146855  2 sata_nv,pata_amd
->>> scsi_mod              153579  4 sr_mod,sg,sd_mod,libata
->>>
->>> I haven't a clue how I got it in this boot, and I built it.  And
->>> apparently a make oldconfig, carefully done by hand (takes about an
->>> hour 30 to do) is not capable of adding it to a .config BECAUSE it
->>> does NOT exist in any of the arch/x86/configs/i386_defconfig's present
->>> on this machine.
->>
->> It does not have to exist in any defconfig.  Those are just default
->> config files and SATA_NV is not enabled by default, but you can still
->> enable it.
->>
->>> Here is how I searched:
->>>
->>> gene@coyote:~/src/linux-3.0.69$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.0.69$ cd
->>> ../linux-3.2.40
->>> gene@coyote:~/src/linux-3.2.40$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.2.40$ cd
->>> ../linux-3.4.36
->>> gene@coyote:~/src/linux-3.4.36$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.4.36$ cd
->>> ../linux-3.8.2
->>> gene@coyote:~/src/linux-3.8.2$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.8.2$ cd
->>> ../linux-3.8.3
->>> gene@coyote:~/src/linux-3.8.3$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.8.3$ cd
->>> ../linux-3.12.0
->>> gene@coyote:~/src/linux-3.12.0$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.12.0$ cd
->>> ../linux-3.12.6
->>> gene@coyote:~/src/linux-3.12.6$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.12.6$ cd
->>> ../linux-3.12.9
->>> gene@coyote:~/src/linux-3.12.9$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.12.9$ cd
->>> ../linux-3.13.1
->>> gene@coyote:~/src/linux-3.13.1$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.13.1$ cd
->>> ../linux-3.13.2
->>> gene@coyote:~/src/linux-3.13.2$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.13.2$
->>>
->>> I've been fighting with this, intermittently for about 6 months. 
->>> Except for this 3.12.9 where I must have been holding my mouth right,
->>> all the rest are boot failures because it can't find the boot drive
->>> with so-and-so for a UUID. sata_nv is on the missing list, even in
->>> this WORKing boots defconfig. "Working" however is a miss-statement,
->>> no multimedia stuff was built.
->>>
->>> There has to be a rule I am violating, but even with Randy's D's help,
->>> it is not becoming obvious.  FWIW libata references also can't be
->>> found, but as can be seen, its in memory right now.
->>
->> libata is built whenever CONFIG_ATA is enabled.
-> 
-> I don't believe the help states that.
+In re: Feature vs. bug fix
 
-AFAICT the Kconfig help does not tell what builds libata.
-Would it help if it did?
+At the risk of trying to arguing about the meaning of `is' I would argue that this is more a bug fix than a feature.  We're not adding a new capability, we are trying to work around deficient HW (no argument that we should have implemented ACS on all platforms).
 
-Maybe by adding 'libata' to this prompt text:
-	"Serial ATA and Parallel ATA drivers"
-e.g.,
-	"Serial ATA and Parallel ATA drivers (libata)"
+Having said that, although I would obviously prefer to see this in v3.14 we can live with this hitting v3.15.
 
+--
+Don Dugger
+"Censeo Toto nos in Kansa esse decisse." - D. Gale
+Ph: 303/443-3786
 
-> 
->>> So please guys, what is the magic dependency that causes libata and
->>> sata_nv to be included in a .config?
->>
->> The SATA_NV kconfig symbol depends on (requires) the following other
->> kconfig symbols to be enabled:
->> 	ATA_SFF and ATA_BMDMA and PCI and ATA
-> 
-> I wrote down those deps from the make menuconfig help screen, they are as 
-> stated.  I made sure with gedit and grep...
-> 
-> It gets to:
-> 
-> Early console decompressing the kernel
-> booting the kernel
-> 
-> Thats it, no disk activity, its hung.
-> 
-> .config for a 3.13.2 attached.
->>
->> If those are not enabled, then you will need to use 'make <some>config'
->> to enabled them before you can enable SATA_NV.
+-----Original Message-----
+From: Bjorn Helgaas [mailto:bhelgaas@google.com] 
+Sent: Friday, February 14, 2014 2:43 PM
+To: Alex Williamson
+Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Dugger, Donald D
+Subject: Re: [PATCH v2 0/3] Quirk Intel PCH root ports for ACS-like features
 
-Please add this string to the kernel command line to see if helps to
-narrow down what is happening:
-	initcall_debug
+[+cc Don]
 
+On Mon, Feb 03, 2014 at 02:27:27PM -0700, Alex Williamson wrote:
+> v2:
+>  - Remove bus #0 bug in filtering matching
+>  - Add 2/3 introducing PCI_DEV_FLAGS_ACS_ENABLED_QUIRK, this gives
+>    is better tracking and addresses the theoretical hotplug issue
+>  - Update 3/3 for PCI_DEV_FLAGS_ACS_ENABLED_QUIRK
+>  - Add dev_info to print regardless of whether we changes bits
+>  - Add Intel cc
+>
+> As described in 3/3 many Intel root ports lack PCIe ACS capabilities 
+> which results in excessively large IOMMU groups.  Many of these root 
+> ports do provide isolation capabilities, we just need to use device 
+> specific mechanisms to enable and verify.  Long term, I hope we can 
+> round out this list (particularly to include X79 root ports) and more 
+> importantly, encourage proper PCIe ACS support in future products.  
+> I'm really hoping we can get this in during the 3.14 cycle.
+> Thanks,
+>
+> Alex
+> ---
+>
+> Alex Williamson (3):
+>       pci: Add device specific PCI ACS enable
+>       pci: Add pci_dev_flag for ACS enable quirks
+>       pci/quirks: Enable quirks for PCIe ACS on Intel PCH root ports
 
--- 
-~Randy
+I applied these (with Don's ack for 3/3) to pci/virtualization.
+
+I tried to figure out how to handle post-merge window patches.  Per Documentation/development-process/2.Process, "[after -rc1], only patches which fix problems should be submitted to the mainline," so one might conclude that a fix for any sort of problem is allowed.  However, Documentation/networking/netdev-FAQ.txt says "No new features get mainlined after this [-rc1] -- only fixes to the rc1 content are expected," which is how I've been operating.
+
+In any case, these patches look more like new functionality (enabling a non-standard ACS feature) than a bug fix to me, so my preference is to merge them during the v3.15 merge window.
+
+I understand the desire for v3.14, namely, "lots of Intel devices don't support ACS, and that makes it hard for users to expose devices to userspace with fine granularity, and waiting for v3.15 will mean another two months."  But this problem is really of Intel's own making: if they'd used standard ACS, or if they'd documented their non-standard mechanism, this wouldn't be an issue.
+
+Bjorn
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
