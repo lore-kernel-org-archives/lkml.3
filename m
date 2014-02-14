@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414AbaBNJzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 04:55:14 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:9443 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932AbaBNJzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 04:55:11 -0500
-X-IronPort-AV: E=Sophos;i="4.95,843,1384272000"; 
-   d="scan'208";a="9527370"
-Message-ID: <52FDE7C5.5000401@cn.fujitsu.com>
-Date: Fri, 14 Feb 2014 17:54:13 +0800
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 0/9] Add MAX_NICE, MIN_NICE and NICE_WIDTH macros in prio.h.
-References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com> <52FDE06A.1020909@cn.fujitsu.com> <20140214095143.GH27965@twins.programming.kicks-ass.net>
-In-Reply-To: <20140214095143.GH27965@twins.programming.kicks-ass.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/14 17:53:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/14 17:53:07,
-	Serialize complete at 2014/02/14 17:53:07
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751914AbaBNJ4a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 04:56:30 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:65077 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606AbaBNJ42 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 04:56:28 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, sachin.kamat@linaro.org
+Subject: [PATCH v2] mfd: wm8400-core: Remove unnecessary goto
+Date: Fri, 14 Feb 2014 15:21:05 +0530
+Message-Id: <1392371465-25294-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 05:51 PM, Peter Zijlstra wrote:
-> On Fri, Feb 14, 2014 at 05:22:50PM +0800, Dongsheng Yang wrote:
->> Hi Ingo & Peter,
->>      What's your opinion on this patchset?
-> I queued it; I wasn't convinced but people seem to like it, which is
-> good enough.
+Return directly to avoid redundant lines of code.
 
-Thank you :)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+Changes since v1:
+Changed (wm8400 == NULL) -> (!wm8400)
+---
+ drivers/mfd/wm8400-core.c |   22 +++++-----------------
+ 1 file changed, 5 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/mfd/wm8400-core.c b/drivers/mfd/wm8400-core.c
+index d66d256551fb..e5eae751aa1b 100644
+--- a/drivers/mfd/wm8400-core.c
++++ b/drivers/mfd/wm8400-core.c
+@@ -161,31 +161,19 @@ static int wm8400_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+ 	struct wm8400 *wm8400;
+-	int ret;
+ 
+ 	wm8400 = devm_kzalloc(&i2c->dev, sizeof(struct wm8400), GFP_KERNEL);
+-	if (wm8400 == NULL) {
+-		ret = -ENOMEM;
+-		goto err;
+-	}
++	if (!wm8400)
++		return -ENOMEM;
+ 
+ 	wm8400->regmap = devm_regmap_init_i2c(i2c, &wm8400_regmap_config);
+-	if (IS_ERR(wm8400->regmap)) {
+-		ret = PTR_ERR(wm8400->regmap);
+-		goto err;
+-	}
++	if (IS_ERR(wm8400->regmap))
++		return PTR_ERR(wm8400->regmap);
+ 
+ 	wm8400->dev = &i2c->dev;
+ 	i2c_set_clientdata(i2c, wm8400);
+ 
+-	ret = wm8400_init(wm8400, dev_get_platdata(&i2c->dev));
+-	if (ret != 0)
+-		goto err;
+-
+-	return 0;
+-
+-err:
+-	return ret;
++	return wm8400_init(wm8400, dev_get_platdata(&i2c->dev));
+ }
+ 
+ static int wm8400_i2c_remove(struct i2c_client *i2c)
+-- 
+1.7.9.5
 
