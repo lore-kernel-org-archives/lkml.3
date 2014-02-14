@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822AbaBNSvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:51:11 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:63670 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103AbaBNSvH (ORCPT
+	id S1752260AbaBNSzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:55:16 -0500
+Received: from smtp3.Stanford.EDU ([171.67.219.83]:59949 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751242AbaBNSzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 13:51:07 -0500
-Date: Fri, 14 Feb 2014 11:51:04 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregory.clement@free-electrons.com, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] mvebu : pcie: dt: potential issue in range parsing
-Message-ID: <20140214185103.GE31093@google.com>
-References: <1389349431-7997-1-git-send-email-jjhiblot@traphandler.com>
- <20140205164710.082f689e@skate>
- <20140205172107.GU8533@titan.lakedaemon.net>
+	Fri, 14 Feb 2014 13:55:14 -0500
+Message-ID: <52FE6681.8090807@ccrma.stanford.edu>
+Date: Fri, 14 Feb 2014 10:54:57 -0800
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140205172107.GU8533@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: nando@ccrma.Stanford.EDU, linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, John Kacur <jkacur@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12.9-rt13: BUG: soft lockup
+References: <52FBF2F1.8040504@localhost> <alpine.DEB.2.02.1402132324230.21991@ionos.tec.linutronix.de> <52FD4D89.2000207@localhost> <alpine.DEB.2.02.1402140053000.21991@ionos.tec.linutronix.de> <52FDB71F.2020000@ccrma.stanford.edu> <alpine.DEB.2.02.1402141040460.21991@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402141040460.21991@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 12:21:07PM -0500, Jason Cooper wrote:
-> 
-> + Bjorn, linux-pci
-> 
-> Bjorn,
-> 
-> It looks like this didn't get Cc'd to linux-pci.  Here's a link:
-> 
->   http://www.spinics.net/lists/arm-kernel/msg299721.html
+On 02/14/2014 02:43 AM, Thomas Gleixner wrote:
+> On Thu, 13 Feb 2014, Fernando Lopez-Lezcano wrote:
+>> On 02/13/2014 03:55 PM, Thomas Gleixner wrote:
+>>> On Thu, 13 Feb 2014, Fernando Lopez-Lezcano wrote:
+>>>
+>>>> On 02/13/2014 02:25 PM, Thomas Gleixner wrote:
+>>>>> On Wed, 12 Feb 2014, Fernando Lopez-Lezcano wrote:
+>>>>>> [771508.546449] RIP: 0010:[<ffffffff810dc60a>]  [<ffffffff810dc60a>]
+>>>>>> smp_call_function_many+0x2ca/0x330
+>>>>>
+>>>>> Can you decode the exact location inside of smp_call_function_many via
+>>>>> addr2line please ?
+>>
+>> # addr2line -e
+>> /usr/lib/debug/lib/modules/3.12.9-301.rt13.1.fc20.ccrma.x86_64+rt/vmlinux
+>> ffffffff810dc60e
+>> /usr/src/debug/kernel-3.12.fc20.ccrma/linux-3.12.9-301.rt13.1.fc20.ccrma.x86_64/kernel/smp.c:108
+>
+> So it's stuck in csd_lock_wait(), which means that the csd of the
+> target cpu is not free.
+>
+> Is the machine completely dead or can you still retrieve information
+> from it?
 
-Thanks for the heads-up; I had indeed missed this (I mostly rely on
-patchwork, which only tracks linux-pci, and it's not smart enough to
-extract quoted patches).
+After migrating to fc20/3.12.x-rtyy I started experiencing freezes in 
+some workstations. This coincided with one of our students running high 
+cpu load multi-core computations in them (he had been doing that before 
+under 3.10.x-rtyy with no problems). In the morning I would find 
+workstations unresponsive and catatonic. Probably his software was still 
+eating up cpu as the machines were warm (ie: still under load). No pings 
+back or keyboard/mouse/display response.
 
-Applied to pci/host-mvebu for v3.15, thanks!
+This was the only time I could get information from a machine while it 
+was in the process of freezing up - but this might have been a different 
+issue. I was ssh'd in and that terminal became unresponsive. I managed 
+to ssh in again and looked at the logs. The machine was not completely 
+frozen but it eventually became completely catatonic. For all I know 
+this might be different from the locked machines syndrome as it left 
+traces in the logs (I could forward you all the log entries if you want).
 
-> 
-> On Wed, Feb 05, 2014 at 04:47:10PM +0100, Thomas Petazzoni wrote:
-> > Dear Jean-Jacques Hiblot,
-> > 
-> > On Fri, 10 Jan 2014 11:23:51 +0100, Jean-Jacques Hiblot wrote:
-> > > The second parameter of of_read_number is not the index, but a size.
-> > > As it happens, in this case it may work just fine because of the the conversion
-> > > to u32 and the favorable endianness on this architecture.
-> > > 
-> > > Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> > > ---
-> > >  drivers/pci/host/pci-mvebu.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
-> > > index c269e43..877e8ce 100644
-> > > --- a/drivers/pci/host/pci-mvebu.c
-> > > +++ b/drivers/pci/host/pci-mvebu.c
-> > > @@ -768,7 +768,7 @@ static int mvebu_get_tgt_attr(struct device_node *np, int devfn,
-> > >  
-> > >  	for (i = 0; i < nranges; i++) {
-> > >  		u32 flags = of_read_number(range, 1);
-> > > -		u32 slot = of_read_number(range, 2);
-> > > +		u32 slot = of_read_number(range + 1, 1);
-> > >  		u64 cpuaddr = of_read_number(range + na, pna);
-> > >  		unsigned long rtype;
-> > >  
-> > 
-> > Sorry for the long delay, and thanks for the fix!
-> > 
-> > Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> > Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> > 
-> > (on Armada 370, with PCIe cards plugged in)
-> 
-> 
-> Fixes: 11be65472a427 ("PCI: mvebu: Adapt to the new device tree layout")
-> Cc: <stable@vger.kernel.org> # v3.12+
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
-> 
-> thx,
-> 
-> Jason.
+I could try to boot one of the machines into 3.12.xrtyy, replicate the 
+conditions and wait. What should I look for if I can catch this in the act?
+
+-- Fernando
