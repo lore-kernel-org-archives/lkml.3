@@ -1,101 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaBNB7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:59:21 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:51834 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaBNB7T (ORCPT
+	id S1751830AbaBNCAK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 21:00:10 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:52216 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaBNCAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 20:59:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392181259-26949-1-git-send-email-acourbot@nvidia.com>
-References: <CAAVeFuLgopbCSE2u_paxUJC-dsZU=XwJxHen-jWMADQKZuuucQ@mail.gmail.com>
-	<1392181259-26949-1-git-send-email-acourbot@nvidia.com>
-Date: Fri, 14 Feb 2014 11:59:19 +1000
-Message-ID: <CACAvsv50tGvTLifR0dFO97aUdSSdPfC3BW0HHpKNOJCgsQ6Lug@mail.gmail.com>
-Subject: Re: [PATCH v2] drm/nouveau: handle -EACCES runtime PM return code
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Feb 2014 21:00:08 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee691-b7efc6d0000039d3-90-52fd78a3cd66
+Content-transfer-encoding: 8BIT
+Message-id: <1392343111.25542.113.camel@kjgkr>
+Subject: Re: [f2fs-dev] f2fs: f2fs unmount hangs if f2fs_init_acl() fails
+ during mkdir syscall
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Andrey Tsyvarev <tsyvarev@ispras.ru>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-f2fs-devel@lists.sourceforge.net
+Date: Fri, 14 Feb 2014 10:58:31 +0900
+In-reply-to: <52F9DF85.7040402@ispras.ru>
+References: <52F320FC.50803@ispras.ru> <1391666564.25542.78.camel@kjgkr>
+ <52F37D67.208@ispras.ru> <1391734185.25542.80.camel@kjgkr>
+ <1391749933.25542.83.camel@kjgkr> <52F9DF85.7040402@ispras.ru>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zA93FFX+DDGau5LG4tMjd4vKuOWwW
+	yy/HOTB7zPg3ldFj94LPTB6fN8kFMEdx2aSk5mSWpRbp2yVwZexcd52xYB5rxbUHE9gbGKew
+	dDFyckgImEg0zD4GZYtJXLi3nq2LkYtDSGAZo8SVHx/gij4fPsUOYgsJTGeUOP42FsTmFRCU
+	+DH5HlANBwezgLzEkUvZIGFmAXWJSfMWMUPMeckoMXP5a0aIej2JSctamUBsYYEEiak3b4P1
+	sgloS2zebwAxXlHi7f67rCC2iICGxOqZP5kgZkZK3Dv5FmwMi4CqxI9nm9lAbE4BTYmdL7+w
+	QOw6BnTzpFlgRfwCohKHF25nhrhfSWJ3eyc7SJGEwC52iemNt5khJglIfJt8COwICQFZiU0H
+	oOolJQ6uuMEygVFiFpI3ZyG8OQvJmwsYmVcxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihMTY
+	xB2M9w9YH2JMBto4kVlKNDkfGKN5JfGGxmZGFqYmpsZG5pZmpAkrifOmP0oKEhJITyxJzU5N
+	LUgtii8qzUktPsTIxMEp1cDYPE3ObfYus8X+sz4UP8rTeBcprmT8cIJiuTHTuol/VB6cKL92
+	KJDt2scTedqvZ/LPuRc3YXeZ4NkZmQ2irB2ydzofNvqz8um76n06w/mhfs364o+hc+/M3su2
+	Pblzx9WFSv33Qv9LJ+q2pvY849xzJsTMyEDFVvb0FLOvKevFIj894jygMz9KiaU4I9FQi7mo
+	OBEAnlviCMcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQd3FFX+DDG51clpcWuRucXnXHDaL
+	5ZfjHJg9Zvybyuixe8FnJo/Pm+QCmKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUN
+	LS3MlRTyEnNTbZVcfAJ03TJzgPYoKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJA
+	AwnrGDN2rrvOWDCPteLagwnsDYxTWLoYOTkkBEwkPh8+xQ5hi0lcuLeeDcQWEpjOKHH8bSyI
+	zSsgKPFj8j2geg4OZgF5iSOXskHCzALqEpPmLWLuYuQCKn/JKDFz+WtGiHo9iUnLWplAbGGB
+	BImpN2+D9bIJaEts3m8AMV5R4u3+u6wgtoiAhsTqmT+ZIGZGStw7+RZsDIuAqsSPZ5vBzuEU
+	0JTY+fILC8SuY4wSVybNAiviFxCVOLxwOzPE/UoSu9s72ScwCs1CcvYshLNnITl7ASPzKkbR
+	1ILkguKk9FwjveLE3OLSvHS95PzcTYzgCH4mvYNxVYPFIUYBDkYlHl6PB3+ChFgTy4orcw8x
+	SnAwK4nwMqX9DRLiTUmsrEotyo8vKs1JLT7EmAx0+URmKdHkfGByySuJNzQ2MTOyNDKzMDIx
+	NydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxtzgtHDhG2emSsYqNxZcWpecaR+0as/d
+	uTVztJfLqz//0CsYduJ3aY/k4YgVBw+e+r9Bfm8QfzKDqNlZrx0Cz1Jdpzb5BV6t6lutkeN1
+	9Xrhrfub2X9/d+O+YVdz76CEzc/0NMVby1ykZjxNubzURWad3aE5wXJ/J/k/VU9T2//Moe7L
+	pkBjSSWW4oxEQy3mouJEAOXqXMgkAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 3:00 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> pm_runtime_get*() may return -EACCES to indicate a device does not have
-> runtime PM enabled. This is currently the case with platform devices
-> on Nouveau, and is not an error in that context. Handle this case
-> without failure.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Merged, thanks :)
+Hi,
 
-> ---
-> Changes since v1:
-> - Fixed typo and inaccuracy in commit message
->
->  drivers/gpu/drm/nouveau/dispnv04/crtc.c     | 2 +-
->  drivers/gpu/drm/nouveau/nouveau_connector.c | 2 +-
->  drivers/gpu/drm/nouveau/nouveau_drm.c       | 4 ++--
->  3 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/gpu/drm/nouveau/dispnv04/crtc.c b/drivers/gpu/drm/nouveau/dispnv04/crtc.c
-> index 0e3270c3ffd2..1caef1fd139e 100644
-> --- a/drivers/gpu/drm/nouveau/dispnv04/crtc.c
-> +++ b/drivers/gpu/drm/nouveau/dispnv04/crtc.c
-> @@ -1048,7 +1048,7 @@ nouveau_crtc_set_config(struct drm_mode_set *set)
->
->         /* get a pm reference here */
->         ret = pm_runtime_get_sync(dev->dev);
-> -       if (ret < 0)
-> +       if (ret < 0 && ret != -EACCES)
->                 return ret;
->
->         ret = drm_crtc_helper_set_config(set);
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
-> index 1674882d60d5..cddef546d9b0 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_connector.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
-> @@ -255,7 +255,7 @@ nouveau_connector_detect(struct drm_connector *connector, bool force)
->         }
->
->         ret = pm_runtime_get_sync(connector->dev->dev);
-> -       if (ret < 0)
-> +       if (ret < 0 && ret != -EACCES)
->                 return conn_status;
->
->         i2c = nouveau_connector_ddc_detect(connector, &nv_encoder);
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-> index b45fd1a0ab28..c677a09aac3f 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-> @@ -696,7 +696,7 @@ nouveau_drm_open(struct drm_device *dev, struct drm_file *fpriv)
->
->         /* need to bring up power immediately if opening device */
->         ret = pm_runtime_get_sync(dev->dev);
-> -       if (ret < 0)
-> +       if (ret < 0 && ret != -EACCES)
->                 return ret;
->
->         get_task_comm(tmpname, current);
-> @@ -781,7 +781,7 @@ long nouveau_drm_ioctl(struct file *filp,
->         dev = file_priv->minor->dev;
->
->         ret = pm_runtime_get_sync(dev->dev);
-> -       if (ret < 0)
-> +       if (ret < 0 && ret != -EACCES)
->                 return ret;
->
->         ret = drm_ioctl(filp, cmd, arg);
-> --
-> 1.8.5.4
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Sorry for the late response.
+I suffered from flu during last a couple of days. :(
+
+2014-02-11 (화), 12:29 +0400, Andrey Tsyvarev:
+> Hi,
+> 
+> > It turns out that make_bad_inode prior to iput sets i_mode to a regular
+> > file, so that f2fs_evict_inode -> truncate_inode_pages ->
+> > f2fs_invalidate_data_page doesn't decrement dirty_dents.
+> >
+> It seems that remove_dirty_dir_inode() call should also be added to the 
+> error-path of
+> init_inode_metadata, because its functionality is also based on 
+> inode->i_mode field
+> which is changed by make_bad_inode().
+
+Agreed.
+I'll update the patch with this.
+Thanks,
+
+-- 
+Jaegeuk Kim
+Samsung
+
