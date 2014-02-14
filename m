@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaBNH7X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 02:59:23 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42792 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294AbaBNH7T (ORCPT
+	id S1752581AbaBNH5T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:57:19 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:60989 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436AbaBNH5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 02:59:19 -0500
+	Fri, 14 Feb 2014 02:57:16 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 19/52] x86, mce: Fix CPU hotplug callback registration
+Subject: [PATCH v2 10/52] arm, kvm: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-edac@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:23:34 +0530
-Message-ID: <20140214075333.22701.61880.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:21:23 +0530
+Message-ID: <20140214075122.22701.18462.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,7 +31,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021407-3568-0000-0000-000004F0C6EE
+x-cbid: 14021407-5490-0000-0000-000004F3022F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -65,44 +67,52 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the mce code in x86 by using this latter form of callback registration.
+Fix the kvm code in arm by using this latter form of callback registration.
 
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: linux-edac@vger.kernel.org
+Cc: kvmarm@lists.cs.columbia.edu
+Cc: kvm@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kernel/cpu/mcheck/mce.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/arm/kvm/arm.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 4d5419b..9b7734b 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2434,14 +2434,18 @@ static __init int mcheck_init_device(void)
- 	if (err)
- 		return err;
- 
-+	cpu_notifier_register_begin();
- 	for_each_online_cpu(i) {
- 		err = mce_device_create(i);
--		if (err)
-+		if (err) {
-+			cpu_notifier_register_done();
- 			return err;
-+		}
+diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+index 1d8248e..147b917 100644
+--- a/arch/arm/kvm/arm.c
++++ b/arch/arm/kvm/arm.c
+@@ -1050,21 +1050,26 @@ int kvm_arch_init(void *opaque)
+ 		}
  	}
  
- 	register_syscore_ops(&mce_syscore_ops);
--	register_hotcpu_notifier(&mce_cpu_notifier);
-+	__register_hotcpu_notifier(&mce_cpu_notifier);
-+	cpu_notifier_register_done();
++	cpu_notifier_register_begin();
++
+ 	err = init_hyp_mode();
+ 	if (err)
+ 		goto out_err;
  
- 	/* register character device /dev/mcelog */
- 	misc_register(&mce_chrdev_device);
+-	err = register_cpu_notifier(&hyp_init_cpu_nb);
++	err = __register_cpu_notifier(&hyp_init_cpu_nb);
+ 	if (err) {
+ 		kvm_err("Cannot register HYP init CPU notifier (%d)\n", err);
+ 		goto out_err;
+ 	}
+ 
++	cpu_notifier_register_done();
++
+ 	hyp_cpu_pm_init();
+ 
+ 	kvm_coproc_table_init();
+ 	return 0;
+ out_err:
++	cpu_notifier_register_done();
+ 	return err;
+ }
+ 
 
