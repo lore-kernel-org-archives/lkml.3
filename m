@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaBNKir (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 05:38:47 -0500
-Received: from mail-db3lp0077.outbound.protection.outlook.com ([213.199.154.77]:40591
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751323AbaBNKiq convert rfc822-to-8bit (ORCPT
+	id S1752025AbaBNKjf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 05:39:35 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34726 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609AbaBNKjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 05:38:46 -0500
-X-Greylist: delayed 896 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Feb 2014 05:38:45 EST
-From: Conrad Kostecki <ck@conrad-kostecki.de>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>
-Subject: [PATCH] x86: HPET force enable for Soekris net6501
-Thread-Topic: [PATCH] x86: HPET force enable for Soekris net6501
-Thread-Index: AQHPKW68eF3VOEekGkmzriEhDKIWtg==
-Date: Fri, 14 Feb 2014 10:23:45 +0000
-Message-ID: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.124.237.237]
-x-forefront-prvs: 01221E3973
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019001)(6009001)(189002)(199002)(65816001)(33646001)(94946001)(53806001)(54356001)(63696002)(85306002)(56776001)(80976001)(59766001)(77982001)(19580395003)(19580405001)(83322001)(66066001)(46102001)(94316002)(74482001)(47446002)(75402002)(575784001)(93516002)(47976001)(86362001)(50986001)(74662001)(31966008)(81816001)(51856001)(15975445006)(47736001)(95416001)(49866001)(93136001)(76576001)(15202345003)(76786001)(74366001)(69226001)(90146001)(74316001)(74876001)(2656002)(87266001)(74706001)(87936001)(81342001)(81542001)(76796001)(81686001)(56816005)(85852003)(92566001)(4396001)(79102001)(54316002)(83072002)(76176001)(95666001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DB4PR04MB266;H:DB4PR04MB265.eurprd04.prod.outlook.com;CLIP:192.124.237.237;FPR:E2B1D1E3.CCA9B1A.1D86F50.C0E29EB0.202AA;InfoNoRecordsMX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 14 Feb 2014 05:39:33 -0500
+Date: Fri, 14 Feb 2014 11:39:30 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Petr =?utf-8?B?UMOtc2HFmQ==?= <petr.pisar@atlas.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?iso-8859-1?Q?Jean-Fran=E7ois?= Moine <moinejf@free.fr>
+Subject: Re: [PATCH] vt: Fix secure clear screen
+Message-ID: <20140214103929.GA3933@amd.pavel.ucw.cz>
+References: <1391716883-31383-1-git-send-email-petr.pisar@atlas.cz>
 MIME-Version: 1.0
-X-OriginatorOrg: conrad-kostecki.de
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391716883-31383-1-git-send-email-petr.pisar@atlas.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-as the Soekris net6501 does not have any ACPI implementation, HPET won't get enabled.
-This patch enables HPET on such platforms.
+Hi!
 
-[    0.430149] pci 0000:00:01.0: Force enabled HPET at 0xfed00000
-[    0.644838] HPET: 3 timers in total, 0 timers will be used for per-cpu timer
+> \E[3J console code (secure clear screen) needs to update_screen(vc)
+> in order to write-through blanks into off-screen video memory.
 
-Original patch by Peter Neubauer, slightly modified by me.
--> http://www.mail-archive.com/soekris-tech@lists.soekris.com/msg06462.html
+I guess it is also suitable for stable, right?
 
-Cheers
-Conrad
+Thanks,
+								Pavel
 
-Signed-off-by: Peter Neubauer <pneubauer@bluerwhite.org>
-Signed-off-by: Conrad Kostecki <ck@conrad-kostecki.de>
+> This has been removed accidentally in 3.6 by:
+> 
+> commit 81732c3b2fede049a692e58a7ceabb6d18ffb18c
+> Author: Jean-François Moine <moinejf@free.fr>
+> Date:   Thu Sep 6 19:24:13 2012 +0200
+> 
+>     tty vt: Fix line garbage in virtual console on command line edition
+> 
+> Signed-off-by: Petr Písař <petr.pisar@atlas.cz>
+> ---
+>  drivers/tty/vt/vt.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> index 61b1137..23b5d32 100644
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -1164,6 +1164,8 @@ static void csi_J(struct vc_data *vc, int vpar)
+>  			scr_memsetw(vc->vc_screenbuf, vc->vc_video_erase_char,
+>  				    vc->vc_screenbuf_size >> 1);
+>  			set_origin(vc);
+> +			if (CON_IS_VISIBLE(vc))
+> +				update_screen(vc);
+>  			/* fall through */
+>  		case 2: /* erase whole display */
+>  			count = vc->vc_cols * vc->vc_rows;
 
---- a/arch/x86/kernel/quirks.c	2014-02-14 11:13:27.703432732 +0100
-+++ b/arch/x86/kernel/quirks.c	2014-02-14 11:14:32.327496474 +0100
-@@ -498,6 +498,25 @@ void force_hpet_resume(void)
- }
- 
- /*
-+ * Soekris net6501, based on Atom E6xx series, does not have ACPI.
-+ * HPET should be force enabled on such platforms.
-+ */
-+static void e6xx_force_enable_hpet(struct pci_dev *dev)
-+{
-+	if (hpet_address || force_hpet_address)
-+		return;
-+
-+	force_hpet_address = 0xFED00000;
-+	force_hpet_resume_type = NONE_FORCE_HPET_RESUME;
-+	dev_printk(KERN_DEBUG, &dev->dev, "Force enabled HPET at "
-+		"0x%lx\n", force_hpet_address);
-+	return;
-+}
-+
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_E6XX_CU,
-+			 e6xx_force_enable_hpet);
-+
-+/*
-  * HPET MSI on some boards (ATI SB700/SB800) has side effect on
-  * floppy DMA. Disable HPET MSI on such platforms.
-  * See erratum #27 (Misinterpreted MSI Requests May Result in
---- a/include/linux/pci_ids.h	2014-02-14 11:13:00.575408953 +0100
-+++ b/include/linux/pci_ids.h	2014-02-14 11:13:37.819442066 +0100
-@@ -2854,6 +2854,7 @@
- #define PCI_DEVICE_ID_INTEL_82372FB_1	0x7601
- #define PCI_DEVICE_ID_INTEL_SCH_LPC	0x8119
- #define PCI_DEVICE_ID_INTEL_SCH_IDE	0x811a
-+#define PCI_DEVICE_ID_INTEL_E6XX_CU	0x8183
- #define PCI_DEVICE_ID_INTEL_ITC_LPC	0x8186
- #define PCI_DEVICE_ID_INTEL_82454GX	0x84c4
- #define PCI_DEVICE_ID_INTEL_82450GX	0x84c5
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
