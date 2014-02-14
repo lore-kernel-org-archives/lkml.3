@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaBNHnG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 02:43:06 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:19923 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751638AbaBNHnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 02:43:04 -0500
-Message-ID: <52FDC8F3.50100@marvell.com>
-Date: Fri, 14 Feb 2014 15:42:43 +0800
-From: Jane Li <jiel@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752055AbaBNHnO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:43:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49896 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751638AbaBNHnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 02:43:07 -0500
+Date: Fri, 14 Feb 2014 08:43:05 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+Message-ID: <20140214074305.GF5160@quack.suse.cz>
+References: <52F88C16.70204@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
+ <52F8C556.6090006@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
+ <52FC6F2A.30905@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
+ <52FC98A6.1000701@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
+ <20140214001438.GB1651@linux.vnet.ibm.com>
+ <CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "joe@perches.com" <joe@perches.com>, "tj@kernel.org" <tj@kernel.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH] printk: fix one circular lockdep warning about console_lock
-References: <1392101400-14550-1-git-send-email-jiel@marvell.com> <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
-In-Reply-To: <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-02-14_02:2014-02-13,2014-02-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1402130246
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 05:19 AM, Andrew Morton wrote:
+On Thu 13-02-14 16:37:53, Linus Torvalds wrote:
+> Is this whole thread still just for the crazy and pointless
+> "max_sane_readahead()"?
+> 
+> Or is there some *real* reason we should care?
+> 
+> Because if it really is just for max_sane_readahead(), then for the
+> love of God, let us just do this
+> 
+>  unsigned long max_sane_readahead(unsigned long nr)
+>  {
+>         return min(nr, 128);
+>  }
+> 
+> and bury this whole idiotic thread.
+  max_sane_readahead() is also used for limiting amount of readahead for
+[fm]advice(2) WILLNEED and that is used e.g. by a dynamic linker to preload
+shared libraries into memory. So I'm convinced this usecase *will* notice
+the change - effectively we limit preloading of shared libraries to the
+first 512KB in the file but libraries get accessed in a rather random manner.
 
->> There are three locks involved in two sequence:
->> a) pm suspend:
->> 	console_lock (@suspend_console())
->> 	cpu_add_remove_lock (@disable_nonboot_cpus())
->> 	cpu_hotplug.lock (@_cpu_down())
-> But but but.  suspend_console() releases console_sem again.
+Maybe limits for WILLNEED and for standard readahead should be different.
+It makes sence to me and people seem to keep forgetting that
+max_sane_readahead() limits also WILLNEED preloading.
 
-Console_lock does not refer to console_sem but console_lock_dep_map. Its name is console_lock. Suspend_console() does not release console_lock_dep_map.
+								Honza
 
-> So the
-> sequence is actually
->
->   	down(&console_sem) (@suspend_console())
-
-	   acquire(&console_lock_dep_map) (&suspend_console())
-
->   	up(&console_sem) (@suspend_console())
->   	cpu_add_remove_lock (@disable_nonboot_cpus())
->   	cpu_hotplug.lock (@_cpu_down())
->
-> So console_sem *doesn't* nest outside cpu_add_remove_lock and
-> cpu_hotplug.lock.
-
-Add console_lock in the sequence.
-
->
->> b) Plug-out CPUx:
->> 	cpu_add_remove_lock (@(cpu_down())
->> 	cpu_hotplug.lock (@_cpu_down())
->> 	console_lock (@console_cpu_notify()) => Lockdeps prints warning log.
->>
->> There should be not real deadlock, as flag of console_suspended can
->> protect this.
-> console_lock() does down(&console_sem) *before* testing
-> console_suspended, so I don't understand this sentence - a more
-> detailed description would help.
-
-After suspend_console(), console_sem is unlocked, but console_lock_dep_map has been acquired.
-
-
-Best Regards,
-Jane
-
+> On Thu, Feb 13, 2014 at 4:14 PM, Nishanth Aravamudan
+> <nacc@linux.vnet.ibm.com> wrote:
+> >
+> > I'm working on this latter bit now. I tried to mirror ia64, but it looks
+> > like they have CONFIG_USER_PERCPU_NUMA_NODE_ID, which powerpc doesn't.
+> > It seems like CONFIG_USER_PERCPU_NUMA_NODE_ID and
+> > CONFIG_HAVE_MEMORYLESS_NODES should be tied together in Kconfig?
+> >
+> > I'll keep working, but would appreciate any further insight.
+> >
+> > -Nish
+> >
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
