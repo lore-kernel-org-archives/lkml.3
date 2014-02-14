@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaBNNdk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:33:40 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64371 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642AbaBNNdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:33:37 -0500
-Date: Fri, 14 Feb 2014 13:33:30 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: tony@atomide.com, bcousson@baylibre.com, balbi@ti.com, nm@ti.com,
-        khilman@linaro.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v7 03/12] mfd: omap-usb-host: Use clock names as per
- function for reference clocks
-Message-ID: <20140214133330.GC13293@lee--X1>
-References: <1392200333-28397-1-git-send-email-rogerq@ti.com>
- <1392200333-28397-4-git-send-email-rogerq@ti.com>
- <20140214100915.GD7380@lee--X1>
- <52FE164F.80503@ti.com>
+	id S1752755AbaBNNei (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:34:38 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44924 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752044AbaBNNeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 08:34:36 -0500
+Date: Fri, 14 Feb 2014 14:34:28 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: Another preempt folding issue?
+Message-ID: <20140214133428.GB26356@pd.tnic>
+References: <20140211194553.GZ9987@twins.programming.kicks-ass.net>
+ <52FB2EC8.4080602@canonical.com>
+ <20140212103713.GE3545@laptop.programming.kicks-ass.net>
+ <20140212104017.GA5121@pd.tnic>
+ <52FB5669.7090506@canonical.com>
+ <20140212115412.GW27965@twins.programming.kicks-ass.net>
+ <52FCFA23.4060701@canonical.com>
+ <20140213173852.GH6835@laptop.programming.kicks-ass.net>
+ <52FD090C.7010408@canonical.com>
+ <20140213182605.GC14089@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52FE164F.80503@ti.com>
+In-Reply-To: <20140213182605.GC14089@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Use a meaningful name for the reference clocks so that it indicates the function.
-> >>
-> >> CC: Lee Jones <lee.jones@linaro.org>
-> >> CC: Samuel Ortiz <sameo@linux.intel.com>
-> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >> ---
-> >>  drivers/mfd/omap-usb-host.c | 6 +++---
-> >>  1 file changed, 3 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-> >> index 60a3bed..ce620a8 100644
-> >> --- a/drivers/mfd/omap-usb-host.c
-> >> +++ b/drivers/mfd/omap-usb-host.c
-> >> @@ -714,21 +714,21 @@ static int usbhs_omap_probe(struct platform_device *pdev)
-> >>  		goto err_mem;
-> >>  	}
-> >>  
-> >> -	omap->xclk60mhsp1_ck = devm_clk_get(dev, "xclk60mhsp1_ck");
-> >> +	omap->xclk60mhsp1_ck = devm_clk_get(dev, "refclk_60m_ext_p1");
-> > 
-> > You can't do that. These changes will have to be in the same patch as
-> > the core change i.e. where they are initialised.
+On Thu, Feb 13, 2014 at 07:26:05PM +0100, Peter Zijlstra wrote:
+> On Thu, Feb 13, 2014 at 07:03:56PM +0100, Stefan Bader wrote:
+> > Yeah... not sure the interleaved source helps or not ...
 > 
-> I'm not touching them anywhere in this series. When core changes are you
-> referring to?
+> It did, thanks!
 
-The ones in:
-  arch/arm/mach-omap2/cclock3xxx_data.c
+Stefan, can you also send sched/core.s? I'm particularly interested in
+what resched_task() has been turned into by your build env.
 
-> >>  	if (IS_ERR(omap->xclk60mhsp1_ck)) {
-> >>  		ret = PTR_ERR(omap->xclk60mhsp1_ck);
-> >>  		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
-> >>  		goto err_mem;
-> >>  	}
-> >>  
-> >> -	omap->xclk60mhsp2_ck = devm_clk_get(dev, "xclk60mhsp2_ck");
-> >> +	omap->xclk60mhsp2_ck = devm_clk_get(dev, "refclk_60m_ext_p2");
-> >>  	if (IS_ERR(omap->xclk60mhsp2_ck)) {
-> >>  		ret = PTR_ERR(omap->xclk60mhsp2_ck);
-> >>  		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
-> >>  		goto err_mem;
-> >>  	}
-> >>  
-> >> -	omap->init_60m_fclk = devm_clk_get(dev, "init_60m_fclk");
-> >> +	omap->init_60m_fclk = devm_clk_get(dev, "refclk_60m_int");
-> >>  	if (IS_ERR(omap->init_60m_fclk)) {
-> >>  		ret = PTR_ERR(omap->init_60m_fclk);
-> >>  		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
-> > 
-> 
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
