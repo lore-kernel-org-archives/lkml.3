@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255AbaBNMNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 07:13:12 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63177 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaBNMMu (ORCPT
+	id S1752362AbaBNMWB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 07:22:01 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:19411 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752032AbaBNMV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 07:12:50 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/2] nohz: ensure users are aware boot CPU is not NO_HZ_FULL
-Date: Fri, 14 Feb 2014 13:12:40 +0100
-Message-Id: <1392379960-4758-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1392379960-4758-1-git-send-email-fweisbec@gmail.com>
-References: <1392379960-4758-1-git-send-email-fweisbec@gmail.com>
+	Fri, 14 Feb 2014 07:21:59 -0500
+Date: Fri, 14 Feb 2014 12:21:52 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH] sched/core: Create new task with twice disabled
+ preemption
+Message-ID: <20140214122152.GD10590@arm.com>
+References: <1392306716.5384.3.camel@tkhai>
+ <20140213160013.GE6835@laptop.programming.kicks-ass.net>
+ <52FD01A6.8060404@yandex.ru>
+ <20140214105255.GA10596@arm.com>
+ <1392376569.5384.25.camel@tkhai>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392376569.5384.25.camel@tkhai>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+On Fri, Feb 14, 2014 at 11:16:09AM +0000, Kirill Tkhai wrote:
+> В Птн, 14/02/2014 в 10:52 +0000, Catalin Marinas пишет:
+> > On Thu, Feb 13, 2014 at 09:32:22PM +0400, Kirill Tkhai wrote:
+> > > Look at ARM64's finish_arch_post_lock_switch(). It looks a task
+> > > must to not be preempted between switch_mm() and this function.
+> > > But in case of new task this is possible.
+> > 
+> > We had a thread about this at the end of last year:
+> > 
+> > https://lkml.org/lkml/2013/11/15/82
+> >
+> > There is indeed a problem on arm64, something like this (and I think
+> > s390 also needs a fix):
+> > 
+> > 1. switch_mm() via check_and_switch_context() defers the actual mm
+> >    switch by setting TIF_SWITCH_MM
+> > 2. the context switch is considered 'done' by the kernel before
+> >    finish_arch_post_lock_switch() and therefore we can be preempted to a
+> >    new thread before finish_arch_post_lock_switch()
+> > 3. The new thread has the same mm as the preempted thread but we
+> >    actually missed the mm switching in finish_arch_post_lock_switch()
+> >    because TIF_SWITCH_MM is per thread rather than mm
+> > 
+> > > This is the problem I tried to solve. I don't know arm64, and I can't
+> > > say how it is serious.
+> > 
+> > Have you managed to reproduce this? I don't say it doesn't exist, but I
+> > want to make sure that any patch actually fixes it.
+> 
+> No, I have not tried. I found this place while analysing scheduler code.
+> But it seems with the RT technics suggested previous message it's quite
+> possible.
 
-This bit of information is in the Kconfig help text:
+Now I think I confused myself. Looking through the __schedule() code,
+context_switch() and therefore finish_arch_post_lock_switch() are called
+with preemption disabled. So the scenario above cannot exist since the
+current thread cannot be preempted between switch_mm() and
+finish_arch_post_lock_switch(). Do I miss anything?
 
-  "Note the boot CPU will still be kept outside the range to
-  handle the timekeeping duty."
+Now I get your point about schedule_tail() which calls
+finish_task_switch() with a preempt count of 0. I'll get back to your
+original patch.
 
-However neither the variable NO_HZ_FULL_ALL, or the prompt
-convey this important detail, so lets add it to the prompt
-to make it more explicitly obvious to the average user.
+Thanks.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1391711781-7466-1-git-send-email-paul.gortmaker@windriver.com
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/time/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-index 3ce6e8c..f448513 100644
---- a/kernel/time/Kconfig
-+++ b/kernel/time/Kconfig
-@@ -124,7 +124,7 @@ config NO_HZ_FULL
- endchoice
- 
- config NO_HZ_FULL_ALL
--       bool "Full dynticks system on all CPUs by default"
-+       bool "Full dynticks system on all CPUs by default (except CPU 0)"
-        depends on NO_HZ_FULL
-        help
-          If the user doesn't pass the nohz_full boot option to
 -- 
-1.8.3.1
-
+Catalin
