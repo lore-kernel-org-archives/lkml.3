@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaBNCAK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 21:00:10 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:52216 "EHLO
+	id S1751932AbaBNCBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 21:01:43 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:52720 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaBNCAI (ORCPT
+	with ESMTP id S1751139AbaBNCBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 21:00:08 -0500
+	Thu, 13 Feb 2014 21:01:42 -0500
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee691-b7efc6d0000039d3-90-52fd78a3cd66
+X-AuditID: cbfee690-b7f266d00000287c-39-52fd79058146
 Content-transfer-encoding: 8BIT
-Message-id: <1392343111.25542.113.camel@kjgkr>
+Message-id: <1392343210.25542.115.camel@kjgkr>
 Subject: Re: [f2fs-dev] f2fs: f2fs unmount hangs if f2fs_init_acl() fails
  during mkdir syscall
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Reply-to: jaegeuk.kim@samsung.com
-To: Andrey Tsyvarev <tsyvarev@ispras.ru>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Andrey Tsyvarev <tsyvarev@ispras.ru>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
         linux-f2fs-devel@lists.sourceforge.net
-Date: Fri, 14 Feb 2014 10:58:31 +0900
-In-reply-to: <52F9DF85.7040402@ispras.ru>
+Date: Fri, 14 Feb 2014 11:00:10 +0900
+In-reply-to: <52FC94D0.2050705@cn.fujitsu.com>
 References: <52F320FC.50803@ispras.ru> <1391666564.25542.78.camel@kjgkr>
  <52F37D67.208@ispras.ru> <1391734185.25542.80.camel@kjgkr>
  <1391749933.25542.83.camel@kjgkr> <52F9DF85.7040402@ispras.ru>
+ <52FC832F.6000103@cn.fujitsu.com> <52FC9315.2090707@ispras.ru>
+ <52FC94D0.2050705@cn.fujitsu.com>
 Organization: Samsung
 X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zA93FFX+DDGau5LG4tMjd4vKuOWwW
-	yy/HOTB7zPg3ldFj94LPTB6fN8kFMEdx2aSk5mSWpRbp2yVwZexcd52xYB5rxbUHE9gbGKew
-	dDFyckgImEg0zD4GZYtJXLi3nq2LkYtDSGAZo8SVHx/gij4fPsUOYgsJTGeUOP42FsTmFRCU
-	+DH5HlANBwezgLzEkUvZIGFmAXWJSfMWMUPMeckoMXP5a0aIej2JSctamUBsYYEEiak3b4P1
-	sgloS2zebwAxXlHi7f67rCC2iICGxOqZP5kgZkZK3Dv5FmwMi4CqxI9nm9lAbE4BTYmdL7+w
-	QOw6BnTzpFlgRfwCohKHF25nhrhfSWJ3eyc7SJGEwC52iemNt5khJglIfJt8COwICQFZiU0H
-	oOolJQ6uuMEygVFiFpI3ZyG8OQvJmwsYmVcxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihMTY
-	xB2M9w9YH2JMBto4kVlKNDkfGKN5JfGGxmZGFqYmpsZG5pZmpAkrifOmP0oKEhJITyxJzU5N
-	LUgtii8qzUktPsTIxMEp1cDYPE3ObfYus8X+sz4UP8rTeBcprmT8cIJiuTHTuol/VB6cKL92
-	KJDt2scTedqvZ/LPuRc3YXeZ4NkZmQ2irB2ydzofNvqz8um76n06w/mhfs364o+hc+/M3su2
-	Pblzx9WFSv33Qv9LJ+q2pvY849xzJsTMyEDFVvb0FLOvKevFIj894jygMz9KiaU4I9FQi7mo
-	OBEAnlviCMcCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQd3FFX+DDG51clpcWuRucXnXHDaL
-	5ZfjHJg9Zvybyuixe8FnJo/Pm+QCmKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUN
-	LS3MlRTyEnNTbZVcfAJ03TJzgPYoKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJA
-	AwnrGDN2rrvOWDCPteLagwnsDYxTWLoYOTkkBEwkPh8+xQ5hi0lcuLeeDcQWEpjOKHH8bSyI
-	zSsgKPFj8j2geg4OZgF5iSOXskHCzALqEpPmLWLuYuQCKn/JKDFz+WtGiHo9iUnLWplAbGGB
-	BImpN2+D9bIJaEts3m8AMV5R4u3+u6wgtoiAhsTqmT+ZIGZGStw7+RZsDIuAqsSPZ5vBzuEU
-	0JTY+fILC8SuY4wSVybNAiviFxCVOLxwOzPE/UoSu9s72ScwCs1CcvYshLNnITl7ASPzKkbR
-	1ILkguKk9FwjveLE3OLSvHS95PzcTYzgCH4mvYNxVYPFIUYBDkYlHl6PB3+ChFgTy4orcw8x
-	SnAwK4nwMqX9DRLiTUmsrEotyo8vKs1JLT7EmAx0+URmKdHkfGByySuJNzQ2MTOyNDKzMDIx
-	NydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxtzgtHDhG2emSsYqNxZcWpecaR+0as/d
-	uTVztJfLqz//0CsYduJ3aY/k4YgVBw+e+r9Bfm8QfzKDqNlZrx0Cz1Jdpzb5BV6t6lutkeN1
-	9Xrhrfub2X9/d+O+YVdz76CEzc/0NMVby1ykZjxNubzURWad3aE5wXJ/J/k/VU9T2//Moe7L
-	pkBjSSWW4oxEQy3mouJEAOXqXMgkAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zY13Wyr9BBosaZC2etx9gtri0yN3i
+	8q45bBbLL8c5sHj8PziJ2WPGv6mMHrsXfGby+LxJLoAlissmJTUnsyy1SN8ugSvj7OTTTAUL
+	OCpmf+xmbGCcxNbFyMkhIWAicXn/N3YIW0ziwr31QHEuDiGBZYwSp678hit6uns7E0RiEaPE
+	voObwDp4BQQlfky+x9LFyMHBLCAvceRSNkiYWUBdYtK8RcwQ9S8ZJRZ3XWWFqNeTmHjnJwuI
+	LSyQIDH15m2wXjYBbYnN+w1AwkICihJv998FKxcRUJN49u4SE8TMRkaJH9PjQGwWAVWJ2Tvn
+	gsU5gUa+ffQaatdqJommLw2MIAl+AVGJwwu3M0M8oCSxu72THaRIQuAUu8T+rVvZISYJSHyb
+	fAjsCAkBWYlNB6DqJSUOrrjBMoFRYhaSN2chvDkLyZsLGJlXMYqmFiQXFCelF5noFSfmFpfm
+	pesl5+duYoRE3oQdjPcOWB9iTAbaOJFZSjQ5Hxi5eSXxhsZmRhamJqbGRuaWZqQJK4nzqj1K
+	ChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKQWM4Eu3tpXGzW1xD+JJmfrhVO/PWuMX/5873wyb
+	6nT+vJCE7/OSnRudvGwbMo2UBFjsYopS2MwPbMzkW8bD4BZ95LjrI5moOmmN8K3lcpv1g6dm
+	il84sZBl7tcZ6lxiP1WSsjWajxxV333z2JXOhzuZ9xTfNeKcvHxVrFOV0E+Tx5bSSzMmMwor
+	sRRnJBpqMRcVJwIAeSvDcNICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jAV3Wyr9BBl92SFo8bz/AbHFpkbvF
+	5V1z2CyWX45zYPH4f3ASs8eMf1MZPXYv+Mzk8XmTXABLVAOjTUZqYkpqkUJqXnJ+SmZeuq2S
+	d3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QRiWFssScUqBQQGJxsZK+HaYJoSFuuhYw
+	jRG6viFBcD1GBmggYR1jxtnJp5kKFnBUzP7YzdjAOImti5GTQ0LAROLp7u1MELaYxIV764Hi
+	XBxCAosYJfYd3MQOkuAVEJT4MfkeSxcjBwezgLzEkUvZIGFmAXWJSfMWMUPUv2SUWNx1lRWi
+	Xk9i4p2fLCC2sECCxNSbt8F62QS0JTbvNwAJCwkoSrzdfxesXERATeLZu0tMEDMbGSV+TI8D
+	sVkEVCVm75wLFucEGvn20WuoXauZJJq+NDCCJPgFRCUOL9zODPGAksTu9k72CYxCs5CcPQvh
+	7FlIzl7AyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIziun0nvYFzVYHGIUYCDUYmH1+PB
+	nyAh1sSy4srcQ4wSHMxKIrxMaX+DhHhTEiurUovy44tKc1KLDzEmA10+kVlKNDkfmHLySuIN
+	jU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoHR+OVftneT1yS+PqhV
+	wFJTvlZd/3fdufwfz1WcPFYtlD+QczTvH9fJSK9jmtdfX33LHnG36Fa6hP25PsEihZcd7FFn
+	TV++aJmxUejPz+fCUfzHFlXGbXZ8dO/Ehg/u2uKZRhF5q5fOvCv8c/uL8IktVX/E7kueLGXR
+	ny618IOw32Fd60e5Ds2zlViKMxINtZiLihMBYtoRnC8DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,25 +63,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Sorry for the late response.
-I suffered from flu during last a couple of days. :(
-
-2014-02-11 (화), 12:29 +0400, Andrey Tsyvarev:
+2014-02-13 (목), 17:48 +0800, Gu Zheng:
 > Hi,
+> On 02/13/2014 05:40 PM, Andrey Tsyvarev wrote:
 > 
-> > It turns out that make_bad_inode prior to iput sets i_mode to a regular
-> > file, so that f2fs_evict_inode -> truncate_inode_pages ->
-> > f2fs_invalidate_data_page doesn't decrement dirty_dents.
-> >
-> It seems that remove_dirty_dir_inode() call should also be added to the 
-> error-path of
-> init_inode_metadata, because its functionality is also based on 
-> inode->i_mode field
-> which is changed by make_bad_inode().
+> > Hi,
+> > 
+> >> BTW, have you tested the case that added remove_dirty_dir_inode() into the fail path
+> >> of init_inode_metadata?
+> >> diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+> >> index e095a4f..d5a2c9e 100644
+> >> --- a/fs/f2fs/dir.c
+> >> +++ b/fs/f2fs/dir.c
+> >> @@ -375,6 +375,7 @@ put_error:
+> >>          /* once the failed inode becomes a bad inode, i_mode is S_IFREG */
+> >>          truncate_inode_pages(&inode->i_data, 0);
+> >>          truncate_blocks(inode, 0);
+> >> +       remove_dirty_dir_inode(inode);
+> >>   error:
+> >>          remove_inode_page(inode);
+> >>          return ERR_PTR(err);
+> > Yes, i have tested that case. Fail in init_inode_metadata has been processed correctly. Thanks.
+> 
+> If no other regressions, maybe you can send out the fix patch about this issue.:)
 
-Agreed.
-I'll update the patch with this.
-Thanks,
+The original patch can treat this too.
+Thank you. :)
+
+> 
+> Thanks,
+> Gu
+> 
+> > 
+> 
+> 
 
 -- 
 Jaegeuk Kim
