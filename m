@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaBNRzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 12:55:43 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:63683 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757AbaBNRzk (ORCPT
+	id S1752034AbaBNSBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:01:34 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:57024 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBNSBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 12:55:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <52FE4C0C.1090008@redhat.com>
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
-	<52F3670D.5090608@redhat.com>
-	<CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
-	<52FD2908.8000009@redhat.com>
-	<52FD458D.6020107@redhat.com>
-	<CAMEtUuwfSYr=7+_8jKryUMUTL1NE-wRV_h=PX7uKdkUebgGiPg@mail.gmail.com>
-	<52FE4C0C.1090008@redhat.com>
-Date: Fri, 14 Feb 2014 09:55:38 -0800
-Message-ID: <CAMEtUuyZtE1hSBP5xXOjTy1sed2iV1JK8pEGQATiwmxsj+GUFw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Fri, 14 Feb 2014 13:01:32 -0500
+Date: Fri, 14 Feb 2014 22:01:29 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Vagin <avagin@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Aditya Kali <adityakali@google.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, criu@openvz.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change
+ boundaries of data, brk and stack
+Message-ID: <20140214180129.GK13358@moon>
+References: <1392387209-330-1-git-send-email-avagin@openvz.org>
+ <1392387209-330-2-git-send-email-avagin@openvz.org>
+ <874n41znl5.fsf@xmission.com>
+ <20140214174314.GA5518@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140214174314.GA5518@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 9:02 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 02/14/2014 01:59 AM, Alexei Starovoitov wrote:
-> ...
->>>
->>> I'm very curious, do you also have any performance numbers, e.g. for
->>>
->>> networking by taking JIT'ed/non-JIT'ed BPF filters and compare them
->>> against
->>> JIT'ed/non-JIT'ed eBPF filters to see how many pps we gain or loose e.g.
->>> for a scenario with a middle box running cls_bpf .. or some other macro/
->>> micro benchmark just to get a picture where both stand in terms of
->>> performance? Who knows, maybe it would outperform nftables engine as
->>> well? ;-) How would that look on a 32bit arch with eBPF that is 64bit?
->>
->>
->> I don't have jited/non-jited numbers, but I suspect for micro-benchmarks
->> the gap should be big. I was shooting for near native performance after
->> JIT.
->
->
-> Ohh, I meant it would be interesting to see a comparison of e.g. common
-> libpcap
-> high-level filters that are in 32bit BPF + JIT (current code) vs 64bit BPF +
-> JIT
-> (new code). I'm wondering how 32bit-only archs should be handled to not
-> regress
-> in evaluation performance to the current code.
+On Fri, Feb 14, 2014 at 09:43:14PM +0400, Andrew Vagin wrote:
+> > My brain hurts just looking at this patch and how you are justifying it.
+> > 
+> > For the resources you are mucking with below all you have to do is to
+> > verify that you are below the appropriate rlimit at all times and no
+> > CAP_SYS_RESOURCE check is needed.  You only need CAP_SYS_RESOURCE
+> > to exceed your per process limits.
+> > 
+> > All you have to do is to fix the current code to properly enforce the
+> > limits.
+> 
+> I'm afraid what you are suggesting doesn't work.
+> 
+> The first reason is that we can not change both boundaries in one call.
+> But when we are restoring these attributes, we may need to move their
+> too far.
 
-Agreed. If we want to rip off old bpf interpreter and replace it with old->new
-converter + new bpf interpreter, the performance of it should be very close.
-In grand scheme some differences are ok, since libpcap bpf filters are not hot.
-So much is happening before and after that tcpdump won't notice whether
-filter was jited or not. cls_bpf is a different story, though I don't know what
-specific use case you have there.
-Could you define a bpf micro benchmark ? cls_bpf with pktgen?
+When this code was introduced, there were no user-namespace implementation,
+if I remember correctly, so CAP_SYS_RESOURCE was enough barrier point
+to prevent modifying this values by anyone. Now user-ns brings a limit --
+we need somehow to provide a way to modify these mm fields having no
+CAP_SYS_RESOURCE set. "Verifying rlimit" not an option here because
+we're modifying members one by one (looking back I think this was not
+a good idea to modify the fields in this manner).
 
-Thanks
-Alexei
+Maybe we could improve this api and provide argument as a pointer
+to a structure, which would have all the fields we're going to
+modify, which in turn would allow us to verify that all new values
+are sane and fit rlimits, then we could (probably) deprecate old
+api if noone except c/r camp is using it (I actually can't imagine
+who else might need this api). Then CAP_SYS_RESOURCE requirement
+could be ripped off. Hm? (sure touching api is always "no-no"
+case, but maybe...)
+
+> 
+> Another problem is that the limits will not work at all in this case. We
+> will able to move start_brk forward before calling brk() and brk() will
+> never fail.
+
