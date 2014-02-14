@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305AbaBNBCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:02:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49263 "EHLO mx1.redhat.com"
+	id S1753327AbaBNBCv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 20:02:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44013 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753089AbaBNBCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 20:02:45 -0500
+	id S1753089AbaBNBCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 20:02:49 -0500
 From: Luiz Capitulino <lcapitulino@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         andi@firstfloor.org, riel@redhat.com, davidlohr@hp.com,
         isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
         rientjes@google.com
-Subject: [PATCH 1/4] memblock: memblock_virt_alloc_internal(): add __GFP_THISNODE flag support
-Date: Thu, 13 Feb 2014 20:02:05 -0500
-Message-Id: <1392339728-13487-2-git-send-email-lcapitulino@redhat.com>
+Subject: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+Date: Thu, 13 Feb 2014 20:02:08 -0500
+Message-Id: <1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
 In-Reply-To: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
 References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,83 +24,293 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Luiz capitulino <lcapitulino@redhat.com>
 
-Currently, if an allocation from the node specified by the nid argument
-fails, memblock_virt_alloc_internal() automatically tries to allocate memory
-from other nodes.
+The HugeTLB command-line option hugepages= allows a user to specify how
+many huge pages should be allocated at boot. This option is needed because
+it improves reliability when allocating 1G huge pages, which are better
+allocated as early as possible due to fragmentation.
 
-This is fine if the caller don't care about which node is going to allocate
-the memory. However, there are cases where the caller wants memory to be
-allocated from the specified node only. If that's not possible, then
-memblock_virt_alloc_internal() should just fail.
+However, hugepages= has a limitation. On NUMA systems, hugepages= will
+automatically distribute memory allocation equally among nodes. For
+example, if you have a 2-node NUMA system and allocate 200 huge pages,
+than hugepages= will try to allocate 100 huge pages from node0 and 100
+from node1.
 
-This commit adds a new flags argument to memblock_virt_alloc_internal()
-where the caller can control this behavior. The flags argument is of type
-gfp_t, so that we can (re-)use the __GFP_THISNODE definition.
+This is very unflexible, as it doesn't allow you to specify which nodes
+the huge pages should be allocated from. For example, there are use-cases
+where the user wants to specify that a 1GB huge page should be allocated
+from node 2 or that 300 2MB huge pages should be allocated from node 0.
+
+The hugepages_node= command-line option introduced by this commit allows
+just that.
+
+The syntax is:
+
+  hugepages_node=nid:nr_pages:size,...
+
+For example, to allocate one 1GB page from node 2, you can do:
+
+  hugepages_node=2:1:1G
+
+Or, to allocate 300 2MB huge pages from node 0 and 5 1GB huge pages from node 1:
+
+ hugepages_node=0:300:2M,1:5:1G
+
+Also, please note the following:
+
+ - All the hugepages_node= option does is to set initial memory allocation
+   distribution among nodes. It doesn't do anything intrusive. All functions
+   and the array added by this commit are run onlt once at boot and discarded
+   thereafter
+
+ - This commit adds support only for the x86 architecture. Adding support for
+   other archs is welcome and should be simple, it's just a matter of porting
+   setup_hugepages_node()
+
+ - When an error is encountered while parsing, allocations are obeyed
+   up to the error and parsing is then aborted. This is simplest way to
+   deal with errors
+
+ - Mixing hugepages_node= and hugepages= options is not supported
 
 Signed-off-by: Luiz capitulino <lcapitulino@redhat.com>
 ---
- mm/memblock.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ Documentation/kernel-parameters.txt |   8 +++
+ arch/x86/mm/hugetlbpage.c           |  52 ++++++++++++++++++
+ include/linux/hugetlb.h             |   2 +
+ mm/hugetlb.c                        | 106 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 168 insertions(+)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 39a31e7..f3821ef 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -1035,12 +1035,18 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
-  * @min_addr: the lower bound of the memory region to allocate (phys address)
-  * @max_addr: the upper bound of the memory region to allocate (phys address)
-  * @nid: nid of the free area to find, %NUMA_NO_NODE for any node
-+ * @flags: control how memory is allocated
-  *
-  * The @min_addr limit is dropped if it can not be satisfied and the allocation
-  * will fall back to memory below @min_addr. Also, allocation may fall back
-  * to any node in the system if the specified node can not
-  * hold the requested memory.
-  *
-+ * The @flags argument is one of:
-+ *
-+ * %__GFP_THISNODE: memory is allocated from the node specified by @nid only.
-+ * 	If that fails, an error is returned
-+ *
-  * The allocation is performed from memory region limited by
-  * memblock.current_limit if @max_addr == %BOOTMEM_ALLOC_ACCESSIBLE.
-  *
-@@ -1058,7 +1064,7 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
- static void * __init memblock_virt_alloc_internal(
- 				phys_addr_t size, phys_addr_t align,
- 				phys_addr_t min_addr, phys_addr_t max_addr,
--				int nid)
-+				int nid, gfp_t flags)
- {
- 	phys_addr_t alloc;
- 	void *ptr;
-@@ -1085,6 +1091,8 @@ again:
- 					    nid);
- 	if (alloc)
- 		goto done;
-+	if (flags & __GFP_THISNODE)
-+		goto error;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 7116fda..bbceb73 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1133,6 +1133,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			(when the CPU supports the "pdpe1gb" cpuinfo flag)
+ 			Note that 1GB pages can only be allocated at boot time
+ 			using hugepages= and not freed afterwards.
++	hugepages_node= [X86-64] HugeTLB pages to allocate at boot on a NUMA system.
++				Format: <nid>:<nrpages>:<size>,...
++				nid: NUMA node id to allocate pages from
++				nrpages: number of huge pages to allocate
++				size: huge pages size (same as hugepagesz= above)
++			On error, allocations are obeyed up to the error and then parsing
++			is aborted. This option shouldn't be mixed with other hugepages=
++			options.
  
- 	if (nid != NUMA_NO_NODE) {
- 		alloc = memblock_find_in_range_node(size, align, min_addr,
-@@ -1145,7 +1153,7 @@ void * __init memblock_virt_alloc_try_nid_nopanic(
- 		     __func__, (u64)size, (u64)align, nid, (u64)min_addr,
- 		     (u64)max_addr, (void *)_RET_IP_);
- 	return memblock_virt_alloc_internal(size, align, min_addr,
--					     max_addr, nid);
-+					     max_addr, nid, 0);
+ 	hvc_iucv=	[S390] Number of z/VM IUCV hypervisor console (HVC)
+ 			       terminal devices. Valid values: 0..8
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 968db71..88318818 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -201,4 +201,56 @@ static __init int setup_hugepagesz(char *opt)
+ 	return 1;
+ }
+ __setup("hugepagesz=", setup_hugepagesz);
++
++/* 
++ * Format is "nid:nr_pages:size,...". Example: "0:300:2M,1:10:1G"
++ *
++ * To make error handling simple we halt parsing on the first error,
++ * which means that the user's allocation requests will be obeyed until
++ * an error is found (if any).
++ */
++static __init int setup_hugepages_node(char *opt)
++{
++	unsigned nid, nr_pages, order;
++	char *p, size_str[16];
++	int ret;
++
++	do {
++		p = strchr(opt, ',');
++		if (p)
++			*p = '\0';
++
++		ret = sscanf(opt, "%u:%u:%15s", &nid, &nr_pages, size_str);
++		if (ret != 3) {
++			pr_err("hugepages_node: bad syntax, aborting\n");
++			return 0;
++		}
++
++		if (nid >= MAX_NUMNODES) {
++			pr_err("hugepages_node: invalid numa node: %u, "
++				"aborting\n", nid);
++			return 0;
++		}
++
++		ret = parse_pagesize_str(size_str, &order);
++		if (ret < 0) {
++			pr_err("hugepages_node: unsupported page size: %s, "
++				"aborting\n", size_str);
++			return 0;
++		}
++
++		ret = hugetlb_boot_alloc_add_nid(nid, nr_pages, order);
++		if (ret < 0)
++			return 0;
++
++		if (p) {
++			*p = ',';
++			opt = ++p;
++		}
++	} while (p);
++
++	return 1;
++}
++__setup("hugepages_node=", setup_hugepages_node);
++
+ #endif
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 8c43cc4..2c1c01a 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -274,6 +274,8 @@ struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
+ int __init alloc_bootmem_huge_page(struct hstate *h);
+ 
+ void __init hugetlb_add_hstate(unsigned order);
++int __init hugetlb_boot_alloc_add_nid(unsigned nid, unsigned nr_pages,
++				unsigned order);
+ struct hstate *size_to_hstate(unsigned long size);
+ 
+ #ifndef HUGE_MAX_HSTATE
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c01cb9f..3e9e929 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -46,6 +46,7 @@ __initdata LIST_HEAD(huge_boot_pages);
+ static struct hstate * __initdata parsed_hstate;
+ static unsigned long __initdata default_hstate_max_huge_pages;
+ static unsigned long __initdata default_hstate_size;
++static unsigned int __initdata boot_alloc_nodes[HUGE_MAX_HSTATE][MAX_NUMNODES];
+ 
+ /*
+  * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
+@@ -1348,6 +1349,50 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+ 	h->max_huge_pages = i;
  }
  
- /**
-@@ -1177,7 +1185,7 @@ void * __init memblock_virt_alloc_try_nid(
- 		     __func__, (u64)size, (u64)align, nid, (u64)min_addr,
- 		     (u64)max_addr, (void *)_RET_IP_);
- 	ptr = memblock_virt_alloc_internal(size, align,
--					   min_addr, max_addr, nid);
-+					   min_addr, max_addr, nid, 0);
- 	if (ptr)
- 		return ptr;
++static unsigned long __init alloc_huge_pages_nid(struct hstate *h,
++						int nid,
++						unsigned long nr_pages)
++{
++	unsigned long i;
++	struct page *page;
++
++	for (i = 0; i < nr_pages; i++) {
++		page = alloc_fresh_huge_page_node(h, nid);
++		if (!page) {
++			count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
++			break;
++		}
++		count_vm_event(HTLB_BUDDY_PGALLOC);
++	}
++
++	return i;
++}
++
++static unsigned __init alloc_huge_pages_nodes(struct hstate *h)
++{
++	unsigned i, *entry, ret = 0;
++
++	for (i = 0; i < MAX_NUMNODES; i++) {
++		entry = &boot_alloc_nodes[hstate_index(h)][i];
++		if (*entry > 0)
++			ret += alloc_huge_pages_nid(h, i, *entry);
++	}
++
++	return ret;
++}
++
++static void __init hugetlb_init_hstates_nodes(void)
++{
++	struct hstate *h;
++	unsigned ret;
++
++	for_each_hstate(h)
++		if (h->order < MAX_ORDER) {
++			ret = alloc_huge_pages_nodes(h);
++			h->max_huge_pages += ret;
++		}
++}
++
+ static void __init hugetlb_init_hstates(void)
+ {
+ 	struct hstate *h;
+@@ -1966,6 +2011,7 @@ static int __init hugetlb_init(void)
+ 		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
  
+ 	hugetlb_init_hstates();
++	hugetlb_init_hstates_nodes();
+ 	gather_bootmem_prealloc();
+ 	report_hugepages();
+ 
+@@ -2005,6 +2051,66 @@ void __init hugetlb_add_hstate(unsigned order)
+ 	parsed_hstate = h;
+ }
+ 
++static void __init hugetlb_hstate_alloc_pages_nid(struct hstate *h,
++						int nid,
++						unsigned long nr_pages)
++{
++	struct huge_bootmem_page *m;
++	unsigned long i;
++	void *addr;
++
++	for (i = 0; i < nr_pages; i++) {
++		addr = memblock_virt_alloc_nid_nopanic(
++				huge_page_size(h), huge_page_size(h),
++				0, BOOTMEM_ALLOC_ACCESSIBLE, nid);
++		if (!addr)
++			break;
++		m = addr;
++		BUG_ON(!IS_ALIGNED((unsigned long) virt_to_phys(m),
++			huge_page_size(h)));
++		list_add(&m->list, &huge_boot_pages);
++		m->hstate = h;
++	}
++
++	h->max_huge_pages += i;
++}
++
++int __init hugetlb_boot_alloc_add_nid(unsigned nid, unsigned nr_pages,
++				unsigned order)
++{
++	struct hstate *h;
++	unsigned *p;
++
++	if (parsed_hstate) {
++		pr_err("hugepages_node: hugepagesz has been specified, "
++			"aborting\n");
++		return -1;
++	}
++
++	for_each_hstate(h)
++		if (h->order == order)
++			break;
++
++	if (h->order != order) {
++		hugetlb_add_hstate(order);
++		parsed_hstate = NULL;
++	}
++
++	p = &boot_alloc_nodes[hstate_index(h)][nid];
++	if (*p != 0) {
++		pr_err("hugepages_node: node %u already specified, "
++			"aborting\n", nid);
++		return -1;
++	}
++
++	*p = nr_pages;
++
++	if (h->order >= MAX_ORDER)
++		hugetlb_hstate_alloc_pages_nid(h, nid, nr_pages);
++
++	return 0;
++}
++
+ static int __init hugetlb_nrpages_setup(char *s)
+ {
+ 	unsigned long *mhp;
 -- 
 1.8.1.4
 
