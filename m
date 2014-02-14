@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaBNHaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 02:30:25 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:51920 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaBNHaY (ORCPT
+	id S1752009AbaBNHdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:33:46 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:27379 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaBNHdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 02:30:24 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 2/6] fat: add fat_fallocate operation
-References: <1387953065-2726-1-git-send-email-linkinjeon@gmail.com>
-	<87mwi8x27b.fsf@devron.myhome.or.jp>
-	<CAKYAXd_EYrfF0iQVw5FJRHkGCeMTUoQdx+BogV+-g9vqXeGZdw@mail.gmail.com>
-	<CAKYAXd80BFUMGYrON22Ui4xSMaxNJaHD1ss8bMVgdQqC4xG48A@mail.gmail.com>
-Date: Fri, 14 Feb 2014 16:30:19 +0900
-In-Reply-To: <CAKYAXd80BFUMGYrON22Ui4xSMaxNJaHD1ss8bMVgdQqC4xG48A@mail.gmail.com>
-	(Namjae Jeon's message of "Fri, 14 Feb 2014 13:53:26 +0900")
-Message-ID: <8761oiqhh0.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 14 Feb 2014 02:33:44 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-d3-52fdc6d55d6f
+Message-id: <1392363220.29133.4.camel@AMDC1943>
+Subject: Re: [PATCH v2 09/14] regulator: s2mps11: Add support for S2MPS14
+ regulators
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Date: Fri, 14 Feb 2014 08:33:40 +0100
+In-reply-to: <20140213191028.GC28112@sirena.org.uk>
+References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
+ <1392282847-25444-10-git-send-email-k.kozlowski@samsung.com>
+ <20140213191028.GC28112@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xq7pXj/0NMnjXZWmxccZ6VoupD5+w
+	WZxtesNucf/rUUaLb1c6mCwu75rDZjHj/D4mi7VH7rJbnO5mtbi44guTA5fHzll32T02repk
+	87hzbQ+bx7yTgR59W1YxenzeJBfAFsVlk5Kak1mWWqRvl8CV8fHsFqaCTWwVC9t2Mjcw9rF2
+	MXJwSAiYSFxcqt/FyAlkiklcuLeerYuRi0NIYCmjxOUdTYwgCSGBz4wSE54qgdTzCuhLzNjN
+	ARIWFgiTuHS6kR3EZhMwlti8fAkbiC0ioCxx9fteFpA5zAJvmCRWzd7OCpJgEVCVmNp+jAXE
+	5gRqeL/wDCPEsvWMEgsWPQLrZhZQl5g0bxEzxEVKErvbO9kh4vISm9e8BYvzCghK/Jh8j2UC
+	o8AsJC2zkJTNQlK2gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIJHzZwbj4mNUhRgEO
+	RiUe3g93/wQJsSaWFVfmHmKU4GBWEuF13/83SIg3JbGyKrUoP76oNCe1+BAjEwenVAOjRHzU
+	9FCOo37XLXw8t/6/KC7G0sMVXfn7wcnA6zpLRIQzPnDvWfM35d/LxQfknCRSTF7tC42ZEP9V
+	RW/hE6Gq5DDlpLP52fMatX77pL6Zm/I+8vmOo3YrXasKPuywNdwx58zCp50vZ3yOjLsQGj+7
+	880JFd+HMTaqcklnWWYv+lu4yszcyUhYiaU4I9FQi7moOBEATcKblGICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Thu, 2014-02-13 at 19:10 +0000, Mark Brown wrote:
+> On Thu, Feb 13, 2014 at 10:14:02AM +0100, Krzysztof Kozlowski wrote:
+> > Add support for S2MPS14 PMIC regulators to s2mps11 driver. The S2MPS14
+> > has fewer BUCK-s and LDO-s than S2MPS11. It also does not support
+> > controlling the BUCK ramp delay.
+> 
+> How different are the other Samsung PMICs?  They share the core driver
+> code and this makes the driver more parameterisable so perhaps it means
+> the others could be merged in here too.
 
->>> [...]
->>>
->>>> +		/* Release unwritten fallocated blocks on inode eviction. */
->>>> +		if (MSDOS_I(inode)->mmu_private < MSDOS_I(inode)->i_disksize) {
->>>> +			int err;
->>>> +			fat_truncate_blocks(inode, MSDOS_I(inode)->mmu_private);
->>>> +			/* Fallocate results in updating the i_start/iogstart
->>>> +			 * for the zero byte file. So, make it return to
->>>> +			 * original state during evict and commit it
->>>> +			 * synchrnously to avoid any corruption on the next
->>>> +			 * access to the cluster chain for the file.
->>>> +			 */
->>>> +			err = fat_sync_inode(inode);
->>>
->>> Ah, good catch. We have to update i_size. I was forgetting about this.
->>> Well, sync inode unconditionally would not be good. Maybe, we better to
->>> use __fat_write_inode() with inode_needs_sync() or such.
->> Okay, I will change it.
-> Hi OGAWA
->
-> When I checked more, we should wait till inode is sync. Because in the
-> eviction it will leave the inode/buffers being marked dirty.
-> Not waiting for it get sync over here. It will leave cluster chain
-> corrupted when remounting.
-> It mean we cannot use __fat_write_inode with inode_needs_sync() conditionally.
+With some effort the s2mps11 and s5m8767 regulator drivers can be
+merged. The s5m8767 shares most of the features with s2mps11 and adds
+some new stuff (i.e. GPIO control over BUCK DVS, low power mode for
+opmode). Anyway it was easier to add support for S2MPS14 to S2MPS11 than
+to merge everything now.
 
-Yeah, this situation bothers us. However, the inode is not marked as
-dirty after I_FREEING. And in fatfs case, all related dirty buffers
-should goes into blockdev inode buffers (i.e. metadata only), right?
-
-So, I thought sync is not necessary.
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
