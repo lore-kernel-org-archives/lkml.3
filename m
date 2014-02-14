@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349AbaBNIF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:05:56 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:53452 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221AbaBNIFx (ORCPT
+	id S1753361AbaBNIGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:06:11 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36543 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaBNIGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:05:53 -0500
+	Fri, 14 Feb 2014 03:06:07 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 49/52] mm, vmstat: Fix CPU hotplug callback registration
+Subject: [PATCH v2 50/52] mm, zswap: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Toshi Kani <toshi.kani@hp.com>, Dave Hansen <dave@sr71.net>,
-        Ingo Molnar <mingo@kernel.org>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux.com>,
+        srivatsa.bhat@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        linux-mm@kvack.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:30:18 +0530
-Message-ID: <20140214080017.22701.62427.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:30:33 +0530
+Message-ID: <20140214080033.22701.40216.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -32,7 +27,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021408-5140-0000-0000-0000048EE587
+x-cbid: 14021408-5816-0000-0000-00000C4554DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -68,45 +63,41 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the vmstat code in the MM subsystem by using this latter form of callback
-registration.
+Fix the zswap code by using this latter form of callback registration.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: Dave Hansen <dave@sr71.net>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: linux-mm@kvack.org
-Acked-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- mm/vmstat.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/zswap.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 7249614..12a553e 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -1290,14 +1290,14 @@ static int __init setup_vmstat(void)
- #ifdef CONFIG_SMP
- 	int cpu;
- 
--	register_cpu_notifier(&vmstat_notifier);
-+	cpu_notifier_register_begin();
-+	__register_cpu_notifier(&vmstat_notifier);
+diff --git a/mm/zswap.c b/mm/zswap.c
+index e55bab9..d7337fb 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -387,18 +387,18 @@ static int zswap_cpu_init(void)
+ {
+ 	unsigned long cpu;
  
 -	get_online_cpus();
- 	for_each_online_cpu(cpu) {
- 		start_cpu_timer(cpu);
- 		node_set_state(cpu_to_node(cpu), N_CPU);
- 	}
++	cpu_notifier_register_begin();
+ 	for_each_online_cpu(cpu)
+ 		if (__zswap_cpu_notifier(CPU_UP_PREPARE, cpu) != NOTIFY_OK)
+ 			goto cleanup;
+-	register_cpu_notifier(&zswap_cpu_notifier_block);
+-	put_online_cpus();
++	__register_cpu_notifier(&zswap_cpu_notifier_block);
++	cpu_notifier_register_done();
+ 	return 0;
+ 
+ cleanup:
+ 	for_each_online_cpu(cpu)
+ 		__zswap_cpu_notifier(CPU_UP_CANCELED, cpu);
 -	put_online_cpus();
 +	cpu_notifier_register_done();
- #endif
- #ifdef CONFIG_PROC_FS
- 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
+ 	return -ENOMEM;
+ }
+ 
 
