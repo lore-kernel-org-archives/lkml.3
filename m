@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaBNI4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:56:09 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:58309 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaBNI4E (ORCPT
+	id S1752738AbaBNI4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:56:25 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:55035 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaBNI4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:56:04 -0500
-Message-ID: <52FDD9FE.8040908@monstr.eu>
-Date: Fri, 14 Feb 2014 09:55:26 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 14 Feb 2014 03:56:20 -0500
+Message-ID: <52FDDA24.6080204@huawei.com>
+Date: Fri, 14 Feb 2014 16:56:04 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
-        michal.simek@xilinx.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v2] can: xilinx CAN controller support.
-References: <\> <0dc128ac-e5cd-47bd-9ab1-3a545c3e2043@CO9EHSMHS012.ehs.local> <52FD1B16.6020600@pengutronix.de>
-In-Reply-To: <52FD1B16.6020600@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="cafLha3RjWhHeNvLUaACRjLplUrb21vHE"
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 3/3] cgroup: deal with dummp_top in cgroup_name() and cgroup_path()
+References: <52FDD9C4.1070001@huawei.com>
+In-Reply-To: <52FDD9C4.1070001@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---cafLha3RjWhHeNvLUaACRjLplUrb21vHE
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+My kernel fails to boot, because blkcg calls cgroup_path() while
+cgroupfs is not mounted.
 
-Hi Marc,
+Fix both cgroup_name() and cgroup_path().
 
->> +	int waiting_ech_skb_num;
->> +	int xcan_echo_skb_max_tx;
->> +	int xcan_echo_skb_max_rx;
->> +	struct napi_struct napi;
->> +	spinlock_t ech_skb_lock;
->> +	u32 (*read_reg)(const struct xcan_priv *priv, int reg);
->> +	void (*write_reg)(const struct xcan_priv *priv, int reg, u32 val);
->=20
-> Please remove read_reg, write_reg, as long as there isn't any BE suppor=
-t
-> in the driver, call them directly.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ include/linux/cgroup.h | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-That's not entirely truth. If you look at Microblaze then you will see
-that Microblaze can be BE and LE.
-There is just missing endian detection which we will add to the next vers=
-ion.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index ef0b3af..8c283a9 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -487,13 +487,21 @@ struct cgroup_subsys_state *seq_css(struct seq_file *seq);
+ 
+ static inline int cgroup_name(struct cgroup *cgrp, char *buf, size_t buflen)
+ {
+-	return kernfs_name(cgrp->kn, buf, buflen);
++	/* dummy_top doesn't have a kn associated */
++	if (cgrp->kn)
++		return kernfs_name(cgrp->kn, buf, buflen);
++	else
++		return strlcpy(buf, "/", buflen);
+ }
+ 
+ static inline char * __must_check cgroup_path(struct cgroup *cgrp, char *buf,
+ 					      size_t buflen)
+ {
+-	return kernfs_path(cgrp->kn, buf, buflen);
++	/* dummy_top doesn't have a kn associated */
++	if (cgrp->kn)
++		return kernfs_path(cgrp->kn, buf, buflen);
++	strlcpy(buf, "/", buflen);
++	return (buflen <= 2) ? NULL : buf;
+ }
+ 
+ static inline void pr_cont_cgroup_name(struct cgroup *cgrp)
+-- 
+1.8.0.2
 
-But because MB io helper functions are broken for a while you should be
-able to use this driver on both endianess.
-
-btw: I would prefer to use ioread32 and ioread32be instead of readl.
-Is it OK for you?
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---cafLha3RjWhHeNvLUaACRjLplUrb21vHE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlL92f4ACgkQykllyylKDCFSbwCaAmXxeKjT7a64na83jdx4Dwv4
-t+gAoImSI59tzdRYMwx5PuSO2r2WBIdc
-=rhln
------END PGP SIGNATURE-----
-
---cafLha3RjWhHeNvLUaACRjLplUrb21vHE--
