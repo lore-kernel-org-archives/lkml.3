@@ -1,225 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaBNDtF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 22:49:05 -0500
-Received: from mail.efficios.com ([78.47.125.74]:39933 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926AbaBNDtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 22:49:03 -0500
-Date: Fri, 14 Feb 2014 03:49:04 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <1828346046.24803.1392349744601.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140213154507.4040fb06@gandalf.local.home>
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com> <20140211072738.GA24232@gmail.com> <20140211234534.6bc34e57@gandalf.local.home> <1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com> <20140213102817.4bfd5eac@gandalf.local.home> <2127052721.24380.1392306090965.JavaMail.zimbra@efficios.com> <20140213154507.4040fb06@gandalf.local.home>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
+	id S1752056AbaBNDuf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 22:50:35 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:20892 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440AbaBNDud (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 22:50:33 -0500
+Message-ID: <52FD9256.1080801@huawei.com>
+Date: Fri, 14 Feb 2014 11:49:42 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH cgroup/for-3.14-fixes] cgroup: update cgroup_enable_task_cg_lists()
+ to grab siglock
+References: <20140213182931.GB17608@htj.dyndns.org>
+In-Reply-To: <20140213182931.GB17608@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-Thread-Index: FuGNqshwka/zKdHupEo0YL9/Afj8yA==
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: "Ingo Molnar" <mingo@kernel.org>, linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@redhat.com>, "Thomas
-> Gleixner" <tglx@linutronix.de>, "Rusty Russell" <rusty@rustcorp.com.au>, "David Howells" <dhowells@redhat.com>,
-> "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-> Sent: Thursday, February 13, 2014 3:45:07 PM
-> Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+On 2014/2/14 2:29, Tejun Heo wrote:
+> Currently, there's nothing preventing cgroup_enable_task_cg_lists()
+> from missing set PF_EXITING and race against cgroup_exit().  Depending
+> on the timing, cgroup_exit() may finish with the task still linked on
+> css_set leading to list corruption.  Fix it by grabbing siglock in
+> cgroup_enable_task_cg_lists() so that PF_EXITING is guaranteed to be
+> visible.
 > 
-> On Thu, 13 Feb 2014 15:41:30 +0000 (UTC)
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> 
-> > Yes, exactly, presuming that by "supporting" you mean CONFIG_MODULE_SIG=y.
-> > Loading an unsigned module then taints the kernel, and taints the module
-> > with TAINT_FORCED_MODULE even though "modprobe --force" was never used.
-> 
-> OK, this IS a major bug and needs to be fixed. This explains a couple
-> of reports I received about tracepoints not working, and I never
-> figured out why. Basically, they even did this:
-> 
-> 
-> 	trace_printk("before tracepoint\n");
-> 	trace_some_trace_point();
-> 	trace_printk("after tracepoint\n");
-> 
-> Enabled the tracepoint (it shows up as enabled and working in the
-> tools, but not the trace), but in the trace they would get:
-> 
-> 	before tracepoint
-> 	after tracepoint
-> 
-> and never get the actual tracepoint. But as they were debugging
-> something else, it was just thought that this was their bug. But it
-> baffled me to why that tracepoint wasn't working even though nothing in
-> the dmesg had any errors about tracepoints.
-> 
-> Well, this now explains it. If you compile a kernel with the following
-> options:
-> 
-> CONFIG_MODULE_SIG=y
-> # CONFIG_MODULE_SIG_FORCE is not set
-> # CONFIG_MODULE_SIG_ALL is not set
-> 
-> You now just disabled (silently) all tracepoints in modules. WITH NO
-> FREAKING ERROR MESSAGE!!!
-> 
-> The tracepoints will show up in /sys/kernel/debug/tracing/events, they
-> will show up in perf list, you can enable them in either perf or the
-> debugfs, but they will never actually be executed. You will just get
-> silence even though everything appeared to be working just fine.
-> 
-> I tested this out. I was not able to get any tracepoints in modules
-> working with the above config options.
-> 
-> There's two bugs here. One, the lack of MODULE_SIG_ALL, will
-> make all modules non signed during the build process. That means that
-> all modules when loaded will be tainted as FORCED. As Mathieu stated,
-> you do not need the --force flag here, it just needs to see that the
-> kernel supports signatures but the module is not signed. In this case,
-> it just calls add_taint_module(), tainting the module with
-> FORCED_MODULE. You get a message like this:
-> 
->  sunrpc: module verification failed: signature and/or required key missing -
->  tainting kernel
-> 
-> 
-> Now when this module adds its tracepoint, since it is marked with a
-> FORCE_MODULE taint flag, the tracepoint code just ignores it and does
-> not do any processing at all.
-> 
-> Worse yet, the tracepoint code never gives any feedback if a tracepoint
-> was enabled or not. That is, if a tracepoint was never initialized when
-> the module was loaded, the tracepoint will still report success at
-> time of enabling, that it was registered (and tracing) even though it is
-> not.
-> 
-> At the end of this email, I added a patch that fixes that. But I have to
-> concur that Mathieu did find a bug. There is no reason to disable
-> tracepoints in modules if someone simply has the above configs enabled
-> (and disabled)!
-> 
-> Below is the patch that warns if the tracepoint is not enabled for
-> whatever reason.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> -- Steve
-> 
-> 
-> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> index 29f2654..b85f68f 100644
-> --- a/kernel/tracepoint.c
-> +++ b/kernel/tracepoint.c
-> @@ -62,6 +62,7 @@ struct tracepoint_entry {
->  	struct hlist_node hlist;
->  	struct tracepoint_func *funcs;
->  	int refcount;	/* Number of times armed. 0 if disarmed. */
-> +	int enabled;	/* Tracepoint enabled */
->  	char name[0];
->  };
->  
-> @@ -237,6 +238,7 @@ static struct tracepoint_entry *add_tracepoint(const char
-> *name)
->  	memcpy(&e->name[0], name, name_len);
->  	e->funcs = NULL;
->  	e->refcount = 0;
-> +	e->enabled = 0;
->  	hlist_add_head(&e->hlist, head);
->  	return e;
->  }
-> @@ -316,6 +318,7 @@ static void tracepoint_update_probe_range(struct
-> tracepoint * const *begin,
->  		if (mark_entry) {
->  			set_tracepoint(&mark_entry, *iter,
->  					!!mark_entry->refcount);
-> +			mark_entry->enabled = !!mark_entry->refcount;
->  		} else {
->  			disable_tracepoint(*iter);
->  		}
-> @@ -380,6 +383,8 @@ tracepoint_add_probe(const char *name, void *probe, void
-> *data)
->  int tracepoint_probe_register(const char *name, void *probe, void *data)
->  {
->  	struct tracepoint_func *old;
-> +	struct tracepoint_entry *entry;
-> +	int ret = 0;
->  
->  	mutex_lock(&tracepoints_mutex);
->  	old = tracepoint_add_probe(name, probe, data);
-> @@ -388,9 +393,15 @@ int tracepoint_probe_register(const char *name, void
-> *probe, void *data)
->  		return PTR_ERR(old);
->  	}
->  	tracepoint_update_probes();		/* may update entry */
-> +	entry = get_tracepoint(name);
-> +	/* Make sure the entry was enabled */
-> +	if (!entry || !entry->enabled) {
-> +		tracepoint_entry_remove_probe(entry, probe, data);
+> This whole on-demand cg_list optimization is extremely fragile and has
+> ample possibility to lead to bugs which can cause things like
+> once-a-year oops during boot.
 
-I'm OK with returning some kind of feedback about whether the tracepoint is
-enabled or not, but there is one use-case I care about this change breaks:
-registering a tracepoint probe for a module that is not yet loaded. The change
-you propose here removes the probe if no tracepoint is found when the probe is
-registered.
+I added the PF_EXITING check years ago:
 
-Another way to do this, without requiring changes to the existing
-tracepoint_probe_register() API, is to simply add e.g. (better function
-names welcome):
+commit 0e04388f0189fa1f6812a8e1cb6172136eada87e
+Author: Li Zefan <lizf@cn.fujitsu.com>
+Date:   Thu Apr 17 11:37:15 2008 +0800
 
-int tracepoint_has_callsites(const char *name)
-{
-    struct tracepoint_entry *entry;
-    int ret = 0;
+    cgroup: fix a race condition in manipulating tsk->cg_list
 
-    mutex_lock(&tracepoints_mutex);
-    entry = get_tracepoint(name);
-    if (entry && entry->refcount) {
-        ret = 1;
-    }
-    mutex_unlock(&tracepoints_mutex);
-    return ret;
-}
+Now the only race I see is caused by checking tsk->cg_list without locking
+in cgroup_exit():
 
-So tools which care about providing feedback to their users about the
-fact that tracepoint callsites are not there can call this new function.
-The advantage is that it would not change the return values of the existing
-API. Also, it would be weird to have tracepoint_probe_register() return
-an error value but leave the tracepoint in a registered state. Moving this
-into a separate query function seems more consistent IMHO.
+cgroup_enable_task_cg_lists()
+  ...
+  if (!p->flags & PF_EXITING) && list_empty(p->cg_list))
+								exit_signal(tsk)  <-- set PF_EXTING;
+								...
+								if (!list_empty(&tsk->cg_list)) {
+								        down_write(&css_set_rwsem);
+								        if (!list_empty(&tsk->cg_list))
+								                list_del_init(&tsk->cg_list);
+								        up_write(&css_set_rwsem);
+								}
+  	list_add(p->cg_list, ...);
 
-Thoughts ?
+Your patch can fix this race, but after diving into the code I don't think
+the race exists, because exit_mm() locks&unlocks task_lock, and exit_mm()
+is called after exit_signal() and before cgroup_exit(), and task_lock is
+also taken by cgroup_enable_task_cg_lists().
 
-Thanks,
+I totally agree the code is fragile and we should take your patch. I just
+want to make it clear if the bug exists in real life or not, and then we
+can write better changelog and decide to queue the patch for 3.14 or 3.15
+and decide to mark it for stable or not.
 
-Mathieu
-
-
-> +		ret = -ENODEV;
-> +	}
->  	mutex_unlock(&tracepoints_mutex);
->  	release_probes(old);
-> -	return 0;
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(tracepoint_probe_register);
->  
+> I'm wondering whether the better
+> approach would be just adding "cgroup_disable=all" handling which
+> disables the whole cgroup rather than tempting fate with this
+> on-demand craziness.
 > 
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+:)
+
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: stable@vger.kernel.org
+> ---
+>  kernel/cgroup.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 68d8710..105f273 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -2905,9 +2905,14 @@ static void cgroup_enable_task_cg_lists(void)
+>  		 * We should check if the process is exiting, otherwise
+>  		 * it will race with cgroup_exit() in that the list
+>  		 * entry won't be deleted though the process has exited.
+> +		 * Do it while holding siglock so that we don't end up
+> +		 * racing against cgroup_exit().
+>  		 */
+> +		spin_lock_irq(&p->sighand->siglock);
+>  		if (!(p->flags & PF_EXITING) && list_empty(&p->cg_list))
+>  			list_add(&p->cg_list, &task_css_set(p)->tasks);
+> +		spin_unlock_irq(&p->sighand->siglock);
+> +
+>  		task_unlock(p);
+>  	} while_each_thread(g, p);
+>  	read_unlock(&tasklist_lock);
+> 
+
