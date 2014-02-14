@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaBNA0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 19:26:39 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43441 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932AbaBNA0h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 19:26:37 -0500
-Date: Fri, 14 Feb 2014 00:26:27 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Gerhard Sittig <gsi@denx.de>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-spi@vger.kernel.org,
+	id S1751902AbaBNA3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 19:29:43 -0500
+Received: from ozlabs.org ([203.10.76.45]:40482 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089AbaBNA3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 19:29:42 -0500
+Date: Fri, 14 Feb 2014 11:29:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
         linux-kernel@vger.kernel.org
-Message-ID: <20140214002627.GG28112@sirena.org.uk>
-References: <1392302806-17267-1-git-send-email-iivanov@mm-sol.com>
- <20140213212757.GM4524@book.gsilab.sittig.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="llJsCJM40947MYJX"
-Content-Disposition: inline
-In-Reply-To: <20140213212757.GM4524@book.gsilab.sittig.org>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: core: Validate lenght of the transfers in message
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Subject: Re: [patch 00/10] mm: thrash detection-based file cache sizing v9
+Message-Id: <20140214112935.4df6f8ace56725331614556a@canb.auug.org.au>
+In-Reply-To: <20140213142407.f2c41f5c6561e708f2453e93@linux-foundation.org>
+References: <1391475222-1169-1-git-send-email-hannes@cmpxchg.org>
+	<201402130321.s1D3LH41073563@www262.sakura.ne.jp>
+	<20140213221126.GP6963@cmpxchg.org>
+	<20140213142407.f2c41f5c6561e708f2453e93@linux-foundation.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__14_Feb_2014_11_29_35_+1100_M8vuOK9XTKgVAuIj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---llJsCJM40947MYJX
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Fri__14_Feb_2014_11_29_35_+1100_M8vuOK9XTKgVAuIj
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Feb 13, 2014 at 10:27:57PM +0100, Gerhard Sittig wrote:
-> On Thu, Feb 13, 2014 at 16:46 +0200, Ivan T. Ivanov wrote:
+Hi Andrew,
 
-> > SPI transfer lenght should be a power-of-two multiple
-> > of eight bits.
+On Thu, 13 Feb 2014 14:24:07 -0800 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> On Thu, 13 Feb 2014 17:11:26 -0500 Johannes Weiner <hannes@cmpxchg.org> w=
+rote:
+>=20
+> > On Thu, Feb 13, 2014 at 12:21:17PM +0900, Tetsuo Handa wrote:
+> > > Hello.
+> > >=20
+> > > I got a lockdep warning shown below, and the bad commit seems to be d=
+e055616
+> > > \"mm: keep page cache radix tree nodes in check\" as of next-20140212
+> > > on linux-next.git.
+> >=20
+> > Thanks for the report.  There is already a fix for this in -mm:
+> > http://marc.info/?l=3Dlinux-mm-commits&m=3D139180637114625&w=3D2
+> >=20
+> > It was merged on the 7th, so it should show up in -next... any day
+> > now?
+>=20
+> Tomorrow, if Stephen works weekends, which I expect he doesn't ;)
 
-> Are you suggesting that an SPI transfer cannot consist of e.g.
-> three bytes?  This would be surprising, and certainly would be
-> rather wrong an assumption.  Am I missing/misunderstanding
-> something?
+Actually later today (my time), since Friday is not a weekend :-(
 
-The check is supposed to be verifying that the transfer is a whole
-number of the current SPI word size as I understand it (not actually
-looked at the change yet but that's where it came from, factored out of
-a driver).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---llJsCJM40947MYJX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Signature=_Fri__14_Feb_2014_11_29_35_+1100_M8vuOK9XTKgVAuIj
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS/WKwAAoJELSic+t+oim9FSUP+gNc6TTk4cW2Le+ZA0SdSQEL
-fzMiadebPWKliuFUuW5TCBB2cilbqGSDy8/6Dz5vC26opALVkXTx83CugDA2e5l4
-6iDqtqhmf0ZDSmP4a/kOlTJjOKQ9508B34Ju8jzz6UhzjkBVF+jlMr3sFTgjnejT
-LoTtHpsMizmmm3BwactQA9v1Ffjhp3mJclRvuN5wTnrrwRgVKB8msyklG7/OSQFR
-O/xfLpa9INvASxXB6MatMrIi/rGlvtmH7ZUqZ4Rc2OdrvbC1mXpJe3XHHUanfBRp
-BibLAozqBUqtrriDlLxEHJ6FeMlxEwICaPryFbbkr0A2ugbEnPJ3KeuK/shvLV+s
-V4hZP1eNjCLUER1PJGZDgnzOPro4b/voy7KdRqscnQFgbPYtIk8KMIZVXf6z+9HM
-7i3eApT4SoNELZHSMv4C2n+wS33llblPiIoF+F8UcB8QsBWPoXPkf/A0G42ME2nB
-27PMFXUrOljkmUaLlRLKp5iUEfapR1BEg5MWH3IHIEJdSb+AVqmnkj7SS96/T1Et
-v+jd3J2Vh82ZW9FAKIQasnmj40MiaRcQ5/vANcWKw//pM55b1mAE7OZnldAHi9CA
-IWDQR57n+y+Q23C8GLZ3iNj4zHqfYf5kAaTk+BPoy4ARDGzGs7dWMBHTOb7IAIh6
-ZzSXT0Gatj1pendnQjw6
-=NX2p
+iQIcBAEBCAAGBQJS/WN0AAoJEMDTa8Ir7ZwVI2gP/2LhyxSwR7YVuiffm16Eegzg
+wmC9XiSQcsjiacqd9vcR2jE9YuLJ5xXjrGo5FOn1FutheF6DtUvlNrfUYhhUhNQb
+31DDT/JREJ3LwPT94M7trf+euRlUsH+YDiNex/C/h/6V4vYB3cN66vAEI4OhEgUe
+r5hFutOfr/9e3m5Has7n9CA/5xM3JvJflJS19XASyGdFB37BvUkYsuKXk3Sp+Pcp
+9SSBQSxO55uW3ybrumKgErA0mDh5peauBAT8jnrrNT2jKmOjQLW/vU9BFZcW9J8e
+RSb9h5yWM6bpd6BzttqZ/l9AqV625FvpfnY2AGYmc/20yZztJC5DM+9EXoarSqAJ
+D3QTzYProcOWVPVCeZiJll+u5QGaEgPu5Xdv1EH+zO5fBQtb6/1qU7ZjIDN2cfBJ
+hpo//sr1U9IA92LatRKNTr5m5ytxHzxXYMogL5dsSENApIYrn4ZW/o3clYFGY6OB
+WGXvs0agSwUlFMxVKcMXau+GTEKHa7usEY1erbWGRQjht53rXppRXVRxr6ppr/ui
++Xwydm4GS96mAcCsx1uKgRCilKre6ICUlsBDk8t8w0iIxIfoR9ZJqdS5edGk4+ID
+m3AUOR5lZrydWWSj8HR8/Y2ZyTBoupWydmucnVc3e+jqqDmi8z5qoVuB+t5P2tU8
+h3EeSDznulPdJUo1a1VE
+=YYNW
 -----END PGP SIGNATURE-----
 
---llJsCJM40947MYJX--
+--Signature=_Fri__14_Feb_2014_11_29_35_+1100_M8vuOK9XTKgVAuIj--
