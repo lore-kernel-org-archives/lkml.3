@@ -1,44 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaBNOgz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 09:36:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:59344 "EHLO mga09.intel.com"
+	id S1753145AbaBNOhx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 09:37:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:63829 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753075AbaBNOgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 09:36:53 -0500
+	id S1751822AbaBNOhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 09:37:51 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,845,1384329600"; 
-   d="scan'208";a="483463781"
-Date: Fri, 14 Feb 2014 06:36:49 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 14/17] Kbuild, lto: Add Link Time Optimization support
-Message-ID: <20140214143649.GQ12219@tassilo.jf.intel.com>
-References: <1391846481-31491-1-git-send-email-ak@linux.intel.com>
- <1391846481-31491-14-git-send-email-ak@linux.intel.com>
- <52FD9B5A.4020905@zytor.com>
+   d="scan'208";a="475246994"
+Date: Fri, 14 Feb 2014 16:45:24 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <lenb@kernel.org>, Aaron Lu <aaron.lu@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Revert "ACPI / video: Add HP EliteBook Revolve 810 to
+ the blacklist"
+Message-ID: <20140214144524.GK5018@intel.com>
+References: <1392381247-28109-1-git-send-email-mika.westerberg@linux.intel.com>
+ <s5hmwht24ub.wl%tiwai@suse.de>
+ <20140214140316.GI5018@intel.com>
+ <s5hfvnl23pq.wl%tiwai@suse.de>
+ <20140214141652.GJ5018@intel.com>
+ <s5ha9dt22zp.wl%tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52FD9B5A.4020905@zytor.com>
+In-Reply-To: <s5ha9dt22zp.wl%tiwai@suse.de>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 08:28:10PM -0800, H. Peter Anvin wrote:
-> I am about to commit the patches before this except 02/17 and 12/17 to
-> tip:x86/asmlinkage; however, I figure we need a new 02/17 before
-> committing the actual LTO patches to avoid build breakage.
+On Fri, Feb 14, 2014 at 03:16:58PM +0100, Takashi Iwai wrote:
+> At Fri, 14 Feb 2014 16:16:52 +0200,
+> Mika Westerberg wrote:
+> > 
+> > On Fri, Feb 14, 2014 at 03:01:21PM +0100, Takashi Iwai wrote:
+> > > At Fri, 14 Feb 2014 16:03:16 +0200,
+> > > Mika Westerberg wrote:
+> > > > 
+> > > > On Fri, Feb 14, 2014 at 02:37:00PM +0100, Takashi Iwai wrote:
+> > > > > At Fri, 14 Feb 2014 14:34:07 +0200,
+> > > > > Mika Westerberg wrote:
+> > > > > > 
+> > > > > > This reverts commit e18ac62fa4b3f16234bab0d5a6627c57dbae9e7e.
+> > > > > > 
+> > > > > > The referenced commit added HP EliteBook Revolve 810 to the ACPI video
+> > > > > > detected blacklist so that only the native Intel backlight interface was
+> > > > > > exported.
+> > > > > > 
+> > > > > > However, this turned to be wrong solution after all. The ACPI video
+> > > > > > interface works and as long as we only use that there are no problems. So
+> > > > > > we can revert this commit and stick to use the backlight interface provided
+> > > > > > by the ACPI video driver.
+> > > > > > 
+> > > > > > (Using Intel native interface will not work after resume since the ACPI
+> > > > > > video driver will restore it's state which takes control over the native
+> > > > > > one. That's a separate thing and should be addressed in the ACPI video
+> > > > > > driver, I suppose.)
+> > > > > > 
+> > > > > > References: https://bugzilla.kernel.org/show_bug.cgi?id=70231
+> > > > > > Cc: Aaron Lu <aaron.lu@intel.com>
+> > > > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > > > > ---
+> > > > > > Rafael, 
+> > > > > > 
+> > > > > > This turned out to be misunderstanding from my side. I should have
+> > > > > > investigated this further before submitting the original patch. Sorry about
+> > > > > > that.
+> > > > > > 
+> > > > > > Aaron,
+> > > > > > 
+> > > > > > Thanks for the investigation and pointing me to the right direction (e.g to
+> > > > > > use acpi_video0 over the native one).
+> > > > > 
+> > > > > Could you check whether the ACPI video still really works even if you
+> > > > > remove the recent acpi_osi blacklist entry below?  It might be that
+> > > > > BIOS changed its mind to behave more kindly as if handling for Win7.
+> > > > > 
+> > > > > 
+> > > > > Takashi
+> > > > > 
+> > > > > ---
+> > > > > diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+> > > > > index 10e4964d051a..64d14406465d 100644
+> > > > > --- a/drivers/acpi/blacklist.c
+> > > > > +++ b/drivers/acpi/blacklist.c
+> > > > > @@ -322,6 +322,7 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+> > > > >  		     DMI_MATCH(DMI_PRODUCT_VERSION, "2349D15"),
+> > > > >  		},
+> > > > >  	},
+> > > > > +#if 0
+> > > > >  	{
+> > > > >  	.callback = dmi_disable_osi_win8,
+> > > > >  	.ident = "HP ProBook 2013 models",
+> > > > > @@ -372,6 +373,7 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+> > > > >  		     DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook 8780w"),
+> > > > >  		},
+> > > > >  	},
+> > > > > +#endif
+> > > > >  
+> > > > >  	/*
+> > > > >  	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
+> > > > 
+> > > > After this patch is applied, the ACPI backlight doesn't work anymore. The
+> > > > brightness stays the same, no matter what I do.
+> > > 
+> > > So, you need the video blacklist when acpi_osi blacklist doesn't
+> > > exist, right?
+> > 
+> > In my case I don't actually need video blacklist if I use only ACPI video
+> > for backlight control. Then it works fine.
+> 
+> Hmm, after removing acpi_osi blacklist above, you loose the ACPI video
+> backlight doesn't work, no?  If so, you need the video blacklist.
+> Am I missing anything obvious...?
 
-Thanks.
+Yes, the machine needs to be in acpi_osi blacklist then the ACPI video
+works fine.
 
-Yes I'll repost today.
+> > However, using intel_backlight will cause ACPI video to restore its
+> > settings over the Intel one on resume.
+> 
+> I guess the very reason why ACPI video backlight doesn't work in Win8
+> BIOS mode -- ACPI video won't conflict the native backlight.
 
-I was assuming those would go through the kbuild tree.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+That might be. I'm not really familiar with the whole backlight mess. Just
+trying to get my machine working :)
