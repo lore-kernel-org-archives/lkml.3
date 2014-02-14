@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305AbaBNUUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:20:21 -0500
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:57735 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752779AbaBNUUQ (ORCPT
+	id S1753478AbaBNU0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:26:12 -0500
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:52766 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753286AbaBNUUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:20:16 -0500
-Message-Id: <20140214201907.228035121@linux.com>
-Date: Fri, 14 Feb 2014 14:19:12 -0600
+	Fri, 14 Feb 2014 15:20:20 -0500
+Message-Id: <20140214201907.446472726@linux.com>
+Date: Fri, 14 Feb 2014 14:19:14 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>
-Subject: [PATCH 31/48] uv: Replace __get_cpu_var
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH 33/48] MIPS: Replace __get_cpu_var uses in FPU emulator.
 References: <20140214201841.826179349@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=more_fixes
+Content-Disposition: inline; filename=0001-MIPS-Replace-__get_cpu_var-uses-in-FPU-emulator.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use __this_cpu_read instead.
 
-Cc: Hedi Berriche <hedi@sgi.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
+From: David Daney <david.daney@cavium.com>
+
+The use of __this_cpu_inc() requires a fundamental integer type, so
+change the type of all the counters to unsigned long, which is the
+same width they were before, but not wrapped in local_t.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
+---
+ arch/mips/include/asm/fpu_emulator.h | 14 +++++++-------
+ arch/mips/math-emu/cp1emu.c          |  6 +++---
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-Index: linux/arch/x86/include/asm/uv/uv_hub.h
+Index: linux/arch/mips/include/asm/fpu_emulator.h
 ===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
-+++ linux/arch/x86/include/asm/uv/uv_hub.h	2014-02-03 14:16:53.987889372 -0600
-@@ -618,7 +618,7 @@
+--- linux.orig/arch/mips/include/asm/fpu_emulator.h	2014-02-03 13:25:55.311884622 -0600
++++ linux/arch/mips/include/asm/fpu_emulator.h	2014-02-03 13:25:55.311884622 -0600
+@@ -30,12 +30,12 @@
+ #ifdef CONFIG_DEBUG_FS
+ 
+ struct mips_fpu_emulator_stats {
+-	local_t emulated;
+-	local_t loads;
+-	local_t stores;
+-	local_t cp1ops;
+-	local_t cp1xops;
+-	local_t errors;
++	unsigned long emulated;
++	unsigned long loads;
++	unsigned long stores;
++	unsigned long cp1ops;
++	unsigned long cp1xops;
++	unsigned long errors;
  };
  
- DECLARE_PER_CPU(struct uv_cpu_nmi_s, __uv_cpu_nmi);
--#define uv_cpu_nmi			(__get_cpu_var(__uv_cpu_nmi))
-+#define uv_cpu_nmi			__this_cpu_read(_uv_cpu_nmi)
- #define uv_hub_nmi			(uv_cpu_nmi.hub)
- #define uv_cpu_nmi_per(cpu)		(per_cpu(__uv_cpu_nmi, cpu))
- #define uv_hub_nmi_per(cpu)		(uv_cpu_nmi_per(cpu).hub)
+ DECLARE_PER_CPU(struct mips_fpu_emulator_stats, fpuemustats);
+@@ -43,7 +43,7 @@
+ #define MIPS_FPU_EMU_INC_STATS(M)					\
+ do {									\
+ 	preempt_disable();						\
+-	__local_inc(&__get_cpu_var(fpuemustats).M);			\
++	__this_cpu_inc(fpuemustats.M);					\
+ 	preempt_enable();						\
+ } while (0)
+ 
+Index: linux/arch/mips/math-emu/cp1emu.c
+===================================================================
+--- linux.orig/arch/mips/math-emu/cp1emu.c	2014-02-03 13:25:55.311884622 -0600
++++ linux/arch/mips/math-emu/cp1emu.c	2014-02-03 13:25:55.311884622 -0600
+@@ -2140,13 +2140,13 @@
+ static int fpuemu_stat_get(void *data, u64 *val)
+ {
+ 	int cpu;
+-	unsigned long sum = 0;
++	u64 sum = 0;
+ 	for_each_online_cpu(cpu) {
+ 		struct mips_fpu_emulator_stats *ps;
+-		local_t *pv;
++		unsigned long *pv;
+ 		ps = &per_cpu(fpuemustats, cpu);
+ 		pv = (void *)ps + (unsigned long)data;
+-		sum += local_read(pv);
++		sum += *pv;
+ 	}
+ 	*val = sum;
+ 	return 0;
 
