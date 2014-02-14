@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaBNBwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:52:49 -0500
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:46403 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750987AbaBNBws (ORCPT
+	id S1751703AbaBNBxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 20:53:31 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:63687 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaBNBxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 20:52:48 -0500
-From: Feng Kan <fkan@apm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, marc.zyngier@arm.com
-Cc: patches@apm.com, Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: [PATCH] gic: change access of gicc_ctrl register to read modify write.
-Date: Thu, 13 Feb 2014 17:48:53 -0800
-Message-Id: <1392342533-23345-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.7.6.1
+	Thu, 13 Feb 2014 20:53:05 -0500
+MIME-Version: 1.0
+From: Pradeep Sawlani <pradeep.sawlani@gmail.com>
+Date: Thu, 13 Feb 2014 17:52:43 -0800
+Message-ID: <CAMrOTPgBtANS_ryRjan0-dTL97U7eRvtf3dCsss=Kn+Uk89fuA@mail.gmail.com>
+Subject: KSM on Android
+To: hughd@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: surim@lab126.com, ieidus@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is made to preserve the GIC v2 releated bits in the
-GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-The original code only set the enable/disable group bit in this register.
-This code will preserve all other bits configured by the bootload except
-the enable/disable bit. The main reason for this change is to allow the
-bypass bits specified in the v2 spec to remain untouched by the current
-GIC code. In the X-Gene platform, the bypass functionality is not used
-and bypass must be disabled at all time.
+Re-sending this in plain text format (Apologies)
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Acked-by: Anup Patel <apatel@apm.com>
-Signed-off-by: Feng Kan <fkan@apm.com>
----
- drivers/irqchip/irq-gic.c |   19 ++++++++++++++++---
- 1 files changed, 16 insertions(+), 3 deletions(-)
+Hello,
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 341c601..4a52a97e2 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 	void __iomem *dist_base = gic_data_dist_base(gic);
- 	void __iomem *base = gic_data_cpu_base(gic);
- 	unsigned int cpu_mask, cpu = smp_processor_id();
-+	unsigned int ctrl_mask;
- 	int i;
- 
- 	/*
-@@ -449,13 +450,21 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
- 
- 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, base + GIC_CPU_CTRL);
-+
-+	ctrl_mask = readl(base + GIC_CPU_CTRL);
-+	ctrl_mask |= 0x1;
-+	writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
- }
- 
- void gic_cpu_if_down(void)
- {
-+	unsigned int ctrl_mask;
-+
- 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
--	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
-+
-+	ctrl_mask = readl(base + GIC_CPU_CTRL);
-+	ctrl_mask &= 0xfffffffe;
-+	writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
- }
- 
- #ifdef CONFIG_CPU_PM
-@@ -566,6 +575,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
- {
- 	int i;
- 	u32 *ptr;
-+	unsigned int ctrl_mask;
- 	void __iomem *dist_base;
- 	void __iomem *cpu_base;
- 
-@@ -590,7 +600,10 @@ static void gic_cpu_restore(unsigned int gic_nr)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
- 
- 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-+
-+	ctrl_mask = readl(base + GIC_CPU_CTRL);
-+	ctrl_mask |= 0x1;
-+	writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
- }
- 
- static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
--- 
-1.7.6.1
+In pursuit of saving memory on Android, I started experimenting with
+Kernel Same Page Merging(KSM).
+Number of pages shared because of KSM is reported by
+/sys/kernel/mm/pages_sharing.
+Documentation/vm/ksm.txt explains this as:
 
+"pages_sharing    - how many more sites are sharing them i.e. how much saved"
+
+After enabling KSM on Android device, this number was reported as 19666 pages.
+Obvious optimization is to find out source of sharing and see if we
+can avoid duplicate pages at first place.
+In order to collect the data needed, It needed few
+modifications(trace_printk) statement in mm/ksm.c.
+Data should be collected from second cycle because that's when ksm
+starts merging
+pages. First KSM cycle is only used to calculate the checksum, pages
+are added to
+unstable tree and eventually moved to stable tree after this.
+
+After analyzing data from second KSM cycle, few things which stood out:
+1.  In the same cycle, KSM can scan same page multiple times. Scanning
+a page involves
+    comparing page with pages in stable tree, if no match is found
+checksum is calculated.
+    From the look of it, it seems to be cpu intensive operation and
+impacts dcache as well.
+
+2.  Same page which is already shared by multiple process can be
+replaced by KSM page.
+    In this case, let say a particular page is mapped 24 times and is
+replaced by KSM page then
+    eventually all 24 entries will point to KSM page. pages_sharing
+will account for all 24 pages.
+    so pages _sharing does not actually report amount of memory saved.
+>From the above example actual
+    savings is one page.
+
+Both cases happen very often with Android because of its architecture
+- Zygote spawning(fork) multiple
+applications. To calculate actual savings, we should account for same
+page(pfn)replaced by same KSM page only once.
+In the case 2 example, page_sharing should account only one page.
+After recalculating memory saving comes out to be 8602 pages (~34MB).
+
+I am trying to find out right solution to fix pages_sharing and
+eventually optimize KSM to scan page
+once even if it is mapped multiple times.
+
+Comments?
+
+Thanks,
+Pradeep
