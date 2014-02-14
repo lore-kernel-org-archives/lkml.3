@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaBNLYO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 06:24:14 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:64423 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaBNLYL (ORCPT
+	id S1752365AbaBNLYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 06:24:16 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:51587 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177AbaBNLYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 06:24:11 -0500
+	Fri, 14 Feb 2014 06:24:15 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: alexandre.torgue@st.com, Lee Jones <lee.jones@linaro.org>,
         devicetree@vger.kernel.org,
         Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the MiPHY365x
-Date: Fri, 14 Feb 2014 11:23:53 +0000
-Message-Id: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 3/4] ARM: DT: STi: Add DT node for MiPHY365x
+Date: Fri, 14 Feb 2014 11:23:55 +0000
+Message-Id: <1392377036-12816-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
+References: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,70 +30,72 @@ Cc: devicetree@vger.kernel.org
 Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- .../devicetree/bindings/phy/phy-miphy365x.txt      | 54 ++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+ arch/arm/boot/dts/stih416-b2020-revE.dts |  6 +++++-
+ arch/arm/boot/dts/stih416-b2020.dts      |  6 ++++++
+ arch/arm/boot/dts/stih416.dtsi           | 13 +++++++++++++
+ 3 files changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-new file mode 100644
-index 0000000..96f269f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-@@ -0,0 +1,54 @@
-+STMicroelectronics STi MIPHY365x PHY binding
-+============================================
-+
-+This binding describes a miphy device that is used to control PHY hardware
-+for SATA and PCIe.
-+
-+Required properties:
-+- compatible: Should be "st,miphy365x-phy"
-+- #phy-cells: Should be 2 (See second example)
-+		First cell is the port number; MIPHY_PORT_{0,1}
-+		Second cell is device type; MIPHY_TYPE_{SATA,PCI}
-+- reg:	      Address and length of the register set for the device
-+- reg-names:  The names of the register addresses corresponding to the
-+	      registers filled in "reg"
-+		Options are; sata{0,1} and pcie{0,1} (See first example)
-+- st,syscfg : Should be a phandle of the system configuration register group
-+	      which contain the SATA, PCIe mode setting bits
-+
-+Optional properties:
-+- st,sata-gen	     : Generation of locally attached SATA IP. Expected values
-+		       are {1,2,3). If not supplied generation 1 hardware will
-+		       be expected
-+- st,pcie-tx-pol-inv : Bool property to invert the polarity PCIe Tx (Txn/Txp)
-+- st,sata-tx-pol-inv : Bool property to invert the polarity SATA Tx (Txn/Txp)
-+
-+Example:
-+
-+	miphy365x_phy: miphy365x@0 {
-+		compatible = "st,miphy365x-phy";
-+		#phy-cells = <2>;
-+		reg =	<0xfe382000 0x100>,
-+			<0xfe38a000 0x100>,
-+			<0xfe394000 0x100>,
-+			<0xfe804000 0x100>;
-+		reg-names = "sata0", "sata1", "pcie0", "pcie1";
-+		st,syscfg= <&syscfg_rear>;
+diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
+index a874570..dbe67fa 100644
+--- a/arch/arm/boot/dts/stih416-b2020-revE.dts
++++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
+@@ -32,6 +32,10 @@
+ 		ethernet1: ethernet@fef08000 {
+ 			snps,reset-gpio 	= <&PIO0 7>;
+ 		};
+-	};
+ 
++		miphy365x_phy: miphy365x@0 {
++			st,pcie_tx_pol_inv = <1>;
++			st,sata_gen = "gen3";
++		};
 +	};
-+
-+Specifying phy control of devices
-+=================================
-+
-+Device nodes should specify the configuration required in their "phys"
-+property, containing a phandle to the miphy device node, a port number
-+and a device type.
-+
-+Example:
+ };
+diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+index 276f28d..fd9cbad 100644
+--- a/arch/arm/boot/dts/stih416-b2020.dts
++++ b/arch/arm/boot/dts/stih416-b2020.dts
+@@ -13,4 +13,10 @@
+ 	model = "STiH416 B2020";
+ 	compatible = "st,stih416", "st,stih416-b2020";
+ 
++	soc {
++		miphy365x_phy: miphy365x@0 {
++			st,pcie_tx_pol_inv = <1>;
++			st,sata_gen = "gen3";
++		};
++	};
+ };
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index 85b8063..9fd8efb 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -9,6 +9,8 @@
+ #include "stih41x.dtsi"
+ #include "stih416-clock.dtsi"
+ #include "stih416-pinctrl.dtsi"
 +
 +#include <dt-bindings/phy/phy-miphy365x.h>
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/reset-controller/stih416-resets.h>
+ / {
+@@ -140,5 +142,16 @@
+ 			clocks		= <&CLK_S_ICN_REG_0>;
+ 		};
+ 
++		miphy365x_phy: miphy365x@0 {
++			compatible      = "st,miphy365x-phy";
++			reg        	= <0xfe382000 0x100>,
++					  <0xfe38a000 0x100>,
++					  <0xfe394000 0x100>,
++					  <0xfe804000 0x100>;
++			reg-names  	= "sata0", "sata1", "pcie0", "pcie1";
 +
-+	sata0: sata@fe380000 {
-+		...
-+		phys	  = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
-+		...
-+	};
++			#phy-cells 	= <2>;
++			st,syscfg  	= <&syscfg_rear>;
++		};
+ 	};
+ };
 -- 
 1.8.3.2
 
