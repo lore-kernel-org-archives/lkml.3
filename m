@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaBNVTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 16:19:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55722 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaBNVT0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 16:19:26 -0500
-Date: Fri, 14 Feb 2014 22:19:17 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] sched: Add a new lockless wake-from-idle implementation
-Message-ID: <20140214211917.GE14089@laptop.programming.kicks-ass.net>
-References: <20140212201709.GB6835@laptop.programming.kicks-ass.net>
- <218b548b69479baa005af8a7b04a3abbea8ed6fa.1392252790.git.luto@amacapital.net>
- <20140213145016.GA15586@twins.programming.kicks-ass.net>
- <CALCETrUOm7uRb1eUctPS5WCQkZDRZjOxyGyYb0BkGu+W-J0zpg@mail.gmail.com>
- <CALCETrUuC1t-SB1tRNBmH_=RhkRT5uprtAUQy82by5QZBJWiwA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUuC1t-SB1tRNBmH_=RhkRT5uprtAUQy82by5QZBJWiwA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1753094AbaBNVTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 16:19:50 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52266 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752739AbaBNVR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 16:17:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,847,1384329600"; 
+   d="scan'208";a="475471039"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-kbuild@vger.kernel.org, mmarek@suse.cz,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/6] kbuild: Don't include const variable in kallsyms with !KALLSYMS_ALL
+Date: Fri, 14 Feb 2014 22:17:06 +0100
+Message-Id: <1392412629-25666-4-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1392412629-25666-1-git-send-email-andi@firstfloor.org>
+References: <1392412629-25666-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 12:17:27PM -0800, Andy Lutomirski wrote:
-> Either you have a bug or I rebased it wrong.  With the attached
-> rebased version, I hit WARN_ON_ONCE(irqs_disabled()) in
-> cpu_idle_loop() on a semi-regular basis when I boot with:
+From: Andi Kleen <ak@linux.intel.com>
 
-Its got a bug; I got it too, but it did boot and build the next kernel.
+const variables are put into the text segment, so !KALLSYMS_ALL
+includes them into the kallsyms section. Remove them to make
+the kallsyms smaller. This also avoids some problems with LTO.
+The way LTO generates the first pass kallsyms cannot handle
+variables currently, so if we don't filter them out the
+first and second level pass differ too much.
 
-I didn't get any time today to look at things; I'll try and prod at
-things a bit more next week.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ scripts/kallsyms.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
+diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+index ceef756..d79027e 100644
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -151,6 +151,11 @@ static int read_symbol(FILE *in, struct sym_entry *s)
+ 	/* exclude debugging symbols */
+ 	else if (stype == 'N')
+ 		return -1;
++	/* Don't include const symbols in the text section
++	 * unless --all-symbols is specified.
++	 */
++	else if (toupper(stype) != 'T' && !all_symbols)
++		return -1;
+ 
+ 	/* include the type field in the symbol name, so that it gets
+ 	 * compressed together */
+-- 
+1.8.5.2
 
