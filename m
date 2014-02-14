@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaBNSGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:06:54 -0500
-Received: from mail-db3lp0080.outbound.protection.outlook.com ([213.199.154.80]:8076
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751822AbaBNSGx convert rfc822-to-8bit (ORCPT
+	id S1752537AbaBNSI0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:08:26 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:27195 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaBNSIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 13:06:53 -0500
-From: Conrad Kostecki <ck@conrad-kostecki.de>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: AW: [PATCH] x86: HPET force enable for Soekris net6501
-Thread-Topic: [PATCH] x86: HPET force enable for Soekris net6501
-Thread-Index: AQHPKW68eF3VOEekGkmzriEhDKIWtpq1BpSAgAADxIA=
-Date: Fri, 14 Feb 2014 18:06:49 +0000
-Message-ID: <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com>
-References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com>
- <52FE5683.6030708@zytor.com>
-In-Reply-To: <52FE5683.6030708@zytor.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [79.218.103.218]
-x-forefront-prvs: 01221E3973
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019001)(6009001)(377454003)(189002)(199002)(51704005)(479174003)(24454002)(243025003)(87936001)(87266001)(2656002)(74706001)(81342001)(81542001)(76796001)(76576001)(74366001)(90146001)(76786001)(15202345003)(93136001)(74876001)(74316001)(69226001)(95666001)(92566001)(81686001)(79102001)(56816005)(2201001)(4396001)(85852003)(83072002)(54316002)(19580395003)(19580405001)(56776001)(80976001)(77982001)(59766001)(83322001)(65816001)(85306002)(33646001)(94946001)(53806001)(66066001)(63696002)(54356001)(15975445006)(51856001)(81816001)(49866001)(47736001)(95416001)(94316002)(46102001)(47446002)(47976001)(74662001)(31966008)(93516002)(50986001)(75402002)(74482001)(86362001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DB4PR04MB267;H:DB4PR04MB265.eurprd04.prod.outlook.com;CLIP:79.218.103.218;FPR:AF9CF14C.8FF2C210.3FA25E8.40E31648.20250;InfoNoRecordsMX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: conrad-kostecki.de
+	Fri, 14 Feb 2014 13:08:25 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-0a-52fe5b97e380
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Yong-Taek Lee <ytk.lee@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC][PATCH] mm/page_alloc: fix freeing of MIGRATE_RESERVE migratetype
+ pages
+Date: Fri, 14 Feb 2014 19:08:18 +0100
+Message-id: <1995877.GHAxfnIsTj@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t9jAd3p0f+CDFa90LJ4+qmPxeLyrjls
+	FvfW/Ge1WHvkLrvF5HfPGC0er+d2YPNYsKnUY9OnSewefVtWMXpsPl3t8XmTXABrFJdNSmpO
+	Zllqkb5dAldG887sgoNiFdOuWzYwPhHqYuTkkBAwkTg6fREzhC0mceHeerYuRi4OIYFFjBI7
+	b99gBEkICbQwSdy7yA9iswlYSUxsXwUU5+AQEVCQmPveHKSeWWAto8TZzofsIDXCAuES29+1
+	MoHYLAKqEv+/zWYDsXkFNCV2/37CCmKLCnhK7Ni+EiouKPFj8j0WEJtZQF5i3/6prBC2lsT6
+	nceZJjDyzUJSNgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBAfoM+kdjKsa
+	LA4xCnAwKvHwSuj+CxJiTSwrrsw9xCjBwawkwisQBhTiTUmsrEotyo8vKs1JLT7EKM3BoiTO
+	e7DVOlBIID2xJDU7NbUgtQgmy8TBKdXAaPpJoMxzcmBe08muixtNf5uGJpXt3LHdwSU3c/kF
+	mSPLjv6TKvqiJ6y4/5HD7Tu85SvMbOQTm8z+La1jaz4m+8bC8JLRm6y2kudGXj/1UgVupvbZ
+	PzK7J7M1cd+VU9veehoqz1niy5e0ZaGUp2WLWllwK0+jv59EWcu55pfTl+5f/ry9Tu6aEktx
+	RqKhFnNRcSIAPa3foEwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 02/14/2014 02:23 AM, Conrad Kostecki wrote:
-> > Hello,
-> > as the Soekris net6501 does not have any ACPI implementation, HPET
-> won't get enabled.
-> > This patch enables HPET on such platforms.
-> >
-> > [    0.430149] pci 0000:00:01.0: Force enabled HPET at 0xfed00000
-> > [    0.644838] HPET: 3 timers in total, 0 timers will be used for per-cpu timer
-> >
-> > Original patch by Peter Neubauer, slightly modified by me.
-> > -> http://www.mail-archive.com/soekris-
-> tech@lists.soekris.com/msg06462.html
-> >
-> > Cheers
-> > Conrad
-> 
-> Are you sure this won't break any other E6xx platforms?
 
-Hm. I am not. The Soekris is my only device with an E6xx CPU. This one is special, as Soekris does not implement ACPI.
-I don't know, how other E6xx systems do work. I guess, there will have ACPI. There seem not to be many out there.
-This patch is now running for about six months without any problems for me.
+Pages allocated from MIGRATE_RESERVE migratetype pageblocks
+are not freed back to MIGRATE_RESERVE migratetype free
+lists in free_pcppages_bulk() if we got to that function
+through drain_[zone_]pages() or __zone_pcp_update().
+The freeing through free_hot_cold_page() is okay because
+freepage migratetype is set to pageblock migratetype before
+calling free_pcppages_bulk().  If pages of MIGRATE_RESERVE
+migratetype end up on the free lists of other migratetype
+whole Reserved pageblock may be later changed to the other
+migratetype in __rmqueue_fallback() and it will be never
+changed back to be a Reserved pageblock.  Fix the issue by
+preserving freepage migratetype as a pageblock migratetype
+(instead of overriding it to the requested migratetype)
+for MIGRATE_RESERVE migratetype pages in rmqueue_bulk().
 
-I was also searching for some other systems. I found here only one manual.
-There are at least the same vendor/device id shown, as used also in Soekris.
--> http://www.ekf.de/p/pc2/pc2_ug.pdf
+The problem was introduced in v2.6.31 by commit ed0ae21
+("page allocator: do not call get_pageblock_migratetype()
+more than necessary").
 
-Is there maybe any possibility to check for the specific Soekris model? At least MPTABLE identifies the Soekris:
-[    0.000000] MPTABLE: OEM ID: Soekris
-[    0.000000] MPTABLE: Product ID: net6501
-[    0.000000] MPTABLE: APIC at: 0xFEE00000
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+---
+ include/linux/mmzone.h |    5 +++++
+ mm/page_alloc.c        |   10 +++++++---
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
-Cheers
-Conrad
+Index: b/include/linux/mmzone.h
+===================================================================
+--- a/include/linux/mmzone.h	2014-02-14 18:59:08.177837747 +0100
++++ b/include/linux/mmzone.h	2014-02-14 18:59:09.077837731 +0100
+@@ -63,6 +63,11 @@ enum {
+ 	MIGRATE_TYPES
+ };
+ 
++static inline bool is_migrate_reserve(int migratetype)
++{
++	return unlikely(migratetype == MIGRATE_RESERVE);
++}
++
+ #ifdef CONFIG_CMA
+ #  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
+ #else
+Index: b/mm/page_alloc.c
+===================================================================
+--- a/mm/page_alloc.c	2014-02-14 18:59:08.185837746 +0100
++++ b/mm/page_alloc.c	2014-02-14 18:59:09.077837731 +0100
+@@ -1174,7 +1174,7 @@ static int rmqueue_bulk(struct zone *zon
+ 			unsigned long count, struct list_head *list,
+ 			int migratetype, int cold)
+ {
+-	int mt = migratetype, i;
++	int mt, i;
+ 
+ 	spin_lock(&zone->lock);
+ 	for (i = 0; i < count; ++i) {
+@@ -1195,9 +1195,13 @@ static int rmqueue_bulk(struct zone *zon
+ 			list_add(&page->lru, list);
+ 		else
+ 			list_add_tail(&page->lru, list);
++		mt = get_pageblock_migratetype(page);
+ 		if (IS_ENABLED(CONFIG_CMA)) {
+-			mt = get_pageblock_migratetype(page);
+-			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
++			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt) &&
++			    !is_migrate_reserve(mt))
++				mt = migratetype;
++		} else {
++			if (!is_migrate_reserve(mt))
+ 				mt = migratetype;
+ 		}
+ 		set_freepage_migratetype(page, mt);
+
