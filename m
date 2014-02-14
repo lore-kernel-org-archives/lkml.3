@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742AbaBNDjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 22:39:47 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:46229 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaBNDjp (ORCPT
+	id S1751914AbaBNDsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 22:48:06 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53739 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbaBNDsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 22:39:45 -0500
+	Thu, 13 Feb 2014 22:48:03 -0500
+Message-ID: <52FD91EE.4010403@gmail.com>
+Date: Thu, 13 Feb 2014 19:47:58 -0800
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <52FCEE74.9010602@redhat.com>
-References: <000001cf2865$0aa2c0c0$1fe84240$%yang@samsung.com>
-	<52FCEE74.9010602@redhat.com>
-Date: Fri, 14 Feb 2014 11:39:45 +0800
-Message-ID: <CAL1ERfPhWbKRGr50Jq61gJ90zYhpMFN+T1tPNxJm0e1n31mcag@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mm/vmscan: restore sc->gfp_mask after promoting it to __GFP_HIGHMEM
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Weijie Yang <weijie.yang@samsung.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the devicetree tree with the net-next
+ tree
+References: <20140214141639.74ea45728f39a8ee874ce986@canb.auug.org.au>
+In-Reply-To: <20140214141639.74ea45728f39a8ee874ce986@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 12:10 AM, Rik van Riel <riel@redhat.com> wrote:
-> On 02/12/2014 09:39 PM, Weijie Yang wrote:
->
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -2298,14 +2298,17 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->>       unsigned long nr_soft_reclaimed;
->>       unsigned long nr_soft_scanned;
->>       bool aborted_reclaim = false;
->> +     bool promoted_mask = false;
->>
->>       /*
->>        * If the number of buffer_heads in the machine exceeds the maximum
->>        * allowed level, force direct reclaim to scan the highmem zone as
->>        * highmem pages could be pinning lowmem pages storing buffer_heads
->>        */
->> -     if (buffer_heads_over_limit)
->> +     if (buffer_heads_over_limit) {
->
-> It took me a minute to figure out why you are doing things this way,
-> so maybe this could use a comment, or maybe it could be done in a
-> simpler way, by simply saving and restoring the original mask?
->                 orig_mask = sc->gfp_mask;
+Hi Stephen,
 
-Yes, you are right. This simpler way is better. I will turn to it in
-V2 resend patch.
+Le 13/02/2014 19:16, Stephen Rothwell a écrit :
+> Hi Grant,
+>
+> Today's linux-next merge of the devicetree tree got a conflict in
+> drivers/of/of_net.c between commit 8a2fe56e8827 ("net: phy: re-design
+> phy_modes to be self-contained") from the net-next tree and commit
+> cf4c9eb5a451 ("of: make of_get_phy_mode parse 'phy-connection-type'")
+> from the devicetree tree.
+>
+> I fixed it up (I applied the following merge fix patch) and can carry the
+> fix as necessary (no action is required).
 
-Thanks!
+Looks good to me, thanks for fixing that!
 
->> +             promoted_mask = !(sc->gfp_mask & __GFP_HIGHMEM);
->>               sc->gfp_mask |= __GFP_HIGHMEM;
->> +     }
->>
->>       for_each_zone_zonelist_nodemask(zone, z, zonelist,
->>                                       gfp_zone(sc->gfp_mask), sc->nodemask) {
->> @@ -2354,6 +2357,9 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
->>               shrink_zone(zone, sc);
->>       }
->>
->> +     if (promoted_mask)
->                 sc->gfp_mask = orig_mask;
 >
->> +             sc->gfp_mask &= ~__GFP_HIGHMEM;
->> +
->>       return aborted_reclaim;
->>  }
->>
->>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 14 Feb 2014 14:14:31 +1100
+> Subject: [PATCH] net: of: merges fix for a moved comment
 >
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>   include/linux/phy.h | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
 >
-> --
-> All rights reversed
+> diff --git a/include/linux/phy.h b/include/linux/phy.h
+> index 42f1bc7eaeb0..bc77c174e0a3 100644
+> --- a/include/linux/phy.h
+> +++ b/include/linux/phy.h
+> @@ -79,8 +79,8 @@ typedef enum {
+>
+>   /**
+>    * It maps 'enum phy_interface_t' found in include/linux/phy.h
+> - * into the device tree binding of 'phy-mode', so that Ethernet
+> - * device driver can get phy interface from device tree.
+> + * into the device tree binding of 'phy-mode' or 'phy-connection-type',
+> + * so that Ethernet device driver can get phy interface from device tree.
+>    */
+>   static inline const char *phy_modes(phy_interface_t interface)
+>   {
+>
