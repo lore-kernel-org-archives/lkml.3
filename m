@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626AbaBNHVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 02:21:10 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:58987 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaBNHVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 02:21:08 -0500
-Message-ID: <1392362464.5579.41.camel@marge.simpson.net>
-Subject: [patch] net,bonding: fix bond_options.c direct rwlock.h include
-From: Mike Galbraith <bitbucket@online.de>
-To: netdev <netdev@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 14 Feb 2014 08:21:04 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:CSFhh5tYfW9Q97FH9he19c+xjTZIMGMIGI/j+EAXran
- DUTpx01+DOH9wW2Ql4pL6YidmJmqVjMFsjCL+kh5ubzXQc304O
- 4ztXv7PPwRA8hI9CuxqssvI5UhbxKDvN54BO3r7sw2W6eZo6RA
- YAyzn2yilEibsWQNSqjxEn9pUE16h11IBHazCsWjdPRAmchlvU
- p9io6+2GsHNont6486sSHyh1O15jHUHBcLcCX4vgRsKaTsmqes
- QMnTuTVvU+GpWQS60ZdwcmN5EDmD0Pj1PfMH8FofttIjkzc6AJ
- ztn1BX+ap7wKJf3+rOZMRPpIKuYC3AH/I2enRa5S0f5B+M29Ru
- jsvpOn1ynqutbg3C1C/LCKv27o6poPZ6YB2Y3YvHsMoRbVTCTn
- pv40DTW+Yf32g==
+	id S1752056AbaBNHYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:24:35 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39341 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751643AbaBNHYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 02:24:33 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: Linux EFI <linux-efi@vger.kernel.org>
+Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
+        Lejun Zhu <lejun.zhu@intel.com>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86, efi: Fix 32-bit fallout
+Date: Fri, 14 Feb 2014 08:24:24 +0100
+Message-Id: <1392362664-26608-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.5.2.192.g7794a68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Borislav Petkov <bp@suse.de>
 
-drivers/net/bonding/bond_options.c includes rwlock.h directly,
-which is a nono, and which also breaks RT kernel build.
+We do not enable the new efi memmap on 32-bit and thus we need to run
+runtime_code_page_mkexec() unconditionally there. Fix that.
 
-Signed-off-by: Mike Galbraith <bitbucket@online.de>
+Reported-and-tested-by: Lejun Zhu <lejun.zhu@intel.com>
+Cc: <stable@vger.kernel.org> # v3.14+
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
-diff --git a/drivers/net/bonding/bond_options.c b/drivers/net/bonding/bond_options.c
-index 11cb943222d5..c37878432717 100644
---- a/drivers/net/bonding/bond_options.c
-+++ b/drivers/net/bonding/bond_options.c
-@@ -14,7 +14,7 @@
- #include <linux/errno.h>
- #include <linux/if.h>
- #include <linux/netdevice.h>
--#include <linux/rwlock.h>
-+#include <linux/spinlock.h>
- #include <linux/rcupdate.h>
- #include <linux/ctype.h>
- #include <linux/inet.h>
+ arch/x86/include/asm/efi.h     | 2 ++
+ arch/x86/platform/efi/efi.c    | 8 +++-----
+ arch/x86/platform/efi/efi_32.c | 6 ++++++
+ arch/x86/platform/efi/efi_64.c | 9 +++++++++
+ 4 files changed, 20 insertions(+), 5 deletions(-)
 
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index d3c099f53ff2..7fd9830285e0 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -133,6 +133,8 @@ extern int efi_setup_page_tables(unsigned long pa_memmap, unsigned num_pages);
+ extern void efi_cleanup_page_tables(unsigned long pa_memmap, unsigned num_pages);
+ extern void __init old_map_region(efi_memory_desc_t *md);
+ extern void __init efi_dump_pagetable(void);
++extern void __init runtime_code_page_mkexec(void);
++extern void __init efi_runtime_mkexec(void);
+ 
+ struct efi_setup_data {
+ 	u64 fw_vendor;
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 0c8672b3f9a3..40e62ea52864 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -776,7 +776,7 @@ void __init efi_set_executable(efi_memory_desc_t *md, bool executable)
+ 		set_memory_nx(addr, npages);
+ }
+ 
+-static void __init runtime_code_page_mkexec(void)
++void __init runtime_code_page_mkexec(void)
+ {
+ 	efi_memory_desc_t *md;
+ 	void *p;
+@@ -1024,8 +1024,7 @@ static void __init kexec_enter_virtual_mode(void)
+ 	efi.update_capsule = virt_efi_update_capsule;
+ 	efi.query_capsule_caps = virt_efi_query_capsule_caps;
+ 
+-	if (efi_enabled(EFI_OLD_MEMMAP) && (__supported_pte_mask & _PAGE_NX))
+-		runtime_code_page_mkexec();
++	efi_runtime_mkexec();
+ 
+ 	/* clean DUMMY object */
+ 	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+@@ -1125,8 +1124,7 @@ static void __init __efi_enter_virtual_mode(void)
+ 	efi.update_capsule = virt_efi_update_capsule;
+ 	efi.query_capsule_caps = virt_efi_query_capsule_caps;
+ 
+-	if (efi_enabled(EFI_OLD_MEMMAP) && (__supported_pte_mask & _PAGE_NX))
+-		runtime_code_page_mkexec();
++	efi_runtime_mkexec();
+ 
+ 	/*
+ 	 * We mapped the descriptor array into the EFI pagetable above but we're
+diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
+index 7ad87ee09525..9ee3491e31fb 100644
+--- a/arch/x86/platform/efi/efi_32.c
++++ b/arch/x86/platform/efi/efi_32.c
+@@ -82,3 +82,9 @@ void efi_call_phys_epilog(void)
+ 
+ 	local_irq_restore(efi_rt_eflags);
+ }
++
++void __init efi_runtime_mkexec(void)
++{
++	if (__supported_pte_mask & _PAGE_NX)
++		runtime_code_page_mkexec();
++}
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index 0998f3a536ff..50cc39be2271 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -268,3 +268,12 @@ void __init efi_dump_pagetable(void)
+ 	ptdump_walk_pgd_level(NULL, pgd);
+ #endif
+ }
++
++void __init efi_runtime_mkexec(void)
++{
++	if (!efi_enabled(EFI_OLD_MEMMAP))
++		return;
++
++	if (__supported_pte_mask & _PAGE_NX)
++		runtime_code_page_mkexec();
++}
+-- 
+1.8.5.2.192.g7794a68
 
