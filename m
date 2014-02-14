@@ -1,135 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaBNEeX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:34:23 -0500
-Received: from ozlabs.org ([203.10.76.45]:38114 "EHLO ozlabs.org"
+	id S1751668AbaBNEnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:43:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17999 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323AbaBNEeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:34:21 -0500
-Date: Fri, 14 Feb 2014 15:34:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>
-Subject: linux-next: manual merge of the akpm-current tree with the cgroup
- tree
-Message-Id: <20140214153414.b15e54bf5aa61d0e75bacc90@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1751050AbaBNEnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 23:43:42 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140214020144.GO4250@linux.vnet.ibm.com>
+References: <20140207165028.GO4250@linux.vnet.ibm.com>
+	 <20140207165548.GR5976@mudshark.cambridge.arm.com>
+	 <20140207180216.GP4250@linux.vnet.ibm.com>
+	 <1391992071.18779.99.camel@triegel.csb>
+	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	 <1392183564.18779.2187.camel@triegel.csb>
+	 <20140212180739.GB4250@linux.vnet.ibm.com>
+	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	 <20140213002355.GI4250@linux.vnet.ibm.com>
+	 <1392321837.18779.3249.camel@triegel.csb>
+	 <20140214020144.GO4250@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Feb 2014 20:43:01 -0800
+Message-ID: <1392352981.18779.3800.camel@triegel.csb>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Feb_2014_15_34_14_+1100_U5A81uSflaRJ.7Of"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Feb_2014_15_34_14_+1100_U5A81uSflaRJ.7Of
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2014-02-13 at 18:01 -0800, Paul E. McKenney wrote:
+> On Thu, Feb 13, 2014 at 12:03:57PM -0800, Torvald Riegel wrote:
+> > On Wed, 2014-02-12 at 16:23 -0800, Paul E. McKenney wrote:
+> > > On Wed, Feb 12, 2014 at 12:22:53PM -0800, Linus Torvalds wrote:
+> > > > On Wed, Feb 12, 2014 at 10:07 AM, Paul E. McKenney
+> > > > <paulmck@linux.vnet.ibm.com> wrote:
+> > > > >
+> > > > > Us Linux-kernel hackers will often need to use volatile semantics in
+> > > > > combination with C11 atomics in most cases.  The C11 atomics do cover
+> > > > > some of the reasons we currently use ACCESS_ONCE(), but not all of them --
+> > > > > in particular, it allows load/store merging.
+> > > > 
+> > > > I really disagree with the "will need to use volatile".
+> > > > 
+> > > > We should never need to use volatile (outside of whatever MMIO we do
+> > > > using C) if C11 defines atomics correctly.
+> > > > 
+> > > > Allowing load/store merging is *fine*. All sane CPU's do that anyway -
+> > > > it's called a cache - and there's no actual reason to think that
+> > > > "ACCESS_ONCE()" has to mean our current "volatile".
+> > > > 
+> > > > Now, it's possible that the C standards simply get atomics _wrong_, so
+> > > > that they create visible semantics that are different from what a CPU
+> > > > cache already does, but that's a plain bug in the standard if so.
+> > > > 
+> > > > But merging loads and stores is fine. And I *guarantee* it is fine,
+> > > > exactly because CPU's already do it, so claiming that the compiler
+> > > > couldn't do it is just insanity.
+> > > 
+> > > Agreed, both CPUs and compilers can merge loads and stores.  But CPUs
+> > > normally get their stores pushed through the store buffer in reasonable
+> > > time, and CPUs also use things like invalidations to ensure that a
+> > > store is seen in reasonable time by readers.  Compilers don't always
+> > > have these two properties, so we do need to be more careful of load
+> > > and store merging by compilers.
+> > 
+> > The standard's _wording_ is a little vague about forward-progress
+> > guarantees, but I believe the vast majority of the people involved do
+> > want compilers to not prevent forward progress.  There is of course a
+> > difference whether a compiler establishes _eventual_ forward progress in
+> > the sense of after 10 years or forward progress in a small bounded
+> > interval of time, but this is a QoI issue, and good compilers won't want
+> > to introduce unnecessary latencies.  I believe that it is fine if the
+> > standard merely talks about eventual forward progress.
+> 
+> The compiler will need to earn my trust on this one.  ;-)
+> 
+> > > > Now, there are things that are *not* fine, like speculative stores
+> > > > that could be visible to other threads. Those are *bugs* (either in
+> > > > the compiler or in the standard), and anybody who claims otherwise is
+> > > > not worth discussing with.
+> > > 
+> > > And as near as I can tell, volatile semantics are required in C11 to
+> > > avoid speculative stores.  I might be wrong about this, and hope that
+> > > I am wrong.  But I am currently not seeing it in the current standard.
+> > > (Though I expect that most compilers would avoid speculating stores,
+> > > especially in the near term.
+> > 
+> > This really depends on how we define speculative stores.  The memory
+> > model is absolutely clear that programs have to behave as if executed by
+> > the virtual machine, and that rules out speculative stores to volatiles
+> > and other locations.  Under certain circumstances, there will be
+> > "speculative" stores in the sense that they will happen at different
+> > times as if you had a trivial implementation of the abstract machine.
+> > But to be allowed to do that, the compiler has to prove that such a
+> > transformation still fulfills the as-if rule.
+> 
+> Agreed, although the as-if rule would ignore control dependencies, since
+> these are not yet part of the standard (as you in fact note below).
+> I nevertheless consider myself at least somewhat reassured that current
+> C11 won't speculate stores.  My remaining concerns involve the compiler
+> proving to itself that a given branch is always taken, thus motivating
+> it to optimize the branch away -- though this is more properly a
+> control-dependency concern.
+> 
+> > IOW, the abstract machine is what currently defines disallowed
+> > speculative stores.  If you want to put *further* constraints on what
+> > implementations are allowed to do, I suppose it is best to talk about
+> > those and see how we can add rules that allow programmers to express
+> > those constraints.  For example, control dependencies might be such a
+> > case.  I don't have a specific suggestion -- maybe the control
+> > dependencies are best tackled similar to consume dependencies (even
+> > though we don't have a good solution for those yets).  But using
+> > volatile accesses for that seems to be a big hammer, or even the wrong
+> > one.
+> 
+> In current compilers, the two hammers we have are volatile and barrier().
+> But yes, it would be good to have something more focused.  One option
+> would be to propose memory_order_control loads to see how loudly the
+> committee screams.  One use case might be as follows:
+> 
+> 	if (atomic_load(x, memory_order_control))
+> 		atomic_store(y, memory_order_relaxed);
+> 
+> This could also be written:
+> 
+> 	r1 = atomic_load(x, memory_order_control);
+> 	if (r1)
+> 		atomic_store(y, memory_order_relaxed);
+> 
+> A branch depending on the memory_order_control load could not be optimized
+> out, though I suppose that the compiler could substitute a memory-barrier
+> instruction for the branch.  Seems like it would take a very large number
+> of branches to equal the overhead of the memory barrier, though.
+> 
+> Another option would be to flag the conditional expression, prohibiting
+> the compiler from optimizing out any conditional branches.  Perhaps
+> something like this:
+> 
+> 	r1 = atomic_load(x, memory_order_control);
+> 	if (control_dependency(r1))
+> 		atomic_store(y, memory_order_relaxed);
 
-Hi Andrew,
+That's the one I had in mind and talked to you about earlier today.  My
+gut feeling is that this is preferably over the other because it "marks"
+the if-statement, so the compiler knows exactly which branches matter.
+I'm not sure one would need the other memory order for that, if indeed
+all you want is relaxed -> branch -> relaxed.  But maybe there are
+corner cases (see the weaker-than-relaxed discussion in SG1 today).
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-mm/memcontrol.c between commit e61734c55c24 ("cgroup: remove
-cgroup->name") from the cgroup tree and commit 05d3a02a1a0d ("memcg:
-change oom_info_lock to mutex") from the akpm-current tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc mm/memcontrol.c
-index d9c6ac1532e6,de1a2aed4954..000000000000
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@@ -1683,25 -1683,54 +1683,25 @@@ static void move_unlock_mem_cgroup(stru
-   */
-  void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_stru=
-ct *p)
-  {
- -	/*
- -	 * protects memcg_name and makes sure that parallel ooms do not
- -	 * interleave
- -	 */
- +	/* oom_info_lock ensures that parallel ooms do not interleave */
-- 	static DEFINE_SPINLOCK(oom_info_lock);
-+ 	static DEFINE_MUTEX(oom_info_lock);
- -	struct cgroup *task_cgrp;
- -	struct cgroup *mem_cgrp;
- -	static char memcg_name[PATH_MAX];
- -	int ret;
-  	struct mem_cgroup *iter;
-  	unsigned int i;
- =20
-  	if (!p)
-  		return;
- =20
-- 	spin_lock(&oom_info_lock);
-+ 	mutex_lock(&oom_info_lock);
-  	rcu_read_lock();
- =20
- -	mem_cgrp =3D memcg->css.cgroup;
- -	task_cgrp =3D task_cgroup(p, mem_cgroup_subsys_id);
- -
- -	ret =3D cgroup_path(task_cgrp, memcg_name, PATH_MAX);
- -	if (ret < 0) {
- -		/*
- -		 * Unfortunately, we are unable to convert to a useful name
- -		 * But we'll still print out the usage information
- -		 */
- -		rcu_read_unlock();
- -		goto done;
- -	}
- -	rcu_read_unlock();
- -
- -	pr_info("Task in %s killed", memcg_name);
- +	pr_info("Task in ");
- +	pr_cont_cgroup_path(task_cgroup(p, memory_cgrp_id));
- +	pr_info(" killed as a result of limit of ");
- +	pr_cont_cgroup_path(memcg->css.cgroup);
- +	pr_info("\n");
- =20
- -	rcu_read_lock();
- -	ret =3D cgroup_path(mem_cgrp, memcg_name, PATH_MAX);
- -	if (ret < 0) {
- -		rcu_read_unlock();
- -		goto done;
- -	}
-  	rcu_read_unlock();
- =20
- -	/*
- -	 * Continues from above, so we don't need an KERN_ level
- -	 */
- -	pr_cont(" as a result of limit of %s\n", memcg_name);
- -done:
- -
-  	pr_info("memory: usage %llukB, limit %llukB, failcnt %llu\n",
-  		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
-  		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
-
---Signature=_Fri__14_Feb_2014_15_34_14_+1100_U5A81uSflaRJ.7Of
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS/ZzLAAoJEMDTa8Ir7ZwVIzIP/iuRClF7TxQ9RhjfxEqzhq1w
-VZFOavW/zMC+w0Yfq1T53Jib8eEPlpSlqtZXHXtKPLeTfiuF3iZTj+6ZmJ7+A03r
-I7kW6fveSLRYchzgkkYFU++Ebz5gy825jp3aK6wDNk4LHOmbMCNlSjuKOakEHotE
-bpY0L5TGgPgTbQYR6TA0kCKH0sDklfttc0b6lm3P6h71Nt7QMjhdmbTZNfDAom7Y
-jaYM8Xe/een7xti0SiT3PtcbBc15EB3RHtqDJRW5CHn7Xxj63t8wiBw6NdM5HwSa
-420juYyo5ZfWUlG/V6zVx4jE/cga6XgbnPOopJkG4mjI/JD2wHxTk01pR63BTQTw
-cH+Gp0KHZppV3x95sf9/JvYmTXEFjkhoepTt0nEgs7YN9k47xlcV1ga1rpIJKD3T
-KreSHI5f+CSZ4afBVLpp/Ul/RuF+52qKJpzpBl/IdI45g6DMQNcKXY6t2kh5BSYD
-v2goyuhaa8iTEXHeHcgXWS0oQp5knmizq6ai3dKPpN1/PAgKyL+n3ELhQ6rP5koK
-k+zyIalNSD1DYpzUS5P00eFjJplLrbnk/+/XH9NuUBzV4Qgw0FI1E58ouSEvv0NT
-g47FDBlq5WSTBqQE+pX8rveD0P9g4mkj0heIvFpH5aF7/GcfdSS5Tnj7JsGX6BCY
-+7L6xRM1Q15I+U/W/0ru
-=An/1
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Feb_2014_15_34_14_+1100_U5A81uSflaRJ.7Of--
