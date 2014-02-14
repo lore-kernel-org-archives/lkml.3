@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaBNFqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 00:46:31 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50553 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaBNFq0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 00:46:26 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Balaji T K <balajitk@ti.com>,
-        Chris Ball <chris@printf.net>
-CC: <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2 0/2] mmc: omap_hsmmc: fix for pre es3.0 OMAP3
-Date: Thu, 13 Feb 2014 23:45:47 -0600
-Message-ID: <1392356749-32091-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752101AbaBNFrh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 00:47:37 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39879 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760AbaBNFrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 00:47:36 -0500
+Date: Thu, 13 Feb 2014 21:47:24 -0800
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+Message-ID: <20140214054724.GA24329@linux.vnet.ibm.com>
+References: <52F4B8A4.70405@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402071239301.4212@chino.kir.corp.google.com>
+ <52F88C16.70204@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
+ <52F8C556.6090006@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
+ <52FC6F2A.30905@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
+ <52FC98A6.1000701@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
+X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021405-5806-0000-0000-0000242246D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally reported in: https://patchwork.kernel.org/patch/3514851/
-https://patchwork.kernel.org/patch/3514881/
+On 13.02.2014 [14:41:04 -0800], David Rientjes wrote:
+> On Thu, 13 Feb 2014, Raghavendra K T wrote:
+> 
+> > Thanks David, unfortunately even after applying that patch, I do not see
+> > the improvement.
+> > 
+> > Interestingly numa_mem_id() seem to still return the value of a
+> > memoryless node.
+> > May be  per cpu _numa_mem_ values are not set properly. Need to dig out ....
+> > 
+> 
+> I believe ppc will be relying on __build_all_zonelists() to set 
+> numa_mem_id() to be the proper node, and that relies on the ordering of 
+> the zonelist built for the memoryless node.  It would be very strange if 
+> local_memory_node() is returning a memoryless node because it is the first 
+> zone for node_zonelist(GFP_KERNEL) (why would a memoryless node be on the 
+> zonelist at all?).
+> 
+> I think the real problem is that build_all_zonelists() is only called at 
+> init when the boot cpu is online so it's only setting numa_mem_id() 
+> properly for the boot cpu.  Does it return a node with memory if you 
+> toggle /proc/sys/vm/numa_zonelist_order?  Do
+> 
+> 	echo node > /proc/sys/vm/numa_zonelist_order
+> 	echo zone > /proc/sys/vm/numa_zonelist_order
+> 	echo default > /proc/sys/vm/numa_zonelist_order
+> 
+> and check if it returns the proper value at either point.  This will force 
+> build_all_zonelists() and numa_mem_id() to point to the proper node since 
+> all cpus are now online.
 
-ES3.0+ provides MMC controller which is fixed for multi-block reads,
-however LDP platform
+Yep, after massaging the code to allow CONFIG_USE_PERCPU_NUMA_NODE_ID,
+you're right that the memory node is wrong. The cpu node is right (they
+are all on node 0), but that could be lucky. The memory node is right
+for the boot cpu. I did notice that some CPUs now think the cpu node is
+1, which is wrong.
 
-Looking at the various IP revision register information:
-sdp2430: Revision: 1.2, Spec: 0.0, normal interrupt
-OMAP3430-ldp: (ES2.1): Revision: 2.6, Spec: 0.0, normal interrupt
-SDP3430:(ES3.0) Revision: 2.6, Spec: 0.0, normal interrupt
-AM3517-evm: (ES1.1): Revision: 2.6, Spec: 0.0, normal interrupt
-AM3517-crane:(ES1.1): Revision: 2.6, Spec: 0.0, normal interrupt
-AM37x-evm: (ES1.2) Revision: 2.6, Spec: 0.0, normal interrupt
-OMAP3630-beag-xm (ES1.2): Revision: 2.6, Spec: 0.0, normal interrupt
-am335x-evm:(ES1.0): Revision: 3.1, Spec: 0.1, normal interrupt
-am335x-sk: (ES2.1): Revision: 3.1, Spec: 0.1, normal interrupt
-am335x-beaglebone-black:(ES2.0): Revision: 3.1, Spec: 0.1, normal
-interrupt
-sdp4430: (ES2.2): Revision: 3.1, Spec: 0.1, normal interrupt
-OMAP4460-panda-es (ES1.1): Revision: 3.1, Spec: 0.1, normal interrupt
-OMAP5uevm:(ES2.0): Revision: 3.3, Spec: 0.2, normal interrupt
-dra7-evm (es1.1): Revision: 3.3, Spec: 0.2, normal interrupt
+> So the prerequisite for CONFIG_HAVE_MEMORYLESS_NODES is that there is an 
+> arch-specific set_numa_mem() that makes this mapping correct like ia64 
+> does.  If that's the case, then it's (1) completely undocumented and (2) 
+> Nishanth's patch is incomplete because anything that adds 
+> CONFIG_HAVE_MEMORYLESS_NODES needs to do the proper set_numa_mem() for it 
+> to be any different than numa_node_id().
 
-This series has been tested on the following platforms:
- 1: BeagleBoard-XM:  Boot PASS: http://slexy.org/raw/s2ObUDfm5N
- 2: BeagleBone-Black:  Boot PASS: http://slexy.org/raw/s2xmviGgFf
- 3:       dra7:  Boot PASS: http://slexy.org/raw/s2Ad6rxaQk
- 4:        ldp:  Boot PASS: http://slexy.org/raw/s20kEx9eHg
- 5: PandaBoard-ES:  Boot PASS: http://slexy.org/raw/s2gHT1EWKF
- 6:    sdp2430:  Boot PASS: http://slexy.org/raw/s20dvr8yQA (nfs)
- 7:    sdp3430:  Boot PASS: http://slexy.org/raw/s2aUEsEemS
- 8:    sdp4430:  Boot PASS: http://slexy.org/raw/s20nqL8gjz
- 9: OMAP5432uEVM:  Boot PASS: http://slexy.org/raw/s20O0QfmZw
-TOTAL = 9 boards, Booted Boards = 9, No Boot boards = 0
+I'll work on getting the set_numa_mem() and set_numa_node() correct for
+powerpc.
 
-LDP platform prior to the series reports: http://slexy.org/raw/s20qVg17T0 
-
-Series is based on v3.14-rc2
-
-Nishanth Menon (2):
-  mmc: omap_hsmmc: Add support for quirky omap3 hsmmc controller
-  ARM: dts: omap3-ldp: fix mmc configuration
-
- .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |    1 +
- arch/arm/boot/dts/omap3-ldp.dts                    |   23 +++++++++++++++++
- drivers/mmc/host/omap_hsmmc.c                      |   26 +++++++++++++++++---
- 3 files changed, 46 insertions(+), 4 deletions(-)
-
--- 
-1.7.9.5
+Thanks,
+Nish
 
