@@ -1,190 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaBNOtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 09:49:43 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:56420 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaBNOtl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 09:49:41 -0500
+	id S1751945AbaBNOub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 09:50:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:3977 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065AbaBNOu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 09:50:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,845,1384329600"; 
+   d="scan'208";a="481575086"
+Message-ID: <52FE2D44.10006@intel.com>
+Date: Fri, 14 Feb 2014 22:50:44 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140214134349.GB17796@e106331-lin.cambridge.arm.com>
-References: <1392384259-14311-1-git-send-email-marek@goldelico.com>
-	<20140214134349.GB17796@e106331-lin.cambridge.arm.com>
-Date: Fri, 14 Feb 2014 15:49:40 +0100
-Message-ID: <CAAfyv34JALq4khS39mKcBzZtrpSeGhqcn-13yCovbA7UXiOmaQ@mail.gmail.com>
-Subject: Re: [PATCH] power: twl4030_madc_battery: Add device tree support.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hns@goldelico.com" <hns@goldelico.com>
+To: Takashi Iwai <tiwai@suse.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Revert "ACPI / video: Add HP EliteBook Revolve 810 to
+ the blacklist"
+References: <1392381247-28109-1-git-send-email-mika.westerberg@linux.intel.com>	<s5hmwht24ub.wl%tiwai@suse.de>	<20140214140316.GI5018@intel.com>	<s5hfvnl23pq.wl%tiwai@suse.de>	<20140214141652.GJ5018@intel.com>	<s5ha9dt22zp.wl%tiwai@suse.de>	<20140214144524.GK5018@intel.com> <s5hy51dzr9f.wl%tiwai@suse.de>
+In-Reply-To: <s5hy51dzr9f.wl%tiwai@suse.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 2:43 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Fri, Feb 14, 2014 at 01:24:19PM +0000, Marek Belisko wrote:
->> Signed-off-by: Marek Belisko <marek@goldelico.com>
->> ---
->>  .../bindings/power_supply/twl4030_madc_battery.txt |  15 +++
->>  drivers/power/twl4030_madc_battery.c               | 109 +++++++++++++++++++++
->>  2 files changed, 124 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
+On 02/14/2014 10:46 PM, Takashi Iwai wrote:
+> At Fri, 14 Feb 2014 16:45:24 +0200,
+> Mika Westerberg wrote:
 >>
->> diff --git a/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
->> new file mode 100644
->> index 0000000..bebc876
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
->> @@ -0,0 +1,15 @@
->> +twl4030_madc_battery
->> +
->> +Required properties:
->> + - compatible : "ti,twl4030-madc-battery"
->> + - capacity : battery capacity in uAh
->> + - charging-calibration-data : list of voltage(mV):level(%) values for charging calibration (see example)
->> + - discharging-calibration-data : list of voltage(mV):level(%) values for discharging calibration (see example)
->> +
->> +Example:
->> +     madc-battery {
->> +             compatible = "ti,twl4030-madc-battery";
->> +             capacity = <1200000>;
->> +             charging-calibration-data = <4200 100 4100 75 4000 55 3900 25 3800 5 3700 2 3600 1 3300 0>;
->> +             discharging-calibration-data = <4200 100 4100 95 4000 70 3800 50 3700 10 3600 5 3300 0>;
->
-> Please bracket list entries individually.
-OK.
->
->> +     };
->> diff --git a/drivers/power/twl4030_madc_battery.c b/drivers/power/twl4030_madc_battery.c
->> index 7ef445a..2843382 100644
->> --- a/drivers/power/twl4030_madc_battery.c
->> +++ b/drivers/power/twl4030_madc_battery.c
->> @@ -19,6 +19,7 @@
->>  #include <linux/sort.h>
->>  #include <linux/i2c/twl4030-madc.h>
->>  #include <linux/power/twl4030_madc_battery.h>
->> +#include <linux/of.h>
+>> On Fri, Feb 14, 2014 at 03:16:58PM +0100, Takashi Iwai wrote:
+>>> At Fri, 14 Feb 2014 16:16:52 +0200,
+>>> Mika Westerberg wrote:
+>>>>
+>>>> On Fri, Feb 14, 2014 at 03:01:21PM +0100, Takashi Iwai wrote:
+>>>>> At Fri, 14 Feb 2014 16:03:16 +0200,
+>>>>> Mika Westerberg wrote:
+>>>>>>
+>>>>>> On Fri, Feb 14, 2014 at 02:37:00PM +0100, Takashi Iwai wrote:
+>>>>>>> At Fri, 14 Feb 2014 14:34:07 +0200,
+>>>>>>> Mika Westerberg wrote:
+>>>>>>>>
+>>>>>>>> This reverts commit e18ac62fa4b3f16234bab0d5a6627c57dbae9e7e.
+>>>>>>>>
+>>>>>>>> The referenced commit added HP EliteBook Revolve 810 to the ACPI video
+>>>>>>>> detected blacklist so that only the native Intel backlight interface was
+>>>>>>>> exported.
+>>>>>>>>
+>>>>>>>> However, this turned to be wrong solution after all. The ACPI video
+>>>>>>>> interface works and as long as we only use that there are no problems. So
+>>>>>>>> we can revert this commit and stick to use the backlight interface provided
+>>>>>>>> by the ACPI video driver.
+>>>>>>>>
+>>>>>>>> (Using Intel native interface will not work after resume since the ACPI
+>>>>>>>> video driver will restore it's state which takes control over the native
+>>>>>>>> one. That's a separate thing and should be addressed in the ACPI video
+>>>>>>>> driver, I suppose.)
+>>>>>>>>
+>>>>>>>> References: https://bugzilla.kernel.org/show_bug.cgi?id=70231
+>>>>>>>> Cc: Aaron Lu <aaron.lu@intel.com>
+>>>>>>>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>>>>>>>> ---
+>>>>>>>> Rafael, 
+>>>>>>>>
+>>>>>>>> This turned out to be misunderstanding from my side. I should have
+>>>>>>>> investigated this further before submitting the original patch. Sorry about
+>>>>>>>> that.
+>>>>>>>>
+>>>>>>>> Aaron,
+>>>>>>>>
+>>>>>>>> Thanks for the investigation and pointing me to the right direction (e.g to
+>>>>>>>> use acpi_video0 over the native one).
+>>>>>>>
+>>>>>>> Could you check whether the ACPI video still really works even if you
+>>>>>>> remove the recent acpi_osi blacklist entry below?  It might be that
+>>>>>>> BIOS changed its mind to behave more kindly as if handling for Win7.
+>>>>>>>
+>>>>>>>
+>>>>>>> Takashi
+>>>>>>>
+>>>>>>> ---
+>>>>>>> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+>>>>>>> index 10e4964d051a..64d14406465d 100644
+>>>>>>> --- a/drivers/acpi/blacklist.c
+>>>>>>> +++ b/drivers/acpi/blacklist.c
+>>>>>>> @@ -322,6 +322,7 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>>>>>>>  		     DMI_MATCH(DMI_PRODUCT_VERSION, "2349D15"),
+>>>>>>>  		},
+>>>>>>>  	},
+>>>>>>> +#if 0
+>>>>>>>  	{
+>>>>>>>  	.callback = dmi_disable_osi_win8,
+>>>>>>>  	.ident = "HP ProBook 2013 models",
+>>>>>>> @@ -372,6 +373,7 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>>>>>>>  		     DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook 8780w"),
+>>>>>>>  		},
+>>>>>>>  	},
+>>>>>>> +#endif
+>>>>>>>  
+>>>>>>>  	/*
+>>>>>>>  	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
+>>>>>>
+>>>>>> After this patch is applied, the ACPI backlight doesn't work anymore. The
+>>>>>> brightness stays the same, no matter what I do.
+>>>>>
+>>>>> So, you need the video blacklist when acpi_osi blacklist doesn't
+>>>>> exist, right?
+>>>>
+>>>> In my case I don't actually need video blacklist if I use only ACPI video
+>>>> for backlight control. Then it works fine.
+>>>
+>>> Hmm, after removing acpi_osi blacklist above, you loose the ACPI video
+>>> backlight doesn't work, no?  If so, you need the video blacklist.
+>>> Am I missing anything obvious...?
 >>
->>  struct twl4030_madc_battery {
->>       struct power_supply psy;
->> @@ -188,6 +189,110 @@ static int twl4030_cmp(const void *a, const void *b)
->>               ((struct twl4030_madc_bat_calibration *)a)->voltage;
->>  }
->>
->> +#ifdef CONFIG_OF
->> +static struct twl4030_madc_bat_platform_data *
->> +     twl4030_madc_dt_probe(struct platform_device *pdev)
->> +{
->> +     struct twl4030_madc_bat_platform_data *pdata;
->> +     struct device_node *np = pdev->dev.of_node;
->> +     struct property *prop;
->> +     int ret;
->> +     int sz, i, j = 0;
->> +
->> +     pdata = devm_kzalloc(&pdev->dev,
->> +                     sizeof(struct twl4030_madc_bat_platform_data),
->> +                     GFP_KERNEL);
->> +     if (!pdata)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     ret = of_property_read_u32(np, "capacity", &pdata->capacity);
->> +     if (ret != 0)
->> +             return ERR_PTR(-EINVAL);
->> +
->> +     /* parse and prepare charging data */
->> +     prop = of_find_property(np, "charging-calibration-data", &sz);
->> +     if (!prop)
->> +             return ERR_PTR(-EINVAL);
->> +
->> +     if (sz % 2) {
->> +             dev_warn(&pdev->dev, "Count of charging-calibration-data must be even!\n");
->> +             return ERR_PTR(-EINVAL);
->> +     }
->
-> As sz is in bytes this checks that the property is a multiple of 2
-> bytes, not that it has an even number of u32 elements.
->
-> Heiko Stübner recently added of_property_count_u32_elems [1,2]. Use that
-> instead.
-OK I'll convert it to that approach. Then seems code will be much
-easier. Thanks for pointing to it.
->
->> +
->> +     sz /= sizeof(u32);
->> +
->> +     {
->> +             u32 data[sz];
->> +
->> +             ret = of_property_read_u32_array(np,
->> +                             "charging-calibration-data", &data[0], sz);
->> +             if (ret)
->> +                     return ERR_PTR(ret);
->
-> Why not just allocate then try to read, possibly having to free if the
-> read fails?
->
-> Otherwise we're trying to put an arbitrarily large value onto the stack
-> for no good reason.
->
->> +
->> +             pdata->charging = devm_kzalloc(&pdev->dev,
->> +                             sizeof(struct twl4030_madc_bat_calibration) * (sz / 2),
->> +                             GFP_KERNEL);
->> +
->> +             for (i = 0; i < sz; i += 2) {
->> +                     pdata->charging[j].voltage = data[i];
->> +                     pdata->charging[j].level = data[i+1];
->> +                     j++;
->
-> Why not have (i = 0; i < sz/2; i++), and get rid of j?
->
->> +             }
->> +
->> +             pdata->charging_size = sz / 2;
->> +     }
->> +
->> +     /* parse and prepare discharging data */
->> +     prop = of_find_property(np, "discharging-calibration-data", &sz);
->> +     if (!prop)
->> +             return ERR_PTR(-EINVAL);
->> +
->> +     if (sz % 2) {
->> +             dev_warn(&pdev->dev, "Count of discharging-calibration-data must be even!\n");
->> +             return ERR_PTR(-EINVAL);
->> +     }
->
-> This has the same issues as with charging-calibration-data.
->
-> Thanks,
-> Mark.
->
-> [1] http://www.spinics.net/lists/devicetree/msg21358.html
-> [2] http://www.spinics.net/lists/devicetree/msg21502.html
+>> Yes, the machine needs to be in acpi_osi blacklist then the ACPI video
+>> works fine.
+> 
+> The acpi_osi blacklist is just a workaround, and if we have better
+> solutions, it should be removed.  That's why I'm asking it.
+> 
+> So, after removing acpi_osi blacklist, and keeping your video
+> blacklist patch, the backlight works?  If yes, as mentioned, we should
+> think of rather extending this video blacklist to more EliteBook G1
+> and ProBook G1 machines, and remove acpi_osi blacklist instead.
 
-BR,
+Agree.
 
-marek
+> 
+> Now hp-wireless is there, so the rfkill part should work without
+> acpi_osi blacklist, too.
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+Suppose we have some work around of making backlight work for
+them in Win8 mode, it seems the acpi_osi blacklist is ready to
+be removed now?
