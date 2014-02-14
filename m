@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbaBNH6l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 02:58:41 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:44384 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010AbaBNH6h (ORCPT
+	id S1752778AbaBNH64 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 02:58:56 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:41510 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010AbaBNH6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 02:58:37 -0500
+	Fri, 14 Feb 2014 02:58:53 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 17/52] x86, vsyscall: Fix CPU hotplug callback registration
+Subject: [PATCH v2 18/52] x86, intel,
+ uncore: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
         x86@kernel.org, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:22:58 +0530
-Message-ID: <20140214075258.22701.21926.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:23:16 +0530
+Message-ID: <20140214075315.22701.33395.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -27,7 +31,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021407-2000-0000-0000-00000FBA372F
+x-cbid: 14021407-2674-0000-0000-00000CB72134
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -63,34 +67,43 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the vsyscall code in x86 by using this latter form of callback
+Fix the uncore code in intel-x86 by using this latter form of callback
 registration.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kernel/vsyscall_64.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 1f96f93..556eaf2 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -393,9 +393,13 @@ static int __init vsyscall_init(void)
- {
- 	BUG_ON(VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE));
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 29c2487..83c3c8b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -3808,7 +3808,7 @@ static int __init uncore_cpu_init(void)
+ 	if (ret)
+ 		return ret;
  
+-	get_online_cpus();
 +	cpu_notifier_register_begin();
-+
- 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
- 	/* notifier priority > KVM */
--	hotcpu_notifier(cpu_vsyscall_notifier, 30);
-+	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
-+
+ 
+ 	for_each_online_cpu(cpu) {
+ 		int i, phys_id = topology_physical_package_id(cpu);
+@@ -3827,9 +3827,9 @@ static int __init uncore_cpu_init(void)
+ 	}
+ 	on_each_cpu(uncore_cpu_setup, NULL, 1);
+ 
+-	register_cpu_notifier(&uncore_cpu_nb);
++	__register_cpu_notifier(&uncore_cpu_nb);
+ 
+-	put_online_cpus();
 +	cpu_notifier_register_done();
  
  	return 0;
