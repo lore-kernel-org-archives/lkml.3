@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaBOKHs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 05:07:48 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35647 "EHLO
+	id S1752937AbaBOKHx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 05:07:53 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60316 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaBOKHn (ORCPT
+	with ESMTP id S1752760AbaBOKHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 05:07:43 -0500
-Date: Fri, 14 Feb 2014 20:44:24 +0000
+	Sat, 15 Feb 2014 05:07:50 -0500
+Date: Fri, 14 Feb 2014 21:18:09 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Milo Kim <milo.kim@ti.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Jingoo Han <jg1.han@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Message-ID: <20140214204424.GS4451@sirena.org.uk>
-References: <1392359564-7205-1-git-send-email-milo.kim@ti.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140214211809.GI4451@sirena.org.uk>
+References: <1392378602-32302-1-git-send-email-sachin.kamat@linaro.org>
+ <1392378602-32302-11-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gh9b96O0vZdbsJLX"
+	protocol="application/pgp-signature"; boundary="OtZJUqNUNrB9XA/T"
 Content-Disposition: inline
-In-Reply-To: <1392359564-7205-1-git-send-email-milo.kim@ti.com>
+In-Reply-To: <1392378602-32302-11-git-send-email-sachin.kamat@linaro.org>
 X-Cookie: Your lucky color has faded.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 175.45.49.105
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 10/10] Documentation: Add device tree bindings for TI LMU
- devices
+Subject: Re: [PATCH 11/16] regulator: da9055: Use of_get_child_by_name
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,36 +31,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---gh9b96O0vZdbsJLX
+--OtZJUqNUNrB9XA/T
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Feb 14, 2014 at 03:32:44PM +0900, Milo Kim wrote:
-> Bindings for TI LMU, backlight, LM3631 regulator and LM3633 LED are added.
+On Fri, Feb 14, 2014 at 05:19:57PM +0530, Sachin Kamat wrote:
+> of_find_node_by_name walks the allnodes list, and can thus walk
+> outside of the parent node. Use of_get_child_by_name instead.
 
-I don't see actual documentation for the regulators here?  They're there
-in the examples but not in the binding section.
+Applied, thanks.
 
---gh9b96O0vZdbsJLX
+--OtZJUqNUNrB9XA/T
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS/oAlAAoJELSic+t+oim91OIP/0v01vP3RZOAg8r0wJUUL0bz
-TaP7yARbibvdosSvVS0e/pJtUEqAw3+hqgeFpPrl2h9zpaT/lmeam7/EajZKZJno
-VntTVgLMyUHMq9hRuoof/g6fNRp74b6uDJyVgHXTEcmZL+TZ35S7jWfJJNhywBcX
-vOqWyKOm9l/4dxISKXcOyCDAIZD6EbIcYKGIlUxplMGkISH1/O5rAlX8nau8oBTc
-ECPhwSVKudb1B4GLI19TUFAoZ2/lyj+gDYhGcZ5m2ZIyGOgfhve0h2gTlwg7L1O+
-WQEa7KAuWYbcgDW7zR8I1Hs9i7h1+NB7JiqePsWCCuR31MB6Eh9543hWYATNcY2Z
-Z9Bpf8CzmJiDeKO3tWjNBxoHCLvPrPqcE+ZFzVcINOleByEnmlT7pN3yELeGenij
-6gEfkdsAfb5la+4ILitqUwUBsbRkY/GeytOq1MFTM+dgvGoy/tZ+fsPY37DxEQkX
-fa3l5L0r1TbHKK+7HzcUHpdVOVvMjyLA/9XM9qhvF5FcZPexEK1WRBUSpWtO1Mb0
-v3ogQrv6tS4WzHa/UFud118omrI2WaWoXzRgz73rfkwNFeMU45s/D2q9+NnNNB2m
-BcHmBSUbzK3HFzXa4+tyMswVu4cQZYYj3NqqsKHwwZXKaBY7nd7SGNG4VC+pB1CH
-5dbKovTIRLz8YBTjIQBw
-=ptHB
+iQIcBAEBAgAGBQJS/ogOAAoJELSic+t+oim9eWEQAJbONGoab1R5TP+RneBdq3UZ
+ltMA9/TBmYkbhOBMCLRWUg3ZdrH9b/ceMwzjnDlslLlJlzmjeHoAAIM0/fGPNOEy
+bY0OUX/71GnwZArae14LgG+avd2DNvKAUhLz8mxD+O9oSaW3aeJIKo/N00TlOqkl
+p76ktalOh9kGFajPLCGis+JzKLg13R7YdvLPxvftzwBNloBzDurLWxuOMp+frpk0
+TTf59mZV54mlDt1dkSHEsQmL9NgycMvaQ7A9YB2MsF+PJSHDQeUTw4dQI0yTAzrs
+1c+VB9/kibSUJQkZeZUGFfPjGtD9Q+ILoQY9J8k+Y4ilU5LKZdpD1XrR+5ZqTHCq
+CUehU4C9XoE5GuBP6oGAE8C2Xg7Pab2GcF+iuprWoo05T79Vl8D5UPf9OgsMPL5n
+2+Ur/3j6OC7iJVA9+lnf9lQoPlnFhIwKxOaG8vZsYHsxMHpqo0BIpGIRo1yruanc
+/h6oFO/CUUpj/VYgUg8hAuzyfGJqghfSfQ6s5nK+NmGu7dK079bNh7uIEWVdsV6j
+USoUeoyMjJbkdMW+FOnD2PD4rg0dMIN3gqjZXrWAzY0521FD9FvSObzzHnk89mdP
+mCzqfg4RcVwUd3PdNIRVXxPzoKFLkYnY0VvKCBjFzvuKv82u0Is+nVf6S+jC+70S
+6Pc32vYf99p9jHZ3gsVw
+=kmXT
 -----END PGP SIGNATURE-----
 
---gh9b96O0vZdbsJLX--
+--OtZJUqNUNrB9XA/T--
