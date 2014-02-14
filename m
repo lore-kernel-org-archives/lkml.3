@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100AbaBNICH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:02:07 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:43161 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084AbaBNICC (ORCPT
+	id S1753117AbaBNICT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:02:19 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:41212 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216AbaBNICO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:02:02 -0500
+	Fri, 14 Feb 2014 03:02:14 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 32/52] powercap,
- intel-rapl: Fix CPU hotplug callback registration
+Subject: [PATCH v2 33/52] scsi, bnx2i: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
+        srivatsa.bhat@linux.vnet.ibm.com, Eddie Wai <eddie.wai@broadcom.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-scsi@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:26:27 +0530
-Message-ID: <20140214075626.22701.37887.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:26:41 +0530
+Message-ID: <20140214075641.22701.48573.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,7 +28,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021408-3568-0000-0000-000004F0C7BD
+x-cbid: 14021408-5490-0000-0000-000004F303ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -67,60 +64,54 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the intel-rapl code in the powercap driver by using this latter form
-of callback registration. But retain the calls to get/put_online_cpus(),
-since they also protect the function rapl_cleanup_data(). By nesting
-get/put_online_cpus() *inside* cpu_notifier_register_begin/done(), we avoid
-the ABBA deadlock possibility mentioned above.
+Fix the bnx2i code in scsi by using this latter form of callback registration.
 
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Eddie Wai <eddie.wai@broadcom.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: linux-scsi@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- drivers/powercap/intel_rapl.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/scsi/bnx2i/bnx2i_init.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
-index 3c67683..d6c74c1 100644
---- a/drivers/powercap/intel_rapl.c
-+++ b/drivers/powercap/intel_rapl.c
-@@ -1369,6 +1369,9 @@ static int __init rapl_init(void)
- 
- 		return -ENODEV;
+diff --git a/drivers/scsi/bnx2i/bnx2i_init.c b/drivers/scsi/bnx2i/bnx2i_init.c
+index 34c294b..80c03b4 100644
+--- a/drivers/scsi/bnx2i/bnx2i_init.c
++++ b/drivers/scsi/bnx2i/bnx2i_init.c
+@@ -537,11 +537,15 @@ static int __init bnx2i_mod_init(void)
+ 		p->iothread = NULL;
  	}
-+
+ 
 +	cpu_notifier_register_begin();
 +
- 	/* prevent CPU hotplug during detection */
- 	get_online_cpus();
- 	ret = rapl_detect_topology();
-@@ -1380,20 +1383,23 @@ static int __init rapl_init(void)
- 		ret = -ENODEV;
- 		goto done;
+ 	for_each_online_cpu(cpu)
+ 		bnx2i_percpu_thread_create(cpu);
+ 
+ 	/* Initialize per CPU interrupt thread */
+-	register_hotcpu_notifier(&bnx2i_cpu_notifier);
++	__register_hotcpu_notifier(&bnx2i_cpu_notifier);
++
++	cpu_notifier_register_done();
+ 
+ 	return 0;
+ 
+@@ -581,11 +585,15 @@ static void __exit bnx2i_mod_exit(void)
  	}
--	register_hotcpu_notifier(&rapl_cpu_notifier);
-+	__register_hotcpu_notifier(&rapl_cpu_notifier);
- done:
- 	put_online_cpus();
-+	cpu_notifier_register_done();
+ 	mutex_unlock(&bnx2i_dev_lock);
  
- 	return ret;
- }
- 
- static void __exit rapl_exit(void)
- {
+-	unregister_hotcpu_notifier(&bnx2i_cpu_notifier);
 +	cpu_notifier_register_begin();
- 	get_online_cpus();
--	unregister_hotcpu_notifier(&rapl_cpu_notifier);
-+	__unregister_hotcpu_notifier(&rapl_cpu_notifier);
- 	rapl_unregister_powercap();
- 	rapl_cleanup_data();
- 	put_online_cpus();
-+	cpu_notifier_register_done();
- }
  
- module_init(rapl_init);
+ 	for_each_online_cpu(cpu)
+ 		bnx2i_percpu_thread_destroy(cpu);
+ 
++	__unregister_hotcpu_notifier(&bnx2i_cpu_notifier);
++
++	cpu_notifier_register_done();
++
+ 	iscsi_unregister_transport(&bnx2i_iscsi_transport);
+ 	cnic_unregister_driver(CNIC_ULP_ISCSI);
+ }
 
