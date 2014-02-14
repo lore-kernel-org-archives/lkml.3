@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaBNID1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:03:27 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:44856 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373AbaBNIDY (ORCPT
+	id S1753213AbaBNIDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:03:40 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:49121 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191AbaBNIDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:03:24 -0500
+	Fri, 14 Feb 2014 03:03:37 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 38/52] drivers/base/topology.c: Fix CPU hotplug callback
- registration
+Subject: [PATCH v2 39/52] clocksource,
+ dummy-timer: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:27:51 +0530
-Message-ID: <20140214075750.22701.57260.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:28:05 +0530
+Message-ID: <20140214075804.22701.19937.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,7 +29,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021408-0260-0000-0000-0000045B72CF
+x-cbid: 14021408-8878-0000-0000-00000AE09E15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -65,43 +65,43 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the topology code by using this latter form of callback registration.
+Fix the clocksource dummy-timer code by using this latter form of callback
+registration.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- drivers/base/topology.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/clocksource/dummy_timer.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/topology.c b/drivers/base/topology.c
-index 94ffee3..a738d10 100644
---- a/drivers/base/topology.c
-+++ b/drivers/base/topology.c
-@@ -161,16 +161,20 @@ static int topology_cpu_callback(struct notifier_block *nfb,
- static int topology_sysfs_init(void)
+diff --git a/drivers/clocksource/dummy_timer.c b/drivers/clocksource/dummy_timer.c
+index b3eb582..ad35725 100644
+--- a/drivers/clocksource/dummy_timer.c
++++ b/drivers/clocksource/dummy_timer.c
+@@ -56,14 +56,19 @@ static struct notifier_block dummy_timer_cpu_nb = {
+ 
+ static int __init dummy_timer_register(void)
  {
- 	int cpu;
--	int rc;
-+	int rc = 0;
+-	int err = register_cpu_notifier(&dummy_timer_cpu_nb);
++	int err = 0;
 +
 +	cpu_notifier_register_begin();
++	err = __register_cpu_notifier(&dummy_timer_cpu_nb);
+ 	if (err)
+-		return err;
++		goto out;
  
- 	for_each_online_cpu(cpu) {
- 		rc = topology_add_dev(cpu);
- 		if (rc)
--			return rc;
-+			goto out;
- 	}
--	hotcpu_notifier(topology_cpu_callback, 0);
-+	__hotcpu_notifier(topology_cpu_callback, 0);
+ 	/* We won't get a call on the boot CPU, so register immediately */
+ 	if (num_possible_cpus() > 1)
+ 		dummy_timer_setup();
  
 -	return 0;
 +out:
 +	cpu_notifier_register_done();
-+	return rc;
++	return err;
  }
- 
- device_initcall(topology_sysfs_init);
+ early_initcall(dummy_timer_register);
 
