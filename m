@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaBNQLX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 11:11:23 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:42065 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaBNQLW (ORCPT
+	id S1752824AbaBNQMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 11:12:50 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:64982 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609AbaBNQMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 11:11:22 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
-Date: Fri, 14 Feb 2014 17:12:27 +0100
-Message-ID: <1790131.DSZsj6HrSK@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CANqRtoS-d-CW3XX3_E2dgJ83btRZYWiMCYmWUJAPqh9EeBhLEQ@mail.gmail.com>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <107109887.afEv2P92gg@avalon> <CANqRtoS-d-CW3XX3_E2dgJ83btRZYWiMCYmWUJAPqh9EeBhLEQ@mail.gmail.com>
+	Fri, 14 Feb 2014 11:12:49 -0500
+Message-ID: <52FE407C.3080002@gmail.com>
+Date: Fri, 14 Feb 2014 18:12:44 +0200
+From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Will Deacon <will.deacon@arm.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Pavel Machek <pavel@ucw.cz>, Sebastian Reichel <sre@ring0.de>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [BISECTED] ssh - Received disconnect from x.x.x.x: 2: Bad packet
+ length 3149594624
+References: <52FD08D1.3030405@gmail.com> <20140213182105.GN13576@mudshark.cambridge.arm.com> <52FD1243.9040706@gmail.com> <20140213192909.GO13576@mudshark.cambridge.arm.com>
+In-Reply-To: <20140213192909.GO13576@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
 
-On Saturday 15 February 2014 01:01:30 Magnus Damm wrote:
-> On Sat, Feb 15, 2014 at 12:53 AM, Laurent Pinchart wrote:
-> > On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
-> >> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
-> >> > +Channels Optional Properties:
-> >> > +
-> >> > +  - clock-source-rating: rating of the timer as a clock source device.
-> >> > +  - clock-event-rating: rating of the timer as a clock event device.
-> >> 
-> >> This feels like a leak of Linux internals. Why do you need this?
-> > 
-> > You're right, it is. The clock source and clock event ratings are
-> > currently configured through platform data, I'll need to find a way to
-> > compute them in the driver instead.
-> 
-> That would be very good!
 
-Any pointer would be appreciated :-) How did you compute the various ratings 
-used in platform data all over the place ?
+On 13.02.2014 21:29, Will Deacon wrote:
+>
+> Can you try hacking crypto/memneq.c so that it doesn't use
+> CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS please? That would at least point the
+> finger at net/mac80211/rx.c or similar.
+>
+> Cheers,
+>
+> Will
+>
 
-> > There's still one piece of Linux-specific data I need though, as I need to
-> > specify for each channel whether to use it as a clock source device, a
-> > clock event device, both of them or none. That's configuration
-> > information that needs to be provided somehow.
-> 
-> I think you can decide clock source or clock event assignment based on
-> number of channels available. If you have only a single channel then both
-> clock event and clock source need to be supported. Otherwise use one channel
-> for clock source and the rest for clock events.
+Well, I am lazy so I hacked net/mac80211/rx.c first:
 
-That won't match the current situation. Look at CMT0 in r8a7790 for instance. 
-There's two hardware channels available, and we only use the first one, for 
-clock events only.
+index c24ca0d..6839c77 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1963,7 +1963,7 @@ ieee80211_deliver_skb(struct ieee80211_rx_data *rx)
+                 }
+         }
 
-> This is probably out of scope for this DT conversion, but it would be neat
-> if you somehow could specify the CPU affinity for a channel to tie a clock
-> event to an individual CPU core. This would make a a per-cpu timer unless
-> I'm mistaken. But that's more of a software policy than anything else.
+-#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
++//#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+         if (skb) {
+                 /* 'align' will only take the values 0 or 2 here since all
+                  * frames are required to be aligned to 2-byte boundaries
+@@ -1987,7 +1987,7 @@ ieee80211_deliver_skb(struct ieee80211_rx_data *rx)
+                         }
+                 }
+         }
+-#endif
++//#endif
 
-Yes, that's a configuration that needs to be specified somewhere. I don't know 
-where though.
+         if (skb) {
+                 /* deliver to local stack */
 
--- 
-Regards,
 
-Laurent Pinchart
+and that seems to fix the problem.
 
+I am not sure whom I should forward the problem.
+
+Thanks,
+Ivo
