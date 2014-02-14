@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaBNMMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 07:12:50 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:46815 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312AbaBNMMs (ORCPT
+	id S1752371AbaBNMNO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 07:13:14 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:37499 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbaBNMMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 07:12:48 -0500
+	Fri, 14 Feb 2014 07:12:49 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/2] timer: Spare IPI when deferrable timer is queued on idle remote targets
-Date: Fri, 14 Feb 2014 13:12:39 +0100
-Message-Id: <1392379960-4758-2-git-send-email-fweisbec@gmail.com>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 0/2] dynticks: A few updates
+Date: Fri, 14 Feb 2014 13:12:38 +0100
+Message-Id: <1392379960-4758-1-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1392379960-4758-1-git-send-email-fweisbec@gmail.com>
-References: <1392379960-4758-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+Hi,
 
-When a timer is enqueued or modified on a remote target, the latter is
-expected to see and handle this timer on its next tick. However if the
-target is idle and CONFIG_NO_HZ_IDLE=y, the CPU may be sleeping tickless
-and the timer may be ignored.
+A small pair of updates for the dynticks code. The patch from Viresh removes a
+few scheduler IPIs that I have seen on boot which are there to wake up CPUs when some
+deferrable timers are enqueued. Those were enqueued on all CPUs so there is a possible
+big round of IPI. And those can be avoided with the first patch. On my machine the main
+sources of these were MCE, vmstat/SLAB, cpufreq. They happen either on initcall or cpu hotplug.
 
-wake_up_nohz_cpu() takes care of that by setting TIF_NEED_RESCHED and
-sending an IPI to idle targets so that the tick is reevaluated on the
-idle loop through the tick_nohz_idle_*() APIs.
+But deferrable timers happen anytime, not just at boot. It depends on your config and
+your load. So the positive impact of the first patch should be broader.
 
-Now this is all performed regardless of the power properties of the
-timer. If the timer is deferrable, idle targets don't need to be woken
-up. Only the next buzy tick needs to care about it, and no IPI kick
-is needed for that to happen.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/dynticks-testing.git
+	timers/core
 
-So lets spare the IPI on idle targets when the timer is deferrable.
+Thanks.
 
-Meanwhile we keep the current behaviour on full dynticks targets. We can
-spare IPIs on idle full dynticks targets as well but some tricky races
-against idle_cpu() must be dealt all along to make sure that the timer
-is well handled after idle exit. We can deal with that later since
-NO_HZ_FULL already has more important powersaving issues.
-
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/timer.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+Paul Gortmaker (1):
+  nohz: ensure users are aware boot CPU is not NO_HZ_FULL
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index accfd24..881f883 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -939,8 +939,15 @@ void add_timer_on(struct timer_list *timer, int cpu)
- 	 * with the timer by holding the timer base lock. This also
- 	 * makes sure that a CPU on the way to stop its tick can not
- 	 * evaluate the timer wheel.
-+	 *
-+	 * Spare the IPI for deferrable timers on idle targets though.
-+	 * The next buzy ticks will take care of it. Except full dynticks
-+	 * require special care against races with idle_cpu(), lets deal
-+	 * with that later.
- 	 */
--	wake_up_nohz_cpu(cpu);
-+	if (!tbase_get_deferrable(timer->base) || tick_nohz_full_cpu(cpu))
-+		wake_up_nohz_cpu(cpu);
-+
- 	spin_unlock_irqrestore(&base->lock, flags);
- }
- EXPORT_SYMBOL_GPL(add_timer_on);
+Viresh Kumar (1):
+  timer: Spare IPI when deferrable timer is queued on idle remote
+    targets
+
+ kernel/time/Kconfig | 2 +-
+ kernel/timer.c      | 9 ++++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
 -- 
 1.8.3.1
 
