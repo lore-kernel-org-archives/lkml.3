@@ -1,274 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaBNBAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:00:33 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:37461 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaBNA7I (ORCPT
+	id S1753149AbaBNBAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 20:00:37 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:61717 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601AbaBNA76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 19:59:08 -0500
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: linux-sh@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 02/27] clocksource: sh_cmt: Rename struct sh_cmt_priv to sh_cmt_device
-Date: Fri, 14 Feb 2014 01:59:40 +0100
-Message-Id: <1392339605-20691-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	Thu, 13 Feb 2014 19:59:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <52FD458D.6020107@redhat.com>
+References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
+	<52F3670D.5090608@redhat.com>
+	<CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
+	<52FD2908.8000009@redhat.com>
+	<52FD458D.6020107@redhat.com>
+Date: Thu, 13 Feb 2014 16:59:56 -0800
+Message-ID: <CAMEtUuwfSYr=7+_8jKryUMUTL1NE-wRV_h=PX7uKdkUebgGiPg@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Channel data is private as well, rename priv to device to make the
-distrinction between the core device and the channels clearer.
+On Thu, Feb 13, 2014 at 2:22 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 02/13/2014 09:20 PM, Daniel Borkmann wrote:
+>>
+>> On 02/07/2014 02:20 AM, Alexei Starovoitov wrote:
+>> ...
+>>>
+>>> Hi Daniel,
+>>
+>>
+>> Thanks for your answer and sorry for the late reply.
+>>
+>>> Thank you for taking a look. Good questions. I had the same concerns.
+>>> Old BPF was carefully extended in specific places.
+>>> End result may look big at first glance, but every extension has specific
+>>> reason behind it. I tried to explain the reasoning in
+>>> Documentation/bpf_jit.txt
+>>>
+>>> I'm planning to write an on-the-fly converter from old BPF to BPF64
+>>> when BPF64 manages to demonstrate that it is equally safe.
+>>> It is straight forward to convert. Encoding is very similar.
+>>> Core concepts are the same.
+>>> Try diff include/uapi/linux/filter.h include/linux/bpf.h
+>>> to see how much is reused.
+>>>
+>>> I believe that old BPF outlived itself and BPF64 should
+>>> replace it in all current use cases plus a lot more.
+>>> It just cannot happen at once.
+>>> BPF64 can come in. bpf32->bpf64 converter functioning.
+>>> JIT from bpf64->aarch64 and may be sparc64 needs to be in place.
+>>> Then old bpf can fade away.
+>>
+>>
+>> Do you see a possibility to integrate your work step by step? That is,
+>> to first integrate the interpreter part only; meaning, to detect "old"
+>> BPF programs e.g. coming from SO_ATTACH_FILTER et al and run them in
+>> compatibility mode while extended BPF is fully integrated and replaces
+>> the old engine in net/core/filter.c. Maybe, "old" programs can be
+>> transformed transparently to the new representation and then would be
+>> good to execute in eBPF. If possible, in such a way that in the first
+>> step JIT compilers won't need any upgrades. Once that is resolved,
+>> JIT compilers could successively migrate, arch by arch, to compile the
+>> new code? And last but not least the existing tools as well for handling
+>> eBPF. I think, if possible, that would be great. Also, I unfortunately
+>> haven't looked into your code too deeply yet due to time constraints,
+>> but I'm wondering e.g. for accessing some skb fields we currently use
+>> the "hack" to "overload" load instructions with negative arguments. Do
+>> we have a sort of "meta" instruction that is extendible in eBPF to avoid
+>> such things in future?
+>>
+>>>> First of all, I think it's very interesting work ! I'm just a bit
+>>>> concerned
+>>>> that this _huge_ patchset with 64 bit BPF, or however we call it, will
+>>>> line
+>>>
+>>>
+>>> Huge?
+>>> kernel is only 2k
+>>> the rest is 6k of userspace LLVM backend where most of it is llvm's
+>>> boilerplate code. GCC backend for BPF is 3k.
+>>> The goal is to have both GCC and LLVM backends to be upstreamed
+>>> when kernel pieces are agreed upon.
+>>> For comparison existing tools/net/bpf* is 2.5k
+>>> but here with 6k we get optimizing compiler from C and assembler.
+>>>
+>>>> up in one row next to the BPF code we currently have and next to new
+>>>> nftables
+>>>> engine and we will end up with three such engines which do quite similar
+>>>> things and are all exposed to user space thus they need to be maintained
+>>>> _forever_, adding up legacy even more. What would be the long-term
+>>>> future
+>>>> use
+>>>> cases where the 64 bit engine comes into place compared to the current
+>>>> BPF
+>>>> engine? What are the concrete killer features? I didn't went through
+>>>> your
+>>>
+>>>
+>>> killer features vs old bpf are:
+>>> - zero-cost function calls
+>>> - 32-bit vs 64-bit
+>>> - optimizing compiler that can compile C into BPF64
+>>>
+>>> Why call kernel function from BPF?
+>>> So that BPF instruction set has to be extended only once and JITs are
+>>> written only once.
+>>> Over the years many extensions crept into old BPF as 'negative offsets'.
+>>> but JITs don't support all of them and assume bpf input as 'skb' only.
+>>> seccomp is using old bpf, but, because of these limitations, cannot use
+>>> JIT.
+>>> BPF64 allows seccomp to be JITed, since bpf input is generalized
+>>> as 'struct bpf_context'.
+>>> New 'negative offset' extension for old bpf would mean implementing it in
+>>> JITs of all architectures? Painful, but doable. We can do better.
+>
+>
+> I'm very curious, do you also have any performance numbers, e.g. for
+> networking by taking JIT'ed/non-JIT'ed BPF filters and compare them against
+> JIT'ed/non-JIT'ed eBPF filters to see how many pps we gain or loose e.g.
+> for a scenario with a middle box running cls_bpf .. or some other macro/
+> micro benchmark just to get a picture where both stand in terms of
+> performance? Who knows, maybe it would outperform nftables engine as
+> well? ;-) How would that look on a 32bit arch with eBPF that is 64bit?
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/clocksource/sh_cmt.c | 116 +++++++++++++++++++++----------------------
- 1 file changed, 58 insertions(+), 58 deletions(-)
+I don't have jited/non-jited numbers, but I suspect for micro-benchmarks
+the gap should be big. I was shooting for near native performance after JIT.
 
-diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index 12ccd11..68cca0a 100644
---- a/drivers/clocksource/sh_cmt.c
-+++ b/drivers/clocksource/sh_cmt.c
-@@ -35,10 +35,10 @@
- #include <linux/pm_domain.h>
- #include <linux/pm_runtime.h>
- 
--struct sh_cmt_priv;
-+struct sh_cmt_device;
- 
- struct sh_cmt_channel {
--	struct sh_cmt_priv *cmt;
-+	struct sh_cmt_device *cmt;
- 
- 	struct irqaction irqaction;
- 
-@@ -54,7 +54,7 @@ struct sh_cmt_channel {
- 	bool cs_enabled;
- };
- 
--struct sh_cmt_priv {
-+struct sh_cmt_device {
- 	struct platform_device *pdev;
- 
- 	void __iomem *mapbase;
-@@ -695,136 +695,136 @@ static int sh_cmt_register(struct sh_cmt_channel *ch, char *name,
- 	return 0;
- }
- 
--static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
-+static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
- {
- 	struct sh_timer_config *cfg = pdev->dev.platform_data;
--	struct sh_cmt_channel *ch = &p->channel;
-+	struct sh_cmt_channel *ch = &cmt->channel;
- 	struct resource *res, *res2;
- 	int irq, ret;
- 	ret = -ENXIO;
- 
--	memset(p, 0, sizeof(*p));
--	p->pdev = pdev;
-+	memset(cmt, 0, sizeof(*cmt));
-+	cmt->pdev = pdev;
- 
- 	if (!cfg) {
--		dev_err(&p->pdev->dev, "missing platform data\n");
-+		dev_err(&cmt->pdev->dev, "missing platform data\n");
- 		goto err0;
- 	}
- 
--	res = platform_get_resource(p->pdev, IORESOURCE_MEM, 0);
-+	res = platform_get_resource(cmt->pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
--		dev_err(&p->pdev->dev, "failed to get I/O memory\n");
-+		dev_err(&cmt->pdev->dev, "failed to get I/O memory\n");
- 		goto err0;
- 	}
- 
- 	/* optional resource for the shared timer start/stop register */
--	res2 = platform_get_resource(p->pdev, IORESOURCE_MEM, 1);
-+	res2 = platform_get_resource(cmt->pdev, IORESOURCE_MEM, 1);
- 
--	irq = platform_get_irq(p->pdev, 0);
-+	irq = platform_get_irq(cmt->pdev, 0);
- 	if (irq < 0) {
--		dev_err(&p->pdev->dev, "failed to get irq\n");
-+		dev_err(&cmt->pdev->dev, "failed to get irq\n");
- 		goto err0;
- 	}
- 
- 	/* map memory, let mapbase point to our channel */
--	p->mapbase = ioremap_nocache(res->start, resource_size(res));
--	if (p->mapbase == NULL) {
--		dev_err(&p->pdev->dev, "failed to remap I/O memory\n");
-+	cmt->mapbase = ioremap_nocache(res->start, resource_size(res));
-+	if (cmt->mapbase == NULL) {
-+		dev_err(&cmt->pdev->dev, "failed to remap I/O memory\n");
- 		goto err0;
- 	}
- 
- 	/* map second resource for CMSTR */
--	p->mapbase_str = ioremap_nocache(res2 ? res2->start :
--					 res->start - cfg->channel_offset,
--					 res2 ? resource_size(res2) : 2);
--	if (p->mapbase_str == NULL) {
--		dev_err(&p->pdev->dev, "failed to remap I/O second memory\n");
-+	cmt->mapbase_str = ioremap_nocache(res2 ? res2->start :
-+					   res->start - cfg->channel_offset,
-+					   res2 ? resource_size(res2) : 2);
-+	if (cmt->mapbase_str == NULL) {
-+		dev_err(&cmt->pdev->dev, "failed to remap I/O second memory\n");
- 		goto err1;
- 	}
- 
- 	/* request irq using setup_irq() (too early for request_irq()) */
--	ch->irqaction.name = dev_name(&p->pdev->dev);
-+	ch->irqaction.name = dev_name(&cmt->pdev->dev);
- 	ch->irqaction.handler = sh_cmt_interrupt;
- 	ch->irqaction.dev_id = ch;
- 	ch->irqaction.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING;
- 
- 	/* get hold of clock */
--	p->clk = clk_get(&p->pdev->dev, "cmt_fck");
--	if (IS_ERR(p->clk)) {
--		dev_err(&p->pdev->dev, "cannot get clock\n");
--		ret = PTR_ERR(p->clk);
-+	cmt->clk = clk_get(&cmt->pdev->dev, "cmt_fck");
-+	if (IS_ERR(cmt->clk)) {
-+		dev_err(&cmt->pdev->dev, "cannot get clock\n");
-+		ret = PTR_ERR(cmt->clk);
- 		goto err2;
- 	}
- 
--	ret = clk_prepare(p->clk);
-+	ret = clk_prepare(cmt->clk);
- 	if (ret < 0)
- 		goto err3;
- 
- 	if (res2 && (resource_size(res2) == 4)) {
- 		/* assume both CMSTR and CMCSR to be 32-bit */
--		p->read_control = sh_cmt_read32;
--		p->write_control = sh_cmt_write32;
-+		cmt->read_control = sh_cmt_read32;
-+		cmt->write_control = sh_cmt_write32;
- 	} else {
--		p->read_control = sh_cmt_read16;
--		p->write_control = sh_cmt_write16;
-+		cmt->read_control = sh_cmt_read16;
-+		cmt->write_control = sh_cmt_write16;
- 	}
- 
- 	if (resource_size(res) == 6) {
--		p->width = 16;
--		p->read_count = sh_cmt_read16;
--		p->write_count = sh_cmt_write16;
--		p->overflow_bit = 0x80;
--		p->clear_bits = ~0x80;
-+		cmt->width = 16;
-+		cmt->read_count = sh_cmt_read16;
-+		cmt->write_count = sh_cmt_write16;
-+		cmt->overflow_bit = 0x80;
-+		cmt->clear_bits = ~0x80;
- 	} else {
--		p->width = 32;
--		p->read_count = sh_cmt_read32;
--		p->write_count = sh_cmt_write32;
--		p->overflow_bit = 0x8000;
--		p->clear_bits = ~0xc000;
-+		cmt->width = 32;
-+		cmt->read_count = sh_cmt_read32;
-+		cmt->write_count = sh_cmt_write32;
-+		cmt->overflow_bit = 0x8000;
-+		cmt->clear_bits = ~0xc000;
- 	}
- 
--	if (p->width == (sizeof(ch->max_match_value) * 8))
-+	if (cmt->width == (sizeof(ch->max_match_value) * 8))
- 		ch->max_match_value = ~0;
- 	else
--		ch->max_match_value = (1 << p->width) - 1;
-+		ch->max_match_value = (1 << cmt->width) - 1;
- 
--	ch->cmt = p;
-+	ch->cmt = cmt;
- 	ch->match_value = ch->max_match_value;
- 	raw_spin_lock_init(&ch->lock);
- 
--	ret = sh_cmt_register(ch, (char *)dev_name(&p->pdev->dev),
-+	ret = sh_cmt_register(ch, (char *)dev_name(&cmt->pdev->dev),
- 			      cfg->clockevent_rating,
- 			      cfg->clocksource_rating);
- 	if (ret) {
--		dev_err(&p->pdev->dev, "registration failed\n");
-+		dev_err(&cmt->pdev->dev, "registration failed\n");
- 		goto err4;
- 	}
- 	ch->cs_enabled = false;
- 
- 	ret = setup_irq(irq, &ch->irqaction);
- 	if (ret) {
--		dev_err(&p->pdev->dev, "failed to request irq %d\n", irq);
-+		dev_err(&cmt->pdev->dev, "failed to request irq %d\n", irq);
- 		goto err4;
- 	}
- 
--	platform_set_drvdata(pdev, p);
-+	platform_set_drvdata(pdev, cmt);
- 
- 	return 0;
- err4:
--	clk_unprepare(p->clk);
-+	clk_unprepare(cmt->clk);
- err3:
--	clk_put(p->clk);
-+	clk_put(cmt->clk);
- err2:
--	iounmap(p->mapbase_str);
-+	iounmap(cmt->mapbase_str);
- err1:
--	iounmap(p->mapbase);
-+	iounmap(cmt->mapbase);
- err0:
- 	return ret;
- }
- 
- static int sh_cmt_probe(struct platform_device *pdev)
- {
--	struct sh_cmt_priv *p = platform_get_drvdata(pdev);
-+	struct sh_cmt_device *cmt = platform_get_drvdata(pdev);
- 	struct sh_timer_config *cfg = pdev->dev.platform_data;
- 	int ret;
- 
-@@ -833,20 +833,20 @@ static int sh_cmt_probe(struct platform_device *pdev)
- 		pm_runtime_enable(&pdev->dev);
- 	}
- 
--	if (p) {
-+	if (cmt) {
- 		dev_info(&pdev->dev, "kept as earlytimer\n");
- 		goto out;
- 	}
- 
--	p = kmalloc(sizeof(*p), GFP_KERNEL);
--	if (p == NULL) {
-+	cmt = kmalloc(sizeof(*cmt), GFP_KERNEL);
-+	if (cmt == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate driver data\n");
- 		return -ENOMEM;
- 	}
- 
--	ret = sh_cmt_setup(p, pdev);
-+	ret = sh_cmt_setup(cmt, pdev);
- 	if (ret) {
--		kfree(p);
-+		kfree(cmt);
- 		pm_runtime_idle(&pdev->dev);
- 		return ret;
- 	}
--- 
-1.8.3.2
+So I took flow_dissector() function, tweaked it a bit and compiled into BPF.
+x86_64 skb_flow_dissect() same skb (all cached)          -  42 nsec per call
+x86_64 skb_flow_dissect() different skbs (cache misses)  - 141 nsec per call
+bpf_jit skb_flow_dissect() same skb (all cached)         -  51 nsec per call
+bpf_jit skb_flow_dissect() different skbs (cache misses) - 135 nsec per call
 
+C->BPF64->x86_64 is slower than C->x86_64 when all data is in cache,
+but presence of cache misses hide extra insns.
+
+For gre flow_dissector() looks into inner packet, but for vxlan it does not,
+since it needs to know udp port number. We can extend it with if (static_key)
+and walk the list of udp_offload_base->offload->port like we do in
+udp_gro_receive(),
+but for RPS we just need a hash. I think custom loadable
+flow_dissector() is the way to go.
+If we know that majority of the traffic on the given machine is vxlan to port N
+we can hard code this into BPF program. Don't need to walk outer packet either.
+Just pick ip/port from inner. It's doable with old BPF too.
+
+What we used to think as dynamic, with BPF can be hard coded.
+
+As soon as I have time I'm thinking to play with nftables. The idea is:
+rules are changed rarely, but a lot of traffic goes through them,
+so we can spend time optimizing them.
+
+Either user input or nft program can be converted to C, then LLVM invoked
+to optimize the whole thing, generate BPF and load it.
+Adding a rule will take time, but if execution of such ip/nftables
+will be faster
+the end user will benefit.
