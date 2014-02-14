@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840AbaBNKqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 05:46:43 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:62425 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaBNKqm (ORCPT
+	id S1751965AbaBNKrF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 05:47:05 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:44604 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbaBNKrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 05:46:42 -0500
+	Fri, 14 Feb 2014 05:47:02 -0500
+Date: Fri, 14 Feb 2014 10:46:55 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Angus Clark <Angus.Clark@st.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
+        DCG_UPD_stlinux_kernel@list.st.com, olivier.clergeaud@st.com
+Subject: Re: [PATCH RESEND v4 00/37] mtd: st_spi_fsm: Add new driver
+Message-ID: <20140214104655.GE9462@lee--X1>
+References: <1390473085-24626-1-git-send-email-lee.jones@linaro.org>
+ <52FA3B1A.2070304@st.com>
 MIME-Version: 1.0
-In-Reply-To: <20140213131720.GC3403@lee--X1>
-References: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
-	<CACRpkdYnw3S3YEa8b0Pmipp892unBhVBMs0kqSNBAz5i0CVA0g@mail.gmail.com>
-	<20140213131720.GC3403@lee--X1>
-Date: Fri, 14 Feb 2014 11:46:41 +0100
-Message-ID: <CACRpkdaoqwiy0n-oN0gKqgX_enGXw+BggRQy9yz8eQNyJ3MvsA@mail.gmail.com>
-Subject: Re: [PATCH] mfd: dbx500/abx500: root out hardcoded IRQ assignments
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>, "arm@kernel.org" <arm@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52FA3B1A.2070304@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> <linus.walleij@linaro.org> wrote:
->>
->> > The DBx500 and ABx500 should be getting their IRQs from the
->> > device tree and nowhere else. Get rid of all the static assignments
->> > everywhere, delete it from the driver, platform data and the
->> > board files in one swift strike.
->> >
->> > Lots of cross-dependencies in the MFD drivers for PRCMU and
->> > AB8500 makes it necessary to strike everywhere at once to
->> > eradicate IRQs passed as resources and platform data to the left
->> > and right around the platform.
->> >
->> > Cc: Mark Brown <broonie@kernel.org>
->> > Cc: Samuel Ortiz <sameo@linux.intel.com>
->> > Cc: Lee Jones <lee.jones@linaro.org>
->> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> OK no major complaints, Lee can you queue this in the MFD tree
->> so we get some Linux-next rotation? If we need an immutable
->> branch remains to be seen, maybe we can merge this throug MFD
->> exclusively.
->
-> I'm happy to do either, but the latter will require an ARM-SoC Ack.
+> Sorry for the delay.  I have now had a quick look through the patches.  Just a
+> couple of points :-)
+> 
+> * stfsm_probe(): stfsm_fetch_platform_configs() needs to be called *before*
+> config() -- config() is based on platform capabilities.  Conceptually,
+> stfsm_fetch_platform_configs() should be called before stfsm_jedec_probe(), and
+> FLASH_FLAG_32BIT_ADDR should be moved out of stfsm_fetch_platform_configs(),
+> placed just after stfsm_jedec_probe() but before config().
+> 
+> * fsm_wait_busy(): logic not quite correct if we get a P_ERR or E_ERR error
+> after a timeout.  I am also not sure about returning (uint8_t)-EIO.  For what
+> its worth, this is what I did in response to Brian's comment about the race
+> condition:
 
-OK Olof/Arnd/Kevin: can you ACK this patch for queueing
-through MFD? It only hits arch/arm/mach-ux500/*
+Thanks Angus.
 
-Yours,
-Linus Walleij
+Brain,
+
+If I fix up the review comments from  Angus', Ludovic and Christophe
+are you happy to finally accept the driver? Or do you have any final
+review comments that you wish me to apply for v5?
+
+> On 01/23/2014 10:30 AM, Lee Jones wrote:
+> > Version 4:
+> >   Tended to Brian's review comments
+> >     - Checkpatch acceptance
+> >     - MODULE_DEVICE_TABLE() name slip correction
+> >     - Timeout issue(s) resolved
+> >     - Potential infinite loop mitigated
+> >     - Code clarity suggests heeded
+> >     - Duplication with MTD core code removed
+> >     - Upgraded to using ROUND_UP() helper
+> >     - Moved non-shared header code into main driver
+> >     - Relocated dynamic msg sequence stores into main struct
+> >     - Averted adaption of static (table) data
+> >     - Basic whitespace/spelling/data type/dev_err suggestions applied
+> >   
+> > Version 3:
+> >   Okay, this thing should be fully functional now. Identify a chip
+> >   based on it's JEDEC ID, Read, Write, Erase (all or by sector).
+> >   Support for various chip quirks added too.
+> > 
+> > Version 2:
+> >   The first bunch of these patches have been on the MLs before, but
+> >   didn't receive a great deal of attention for the most part. We are
+> >   a little more featureful this time however. We can now successfully
+> >   setup and configure the N25Q256. We still can't read/write/erase
+> >   it though. I'll start work on that next week and will provide it in
+> >   the next instalment.
+> > 
+> > Version 1:
+> >   First stab at getting this thing Mainlined. It doesn't do a great deal
+> >   yet, but we are able to initialise the device and dynamically set it up
+> >   correctly based on an extracted JEDEC ID.
+> > 
+> >  Documentation/devicetree/bindings/mtd/st-fsm.txt |   26 ++
+> >  arch/arm/boot/dts/stih416-b2105.dts              |   14 +
+> >  arch/arm/boot/dts/stih416-pinctrl.dtsi           |   12 +
+> >  drivers/mtd/devices/Kconfig                      |    8 +
+> >  drivers/mtd/devices/Makefile                     |    1 +
+> >  drivers/mtd/devices/serial_flash_cmds.h          |   81 ++++
+> >  drivers/mtd/devices/st_spi_fsm.c                 | 2124 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > 7 files changed, 2266 insertions(+)
+> > 
+> > 
+> 
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
