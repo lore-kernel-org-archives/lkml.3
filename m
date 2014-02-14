@@ -1,177 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaBNBAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 20:00:37 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:61717 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbaBNA76 (ORCPT
+	id S1753103AbaBNBAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 20:00:30 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37461 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbaBNA7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 19:59:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <52FD458D.6020107@redhat.com>
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
-	<52F3670D.5090608@redhat.com>
-	<CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com>
-	<52FD2908.8000009@redhat.com>
-	<52FD458D.6020107@redhat.com>
-Date: Thu, 13 Feb 2014 16:59:56 -0800
-Message-ID: <CAMEtUuwfSYr=7+_8jKryUMUTL1NE-wRV_h=PX7uKdkUebgGiPg@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Feb 2014 19:59:19 -0500
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+To: linux-sh@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 27/27] ARM: shmobile: koelsch-reference: Enable CMT0 in device tree
+Date: Fri, 14 Feb 2014 02:00:05 +0100
+Message-Id: <1392339605-20691-28-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 2:22 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 02/13/2014 09:20 PM, Daniel Borkmann wrote:
->>
->> On 02/07/2014 02:20 AM, Alexei Starovoitov wrote:
->> ...
->>>
->>> Hi Daniel,
->>
->>
->> Thanks for your answer and sorry for the late reply.
->>
->>> Thank you for taking a look. Good questions. I had the same concerns.
->>> Old BPF was carefully extended in specific places.
->>> End result may look big at first glance, but every extension has specific
->>> reason behind it. I tried to explain the reasoning in
->>> Documentation/bpf_jit.txt
->>>
->>> I'm planning to write an on-the-fly converter from old BPF to BPF64
->>> when BPF64 manages to demonstrate that it is equally safe.
->>> It is straight forward to convert. Encoding is very similar.
->>> Core concepts are the same.
->>> Try diff include/uapi/linux/filter.h include/linux/bpf.h
->>> to see how much is reused.
->>>
->>> I believe that old BPF outlived itself and BPF64 should
->>> replace it in all current use cases plus a lot more.
->>> It just cannot happen at once.
->>> BPF64 can come in. bpf32->bpf64 converter functioning.
->>> JIT from bpf64->aarch64 and may be sparc64 needs to be in place.
->>> Then old bpf can fade away.
->>
->>
->> Do you see a possibility to integrate your work step by step? That is,
->> to first integrate the interpreter part only; meaning, to detect "old"
->> BPF programs e.g. coming from SO_ATTACH_FILTER et al and run them in
->> compatibility mode while extended BPF is fully integrated and replaces
->> the old engine in net/core/filter.c. Maybe, "old" programs can be
->> transformed transparently to the new representation and then would be
->> good to execute in eBPF. If possible, in such a way that in the first
->> step JIT compilers won't need any upgrades. Once that is resolved,
->> JIT compilers could successively migrate, arch by arch, to compile the
->> new code? And last but not least the existing tools as well for handling
->> eBPF. I think, if possible, that would be great. Also, I unfortunately
->> haven't looked into your code too deeply yet due to time constraints,
->> but I'm wondering e.g. for accessing some skb fields we currently use
->> the "hack" to "overload" load instructions with negative arguments. Do
->> we have a sort of "meta" instruction that is extendible in eBPF to avoid
->> such things in future?
->>
->>>> First of all, I think it's very interesting work ! I'm just a bit
->>>> concerned
->>>> that this _huge_ patchset with 64 bit BPF, or however we call it, will
->>>> line
->>>
->>>
->>> Huge?
->>> kernel is only 2k
->>> the rest is 6k of userspace LLVM backend where most of it is llvm's
->>> boilerplate code. GCC backend for BPF is 3k.
->>> The goal is to have both GCC and LLVM backends to be upstreamed
->>> when kernel pieces are agreed upon.
->>> For comparison existing tools/net/bpf* is 2.5k
->>> but here with 6k we get optimizing compiler from C and assembler.
->>>
->>>> up in one row next to the BPF code we currently have and next to new
->>>> nftables
->>>> engine and we will end up with three such engines which do quite similar
->>>> things and are all exposed to user space thus they need to be maintained
->>>> _forever_, adding up legacy even more. What would be the long-term
->>>> future
->>>> use
->>>> cases where the 64 bit engine comes into place compared to the current
->>>> BPF
->>>> engine? What are the concrete killer features? I didn't went through
->>>> your
->>>
->>>
->>> killer features vs old bpf are:
->>> - zero-cost function calls
->>> - 32-bit vs 64-bit
->>> - optimizing compiler that can compile C into BPF64
->>>
->>> Why call kernel function from BPF?
->>> So that BPF instruction set has to be extended only once and JITs are
->>> written only once.
->>> Over the years many extensions crept into old BPF as 'negative offsets'.
->>> but JITs don't support all of them and assume bpf input as 'skb' only.
->>> seccomp is using old bpf, but, because of these limitations, cannot use
->>> JIT.
->>> BPF64 allows seccomp to be JITed, since bpf input is generalized
->>> as 'struct bpf_context'.
->>> New 'negative offset' extension for old bpf would mean implementing it in
->>> JITs of all architectures? Painful, but doable. We can do better.
->
->
-> I'm very curious, do you also have any performance numbers, e.g. for
-> networking by taking JIT'ed/non-JIT'ed BPF filters and compare them against
-> JIT'ed/non-JIT'ed eBPF filters to see how many pps we gain or loose e.g.
-> for a scenario with a middle box running cls_bpf .. or some other macro/
-> micro benchmark just to get a picture where both stand in terms of
-> performance? Who knows, maybe it would outperform nftables engine as
-> well? ;-) How would that look on a 32bit arch with eBPF that is 64bit?
+Enable the CMT0 device and configure channel 0 as a clock event
+provider.
 
-I don't have jited/non-jited numbers, but I suspect for micro-benchmarks
-the gap should be big. I was shooting for near native performance after JIT.
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+---
+ arch/arm/boot/dts/r8a7791-koelsch.dts            |  9 +++++++++
+ arch/arm/mach-shmobile/board-koelsch-reference.c | 15 +--------------
+ arch/arm/mach-shmobile/include/mach/r8a7791.h    |  1 -
+ arch/arm/mach-shmobile/setup-r8a7791.c           |  7 +------
+ 4 files changed, 11 insertions(+), 21 deletions(-)
 
-So I took flow_dissector() function, tweaked it a bit and compiled into BPF.
-x86_64 skb_flow_dissect() same skb (all cached)          -  42 nsec per call
-x86_64 skb_flow_dissect() different skbs (cache misses)  - 141 nsec per call
-bpf_jit skb_flow_dissect() same skb (all cached)         -  51 nsec per call
-bpf_jit skb_flow_dissect() different skbs (cache misses) - 135 nsec per call
+diff --git a/arch/arm/boot/dts/r8a7791-koelsch.dts b/arch/arm/boot/dts/r8a7791-koelsch.dts
+index 42fd5eb..36e1c33 100644
+--- a/arch/arm/boot/dts/r8a7791-koelsch.dts
++++ b/arch/arm/boot/dts/r8a7791-koelsch.dts
+@@ -130,6 +130,15 @@
+ 	};
+ };
+ 
++&cmt0 {
++	status = "ok";
++
++	channel@0 {
++		reg = <0>;
++		clock-event-rating = <80>;
++	};
++};
++
+ &sata0 {
+ 	status = "okay";
+ };
+diff --git a/arch/arm/mach-shmobile/board-koelsch-reference.c b/arch/arm/mach-shmobile/board-koelsch-reference.c
+index e67a4be7..abcb8da 100644
+--- a/arch/arm/mach-shmobile/board-koelsch-reference.c
++++ b/arch/arm/mach-shmobile/board-koelsch-reference.c
+@@ -30,22 +30,9 @@
+ 
+ static void __init koelsch_add_standard_devices(void)
+ {
+-#ifdef CONFIG_COMMON_CLK
+-	/*
+-	 * This is a really crude hack to provide clkdev support to the CMT
+-	 * device until they get moved to DT.
+-	 */
+-	struct clk *clk;
+-
+-	clk = clk_get(NULL, "cmt0");
+-	if (!IS_ERR(clk)) {
+-		clk_register_clkdev(clk, NULL, "sh-cmt-48-gen2.0");
+-		clk_put(clk);
+-	}
+-#else
++#ifndef CONFIG_COMMON_CLK
+ 	r8a7791_clock_init();
+ #endif
+-	r8a7791_add_dt_devices();
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+ 
+diff --git a/arch/arm/mach-shmobile/include/mach/r8a7791.h b/arch/arm/mach-shmobile/include/mach/r8a7791.h
+index 200fa69..57a37f1 100644
+--- a/arch/arm/mach-shmobile/include/mach/r8a7791.h
++++ b/arch/arm/mach-shmobile/include/mach/r8a7791.h
+@@ -2,7 +2,6 @@
+ #define __ASM_R8A7791_H__
+ 
+ void r8a7791_add_standard_devices(void);
+-void r8a7791_add_dt_devices(void);
+ void r8a7791_clock_init(void);
+ void r8a7791_pinmux_init(void);
+ void r8a7791_init_early(void);
+diff --git a/arch/arm/mach-shmobile/setup-r8a7791.c b/arch/arm/mach-shmobile/setup-r8a7791.c
+index a17ebb8..c1e9c0f 100644
+--- a/arch/arm/mach-shmobile/setup-r8a7791.c
++++ b/arch/arm/mach-shmobile/setup-r8a7791.c
+@@ -189,11 +189,6 @@ static const struct resource thermal_resources[] __initconst = {
+ 					thermal_resources,		\
+ 					ARRAY_SIZE(thermal_resources))
+ 
+-void __init r8a7791_add_dt_devices(void)
+-{
+-	r8a7791_register_cmt(0);
+-}
+-
+ void __init r8a7791_add_standard_devices(void)
+ {
+ 	r8a7791_register_scif(0);
+@@ -211,7 +206,7 @@ void __init r8a7791_add_standard_devices(void)
+ 	r8a7791_register_scif(12);
+ 	r8a7791_register_scif(13);
+ 	r8a7791_register_scif(14);
+-	r8a7791_add_dt_devices();
++	r8a7791_register_cmt(0);
+ 	r8a7791_register_irqc(0);
+ 	r8a7791_register_thermal();
+ }
+-- 
+1.8.3.2
 
-C->BPF64->x86_64 is slower than C->x86_64 when all data is in cache,
-but presence of cache misses hide extra insns.
-
-For gre flow_dissector() looks into inner packet, but for vxlan it does not,
-since it needs to know udp port number. We can extend it with if (static_key)
-and walk the list of udp_offload_base->offload->port like we do in
-udp_gro_receive(),
-but for RPS we just need a hash. I think custom loadable
-flow_dissector() is the way to go.
-If we know that majority of the traffic on the given machine is vxlan to port N
-we can hard code this into BPF program. Don't need to walk outer packet either.
-Just pick ip/port from inner. It's doable with old BPF too.
-
-What we used to think as dynamic, with BPF can be hard coded.
-
-As soon as I have time I'm thinking to play with nftables. The idea is:
-rules are changed rarely, but a lot of traffic goes through them,
-so we can spend time optimizing them.
-
-Either user input or nft program can be converted to C, then LLVM invoked
-to optimize the whole thing, generate BPF and load it.
-Adding a rule will take time, but if execution of such ip/nftables
-will be faster
-the end user will benefit.
