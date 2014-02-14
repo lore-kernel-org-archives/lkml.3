@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaBNWxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 17:53:16 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:40602 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaBNWxD (ORCPT
+	id S1753053AbaBNXAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 18:00:46 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:49995 "EHLO
+	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaBNXAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 17:53:03 -0500
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Cc: Sebastian Capella <sebastian.capella@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: [PATCH v9] PM / Hibernate: use name_to_dev_t to parse resume
-Date: Fri, 14 Feb 2014 14:52:56 -0800
-Message-Id: <1392418376-30060-2-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392418376-30060-1-git-send-email-sebastian.capella@linaro.org>
-References: <1392418376-30060-1-git-send-email-sebastian.capella@linaro.org>
+	Fri, 14 Feb 2014 18:00:45 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Fri, 14 Feb 2014 14:48:01 -0800
+Message-ID: <52FEA01B.7040604@synaptics.com>
+Date: Fri, 14 Feb 2014 15:00:43 -0800
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Andrew Duggan <aduggan@synaptics.com>,
+        Vincent Huang <vincent.huang@tw.synaptics.com>,
+        Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/11] Input: synaptics-rmi4 - do not update configuration
+ in rmi_f01_probe()
+References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com> <1392269277-16391-3-git-send-email-dmitry.torokhov@gmail.com> <52FD1BC0.1050009@synaptics.com> <20140213215432.GA6225@core.coreip.homeip.net>
+In-Reply-To: <20140213215432.GA6225@core.coreip.homeip.net>
+X-Originating-IP: [10.3.20.103]
+X-Brightmail-Tracker: AAAAAQAAAWE=
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the name_to_dev_t call to parse the device name echo'd to
-to /sys/power/resume.  This imitates the method used in hibernate.c
-in software_resume, and allows the resume partition to be specified
-using other equivalent device formats as well.  By allowing
-/sys/debug/resume to accept the same syntax as the resume=device
-parameter, we can parse the resume=device in the init script and
-use the resume device directly from the kernel command line.
+On 02/13/2014 01:54 PM, Dmitry Torokhov wrote:
+> On Thu, Feb 13, 2014 at 11:23:44AM -0800, Christopher Heiny wrote:
+>> >On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
+>>> > >Do not write configuration data in probe(), we have config() for that.
+>> >
+>> >Then we should call config() in rmi_function_probe() to ensure that
+>> >any platform data or device tree configuration settings get written
+>> >to the device.
+ >
+> Well, yes, we may elect to update device configuration in probe, but
+> then we should not be doing that 2nd time in ->config(). We shoudl pick
+> either one or another.
 
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
----
- kernel/power/hibernate.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 0121dab..a5f702a 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -972,16 +972,20 @@ static ssize_t resume_show(struct kobject *kobj, struct kobj_attribute *attr,
- static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
- 			    const char *buf, size_t n)
- {
--	unsigned int maj, min;
- 	dev_t res;
--	int ret = -EINVAL;
-+	int len = n;
-+	char *name;
- 
--	if (sscanf(buf, "%u:%u", &maj, &min) != 2)
--		goto out;
-+	if (len && buf[len-1] == '\n')
-+		len--;
-+	name = kstrndup(buf, len, GFP_KERNEL);
-+	if (!name)
-+		return -ENOMEM;
- 
--	res = MKDEV(maj,min);
--	if (maj != MAJOR(res) || min != MINOR(res))
--		goto out;
-+	res = name_to_dev_t(name);
-+	kfree(name);
-+	if (!res)
-+		return -EINVAL;
- 
- 	lock_system_sleep();
- 	swsusp_resume_device = res;
-@@ -989,9 +993,7 @@ static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
- 	printk(KERN_INFO "PM: Starting manual resume from disk\n");
- 	noresume = 0;
- 	software_resume();
--	ret = n;
-- out:
--	return ret;
-+	return n;
- }
- 
- power_attr(resume);
--- 
-1.7.9.5
-
+But as the code currently stands, config() is only called when a device 
+reset is detected, not during initialization.  So if there's platform 
+specific configuration data that needs to be written to a function, it 
+won't get written until after a device reset occurs, which might never 
+happen.  So either we need to write that data (or call config()) in each 
+function's probe(), or in rmi_function_probe().
