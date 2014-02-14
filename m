@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965AbaBNEaT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 23:30:19 -0500
-Received: from ozlabs.org ([203.10.76.45]:39399 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185AbaBNEaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 23:30:17 -0500
-Date: Fri, 14 Feb 2014 15:30:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: linux-next: manual merge of the akpm-current tree with the
- cgroup tree
-Message-Id: <20140214153010.7ccb12b8518a46b21a158b22@canb.auug.org.au>
-In-Reply-To: <20140214152557.cf6e5b5b0961dc47f800fe4d@canb.auug.org.au>
-References: <20140214152557.cf6e5b5b0961dc47f800fe4d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Feb_2014_15_30_10_+1100_4IT5bCg+/A9kEaaz"
+	id S1751703AbaBNEaj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 23:30:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48135 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973AbaBNEah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 23:30:37 -0500
+Date: Thu, 13 Feb 2014 20:30:26 -0800
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-67424d5a22124fa2d115faa8f32d12506989628f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1391846481-31491-1-git-send-email-ak@linux.intel.com>
+References: <1391846481-31491-1-git-send-email-ak@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asmlinkage] x86, lto: Disable LTO for the x86 VDSO
+Git-Commit-ID: 67424d5a22124fa2d115faa8f32d12506989628f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 13 Feb 2014 20:30:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Feb_2014_15_30_10_+1100_4IT5bCg+/A9kEaaz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  67424d5a22124fa2d115faa8f32d12506989628f
+Gitweb:     http://git.kernel.org/tip/67424d5a22124fa2d115faa8f32d12506989628f
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Sat, 8 Feb 2014 09:01:05 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 13 Feb 2014 20:21:57 -0800
 
-[Just adding Tejun]
+x86, lto: Disable LTO for the x86 VDSO
 
-On Fri, 14 Feb 2014 15:25:57 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Hi Andrew,
->=20
-> Today's linux-next merge of the akpm-current tree got a conflict in
-> kernel/cpuset.c between commit d66393e54e0a ("cpuset: use
-> css_task_iter_start/next/end() instead of css_scan_tasks()") from the
-> cgroup tree and commit a82211b06d6e ("cpusets: allocate heap only when
-> required") from the akpm-current tree.
->=20
-> I fixed it up (the former removed the need for the heap, so I effectively
-> remove the latter) and can carry the fix as necessary (no action is
-> required).
->=20
-> --=20
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+The VDSO does not play well with LTO, so just disable LTO for it.
+Also pass a 32bit linker flag for the 32bit version.
 
+[ hpa: change braces to parens to match kernel Makefile style ]
 
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1391846481-31491-1-git-send-email-ak@linux.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/vdso/Makefile | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---Signature=_Fri__14_Feb_2014_15_30_10_+1100_4IT5bCg+/A9kEaaz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS/ZvWAAoJEMDTa8Ir7ZwVk3wP/2s0F46DVtBshmQYwdW1va4w
-bayj13jQeF2rYpzdu46l5Odn+k8EsjvwJ7/1OQhngVtOL+cGqpmQfTGaOKOVaboA
-mHhEDWh6zAYzsnTn6t1ZTId7naSkLmUq1f5Cov2L4RfYZehs/O3l+Q+3SZGG91sQ
-TQuAeOoJn2qtt2hWjtwz5xWcDJrFq7ZtkADmVljbBBOuwbspSj6RZRfjIzlt7/Z1
-6LNJBcKQ+/AzDhmgbBrT8aTMlrh3V64JTj2B/My7SLwWiAht310i+pYOx6UrqPLC
-wUdndv8Oyx9/glbdPkqdAPM5QG+DM+qLSGxj74SW+4PFi6Cxj0Fsy0Euq9G3M6qZ
-1JhX8Gl+M5GaPovoQcYlLwJstQXmG7jYmIhZJrnmlxEDqVQAUQVede/A2ibua4q+
-sQccy3ycyQ0O4UGgV64PprIvztlqVf6pe3GjJf00SURAUv2Y6sLhdPLVFbUvyo9J
-lcjyM7z5Bmmdvu90/wg5Z8wHJcm+L3uPa8ozuJYH6OFhaut+5xibihdT7oRLazON
-OlaBmdoIcXvd8d8TV0Ik0YSrPyyo2DlQrJI4DOSGw+gvsqXxn50/QUL1FynWqZpa
-bjccuc/T26rrj4CWehPeTGvh+AjrT3knvJqmfY+bEYWCLAYeHy6iYhGCOtATSyGO
-yk1X1btMWk4Ooshw6dY5
-=1km7
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Feb_2014_15_30_10_+1100_4IT5bCg+/A9kEaaz--
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index fd14be1..9206ac7 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -2,6 +2,8 @@
+ # Building vDSO images for x86.
+ #
+ 
++KBUILD_CFLAGS += $(DISABLE_LTO)
++
+ VDSO64-$(CONFIG_X86_64)		:= y
+ VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
+ VDSO32-$(CONFIG_X86_32)		:= y
+@@ -35,7 +37,8 @@ export CPPFLAGS_vdso.lds += -P -C
+ 
+ VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
+ 			-Wl,--no-undefined \
+-		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
++			-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096 \
++			$(DISABLE_LTO)
+ 
+ $(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
+ 
+@@ -127,7 +130,7 @@ vdso32.so-$(VDSO32-y)		+= sysenter
+ vdso32-images			= $(vdso32.so-y:%=vdso32-%.so)
+ 
+ CPPFLAGS_vdso32.lds = $(CPPFLAGS_vdso.lds)
+-VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-soname=linux-gate.so.1
++VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-m,elf_i386 -Wl,-soname=linux-gate.so.1
+ 
+ # This makes sure the $(obj) subdirectory exists even though vdso32/
+ # is not a kbuild sub-make subdirectory.
+@@ -181,7 +184,8 @@ quiet_cmd_vdso = VDSO    $@
+ 		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) && \
+ 		 sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
+ 
+-VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
++VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
++		$(LTO_CFLAGS)
+ GCOV_PROFILE := n
+ 
+ #
