@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaBNKxE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 05:53:04 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:39476 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751758AbaBNKxC (ORCPT
+	id S1751994AbaBNKyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 05:54:11 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42095 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaBNKyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 05:53:02 -0500
-Date: Fri, 14 Feb 2014 10:52:55 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH] sched/core: Create new task with twice disabled
- preemption
-Message-ID: <20140214105255.GA10596@arm.com>
-References: <1392306716.5384.3.camel@tkhai>
- <20140213160013.GE6835@laptop.programming.kicks-ass.net>
- <52FD01A6.8060404@yandex.ru>
+	Fri, 14 Feb 2014 05:54:09 -0500
+Date: Fri, 14 Feb 2014 02:54:06 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+In-Reply-To: <20140214043235.GA21999@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1402140244330.12099@chino.kir.corp.google.com>
+References: <52F88C16.70204@linux.vnet.ibm.com> <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com> <52F8C556.6090006@linux.vnet.ibm.com> <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com> <52FC6F2A.30905@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com> <52FC98A6.1000701@linux.vnet.ibm.com> <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com> <20140214001438.GB1651@linux.vnet.ibm.com> <CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
+ <20140214043235.GA21999@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FD01A6.8060404@yandex.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 09:32:22PM +0400, Kirill Tkhai wrote:
-> On 13.02.2014 20:00, Peter Zijlstra wrote:
-> > On Thu, Feb 13, 2014 at 07:51:56PM +0400, Kirill Tkhai wrote:
-> >> For archs without __ARCH_WANT_UNLOCKED_CTXSW set this means
-> >> that all newly created tasks execute finish_arch_post_lock_switch()
-> >> and post_schedule() with preemption enabled.
-> > 
-> > That's IA64 and MIPS; do they have a 'good' reason to use this?
+On Thu, 13 Feb 2014, Nishanth Aravamudan wrote:
+
+> There is an open issue on powerpc with memoryless nodes (inasmuch as we
+> can have them, but the kernel doesn't support it properly). There is a
+> separate discussion going on on linuxppc-dev about what is necessary for
+> CONFIG_HAVE_MEMORYLESS_NODES to be supported.
 > 
-> It seems my description misleads reader, I'm sorry if so.
+
+Yeah, and this is causing problems with the slub allocator as well.
+
+> Apologies for hijacking the thread, my comments below were purely about
+> the memoryless node support, not about readahead specifically.
 > 
-> I mean all architectures *except* IA64 and MIPS. All, which
-> has no __ARCH_WANT_UNLOCKED_CTXSW defined.
-> 
-> IA64 and MIPS already have preempt_enable() in schedule_tail():
-> 
-> #ifdef __ARCH_WANT_UNLOCKED_CTXSW
->         /* In this case, finish_task_switch does not reenable preemption */
->         preempt_enable();
-> #endif
-> 
-> Their initial preemption is not decremented in finish_lock_switch().
-> 
-> So, we speak about x86, ARM64 etc.
-> 
-> Look at ARM64's finish_arch_post_lock_switch(). It looks a task
-> must to not be preempted between switch_mm() and this function.
-> But in case of new task this is possible.
 
-We had a thread about this at the end of last year:
+Neither you nor Raghavendra have any reason to apologize to anybody.  
+Memoryless node support on powerpc isn't working very well right now and 
+you're trying to fix it, that fix is needed both in this thread and in 
+your fixes for slub.  It's great to see both of you working hard on your 
+platform to make it work the best.
 
-https://lkml.org/lkml/2013/11/15/82
+I think what you'll need to do in addition to your 
+CONFIG_HAVE_MEMORYLESS_NODE fix, which is obviously needed, is to enable 
+CONFIG_USE_PERCPU_NUMA_NODE_ID for the same NUMA configurations and then 
+use set_numa_node() or set_cpu_numa_node() to properly store the mapping 
+between cpu and node rather than numa_cpu_lookup_table.  Then you should 
+be able to do away with your own implementation of cpu_to_node().
 
-There is indeed a problem on arm64, something like this (and I think
-s390 also needs a fix):
+After that, I think it should be as simple as doing
 
-1. switch_mm() via check_and_switch_context() defers the actual mm
-   switch by setting TIF_SWITCH_MM
-2. the context switch is considered 'done' by the kernel before
-   finish_arch_post_lock_switch() and therefore we can be preempted to a
-   new thread before finish_arch_post_lock_switch()
-3. The new thread has the same mm as the preempted thread but we
-   actually missed the mm switching in finish_arch_post_lock_switch()
-   because TIF_SWITCH_MM is per thread rather than mm
+	set_numa_node(cpu_to_node(cpu));
+	set_numa_mem(local_memory_node(cpu_to_node(cpu)));
 
-> This is the problem I tried to solve. I don't know arm64, and I can't
-> say how it is serious.
+probably before taking vector_lock in smp_callin().  The cpu-to-node 
+mapping should be done much earlier in boot while the nodes are being 
+initialized, I don't think there should be any problem there.
 
-Have you managed to reproduce this? I don't say it doesn't exist, but I
-want to make sure that any patch actually fixes it.
+While you're at it, I think you'll also want to add a comment that
+setting up the cpu sibling mask must be done before the smp_wmb() before 
+notify_cpu_starting(cpu), it's crucial to have before the cpu is brought 
+online and why we need the store memory barrier.
 
-So we have more solutions, one of the first two suitable for stable:
-
-1. Propagate the TIF_SWITCH_MM to the next thread (suggested by Martin)
-2. Get rid of TIF_SWITCH_MM and use mm_cpumask for tracking (I already
-   have the patch, it just needs a lot more testing)
-3. Re-write the ASID allocation algorithm to no longer require IPIs and
-   therefore drop finish_arch_post_lock_switch() (this can be done, so
-   pretty intrusive for stable)
-4. Replace finish_arch_post_lock_switch() with finish_mm_switch() as per
-   Martin's patch and I think this would guarantee a call always, we can
-   move the mm switching from switch_mm() to finish_mm_switch() and no
-   need for flags to mark deferred mm switching
-
-For arm64, we'll most likely go with 2 for stable and move to 3 shortly
-after, no need for other deferred mm switching.
-
--- 
-Catalin
+But, again, please don't apologize for developing your architecture and 
+attacking bugs as they arise, it's very admirable and I'm happy to help in 
+any way that I can.
