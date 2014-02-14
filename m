@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaBNCCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Feb 2014 21:02:23 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:32852 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaBNCCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Feb 2014 21:02:21 -0500
+	id S1751533AbaBNCIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Feb 2014 21:08:04 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:45959 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987AbaBNCIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Feb 2014 21:08:02 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: i386_defconfig for 3.13.2?
+Date: Thu, 13 Feb 2014 21:07:59 -0500
+Cc: linux-kernel@vger.kernel.org
+References: <201402121408.12535.gheskett@wdtv.com> <52FC2531.9000304@infradead.org>
+In-Reply-To: <52FC2531.9000304@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20140210121431.GD20143@ulmo.nvidia.com>
-References: <1392011821-2406-1-git-send-email-acourbot@nvidia.com>
-	<20140210121431.GD20143@ulmo.nvidia.com>
-Date: Fri, 14 Feb 2014 12:02:20 +1000
-Message-ID: <CACAvsv6LoNinrLviqFDqsngSokuq2eJj7-8Hq-vapO5rSkCCpw@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH] drm/nouveau/fifo: allocate usermem as needed
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402132107.59841.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 10:14 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Mon, Feb 10, 2014 at 02:57:01PM +0900, Alexandre Courbot wrote:
->> Memory was always allocated for 4096 channels. Change this to allocate
->> what we actually need according to the number of channels we use.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>  drivers/gpu/drm/nouveau/core/engine/fifo/nve0.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
+On Wednesday 12 February 2014, Randy Dunlap wrote:
+>On 02/12/2014 11:08 AM, Gene Heskett wrote:
+>> Greetings, not making any progress on newer kernel builds yet.
+>> 
+>> So I unpacked 3.13.2 this morning and copied its
+>> arch/x86/i386_defconfig to .config.
+>> 
+>> Ran make oldconfig, then 3 or 4 sessions of xconfig removing stuff that
+>> isn't for my hardware & generally making lots of modules where I wasn't
+>> sure.
+>> 
+>> But, my "makeit" script, when it makes the initrd, spits out this, and
+>> note the not always final "/"
+>> 
+>> now making a new /boot/initrd.3.13.2.img
+>> find: `/lib/modules/3.13.2/kernel/arch': No such file or directory
+>> find: `/lib/modules/3.13.2/kernel/arch': No such file or directory
+>> find: `/lib/modules/3.13.2/kernel/arch/': No such file or directory
+>> find: `/lib/modules/3.13.2/kernel/arch/': No such file or directory
+>> find: `/lib/modules/3.13.2/kernel/arch/': No such file or directory
+>> find: `/lib/modules/3.13.2/kernel/arch/': No such file or directory
+>> find: `/lib/modules/3.13.2/kernel/arch/': No such file or directory
+>> find: `/lib/modules/3.13.2/kernel/arch/': No such file or directory
+>> find: `/lib/modules/3.13.2/kernel/arch/': No such file or directory
+>> 
+>> And indeed that directory does not exist.
+>> And that string does not exist in the .config.
+>> 
+>> Does this ring any bells?
 >
-> Looks good to me:
+>Not for me, but building the initrd (or initramfs) may be
+>distro-specific. You might have to share the command that was used for
+>that and maybe even the script that was executed (like /sbin/mkinitrd --
+>where yours and mine are probably different depending on distros).
 >
-> Reviewed-by: Thierry Reding <treding@nvidia.com>
-Thanks guys!
+>Have you (your script) already run 'make install' at this point?
+>AFAIK, that should have created /lib/modules/3.13.2/kernel/arch/ and some
+>other subdirectories there.
 
->
-> _______________________________________________
-> Nouveau mailing list
-> Nouveau@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/nouveau
->
+I finally got thru a makeit, using the original version I last whacked at a 
+year or so back.
+
+I blew the tree away, unpacked it fresh and did another make oldconfig. 
+BOOM
+I copied the Makefile in from 3.12.9, edited the version & ran it, BOOM.
+
+I had some crypto stuff as modules, but finally I said the only thing I can 
+do is lock out root, called up a make menuconfig, went down to the crypto 
+section and set it to M for all previously cleared crypto things.  Worked, 
+the /lib/modules/3.13.2/crypto tree is created and populated and 
+mkinitramfs works as advertised.  Now for a boot test, but at least the SOB 
+built.
+
+15  minutes later, boot test is abject failure, only gets to "booting the 
+kernel" on the tty screen and stops.
+
+One last q:  What is the syntax to make this command line:
+
+ccache make -j2 bzImage
+
+Its using 98% of all 4 cores of this phenom, which is currently sitting at 
+about 78.8F ATM, but which will be above 260F 3 to 4 seconds after I start 
+a compile.  Its ignoring the -j2 & lighting up all 4 cores like a movie 
+marquee in gkrellm's cpu displays.
+
+Thanks for any more insight Randy.
+
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
+
