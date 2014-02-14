@@ -1,71 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaBNSrB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:47:01 -0500
-Received: from ring0.de ([5.45.105.125]:59845 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460AbaBNSqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 13:46:45 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [RFCv1 3/4] Documentation: DT: Document twl4030-madc binding
-Date: Fri, 14 Feb 2014 19:46:25 +0100
-Message-Id: <1392403586-30540-3-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392403586-30540-1-git-send-email-sre@debian.org>
-References: <20140214174040.GB26969@earth.universe>
- <1392403586-30540-1-git-send-email-sre@debian.org>
+	id S1752672AbaBNSrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:47:25 -0500
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:38424
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751598AbaBNSrX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 13:47:23 -0500
+Date: Fri, 14 Feb 2014 12:47:21 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 7/9] slab: use the lock on alien_cache, instead of the
+ lock on array_cache
+In-Reply-To: <1392361043-22420-8-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.DEB.2.10.1402141247070.12887@nuc>
+References: <1392361043-22420-1-git-send-email-iamjoonsoo.kim@lge.com> <1392361043-22420-8-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devicetree binding documentation for twl4030-madc
-analog digital converter.
+On Fri, 14 Feb 2014, Joonsoo Kim wrote:
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
- .../devicetree/bindings/iio/adc/twl4030-madc.txt      | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
+> Now, we have separate alien_cache structure, so it'd be better to hold
+> the lock on alien_cache while manipulating alien_cache. After that,
+> we don't need the lock on array_cache, so remove it.
 
-diff --git a/Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt b/Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
-new file mode 100644
-index 0000000..d074286
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
-@@ -0,0 +1,19 @@
-+* TWL4030 Monitoring Analog to Digital Converter (MADC)
-+
-+The MADC subsystem in the TWL4030 consists of a 10-bit ADC
-+combined with a 16-input analog multiplexer.
-+
-+Required properties:
-+  - compatible: Should contain "ti,twl4030-madc".
-+  - interrupts: IRQ line for the MADC submodule.
-+  - #io-channel-cells: Should be set to <1>.
-+
-+Example:
-+
-+&twl {
-+	madc {
-+		compatible = "ti,twl4030-madc";
-+		interrupts = <3>;
-+		#io-channel-cells = <1>;
-+	};
-+};
--- 
-1.8.5.3
-
+Acked-by: Christoph Lameter <cl@linux.com>
