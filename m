@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaBNIFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:05:43 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58536 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221AbaBNIFj (ORCPT
+	id S1753349AbaBNIF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:05:56 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:53452 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaBNIFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:05:39 -0500
+	Fri, 14 Feb 2014 03:05:53 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 48/52] profile: Fix CPU hotplug callback registration
+Subject: [PATCH v2 49/52] mm, vmstat: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Toshi Kani <toshi.kani@hp.com>, Dave Hansen <dave@sr71.net>,
+        Ingo Molnar <mingo@kernel.org>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Fri, 14 Feb 2014 13:30:07 +0530
-Message-ID: <20140214080006.22701.61064.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 14 Feb 2014 13:30:18 +0530
+Message-ID: <20140214080017.22701.62427.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 References: <20140214074750.22701.47330.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -28,7 +32,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021408-8256-0000-0000-00000B767DE5
+x-cbid: 14021408-5140-0000-0000-0000048EE587
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -64,53 +68,45 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the profile code by using this latter form of callback registration.
+Fix the vmstat code in the MM subsystem by using this latter form of callback
+registration.
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Dave Hansen <dave@sr71.net>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: linux-mm@kvack.org
+Acked-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/profile.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ mm/vmstat.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/profile.c b/kernel/profile.c
-index 6631e1e..4c0cb95 100644
---- a/kernel/profile.c
-+++ b/kernel/profile.c
-@@ -591,18 +591,28 @@ out_cleanup:
- int __ref create_proc_profile(void) /* false positive from hotcpu_notifier */
- {
- 	struct proc_dir_entry *entry;
-+	int err = 0;
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 7249614..12a553e 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -1290,14 +1290,14 @@ static int __init setup_vmstat(void)
+ #ifdef CONFIG_SMP
+ 	int cpu;
  
- 	if (!prof_on)
- 		return 0;
--	if (create_hash_tables())
--		return -ENOMEM;
-+
+-	register_cpu_notifier(&vmstat_notifier);
 +	cpu_notifier_register_begin();
-+
-+	if (create_hash_tables()) {
-+		err = -ENOMEM;
-+		goto out;
-+	}
-+
- 	entry = proc_create("profile", S_IWUSR | S_IRUGO,
- 			    NULL, &proc_profile_operations);
- 	if (!entry)
--		return 0;
-+		goto out;
- 	proc_set_size(entry, (1 + prof_len) * sizeof(atomic_t));
--	hotcpu_notifier(profile_cpu_callback, 0);
--	return 0;
-+	__hotcpu_notifier(profile_cpu_callback, 0);
-+
-+out:
++	__register_cpu_notifier(&vmstat_notifier);
+ 
+-	get_online_cpus();
+ 	for_each_online_cpu(cpu) {
+ 		start_cpu_timer(cpu);
+ 		node_set_state(cpu_to_node(cpu), N_CPU);
+ 	}
+-	put_online_cpus();
 +	cpu_notifier_register_done();
-+	return err;
- }
- module_init(create_proc_profile);
- #endif /* CONFIG_PROC_FS */
+ #endif
+ #ifdef CONFIG_PROC_FS
+ 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
 
