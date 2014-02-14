@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbaBNWDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 17:03:11 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50661 "EHLO e9.ny.us.ibm.com"
+	id S1753253AbaBNWD2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 17:03:28 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33824 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752875AbaBNWDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 17:03:09 -0500
+	id S1752354AbaBNWDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 17:03:24 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
@@ -16,95 +16,325 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@redhat.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Michael Ellerman <michael@ellerman.id.au>
-Subject: [PATCH v2 07/11] powerpc: add a shared interface to get gpci version and capabilities
-Date: Fri, 14 Feb 2014 14:02:11 -0800
-Message-Id: <1392415338-16288-8-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH v2 08/11] powerpc/perf: add support for the hv gpci (get performance counter info) interface
+Date: Fri, 14 Feb 2014 14:02:12 -0800
+Message-Id: <1392415338-16288-9-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.5.4
 In-Reply-To: <1392415338-16288-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1392415338-16288-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021422-7182-0000-0000-000009D7686D
+x-cbid: 14021422-0320-0000-0000-0000027816BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This provides a basic link between perf and hv_gpci. Notably, it does
+not yet support transactions and does not list any events (they can
+still be manually composed).
+
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- arch/powerpc/perf/hv-common.c | 39 +++++++++++++++++++++++++++++++++++++++
- arch/powerpc/perf/hv-common.h | 17 +++++++++++++++++
- 2 files changed, 56 insertions(+)
- create mode 100644 arch/powerpc/perf/hv-common.c
- create mode 100644 arch/powerpc/perf/hv-common.h
+ arch/powerpc/perf/hv-gpci.c | 290 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 290 insertions(+)
+ create mode 100644 arch/powerpc/perf/hv-gpci.c
 
-diff --git a/arch/powerpc/perf/hv-common.c b/arch/powerpc/perf/hv-common.c
+diff --git a/arch/powerpc/perf/hv-gpci.c b/arch/powerpc/perf/hv-gpci.c
 new file mode 100644
-index 0000000..47e02b3
+index 0000000..1f5d96d
 --- /dev/null
-+++ b/arch/powerpc/perf/hv-common.c
-@@ -0,0 +1,39 @@
-+#include <asm/io.h>
++++ b/arch/powerpc/perf/hv-gpci.c
+@@ -0,0 +1,290 @@
++/*
++ * Hypervisor supplied "gpci" ("get performance counter info") performance
++ * counter support
++ *
++ * Author: Cody P Schafer <cody@linux.vnet.ibm.com>
++ * Copyright 2014 IBM Corporation.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++#define pr_fmt(fmt) "hv-gpci: " fmt
++
++#include <linux/init.h>
++#include <linux/perf_event.h>
++#include <asm/firmware.h>
 +#include <asm/hvcall.h>
++#include <asm/io.h>
 +
 +#include "hv-gpci.h"
 +#include "hv-common.h"
 +
-+unsigned long hv_perf_caps_get(struct hv_perf_caps *caps)
-+{
-+	unsigned long r;
-+	struct p {
-+		struct hv_get_perf_counter_info_params params;
-+		struct cv_system_performance_capabilities caps;
-+	} __packed __aligned(sizeof(uint64_t));
++PMU_RANGE_ATTR(request, config, 0, 31); /* u32 */
++PMU_RANGE_ATTR(starting_index, config, 32, 63); /* u32 */
++PMU_RANGE_ATTR(secondary_index, config1, 0, 15); /* u16 */
++PMU_RANGE_ATTR(counter_info_version, config1, 16, 23); /* u8 */
++PMU_RANGE_ATTR(length, config1, 24, 31); /* u8, bytes of data (1-8) */
++PMU_RANGE_ATTR(offset, config1, 32, 63); /* u32, byte offset */
 +
-+	struct p arg = {
++static struct attribute *format_attrs[] = {
++	&format_attr_request.attr,
++	&format_attr_starting_index.attr,
++	&format_attr_secondary_index.attr,
++	&format_attr_counter_info_version.attr,
++
++	&format_attr_offset.attr,
++	&format_attr_length.attr,
++	NULL,
++};
++
++static struct attribute_group format_group = {
++	.name = "format",
++	.attrs = format_attrs,
++};
++
++#define HV_CAPS_ATTR(_name, _format)				\
++static ssize_t _name##_show(struct device *dev,			\
++			    struct device_attribute *attr,	\
++			    char *page)				\
++{								\
++	struct hv_perf_caps caps;				\
++	unsigned long hret = hv_perf_caps_get(&caps);		\
++	if (hret)						\
++		return -EIO;					\
++								\
++	return sprintf(page, _format, caps._name);		\
++}								\
++static struct device_attribute hv_caps_attr_##_name = __ATTR_RO(_name)
++
++static ssize_t kernel_version_show(struct device *dev,
++				   struct device_attribute *attr,
++				   char *page)
++{
++	return sprintf(page, "0x%x\n", COUNTER_INFO_VERSION_CURRENT);
++}
++
++DEVICE_ATTR_RO(kernel_version);
++HV_CAPS_ATTR(version, "0x%x\n");
++HV_CAPS_ATTR(ga, "%d\n");
++HV_CAPS_ATTR(expanded, "%d\n");
++HV_CAPS_ATTR(lab, "%d\n");
++HV_CAPS_ATTR(collect_privileged, "%d\n");
++
++static struct attribute *interface_attrs[] = {
++	&dev_attr_kernel_version.attr,
++	&hv_caps_attr_version.attr,
++	&hv_caps_attr_ga.attr,
++	&hv_caps_attr_expanded.attr,
++	&hv_caps_attr_lab.attr,
++	&hv_caps_attr_collect_privileged.attr,
++	NULL,
++};
++
++static struct attribute_group interface_group = {
++	.name = "interface",
++	.attrs = interface_attrs,
++};
++
++static const struct attribute_group *attr_groups[] = {
++	&format_group,
++	&interface_group,
++	NULL,
++};
++
++#define GPCI_MAX_DATA_BYTES \
++	(1024 - sizeof(struct hv_get_perf_counter_info_params))
++
++static unsigned long single_gpci_request(u32 req, u32 starting_index,
++		u16 secondary_index, u8 version_in, u32 offset, u8 length,
++		u64 *value)
++{
++	unsigned long ret;
++	size_t i;
++	u64 count;
++
++	struct {
++		struct hv_get_perf_counter_info_params params;
++		uint8_t bytes[GPCI_MAX_DATA_BYTES];
++	} __packed __aligned(sizeof(uint64_t)) arg = {
 +		.params = {
-+			.counter_request = cpu_to_be32(
-+					CIR_SYSTEM_PERFORMANCE_CAPABILITIES),
-+			.starting_index = cpu_to_be32(-1),
-+			.counter_info_version_in = 0,
++			.counter_request = cpu_to_be32(req),
++			.starting_index = cpu_to_be32(starting_index),
++			.secondary_index = cpu_to_be16(secondary_index),
++			.counter_info_version_in = version_in,
 +		}
 +	};
 +
-+	r = plpar_hcall_norets(H_GET_PERF_COUNTER_INFO,
-+			       virt_to_phys(&arg), sizeof(arg));
++	ret = plpar_hcall_norets(H_GET_PERF_COUNTER_INFO,
++			virt_to_phys(&arg), sizeof(arg));
++	if (ret) {
++		pr_devel("hcall failed: 0x%lx\n", ret);
++		return ret;
++	}
 +
++	/*
++	 * we verify offset and length are within the zeroed buffer at event
++	 * init.
++	 */
++	count = 0;
++	for (i = offset; i < offset + length; i++)
++		count |= arg.bytes[i] << (i - offset);
++
++	*value = count;
++	return ret;
++}
++
++static u64 h_gpci_get_value(struct perf_event *event)
++{
++	u64 count;
++	unsigned long ret = single_gpci_request(event_get_request(event),
++					event_get_starting_index(event),
++					event_get_secondary_index(event),
++					event_get_counter_info_version(event),
++					event_get_offset(event),
++					event_get_length(event),
++					&count);
++	if (ret)
++		return 0;
++	return count;
++}
++
++static void h_gpci_event_update(struct perf_event *event)
++{
++	s64 prev;
++	u64 now = h_gpci_get_value(event);
++	prev = local64_xchg(&event->hw.prev_count, now);
++	local64_add(now - prev, &event->count);
++}
++
++static void h_gpci_event_start(struct perf_event *event, int flags)
++{
++	local64_set(&event->hw.prev_count, h_gpci_get_value(event));
++	perf_swevent_start_hrtimer(event);
++}
++
++static void h_gpci_event_stop(struct perf_event *event, int flags)
++{
++	perf_swevent_cancel_hrtimer(event);
++	h_gpci_event_update(event);
++}
++
++static int h_gpci_event_add(struct perf_event *event, int flags)
++{
++	if (flags & PERF_EF_START)
++		h_gpci_event_start(event, flags);
++
++	return 0;
++}
++
++static void h_gpci_event_del(struct perf_event *event, int flags)
++{
++	h_gpci_event_stop(event, flags);
++}
++
++static void h_gpci_event_read(struct perf_event *event)
++{
++	h_gpci_event_update(event);
++}
++
++static int h_gpci_event_init(struct perf_event *event)
++{
++	u64 count;
++	u8 length;
++
++	/* Not our event */
++	if (event->attr.type != event->pmu->type)
++		return -ENOENT;
++
++	/* config2 is unused */
++	if (event->attr.config2) {
++		pr_devel("config2 set when reserved\n");
++		return -EINVAL;
++	}
++
++	/* unsupported modes and filters */
++	if (event->attr.exclude_user   ||
++	    event->attr.exclude_kernel ||
++	    event->attr.exclude_hv     ||
++	    event->attr.exclude_idle   ||
++	    event->attr.exclude_host   ||
++	    event->attr.exclude_guest  ||
++	    is_sampling_event(event)) /* no sampling */
++		return -EINVAL;
++
++	/* no branch sampling */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
++	length = event_get_length(event);
++	if (length < 1 || length > 8) {
++		pr_devel("length invalid\n");
++		return -EINVAL;
++	}
++
++	/* last byte within the buffer? */
++	if ((event_get_offset(event) + length) > GPCI_MAX_DATA_BYTES) {
++		pr_devel("request outside of buffer: %zu > %zu\n",
++				(size_t)event_get_offset(event) + length,
++				GPCI_MAX_DATA_BYTES);
++		return -EINVAL;
++	}
++
++	/* check if the request works... */
++	if (single_gpci_request(event_get_request(event),
++				event_get_starting_index(event),
++				event_get_secondary_index(event),
++				event_get_counter_info_version(event),
++				event_get_offset(event),
++				length,
++				&count)) {
++		pr_devel("gpci hcall failed\n");
++		return -EINVAL;
++	}
++
++	perf_swevent_init_hrtimer(event);
++	return 0;
++}
++
++static struct pmu h_gpci_pmu = {
++	.task_ctx_nr = perf_invalid_context,
++
++	.name = "hv_gpci",
++	.attr_groups = attr_groups,
++	.event_init  = h_gpci_event_init,
++	.add         = h_gpci_event_add,
++	.del         = h_gpci_event_del,
++	.start       = h_gpci_event_start,
++	.stop        = h_gpci_event_stop,
++	.read        = h_gpci_event_read,
++
++	.event_idx = perf_swevent_event_idx,
++};
++
++static int hv_gpci_init(void)
++{
++	int r;
++	unsigned long hret;
++	struct hv_perf_caps caps;
++
++	if (!firmware_has_feature(FW_FEATURE_LPAR)) {
++		pr_info("not a virtualized system, not enabling\n");
++		return -ENODEV;
++	}
++
++	hret = hv_perf_caps_get(&caps);
++	if (hret) {
++		pr_info("could not obtain capabilities, error 0x%80lx, not enabling\n",
++				hret);
++		return -ENODEV;
++	}
++
++	r = perf_pmu_register(&h_gpci_pmu, h_gpci_pmu.name, -1);
 +	if (r)
 +		return r;
 +
-+	pr_devel("capability_mask: 0x%x\n", arg.caps.capability_mask);
-+
-+	caps->version = arg.params.counter_info_version_out;
-+	caps->collect_privileged = !!arg.caps.perf_collect_privileged;
-+	caps->ga = !!(arg.caps.capability_mask & CV_CM_GA);
-+	caps->expanded = !!(arg.caps.capability_mask & CV_CM_EXPANDED);
-+	caps->lab = !!(arg.caps.capability_mask & CV_CM_LAB);
-+
-+	return r;
++	return 0;
 +}
-diff --git a/arch/powerpc/perf/hv-common.h b/arch/powerpc/perf/hv-common.h
-new file mode 100644
-index 0000000..7e615bd
---- /dev/null
-+++ b/arch/powerpc/perf/hv-common.h
-@@ -0,0 +1,17 @@
-+#ifndef LINUX_POWERPC_PERF_HV_COMMON_H_
-+#define LINUX_POWERPC_PERF_HV_COMMON_H_
 +
-+#include <linux/types.h>
-+
-+struct hv_perf_caps {
-+	u16 version;
-+	u16 collect_privileged:1,
-+	    ga:1,
-+	    expanded:1,
-+	    lab:1,
-+	    unused:12;
-+};
-+
-+unsigned long hv_perf_caps_get(struct hv_perf_caps *caps);
-+
-+#endif
++device_initcall(hv_gpci_init);
 -- 
 1.8.5.4
 
