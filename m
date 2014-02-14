@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaBNRa6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 12:30:58 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55084 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432AbaBNRa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 12:30:56 -0500
-Date: Fri, 14 Feb 2014 09:30:39 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>
-Subject: Re: Memory allocator semantics
-Message-ID: <20140214173038.GR4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140102203320.GA27615@linux.vnet.ibm.com>
- <52F60699.8010204@iki.fi>
- <20140209020004.GY4250@linux.vnet.ibm.com>
- <CAOJsxLHs890eypzfnNj4ff1zqy_=bC8FA7B0YYbcZQF_c_wSog@mail.gmail.com>
- <alpine.DEB.2.10.1402111242380.28186@nuc>
+	id S1752436AbaBNRdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 12:33:44 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37893 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751772AbaBNRdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 12:33:42 -0500
+Date: Fri, 14 Feb 2014 18:33:33 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: Another preempt folding issue?
+Message-ID: <20140214173333.GA6953@pd.tnic>
+References: <52FB5669.7090506@canonical.com>
+ <20140212115412.GW27965@twins.programming.kicks-ass.net>
+ <52FCFA23.4060701@canonical.com>
+ <20140213173852.GH6835@laptop.programming.kicks-ass.net>
+ <52FD090C.7010408@canonical.com>
+ <20140213182605.GC14089@laptop.programming.kicks-ass.net>
+ <20140214133428.GB26356@pd.tnic>
+ <52FE2709.3050505@canonical.com>
+ <20140214144700.GC26356@pd.tnic>
+ <52FE4C28.1080500@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1402111242380.28186@nuc>
+In-Reply-To: <52FE4C28.1080500@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021417-7164-0000-0000-00000608205D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 12:43:35PM -0600, Christoph Lameter wrote:
-> On Tue, 11 Feb 2014, Pekka Enberg wrote:
-> 
-> > So again, there's nothing in (A) that the memory allocator is
-> > concerned about.  kmalloc() makes no guarantees whatsoever about the
-> > visibility of "r1" across CPUs.  If you're saying that there's an
-> > implicit barrier between kmalloc() and kfree(), that's an unintended
-> > side-effect, not a design decision AFAICT.
-> 
-> I am not sure that this side effect necessarily happens. The SLUB fastpath
-> does not disable interrupts and only uses a cmpxchg without lock
-> semantics.
+On Fri, Feb 14, 2014 at 06:02:32PM +0100, Stefan Bader wrote:
+> Okaaay, I think I did what you asked. So yes, there is sse2 in the cpu info. And
+> there is a mfence in the disassembly:
 
-That tells me what I need to know.  Users should definitely not try a
-"drive-by kfree()" of something that was concurrently allocated.  ;-)
+Btw, I just realized booting the kernel in the guest was a dumb idea,
+because, doh, the guest is not baremetal. The only reliable thing we
+can say is that sse2 is present and that MFENCE alternative replacement
+works :)
 
-							Thanx, Paul
+But for simplicity's sake let's just assume the machine can do MFENCE
+just fine and it gets replaced by the alternatives code.
 
+Besides, if that weren't true, we'd have a whole lot of other problems
+on those boxes.
+
+> Thinking about it, I guess Peter is quite right saying that I likely
+> will end on the patch that converted preempt_count to percpu.
+
+Yeah, c2daa3bed53a81171cf8c1a36db798e82b91afe8 et al.
+
+> One thing I likely should do is to reinstall the exact same laptop
+> with 64bit kernel and userspace... maybe only 64bit kernel first...
+> and make sure on my side that this does not show up on 64bit, too. I
+> took the word of reporters for that (and the impression that otherwise
+> many more people would have complained).
+
+Yeah, that should be a prudent thing to do.
+
+Also, Paolo and I were wondering whether you can trigger this thing
+without kvm, i.e. virtualization involved... do you have any data on
+that?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
