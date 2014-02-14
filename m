@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380AbaBNIxi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 03:53:38 -0500
-Received: from www84.your-server.de ([213.133.104.84]:34716 "EHLO
+	id S1752452AbaBNIxx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 03:53:53 -0500
+Received: from www84.your-server.de ([213.133.104.84]:34714 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaBNIwL (ORCPT
+	with ESMTP id S1751956AbaBNIwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 03:52:11 -0500
+	Fri, 14 Feb 2014 03:52:10 -0500
 From: Stefani Seibold <stefani@seibold.net>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
@@ -15,9 +15,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
         Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v16 07/10] introduce VVAR marco for vdso32
-Date: Fri, 14 Feb 2014 09:52:41 +0100
-Message-Id: <1392367964-32118-8-git-send-email-stefani@seibold.net>
+Subject: [PATCH v16 05/10] replace VVAR(vsyscall_gtod_data) by gtod macro
+Date: Fri, 14 Feb 2014 09:52:39 +0100
+Message-Id: <1392367964-32118-6-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.8.5.4
 In-Reply-To: <1392367964-32118-1-git-send-email-stefani@seibold.net>
 References: <1392367964-32118-1-git-send-email-stefani@seibold.net>
@@ -26,49 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch revamp the vvar.h for introduce the VVAR macro for vdso32.
+There a currently more than 30 users of the gtod macro, so replace the
+last VVAR(vsyscall_gtod_data) by gtod macro.
 
 Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- arch/x86/include/asm/vvar.h | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ arch/x86/vdso/vclock_gettime.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index 0a534ea..52c79ff 100644
---- a/arch/x86/include/asm/vvar.h
-+++ b/arch/x86/include/asm/vvar.h
-@@ -26,6 +26,15 @@
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index fd074dd..743f277 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -109,7 +109,7 @@ static notrace cycle_t vread_pvclock(int *mode)
+ 		*mode = VCLOCK_NONE;
  
- #else
+ 	/* refer to tsc.c read_tsc() comment for rationale */
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
  
-+#ifdef BUILD_VDSO32
-+
-+#define DECLARE_VVAR(offset, type, name)				\
-+	extern type vvar_ ## name __attribute__((visibility("hidden")));
-+
-+#define VVAR(name) (vvar_ ## name)
-+
-+#else
-+
- extern char __vvar_page;
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -133,7 +133,7 @@ notrace static cycle_t vread_tsc(void)
+ 	rdtsc_barrier();
+ 	ret = (cycle_t)vget_cycles();
  
- /* Base address of vvars.  This is not ABI. */
-@@ -39,12 +48,13 @@ extern char __vvar_page;
- 	static type const * const vvaraddr_ ## name =			\
- 		(void *)(VVAR_ADDRESS + (offset));
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
  
-+#define VVAR(name) (*vvaraddr_ ## name)
-+#endif
-+
- #define DEFINE_VVAR(type, name)						\
- 	type name							\
- 	__attribute__((section(".vvar_" #name), aligned(16))) __visible
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -288,7 +288,7 @@ int gettimeofday(struct timeval *, struct timezone *)
+ notrace time_t __vdso_time(time_t *t)
+ {
+ 	/* This is atomic on x86_64 so we don't need any locks. */
+-	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
++	time_t result = ACCESS_ONCE(gtod->wall_time_sec);
  
--#define VVAR(name) (*vvaraddr_ ## name)
--
- #endif
- 
- /* DECLARE_VVAR(offset, type, name) */
+ 	if (t)
+ 		*t = result;
 -- 
 1.8.5.4
 
