@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291AbaBNRPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 12:15:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43664 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaBNRPt (ORCPT
+	id S1752102AbaBNRWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 12:22:04 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:64580 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaBNRWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 12:15:49 -0500
-Date: Fri, 14 Feb 2014 09:17:08 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: r8188eu: Remove dead code
-Message-ID: <20140214171708.GA26304@kroah.com>
-References: <1392292818.14949.5.camel@x220>
+	Fri, 14 Feb 2014 12:22:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392292818.14949.5.camel@x220>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1790131.DSZsj6HrSK@avalon>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<107109887.afEv2P92gg@avalon>
+	<CANqRtoS-d-CW3XX3_E2dgJ83btRZYWiMCYmWUJAPqh9EeBhLEQ@mail.gmail.com>
+	<1790131.DSZsj6HrSK@avalon>
+Date: Sat, 15 Feb 2014 02:22:00 +0900
+Message-ID: <CANqRtoROALpUqi8rKWRpQk7LGc0BqU14AKg-2MgYBMNoEFGA4Q@mail.gmail.com>
+Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 01:00:18PM +0100, Paul Bolle wrote:
-> There are a few lines in this driver that depend on a macro
-> CONFIG_BT_COEXIST. But there's no Kconfig symbol of that name nor is
-> there a preprocessor define for that string. So remove these lines.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Entirely untested.
-> 
-> Fun fact: two years ago, code depending on the same undefined macro was
-> removed from rtl8192cu, see commit 9ef11f7b34c0 ("rtl8192cu: Remove dead
-> code never selected"). I wonder where this macro originated.
+Hi Laurent,
 
-It comes from the stand-alone version of this driver, and the config
-options that it "provides" when building.  So expect it to constantly
-show up until this company stops relying on their internal tree...
+On Sat, Feb 15, 2014 at 1:12 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Magnus,
+>
+> On Saturday 15 February 2014 01:01:30 Magnus Damm wrote:
+>> On Sat, Feb 15, 2014 at 12:53 AM, Laurent Pinchart wrote:
+>> > On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
+>> >> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
+>> >> > +Channels Optional Properties:
+>> >> > +
+>> >> > +  - clock-source-rating: rating of the timer as a clock source device.
+>> >> > +  - clock-event-rating: rating of the timer as a clock event device.
+>> >>
+>> >> This feels like a leak of Linux internals. Why do you need this?
+>> >
+>> > You're right, it is. The clock source and clock event ratings are
+>> > currently configured through platform data, I'll need to find a way to
+>> > compute them in the driver instead.
+>>
+>> That would be very good!
+>
+> Any pointer would be appreciated :-) How did you compute the various ratings
+> used in platform data all over the place ?
 
-thanks,
+Historically we used the rating to select between CMT and TMU. For
+clock sources I suppose you also have the jiffy rating to consider.
+And for the SMP parts we have ARM IP for TWD and arch timers that have
+their ratings too. So you need to check all the timers on a particular
+system and consider what you want to have operating by default. The
+ARM IP timers should be preferred if available. For clock sources the
+rule is probably the higher resolution the better.
 
-greg k-h
+>> > There's still one piece of Linux-specific data I need though, as I need to
+>> > specify for each channel whether to use it as a clock source device, a
+>> > clock event device, both of them or none. That's configuration
+>> > information that needs to be provided somehow.
+>>
+>> I think you can decide clock source or clock event assignment based on
+>> number of channels available. If you have only a single channel then both
+>> clock event and clock source need to be supported. Otherwise use one channel
+>> for clock source and the rest for clock events.
+>
+> That won't match the current situation. Look at CMT0 in r8a7790 for instance.
+> There's two hardware channels available, and we only use the first one, for
+> clock events only.
+
+You are correct. The reason for that is that the CMT driver today is
+optimized for combined clock event and clock source operation.
+
+Historically the hardware it initially was written for (sh-mobile on
+the SH arch) only had a single timer channel so combined operation was
+required for tickless to work. But since you're asking how to allocate
+channels then I propose checking numbers of channels available and go
+from there. With that the r8a7790 support can only get better. =)
+
+>> This is probably out of scope for this DT conversion, but it would be neat
+>> if you somehow could specify the CPU affinity for a channel to tie a clock
+>> event to an individual CPU core. This would make a a per-cpu timer unless
+>> I'm mistaken. But that's more of a software policy than anything else.
+>
+> Yes, that's a configuration that needs to be specified somewhere. I don't know
+> where though.
+
+As long as you have per-channel interrupts described in DT you can
+probably handle this in a generic way in the driver.
+
+Thanks,
+
+/ magnus
