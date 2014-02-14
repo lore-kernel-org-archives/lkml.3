@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaBNSD6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:03:58 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:51538 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaBNSDz (ORCPT
+	id S1752579AbaBNSEB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:04:01 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:59953 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbaBNSD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 13:03:55 -0500
+	Fri, 14 Feb 2014 13:03:59 -0500
 From: Peter Wu <lekensteyn@gmail.com>
 To: Larry Finger <Larry.Finger@lwfinger.net>,
         Chaoming_Li <chaoming_li@realsil.com.cn>
 Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
         lekensteyn@gmail.com
-Subject: [PATCH 1/3] rtlwifi: avoid accessing RCR directly
-Date: Fri, 14 Feb 2014 19:03:44 +0100
-Message-Id: <1392401026-18417-2-git-send-email-lekensteyn@gmail.com>
+Subject: [PATCH 3/3] rtlwifi: remove unused allow_all_destaddr functions
+Date: Fri, 14 Feb 2014 19:03:46 +0100
+Message-Id: <1392401026-18417-4-git-send-email-lekensteyn@gmail.com>
 X-Mailer: git-send-email 1.8.5.4
 In-Reply-To: <1392401026-18417-1-git-send-email-lekensteyn@gmail.com>
 References: <1392401026-18417-1-git-send-email-lekensteyn@gmail.com>
@@ -22,145 +22,249 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rtl*_set_check_bssid functions are mostly the same, but access the
-RCR register in different ways. Use the get_hw_reg abstraction layer
-(which reads rtlpci->receive_config for PCI devices and mac->rx_conf for
-USB).
-
-There is no functional change for cases where receive_config was
-accessed directly. For rtl8192ce, there is still no change because
-nothing modifies REG_RCR or receive_config. For rtl8192cu, it now also
-applies changes to rx_conf from configure_filter, but that can be
-considered a bug which is fixed later.
+Unused as configure_filter takes care of setting/clearing RCR_AAP.
 
 Signed-off-by: Peter Wu <lekensteyn@gmail.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8188ee/hw.c | 5 +++--
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c | 4 +++-
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 4 +++-
- drivers/net/wireless/rtlwifi/rtl8192de/hw.c | 6 ++++--
- drivers/net/wireless/rtlwifi/rtl8192se/hw.c | 5 +++--
- drivers/net/wireless/rtlwifi/rtl8723ae/hw.c | 5 +++--
- 6 files changed, 19 insertions(+), 10 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.c | 20 --------------------
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.h |  2 --
+ drivers/net/wireless/rtlwifi/rtl8188ee/sw.c |  1 -
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c | 21 ---------------------
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.h |  2 --
+ drivers/net/wireless/rtlwifi/rtl8192ce/sw.c |  1 -
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.c | 20 --------------------
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.h |  2 --
+ drivers/net/wireless/rtlwifi/rtl8192se/sw.c |  1 -
+ drivers/net/wireless/rtlwifi/rtl8723ae/hw.c | 21 ---------------------
+ drivers/net/wireless/rtlwifi/rtl8723ae/hw.h |  2 --
+ drivers/net/wireless/rtlwifi/rtl8723ae/sw.c |  1 -
+ drivers/net/wireless/rtlwifi/wifi.h         |  2 --
+ 13 files changed, 96 deletions(-)
 
 diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-index e06971b..ce2226c 100644
+index ce2226c..c0e7f62 100644
 --- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
 +++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-@@ -1235,12 +1235,13 @@ static int _rtl88ee_set_media_status(struct ieee80211_hw *hw,
- void rtl88ee_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
+@@ -2510,23 +2510,3 @@ void rtl88ee_suspend(struct ieee80211_hw *hw)
+ void rtl88ee_resume(struct ieee80211_hw *hw)
  {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ }
+-
+-/* Turn on AAP (RCR:bit 0) for promicuous mode. */
+-void rtl88ee_allow_all_destaddr(struct ieee80211_hw *hw,
+-				bool allow_all_da, bool write_into_reg)
+-{
+-	struct rtl_priv *rtlpriv = rtl_priv(hw);
 -	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
--	u32 reg_rcr = rtlpci->receive_config;
-+	u32 reg_rcr;
+-
+-	if (allow_all_da) /* Set BIT0 */
+-		rtlpci->receive_config |= RCR_AAP;
+-	 else /* Clear BIT0 */
+-		rtlpci->receive_config &= ~RCR_AAP;
+-
+-	if (write_into_reg)
+-		rtl_write_dword(rtlpriv, REG_RCR, rtlpci->receive_config);
+-
+-	RT_TRACE(rtlpriv, COMP_TURBO | COMP_INIT, DBG_LOUD,
+-		 "receive_config = 0x%08X, write_into_reg =%d\n",
+-		 rtlpci->receive_config, write_into_reg);
+-}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.h b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.h
+index b4460a4..1850fde 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.h
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.h
+@@ -61,8 +61,6 @@ void rtl8188ee_bt_reg_init(struct ieee80211_hw *hw);
+ void rtl8188ee_bt_hw_init(struct ieee80211_hw *hw);
+ void rtl88ee_suspend(struct ieee80211_hw *hw);
+ void rtl88ee_resume(struct ieee80211_hw *hw);
+-void rtl88ee_allow_all_destaddr(struct ieee80211_hw *hw,
+-				bool allow_all_da, bool write_into_reg);
+ void rtl88ee_fw_clk_off_timer_callback(unsigned long data);
  
- 	if (rtlpriv->psc.rfpwr_state != ERFON)
- 		return;
- 
-+	rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_RCR, (u8 *)(&reg_rcr));
-+
- 	if (check_bssid == true) {
- 		reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
+ #endif
+diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/sw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/sw.c
+index 347af1e..41de6f3 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/sw.c
+@@ -254,7 +254,6 @@ static struct rtl_hal_ops rtl8188ee_hal_ops = {
+ 	.enable_hw_sec = rtl88ee_enable_hw_security_config,
+ 	.set_key = rtl88ee_set_key,
+ 	.init_sw_leds = rtl88ee_init_sw_leds,
+-	.allow_all_destaddr = rtl88ee_allow_all_destaddr,
+ 	.get_bbreg = rtl88e_phy_query_bb_reg,
+ 	.set_bbreg = rtl88e_phy_set_bb_reg,
+ 	.get_rfreg = rtl88e_phy_query_rf_reg,
 diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-index a82b30a..25e178c 100644
+index 25e178c..8b3134a 100644
 --- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
 +++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -1200,11 +1200,13 @@ static int _rtl92ce_set_media_status(struct ieee80211_hw *hw,
- void rtl92ce_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
+@@ -2407,24 +2407,3 @@ void rtl92ce_suspend(struct ieee80211_hw *hw)
+ void rtl92ce_resume(struct ieee80211_hw *hw)
  {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
-+	u32 reg_rcr;
- 
- 	if (rtlpriv->psc.rfpwr_state != ERFON)
- 		return;
- 
-+	rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_RCR, (u8 *)(&reg_rcr));
-+
- 	if (check_bssid) {
- 		reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-index 468bf73..49ad106 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -1379,11 +1379,13 @@ void rtl92cu_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
--	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
-+	u32 reg_rcr;
- 
- 	if (rtlpriv->psc.rfpwr_state != ERFON)
- 		return;
- 
-+	rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_RCR, (u8 *)(&reg_rcr));
-+
- 	if (check_bssid) {
- 		u8 tmp;
- 		if (IS_NORMAL_CHIP(rtlhal->version)) {
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-index c4a7db9..c16aa6b 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-@@ -1138,11 +1138,13 @@ static int _rtl92de_set_media_status(struct ieee80211_hw *hw,
- void rtl92de_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ }
+-
+-/* Turn on AAP (RCR:bit 0) for promicuous mode. */
+-void rtl92ce_allow_all_destaddr(struct ieee80211_hw *hw,
+-	bool allow_all_da, bool write_into_reg)
+-{
+-	struct rtl_priv *rtlpriv = rtl_priv(hw);
 -	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
--	u32 reg_rcr = rtlpci->receive_config;
-+	u32 reg_rcr;
+-
+-	if (allow_all_da) {/* Set BIT0 */
+-		rtlpci->receive_config |= RCR_AAP;
+-	} else {/* Clear BIT0 */
+-		rtlpci->receive_config &= ~RCR_AAP;
+-	}
+-
+-	if (write_into_reg)
+-		rtl_write_dword(rtlpriv, REG_RCR, rtlpci->receive_config);
+-
+-	RT_TRACE(rtlpriv, COMP_TURBO | COMP_INIT, DBG_LOUD,
+-		 "receive_config=0x%08X, write_into_reg=%d\n",
+-		 rtlpci->receive_config, write_into_reg);
+-}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.h b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.h
+index 2d063b0..5533070 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.h
+@@ -76,7 +76,5 @@ void rtl8192ce_bt_reg_init(struct ieee80211_hw *hw);
+ void rtl8192ce_bt_hw_init(struct ieee80211_hw *hw);
+ void rtl92ce_suspend(struct ieee80211_hw *hw);
+ void rtl92ce_resume(struct ieee80211_hw *hw);
+-void rtl92ce_allow_all_destaddr(struct ieee80211_hw *hw,
+-				bool allow_all_da, bool write_into_reg);
  
- 	if (rtlpriv->psc.rfpwr_state != ERFON)
- 		return;
-+
-+	rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_RCR, (u8 *)(&reg_rcr));
-+
- 	if (check_bssid) {
- 		reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR, (u8 *)(&reg_rcr));
+ #endif
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+index b790320..12f21f4 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+@@ -229,7 +229,6 @@ static struct rtl_hal_ops rtl8192ce_hal_ops = {
+ 	.enable_hw_sec = rtl92ce_enable_hw_security_config,
+ 	.set_key = rtl92ce_set_key,
+ 	.init_sw_leds = rtl92ce_init_sw_leds,
+-	.allow_all_destaddr = rtl92ce_allow_all_destaddr,
+ 	.get_bbreg = rtl92c_phy_query_bb_reg,
+ 	.set_bbreg = rtl92c_phy_set_bb_reg,
+ 	.set_rfreg = rtl92ce_phy_set_rf_reg,
 diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
-index 4f46178..5aa39ef 100644
+index 5aa39ef..8c7aca4 100644
 --- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
 +++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
-@@ -1135,12 +1135,13 @@ void rtl92se_set_mac_addr(struct rtl_io *io, const u8 *addr)
- void rtl92se_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+@@ -2531,23 +2531,3 @@ void rtl92se_resume(struct ieee80211_hw *hw)
+ 		pci_write_config_dword(rtlpci->pdev, 0x40,
+ 			val & 0xffff00ff);
+ }
+-
+-/* Turn on AAP (RCR:bit 0) for promicuous mode. */
+-void rtl92se_allow_all_destaddr(struct ieee80211_hw *hw,
+-				bool allow_all_da, bool write_into_reg)
+-{
+-	struct rtl_priv *rtlpriv = rtl_priv(hw);
 -	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
--	u32 reg_rcr = rtlpci->receive_config;
-+	u32 reg_rcr;
+-
+-	if (allow_all_da) /* Set BIT0 */
+-		rtlpci->receive_config |= RCR_AAP;
+-	else /* Clear BIT0 */
+-		rtlpci->receive_config &= ~RCR_AAP;
+-
+-	if (write_into_reg)
+-		rtl_write_dword(rtlpriv, RCR, rtlpci->receive_config);
+-
+-	RT_TRACE(rtlpriv, COMP_TURBO | COMP_INIT, DBG_LOUD,
+-		 "receive_config=0x%08X, write_into_reg=%d\n",
+-		 rtlpci->receive_config, write_into_reg);
+-}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/hw.h b/drivers/net/wireless/rtlwifi/rtl8192se/hw.h
+index da48aa8..4cacee1 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.h
+@@ -74,7 +74,5 @@ void rtl92se_set_key(struct ieee80211_hw *hw,
+ 		     u8 enc_algo, bool is_wepkey, bool clear_all);
+ void rtl92se_suspend(struct ieee80211_hw *hw);
+ void rtl92se_resume(struct ieee80211_hw *hw);
+-void rtl92se_allow_all_destaddr(struct ieee80211_hw *hw,
+-				bool allow_all_da, bool write_into_reg);
  
- 	if (rtlpriv->psc.rfpwr_state != ERFON)
- 		return;
- 
-+	rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_RCR, (u8 *)(&reg_rcr));
-+
- 	if (check_bssid) {
- 		reg_rcr |= (RCR_CBSSID);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR, (u8 *)(&reg_rcr));
+ #endif
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+index 2e8e6f8..1bff2a0 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+@@ -290,7 +290,6 @@ static struct rtl_hal_ops rtl8192se_hal_ops = {
+ 	.enable_hw_sec = rtl92se_enable_hw_security_config,
+ 	.set_key = rtl92se_set_key,
+ 	.init_sw_leds = rtl92se_init_sw_leds,
+-	.allow_all_destaddr = rtl92se_allow_all_destaddr,
+ 	.get_bbreg = rtl92s_phy_query_bb_reg,
+ 	.set_bbreg = rtl92s_phy_set_bb_reg,
+ 	.get_rfreg = rtl92s_phy_query_rf_reg,
 diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-index c333dfd..4680816 100644
+index 4680816..48e8b82 100644
 --- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
 +++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-@@ -1112,12 +1112,13 @@ static int _rtl8723ae_set_media_status(struct ieee80211_hw *hw,
- void rtl8723ae_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
+@@ -2377,24 +2377,3 @@ void rtl8723ae_suspend(struct ieee80211_hw *hw)
+ void rtl8723ae_resume(struct ieee80211_hw *hw)
  {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ }
+-
+-/* Turn on AAP (RCR:bit 0) for promicuous mode. */
+-void rtl8723ae_allow_all_destaddr(struct ieee80211_hw *hw,
+-	bool allow_all_da, bool write_into_reg)
+-{
+-	struct rtl_priv *rtlpriv = rtl_priv(hw);
 -	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
--	u32 reg_rcr = rtlpci->receive_config;
-+	u32 reg_rcr;
+-
+-	if (allow_all_da) /* Set BIT0 */
+-		rtlpci->receive_config |= RCR_AAP;
+-	else /* Clear BIT0 */
+-		rtlpci->receive_config &= ~RCR_AAP;
+-
+-	if (write_into_reg)
+-		rtl_write_dword(rtlpriv, REG_RCR, rtlpci->receive_config);
+-
+-
+-	RT_TRACE(rtlpriv, COMP_TURBO | COMP_INIT, DBG_LOUD,
+-		 "receive_config=0x%08X, write_into_reg=%d\n",
+-		 rtlpci->receive_config, write_into_reg);
+-}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.h b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.h
+index 6fa24f7..d3bc39f 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.h
++++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.h
+@@ -67,7 +67,5 @@ void rtl8723ae_bt_reg_init(struct ieee80211_hw *hw);
+ void rtl8723ae_bt_hw_init(struct ieee80211_hw *hw);
+ void rtl8723ae_suspend(struct ieee80211_hw *hw);
+ void rtl8723ae_resume(struct ieee80211_hw *hw);
+-void rtl8723ae_allow_all_destaddr(struct ieee80211_hw *hw,
+-				  bool allow_all_da, bool write_into_reg);
  
- 	if (rtlpriv->psc.rfpwr_state != ERFON)
- 		return;
- 
-+	rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_RCR, (u8 *)(&reg_rcr));
-+
- 	if (check_bssid == true) {
- 		reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
+ #endif
+diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
+index 62b204f..a9cb110 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
+@@ -230,7 +230,6 @@ static struct rtl_hal_ops rtl8723ae_hal_ops = {
+ 	.enable_hw_sec = rtl8723ae_enable_hw_security_config,
+ 	.set_key = rtl8723ae_set_key,
+ 	.init_sw_leds = rtl8723ae_init_sw_leds,
+-	.allow_all_destaddr = rtl8723ae_allow_all_destaddr,
+ 	.get_bbreg = rtl8723ae_phy_query_bb_reg,
+ 	.set_bbreg = rtl8723ae_phy_set_bb_reg,
+ 	.get_rfreg = rtl8723ae_phy_query_rf_reg,
+diff --git a/drivers/net/wireless/rtlwifi/wifi.h b/drivers/net/wireless/rtlwifi/wifi.h
+index 8c64739..08fd164 100644
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1714,8 +1714,6 @@ struct rtl_hal_ops {
+ 			  u32 regaddr, u32 bitmask);
+ 	void (*set_rfreg) (struct ieee80211_hw *hw, enum radio_path rfpath,
+ 			   u32 regaddr, u32 bitmask, u32 data);
+-	void (*allow_all_destaddr)(struct ieee80211_hw *hw,
+-		bool allow_all_da, bool write_into_reg);
+ 	void (*linked_set_reg) (struct ieee80211_hw *hw);
+ 	void (*chk_switch_dmdp) (struct ieee80211_hw *hw);
+ 	void (*dualmac_easy_concurrent) (struct ieee80211_hw *hw);
 -- 
 1.8.5.4
 
