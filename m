@@ -1,113 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaBNUS4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 15:18:56 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:39778 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaBNUSz (ORCPT
+	id S1752815AbaBNUTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 15:19:10 -0500
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:40276 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752731AbaBNUTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 15:18:55 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Andrew Vagin <avagin@gmail.com>,
-        Aditya Kali <adityakali@google.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-References: <1392387209-330-1-git-send-email-avagin@openvz.org>
-	<1392387209-330-2-git-send-email-avagin@openvz.org>
-	<874n41znl5.fsf@xmission.com> <20140214174314.GA5518@gmail.com>
-	<20140214180129.GK13358@moon> <8761ohqzc6.fsf@xmission.com>
-	<52FE72C1.9090100@parallels.com> <20140214200622.GN13358@moon>
-Date: Fri, 14 Feb 2014 12:18:46 -0800
-In-Reply-To: <20140214200622.GN13358@moon> (Cyrill Gorcunov's message of "Sat,
-	15 Feb 2014 00:06:22 +0400")
-Message-ID: <877g8xphw9.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+zYeH75MswHUYfytDJVZPrXtnLLICa9fQ=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4832]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Cyrill Gorcunov <gorcunov@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change boundaries of data, brk and stack
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Fri, 14 Feb 2014 15:19:07 -0500
+Message-Id: <20140214201841.826179349@linux.com>
+Date: Fri, 14 Feb 2014 14:18:41 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 00/48] percpu: Consistent per cpu operations V4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov <gorcunov@gmail.com> writes:
+Can we please get this merged? The first patch alone would at least define
+the functions required to enable the merging of the rest in any order and
+through any tree.
 
-> On Fri, Feb 14, 2014 at 11:47:13PM +0400, Pavel Emelyanov wrote:
->> >> Maybe we could improve this api and provide argument as a pointer
->> >> to a structure, which would have all the fields we're going to
->> >> modify, which in turn would allow us to verify that all new values
->> >> are sane and fit rlimits, then we could (probably) deprecate old
->> >> api if noone except c/r camp is using it (I actually can't imagine
->> >> who else might need this api). Then CAP_SYS_RESOURCE requirement
->> >> could be ripped off. Hm? (sure touching api is always "no-no"
->> >> case, but maybe...)
->> > 
->> > Hmm.  Let me rewind this a little bit.
->> > 
->> > I want to be very stupid and ask the following.
->> > 
->> > Why can't you have the process of interest do:
->> > 	ptrace(PTRACE_ATTACHME);
->> > 	execve(executable, args, ...);
->> >         
->> >         /* Have the ptracer inject the recovery/fixup code */
->> > 	    /* Fix up the mostly correct process to look like it has been
->> >          * executing for a while.
->> >          */
->
-> Erik, it seems I don't understand how it will help us to restore
-> the mm fields mentioned above?
+There is a git tree that can be pulled at 
 
-Because exec is how those mm fields are set when you don't use
-prctl_set_mm.  So execpt for the stack and the brk limits that
-will simply result in the values being set to what the usually
-would be set to.
+https://git.kernel.org/cgit/linux/kernel/git/christoph/percpu.git/
 
->> Let's imagine we do that.
->> 
->> This means, that the whole memory contents should be restored _after_
->> the execve() call, since the execve() flushes old mappings. In
->> that case we lose the ability to preserve any shared memory regions
->> between any two processes. This "shared" can be either regular
->> MAP_SHARED mappings or MAP_ANONYMOUS but still not COW-ed ones.
->> 
->> > That should work, set all of the interesting fields, and works as
->> > non-root today.  My gut feel says do that and we can just
->> > deprecate/remove prctl_set_mm.
->> > 
->> > I am hoping we can move this conversation what makes sense from oh ick
->> > checkpoint/restort does not work with user namespaces.
->
-> I fear you've got a wrong impression that we're "ick'ing" about user-ns ;)
-> Actually it's "must have" feature for containers thus we would _really_
-> love to be able to c/r them.
+It has the following branches:
 
-What I meant is that the analysis of how to deal with prctl_set_mm seems
-to be knee jerk shallow analysis based upon the fact that things are not
-working, and not asking the question what really makes sense here? and
-Why are people concerned with these changes and these values?
+minimal		Just the first 5 patches to get the preemption checks going
+most		All the conversion but not the removal of functionality in 47/48
+all		All these patches 
 
-Eric
+V3->V4:
+- Rediff patches
+- Put the patches first that define the new API.
+- Add patches to convert the __get_cpu_var stuff added in 3.14
+
+V2->V3:
+- Rediff patches
+- Fix breakage caused by mips patches. Add a mips patch to convert from local_t.
+- Update some descriptions.
+
+V1->V2:
+- Move legacy definition for __this_cpu_ptr into include/asm-generic/percpu.h
+  so that users bypassing include/linux/percpu.h do not break (affects
+  tile and s390)
+- Merge raw_cpu_ops core and the patch to rename x86 __this_cpu primitives
+  into one. Otherwise breakage will occur since x86 __this_cpu ops will fall
+  back to generic ops which is not tolerated well by the preempt hackery
+  in x86.
+- Add notes to each patch that depends on another to avoid mismerges.
+  Add acks etc.
+- Use quilt-0.61 with the bug fix that ensures all mailing lists
+  receive the postings intended for them.
+
+
+The kernel has never been audited to ensure that this_cpu operations are
+consistently used throughout the kernel. The code generated in many
+places can be improved through the use of this_cpu operations (which uses
+a segment register for relocation of per cpu offsets instead of
+performing address calculations).
+
+The patch set also addresses various consistency issues in general with
+the per cpu macros.
+
+A. The semantics of __this_cpu_ptr() differs from this_cpu_ptr only
+   because checks are skipped. This is typically shown through a raw_
+   prefix. So this patch set changes the places where __this_cpu_ptr()
+   is used to raw_cpu_ptr().
+
+B. There has been the long term wish by some that __this_cpu operations
+   would check for preemption. However, there are cases where preemption
+   checks need to be skipped. This patch set adds raw_cpu operations that
+   do not check for preemption and then adds preemption checks to the
+   __this_cpu operations.
+
+C. The use of __get_cpu_var is always a reference to a percpu variable
+   that can also be handled via a this_cpu operation. This patch set
+   replaces all uses of __get_cpu_var with this_cpu operations.
+
+D. We can then use this_cpu RMW operations in various places replacing
+   sequences of instructions by a single one.
+
+E. The use of this_cpu operations throughout will allow other arches than
+   x86 to implement optimized references and RMV operations to work with
+   per cpu local data.
+
+F. The use of this_cpu operations opens up the possibility to
+   further optimize code that relies on synchronization through
+   per cpu data.
+
+
+The patch set works in a couple of stages:
+
+I. Patch 1 adds the additional raw_cpu operations and raw_cpu_ptr().
+    Also converts the existing __this_cpu_xx_# primitive in the x86
+    code to raw_cpu_xx_#.
+
+II. Patch 2-4 use the raw_cpu operations in places that would give
+     us false positives once they are enabled.
+
+III. Patch 5 adds preemption checks to __this_cpu operations to allow
+    checking if preemption is properly disabled when these functions
+    are used.
+
+IV. Patches 6-20 are patches that simply replace uses of __get_cpu_var
+   with this_cpu_ptr. They do not depend on any changes to the percpu
+   code. No preemption tests are skipped if they are applied.
+
+V. Patches 21-46 are conversion patches that use this_cpu operations
+   in various kernel subsystems/drivers or arch code.
+
+VI. Patches 47/48 remove no longer used functions (__this_cpu_ptr
+    and __get_cpu_var).  These should only be applied after all the
+    conversion patches have made it and after we have done additional
+    passes through the kernel to ensure that none of the uses of these
+    functions remain.
 
