@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaBNSgX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:36:23 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:35244 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036AbaBNSgU (ORCPT
+	id S1752600AbaBNSiV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:38:21 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43837 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972AbaBNSiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 13:36:20 -0500
-Date: Fri, 14 Feb 2014 13:36:17 -0500 (EST)
-Message-Id: <20140214.133617.1389101802638585879.davem@davemloft.net>
-To: richardcochran@gmail.com
-Cc: stefan.sorensen@spectralink.com, grant.likely@linaro.org,
-        robh+dt@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v3 0/3] dp83640: Get pin and master/slave configuration
- from DT
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140214090601.GA3906@netboy>
-References: <1392302129-24947-1-git-send-email-stefan.sorensen@spectralink.com>
-	<20140213.173957.2126489785330496380.davem@davemloft.net>
-	<20140214090601.GA3906@netboy>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 14 Feb 2014 10:36:20 -0800 (PST)
+	Fri, 14 Feb 2014 13:38:19 -0500
+Date: Fri, 14 Feb 2014 19:38:24 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Conrad Kostecki <ck@conrad-kostecki.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+In-Reply-To: <52FE5ED4.4040508@zytor.com>
+Message-ID: <alpine.DEB.2.02.1402141924170.21991@ionos.tec.linutronix.de>
+References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <52FE5D91.6060005@zytor.com> <alpine.DEB.2.02.1402141917320.21991@ionos.tec.linutronix.de> <52FE5ED4.4040508@zytor.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Cochran <richardcochran@gmail.com>
-Date: Fri, 14 Feb 2014 10:06:01 +0100
-
-> People want to be able to configure the auxiliary functions on the
-> pins of their PTP devices. My preference for supporting this is:
+On Fri, 14 Feb 2014, H. Peter Anvin wrote:
+> On 02/14/2014 10:21 AM, Thomas Gleixner wrote:
+> > I wish we could just use devicetree for such cases and fix the crud
+> > ourself.
+> > 
 > 
-> 1. additional ioctl on the PTP character device
-> 2. ethtool ioctl
-> 3. DT and/or ACPI
-> 
-> The first option seems best because that is how you activate the
-> auxiliary functions. I am working on something in this direction.
+> We'd have to identify the platform, which is the main problem.  Right
+> now we support quirking for DMI or PCI, but I don't think we do for MPTABLE.
 
-Probably since PTP already uses ioctls, and that is the activation
-point, yes that seems the best approach.
+My point is that device tree support for some basic stuff like
+hpet/ioapic and such would allow people like Conrad to avoid the
+stupid hackery of quirks.
+
+Building your own DT requires to read a datasheet as does hacking a
+quirk, but its definitely simpler. And we can collect the DTs for
+known boards either in the kernel or in some external repository.
+
+People who are dealing with embedded stuff are not those who are
+frightened by datasheets and building a custom kernel with some extra
+blob.
+
+I bet Conrad is also stuck with PIC on the E6xx CPU and that's a major
+PITA. I have such a board as well and it simply sucks.
+
+Now you can't hack an ioapic quirk because that's way to complex, but
+we have proven with the ce4100 that it is reasonably simple to get
+that stuff working nicely when you can read a datasheet. If we could
+generalize that for a few crucial devices that would help a lot.
+
+When I asked the board vendor why there are no acpi tables in the
+device, I got the answer, that this is an embedded board and the
+"BIOS" built with BLDK does not support that. We all know that's not
+true, but how does that help?
+
+The people who brought up the initial target OS (WinCE) on that board
+worked around the lack of ACPI by hacking HPET support into the CE
+preloader and switched all device drivers to use MSI because CE failed
+to handle the PIC properly. That avoided that they needed to hack the
+ioapic into submission as well.
+
+That's the sad reality. And we have to cope with these boards whether
+we like it or not.
+
+Thanks,
+
+	tglx
+
+
+
+
+
+
+
+
