@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaBNS1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 13:27:16 -0500
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:33372 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752252AbaBNS1N (ORCPT
+	id S1752647AbaBNS25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 13:28:57 -0500
+Received: from mail-am1lp0017.outbound.protection.outlook.com ([213.199.154.17]:51764
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751772AbaBNS24 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 13:27:13 -0500
-Date: Fri, 14 Feb 2014 12:27:10 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 2/9] slab: makes clear_obj_pfmemalloc() just return store
- masked value
-In-Reply-To: <1392361043-22420-3-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.DEB.2.10.1402141225460.12887@nuc>
-References: <1392361043-22420-1-git-send-email-iamjoonsoo.kim@lge.com> <1392361043-22420-3-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 14 Feb 2014 13:28:56 -0500
+From: Conrad Kostecki <ck@conrad-kostecki.de>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: AW: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+Thread-Topic: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+Thread-Index: AQHPKW68eF3VOEekGkmzriEhDKIWtpq1BpSAgAADxICAAAJuAIAAAOYQgAABUYCAAAGIwA==
+Date: Fri, 14 Feb 2014 18:28:52 +0000
+Message-ID: <0363648bf9644167bf5aa0a954cd145b@DB4PR04MB265.eurprd04.prod.outlook.com>
+References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <52FE5683.6030708@zytor.com>
+ <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <52FE5BB6.9070405@zytor.com>
+ <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.eurprd04.prod.outlook.com>
+ <52FE5D91.6060005@zytor.com>
+In-Reply-To: <52FE5D91.6060005@zytor.com>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [79.218.103.218]
+x-forefront-prvs: 01221E3973
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019001)(6009001)(24454002)(189002)(199002)(51704005)(377454003)(479174003)(65816001)(54356001)(53806001)(94946001)(63696002)(66066001)(85306002)(33646001)(59766001)(77982001)(83322001)(19580405001)(56776001)(80976001)(94316002)(46102001)(75402002)(74482001)(86362001)(50986001)(74662001)(47976001)(47446002)(93516002)(31966008)(81816001)(51856001)(95416001)(49866001)(47736001)(93136001)(76576001)(76786001)(74366001)(90146001)(69226001)(74876001)(74316001)(2656002)(87266001)(74706001)(87936001)(81542001)(81342001)(76796001)(85852003)(4396001)(56816005)(2201001)(79102001)(81686001)(54316002)(19580395003)(83072002)(92566001)(95666001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DB4PR04MB265;H:DB4PR04MB265.eurprd04.prod.outlook.com;CLIP:79.218.103.218;FPR:9F59F232.1EE60611.81D19FA7.14D3EF31.20162;InfoNoRecordsMX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: conrad-kostecki.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Feb 2014, Joonsoo Kim wrote:
+> On 02/14/2014 10:13 AM, Conrad Kostecki wrote:
+> >>
+> >> Does it have DMI?
+> >
+> > Unfortunately not.
+> >
+> > # dmidecode 2.12
+> > # No SMBIOS nor DMI entry point found, sorry.
+> >
+> 
+> Sigh.  Does anyone have contacts at Soekris who can complain about this
+> stuff?
 
-> clear_obj_pfmemalloc() takes the pointer to the object pointer as argument
-> to store masked value back into this address.
-> But this is useless, since we don't use this stored value anymore.
-> All we need is just masked value. So makes clear_obj_pfmemalloc()
-> just return masked value.
+I don't think, that Soekris will fix this. No model of Soekris ever had implemented DMI.
+Their BIOS (called comBIOS) is completely written by them. Output is via serial port only.
+At least I know, that the technical engineers at Soekris respond on sales@soekris.com.
 
-Could this be a bit more compact?
-
-> @@ -215,9 +215,9 @@ static inline void set_obj_pfmemalloc(void **objp)
->  	return;
->  }
->
-> -static inline void clear_obj_pfmemalloc(void **objp)
-> +static inline void *clear_obj_pfmemalloc(void *objp)
->  {
-> -	*objp = (void *)((unsigned long)*objp & ~SLAB_OBJ_PFMEMALLOC);
-> +	return (void *)((unsigned long)objp & ~SLAB_OBJ_PFMEMALLOC);
->  }
-
-I dont think you need the (void *) cast here.
-
->  /*
-> @@ -810,7 +810,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
->  		struct kmem_cache_node *n;
->
->  		if (gfp_pfmemalloc_allowed(flags)) {
-> -			clear_obj_pfmemalloc(&objp);
-> +			objp = clear_obj_pfmemalloc(objp);
->  			return objp;
->  		}
-
-No need for objp. Just "return clear_obj_....
-
-
-> @@ -833,7 +833,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
->  		if (!list_empty(&n->slabs_free) && force_refill) {
->  			struct page *page = virt_to_head_page(objp);
->  			ClearPageSlabPfmemalloc(page);
-> -			clear_obj_pfmemalloc(&objp);
-> +			objp = clear_obj_pfmemalloc(objp);
->  			recheck_pfmemalloc_active(cachep, ac);
->  			return objp;
-
-Same here?
+Maybe the patch could be extended, that HPET would be only enabled if there is no ACPI present?
