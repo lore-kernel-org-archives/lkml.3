@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaBNMdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 07:33:12 -0500
-Received: from relay.parallels.com ([195.214.232.42]:57673 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932AbaBNMdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 07:33:10 -0500
-Message-ID: <1392381205.5384.39.camel@tkhai>
-Subject: Re: [PATCH] sched/core: Create new task with twice disabled
- preemption
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Date: Fri, 14 Feb 2014 16:33:25 +0400
-In-Reply-To: <20140214122152.GD10590@arm.com>
-References: <1392306716.5384.3.camel@tkhai>
-	 <20140213160013.GE6835@laptop.programming.kicks-ass.net>
-	 <52FD01A6.8060404@yandex.ru> <20140214105255.GA10596@arm.com>
-	 <1392376569.5384.25.camel@tkhai> <20140214122152.GD10590@arm.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+	id S1752252AbaBNMeZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 07:34:25 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20854 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751926AbaBNMeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 07:34:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,844,1384329600"; 
+   d="scan'208";a="455473323"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] Revert "ACPI / video: Add HP EliteBook Revolve 810 to the blacklist"
+Date: Fri, 14 Feb 2014 14:34:07 +0200
+Message-Id: <1392381247-28109-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Птн, 14/02/2014 в 12:21 +0000, Catalin Marinas пишет:
-> On Fri, Feb 14, 2014 at 11:16:09AM +0000, Kirill Tkhai wrote:
-> > В Птн, 14/02/2014 в 10:52 +0000, Catalin Marinas пишет:
-> > > On Thu, Feb 13, 2014 at 09:32:22PM +0400, Kirill Tkhai wrote:
-> > > > Look at ARM64's finish_arch_post_lock_switch(). It looks a task
-> > > > must to not be preempted between switch_mm() and this function.
-> > > > But in case of new task this is possible.
-> > > 
-> > > We had a thread about this at the end of last year:
-> > > 
-> > > https://lkml.org/lkml/2013/11/15/82
-> > >
-> > > There is indeed a problem on arm64, something like this (and I think
-> > > s390 also needs a fix):
-> > > 
-> > > 1. switch_mm() via check_and_switch_context() defers the actual mm
-> > >    switch by setting TIF_SWITCH_MM
-> > > 2. the context switch is considered 'done' by the kernel before
-> > >    finish_arch_post_lock_switch() and therefore we can be preempted to a
-> > >    new thread before finish_arch_post_lock_switch()
-> > > 3. The new thread has the same mm as the preempted thread but we
-> > >    actually missed the mm switching in finish_arch_post_lock_switch()
-> > >    because TIF_SWITCH_MM is per thread rather than mm
-> > > 
-> > > > This is the problem I tried to solve. I don't know arm64, and I can't
-> > > > say how it is serious.
-> > > 
-> > > Have you managed to reproduce this? I don't say it doesn't exist, but I
-> > > want to make sure that any patch actually fixes it.
-> > 
-> > No, I have not tried. I found this place while analysing scheduler code.
-> > But it seems with the RT technics suggested previous message it's quite
-> > possible.
-> 
-> Now I think I confused myself. Looking through the __schedule() code,
-> context_switch() and therefore finish_arch_post_lock_switch() are called
-> with preemption disabled. So the scenario above cannot exist since the
-> current thread cannot be preempted between switch_mm() and
-> finish_arch_post_lock_switch(). Do I miss anything?
+This reverts commit e18ac62fa4b3f16234bab0d5a6627c57dbae9e7e.
 
-Everything is right, the only case, which we have to worry, is
-schedule_tail()
+The referenced commit added HP EliteBook Revolve 810 to the ACPI video
+detected blacklist so that only the native Intel backlight interface was
+exported.
 
-> Now I get your point about schedule_tail() which calls
-> finish_task_switch() with a preempt count of 0. I'll get back to your
-> original patch.
-> 
-> Thanks.
-> 
+However, this turned to be wrong solution after all. The ACPI video
+interface works and as long as we only use that there are no problems. So
+we can revert this commit and stick to use the backlight interface provided
+by the ACPI video driver.
 
-Kirill
+(Using Intel native interface will not work after resume since the ACPI
+video driver will restore it's state which takes control over the native
+one. That's a separate thing and should be addressed in the ACPI video
+driver, I suppose.)
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=70231
+Cc: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+Rafael, 
+
+This turned out to be misunderstanding from my side. I should have
+investigated this further before submitting the original patch. Sorry about
+that.
+
+Aaron,
+
+Thanks for the investigation and pointing me to the right direction (e.g to
+use acpi_video0 over the native one).
+
+ drivers/acpi/video_detect.c | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+index a697b77b8865..f0447d3daf2c 100644
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -170,14 +170,6 @@ static struct dmi_system_id video_detect_dmi_table[] = {
+ 	},
+ 	{
+ 	.callback = video_detect_force_vendor,
+-	.ident = "HP EliteBook Revolve 810",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Revolve 810 G1"),
+-		},
+-	},
+-	{
+-	.callback = video_detect_force_vendor,
+ 	.ident = "Lenovo Yoga 13",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-- 
+1.8.5.2
 
