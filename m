@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaBNLPc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 06:15:32 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:51142 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaBNLPa (ORCPT
+	id S1752232AbaBNLPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 06:15:54 -0500
+Received: from relay.parallels.com ([195.214.232.42]:42695 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbaBNLPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 06:15:30 -0500
-Message-ID: <52FDFAC6.1080802@gmail.com>
-Date: Fri, 14 Feb 2014 19:15:18 +0800
-From: Li Zefan <lizf.kern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 14 Feb 2014 06:15:53 -0500
+Message-ID: <1392376569.5384.25.camel@tkhai>
+Subject: Re: [PATCH] sched/core: Create new task with twice disabled
+ preemption
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
+        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "Martin Schwidefsky" <schwidefsky@de.ibm.com>
+Date: Fri, 14 Feb 2014 15:16:09 +0400
+In-Reply-To: <20140214105255.GA10596@arm.com>
+References: <1392306716.5384.3.camel@tkhai>
+	 <20140213160013.GE6835@laptop.programming.kicks-ass.net>
+	 <52FD01A6.8060404@yandex.ru> <20140214105255.GA10596@arm.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: fix top cgroup refcnt leak
-References: <52FDE393.6050607@huawei.com>
-In-Reply-To: <52FDE393.6050607@huawei.com>
-Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2014年02月14日 17:36, Li Zefan 写道:
-> If we mount the same cgroupfs in serveral mount points, and then
-> umount all of them, kill_sb() will be called only once.
+袙 袩褌薪, 14/02/2014 胁 10:52 +0000, Catalin Marinas 锌懈褕械褌:
+> On Thu, Feb 13, 2014 at 09:32:22PM +0400, Kirill Tkhai wrote:
+> > On 13.02.2014 20:00, Peter Zijlstra wrote:
+> > > On Thu, Feb 13, 2014 at 07:51:56PM +0400, Kirill Tkhai wrote:
+> > >> For archs without __ARCH_WANT_UNLOCKED_CTXSW set this means
+> > >> that all newly created tasks execute finish_arch_post_lock_switch()
+> > >> and post_schedule() with preemption enabled.
+> > > 
+> > > That's IA64 and MIPS; do they have a 'good' reason to use this?
+> > 
+> > It seems my description misleads reader, I'm sorry if so.
+> > 
+> > I mean all architectures *except* IA64 and MIPS. All, which
+> > has no __ARCH_WANT_UNLOCKED_CTXSW defined.
+> > 
+> > IA64 and MIPS already have preempt_enable() in schedule_tail():
+> > 
+> > #ifdef __ARCH_WANT_UNLOCKED_CTXSW
+> >         /* In this case, finish_task_switch does not reenable preemption */
+> >         preempt_enable();
+> > #endif
+> > 
+> > Their initial preemption is not decremented in finish_lock_switch().
+> > 
+> > So, we speak about x86, ARM64 etc.
+> > 
+> > Look at ARM64's finish_arch_post_lock_switch(). It looks a task
+> > must to not be preempted between switch_mm() and this function.
+> > But in case of new task this is possible.
 > 
-> Therefore it's wrong to increment top_cgroup's refcnt when we find
-> an existing cgroup_root.
+> We had a thread about this at the end of last year:
 > 
-> Try:
-> 	# mount -t cgroup -o cpuacct xxx /cgroup
-> 	# mount -t cgroup -o cpuacct xxx /cgroup2
-> 	# cat /proc/cgroups | grep cpuacct
-> 	cpuacct 2       1       1
-> 	# umount /cgroup
-> 	# umount /cgroup2
-> 	# cat /proc/cgroups | grep cpuacct
-> 	cpuacct 2       1       1
+> https://lkml.org/lkml/2013/11/15/82
+>
+> There is indeed a problem on arm64, something like this (and I think
+> s390 also needs a fix):
 > 
-> You'll see cgroupfs will never be freed.
+> 1. switch_mm() via check_and_switch_context() defers the actual mm
+>    switch by setting TIF_SWITCH_MM
+> 2. the context switch is considered 'done' by the kernel before
+>    finish_arch_post_lock_switch() and therefore we can be preempted to a
+>    new thread before finish_arch_post_lock_switch()
+> 3. The new thread has the same mm as the preempted thread but we
+>    actually missed the mm switching in finish_arch_post_lock_switch()
+>    because TIF_SWITCH_MM is per thread rather than mm
 > 
-> Also move this chunk of code upwards.
+> > This is the problem I tried to solve. I don't know arm64, and I can't
+> > say how it is serious.
 > 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->  kernel/cgroup.c | 32 ++++++++++++++++----------------
->  1 file changed, 16 insertions(+), 16 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 37d94a2..5bfe738 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1498,6 +1498,22 @@ retry:
->  		bool name_match = false;
->  
->  		/*
-> +		 * A root's lifetime is governed by its top cgroup.  Zero
-> +		 * ref indicate that the root is being destroyed.  Wait for
-> +		 * destruction to complete so that the subsystems are free.
-> +		 * We can use wait_queue for the wait but this path is
-> +		 * super cold.  Let's just sleep for a bit and retry.
-> +		 */
-> +		if (!atomic_read(&root->top_cgroup.refcnt)) {
+> Have you managed to reproduce this? I don't say it doesn't exist, but I
+> want to make sure that any patch actually fixes it.
 
-oops, this fix is wrong. We call kernfs_mount() without cgroup locks and it
-drops cgroup refcnt if failed.
+No, I have not tried. I found this place while analysing scheduler code.
+But it seems with the RT technics suggested previous message it's quite
+possible.
 
-I guess we need to bump the refcnt and then drop it after kernfs_mount().
+> So we have more solutions, one of the first two suitable for stable:
+> 
+> 1. Propagate the TIF_SWITCH_MM to the next thread (suggested by Martin)
+> 2. Get rid of TIF_SWITCH_MM and use mm_cpumask for tracking (I already
+>    have the patch, it just needs a lot more testing)
+> 3. Re-write the ASID allocation algorithm to no longer require IPIs and
+>    therefore drop finish_arch_post_lock_switch() (this can be done, so
+>    pretty intrusive for stable)
+> 4. Replace finish_arch_post_lock_switch() with finish_mm_switch() as per
+>    Martin's patch and I think this would guarantee a call always, we can
+>    move the mm switching from switch_mm() to finish_mm_switch() and no
+>    need for flags to mark deferred mm switching
+> 
+> For arm64, we'll most likely go with 2 for stable and move to 3 shortly
+> after, no need for other deferred mm switching.
+> 
+
+It's good, but one of architectures is a corner case. It seems to me
+it's better to have the same enviroment/preemption for the first schedule
+and for others.
+
+This minimises the number of rare errors and this may help in the future.
+The first schedule happens rare and it's tested worse.
+
+Kirill
+
