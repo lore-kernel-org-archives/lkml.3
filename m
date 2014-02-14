@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbaBNNq1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 08:46:27 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:59522 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337AbaBNNq0 (ORCPT
+	id S1752835AbaBNNrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 08:47:41 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:41311 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201AbaBNNrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 08:46:26 -0500
+	Fri, 14 Feb 2014 08:47:40 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 26/27] ARM: shmobile: lager-reference: Enable CMT0 in device tree
+Date: Fri, 14 Feb 2014 14:48:44 +0100
+Message-ID: <2244047.l1cecWDdMU@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <52FE1E14.5090400@cogentembedded.com>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1392339605-20691-27-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <52FE1E14.5090400@cogentembedded.com>
 MIME-Version: 1.0
-In-Reply-To: <s5hiosi3osp.wl%tiwai@suse.de>
-References: <CAAJw_ZvX2AfS8COiNdN9gi_1xJ4L_vL=ROCzcLL3u0h51kuX3Q@mail.gmail.com>
-	<52FCFD92.7040109@hurleysoftware.com>
-	<s5hiosi3osp.wl%tiwai@suse.de>
-Date: Fri, 14 Feb 2014 21:46:25 +0800
-Message-ID: <CAAJw_ZsoO=kd6cVM3HYrkim5K0RKrnDXYGgodNNQmHVYs19a8A@mail.gmail.com>
-Subject: Re: Lenovo X240 (haswell) suspend-to-ram hangs on 3-14.0-rc2
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        lkml <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 1:28 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Thu, 13 Feb 2014 12:14:58 -0500,  Peter Hurley wrote:
-> Apparently there's no maintainer but I've cc'ed people who might
-> have a clue about this.
+Hi Sergei,
 
-Peter ... thanks for pointer.
+Thank you for the review.
 
-> On Fri, Feb 14, 2014 at 1:28 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> Is it a Intel+Nvidia hybrid?  If so, does it happen even with
-> CONFIG_VGA_SWITCHEROO=n?
+On Friday 14 February 2014 17:45:56 Sergei Shtylyov wrote:
+> On 14-02-2014 5:00, Laurent Pinchart wrote:
+> > Enable the CMT0 device and configure channel 0 as a clock event
+> > provider.
+> > 
+> > Signed-off-by: Laurent Pinchart
+> > <laurent.pinchart+renesas@ideasonboard.com>
+> > 
+> > diff --git a/arch/arm/mach-shmobile/include/mach/r8a7790.h
+> > b/arch/arm/mach-shmobile/include/mach/r8a7790.h index 0b95bab..62b31f3
+> > 100644
+> > --- a/arch/arm/mach-shmobile/include/mach/r8a7790.h
+> > +++ b/arch/arm/mach-shmobile/include/mach/r8a7790.h
+> > @@ -29,7 +29,6 @@ enum {
+> >  };
+> >   
+> >  void r8a7790_add_standard_devices(void);
+> > -void r8a7790_add_dt_devices(void);
+> >  void r8a7790_clock_init(void);
+> >  void r8a7790_pinmux_init(void);
+> >  void r8a7790_pm_init(void);
+> > diff --git a/arch/arm/mach-shmobile/setup-r8a7790.c
+> > b/arch/arm/mach-shmobile/setup-r8a7790.c index 3e5813f..462c81f 100644
+> > --- a/arch/arm/mach-shmobile/setup-r8a7790.c
+> > +++ b/arch/arm/mach-shmobile/setup-r8a7790.c
+> > @@ -294,11 +294,6 @@ static struct resource cmt0_resources[] = {
+> >   					  &cmt##idx##_platform_data,	\
+> >   					  sizeof(struct sh_timer_config))
+> > 
+> > -void __init r8a7790_add_dt_devices(void)
+> > -{
+> > -	r8a7790_register_cmt(0);
+> > -}
+> > -
+> >  void __init r8a7790_add_standard_devices(void)
+> >  {
+> >   	r8a7790_register_scif(0);
+> > @@ -311,7 +306,7 @@ void __init r8a7790_add_standard_devices(void)
+> >   	r8a7790_register_scif(7);
+> >   	r8a7790_register_scif(8);
+> >   	r8a7790_register_scif(9);
+> > -	r8a7790_add_dt_devices();
+> > +	r8a7790_register_cmt(0);
+> >   	r8a7790_register_irqc(0);
+> >   	r8a7790_register_thermal();
+> >  }
+> 
+>     IMHO, these 2 files should be split into a separate patch.
 
-It's not Intel+Nvidia. It's Intel Core i7-4600U 2.1 GHz, Intel HD Graphics 4400.
+That could easily be done, but why ?
 
-I checked my config. CONFIG_VGA_SWITCHEROO is not set.
+-- 
+Regards,
 
-On Fri, Feb 14, 2014 at 5:21 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> For what it's worth, I have a the X240's bigger brother --- a T540p
-> (with intel graphics and the 3k panel) running 3.14-rc2, and
-> suspend-to-ram is working without any problems on my laptop.
+Laurent Pinchart
 
-Interesting. Perhaps it's the USB options. I had these set to "y"
-
-CONFIG_USB_XHCI_HCD=y
-CONFIG_USB_EHCI_HCD=y
-CONFIG_USB_EHCI_ROOT_HUB_TT=y
-CONFIG_USB_EHCI_TT_NEWSCHED=y
-CONFIG_USB_EHCI_PCI=y
-
-Again, These same config works find on X230. It's very strange. The
-same hard disk (SSD) can suspend-to-ram on the X230 but not on the
-X240. The X230 has i7-3520M vs X240 i7-4600U.
-
-I've even tried with all the USB set to "n" and still couldn't S2D.
-May be the graphic?
-
-Thanks,
-Jeff
