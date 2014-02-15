@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaBOXd2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 18:33:28 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:54558 "EHLO kolab.o2s.ch"
+	id S1753217AbaBOXdf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 18:33:35 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:54610 "EHLO kolab.o2s.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752526AbaBOXdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 18:33:23 -0500
-Subject: [PATCH v6 0/8] 
+	id S1753060AbaBOXdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 18:33:33 -0500
+Subject: [PATCH v6 3/8] ARM: sunxi: clk: export clk_sunxi_mmc_phase_control
 To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
         Mike Turquette <mturquette@linaro.org>,
@@ -20,97 +20,52 @@ To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         linux-arm-kernel@lists.infradead.org
 From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Sun, 16 Feb 2014 00:33:12 +0100
-Message-ID: <20140215233011.30460.27261.stgit@dizzy-6.o2s.ch>
+Date: Sun, 16 Feb 2014 00:33:31 +0100
+Message-ID: <20140215233330.30460.53458.stgit@dizzy-6.o2s.ch>
+In-Reply-To: <20140215233011.30460.27261.stgit@dizzy-6.o2s.ch>
+References: <20140215233011.30460.27261.stgit@dizzy-6.o2s.ch>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-The following patchset adds support for the SD/MMC host found in the Allwinner SoCs.
-It contains all the necessary modifications for clock environment and also the device
-tree script modification which add it to all the boards using it.
-The clock environment function needed for phase offset configuration has
-been proposed and implemented by Emilio.
-A lot of work and cleanup has been done by Hans de Goede. Special thanks to him!
-This patchset is the 4th attempt to send this driver upstream.
+From: Hans de Goede <hdegoede@redhat.com>
 
-Changes since v1:
--Using mmc_of_parse instead of diy dt parsing
--Adding nodes for all mmc controller to the dtsi files,
- including sofar unused controllers
--Using generic GPIO slot library for WP/CD
--Adding additional MMC device nodes into DTSI files
-
-Changes since v2:
--Add missing Signed-off-by tags
--Stop using __raw_readl / __raw_writel so that barriers are properly used
--Adding missing new lines
--Adding missing patch for automatic reparenting of clocks
-
-Changes since v3:
--Move clk_enable / disable into host_init / exit (Hans)
--Fix hang on boot caused by irq storm (Hans)
-
-Changes since v4:
--moving sunxi-mci.{c/h} to sunxi-mmc.{c/h}
--removing camel cases from the defines in  sunxi-mmc.h
--moving defines out of the struct definition
- since this is bad coding style
--adding documentation for the device tree binding
-
-Changes since v5:
--adding host initialization for when the sdio irq is enabled
- (just to make sure having a defined state at all time)
--add mmc support fixup: set pullup on cd pins
--fixup: Don't set MMC_CAP_NEEDS_POLL /  MMC_CAP_4_BIT_DATA
-
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 ---
-
-David Lanzendörfer (5):
-      ARM: sunxi: Add driver for SD/MMC hosts found on Allwinner sunxi SoCs
-      ARM: dts: sun7i: Add support for mmc
-      ARM: dts: sun4i: Add support for mmc
-      ARM: dts: sun5i: Add support for mmc
-      ARM: sunxi: Add documentation for driver for SD/MMC hosts found on Allwinner sunxi SoCs
-
-Emilio López (2):
-      clk: sunxi: factors: automatic reparenting support
-      clk: sunxi: Implement MMC phase control
-
-Hans de Goede (1):
-      ARM: sunxi: clk: export clk_sunxi_mmc_phase_control
-
-
- .../devicetree/bindings/mmc/sunxi-mmc.txt          |   32 +
- arch/arm/boot/dts/sun4i-a10-a1000.dts              |    8 
- arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |    8 
- arch/arm/boot/dts/sun4i-a10.dtsi                   |   54 +
- arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts   |   30 +
- arch/arm/boot/dts/sun5i-a10s.dtsi                  |   44 +
- arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts    |   15 
- arch/arm/boot/dts/sun5i-a13-olinuxino.dts          |   15 
- arch/arm/boot/dts/sun5i-a13.dtsi                   |   37 +
- arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |    8 
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |    8 
- arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts    |   23 +
- arch/arm/boot/dts/sun7i-a20.dtsi                   |   61 +
- drivers/clk/sunxi/clk-factors.c                    |   36 +
- drivers/clk/sunxi/clk-sunxi.c                      |   35 +
- drivers/mmc/host/Kconfig                           |    7 
- drivers/mmc/host/Makefile                          |    2 
- drivers/mmc/host/sunxi-mmc.c                       |  876 ++++++++++++++++++++
- drivers/mmc/host/sunxi-mmc.h                       |  239 +++++
- include/linux/clk/sunxi.h                          |   22 +
- 20 files changed, 1560 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
- create mode 100644 drivers/mmc/host/sunxi-mmc.c
- create mode 100644 drivers/mmc/host/sunxi-mmc.h
+ include/linux/clk/sunxi.h |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
  create mode 100644 include/linux/clk/sunxi.h
 
--- 
-Signature
+diff --git a/include/linux/clk/sunxi.h b/include/linux/clk/sunxi.h
+new file mode 100644
+index 0000000..1ef5c89
+--- /dev/null
++++ b/include/linux/clk/sunxi.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright 2013 - Hans de Goede <hdegoede@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __LINUX_CLK_SUNXI_H_
++#define __LINUX_CLK_SUNXI_H_
++
++#include <linux/clk.h>
++
++void clk_sunxi_mmc_phase_control(struct clk_hw *hw, u8 sample, u8 output);
++
++#endif
+
