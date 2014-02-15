@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaBOOCt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 09:02:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41376 "EHLO mx2.suse.de"
+	id S1753333AbaBOO1G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 09:27:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20480 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753046AbaBOOCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 09:02:47 -0500
-Date: Sat, 15 Feb 2014 15:02:23 +0100
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>, Jan Beulich <jbeulich@suse.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: Issue a warning if number of present CPUs > maxcpus
- and CONFIG_HOTPLUG=n
-Message-ID: <20140215150223.63bb52fb@hananiah.suse.cz>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753153AbaBOO1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 09:27:04 -0500
+Date: Sat, 15 Feb 2014 15:27:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140215142700.GA15540@redhat.com>
+References: <20140212042215.GN18016@ZenIV.linux.org.uk> <20140212054043.GB13997@dastard> <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com> <20140212113928.GO18016@ZenIV.linux.org.uk> <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com> <20140212211421.GP18016@ZenIV.linux.org.uk> <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com> <20140213174020.GA14455@redhat.com> <CA+55aFxwozCQ05axLB02R3huX8sj=20EoFfw0cSDDL8fBE_Y6Q@mail.gmail.com> <20140215052531.GX18016@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140215052531.GX18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note that the check against i (value passed as maxcpus, but at least 1)
-is repeated further down, including the warning, but since possible is
-already clamped to max_cpus at that time, it is never printed. In fact,
-for the non-hotplug case, the warning about exceeding maxcpus is only
-ever printed if "possible_cpus" was also specified on the command line.
+On 02/15, Al Viro wrote:
+>
+> OK, _very_ preliminary patch follows.  It's uglier than it has to
 
-I strongly believe that such limitation was unintentional.
+And I'm afraid it needs more uglifications...
 
-I also changed the message slightly -- the kernel parameter name is
-maxcpus, not max_cpus.
+> +void dismiss_siginfo(ksiginfo_t *info)
+> +{
+> +	if (info->q)
+> +		__sigqueue_free(info->q);
+> +	info->q = NULL;
+> +}
 
-Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
----
- arch/x86/kernel/smpboot.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+1. info->q can be already freed if SIGQUEUE_PREALLOC.
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index a32da80..376b6c6 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1226,9 +1226,6 @@ __init void prefill_possible_map(void)
- #ifdef CONFIG_HOTPLUG_CPU
- 		if (setup_max_cpus)
- 			possible += disabled_cpus;
--#else
--		if (possible > i)
--			possible = i;
- #endif
- 	} else
- 		possible = setup_possible_cpus;
-@@ -1246,7 +1243,7 @@ __init void prefill_possible_map(void)
- 	if (!setup_max_cpus)
- #endif
- 	if (possible > i) {
--		pr_warn("%d Processors exceeds max_cpus limit of %u\n",
-+		pr_warn("%d Processors exceeds maxcpus limit of %u\n",
- 			possible, setup_max_cpus);
- 		possible = i;
- 	}
--- 
-1.8.4.5
+   Once get_signal_to_deliver() or any other caller drops ->siglock
+   another thread can do sys_timer_delete()->sigqueue_free().
+
+2. We need to move do_schedule_next_timer() from dequeue_signal()
+   here.
+
+   Otherwise ->q can be reused/overwritten by the next send_sigqueue()
+   right affter ->siglock is dropped.
+
+Oleg.
+
