@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaBOTj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 14:39:26 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:48080 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528AbaBOTjY (ORCPT
+	id S1753856AbaBOTkX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 14:40:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53199 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753732AbaBOTkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 14:39:24 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>, <stable@vger.kernel.org>
-Subject: [PATCH] workqueue: Document exceptions to work item non-reentrancy guarantee
-Date: Sat, 15 Feb 2014 14:38:39 -0500
-Message-Id: <1392493119-9277-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Sat, 15 Feb 2014 14:40:22 -0500
+Date: Sat, 15 Feb 2014 11:41:42 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [PATCH] lib: Fix some sparse warnings in devres.c
+Message-ID: <20140215194142.GA2395@kroah.com>
+References: <20140206111346.712edc04@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140206111346.712edc04@gandalf.local.home>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77,
-  workqueue: consider work function when searching for busy work items
-work items whose work functions are re-assigned are no longer guaranteed
-non-reentrancy with the previously assigned work function. For example,
+On Thu, Feb 06, 2014 at 11:13:46AM -0500, Steven Rostedt wrote:
+> Having a discussion about sparse warnings in the kernel, and that we
+> should clean them up, I decided to pick a random file to do so. This
+> happened to be devres.c which gives the following warnings:
+> 
+>   CHECK   lib/devres.c
+> lib/devres.c:83:9: warning: cast removes address space of expression
+> lib/devres.c:117:31: warning: incorrect type in return expression (different address spaces)
+> lib/devres.c:117:31:    expected void [noderef] <asn:2>*
+> lib/devres.c:117:31:    got void *
+> lib/devres.c:125:31: warning: incorrect type in return expression (different address spaces)
+> lib/devres.c:125:31:    expected void [noderef] <asn:2>*
+> lib/devres.c:125:31:    got void *
+> lib/devres.c:136:26: warning: incorrect type in assignment (different address spaces)
+> lib/devres.c:136:26:    expected void [noderef] <asn:2>*[assigned] dest_ptr
+> lib/devres.c:136:26:    got void *
+> lib/devres.c:226:9: warning: cast removes address space of expression
+> 
+> Mostly it's just the use of typecasting to void * without adding
+> __force, or returning ERR_PTR(-ESOMEERR) without typecasting to a
+> __iomem type.
+> 
+> I added a helper macro IOMEM_ERR_PTR() that does the typecast to make
+> the code a little nicer than adding ugly typecasts to the code.
+> 
+> This is applied against linux-next.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-        PREPARE_WORK(&work, funcA)
-        schedule_work(&work)
-          .
-        < funcA starts >
-          .
-        PREPARE_WORK(&work, funcB)
-        schedule_work(&work)
-
-funcA() may run concurrently with funcB().
-
-The work item non-reentrancy guarantee is a crucial design guarantee
-which, if violated, may not have obvious consequences. For example,
-the entire firewire subsystem expects the as-documented per-work item
-non-reentrancy guarantee, which was the behavior prior to the above
-commit, not the per-work function + per-work item behavior since.
-
-Document the known exceptions to this guarantee.
-
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- Documentation/workqueue.txt | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/workqueue.txt b/Documentation/workqueue.txt
-index f81a65b..5b49491 100644
---- a/Documentation/workqueue.txt
-+++ b/Documentation/workqueue.txt
-@@ -223,9 +223,17 @@ resources, scheduled and executed.
- 
- 	This flag is meaningless for unbound wq.
- 
--Note that the flag WQ_NON_REENTRANT no longer exists as all workqueues
--are now non-reentrant - any work item is guaranteed to be executed by
--at most one worker system-wide at any given time.
-+Note that the flag WQ_NON_REENTRANT no longer exists.
-+Generally, workqueues are non-reentrant -- a work item will be executed
-+by at most one worker system-wide at any given time. However, this
-+non-reentrancy guarantee does not extend to work items whose function
-+is re-assigned (for example, via PREPARE_WORK/PREPARE_DELAYED_WORK)
-+and re-queued for execution; the newly scheduled work may run concurrently
-+with the previous work item function.
-+
-+Note that WQ_UNBOUND workqueues, such as system_unbound_wq, have no
-+non-reentrancy guarantees as these workqueues do not provide concurrency
-+management.
- 
- @max_active:
- 
--- 
-1.8.1.2
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
