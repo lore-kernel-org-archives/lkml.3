@@ -1,149 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669AbaBOX2V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 18:28:21 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:37200 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103AbaBOX2T (ORCPT
+	id S1752796AbaBOX2a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 18:28:30 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36301 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992AbaBOX22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 18:28:19 -0500
-Date: Sat, 15 Feb 2014 15:27:29 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Pradeep Sawlani <pradeep.sawlani@gmail.com>
-cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, surim@lab126.com,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Dave Hansen <dave@sr71.net>, Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: KSM on Android
-In-Reply-To: <CAMrOTPgBtANS_ryRjan0-dTL97U7eRvtf3dCsss=Kn+Uk89fuA@mail.gmail.com>
-Message-ID: <alpine.LSU.2.11.1402151344340.8605@eggly.anvils>
-References: <CAMrOTPgBtANS_ryRjan0-dTL97U7eRvtf3dCsss=Kn+Uk89fuA@mail.gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sat, 15 Feb 2014 18:28:28 -0500
+Message-ID: <52FFF7F8.2070801@oracle.com>
+Date: Sat, 15 Feb 2014 18:27:52 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+CC: Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: sched: fair: NULL ptr deref in check_preempt_wakeup
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014, Pradeep Sawlani wrote:
-> Re-sending this in plain text format (Apologies)
-> 
-> Hello,
-> 
-> In pursuit of saving memory on Android, I started experimenting with
-> Kernel Same Page Merging(KSM).
-> Number of pages shared because of KSM is reported by
-> /sys/kernel/mm/pages_sharing.
-> Documentation/vm/ksm.txt explains this as:
-> 
-> "pages_sharing    - how many more sites are sharing them i.e. how much saved"
-> 
-> After enabling KSM on Android device, this number was reported as 19666 pages.
-> Obvious optimization is to find out source of sharing and see if we
-> can avoid duplicate pages at first place.
-> In order to collect the data needed, It needed few
-> modifications(trace_printk) statement in mm/ksm.c.
-> Data should be collected from second cycle because that's when ksm
-> starts merging
-> pages. First KSM cycle is only used to calculate the checksum, pages
-> are added to
-> unstable tree and eventually moved to stable tree after this.
-> 
-> After analyzing data from second KSM cycle, few things which stood out:
-> 1.  In the same cycle, KSM can scan same page multiple times. Scanning
-> a page involves
->     comparing page with pages in stable tree, if no match is found
-> checksum is calculated.
->     From the look of it, it seems to be cpu intensive operation and
-> impacts dcache as well.
+Hi folks,
 
-Yes.
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've
+stumbled on the following:
 
-Of course you can adjust /sys/kernel/mm/ksm tunables to make it more
-or less cpu and dcache intensive, and correspondingly more or less
-effective in combining memory; but that's not really your interest.
+[  522.645288] BUG: unable to handle kernel NULL pointer dereference at 0000000000000150
+[  522.646271] IP: [<ffffffff81186c6f>] check_preempt_wakeup+0x11f/0x210
+[  522.646976] PGD b0a79067 PUD ae9cf067 PMD 0
+[  522.647494] Oops: 0000 [#1] PREEMPT SMP
+[  522.648000] Dumping ftrace buffer:
+[  522.648380]    (ftrace buffer empty)
+[  522.648775] Modules linked in:
+[  522.649125] CPU: 0 PID: 11735 Comm: trinity-c50 Not tainted 
+3.14.0-rc2-next-20140214-sasha-00008-g95d9d16-dirty #85
+[  522.650021] task: ffff8800c00bb000 ti: ffff88007fdb8000 task.ti: ffff88007fdb8000
+[  522.650021] RIP: 0010:[<ffffffff81186c6f>]  [<ffffffff81186c6f>] check_preempt_wakeup+0x11f/0x210
+[  522.650021] RSP: 0018:ffff880226e03ba8  EFLAGS: 00010046
+[  522.650021] RAX: 0000000000000000 RBX: ffff880226fd79c0 RCX: 0000000000000008
+[  522.650021] RDX: 0000000000000000 RSI: ffff880211313000 RDI: 000000000000000c
+[  522.650021] RBP: ffff880226e03be8 R08: 0000000000000000 R09: 000000000000b4bb
+[  522.650021] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+[  522.650021] R13: ffff880211313068 R14: ffff8800c00bb000 R15: 0000000000000000
+[  522.650021] FS:  00007f435269f700(0000) GS:ffff880226e00000(0000) knlGS:0000000000000000
+[  522.650021] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  522.650021] CR2: 0000000000000150 CR3: 00000000abd2c000 CR4: 00000000000006f0
+[  522.650021] DR0: 0000000000995750 DR1: 0000000000000000 DR2: 0000000000000000
+[  522.650021] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000600
+[  522.650021] Stack:
+[  522.650021]  ffff880211313000 01ff880226fd79c0 ffff880211313000 ffff880226fd79c0
+[  522.650021]  ffff880226fd79c0 ffff880211313000 0000000000000000 ffff880226e00000
+[  522.650021]  ffff880226e03c08 ffffffff8117361d ffff880226fd79c0 ffff880226fd79c0
+[  522.650021] Call Trace:
+[  522.650021]  <IRQ>
+[  522.650021]  [<ffffffff8117361d>] check_preempt_curr+0x3d/0xb0
+[  522.650021]  [<ffffffff81175d88>] ttwu_do_wakeup+0x18/0x130
+[  522.650021]  [<ffffffff81175ee4>] T.2248+0x44/0x50
+[  522.650021]  [<ffffffff81175f9e>] ttwu_queue+0xae/0xd0
+[  522.650021]  [<ffffffff81180224>] ? try_to_wake_up+0x34/0x2a0
+[  522.650021]  [<ffffffff81180454>] try_to_wake_up+0x264/0x2a0
+[  522.650021]  [<ffffffff811a1672>] ? __lock_acquired+0x2a2/0x2e0
+[  522.650021]  [<ffffffff8118049d>] default_wake_function+0xd/0x10
+[  522.650021]  [<ffffffff811952f8>] autoremove_wake_function+0x18/0x40
+[  522.650021]  [<ffffffff811951b2>] __wake_up_common+0x52/0x90
+[  522.650021]  [<ffffffff8119550d>] ? __wake_up+0x2d/0x70
+[  522.650021]  [<ffffffff81195523>] __wake_up+0x43/0x70
+[  522.650021]  [<ffffffff843119a3>] p9_client_cb+0x43/0x70
+[  522.650021]  [<ffffffff84319d05>] req_done+0x105/0x110
+[  522.650021]  [<ffffffff81cafca6>] vring_interrupt+0x86/0xa0
+[  522.650021]  [<ffffffff811b9a28>] ? handle_irq_event+0x38/0x70
+[  522.650021]  [<ffffffff811b9779>] handle_irq_event_percpu+0x129/0x3a0
+[  522.650021]  [<ffffffff811b9a33>] handle_irq_event+0x43/0x70
+[  522.650021]  [<ffffffff811bd1e8>] handle_edge_irq+0xe8/0x120
+[  522.650021]  [<ffffffff81070a34>] handle_irq+0x164/0x180
+[  522.650021]  [<ffffffff811833c9>] ? vtime_account_system+0x79/0x90
+[  522.650021]  [<ffffffff81183435>] ? vtime_common_account_irq_enter+0x55/0x60
+[  522.650021]  [<ffffffff8106f629>] do_IRQ+0x59/0x100
+[  522.650021]  [<ffffffff84395e72>] common_interrupt+0x72/0x72
+[  522.650021]  <EOI>
+[  522.650021]  [<ffffffff812510d5>] ? context_tracking_user_exit+0x1a5/0x1c0
+[  522.650021]  [<ffffffff8107cfdd>] syscall_trace_enter+0x2d/0x280
+[  522.650021]  [<ffffffff8439f081>] tracesys+0x7e/0xe2
+[  522.650021] Code: 0f 1f 40 00 ff c8 4d 8b ad 48 01 00 00 39 d0 7f f3 eb 18 66 0f 1f 84 00 00 00 
+00 00 4d 8b a4 24 48 01 00 00 4d 8b ad 48 01 00 00 <49> 8b bc 24 50 01 00 00 49 3b bd 50 01 00 00 75 
+e0 48 85 ff 74
+[  522.650021] RIP  [<ffffffff81186c6f>] check_preempt_wakeup+0x11f/0x210
+[  522.650021]  RSP <ffff880226e03ba8>
+[  522.650021] CR2: 0000000000000150
+[  522.650021] ---[ end trace adce75aec8b1b32f ]---
 
-> 
-> 2.  Same page which is already shared by multiple process can be
-> replaced by KSM page.
->     In this case, let say a particular page is mapped 24 times and is
-> replaced by KSM page then
->     eventually all 24 entries will point to KSM page. pages_sharing
-> will account for all 24 pages.
->     so pages _sharing does not actually report amount of memory saved.
-> From the above example actual
->     savings is one page.
+Since it's pretty inlined, the code points to:
 
-Yes.
+	check_preempt_wakeup()
+		find_matching_se()
+			find_matching_se()
+				check_preempt_wakeup()
 
-KSM was created mainly to support KVM, where forking is not an issue,
-I think.  I do remember fixing it early on, to stop it from converting
-every forked page to a KSM page.  But you're right that once there is
-a stable KSM page of particular content, forked instances of a page of
-the same content will be peeled off one by one to be shared with the
-KSM page, and the pages_sharing count claim more has been saved than
-is actually so.
 
-The easy fix to that is to remove "i.e. how much saved" from the
-Documentation, or better, to qualify it by your point on forking.
-But again, that's not really your interest.
+	static inline struct cfs_rq *
+	is_same_group(struct sched_entity *se, struct sched_entity *pse)
+	{
+	        if (se->cfs_rq == pse->cfs_rq)	<=== HERE
+	                return se->cfs_rq;
+	
+	        return NULL;
+	}
 
-Coming up with a supportable alternative or fix to pages_sharing:
-it's not obvious to me how to go about that - whether or not to
-decrement the count once a write COWs off an instance of the page.
-Presumably it could be done, but at cost of recording more info in the
-rmap_items: I doubt it would be worth the extra memory and processing.
 
-Easier and less consuming might be to provide a running statistic of
-the average page_mapcount of pages being shared into stable.  Or even
-a tunable to refuse sharing into stable above a certain mapcount,
-which could be set to 1 or something higher (or 0 for no limit).
-
-> 
-> Both cases happen very often with Android because of its architecture
-> - Zygote spawning(fork) multiple
-> applications. To calculate actual savings, we should account for same
-> page(pfn)replaced by same KSM page only once.
-> In the case 2 example, page_sharing should account only one page.
-> After recalculating memory saving comes out to be 8602 pages (~34MB).
-> 
-> I am trying to find out right solution to fix pages_sharing and
-> eventually optimize KSM to scan page
-> once even if it is mapped multiple times.
-
-To scan page once (each cycle) even if it is mapped multiple times:
-that does sound a useful enhancement to make for the Android case
-you describe.  I see two sides to that.
-
-One is mapping the replacement page into all sites at the same time.
-That sounds doable, but without actually attempting to do it, I'm
-not at all sure.  It's interesting that try_to_merge_with_ksm_page()
-works on one rmap_item and down_reads the corresponding mmap_sem,
-but try_to_merge_one_page() itself does not use the rmap_item.
-Lots to think about there: most particularly, what is that mmap_sem
-protecting here?  Because it would not be protecting the other
-instances that you replace.
-
-Something it does protect is VM_MERGEABLE in vma->vm_flags: it's
-a nuisance that VM_MERGEABLE might not be set in some of the vmas
-sharing this page.
-
-(By the way, if break_cow() poses a problem for you - break_cow()
-being KSM's easy answer for backtracking, just COW back to ordinary
-anon page if something goes wrong - and I've a feeling it might,
-I do have a patch from a year ago which I never had time to write
-up and complete testing on, which eliminates its use.)
-
-The other side is cmp_and_merge_page() skipping a page which has
-already been scanned this cycle via another mapping.  I think
-the easiest way to accomplish that would be with two pageflags,
-using alternate flag each cycle.  But we certainly don't have
-two pageflags to spare on 32-bit, and I doubt it on 64-bit:
-everyone wants to use that space.  However, you could easily
-prototype it that way, to measure the savings and judge whether
-it's worth going further.
-
-Good luck.  Interesting work, but I can't find time for it.
-
-Hugh
+Thanks,
+Sasha
