@@ -1,89 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaBOECc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 23:02:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518AbaBOECb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 23:02:31 -0500
-Date: Fri, 14 Feb 2014 22:58:10 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mtosatti@redhat.com, mgorman@suse.de,
-        aarcange@redhat.com, andi@firstfloor.org, riel@redhat.com,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-ID: <20140214225810.57e854cb@redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
-References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
-	<1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
-	<alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752721AbaBOEDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 23:03:13 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:60478 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752159AbaBOEDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 23:03:11 -0500
+Message-ID: <52FEE6F8.8030404@huawei.com>
+Date: Sat, 15 Feb 2014 12:03:04 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v2] cgroup: fix top cgroup refcnt leak
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Feb 2014 15:14:22 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+If we mount the same cgroupfs in serveral mount points, and then
+umount all of them, kill_sb() will be called only once.
 
-> On Thu, 13 Feb 2014, Luiz Capitulino wrote:
-> 
-> > From: Luiz capitulino <lcapitulino@redhat.com>
-> > 
-> > The HugeTLB command-line option hugepages= allows a user to specify how
-> > many huge pages should be allocated at boot. This option is needed because
-> > it improves reliability when allocating 1G huge pages, which are better
-> > allocated as early as possible due to fragmentation.
-> > 
-> > However, hugepages= has a limitation. On NUMA systems, hugepages= will
-> > automatically distribute memory allocation equally among nodes. For
-> > example, if you have a 2-node NUMA system and allocate 200 huge pages,
-> > than hugepages= will try to allocate 100 huge pages from node0 and 100
-> > from node1.
-> > 
-> > This is very unflexible, as it doesn't allow you to specify which nodes
-> > the huge pages should be allocated from. For example, there are use-cases
-> > where the user wants to specify that a 1GB huge page should be allocated
-> > from node 2 or that 300 2MB huge pages should be allocated from node 0.
-> > 
-> > The hugepages_node= command-line option introduced by this commit allows
-> > just that.
-> > 
-> > The syntax is:
-> > 
-> >   hugepages_node=nid:nr_pages:size,...
-> > 
-> 
-> Again, I think this syntax is horrendous and doesn't couple well with the 
-> other hugepage-related kernel command line options.  We already have 
-> hugepages= and hugepagesz= which you can interleave on the command line to 
-> get 100 2M hugepages and 10 1GB hugepages, for example.
-> 
-> This patchset is simply introducing another variable to the matter: the 
-> node that the hugepages should be allocated on.  So just introduce a 
-> hugepagesnode= parameter to couple with the others so you can do
-> 
-> 	hugepagesz=<size> hugepagesnode=<nid> hugepages=<#>
+Therefore it's wrong to increment top_cgroup's refcnt when we find
+an existing cgroup_root.
 
-That was my first try but it turned out really bad. First, for every node
-you specify you need three options. So, if you want to setup memory for
-three nodes you'll need to specify nine options. And it gets worse, because
-hugepagesz= and hugepages= have strict ordering (which is a mistake, IMHO) so
-you have to specify them in the right order otherwise things don't work as
-expected and you have no idea why (have been there myself).
+Try:
+        # mount -t cgroup -o cpuacct xxx /cgroup
+        # mount -t cgroup -o cpuacct xxx /cgroup2
+        # cat /proc/cgroups | grep cpuacct
+        cpuacct 2       1       1
+        # umount /cgroup
+        # umount /cgroup2
+        # cat /proc/cgroups | grep cpuacct
+        cpuacct 2       1       1
 
-IMO, hugepages_node=<nid>:<nr_pages>:<size>,... is good enough. It's concise,
-and don't depend on any other option to function. Also, there are lots of other
-kernel command-line options that require you to specify multiple fields, so
-it's not like hugepages_node= is totally different in that regard.
+You'll see cgroupfs will never be freed.
 
-> 
-> instead of having completely confusing interfaces where you want to do 
-> hugepages_node=1:1:1G for a 1GB hugepage on page 1 (and try remembering 
-> which "1" means what, yuck) and "hugepagesz=1GB hugepages=1" if you're 
-> indifferent to the node.
-> 
+v2: change to take the refcnt and drop it after kernfs_mount().
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 37d94a2..eaffc08 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1477,6 +1477,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 	struct cgroup_sb_opts opts;
+ 	struct dentry *dentry;
+ 	int ret;
++	bool new_root = false;
+ 
+ 	/*
+ 	 * The first time anyone tries to mount a cgroup, enable the list
+@@ -1536,6 +1537,10 @@ retry:
+ 		 * destruction to complete so that the subsystems are free.
+ 		 * We can use wait_queue for the wait but this path is
+ 		 * super cold.  Let's just sleep for a bit and retry.
++		 *
++		 * Take a reference so root won't be freed after we drop
++		 * cgroup mutexes, and drop it after we've done the real
++		 * mount through kernfs.
+ 		 */
+ 		if (!atomic_inc_not_zero(&root->top_cgroup.refcnt)) {
+ 			mutex_unlock(&cgroup_mutex);
+@@ -1551,6 +1556,7 @@ retry:
+ 	}
+ 
+ 	/* no such thing, create a new one */
++	new_root = true;
+ 	root = cgroup_root_from_opts(&opts);
+ 	if (IS_ERR(root)) {
+ 		ret = PTR_ERR(root);
+@@ -1572,7 +1578,7 @@ out_unlock:
+ 		return ERR_PTR(ret);
+ 
+ 	dentry = kernfs_mount(fs_type, flags, root->kf_root);
+-	if (IS_ERR(dentry))
++	if (IS_ERR(dentry) || !new_root)
+ 		cgroup_put(&root->top_cgroup);
+ 	return dentry;
+ }
+-- 
+1.8.0.2
+
