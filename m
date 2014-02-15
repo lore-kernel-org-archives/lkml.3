@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651AbaBOSZq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 13:25:46 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:39161 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601AbaBOSZo (ORCPT
+	id S1753689AbaBOS0J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 13:26:09 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:42490 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753673AbaBOS0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 13:25:44 -0500
+	Sat, 15 Feb 2014 13:26:07 -0500
 From: Jassi Brar <jassisinghbrar@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org, s-anna@ti.com, tony@atomide.com,
         omar.ramirez@copitl.com, loic.pallardy@st.com, lftan.linux@gmail.com,
         slapdau@yahoo.com.au, courtney.cavin@sonymobile.com,
         rafael.j.wysocki@intel.com, Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCHv3 2/6] mailbox: Introduce a new common API
-Date: Sat, 15 Feb 2014 23:55:27 +0530
-Message-Id: <1392488727-17981-1-git-send-email-jaswinder.singh@linaro.org>
+Subject: [PATCHv3 3/6] mailbox: pl320: Introduce common API driver
+Date: Sat, 15 Feb 2014 23:55:51 +0530
+Message-Id: <1392488751-18026-1-git-send-email-jaswinder.singh@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
 References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
@@ -23,804 +23,521 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce common framework for client/protocol drivers and
-controller drivers of Inter-Processor-Communication (IPC).
-
-Client driver developers should have a look at
- include/linux/mailbox_client.h to understand the part of
-the API exposed to client drivers.
-Similarly controller driver developers should have a look
-at include/linux/mailbox_controller.h
+Convert the PL320 controller driver to work with the common
+mailbox API. Also convert the only user of PL320, highbank-cpufreq.c
+to work with thee API. Drop the obsoleted driver pl320-ipc.c
 
 Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 ---
- drivers/mailbox/Makefile           |   4 +
- drivers/mailbox/mailbox.c          | 534 +++++++++++++++++++++++++++++++++++++
- include/linux/mailbox.h            |  17 ++
- include/linux/mailbox_client.h     |  87 ++++++
- include/linux/mailbox_controller.h | 102 +++++++
- 5 files changed, 744 insertions(+)
- create mode 100644 drivers/mailbox/mailbox.c
- create mode 100644 include/linux/mailbox.h
- create mode 100644 include/linux/mailbox_client.h
- create mode 100644 include/linux/mailbox_controller.h
+ drivers/cpufreq/highbank-cpufreq.c |  22 +++-
+ drivers/mailbox/Makefile           |   2 +-
+ drivers/mailbox/pl320-ipc.c        | 198 ----------------------------------
+ drivers/mailbox/pl320.c            | 212 +++++++++++++++++++++++++++++++++++++
+ include/linux/pl320-ipc.h          |  17 ---
+ 5 files changed, 233 insertions(+), 218 deletions(-)
+ delete mode 100644 drivers/mailbox/pl320-ipc.c
+ create mode 100644 drivers/mailbox/pl320.c
+ delete mode 100644 include/linux/pl320-ipc.h
 
+diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
+index b464f29..b1a6b2e 100644
+--- a/drivers/cpufreq/highbank-cpufreq.c
++++ b/drivers/cpufreq/highbank-cpufreq.c
+@@ -19,7 +19,7 @@
+ #include <linux/cpu.h>
+ #include <linux/err.h>
+ #include <linux/of.h>
+-#include <linux/pl320-ipc.h>
++#include <linux/mailbox_client.h>
+ #include <linux/platform_device.h>
+ 
+ #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
+@@ -29,8 +29,26 @@
+ static int hb_voltage_change(unsigned int freq)
+ {
+ 	u32 msg[HB_CPUFREQ_IPC_LEN] = {HB_CPUFREQ_CHANGE_NOTE, freq / 1000000};
++	struct ipc_client cl;
++	int ret = -ETIMEDOUT;
++	void *chan;
+ 
+-	return pl320_ipc_transmit(msg);
++	cl.rxcb = NULL;
++	cl.txcb = NULL;
++	cl.tx_block = true;
++	cl.tx_tout = 1000; /* 1 sec */
++	cl.link_data = NULL;
++	cl.knows_txdone = false;
++	cl.chan_name = "pl320:A9_to_M3";
++
++	chan = ipc_request_channel(&cl);
++
++	if (ipc_send_message(chan, (void *)msg))
++		ret = msg[1]; /* PL320 updates buffer with FIFO after ACK */
++
++	ipc_free_channel(chan);
++
++	return ret;
+ }
+ 
+ static int hb_cpufreq_clk_notify(struct notifier_block *nb,
 diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
-index e0facb3..2fa343a 100644
+index 2fa343a..f3f4ab7 100644
 --- a/drivers/mailbox/Makefile
 +++ b/drivers/mailbox/Makefile
-@@ -1,3 +1,7 @@
-+# Generic MAILBOX API
-+
-+obj-$(CONFIG_MAILBOX)		+= mailbox.o
-+
- obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
+@@ -2,7 +2,7 @@
+ 
+ obj-$(CONFIG_MAILBOX)		+= mailbox.o
+ 
+-obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
++obj-$(CONFIG_PL320_MBOX)	+= pl320.o
  
  obj-$(CONFIG_OMAP_MBOX)		+= omap-mailbox.o
-diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+ obj-$(CONFIG_OMAP1_MBOX)	+= mailbox_omap1.o
+diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
+deleted file mode 100644
+index f3755e0..0000000
+--- a/drivers/mailbox/pl320-ipc.c
++++ /dev/null
+@@ -1,198 +0,0 @@
+-/*
+- * Copyright 2012 Calxeda, Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program.  If not, see <http://www.gnu.org/licenses/>.
+- */
+-#include <linux/types.h>
+-#include <linux/err.h>
+-#include <linux/delay.h>
+-#include <linux/export.h>
+-#include <linux/io.h>
+-#include <linux/interrupt.h>
+-#include <linux/completion.h>
+-#include <linux/mutex.h>
+-#include <linux/notifier.h>
+-#include <linux/spinlock.h>
+-#include <linux/device.h>
+-#include <linux/amba/bus.h>
+-
+-#include <linux/pl320-ipc.h>
+-
+-#define IPCMxSOURCE(m)		((m) * 0x40)
+-#define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
+-#define IPCMxDCLEAR(m)		(((m) * 0x40) + 0x008)
+-#define IPCMxDSTATUS(m)		(((m) * 0x40) + 0x00C)
+-#define IPCMxMODE(m)		(((m) * 0x40) + 0x010)
+-#define IPCMxMSET(m)		(((m) * 0x40) + 0x014)
+-#define IPCMxMCLEAR(m)		(((m) * 0x40) + 0x018)
+-#define IPCMxMSTATUS(m)		(((m) * 0x40) + 0x01C)
+-#define IPCMxSEND(m)		(((m) * 0x40) + 0x020)
+-#define IPCMxDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
+-
+-#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
+-#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
+-
+-#define MBOX_MASK(n)		(1 << (n))
+-#define IPC_TX_MBOX		1
+-#define IPC_RX_MBOX		2
+-
+-#define CHAN_MASK(n)		(1 << (n))
+-#define A9_SOURCE		1
+-#define M3_SOURCE		0
+-
+-static void __iomem *ipc_base;
+-static int ipc_irq;
+-static DEFINE_MUTEX(ipc_m1_lock);
+-static DECLARE_COMPLETION(ipc_completion);
+-static ATOMIC_NOTIFIER_HEAD(ipc_notifier);
+-
+-static inline void set_destination(int source, int mbox)
+-{
+-	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDSET(mbox));
+-	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMSET(mbox));
+-}
+-
+-static inline void clear_destination(int source, int mbox)
+-{
+-	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDCLEAR(mbox));
+-	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMCLEAR(mbox));
+-}
+-
+-static void __ipc_send(int mbox, u32 *data)
+-{
+-	int i;
+-	for (i = 0; i < 7; i++)
+-		__raw_writel(data[i], ipc_base + IPCMxDR(mbox, i));
+-	__raw_writel(0x1, ipc_base + IPCMxSEND(mbox));
+-}
+-
+-static u32 __ipc_rcv(int mbox, u32 *data)
+-{
+-	int i;
+-	for (i = 0; i < 7; i++)
+-		data[i] = __raw_readl(ipc_base + IPCMxDR(mbox, i));
+-	return data[1];
+-}
+-
+-/* blocking implmentation from the A9 side, not usuable in interrupts! */
+-int pl320_ipc_transmit(u32 *data)
+-{
+-	int ret;
+-
+-	mutex_lock(&ipc_m1_lock);
+-
+-	init_completion(&ipc_completion);
+-	__ipc_send(IPC_TX_MBOX, data);
+-	ret = wait_for_completion_timeout(&ipc_completion,
+-					  msecs_to_jiffies(1000));
+-	if (ret == 0) {
+-		ret = -ETIMEDOUT;
+-		goto out;
+-	}
+-
+-	ret = __ipc_rcv(IPC_TX_MBOX, data);
+-out:
+-	mutex_unlock(&ipc_m1_lock);
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(pl320_ipc_transmit);
+-
+-static irqreturn_t ipc_handler(int irq, void *dev)
+-{
+-	u32 irq_stat;
+-	u32 data[7];
+-
+-	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
+-	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
+-		__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
+-		complete(&ipc_completion);
+-	}
+-	if (irq_stat & MBOX_MASK(IPC_RX_MBOX)) {
+-		__ipc_rcv(IPC_RX_MBOX, data);
+-		atomic_notifier_call_chain(&ipc_notifier, data[0], data + 1);
+-		__raw_writel(2, ipc_base + IPCMxSEND(IPC_RX_MBOX));
+-	}
+-
+-	return IRQ_HANDLED;
+-}
+-
+-int pl320_ipc_register_notifier(struct notifier_block *nb)
+-{
+-	return atomic_notifier_chain_register(&ipc_notifier, nb);
+-}
+-EXPORT_SYMBOL_GPL(pl320_ipc_register_notifier);
+-
+-int pl320_ipc_unregister_notifier(struct notifier_block *nb)
+-{
+-	return atomic_notifier_chain_unregister(&ipc_notifier, nb);
+-}
+-EXPORT_SYMBOL_GPL(pl320_ipc_unregister_notifier);
+-
+-static int pl320_probe(struct amba_device *adev, const struct amba_id *id)
+-{
+-	int ret;
+-
+-	ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
+-	if (ipc_base == NULL)
+-		return -ENOMEM;
+-
+-	__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
+-
+-	ipc_irq = adev->irq[0];
+-	ret = request_irq(ipc_irq, ipc_handler, 0, dev_name(&adev->dev), NULL);
+-	if (ret < 0)
+-		goto err;
+-
+-	/* Init slow mailbox */
+-	__raw_writel(CHAN_MASK(A9_SOURCE),
+-			ipc_base + IPCMxSOURCE(IPC_TX_MBOX));
+-	__raw_writel(CHAN_MASK(M3_SOURCE),
+-			ipc_base + IPCMxDSET(IPC_TX_MBOX));
+-	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
+-		     ipc_base + IPCMxMSET(IPC_TX_MBOX));
+-
+-	/* Init receive mailbox */
+-	__raw_writel(CHAN_MASK(M3_SOURCE),
+-			ipc_base + IPCMxSOURCE(IPC_RX_MBOX));
+-	__raw_writel(CHAN_MASK(A9_SOURCE),
+-			ipc_base + IPCMxDSET(IPC_RX_MBOX));
+-	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
+-		     ipc_base + IPCMxMSET(IPC_RX_MBOX));
+-
+-	return 0;
+-err:
+-	iounmap(ipc_base);
+-	return ret;
+-}
+-
+-static struct amba_id pl320_ids[] = {
+-	{
+-		.id	= 0x00041320,
+-		.mask	= 0x000fffff,
+-	},
+-	{ 0, 0 },
+-};
+-
+-static struct amba_driver pl320_driver = {
+-	.drv = {
+-		.name	= "pl320",
+-	},
+-	.id_table	= pl320_ids,
+-	.probe		= pl320_probe,
+-};
+-
+-static int __init ipc_init(void)
+-{
+-	return amba_driver_register(&pl320_driver);
+-}
+-module_init(ipc_init);
+diff --git a/drivers/mailbox/pl320.c b/drivers/mailbox/pl320.c
 new file mode 100644
-index 0000000..3082f08
+index 0000000..7ddae5c
 --- /dev/null
-+++ b/drivers/mailbox/mailbox.c
-@@ -0,0 +1,534 @@
++++ b/drivers/mailbox/pl320.c
+@@ -0,0 +1,212 @@
 +/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Copyright 2012 Calxeda, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+
-+#include <linux/interrupt.h>
-+#include <linux/spinlock.h>
-+#include <linux/mutex.h>
-+#include <linux/delay.h>
-+#include <linux/slab.h>
++#include <linux/types.h>
 +#include <linux/err.h>
-+#include <linux/module.h>
-+#include <linux/mailbox_client.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/completion.h>
++#include <linux/mutex.h>
++#include <linux/notifier.h>
++#include <linux/spinlock.h>
++#include <linux/device.h>
++#include <linux/amba/bus.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
 +#include <linux/mailbox_controller.h>
 +
-+/*
-+ * The length of circular buffer for queuing messages from a client.
-+ * 'msg_count' tracks the number of buffered messages while 'msg_free'
-+ * is the index where the next message would be buffered.
-+ * We shouldn't need it too big because every transferr is interrupt
-+ * triggered and if we have lots of data to transfer, the interrupt
-+ * latencies are going to be the bottleneck, not the buffer length.
-+ * Besides, ipc_send_message could be called from atomic context and
-+ * the client could also queue another message from the notifier 'txcb'
-+ * of the last transfer done.
-+ * REVIST: If too many platforms see the "Try increasing MBOX_TX_QUEUE_LEN"
-+ * print, it needs to be taken from config option or somesuch.
-+ */
-+#define MBOX_TX_QUEUE_LEN	20
++#define IPCMSOURCE(m)		((m) * 0x40)
++#define IPCMDSET(m)		(((m) * 0x40) + 0x004)
++#define IPCMDCLEAR(m)		(((m) * 0x40) + 0x008)
++#define IPCMDSTATUS(m)		(((m) * 0x40) + 0x00C)
++#define IPCMMODE(m)		(((m) * 0x40) + 0x010)
++#define IPCMMSET(m)		(((m) * 0x40) + 0x014)
++#define IPCMMCLEAR(m)		(((m) * 0x40) + 0x018)
++#define IPCMMSTATUS(m)		(((m) * 0x40) + 0x01C)
++#define IPCMSEND(m)		(((m) * 0x40) + 0x020)
++#define IPCMDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
 +
-+#define TXDONE_BY_IRQ	(1 << 0) /* controller has remote RTR irq */
-+#define TXDONE_BY_POLL	(1 << 1) /* controller can read status of last TX */
-+#define TXDONE_BY_ACK	(1 << 2) /* S/W ACK recevied by Client ticks the TX */
++#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
++#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
 +
-+struct ipc_chan {
-+	char name[16]; /* link_name */
-+	struct ipc_con *con; /* Parent Controller */
-+	unsigned txdone_method;
++#define MBOX_MASK(n)		(1 << (n))
++#define IPC_TX_MBOX		1
 +
-+	/* Cached values from controller */
-+	struct ipc_link *link;
-+	struct ipc_link_ops *link_ops;
++#define CHAN_MASK(n)		(1 << (n))
++#define A9_SOURCE		1
++#define M3_SOURCE		0
 +
-+	/* Cached values from client */
-+	void *cl_id;
-+	void (*rxcb)(void *cl_id, void *mssg);
-+	void (*txcb)(void *cl_id, void *mssg, enum xfer_result r);
-+	bool tx_block;
-+	unsigned long tx_tout;
-+	struct completion tx_complete;
-+
-+	void *active_req;
-+	unsigned msg_count, msg_free;
-+	void *msg_data[MBOX_TX_QUEUE_LEN];
-+	bool assigned;
-+	/* Serialize access to the channel */
-+	spinlock_t lock;
-+	/* Hook to add to the controller's list of channels */
-+	struct list_head node;
-+	/* Notifier to all clients waiting on aquiring this channel */
-+	struct blocking_notifier_head avail;
++struct pl320_con {
++	u32 *data;
++	int ipc_irq;
++	struct device *dev;
++	struct ipc_link link;
++	void __iomem *ipc_base;
++	struct ipc_controller ipc_con;
 +};
 +
-+/* Internal representation of a controller */
-+struct ipc_con {
-+	char name[16]; /* controller_name */
-+	struct list_head channels;
-+	/*
-+	 * If the controller supports only TXDONE_BY_POLL,
-+	 * this timer polls all the links for txdone.
-+	 */
-+	struct timer_list poll;
-+	unsigned period;
-+	/* Hook to add to the global controller list */
-+	struct list_head node;
-+};
-+
-+static LIST_HEAD(ipc_cons);
-+static DEFINE_MUTEX(con_mutex);
-+
-+static request_token_t _add_to_rbuf(struct ipc_chan *chan, void *mssg)
++static inline struct pl320_con *to_pl320(struct ipc_link *l)
 +{
-+	request_token_t idx;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	/* See if there is any space left */
-+	if (chan->msg_count == MBOX_TX_QUEUE_LEN) {
-+		spin_unlock_irqrestore(&chan->lock, flags);
-+		return 0;
-+	}
-+
-+	idx = chan->msg_free;
-+	chan->msg_data[idx] = mssg;
-+	chan->msg_count++;
-+
-+	if (idx == MBOX_TX_QUEUE_LEN - 1)
-+		chan->msg_free = 0;
-+	else
-+		chan->msg_free++;
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	/* To aid debugging, we return 'idx+1' instead of 1 */
-+	return idx + 1;
-+}
-+
-+static void _msg_submit(struct ipc_chan *chan)
-+{
-+	struct ipc_link *link = chan->link;
-+	unsigned count, idx;
-+	unsigned long flags;
-+	void *data;
-+	int err;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	if (!chan->msg_count || chan->active_req) {
-+		spin_unlock_irqrestore(&chan->lock, flags);
-+		return;
-+	}
-+
-+	count = chan->msg_count;
-+	idx = chan->msg_free;
-+	if (idx >= count)
-+		idx -= count;
-+	else
-+		idx += MBOX_TX_QUEUE_LEN - count;
-+
-+	data = chan->msg_data[idx];
-+
-+	/* Try to submit a message to the IPC controller */
-+	err = chan->link_ops->send_data(link, data);
-+	if (!err) {
-+		chan->active_req = data;
-+		chan->msg_count--;
-+	}
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+static void tx_tick(struct ipc_chan *chan, enum xfer_result r)
-+{
-+	unsigned long flags;
-+	void *mssg;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+	mssg = chan->active_req;
-+	chan->active_req = NULL;
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	/* Submit next message */
-+	_msg_submit(chan);
-+
-+	/* Notify the client */
-+	if (chan->tx_block)
-+		complete(&chan->tx_complete);
-+	else if (mssg && chan->txcb)
-+		chan->txcb(chan->cl_id, mssg, r);
-+}
-+
-+static void poll_txdone(unsigned long data)
-+{
-+	struct ipc_con *con = (struct ipc_con *)data;
-+	bool txdone, resched = false;
-+	struct ipc_chan *chan;
-+
-+	list_for_each_entry(chan, &con->channels, node) {
-+		if (chan->active_req && chan->assigned) {
-+			resched = true;
-+			txdone = chan->link_ops->last_tx_done(chan->link);
-+			if (txdone)
-+				tx_tick(chan, XFER_OK);
-+		}
-+	}
-+
-+	if (resched)
-+		mod_timer(&con->poll,
-+			jiffies + msecs_to_jiffies(con->period));
-+}
-+
-+/*
-+ * After 'startup' and before 'shutdown', the IPC controller driver
-+ * notifies the API of data received over the link.
-+ * The controller driver should make sure the 'RTR' is de-asserted since
-+ * reception of the packet and until after this call returns.
-+ * This call could be made from atomic context.
-+ */
-+void ipc_link_received_data(struct ipc_link *link, void *mssg)
-+{
-+	struct ipc_chan *chan = (struct ipc_chan *)link->api_priv;
-+
-+	/* No buffering the received data */
-+	if (chan->rxcb)
-+		chan->rxcb(chan->cl_id, mssg);
-+}
-+EXPORT_SYMBOL(ipc_link_received_data);
-+
-+/*
-+ * The IPC controller driver notifies the API that the remote has
-+ * asserted RTR and it could now send another message on the link.
-+ */
-+void ipc_link_txdone(struct ipc_link *link, enum xfer_result r)
-+{
-+	struct ipc_chan *chan = (struct ipc_chan *)link->api_priv;
-+
-+	if (unlikely(!(chan->txdone_method & TXDONE_BY_IRQ))) {
-+		pr_err("Controller can't run the TX ticker\n");
-+		return;
-+	}
-+
-+	tx_tick(chan, r);
-+}
-+EXPORT_SYMBOL(ipc_link_txdone);
-+
-+/*
-+ * The client/protocol had received some 'ACK' packet and it notifies
-+ * the API that the last packet was sent successfully. This only works
-+ * if the controller doesn't get IRQ for TX done.
-+ */
-+void ipc_client_txdone(void *channel, enum xfer_result r)
-+{
-+	struct ipc_chan *chan = (struct ipc_chan *)channel;
-+	bool txdone = true;
-+
-+	if (unlikely(!(chan->txdone_method & TXDONE_BY_ACK))) {
-+		pr_err("Client can't run the TX ticker\n");
-+		return;
-+	}
-+
-+	if (chan->txdone_method & TXDONE_BY_POLL)
-+		txdone = chan->link_ops->last_tx_done(chan->link);
-+
-+	if (txdone)
-+		tx_tick(chan, r);
-+}
-+EXPORT_SYMBOL(ipc_client_txdone);
-+
-+/*
-+ * Called by a client to "put data on the h/w channel" so that if
-+ * everything else is fine we don't need to do anything more locally
-+ * for the remote to receive the data intact.
-+ * In reality, the remote may receive it intact, corrupted or not at all.
-+ * This could be called from atomic context as it simply
-+ * queues the data and returns a token (request_token_t)
-+ * against the request.
-+ * The client is later notified of successful transmission of
-+ * data over the channel via the 'txcb'. The client could in
-+ * turn queue more messages from txcb.
-+ */
-+request_token_t ipc_send_message(void *channel, void *mssg)
-+{
-+	struct ipc_chan *chan = (struct ipc_chan *)channel;
-+	request_token_t t;
-+
-+	if (!chan || !chan->assigned)
-+		return 0;
-+
-+	t = _add_to_rbuf(chan, mssg);
-+	if (!t)
-+		pr_err("Try increasing MBOX_TX_QUEUE_LEN\n");
-+
-+	_msg_submit(chan);
-+
-+	if (chan->txdone_method	== TXDONE_BY_POLL)
-+		poll_txdone((unsigned long)chan->con);
-+
-+	if (chan->tx_block && chan->active_req) {
-+		int ret;
-+		init_completion(&chan->tx_complete);
-+		ret = wait_for_completion_timeout(&chan->tx_complete,
-+			chan->tx_tout);
-+		if (ret == 0) {
-+			t = 0;
-+			tx_tick(chan, XFER_ERR);
-+		}
-+	}
-+
-+	return t;
-+}
-+EXPORT_SYMBOL(ipc_send_message);
-+
-+/*
-+ * A client driver asks for exclusive use of a channel/mailbox.
-+ * If assigned, the channel has to be 'freed' before it could
-+ * be assigned to some other client.
-+ * After assignment, any packet received on this channel will be
-+ * handed over to the client via the 'rxcb' callback.
-+ * The 'txcb' callback is used to notify client upon sending the
-+ * packet over the channel, which may or may not have been yet
-+ * read by the remote processor.
-+ */
-+void *ipc_request_channel(struct ipc_client *cl)
-+{
-+	struct ipc_chan *chan;
-+	struct ipc_con *con;
-+	unsigned long flags;
-+	char *con_name;
-+	int len, ret;
-+
-+	con_name = cl->chan_name;
-+	len = strcspn(cl->chan_name, ":");
-+
-+	ret = 0;
-+	mutex_lock(&con_mutex);
-+	list_for_each_entry(con, &ipc_cons, node)
-+		if (!strncmp(con->name, con_name, len)) {
-+			ret = 1;
-+			break;
-+		}
-+	mutex_unlock(&con_mutex);
-+
-+	if (!ret) {
-+		pr_info("Channel(%s) not found!\n", cl->chan_name);
-+		return NULL;
-+	}
-+
-+	ret = 0;
-+	list_for_each_entry(chan, &con->channels, node) {
-+		if (!strcmp(con_name + len + 1, chan->name)
-+				&& !chan->assigned) {
-+			spin_lock_irqsave(&chan->lock, flags);
-+			chan->msg_free = 0;
-+			chan->msg_count = 0;
-+			chan->active_req = NULL;
-+			chan->rxcb = cl->rxcb;
-+			chan->txcb = cl->txcb;
-+			chan->cl_id = cl->cl_id;
-+			chan->assigned = true;
-+			chan->tx_block = cl->tx_block;
-+			if (!cl->tx_tout)
-+				chan->tx_tout = msecs_to_jiffies(3600000);
-+			else
-+				chan->tx_tout = msecs_to_jiffies(cl->tx_tout);
-+			if (chan->txdone_method	== TXDONE_BY_POLL
-+					&& cl->knows_txdone)
-+				chan->txdone_method |= TXDONE_BY_ACK;
-+			spin_unlock_irqrestore(&chan->lock, flags);
-+			ret = 1;
-+			break;
-+		}
-+	}
-+
-+	if (!ret) {
-+		pr_err("Unable to assign mailbox(%s)\n", cl->chan_name);
-+		return NULL;
-+	}
-+
-+	ret = chan->link_ops->startup(chan->link, cl->link_data);
-+	if (ret) {
-+		pr_err("Unable to startup the link\n");
-+		ipc_free_channel((void *)chan);
-+		return NULL;
-+	}
-+
-+	return (void *)chan;
-+}
-+EXPORT_SYMBOL(ipc_request_channel);
-+
-+/* Drop any messages queued and release the channel */
-+void ipc_free_channel(void *ch)
-+{
-+	struct ipc_chan *chan = (struct ipc_chan *)ch;
-+	unsigned long flags;
-+
-+	if (!chan || !chan->assigned)
-+		return;
-+
-+	chan->link_ops->shutdown(chan->link);
-+
-+	/* The queued TX requests are simply aborted, no callbacks are made */
-+	spin_lock_irqsave(&chan->lock, flags);
-+	chan->assigned = false;
-+	chan->active_req = NULL;
-+	if (chan->txdone_method == (TXDONE_BY_POLL | TXDONE_BY_ACK))
-+		chan->txdone_method = TXDONE_BY_POLL;
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	blocking_notifier_call_chain(&chan->avail, 0, NULL);
-+}
-+EXPORT_SYMBOL(ipc_free_channel);
-+
-+static struct ipc_chan *name_to_chan(const char *name)
-+{
-+	struct ipc_chan *chan = NULL;
-+	struct ipc_con *con;
-+	int len, found = 0;
-+
-+	len = strcspn(name, ":");
-+
-+	mutex_lock(&con_mutex);
-+
-+	list_for_each_entry(con, &ipc_cons, node) {
-+		if (!strncmp(con->name, name, len)) {
-+			list_for_each_entry(chan, &con->channels, node) {
-+				if (!strcmp(name + len + 1, chan->name)) {
-+					found = 1;
-+					goto done;
-+				}
-+			}
-+		}
-+	}
-+done:
-+	mutex_unlock(&con_mutex);
-+
-+	if (!found)
++	if (!l)
 +		return NULL;
 +
-+	return chan;
++	return container_of(l, struct pl320_con, link);
 +}
 +
-+int ipc_notify_chan_register(const char *name, struct notifier_block *nb)
++static irqreturn_t ipc_handler(int irq, void *p)
 +{
-+	struct ipc_chan *chan = name_to_chan(name);
++	struct ipc_link *link = (struct ipc_link *)p;
++	struct pl320_con *pl320 = to_pl320(link);
++	void __iomem *ipc_base = pl320->ipc_base;
++	u32 irq_stat;
 +
-+	if (chan && nb)
-+		return blocking_notifier_chain_register(&chan->avail, nb);
++	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
++	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
++		u32 *data = pl320->data;
++		int i;
 +
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL(ipc_notify_chan_register);
++		__raw_writel(0, ipc_base + IPCMSEND(IPC_TX_MBOX));
 +
-+void ipc_notify_chan_unregister(const char *name, struct notifier_block *nb)
-+{
-+	struct ipc_chan *chan = name_to_chan(name);
++		/*
++		 * The PL320 driver specifies that the send buffer
++		 * will be overwritten by same fifo upon TX ACK.
++		 */
++		for (i = 0; i < 7; i++)
++			data[i] = __raw_readl(ipc_base
++					 + IPCMDR(IPC_TX_MBOX, i));
 +
-+	if (chan && nb)
-+		blocking_notifier_chain_unregister(&chan->avail, nb);
-+}
-+EXPORT_SYMBOL(ipc_notify_chan_unregister);
++		ipc_link_txdone(link, XFER_OK);
 +
-+/*
-+ * Call for IPC controller drivers to register a controller, adding
-+ * its channels/mailboxes to the global pool.
-+ */
-+int ipc_links_register(struct ipc_controller *ipc)
-+{
-+	int i, num_links, txdone;
-+	struct ipc_chan *chan;
-+	struct ipc_con *con;
-+
-+	/* Sanity check */
-+	if (!ipc || !ipc->ops)
-+		return -EINVAL;
-+
-+	for (i = 0; ipc->links[i]; i++)
-+		;
-+	if (!i)
-+		return -EINVAL;
-+	num_links = i;
-+
-+	mutex_lock(&con_mutex);
-+	/* Check if already populated */
-+	list_for_each_entry(con, &ipc_cons, node)
-+		if (!strcmp(ipc->controller_name, con->name)) {
-+			mutex_unlock(&con_mutex);
-+			return -EINVAL;
-+		}
-+	mutex_unlock(&con_mutex);
-+
-+	con = kzalloc(sizeof(*con) + sizeof(*chan) * num_links, GFP_KERNEL);
-+	if (!con)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&con->channels);
-+	snprintf(con->name, 16, "%s", ipc->controller_name);
-+
-+	if (ipc->txdone_irq)
-+		txdone = TXDONE_BY_IRQ;
-+	else if (ipc->txdone_poll)
-+		txdone = TXDONE_BY_POLL;
-+	else /* It has to be ACK then */
-+		txdone = TXDONE_BY_ACK;
-+
-+	if (txdone == TXDONE_BY_POLL) {
-+		con->period = ipc->txpoll_period;
-+		con->poll.function = &poll_txdone;
-+		con->poll.data = (unsigned long)con;
-+		init_timer(&con->poll);
++		pl320->data = NULL;
 +	}
 +
-+	chan = (void *)con + sizeof(*con);
-+	for (i = 0; i < num_links; i++) {
-+		chan[i].con = con;
-+		chan[i].assigned = false;
-+		chan[i].link_ops = ipc->ops;
-+		chan[i].link = ipc->links[i];
-+		chan[i].txdone_method = txdone;
-+		chan[i].link->api_priv = &chan[i];
-+		spin_lock_init(&chan[i].lock);
-+		BLOCKING_INIT_NOTIFIER_HEAD(&chan[i].avail);
-+		list_add_tail(&chan[i].node, &con->channels);
-+		snprintf(chan[i].name, 16, "%s", ipc->links[i]->link_name);
-+	}
++	return IRQ_HANDLED;
++}
 +
-+	mutex_lock(&con_mutex);
-+	list_add_tail(&con->node, &ipc_cons);
-+	mutex_unlock(&con_mutex);
++static int pl320_send_data(struct ipc_link *link, void *msg)
++{
++	struct pl320_con *pl320 = to_pl320(link);
++	void __iomem *ipc_base = pl320->ipc_base;
++	u32 *data = (u32 *)msg;
++	int i;
++
++	pl320->data = data;
++
++	for (i = 0; i < 7; i++)
++		__raw_writel(data[i], ipc_base + IPCMDR(IPC_TX_MBOX, i));
++
++	__raw_writel(0x1, ipc_base + IPCMSEND(IPC_TX_MBOX));
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL(ipc_links_register);
 +
-+void ipc_links_unregister(struct ipc_controller *ipc)
++static int pl320_startup(struct ipc_link *link, void *ignored)
 +{
-+	struct ipc_con *t, *con = NULL;
-+	struct ipc_chan *chan;
++	struct pl320_con *pl320 = to_pl320(link);
++	void __iomem *ipc_base = pl320->ipc_base;
++	int err, ipc_irq = pl320->ipc_irq;
 +
-+	mutex_lock(&con_mutex);
++	__raw_writel(0, ipc_base + IPCMSEND(IPC_TX_MBOX));
 +
-+	list_for_each_entry(t, &ipc_cons, node)
-+		if (!strcmp(ipc->controller_name, t->name)) {
-+			con = t;
-+			break;
-+		}
++	err = request_irq(ipc_irq, ipc_handler, 0, dev_name(pl320->dev), link);
++	if (err)
++		return err;
 +
-+	if (con)
-+		list_del(&con->node);
++	/* Init slow mailbox */
++	__raw_writel(CHAN_MASK(A9_SOURCE),
++			ipc_base + IPCMSOURCE(IPC_TX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE),
++			ipc_base + IPCMDSET(IPC_TX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
++		     ipc_base + IPCMMSET(IPC_TX_MBOX));
 +
-+	mutex_unlock(&con_mutex);
-+
-+	if (!con)
-+		return;
-+
-+	list_for_each_entry(chan, &con->channels, node)
-+		ipc_free_channel((void *)chan);
-+
-+	del_timer_sync(&con->poll);
-+
-+	kfree(con);
++	pl320->data = NULL;
++	return 0;
 +}
-+EXPORT_SYMBOL(ipc_links_unregister);
-diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
-new file mode 100644
-index 0000000..232e2c4
---- /dev/null
-+++ b/include/linux/mailbox.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
 +
-+#ifndef __MAILBOX_H
-+#define __MAILBOX_H
++static void pl320_shutdown(struct ipc_link *link)
++{
++	struct pl320_con *pl320 = to_pl320(link);
 +
-+enum xfer_result {
-+	XFER_OK = 0,
-+	XFER_ERR,
++	pl320->data = NULL;
++	free_irq(pl320->ipc_irq, link);
++}
++
++static struct ipc_link_ops pl320_ops = {
++	.send_data = pl320_send_data,
++	.startup = pl320_startup,
++	.shutdown = pl320_shutdown,
 +};
 +
-+typedef unsigned request_token_t;
++static int pl320_probe(struct amba_device *adev, const struct amba_id *id)
++{
++	struct pl320_con *pl320;
++	struct ipc_link *l[2];
++	int ret;
 +
-+#endif /* __MAILBOX_H */
-diff --git a/include/linux/mailbox_client.h b/include/linux/mailbox_client.h
-new file mode 100644
-index 0000000..c43f2c7
---- /dev/null
-+++ b/include/linux/mailbox_client.h
-@@ -0,0 +1,87 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++	pl320 = kzalloc(sizeof(struct pl320_con), GFP_KERNEL);
++	if (!pl320)
++		return -ENOMEM;
 +
-+#ifndef __MAILBOX_CLIENT_H
-+#define __MAILBOX_CLIENT_H
++	pl320->ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
++	if (pl320->ipc_base == NULL) {
++		kfree(pl320);
++		return -ENOMEM;
++	}
 +
-+#include <linux/mailbox.h>
++	pl320->dev = &adev->dev;
++	pl320->ipc_irq = adev->irq[0];
++	amba_set_drvdata(adev, pl320);
 +
-+/**
-+ * struct ipc_client - User of a mailbox
-+ * @chan_name: the "controller:channel" this client wants
-+ * @cl_id: The identity to associate any tx/rx data with
-+ * @rxcb: atomic callback to provide client the data received
-+ * @txcb: atomic callback to tell client of data transmission
-+ * @tx_block: if the ipc_send_message should block until data is transmitted
-+ * @tx_tout: Max block period in ms before TX is assumed failure
-+ * @knows_txdone: if the client could run the TX state machine. Usually if
-+ *    the client receives some ACK packet for transmission. Unused if the
-+ *    controller already has TX_Done/RTR IRQ.
-+ * @link_data: Optional controller specific parameters during channel request
-+ */
-+struct ipc_client {
-+	char *chan_name;
-+	void *cl_id;
-+	void (*rxcb)(void *cl_id, void *mssg);
-+	void (*txcb)(void *cl_id, void *mssg, enum xfer_result r);
-+	bool tx_block;
-+	unsigned long tx_tout;
-+	bool knows_txdone;
-+	void *link_data;
++	l[0] = &pl320->link;
++	l[1] = NULL;
++	pl320->ipc_con.links = l;
++	pl320->ipc_con.txdone_irq = true;
++	pl320->ipc_con.ops = &pl320_ops;
++	snprintf(pl320->link.link_name, 16, "A9_to_M3");
++	snprintf(pl320->ipc_con.controller_name, 16, "pl320");
++
++	ret = ipc_links_register(&pl320->ipc_con);
++	if (ret) {
++		iounmap(pl320->ipc_base);
++		kfree(pl320);
++	}
++
++	return ret;
++}
++
++static struct amba_id pl320_ids[] = {
++	{
++		.id	= 0x00041320,
++		.mask	= 0x000fffff,
++	},
++	{ 0, 0 },
 +};
 +
-+/**
-+ * The Client specifies its requirements and capabilities while asking for
-+ * a channel/mailbox by name. It can't be called from atomic context.
-+ * The channel is exclusively allocated and can't be used by another
-+ * client before the owner calls ipc_free_channel.
-+ */
-+void *ipc_request_channel(struct ipc_client *cl);
-+
-+/**
-+ * For client to submit data to the controller destined for a remote
-+ * processor. If the client had set 'tx_block', the call will return
-+ * either when the remote receives the data or when 'tx_tout' millisecs
-+ * run out.
-+ *  In non-blocking mode, the requests are buffered by the API and a
-+ * non-zero token is returned for each queued request. If the queue
-+ * was full the returned token will be 0. Upon failure or successful
-+ * TX, the API calls 'txcb' from atomic context, from which the client
-+ * could submit yet another request.
-+ *  In blocking mode, 'txcb' is not called, effectively making the
-+ * queue length 1. The returned value is 0 if TX timed out, some
-+ * non-zero value upon success.
-+ */
-+request_token_t ipc_send_message(void *channel, void *mssg);
-+
-+/**
-+ * The way for a client to run the TX state machine. This works
-+ * only if the client sets 'knows_txdone' and the IPC controller
-+ * doesn't get an IRQ for TX_Done/Remote_RTR.
-+ */
-+void ipc_client_txdone(void *channel, enum xfer_result r);
-+
-+/**
-+ * The client relinquishes control of a mailbox by this call,
-+ * make it available to other clients.
-+ * The ipc_request/free_channel are light weight calls, so the
-+ * client should avoid holding it when it doesn't need to
-+ * transfer data.
-+ */
-+void ipc_free_channel(void *channel);
-+
-+/**
-+ * The client make ask the API to be notified when a particular channel
-+ * becomes available to be acquired again.
-+ */
-+int ipc_notify_chan_register(const char *name, struct notifier_block *nb);
-+
-+/**
-+ * The client is no more interested in acquiring the channel.
-+ */
-+void ipc_notify_chan_unregister(const char *name, struct notifier_block *nb);
-+
-+#endif /* __MAILBOX_CLIENT_H */
-diff --git a/include/linux/mailbox_controller.h b/include/linux/mailbox_controller.h
-new file mode 100644
-index 0000000..a907467
---- /dev/null
-+++ b/include/linux/mailbox_controller.h
-@@ -0,0 +1,102 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __MAILBOX_CONTROLLER_H
-+#define __MAILBOX_CONTROLLER_H
-+
-+#include <linux/mailbox.h>
-+
-+/**
-+ * struct ipc_link - s/w representation of a communication link
-+ * @link_name: Literal name assigned to the link. Physically
-+ *    identical channels may have the same name.
-+ * @api_priv: hook for the API to map its private data on the link
-+ *    Controller driver must not touch it.
-+ */
-+struct ipc_link {
-+	char link_name[16];
-+	void *api_priv;
++static struct amba_driver pl320_driver = {
++	.drv = {
++		.name	= "pl320",
++	},
++	.id_table	= pl320_ids,
++	.probe		= pl320_probe,
 +};
 +
-+/**
-+ * struct ipc_link - s/w representation of a communication link
-+ * @send_data: The API asks the IPC controller driver, in atomic
-+ *    context try to transmit a message on the bus. Returns 0 if
-+ *    data is accepted for transmission, -EBUSY while rejecting
-+ *    if the remote hasn't yet read the last data sent. Actual
-+ *    transmission of data is reported by the controller via
-+ *    ipc_link_txdone (if it has some TX ACK irq). It must not
-+ *    block.
-+ * @startup: Called when a client requests the link. The controller
-+ *    could ask clients for additional parameters of communication
-+ *    to be provided via client's link_data. This call may block.
-+ *    After this call the Controller must forward any data received
-+ *    on the link by calling ipc_link_received_data (which won't block)
-+ * @shutdown: Called when a client relinquishes control of a link.
-+ *    This call may block too. The controller must not forwared
-+ *    any received data anymore.
-+ * @last_tx_done: If the controller sets 'txdone_poll', the API calls
-+ *    this to poll status of last TX. The controller must give priority
-+ *    to IRQ method over polling and never set both txdone_poll and
-+ *    txdone_irq. Only in polling mode 'send_data' is expected to
-+ *    return -EBUSY. Used only if txdone_poll:=true && txdone_irq:=false
-+ */
-+struct ipc_link_ops {
-+	int (*send_data)(struct ipc_link *link, void *data);
-+	int (*startup)(struct ipc_link *link, void *params);
-+	void (*shutdown)(struct ipc_link *link);
-+	bool (*last_tx_done)(struct ipc_link *link);
-+};
-+
-+/**
-+ * struct ipc_controller - Controller of a class of communication links
-+ * @controller_name: Literal name of the controller.
-+ * @ops: Operators that work on each communication link
-+ * @links: Null terminated array of links.
-+ * @txdone_irq: Indicates if the controller can report to API when the
-+ *    last transmitted data was read by the remote. Eg, if it has some
-+ *    TX ACK irq.
-+ * @txdone_poll: If the controller can read but not report the TX done.
-+ *    Eg, is some register shows the TX status but no interrupt rises.
-+ *    Ignored if 'txdone_irq' is set.
-+ * @txpoll_period: If 'txdone_poll' is in effect, the API polls for
-+ *    last TX's status after these many millisecs
-+ */
-+struct ipc_controller {
-+	char controller_name[16];
-+	struct ipc_link_ops *ops;
-+	struct ipc_link **links;
-+	bool txdone_irq;
-+	bool txdone_poll;
-+	unsigned txpoll_period;
-+};
-+
-+/**
-+ * The controller driver registers its communication links to the
-+ * global pool managed by the API.
-+ */
-+int ipc_links_register(struct ipc_controller *ipc_con);
-+
-+/**
-+ * After startup and before shutdown any data received on the link
-+ * is pused to the API via atomic ipc_link_received_data() API.
-+ * The controller should ACK the RX only after this call returns.
-+ */
-+void ipc_link_received_data(struct ipc_link *link, void *data);
-+
-+/**
-+ * The controller the has IRQ for TX ACK calls this atomic API
-+ * to tick the TX state machine. It works only if txdone_irq
-+ * is set by the controller.
-+ */
-+void ipc_link_txdone(struct ipc_link *link, enum xfer_result r);
-+
-+/**
-+ * Purge the links from the global pool maintained by the API.
-+ */
-+void ipc_links_unregister(struct ipc_controller *ipc_con);
-+
-+#endif /* __MAILBOX_CONTROLLER_H */
++static int __init ipc_init(void)
++{
++	return amba_driver_register(&pl320_driver);
++}
++module_init(ipc_init);
+diff --git a/include/linux/pl320-ipc.h b/include/linux/pl320-ipc.h
+deleted file mode 100644
+index 5161f63..0000000
+--- a/include/linux/pl320-ipc.h
++++ /dev/null
+@@ -1,17 +0,0 @@
+-/*
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program.  If not, see <http://www.gnu.org/licenses/>.
+- */
+-
+-int pl320_ipc_transmit(u32 *data);
+-int pl320_ipc_register_notifier(struct notifier_block *nb);
+-int pl320_ipc_unregister_notifier(struct notifier_block *nb);
 -- 
 1.8.1.2
 
