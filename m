@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaBOMm4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 07:42:56 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46913 "EHLO
+	id S1753285AbaBOMqt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 07:46:49 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46925 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaBOMmy (ORCPT
+	with ESMTP id S1752951AbaBOMqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 07:42:54 -0500
-Date: Sat, 15 Feb 2014 13:42:54 +0100 (CET)
+	Sat, 15 Feb 2014 07:46:48 -0500
+Date: Sat, 15 Feb 2014 13:46:54 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Tarek Dakhran <t.dakhran@samsung.com>
-cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Tarek Dakhran <t.dakhran@gmail.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v1 1/2] clocksource: mct: remove request_irq from
- exynos4_local_timer_setup
-In-Reply-To: <1392260923-31659-2-git-send-email-t.dakhran@samsung.com>
-Message-ID: <alpine.DEB.2.02.1402151321120.21991@ionos.tec.linutronix.de>
-References: <1392260923-31659-1-git-send-email-t.dakhran@samsung.com> <1392260923-31659-2-git-send-email-t.dakhran@samsung.com>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 11/27] clocksource: sh_cmt: Add support for multiple
+ channels per device
+In-Reply-To: <1392339605-20691-12-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Message-ID: <alpine.DEB.2.02.1402151345450.21991@ionos.tec.linutronix.de>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1392339605-20691-12-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -33,65 +28,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014, Tarek Dakhran wrote:
-
-> exynos4_local_timer_setup called on the secondary cpu before
-> irqs are enabled. request_irq can sleep, which produces next warning:
+On Fri, 14 Feb 2014, Laurent Pinchart wrote:
+> CMT hardware devices can support multiple channels, with global
+> registers and per-channel registers. The sh_cmt driver currently models
+> the hardware with one Linux device per channel. This model makes it
+> difficult to handle global registers in a clean way.
 > 
-> 	BUG: sleeping function called from invalid context at mm/slub.c:965
-> 	in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper/3
+> Add support for a new model that uses one Linux device per timer with
+> multiple channels per device. This requires changes to platform data,
+> add new channel configuration fields.
 > 
-> Call setup_irq for each local timer in exynos4_timer_resources,
-> and only call enable_irq during percpu timer setup.
+> Support for the legacy model is kept and will be removed after all
+> platforms switch to the new model.
 > 
-> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 > ---
->  drivers/clocksource/exynos_mct.c |   38 ++++++++++++++++++++++++++++++--------
->  1 file changed, 30 insertions(+), 8 deletions(-)
+>  drivers/clocksource/sh_cmt.c | 299 +++++++++++++++++++++++++++++++++----------
+>  include/linux/sh_timer.h     |   9 ++
+>  2 files changed, 239 insertions(+), 69 deletions(-)
 > 
-> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-> index 48f76bc..1cde3de 100644
-> --- a/drivers/clocksource/exynos_mct.c
-> +++ b/drivers/clocksource/exynos_mct.c
-> @@ -82,6 +82,7 @@ static void __iomem *reg_base;
->  static unsigned long clk_rate;
->  static unsigned int mct_int_type;
->  static int mct_irqs[MCT_NR_IRQS];
-> +static struct irqaction __percpu *mct_LX_irqaction;
+> diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
+> index 5280231..8390f0f 100644
+> --- a/drivers/clocksource/sh_cmt.c
+> +++ b/drivers/clocksource/sh_cmt.c
+> @@ -53,7 +53,16 @@ struct sh_cmt_device;
+>   * channel registers block. All other versions have a shared start/stop register
+>   * located in the global space.
+>   *
+> - * Note that CMT0 on r8a73a4, r8a7790 and r8a7791, while implementing 32-bit
+> + * Channels are indexed from 0 to N-1 in the documentation. The channel index
+> + * infers the start/stop bit position in the control register and the channel
+> + * registers block address. Some CMT instances have a subset of channels
+> + * available, in which case the index in the documentation doesn't match the
+> + * "real" index as implemented in hardware. This is for instance the case with
+> + * CMT0 on r8a7740, which is a 32-bit variant with a single channel numbered 0
+> + * in the documentation but using start/stop bit 5 and having its registers
+> + * block at 0x60.
+> + *
+> + * Similarly CMT0 on r8a73a4, r8a7790 and r8a7791, while implementing 32-bit
+>   * channels only, is a 48-bit gen2 CMT with the 48-bit channels unavailable.
+>   */
 >  
->  struct mct_clock_event_device {
->  	struct clock_event_device evt;
-> @@ -402,6 +403,25 @@ static irqreturn_t exynos4_mct_tick_isr(int irq, void *dev_id)
->  	return IRQ_HANDLED;
->  }
+> @@ -85,11 +94,15 @@ struct sh_cmt_info {
 >  
-> +static void exynos4_setup_irqaction_spi(unsigned int cpu)
-> +{
-> +	struct irqaction *pcpu_irqaction = per_cpu_ptr(mct_LX_irqaction, cpu);
-> +	unsigned int irq = mct_irqs[MCT_L0_IRQ + cpu];
-> +	int err;
+>  struct sh_cmt_channel {
+>  	struct sh_cmt_device *cmt;
+> -	unsigned int index;
+>  
+> -	void __iomem *base;
+> +	unsigned int index;	/* Index in the documentation */
+> +	unsigned int hwidx;	/* Real hardware index */
 > +
-> +	pcpu_irqaction->name = per_cpu(percpu_mct_tick, cpu).name;
-> +	pcpu_irqaction->flags  = IRQF_TIMER | IRQF_NOBALANCING;
-> +	pcpu_irqaction->handler = exynos4_mct_tick_isr;
-> +	pcpu_irqaction->dev_id = &per_cpu(percpu_mct_tick, cpu);
-> +
-> +	err = setup_irq(irq, pcpu_irqaction);
+> +	void __iomem *iostart;
+> +	void __iomem *ioctrl;
+>  	struct irqaction irqaction;
 
-This is just crap. Why don't you use request_irq()?
-
-> +	if (err) {
-> +		pr_err("MCT: can't setup IRQ %d (%d)\n", irq, err);
-> +		return;
-> +	}
-> +	disable_irq(irq);
-
-This is completely backwards. We have flags which tell the core not to
-enable an interrupt at setup time. Also what's wrong with enabling the
-interrupt in the first place? When the timer is stopped then no
-interrupts happen and it does not matter a bit whether the irq line is
-enabled or not.
-
+While you are at it, can you please get rid of that irqaction and use
+request_irq() ?
+  
 Thanks,
 
 	tglx
