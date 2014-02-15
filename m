@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827AbaBOKlk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 05:41:40 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38854 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496AbaBOKlj (ORCPT
+	id S1752904AbaBOKmV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 05:42:21 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:56820 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496AbaBOKmT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 05:41:39 -0500
-Date: Sat, 15 Feb 2014 13:41:17 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Levente Kurusa <levex@linux.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Micky Ching <micky_ching@realsil.com.cn>,
-        OSUOSL Drivers <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Binderman <dcb314@hotmail.com>
-Subject: Re: [PATCH] staging: rts5208: fix always true condition
-Message-ID: <20140215104117.GF26722@mwanda>
-References: <1392457475-27693-1-git-send-email-levex@linux.com>
+	Sat, 15 Feb 2014 05:42:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392457475-27693-1-git-send-email-levex@linux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <BBC3AB9B-17A9-4112-B8CC-D3DCB3B673D9@arm.com>
+References: <1392406515-27835-1-git-send-email-olof@lixom.net> <BBC3AB9B-17A9-4112-B8CC-D3DCB3B673D9@arm.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Sat, 15 Feb 2014 10:41:59 +0000
+X-Google-Sender-Auth: TVN__WvDNckLeczHZuy8d35aPdM
+Message-ID: <CAHkRjk4b_mY+YEEPoh43HC=Hq7+3zeR1OgQm+Rhcfv=5m59iUw@mail.gmail.com>
+Subject: Re: [PATCH] ARM64: unwind: Fix PC calculation
+To: Olof Johansson <olof@lixom.net>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 10:44:35AM +0100, Levente Kurusa wrote:
-> ANDing anything with 0x1E and expecting it to be not 0x03 will always
-> be true. AND instead with 0x03, so that we check the last two bits,
-> which should be what was intended there.
-> 
+On 15 February 2014 10:28, Catalin Marinas <Catalin.Marinas@arm.com> wrote:
+> -- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
 
-This one is less clear what the intent was.  Could easily be that the
-0x3 is wrong.
+And BTW, please ignore this, I picked the wrong smtp server.
 
-Sometimes it's better to leave the warning rather than guess at the fix.
-
-regards,
-dan carpenter
-
+-- 
+Catalin
