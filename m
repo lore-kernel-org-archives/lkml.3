@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaBOHhP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 02:37:15 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:40740
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752637AbaBOHgc (ORCPT
+	id S1752449AbaBOHqy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 02:46:54 -0500
+Received: from mga02.intel.com ([134.134.136.20]:20097 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751753AbaBOHqx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 02:36:32 -0500
-X-IronPort-AV: E=Sophos;i="4.95,849,1384297200"; 
-   d="scan'208";a="49183510"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] caif: delete unnecessary field initialization
-Date: Sat, 15 Feb 2014 08:36:13 +0100
-Message-Id: <1392449773-23429-3-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 15 Feb 2014 02:46:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,849,1384329600"; 
+   d="scan'208";a="455958761"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 3/4] mei: add mei_hbuf_acquire wrapper
+Thread-Topic: [char-misc-next 3/4] mei: add mei_hbuf_acquire wrapper
+Thread-Index: AQHPKbi4DPm9h1yYRkGxy6wpWqtSk5q17lPg
+Date: Sat, 15 Feb 2014 07:46:49 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF721AA@HASMSX106.ger.corp.intel.com>
+References: <1392234114-4926-1-git-send-email-tomas.winkler@intel.com>
+ <1392234114-4926-4-git-send-email-tomas.winkler@intel.com>
+ <20140214191338.GA423@kroah.com>
+In-Reply-To: <20140214191338.GA423@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> This patch fails to apply:
+> 	checking file drivers/misc/mei/amthif.c
+> 	checking file drivers/misc/mei/client.c
+> 	Hunk #4 FAILED at 681.
+> 	Hunk #5 succeeded at 815 (offset -2 lines).
+> 	Hunk #6 succeeded at 848 (offset -2 lines).
+> 	1 out of 6 hunks FAILED
+> 	checking file drivers/misc/mei/hw-me.c
+> 	checking file drivers/misc/mei/hw-txe.c
+> 	checking file drivers/misc/mei/interrupt.c
+> 	checking file drivers/misc/mei/mei_dev.h
+> 	checking file drivers/misc/mei/wd.c
 
-On success, the function netdev_alloc_skb initializes the dev field of its
-result to its first argument, so this doesn't have to be done in the
-calling context.
+Did I missed something in the process? 
+This patch series has dependency on path that was destined for stable https://lkml.org/lkml/2014/2/12/389
+ as stated in 0/4 http://www.spinics.net/lists/kernel/msg1686728.html
+Quoting:
+"In order to avoid conflicts please apply after
+mei: set client's read_cb to NULL when flow control fails
+https://lkml.org/lkml/2014/2/12/389"
 
-The semantic patch that fixes this problem is as follows:
-(http://coccinelle.lip6.fr/)
 
-// <smpl>
-@@
-expression skb,privn,e;
-@@
-
-skb = netdev_alloc_skb(privn,...);
-... when strict
-(
--skb->dev = privn;
-|
-?skb = e
-)
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/net/caif/caif_serial.c |    1 -
- drivers/net/caif/caif_spi.c    |    1 -
- 2 files changed, 2 deletions(-)
-
-diff --git a/drivers/net/caif/caif_serial.c b/drivers/net/caif/caif_serial.c
-index 88a6a58..fc73865 100644
---- a/drivers/net/caif/caif_serial.c
-+++ b/drivers/net/caif/caif_serial.c
-@@ -204,7 +204,6 @@ static void ldisc_receive(struct tty_struct *tty, const u8 *data,
- 
- 	skb->protocol = htons(ETH_P_CAIF);
- 	skb_reset_mac_header(skb);
--	skb->dev = ser->dev;
- 	debugfs_rx(ser, data, count);
- 	/* Push received packet up the stack. */
- 	ret = netif_rx_ni(skb);
-diff --git a/drivers/net/caif/caif_spi.c b/drivers/net/caif/caif_spi.c
-index 155db68..ff54c0e 100644
---- a/drivers/net/caif/caif_spi.c
-+++ b/drivers/net/caif/caif_spi.c
-@@ -554,7 +554,6 @@ int cfspi_rxfrm(struct cfspi *cfspi, u8 *buf, size_t len)
- 
- 		skb->protocol = htons(ETH_P_CAIF);
- 		skb_reset_mac_header(skb);
--		skb->dev = cfspi->ndev;
- 
- 		/*
- 		 * Push received packet up the stack.
+Thanks
+Tomas
 
