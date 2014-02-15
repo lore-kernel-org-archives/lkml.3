@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366AbaBODAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 22:00:46 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:65379 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026AbaBOC76 (ORCPT
+	id S1752760AbaBODFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 22:05:06 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:39869 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491AbaBODFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 21:59:58 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: netdev@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [RFC v2 2/4] net: enables interface option to skip IP
-Date: Fri, 14 Feb 2014 18:59:38 -0800
-Message-Id: <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
+	Fri, 14 Feb 2014 22:05:02 -0500
+From: Bill Sumner <bill.sumner@hp.com>
+To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
+        joro@8bytes.org
+Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
+        doug.hatch@hp.com, zhenhua@hp.com
+Subject: [PATCH 0/1] Fix Crashdump failure caused by leftover DMA through a hardware IOMMU
+Date: Fri, 14 Feb 2014 20:04:26 -0700
+Message-Id: <1392433467-62357-1-git-send-email-bill.sumner@hp.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+Renamed from previous email thread: Crashdump Accepting Active IOMMU
 
-Some interfaces do not need to have any IPv4 or IPv6
-addresses, so enable an option to specify this. One
-example where this is observed are virtualization
-backend interfaces which just use the net_device
-constructs to help with their respective frontends.
+This patch implements a fix for:
+A kdump problem about DMA that has been discussed for a long time. That is,
+when a kernel panics and boots into the kdump kernel, DMA started by the 
+panicked kernel is not stopped before the kdump kernel is booted and the 
+kdump kernel disables the IOMMU while this DMA continues.  This causes the
+IOMMU to stop translating the DMA addresses as IOVAs and begin to treat them 
+as physical memory addresses -- which causes the DMA to either:
+(1) generate DMAR errors or (2) generate PCI SERR errors or (3) transfer  
+data to or from incorrect areas of memory. Often this causes the dump to fail.
 
-This should optimize boot time and complexity on
-virtualization environments for each backend interface
-while also avoiding triggering SLAAC and DAD, which is
-simply pointless for these type of interfaces.
+This patch modifies the behavior of the Intel iommu in the crashdump kernel: 
+1. to skip disabling the iommu hardware translations
+2. to leave the current translations in-place so that legacy DMA will continue
+   using its current buffers until the device drivers in the crashdump kernel
+   initialize and initialize their devices,
+3. to use different portions of the iova address ranges for the device drivers
+   in the crashdump kernel than the iova ranges that were in-use at the time
+   of the panic.  
 
-Cc: "David S. Miller" <davem@davemloft.net>
-cC: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- include/uapi/linux/if.h | 1 +
- net/ipv4/devinet.c      | 3 +++
- net/ipv6/addrconf.c     | 6 ++++++
- 3 files changed, 10 insertions(+)
+Advantages of this approach:
+1. All manipulation of the IO-device is done by the Linux device-driver
+   for that device.
+2. This approach behaves in a manner very similar to operation when the
+   panicked kernel was not using a hardware IOMMU.
+3. Any activity between the IO-device and its RMRR areas is handled by the
+   device-driver in the same manner as during a non-kdump boot.
+4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
+   This supports the practice of creating a special kdump kernel without
+   drivers for any devices that are not required for taking a crashdump. 
 
-diff --git a/include/uapi/linux/if.h b/include/uapi/linux/if.h
-index 8d10382..566d856 100644
---- a/include/uapi/linux/if.h
-+++ b/include/uapi/linux/if.h
-@@ -85,6 +85,7 @@
- 					 * change when it's running */
- #define IFF_MACVLAN 0x200000		/* Macvlan device */
- #define IFF_BRIDGE_NON_ROOT 0x400000    /* Don't consider for root bridge */
-+#define IFF_SKIP_IP	0x800000	/* Skip IPv4, IPv6 */
- 
- 
- #define IF_GET_IFACE	0x0001		/* for querying only */
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index a1b5bcb..8e9ef07 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1342,6 +1342,9 @@ static int inetdev_event(struct notifier_block *this, unsigned long event,
- 
- 	ASSERT_RTNL();
- 
-+	if (dev->priv_flags & IFF_SKIP_IP)
-+		goto out;
-+
- 	if (!in_dev) {
- 		if (event == NETDEV_REGISTER) {
- 			in_dev = inetdev_init(dev);
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 4b6b720..57f58e3 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -314,6 +314,9 @@ static struct inet6_dev *ipv6_add_dev(struct net_device *dev)
- 
- 	ASSERT_RTNL();
- 
-+	if (dev->priv_flags & IFF_SKIP_IP)
-+		return NULL;
-+
- 	if (dev->mtu < IPV6_MIN_MTU)
- 		return NULL;
- 
-@@ -2749,6 +2752,9 @@ static int addrconf_notify(struct notifier_block *this, unsigned long event,
- 	int run_pending = 0;
- 	int err;
- 
-+	if (dev->priv_flags & IFF_SKIP_IP)
-+		return NOTIFY_OK;
-+
- 	switch (event) {
- 	case NETDEV_REGISTER:
- 		if (!idev && dev->mtu >= IPV6_MIN_MTU) {
+Bill Sumner (1):
+  Fix Crashdump failure caused by leftover DMA through a hardware IOMMU
+
+ drivers/iommu/intel-iommu.c | 1233 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 1172 insertions(+), 61 deletions(-)
+
 -- 
-1.8.5.2
+Bill Sumner <bill.sumner@hp.com>
 
