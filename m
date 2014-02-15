@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaBOQdE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 11:33:04 -0500
-Received: from www84.your-server.de ([213.133.104.84]:47146 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460AbaBOQcQ (ORCPT
+	id S1753467AbaBOQrH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 11:47:07 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:33142 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753430AbaBOQrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 11:32:16 -0500
-From: Stefani Seibold <stefani@seibold.net>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v17 05/10] replace VVAR(vsyscall_gtod_data) by gtod macro
-Date: Sat, 15 Feb 2014 17:32:51 +0100
-Message-Id: <1392481976-6370-6-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1392481976-6370-1-git-send-email-stefani@seibold.net>
-References: <1392481976-6370-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Sat, 15 Feb 2014 11:47:06 -0500
+Date: Sat, 15 Feb 2014 17:46:58 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mturquette@linaro.org,
+        nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
+        b.brezillon@overkiz.com
+Subject: Re: [PATCH] clk:at91: Fix memory leak in of_at91_clk_master_setup()
+Message-ID: <20140215164658.GI2932@piout.net>
+References: <1392124507-14463-1-git-send-email-standby24x7@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392124507-14463-1-git-send-email-standby24x7@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There a currently more than 30 users of the gtod macro, so replace the
-last VVAR(vsyscall_gtod_data) by gtod macro.
+On 11/02/2014 at 22:15:07 +0900, Masanari Iida wrote :
+> cppcheck detected following error
+> [clk-master.c:245]: (error) Memory leak: characteristics
+> 
+> The original code forgot to free characteristics when
+> irq_of_parse_and_map() failed.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/vdso/vclock_gettime.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index fd074dd..743f277 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -109,7 +109,7 @@ static notrace cycle_t vread_pvclock(int *mode)
- 		*mode = VCLOCK_NONE;
- 
- 	/* refer to tsc.c read_tsc() comment for rationale */
--	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
-+	last = gtod->clock.cycle_last;
- 
- 	if (likely(ret >= last))
- 		return ret;
-@@ -133,7 +133,7 @@ notrace static cycle_t vread_tsc(void)
- 	rdtsc_barrier();
- 	ret = (cycle_t)vget_cycles();
- 
--	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
-+	last = gtod->clock.cycle_last;
- 
- 	if (likely(ret >= last))
- 		return ret;
-@@ -288,7 +288,7 @@ int gettimeofday(struct timeval *, struct timezone *)
- notrace time_t __vdso_time(time_t *t)
- {
- 	/* This is atomic on x86_64 so we don't need any locks. */
--	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
-+	time_t result = ACCESS_ONCE(gtod->wall_time_sec);
- 
- 	if (t)
- 		*t = result;
+> ---
+>  drivers/clk/at91/clk-master.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/at91/clk-master.c b/drivers/clk/at91/clk-master.c
+> index bd313f7..c1af80b 100644
+> --- a/drivers/clk/at91/clk-master.c
+> +++ b/drivers/clk/at91/clk-master.c
+> @@ -242,7 +242,7 @@ of_at91_clk_master_setup(struct device_node *np, struct at91_pmc *pmc,
+>  
+>  	irq = irq_of_parse_and_map(np, 0);
+>  	if (!irq)
+> -		return;
+> +		goto out_free_characteristics;
+>  
+>  	clk = at91_clk_register_master(pmc, irq, name, num_parents,
+>  				       parent_names, layout,
+> -- 
+> 1.9.rc1
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
 -- 
-1.8.5.4
-
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
