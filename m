@@ -1,101 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaBOAOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 19:14:34 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:64119 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaBOAOd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 19:14:33 -0500
-Message-ID: <52FEB167.9080404@lwfinger.net>
-Date: Fri, 14 Feb 2014 18:14:31 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753087AbaBOAZS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 19:25:18 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:41760 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788AbaBOAZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 19:25:16 -0500
+Date: Fri, 14 Feb 2014 16:25:05 -0800
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Lijun Pan <Lijun.Pan@freescale.com>, Li Yang <leoli@freescale.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Priyanka Jain <Priyanka.Jain@freescale.com>,
+        Tang Yuantian <yuantian.tang@freescale.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v2 10/11] powerpc/perf: add kconfig option for hypervisor
+ provided counters
+Message-ID: <20140215002505.GA2991@negative>
+References: <1392415338-16288-1-git-send-email-cody@linux.vnet.ibm.com>
+ <1392415338-16288-11-git-send-email-cody@linux.vnet.ibm.com>
+ <1392417133.6733.624.camel@snotra.buserror.net>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>, Gene Heskett <gheskett@wdtv.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Loseing my patience with libata and sata_nv
-References: <201402141131.48157.gheskett@wdtv.com> <52FE639C.2030007@infradead.org>
-In-Reply-To: <52FE639C.2030007@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392417133.6733.624.camel@snotra.buserror.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021500-0320-0000-0000-0000027844A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 12:42 PM, Randy Dunlap wrote:
-> On 02/14/2014 08:31 AM, Gene Heskett wrote:
->> Which is required for my $290 ASUS M2n-SLI Deluxe motherboard to boot.
->>
->> Not finding the option in any kernel tree that exists on my system,
->> except it appears its been replaced or something.
->>
->> This once in a lifetime boot, to 3.12.9, shows from an lsmod:
->> libata                146855  2 sata_nv,pata_amd
->> scsi_mod              153579  4 sr_mod,sg,sd_mod,libata
->>
->> I haven't a clue how I got it in this boot, and I built it.  And
->> apparently a make oldconfig, carefully done by hand (takes about an hour
->> 30 to do) is not capable of adding it to a .config BECAUSE it does NOT
->> exist in any of the arch/x86/configs/i386_defconfig's present on this machine.
->
-> It does not have to exist in any defconfig.  Those are just default config files
-> and SATA_NV is not enabled by default, but you can still enable it.
->
->> Here is how I searched:
->>
->> gene@coyote:~/src/linux-3.0.69$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.0.69$ cd ../linux-3.2.40
->> gene@coyote:~/src/linux-3.2.40$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.2.40$ cd ../linux-3.4.36
->> gene@coyote:~/src/linux-3.4.36$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.4.36$ cd ../linux-3.8.2
->> gene@coyote:~/src/linux-3.8.2$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.8.2$ cd ../linux-3.8.3
->> gene@coyote:~/src/linux-3.8.3$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.8.3$ cd ../linux-3.12.0
->> gene@coyote:~/src/linux-3.12.0$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.12.0$ cd ../linux-3.12.6
->> gene@coyote:~/src/linux-3.12.6$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.12.6$ cd ../linux-3.12.9
->> gene@coyote:~/src/linux-3.12.9$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.12.9$ cd ../linux-3.13.1
->> gene@coyote:~/src/linux-3.13.1$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.13.1$ cd ../linux-3.13.2
->> gene@coyote:~/src/linux-3.13.2$ grep SATA_NV arch/x86/configs/i386_defconfig
->> gene@coyote:~/src/linux-3.13.2$
->>
->> I've been fighting with this, intermittently for about 6 months.  Except
->> for this 3.12.9 where I must have been holding my mouth right, all the
->> rest are boot failures because it can't find the boot drive with so-and-so
->> for a UUID. sata_nv is on the missing list, even in this WORKing boots defconfig.
->> "Working" however is a miss-statement, no multimedia stuff was built.
->>
->> There has to be a rule I am violating, but even with Randy's D's help, it is
->> not becoming obvious.  FWIW libata references also can't be found, but as
->> can be seen, its in memory right now.
->
-> libata is built whenever CONFIG_ATA is enabled.
->
->>
->> So please guys, what is the magic dependency that causes libata and
->> sata_nv to be included in a .config?
->
-> The SATA_NV kconfig symbol depends on (requires) the following other kconfig
-> symbols to be enabled:
-> 	ATA_SFF and ATA_BMDMA and PCI and ATA
->
-> If those are not enabled, then you will need to use 'make <some>config' to
-> enabled them before you can enable SATA_NV.
+On Fri, Feb 14, 2014 at 04:32:13PM -0600, Scott Wood wrote:
+> On Fri, 2014-02-14 at 14:02 -0800, Cody P Schafer wrote:
+> > Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> > ---
+> >  arch/powerpc/perf/Makefile             | 2 ++
+> >  arch/powerpc/platforms/Kconfig.cputype | 6 ++++++
+> >  2 files changed, 8 insertions(+)
+> > 
+> > diff --git a/arch/powerpc/perf/Makefile b/arch/powerpc/perf/Makefile
+> > index 60d71ee..f9c083a 100644
+> > --- a/arch/powerpc/perf/Makefile
+> > +++ b/arch/powerpc/perf/Makefile
+> > @@ -11,5 +11,7 @@ obj32-$(CONFIG_PPC_PERF_CTRS)	+= mpc7450-pmu.o
+> >  obj-$(CONFIG_FSL_EMB_PERF_EVENT) += core-fsl-emb.o
+> >  obj-$(CONFIG_FSL_EMB_PERF_EVENT_E500) += e500-pmu.o e6500-pmu.o
+> >  
+> > +obj-$(CONFIG_HV_PERF_CTRS) += hv-24x7.o hv-gpci.o hv-common.o
+> > +
+> >  obj-$(CONFIG_PPC64)		+= $(obj64-y)
+> >  obj-$(CONFIG_PPC32)		+= $(obj32-y)
+> > diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
+> > index 434fda3..dcc67cd 100644
+> > --- a/arch/powerpc/platforms/Kconfig.cputype
+> > +++ b/arch/powerpc/platforms/Kconfig.cputype
+> > @@ -364,6 +364,12 @@ config PPC_PERF_CTRS
+> >         help
+> >           This enables the powerpc-specific perf_event back-end.
+> >  
+> > +config HV_PERF_CTRS
+> > +       def_bool y
+> > +       depends on PERF_EVENTS && PPC_HAVE_PMU_SUPPORT
+> > +       help
+> > +         Enable access to perf counters provided by the hypervisor
+> 
+> Please don't add default-y stuff that is platform-specific, and
+> definitely point out that platform dependency in the config description
+> -- I have to look elsewhere in the patchset to determine that this is
+> for "Power Hypervisor".  PPC_HAVE_PMU_SUPPORT is enabled by all 6xx
+> builds, even for hardware like e300 that doesn't have PMU at all (it has
+> the FSL embedded perfmon instead), much less this hv interface.
+> 
+> And yes, PPC_PERF_CTRS has the same problem and should be fixed. :-)
 
-Gene,
+Yep, I just based this one on what PPC_PERF_CTRS was doing.
 
-Your CONFIG indicates that you are building both libata and sata_nv. Perhaps you 
-are not including them in your initrd, or whatever it is called in your distro. 
-That makes them unavailable at boot time due to the chicken-and-egg problem. You 
-need those drivers to access the drive, but that is where they reside. An easy 
-way might be to make those two drivers be built in rather than as modules.
+How about the following:
 
-Larry
++config HV_PERF_CTRS
++       bool "Perf Hypervisor supplied counters"
++       default y
++       depends on PERF_EVENTS && PPC_HAVE_PMU_SUPPORT && PPC_PSERIES
++       help
++	  Enable access to hypervisor supplied counters in perf. Currently,
++	  this enables code that uses the hcall GetPerfCounterInfo and 24x7
++	  interfaces to retrieve counters. GPCI exists on Power 6 and later
++	  systems. 24x7 is available on Power 8 systems.
++
++          If unsure, select Y.
 
+And relocated to arch/powerpc/platforms/Kconfig (as this isn't really
+strictly "cputype" related).
 
