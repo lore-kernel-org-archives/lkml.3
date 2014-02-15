@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031AbaBODiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 22:38:00 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11044 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaBODh6 (ORCPT
+	id S1752201AbaBODic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 22:38:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47771 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaBODia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 22:37:58 -0500
-Message-ID: <52FEE10C.7010101@huawei.com>
-Date: Sat, 15 Feb 2014 11:37:48 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 14 Feb 2014 22:38:30 -0500
+Date: Fri, 14 Feb 2014 19:40:46 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
+        "Anna, Suman" <s-anna@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        Pawel Moll <pawel.moll@arm.com>, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>
+Subject: Re: [RFC 0/6] mailbox: add common framework and port drivers
+Message-ID: <20140215034046.GA26468@kroah.com>
+References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com>
+ <CAJe_ZhfgNUN5=azLrjyLLkh262zv2oBP-ioS8xtBWPonOPacrA@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH cgroup/for-3.14-fixes] cgroup: update cgroup_enable_task_cg_lists()
- to grab siglock
-References: <20140213182931.GB17608@htj.dyndns.org>
-In-Reply-To: <20140213182931.GB17608@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJe_ZhfgNUN5=azLrjyLLkh262zv2oBP-ioS8xtBWPonOPacrA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/14 2:29, Tejun Heo wrote:
-> Currently, there's nothing preventing cgroup_enable_task_cg_lists()
-> from missing set PF_EXITING and race against cgroup_exit().  Depending
-> on the timing, cgroup_exit() may finish with the task still linked on
-> css_set leading to list corruption.  Fix it by grabbing siglock in
-> cgroup_enable_task_cg_lists() so that PF_EXITING is guaranteed to be
-> visible.
+On Sat, Feb 15, 2014 at 09:02:07AM +0530, Jassi Brar wrote:
+> Hi,
 > 
-> This whole on-demand cg_list optimization is extremely fragile and has
-> ample possibility to lead to bugs which can cause things like
-> once-a-year oops during boot.  I'm wondering whether the better
-> approach would be just adding "cgroup_disable=all" handling which
-> disables the whole cgroup rather than tempting fate with this
-> on-demand craziness.
+> On 8 February 2014 06:20, Courtney Cavin <courtney.cavin@sonymobile.com> wrote:
+> > There is currently no common framework for mailbox drivers, so this is my
+> > attempt to come up with something suitable.  There seems to be a need for
+> > making this generic, so I have attempted to do just that.  Most of this is
+> > modeled pretty strongly after the pwm core, with some influences from the clock
+> > core.
+> >
+> > Looking at the existing use-cases, and some new ones, it would appear that the
+> > requirements here are rather simple. We need essentially two things for
+> > consumers:
+> >         - put_message
+> >         - callback for receiving messages
+> >
+> > The code currently uses atomic notifiers for callbacks.  The common omap core
+> > deals with fifos and work-queues in order to escape atomic contexts, but from
+> > what I can see, this is unneeded.  I am also of the opinion that the contexts
+> > can be much better managed in the drivers which are working with these
+> > contexts, rather than generically.
+> >
+> > Hopefully this will be suitable for the plethora of other drivers around the
+> > kernel which implement mailboxes, as well.  In any case, I'm rather interested
+> > to see what the rest of the world thinks.
+> >
+> > Keep in mind that while the pl320 & omap code should compile, I don't currently
+> > have a platform on which I can perform proper testing.  I also removed the
+> > context save/restore code from omap2 mailbox support, because I think it should
+> > be able to be done via driver suspend/resume, but haven't done a full
+> > investigation just yet.
+> >
+> > I'm also aware that breaking omap, just to fix it again probably isn't the best
+> > course of action, and I'm open to suggestions.
+> >
+> Did you try to look up the history of mailbox api development?  Google
+> search: 'mailbox common api'
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: stable@vger.kernel.org
+> I (Linaro/Fujitsu), Suman Anna (TI), LeyFoon Tan (Intel), Craig
+> McGeachie(Broadcom) and Loic Pallardy(ST) already worked a generic
+> Mailbox framework and infact have controller drivers working over
+> them.
+>  For some confidentiality and some lazy and some confusion or whatever
+> reasons the final version of drivers and API wasn't submitted upstream
+> yet.
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+Then, in all reality, it doesn't exist at all, and so, we will evaluate
+this submission instead.
 
+Just because you all can't send something for merging, doesn't mean you
+get to block someone else who has got their act together, that's not
+fair.
+
+sorry,
+
+greg k-h
