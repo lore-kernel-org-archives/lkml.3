@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaBOCL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 21:11:56 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51278 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaBOCLz (ORCPT
+	id S1752002AbaBOCWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 21:22:19 -0500
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:42109 "HELO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751667AbaBOCWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 21:11:55 -0500
-Message-ID: <52FECCE3.1010707@huawei.com>
-Date: Sat, 15 Feb 2014 10:11:47 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 cgroup/for-3.15] cgroup: make cgroup_enable_task_cg_lists()
- to grab siglock
-References: <20140213182931.GB17608@htj.dyndns.org> <20140214204709.GB2851@mtj.dyndns.org>
-In-Reply-To: <20140214204709.GB2851@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	Fri, 14 Feb 2014 21:22:15 -0500
+From: Ravi Patel <rapatel@apm.com>
+To: arnd@arndb.de, gregkh@linuxfoundation.org, davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jcm@redhat.com, patches@apm.com, Ravi Patel <rapatel@apm.com>,
+        Keyur Chudgar <kchudgar@apm.com>
+Subject: [PATCH V3 0/4] mailbox: xgene: Add support for APM X-Gene SoC Queue Manager/Traffic Manager
+Date: Fri, 14 Feb 2014 18:21:58 -0800
+Message-Id: <1392430922-24643-1-git-send-email-rapatel@apm.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/15 4:47, Tejun Heo wrote:
-> Currently, there's nothing explicitly preventing
-> cgroup_enable_task_cg_lists() from missing set PF_EXITING and race
-> against cgroup_exit(), and, depending on the timing, cgroup_exit()
-> seemingly may finish with the task still linked on css_set leading to
-> list corruption because cgroup_enable_task_cg_lists() can end up
-> linking it after list_empty(&tsk->cg_list) test in cgroup_exit().
-> 
-> This can't really happen because exit_mm() grabs and release
-> task_lock() between setting of PF_EXITING and cgroup_exit(), and
-> cgroup_enable_task_cg_lists() synchronizes against task_lock too;
-> however, this is fragile and more of a happy accident.  Let's make the
-> synchronization explicit by making cgroup_enable_task_cg_lists() grab
-> siglock around PF_EXITING testing.
-> 
-> This whole on-demand cg_list optimization is extremely fragile and has
-> ample possibility to lead to bugs which can cause things like
-> once-a-year oops during boot.  I'm wondering whether the better
-> approach would be just adding "cgroup_disable=all" handling which
-> disables the whole cgroup rather than tempting fate with this dynamic
-> optimization craziness.
-> 
-> v2: Li pointed out that the race condition can't actually happen due
->     to task_lock locking in exit_mm().  Updated the patch description
->     accordingly and dropped -stable cc.
-> 
+This patch adds support for APM X-Gene SoC Queue Manager/Traffic Manager.
+ QMTM is required by APM X-Gene SoC Ethernet, PktDMA (XOR Engine) and
+ Security Engine subsystems. All subsystems communicate with QMTM using
+ messages which include information about the work to be performed and
+ the location of associated data buffers.
 
-I realise exit_mm() is a no-op for threads... There're quite a few places
-task_lock is used between exit_signal() and cgroup_exit(), but they're
-all conditional, so I think your original changelog stands!
+V3:
+ * Switch to mailbox framework
+ * Add support for little and big endian kernel
+ * Change virt_to_phys function call to dma_zalloc_coherent
+
+V2:
+ * Adding COMPILE_TEST dependency for QMTM in Kconfig
+ * Updated license banner as per review comments
+ * Fixed alignment for macros
+ * Changed EXPORT_SYMBOL to EXPORT_SYMBOL_GPL
+
+V1:
+ * inital version
+
+Signed-off-by: Ravi Patel <rapatel@apm.com>
+Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+---
+Ravi Patel (4):
+  Documentation: mailbox: APM X-Gene SoC QMTM
+  Documentation: devicetree: bindings for APM X-Gene SoC QMTM
+  mailbox: xgene: base driver for APM X-Gene SoC QMTM
+  arm64: boot: dts: entries for APM X-Gene SoC QMTM
+
+ .../devicetree/bindings/mailbox/apm-xgene-qmtm.txt |   53 ++
+ Documentation/mailbox/apm-xgene-qmtm.txt           |  149 ++++++
+ MAINTAINERS                                        |    9 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |   18 +-
+ drivers/mailbox/Kconfig                            |    2 +
+ drivers/mailbox/Makefile                           |    1 +
+ drivers/mailbox/xgene/Kconfig                      |    9 +
+ drivers/mailbox/xgene/Makefile                     |    7 +
+ drivers/mailbox/xgene/xgene_qmtm_main.c            |  516 ++++++++++++++++++++
+ drivers/mailbox/xgene/xgene_qmtm_main.h            |  112 +++++
+ drivers/mailbox/xgene/xgene_qmtm_storm.c           |  358 ++++++++++++++
+ include/linux/platform_data/xgene_qmtm.h           |  300 ++++++++++++
+ 12 files changed, 1533 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/mailbox/apm-xgene-qmtm.txt
+ create mode 100644 Documentation/mailbox/apm-xgene-qmtm.txt
+ create mode 100644 drivers/mailbox/xgene/Kconfig
+ create mode 100644 drivers/mailbox/xgene/Makefile
+ create mode 100644 drivers/mailbox/xgene/xgene_qmtm_main.c
+ create mode 100644 drivers/mailbox/xgene/xgene_qmtm_main.h
+ create mode 100644 drivers/mailbox/xgene/xgene_qmtm_storm.c
+ create mode 100644 include/linux/platform_data/xgene_qmtm.h
+
+-- 
+1.7.9.5
 
