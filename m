@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaBOPgh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 10:36:37 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52983 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398AbaBOPgh (ORCPT
+	id S1753415AbaBOPpT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 10:45:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37359 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382AbaBOPpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 10:36:37 -0500
-Date: Sat, 15 Feb 2014 15:36:31 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
-        Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140215153631.GZ18016@ZenIV.linux.org.uk>
-References: <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
- <20140212113928.GO18016@ZenIV.linux.org.uk>
- <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
- <20140212211421.GP18016@ZenIV.linux.org.uk>
- <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com>
- <20140213174020.GA14455@redhat.com>
- <CA+55aFxwozCQ05axLB02R3huX8sj=20EoFfw0cSDDL8fBE_Y6Q@mail.gmail.com>
- <20140215052531.GX18016@ZenIV.linux.org.uk>
- <20140215142700.GA15540@redhat.com>
- <20140215152251.GY18016@ZenIV.linux.org.uk>
+	Sat, 15 Feb 2014 10:45:17 -0500
+Date: Sat, 15 Feb 2014 16:45:02 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul Mackerras <paulus@samba.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 39/48] powerpc: Replace __get_cpu_var uses
+Message-ID: <20140215154502.GK14089@laptop.programming.kicks-ass.net>
+References: <20140214201841.826179349@linux.com>
+ <20140214201908.082769265@linux.com>
+ <1392436208.10050.22.camel@pasglop>
+ <20140215094239.GF14089@laptop.programming.kicks-ass.net>
+ <1392458479.10050.26.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140215152251.GY18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392458479.10050.26.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 03:22:51PM +0000, Al Viro wrote:
-> On Sat, Feb 15, 2014 at 03:27:00PM +0100, Oleg Nesterov wrote:
-> 
-> > 1. info->q can be already freed if SIGQUEUE_PREALLOC.
+On Sat, Feb 15, 2014 at 09:01:19PM +1100, Benjamin Herrenschmidt wrote:
+> On Sat, 2014-02-15 at 10:42 +0100, Peter Zijlstra wrote:
+> > On Sat, Feb 15, 2014 at 02:50:08PM +1100, Benjamin Herrenschmidt wrote:
+> > > For some reason Im still getting these as attachments instead of inline
+> > > in the email, which makes reviewing a major PITA. Christoph, I'm not
+> > > sure what you are doing wrong here but you should consider fixing it :-)
 > > 
-> >    Once get_signal_to_deliver() or any other caller drops ->siglock
-> >    another thread can do sys_timer_delete()->sigqueue_free().
+> > Yeah, what the others have already said; evolution is a pile of steaming
+> > crap. Get yourself a real MUA :-)
 > 
-> How the devil would it find the sucker?  It's off the list already.
+> I yet have to find one that isn't a steaming pile ... :-) Sadly I got
+> used to evo and transferring all my filters etc... to another one is
+> something I'm really not looking fwd to, though I suppose it will have
+> to happen sooner or later.
+> 
+> Plus dwmw2 keeps convincing me that evo doesn't suck as much as I think
+> it does :-)
 
-Ouch...  I think I see what you mean.  Let me see if I got it right:
-timer->sigq is *not* freed by collect_signal(); it's done by
-release_posix_timer() instead, under siglock.  Frankly, this
-        /*
-         * If it is queued it will be freed when dequeued,
-         * like the "regular" sigqueue.
-         */
-        if (!list_empty(&q->list))
-                q = NULL;
-in sigqueue_free() smells like it's asking for races.  Sigh...
+There's a good solution there; make dwmw2 fix it ;-)
+
+David; in particular; quilt mail adds "Content-Disposition: inline"
+headers and Evo, in its infinite wisdom, makes the entire body into an
+attachment.
+
