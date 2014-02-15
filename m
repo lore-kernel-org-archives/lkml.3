@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaBOQOo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 11:14:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45333 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396AbaBOQOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 11:14:42 -0500
-Message-ID: <52FF9236.1040205@redhat.com>
-Date: Sat, 15 Feb 2014 17:13:42 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com> <52F3670D.5090608@redhat.com> <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com> <52FD2908.8000009@redhat.com> <52FD458D.6020107@redhat.com> <CAMEtUuwfSYr=7+_8jKryUMUTL1NE-wRV_h=PX7uKdkUebgGiPg@mail.gmail.com> <52FE4C0C.1090008@redhat.com> <CAMEtUuyZtE1hSBP5xXOjTy1sed2iV1JK8pEGQATiwmxsj+GUFw@mail.gmail.com>
-In-Reply-To: <CAMEtUuyZtE1hSBP5xXOjTy1sed2iV1JK8pEGQATiwmxsj+GUFw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753451AbaBOQcO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 11:32:14 -0500
+Received: from www84.your-server.de ([213.133.104.84]:47130 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396AbaBOQcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 11:32:13 -0500
+From: Stefani Seibold <stefani@seibold.net>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v17 02/10] Add new func _install_special_mapping() to mmap.c
+Date: Sat, 15 Feb 2014 17:32:48 +0100
+Message-Id: <1392481976-6370-3-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1392481976-6370-1-git-send-email-stefani@seibold.net>
+References: <1392481976-6370-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 06:55 PM, Alexei Starovoitov wrote:
-> On Fri, Feb 14, 2014 at 9:02 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> On 02/14/2014 01:59 AM, Alexei Starovoitov wrote:
->> ...
->>>>
->>>> I'm very curious, do you also have any performance numbers, e.g. for
->>>>
->>>> networking by taking JIT'ed/non-JIT'ed BPF filters and compare them
->>>> against
->>>> JIT'ed/non-JIT'ed eBPF filters to see how many pps we gain or loose e.g.
->>>> for a scenario with a middle box running cls_bpf .. or some other macro/
->>>> micro benchmark just to get a picture where both stand in terms of
->>>> performance? Who knows, maybe it would outperform nftables engine as
->>>> well? ;-) How would that look on a 32bit arch with eBPF that is 64bit?
->>>
->>> I don't have jited/non-jited numbers, but I suspect for micro-benchmarks
->>> the gap should be big. I was shooting for near native performance after
->>> JIT.
->>
->> Ohh, I meant it would be interesting to see a comparison of e.g. common
->> libpcap
->> high-level filters that are in 32bit BPF + JIT (current code) vs 64bit BPF +
->> JIT
->> (new code). I'm wondering how 32bit-only archs should be handled to not
->> regress
->> in evaluation performance to the current code.
->
-> Agreed. If we want to rip off old bpf interpreter and replace it with old->new
-> converter + new bpf interpreter, the performance of it should be very close.
-> In grand scheme some differences are ok, since libpcap bpf filters are not hot.
-> So much is happening before and after that tcpdump won't notice whether
-> filter was jited or not. cls_bpf is a different story, though I don't know what
-> specific use case you have there.
-> Could you define a bpf micro benchmark ? cls_bpf with pktgen?
+The _install_special_mapping() is the new base function for
+install_special_mapping(). This function will return a pointer of the
+created VMA or a error code in an ERR_PTR()
 
-Well, that's just one example, it's not necessarily about cls_bpf, e.g. just
-a modified pktgen where skb goes through new/old BPF filters on local output
-path and the remote machine queries nic counters (e.g. ifpps, an ixia box or
-something else suitable). There's probably even something more simple and
-suitable for comparing both, so it doesn't necessarily has to be this scenario.
-It's just to have a basic comparison to see where we would stand e.g. in case
-of 32/64bit architectures. Otherwise, regarding your other email, sounds like
-convergence at least to _me_. Details can then still be discussed at particular
-steps, but integrating this step by step into the existing architecture would
-be a good start, imho.
+This new function will be needed by the for the vdso 32 bit support to map the
+additonal vvar and hpet pages into the 32 bit address space. This will be done
+with io_remap_pfn_range() and remap_pfn_range, which requieres a vm_area_struct.
+
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ include/linux/mm.h |  3 +++
+ mm/mmap.c          | 20 ++++++++++++++++----
+ 2 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f28f46e..55342aa 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1740,6 +1740,9 @@ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
+ extern struct file *get_mm_exe_file(struct mm_struct *mm);
+ 
+ extern int may_expand_vm(struct mm_struct *mm, unsigned long npages);
++extern struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
++				   unsigned long addr, unsigned long len,
++				   unsigned long flags, struct page **pages);
+ extern int install_special_mapping(struct mm_struct *mm,
+ 				   unsigned long addr, unsigned long len,
+ 				   unsigned long flags, struct page **pages);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 20ff0c3..81ba54f 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2918,7 +2918,7 @@ static const struct vm_operations_struct special_mapping_vmops = {
+  * The array pointer and the pages it points to are assumed to stay alive
+  * for as long as this mapping might exist.
+  */
+-int install_special_mapping(struct mm_struct *mm,
++struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
+ 			    unsigned long addr, unsigned long len,
+ 			    unsigned long vm_flags, struct page **pages)
+ {
+@@ -2927,7 +2927,7 @@ int install_special_mapping(struct mm_struct *mm,
+ 
+ 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+ 	if (unlikely(vma == NULL))
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
+ 	vma->vm_mm = mm;
+@@ -2948,11 +2948,23 @@ int install_special_mapping(struct mm_struct *mm,
+ 
+ 	perf_event_mmap(vma);
+ 
+-	return 0;
++	return vma;
+ 
+ out:
+ 	kmem_cache_free(vm_area_cachep, vma);
+-	return ret;
++	return ERR_PTR(ret);
++}
++
++int install_special_mapping(struct mm_struct *mm,
++			    unsigned long addr, unsigned long len,
++			    unsigned long vm_flags, struct page **pages)
++{
++	struct vm_area_struct *vma = _install_special_mapping(mm,
++			    addr, len, vm_flags, pages);
++
++	if (IS_ERR(vma))
++		return PTR_ERR(vma);
++	return 0;
+ }
+ 
+ static DEFINE_MUTEX(mm_all_locks_mutex);
+-- 
+1.8.5.4
+
