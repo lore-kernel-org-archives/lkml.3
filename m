@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaBONWS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 08:22:18 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:35999 "EHLO
+	id S1753279AbaBONWR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 08:22:17 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:35985 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753092AbaBONWQ (ORCPT
+	by vger.kernel.org with ESMTP id S1753050AbaBONWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 15 Feb 2014 08:22:16 -0500
-Message-Id: <20140215132057.012974140@goodmis.org>
+Message-Id: <20140215132214.688909341@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sat, 15 Feb 2014 08:20:57 -0500
+Date: Sat, 15 Feb 2014 08:20:58 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 0/2] [GIT PULL] tracing: Two urgent fixes
-X-RR-Connecting-IP: 107.14.168.118:25
+Subject: [PATCH 1/2] ring-buffer: Fix first commit on sub-buffer having non-zero delta
+References: <20140215132057.012974140@goodmis.org>
+Content-Disposition: inline; filename=0001-ring-buffer-Fix-first-commit-on-sub-buffer-having-no.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Linus,
+Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
+that page use a 27 bit delta against that timestamp in order to save on
+bits written to the ring buffer. If the time between events is larger than
+what the 27 bits can hold, a "time extend" event is added to hold the
+entire 64 bit timestamp again and the events after that hold a delta from
+that timestamp.
 
-Two fixes in the tracing utility.
+As a "time extend" is always paired with an event, it is logical to just
+allocate the event with the time extend, to make things a bit more efficient.
 
-The first is a fix for the way the ring buffer stores timestamps.
-After a restructure of the code was done, the ring buffer timestamp
-logic missed the fact that the first event on a sub buffer is to have
-a zero delta, as the full timestamp is stored on the sub buffer itself.
-But because the delta was not cleared to zero, the timestamp for that
-event will be calculated as the real timestamp + the delta from the
-last timestamp. This can skew the timestamps of the events and
-have them say they happened when they didn't really happen. That's bad.
+Unfortunately, when the pairing code was written, it removed the "delta = 0"
+from the first commit on a page, causing the events on the page to be
+slightly skewed.
 
-The second fix is for modifying the function graph caller site.
-When the stop machine was removed from updating the function tracing
-code, it missed updating the function graph call site location.
-It is still modified as if it is being done via stop machine. But it's not.
-This can lead to a GPF and kernel crash if the function graph call site
-happens to lie between cache lines and one CPU is executing it while
-another CPU is doing the update. It would be a very hard condition to
-hit, but the result is sever enough to have it fixed ASAP.
+Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
+Cc: stable@vger.kernel.org # 2.6.37+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ring_buffer.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Please pull the latest trace-fixes-v3.14-rc2 tree, which can be found at:
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 294b8a2..fc4da2d 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2397,6 +2397,13 @@ __rb_reserve_next(struct ring_buffer_per_cpu *cpu_buffer,
+ 	write &= RB_WRITE_MASK;
+ 	tail = write - length;
+ 
++	/*
++	 * If this is the first commit on the page, then it has the same
++	 * timestamp as the page itself.
++	 */
++	if (!tail)
++		delta = 0;
++
+ 	/* See if we shot pass the end of this buffer page */
+ 	if (unlikely(write > BUF_PAGE_SIZE))
+ 		return rb_move_tail(cpu_buffer, length, tail,
+-- 
+1.8.4.3
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.14-rc2
-
-Tag SHA1: 390f3e6a6f910b3aea1cef47b9339b99d7f3576f
-Head SHA1: 87fbb2ac6073a7039303517546a76074feb14c84
-
-
-Steven Rostedt (Red Hat) (2):
-      ring-buffer: Fix first commit on sub-buffer having non-zero delta
-      ftrace/x86: Use breakpoints for converting function graph caller
-
-----
- arch/x86/kernel/ftrace.c   | 83 ++++++++++++++++++++++++++--------------------
- kernel/trace/ring_buffer.c |  7 ++++
- 2 files changed, 54 insertions(+), 36 deletions(-)
