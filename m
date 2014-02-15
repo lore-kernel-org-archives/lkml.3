@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaBOKKM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 05:10:12 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60686 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaBOKKH (ORCPT
+	id S1753508AbaBOKKb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 05:10:31 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:43489 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413AbaBOKK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 05:10:07 -0500
-Date: Fri, 14 Feb 2014 21:11:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20140214211157.GD4451@sirena.org.uk>
-References: <1392378602-32302-1-git-send-email-sachin.kamat@linaro.org>
- <1392378602-32302-6-git-send-email-sachin.kamat@linaro.org>
+	Sat, 15 Feb 2014 05:10:26 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DvpQYQy10PodzGf7"
-Content-Disposition: inline
-In-Reply-To: <1392378602-32302-6-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Your lucky color has faded.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 175.45.49.105
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 06/16] regulator: max8997: Use of_get_child_by_name
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140214161552.GA20909@infradead.org>
+References: <52FE33A0.6090702@gmail.com> <20140214161552.GA20909@infradead.org>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Sat, 15 Feb 2014 11:10:06 +0100
+Message-ID: <CAKgNAkht_Lp83QGSXHC9HT31LXoDS9Yjg+s1_xQH8Xmt96mAmw@mail.gmail.com>
+Subject: Re: man-pages-3.58 is released
+To: Christoph Hellwig <hch@infradead.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 14, 2014 at 5:15 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Fri, Feb 14, 2014 at 04:17:52PM +0100, Michael Kerrisk (man-pages) wrote:
+>> pipe.2
+>>     Michael Kerrisk
+>>         Document the pipe2() O_DIRECT flag added in Linux 3.4
+>
+> Eww, reusing O_DIRECT for some totally different semantics is nasty.
+> Did this go by linux-man back in the day?
 
---DvpQYQy10PodzGf7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+(I suspect you meant linux-api@)
 
-On Fri, Feb 14, 2014 at 05:19:52PM +0530, Sachin Kamat wrote:
-> of_find_node_by_name walks the allnodes list, and can thus walk
-> outside of the parent node. Use of_get_child_by_name instead.
+Nope. I happened to discover the new flag by accident while grepping
+the sources.
 
-Applied, thanks.
+Cheers,
 
---DvpQYQy10PodzGf7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Michael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS/oaaAAoJELSic+t+oim99egP/iMQX7X5P0r3c0SFXJd/FzSE
-J59BLb5EKBEYyjuhiGLH+vYD2pf9Kp7c0WYfOkzefDz+APkPS1Igmt8wIkint8m1
-zn3CQnF7GaU3NxFa+9pd6gAUBUOlVCw6i0u40dzB8areUNvGW03rMfjbt2JtUyav
-uyNVSdDeTy1NrX+eZLLttGa2btTorBUM0z8OZYt1SH+NHd3NDZWcJ+ZjG8MUhICD
-HrxCUabt8qDCDhZhUyld9wPSaWECjCur6Z46jBQOV1BDqqOPkZScto1hM59waAHC
-MKjKhN//pWdn0txT2UYZLsbrXIZqiVU9WQ2yHiPC7rMp4kKigOQ2+ClOzTY60VjE
-fWVLwLn5ErSeyhLXaqx6Xk/sVIIvWNPJ+ymky11OcGA0cTN3WKQYlq8H3FdxpyZD
-RbLSPGOH4ZiwzCStDYnU8z1o3mtdBVy4qpUhSJFDxys321h24MGnUrZuDRHbtvFq
-beRIdQ4zfgU/mash479nI/x+DJZHZBok/yPo8+ySRa1u/Rac/KIUB8/z+JzOdsKf
-5DO6HPK2E15IQDVCtu6uubjPWhS7gc2M8d5/txgRdd0X6sXLKN+1imvNb+bMBEAx
-AIoMQTfab/XgddaHtn+UAM5i0IDiXqCNbakFCKjXEfULR+xHnn14iPUzu6hyeitc
-WwYjVoLKC/HS2bqymRWB
-=SmHz
------END PGP SIGNATURE-----
 
---DvpQYQy10PodzGf7--
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
