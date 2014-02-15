@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaBOG6y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 01:58:54 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:43529 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692AbaBOG6v (ORCPT
+	id S1752729AbaBOHgc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 02:36:32 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:23206
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751824AbaBOHga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 01:58:51 -0500
-Date: Fri, 14 Feb 2014 22:58:43 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140215065843.GA5016@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1392321837.18779.3249.camel@triegel.csb>
- <20140214020144.GO4250@linux.vnet.ibm.com>
- <1392352981.18779.3800.camel@triegel.csb>
- <20140214172920.GQ4250@linux.vnet.ibm.com>
- <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
- <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
- <20140215020815.GS4250@linux.vnet.ibm.com>
- <CA+55aFyQTE-CzOoNn=KfDgt9bTLrUxBCXzhQ2T9kNoTy+bRQrQ@mail.gmail.com>
- <CA+55aFzoqKGG3iJMZxfaGnDAtpiOCOZcXf7f6cA4+uw2ST2N9w@mail.gmail.com>
- <20140215063543.GU4250@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140215063543.GU4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021506-0928-0000-0000-000006A8489D
+	Sat, 15 Feb 2014 02:36:30 -0500
+X-IronPort-AV: E=Sophos;i="4.95,849,1384297200"; 
+   d="scan'208";a="49183509"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] staging: r8188eu: delete unnecessary field initialization
+Date: Sat, 15 Feb 2014 08:36:12 +0100
+Message-Id: <1392449773-23429-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 10:35:44PM -0800, Paul E. McKenney wrote:
-> On Fri, Feb 14, 2014 at 06:48:02PM -0800, Linus Torvalds wrote:
-> > On Fri, Feb 14, 2014 at 6:44 PM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > >
-> > > And conversely, the C11 people can walk away from us too. But if they
-> > > can't make us happy (and by "make us happy", I really mean no stupid
-> > > games on our part) I personally think they'll have a stronger
-> > > standard, and a real use case, and real arguments. I'm assuming they
-> > > want that.
-> > 
-> > I should have somebody who proof-reads my emails before I send them out.
-> > 
-> > I obviously meant "if they *can* make us happy" (not "can't").
-> 
-> Understood.  My next step is to take a more detailed look at the piece
-> of the standard that should support RCU.  Depending on how that turns
-> out, I might look at other parts of the standard vs. Linux's atomics
-> and memory-ordering needs.  Should be interesting.  ;-)
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-And perhaps a better way to represent the roles is that I am not the
-buyer, but rather the purchasing agent for the -potential- buyer.  -You-
-are of course the potential buyer.
+On success, the function netdev_alloc_skb initializes the dev field of its
+result to its first argument, so this doesn't have to be done in the
+calling context.
 
-If I were to see myself as the buyer, then I must confess that the
-concerns you implicitly expressed in your prior email would be all too
-well-founded!
+The semantic patch that fixes this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-							Thanx, Paul
+// <smpl>
+@@
+expression skb,privn,e;
+@@
+
+skb = netdev_alloc_skb(privn,...);
+... when strict
+(
+-skb->dev = privn;
+|
+?skb = e
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/staging/rtl8188eu/hal/usb_ops_linux.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/staging/rtl8188eu/hal/usb_ops_linux.c b/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
+index 74ee2e6..b92b4f5 100644
+--- a/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
++++ b/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
+@@ -384,7 +384,6 @@ static int recvbuf2recvframe(struct adapter *adapt, struct sk_buff *pskb)
+ 
+ 		pkt_copy = netdev_alloc_skb(adapt->pnetdev, alloc_sz);
+ 		if (pkt_copy) {
+-			pkt_copy->dev = adapt->pnetdev;
+ 			precvframe->u.hdr.pkt = pkt_copy;
+ 			precvframe->u.hdr.rx_head = pkt_copy->data;
+ 			precvframe->u.hdr.rx_end = pkt_copy->data + alloc_sz;
 
