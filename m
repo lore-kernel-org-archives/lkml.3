@@ -1,136 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaBOECI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 23:02:08 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:51606 "EHLO mail.wdtv.com"
+	id S1752661AbaBOECc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 23:02:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2753 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643AbaBOECG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 23:02:06 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Loseing my patience with libata and sata_nv
-Date: Fri, 14 Feb 2014 23:01:56 -0500
-References: <201402141131.48157.gheskett@wdtv.com> <52FE639C.2030007@infradead.org> <52FEB167.9080404@lwfinger.net>
-In-Reply-To: <52FEB167.9080404@lwfinger.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
+	id S1751518AbaBOECb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Feb 2014 23:02:31 -0500
+Date: Fri, 14 Feb 2014 22:58:10 -0500
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mtosatti@redhat.com, mgorman@suse.de,
+        aarcange@redhat.com, andi@firstfloor.org, riel@redhat.com,
+        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org
+Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+Message-ID: <20140214225810.57e854cb@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
+References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
+	<1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
+	<alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201402142301.56301.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 February 2014, Larry Finger wrote:
->On 02/14/2014 12:42 PM, Randy Dunlap wrote:
->> On 02/14/2014 08:31 AM, Gene Heskett wrote:
->>> Which is required for my $290 ASUS M2n-SLI Deluxe motherboard to boot.
->>> 
->>> Not finding the option in any kernel tree that exists on my system,
->>> except it appears its been replaced or something.
->>> 
->>> This once in a lifetime boot, to 3.12.9, shows from an lsmod:
->>> libata                146855  2 sata_nv,pata_amd
->>> scsi_mod              153579  4 sr_mod,sg,sd_mod,libata
->>> 
->>> I haven't a clue how I got it in this boot, and I built it.  And
->>> apparently a make oldconfig, carefully done by hand (takes about an
->>> hour 30 to do) is not capable of adding it to a .config BECAUSE it
->>> does NOT exist in any of the arch/x86/configs/i386_defconfig's
->>> present on this machine.
->> 
->> It does not have to exist in any defconfig.  Those are just default
->> config files and SATA_NV is not enabled by default, but you can still
->> enable it.
->> 
->>> Here is how I searched:
->>> 
->>> gene@coyote:~/src/linux-3.0.69$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.0.69$ cd
->>> ../linux-3.2.40
->>> gene@coyote:~/src/linux-3.2.40$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.2.40$ cd
->>> ../linux-3.4.36
->>> gene@coyote:~/src/linux-3.4.36$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.4.36$ cd
->>> ../linux-3.8.2
->>> gene@coyote:~/src/linux-3.8.2$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.8.2$ cd
->>> ../linux-3.8.3
->>> gene@coyote:~/src/linux-3.8.3$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.8.3$ cd
->>> ../linux-3.12.0
->>> gene@coyote:~/src/linux-3.12.0$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.12.0$ cd
->>> ../linux-3.12.6
->>> gene@coyote:~/src/linux-3.12.6$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.12.6$ cd
->>> ../linux-3.12.9
->>> gene@coyote:~/src/linux-3.12.9$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.12.9$ cd
->>> ../linux-3.13.1
->>> gene@coyote:~/src/linux-3.13.1$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.13.1$ cd
->>> ../linux-3.13.2
->>> gene@coyote:~/src/linux-3.13.2$ grep SATA_NV
->>> arch/x86/configs/i386_defconfig gene@coyote:~/src/linux-3.13.2$
->>> 
->>> I've been fighting with this, intermittently for about 6 months. 
->>> Except for this 3.12.9 where I must have been holding my mouth right,
->>> all the rest are boot failures because it can't find the boot drive
->>> with so-and-so for a UUID. sata_nv is on the missing list, even in
->>> this WORKing boots defconfig. "Working" however is a miss-statement,
->>> no multimedia stuff was built.
->>> 
->>> There has to be a rule I am violating, but even with Randy's D's help,
->>> it is not becoming obvious.  FWIW libata references also can't be
->>> found, but as can be seen, its in memory right now.
->> 
->> libata is built whenever CONFIG_ATA is enabled.
->> 
->>> So please guys, what is the magic dependency that causes libata and
->>> sata_nv to be included in a .config?
->> 
->> The SATA_NV kconfig symbol depends on (requires) the following other
->> kconfig
->> 
->> symbols to be enabled:
->> 	ATA_SFF and ATA_BMDMA and PCI and ATA
->> 
->> If those are not enabled, then you will need to use 'make <some>config'
->> to enabled them before you can enable SATA_NV.
->
->Gene,
->
->Your CONFIG indicates that you are building both libata and sata_nv.
->Perhaps you are not including them in your initrd, or whatever it is
->called in your distro. That makes them unavailable at boot time due to
->the chicken-and-egg problem. You need those drivers to access the drive,
->but that is where they reside. An easy way might be to make those two
->drivers be built in rather than as modules.
->
->Larry
+On Fri, 14 Feb 2014 15:14:22 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-Almost exactly the same, Larry, I waited for the 2 minute timeout that 
-tried to print something on the top line of the screen before I got up to 
-walk over and reset it, but this time there was about a 1 minute blast of 
-disk activity from the drive it was trying to boot from, and I thought I 
-might have been an e2fsck, so I waited till the drive leds went off and 
-stayed off before resetting it.  Nothing on the screen changed after that.
+> On Thu, 13 Feb 2014, Luiz Capitulino wrote:
+> 
+> > From: Luiz capitulino <lcapitulino@redhat.com>
+> > 
+> > The HugeTLB command-line option hugepages= allows a user to specify how
+> > many huge pages should be allocated at boot. This option is needed because
+> > it improves reliability when allocating 1G huge pages, which are better
+> > allocated as early as possible due to fragmentation.
+> > 
+> > However, hugepages= has a limitation. On NUMA systems, hugepages= will
+> > automatically distribute memory allocation equally among nodes. For
+> > example, if you have a 2-node NUMA system and allocate 200 huge pages,
+> > than hugepages= will try to allocate 100 huge pages from node0 and 100
+> > from node1.
+> > 
+> > This is very unflexible, as it doesn't allow you to specify which nodes
+> > the huge pages should be allocated from. For example, there are use-cases
+> > where the user wants to specify that a 1GB huge page should be allocated
+> > from node 2 or that 300 2MB huge pages should be allocated from node 0.
+> > 
+> > The hugepages_node= command-line option introduced by this commit allows
+> > just that.
+> > 
+> > The syntax is:
+> > 
+> >   hugepages_node=nid:nr_pages:size,...
+> > 
+> 
+> Again, I think this syntax is horrendous and doesn't couple well with the 
+> other hugepage-related kernel command line options.  We already have 
+> hugepages= and hugepagesz= which you can interleave on the command line to 
+> get 100 2M hugepages and 10 1GB hugepages, for example.
+> 
+> This patchset is simply introducing another variable to the matter: the 
+> node that the hugepages should be allocated on.  So just introduce a 
+> hugepagesnode= parameter to couple with the others so you can do
+> 
+> 	hugepagesz=<size> hugepagesnode=<nid> hugepages=<#>
 
-So call me clueless & you would be pretty accurate. :(
+That was my first try but it turned out really bad. First, for every node
+you specify you need three options. So, if you want to setup memory for
+three nodes you'll need to specify nine options. And it gets worse, because
+hugepagesz= and hugepages= have strict ordering (which is a mistake, IMHO) so
+you have to specify them in the right order otherwise things don't work as
+expected and you have no idea why (have been there myself).
 
-Is there another dependency yet?
+IMO, hugepages_node=<nid>:<nr_pages>:<size>,... is good enough. It's concise,
+and don't depend on any other option to function. Also, there are lots of other
+kernel command-line options that require you to specify multiple fields, so
+it's not like hugepages_node= is totally different in that regard.
 
-Thanks.
-
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-NOTICE: Will pay 100 USD for an HP-4815A defective but
-complete probe assembly.
-
+> 
+> instead of having completely confusing interfaces where you want to do 
+> hugepages_node=1:1:1G for a 1GB hugepage on page 1 (and try remembering 
+> which "1" means what, yuck) and "hugepagesz=1GB hugepages=1" if you're 
+> indifferent to the node.
+> 
