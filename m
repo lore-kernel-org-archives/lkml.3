@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaBOREM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 12:04:12 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:61805 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaBOREK (ORCPT
+	id S1753537AbaBORIU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 12:08:20 -0500
+Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:38013 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753443AbaBORIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 12:04:10 -0500
-Message-ID: <52FF9E00.90005@samsung.com>
-Date: Sun, 16 Feb 2014 02:04:00 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Sat, 15 Feb 2014 12:08:18 -0500
+Message-ID: <52FF9EFC.2060707@overkiz.com>
+Date: Sat, 15 Feb 2014 18:08:12 +0100
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-arch@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 19/73] arm: mach-s3c64xx mach-crag6410-module.c is not
- modular
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com> <1390339396-3479-20-git-send-email-paul.gortmaker@windriver.com> <20140123131621.GD11589@opensource.wolfsonmicro.com>
-In-Reply-To: <20140123131621.GD11589@opensource.wolfsonmicro.com>
+To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
+        mturquette@linaro.org
+CC: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk:at91: Fix memory leak in of_at91_clk_master_setup()
+References: <1392124507-14463-1-git-send-email-standby24x7@gmail.com> <52FA2338.3030707@overkiz.com>
+In-Reply-To: <52FA2338.3030707@overkiz.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 11453498277842680034
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrledtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/14 22:16, Charles Keepax wrote:
-> On Tue, Jan 21, 2014 at 04:22:22PM -0500, Paul Gortmaker wrote:
->> Despite the name mach-crag6410-module.c, the code is built for
->> MACH_WLF_CRAGG_6410 -- which is bool, and hence this code is
->> either present or absent.  It will never be modular, so using
->> module_init as an alias for __initcall can be somewhat
->> misleading.
->>
->> Fix this up now, so that we can relocate module_init from
->> init.h into module.h in the future.  If we don't do this, we'd
->> have to add module.h to obviously non-modular code, and that
->> would be a worse thing.
->>
->> Note that direct use of __initcall is discouraged, vs. one
->> of the priority categorized subgroups.  As __initcall gets
->> mapped onto device_initcall, our use of device_initcall
->> directly in this change means that the runtime impact is
->> zero -- it will remain at level 6 in initcall ordering.
->>
->> Cc: Ben Dooks<ben-linux@fluff.org>
->> Cc: Kukjin Kim<kgene.kim@samsung.com>
->> Cc: Russell King<linux@arm.linux.org.uk>
->> Cc: patches@opensource.wolfsonmicro.com
->> Cc: linux-arm-kernel@lists.infradead.org
->> Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
->> ---
->
-> Tested-by: Charles Keepax<ckeepax@opensource.wolfsonmicro.com>
->
-Thanks, applied.
+Hi Mike,
 
-- Kukjin
+Could you take this patch for the next 3.14 release ?
+
+Best Regards,
+
+Boris
+
+On 11/02/2014 14:18, Boris BREZILLON wrote:
+> On 11/02/2014 14:15, Masanari Iida wrote:
+>> cppcheck detected following error
+>> [clk-master.c:245]: (error) Memory leak: characteristics
+>>
+>> The original code forgot to free characteristics when
+>> irq_of_parse_and_map() failed.
+>>
+>> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> Acked-by Boris BREZILLON <b.brezillon@overkiz.com>
+>
+> Thanks for fixing this.
+>
+> Best Regards,
+>
+> Boris
+>> ---
+>>   drivers/clk/at91/clk-master.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/clk/at91/clk-master.c 
+>> b/drivers/clk/at91/clk-master.c
+>> index bd313f7..c1af80b 100644
+>> --- a/drivers/clk/at91/clk-master.c
+>> +++ b/drivers/clk/at91/clk-master.c
+>> @@ -242,7 +242,7 @@ of_at91_clk_master_setup(struct device_node *np, 
+>> struct at91_pmc *pmc,
+>>         irq = irq_of_parse_and_map(np, 0);
+>>       if (!irq)
+>> -        return;
+>> +        goto out_free_characteristics;
+>>         clk = at91_clk_register_master(pmc, irq, name, num_parents,
+>>                          parent_names, layout,
+>
+
