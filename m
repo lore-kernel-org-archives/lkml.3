@@ -1,125 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141AbaBOMA5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 07:00:57 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:38046 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767AbaBOMAn (ORCPT
+	id S1753046AbaBOMHc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 07:07:32 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:46888 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847AbaBOMHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 07:00:43 -0500
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org
-Cc: levex@linux.com, lars@metafoo.de, andriy.shevchenko@linux.intel.com,
-        dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: [PATCH v3 2/3] dma: Add Xilinx Video DMA DT Binding Documentation
-Date: Sat, 15 Feb 2014 17:30:18 +0530
-Message-Id: <1392465619-27614-3-git-send-email-sthokal@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392465619-27614-1-git-send-email-sthokal@xilinx.com>
-References: <1392465619-27614-1-git-send-email-sthokal@xilinx.com>
+	Sat, 15 Feb 2014 07:07:31 -0500
+X-Auth-Info: Bc62P6LTAOCPx2UPZsG6ryPK9kOyQLDim0wVl7NEueo=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@linux.com>,
+        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 39/48] powerpc: Replace __get_cpu_var uses
+References: <20140214201841.826179349@linux.com>
+	<20140214201908.082769265@linux.com>
+	<1392436208.10050.22.camel@pasglop>
+	<20140215094239.GF14089@laptop.programming.kicks-ass.net>
+	<1392458479.10050.26.camel@pasglop>
+X-Yow: I can't think about that.  It doesn't go with HEDGES in the shape of
+ LITTLE LULU -- or ROBOTS making BRICKS...
+Date: Sat, 15 Feb 2014 13:07:17 +0100
+In-Reply-To: <1392458479.10050.26.camel@pasglop> (Benjamin Herrenschmidt's
+	message of "Sat, 15 Feb 2014 21:01:19 +1100")
+Message-ID: <87lhxctw96.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device-tree binding documentation of Xilinx Video DMA Engine
+Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
 
-Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
----
-Changes in v3:
-None
+> On Sat, 2014-02-15 at 10:42 +0100, Peter Zijlstra wrote:
+>> On Sat, Feb 15, 2014 at 02:50:08PM +1100, Benjamin Herrenschmidt wrote:
+>> > For some reason Im still getting these as attachments instead of inline
+>> > in the email, which makes reviewing a major PITA. Christoph, I'm not
+>> > sure what you are doing wrong here but you should consider fixing it :-)
+>> 
+>> Yeah, what the others have already said; evolution is a pile of steaming
+>> crap. Get yourself a real MUA :-)
+>
+> I yet have to find one that isn't a steaming pile ... :-) 
 
-Changes in v2:
-- Removed device-id DT property, as suggested by Arnd Bergmann
-- Properly documented DT bindings as suggested by Arnd Bergmann
----
- .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   75 ++++++++++++++++++++
- 1 file changed, 75 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+Gnus.
 
-diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-new file mode 100644
-index 0000000..ab8be1a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-@@ -0,0 +1,75 @@
-+Xilinx AXI VDMA engine, it does transfers between memory and video devices.
-+It can be configured to have one channel or two channels. If configured
-+as two channels, one is to transmit to the video device and another is
-+to receive from the video device.
-+
-+Required properties:
-+- compatible: Should be "xlnx,axi-vdma-1.00.a"
-+- #dma-cells: Should be <1>, see "dmas" property below
-+- reg: Should contain VDMA registers location and length.
-+- xlnx,num-fstores: Should be the number of framebuffers as configured in h/w.
-+- dma-channel child node: Should have atleast one channel and can have upto
-+	two channels per device. This node specifies the properties of each
-+	DMA channel (see child node properties below).
-+
-+Optional properties:
-+- xlnx,include-sg: Tells whether configured for Scatter-mode in
-+	the hardware.
-+- xlnx,flush-fsync: Tells whether which channel to Flush on Frame sync.
-+	It takes following values:
-+	{1}, flush both channels
-+	{2}, flush mm2s channel
-+	{3}, flush s2mm channel
-+
-+Required child node properties:
-+- compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
-+	"xlnx,axi-vdma-s2mm-channel".
-+- interrupts: Should contain per channel VDMA interrupts.
-+- xlnx,data-width: Should contain the stream data width, take values
-+	{32,64...1024}.
-+
-+Option child node properties:
-+- xlnx,include-dre: Tells whether hardware is configured for Data
-+	Realignment Engine.
-+- xlnx,genlock-mode: Tells whether Genlock synchronization is
-+	enabled/disabled in hardware.
-+
-+Example:
-+++++++++
-+
-+axi_vdma_0: axivdma@40030000 {
-+	compatible = "xlnx,axi-vdma-1.00.a";
-+	#dma_cells = <1>;
-+	reg = < 0x40030000 0x10000 >;
-+	xlnx,num-fstores = <0x8>;
-+	xlnx,flush-fsync = <0x1>;
-+	dma-channel@40030000 {
-+		compatible = "xlnx,axi-vdma-mm2s-channel";
-+		interrupts = < 0 54 4 >;
-+		xlnx,datawidth = <0x40>;
-+	} ;
-+	dma-channel@40030030 {
-+		compatible = "xlnx,axi-vdma-s2mm-channel";
-+		interrupts = < 0 53 4 >;
-+		xlnx,datawidth = <0x40>;
-+	} ;
-+} ;
-+
-+
-+* DMA client
-+
-+Required properties:
-+- dmas: a list of <[Video DMA device phandle] [Channel ID]> pairs,
-+	where Channel ID is '0' for write/tx and '1' for read/rx
-+	channel.
-+- dma-names: a list of DMA channel names, one per "dmas" entry
-+
-+Example:
-+++++++++
-+
-+vdmatest_0: vdmatest@0 {
-+	compatible ="xlnx,axi-vdma-test-1.00.a";
-+	dmas = <&axi_vdma_0 0
-+		&axi_vdma_0 1>;
-+	dma-names = "vdma0", "vdma1";
-+} ;
+Andreas.
+
 -- 
-1.7.9.5
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
