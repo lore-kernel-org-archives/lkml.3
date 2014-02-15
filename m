@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaBOG32 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 01:29:28 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:55422 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaBOG31 (ORCPT
+	id S1752546AbaBOGfw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 01:35:52 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:37649 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaBOGfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 01:29:27 -0500
-Date: Sat, 15 Feb 2014 10:29:22 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Andrew Vagin <avagin@gmail.com>,
-        Aditya Kali <adityakali@google.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change
- boundaries of data, brk and stack
-Message-ID: <20140215062922.GA22779@moon>
-References: <1392387209-330-1-git-send-email-avagin@openvz.org>
- <1392387209-330-2-git-send-email-avagin@openvz.org>
- <874n41znl5.fsf@xmission.com>
- <20140214174314.GA5518@gmail.com>
- <20140214180129.GK13358@moon>
- <8761ohqzc6.fsf@xmission.com>
- <52FE72C1.9090100@parallels.com>
- <20140214200622.GN13358@moon>
- <877g8xphw9.fsf@xmission.com>
+	Sat, 15 Feb 2014 01:35:50 -0500
+Date: Fri, 14 Feb 2014 22:35:44 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140215063543.GU4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140213002355.GI4250@linux.vnet.ibm.com>
+ <1392321837.18779.3249.camel@triegel.csb>
+ <20140214020144.GO4250@linux.vnet.ibm.com>
+ <1392352981.18779.3800.camel@triegel.csb>
+ <20140214172920.GQ4250@linux.vnet.ibm.com>
+ <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+ <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+ <20140215020815.GS4250@linux.vnet.ibm.com>
+ <CA+55aFyQTE-CzOoNn=KfDgt9bTLrUxBCXzhQ2T9kNoTy+bRQrQ@mail.gmail.com>
+ <CA+55aFzoqKGG3iJMZxfaGnDAtpiOCOZcXf7f6cA4+uw2ST2N9w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <877g8xphw9.fsf@xmission.com>
+In-Reply-To: <CA+55aFzoqKGG3iJMZxfaGnDAtpiOCOZcXf7f6cA4+uw2ST2N9w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021506-0928-0000-0000-000006A82917
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 12:18:46PM -0800, Eric W. Biederman wrote:
-> >> > 
-> >> > Why can't you have the process of interest do:
-> >> > 	ptrace(PTRACE_ATTACHME);
-> >> > 	execve(executable, args, ...);
-> >> >         
-> >> >         /* Have the ptracer inject the recovery/fixup code */
-> >> > 	    /* Fix up the mostly correct process to look like it has been
-> >> >          * executing for a while.
-> >> >          */
+On Fri, Feb 14, 2014 at 06:48:02PM -0800, Linus Torvalds wrote:
+> On Fri, Feb 14, 2014 at 6:44 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
 > >
-> > Erik, it seems I don't understand how it will help us to restore
-> > the mm fields mentioned above?
+> > And conversely, the C11 people can walk away from us too. But if they
+> > can't make us happy (and by "make us happy", I really mean no stupid
+> > games on our part) I personally think they'll have a stronger
+> > standard, and a real use case, and real arguments. I'm assuming they
+> > want that.
 > 
-> Because exec is how those mm fields are set when you don't use
-> prctl_set_mm.  So execpt for the stack and the brk limits that
-> will simply result in the values being set to what the usually
-> would be set to.
+> I should have somebody who proof-reads my emails before I send them out.
+> 
+> I obviously meant "if they *can* make us happy" (not "can't").
 
-Yes, all these fields are set up by kernel's elf loader but this
-routine is a way more time consuming than a clone call. But gimme
-some time to examine all possible problems we might have with such
-approach and if there a way to solve them.
+Understood.  My next step is to take a more detailed look at the piece
+of the standard that should support RCU.  Depending on how that turns
+out, I might look at other parts of the standard vs. Linux's atomics
+and memory-ordering needs.  Should be interesting.  ;-)
 
-> >> Let's imagine we do that.
-> >> 
-> >> This means, that the whole memory contents should be restored _after_
-> >> the execve() call, since the execve() flushes old mappings. In
-> >> that case we lose the ability to preserve any shared memory regions
-> >> between any two processes. This "shared" can be either regular
-> >> MAP_SHARED mappings or MAP_ANONYMOUS but still not COW-ed ones.
+							Thanx, Paul
+
