@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaBOXFu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 18:05:50 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:54016 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802AbaBOXFt (ORCPT
+	id S1752377AbaBOXPM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 18:15:12 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:40460 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaBOXPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 18:05:49 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrey Wagin <avagin@gmail.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Aditya Kali <adityakali@google.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "criu\@openvz.org" <criu@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-References: <1392387209-330-1-git-send-email-avagin@openvz.org>
-	<1392387209-330-2-git-send-email-avagin@openvz.org>
-	<874n41znl5.fsf@xmission.com> <20140214174314.GA5518@gmail.com>
-	<20140214180129.GK13358@moon> <8761ohqzc6.fsf@xmission.com>
-	<CANaxB-xv_izadrMWq5xawk9k-vdADocv8X7=m69r_HK8FfJnOg@mail.gmail.com>
-Date: Sat, 15 Feb 2014 15:05:43 -0800
-In-Reply-To: <CANaxB-xv_izadrMWq5xawk9k-vdADocv8X7=m69r_HK8FfJnOg@mail.gmail.com>
-	(Andrey Wagin's message of "Sat, 15 Feb 2014 00:44:46 +0400")
-Message-ID: <87vbwg7z94.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sat, 15 Feb 2014 18:15:09 -0500
+X-Authority-Analysis: v=2.0 cv=H69ZMpki c=1 sm=0 a=2fUkqGT2UzHXw691IaMUVw==:17 a=wom5GMh1gUkA:10 a=JU4hbWwUC5wA:10 a=zz6odIEfzeQA:10 a=hvm3MZhftXEA:10 a=kj9zAlcOel0A:10 a=7kYe3NcsAAAA:8 a=KGjhK52YXX0A:10 a=Sd6W3NyGy_IA:10 a=Z-SZ1Z_njRioQy8wcT0A:9 a=CjuIK1q_8ugA:10 a=-XA83Ip703gA:10 a=2fUkqGT2UzHXw691IaMUVw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.246.46.80
+Date: Sat, 15 Feb 2014 18:14:57 -0500
+From: "Daniel M. Weeks" <dan@danweeks.net>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix flags for initramfs LZ4 compression
+Message-ID: <20140215231447.GA30803@dev.danweeks.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+QKUD6itcs1/+H45nWqXe/1EodnQ3n0oI=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3287]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Andrey Wagin <avagin@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change boundaries of data, brk and stack
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey Wagin <avagin@gmail.com> writes:
+LZ4 as implemented in the kernel differs from the default method now
+used by the reference implementation of LZ4. Until the in-kernel method
+is updated to support the new default, passing the legacy flag (-l) to
+the compressor is necessary. Without this flag the kernel-generated,
+LZ4-compressed initramfs is junk.
 
-> 2014-02-14 23:16 GMT+04:00 Eric W. Biederman <ebiederm@xmission.com>:
->>
->> Hmm.  Let me rewind this a little bit.
->>
->> I want to be very stupid and ask the following.
->>
->> Why can't you have the process of interest do:
->>         ptrace(PTRACE_ATTACHME);
->>         execve(executable, args, ...);
->>
->>         /* Have the ptracer inject the recovery/fixup code */
->>         /* Fix up the mostly correct process to look like it has been
->>          * executing for a while.
->>          */
->>
->> That should work, set all of the interesting fields, and works as
->> non-root today.  My gut feel says do that and we can just
->> deprecate/remove prctl_set_mm.
->
-> start_brk and start_stack are randomized each time. I don't understand
-> how execve() can restore the origin values of attributes.
+Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
+---
+ scripts/gen_initramfs_list.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-As is the location of the vdso and there isn't a way to set that.
-
-So perhaps what we want to do is to change the randomization with
-mremap(old_addr, size, size, MREMAP_MAYMOVE | MREMAP_FIXED, new_addr)
-and just have the kernel update all of the addresses in bulk when we
-move the location.
-
-I don't know what the folks who are worried about losing tampering
-evidence will think but as a targeted special case it may not be at all
-crazy.
-
-Eric
+diff --git a/scripts/gen_initramfs_list.sh b/scripts/gen_initramfs_list.sh
+index ef47409..17fa901 100644
+--- a/scripts/gen_initramfs_list.sh
++++ b/scripts/gen_initramfs_list.sh
+@@ -257,7 +257,7 @@ case "$arg" in
+                 && compr="lzop -9 -f"
+ 		echo "$output_file" | grep -q "\.lz4$" \
+                 && [ -x "`which lz4 2> /dev/null`" ] \
+-                && compr="lz4 -9 -f"
++                && compr="lz4 -l -9 -f"
+ 		echo "$output_file" | grep -q "\.cpio$" && compr="cat"
+ 		shift
+ 		;;
+-- 
+Daniel M. Weeks
