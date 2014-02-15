@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbaBOSCe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 13:02:34 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:50411 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438AbaBOSCc (ORCPT
+	id S1753559AbaBOSF1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 13:05:27 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53440 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432AbaBOSF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 13:02:32 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52FFABB7.3090302@roeck-us.net>
-Date: Sat, 15 Feb 2014 10:02:31 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sat, 15 Feb 2014 13:05:26 -0500
+Date: Sat, 15 Feb 2014 18:05:20 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140215180520.GC18016@ZenIV.linux.org.uk>
+References: <20140212211421.GP18016@ZenIV.linux.org.uk>
+ <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com>
+ <20140213174020.GA14455@redhat.com>
+ <CA+55aFxwozCQ05axLB02R3huX8sj=20EoFfw0cSDDL8fBE_Y6Q@mail.gmail.com>
+ <20140215052531.GX18016@ZenIV.linux.org.uk>
+ <20140215142700.GA15540@redhat.com>
+ <20140215152251.GY18016@ZenIV.linux.org.uk>
+ <20140215153631.GZ18016@ZenIV.linux.org.uk>
+ <20140215155838.GA18016@ZenIV.linux.org.uk>
+ <20140215174345.GA24799@redhat.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] powerpc: Fix "attempt to move .org backwards" error
-References: <20131209191015.22974.31604.stgit@mars> <20131210101031.82b02468d32ddb89481b24b9@canb.auug.org.au> <1386631570.32037.40.camel@pasglop> <20140212162251.57472ed024ace170b49ec2fa@canb.auug.org.au>
-In-Reply-To: <20140212162251.57472ed024ace170b49ec2fa@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140215174345.GA24799@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 09:22 PM, Stephen Rothwell wrote:
-> Hi all,
->
-> On Tue, 10 Dec 2013 10:26:10 +1100 Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
->>
->> On Tue, 2013-12-10 at 10:10 +1100, Stephen Rothwell wrote:
->>> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>> Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>>
->>> Works for me.  Thanks.  I will add this to linux-next today if Ben
->>> doesn't add it to his tree.
->>
->> I will but probably not soon enough for your cut today
->
-> As noted elsewhere, this did not completely fix the problem and I have
-> been still getting this error from my allyesconfig builds for some time:
->
+On Sat, Feb 15, 2014 at 06:43:45PM +0100, Oleg Nesterov wrote:
+> > So basically we want a different condition for "can we just go ahead and
+> > free that sucker", right?  Instead of "it's on the list, shan't free it"
+> > it ought to be something like "it's on the list or it is referenced by
+> > ksiginfo".  Locking will be interesting, though... ;-/
+> 
+> I guess yes... send_sigqueue() checks list_empty() too, probably nobody else.
 
-+allmodconfig in latest mainline.
+The trouble being, we might end up with
+	Q picked by collect_signal and and stuff into ksiginfo
+	Q resubmitted by timer code
+	Q picked by *another* thread into its ksiginfo
+	the first thread finally done with signal
+and at that point we still have a reference in the second thread's ksiginfo.
+Hell knows - my first reflex in that kind of situation is to replace
+that flag with refcount, so that timer code would hold a reference from
+timer_create(2) to timer_delete(2), send_sigqueue() would bump it and
+dismiss_siginfo() - drop the sucker.  But that means either grabbing
+siglock in dismiss_siginfo() or making the counter atomic; either way
+it's a cacheline ping-pong.  Atomic counter is less painful in that respect -
+it would be right next to the list, so we dirty that cacheline anyway...
 
-> arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-> arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
->
-> Could someone please fix this?
->
-
-Guenter
-
+I'm still trying another approach (slightly bigger ksiginfo used to store
+all variants with si_code >= 0), but it has messiness of its own; we'll
+see how it goes...
