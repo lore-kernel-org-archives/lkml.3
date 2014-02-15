@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaBOEDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 23:03:13 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:60478 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159AbaBOEDL (ORCPT
+	id S1752290AbaBOEJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 23:09:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47923 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaBOEJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 23:03:11 -0500
-Message-ID: <52FEE6F8.8030404@huawei.com>
-Date: Sat, 15 Feb 2014 12:03:04 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 14 Feb 2014 23:09:02 -0500
+Date: Fri, 14 Feb 2014 20:11:19 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
+        "Anna, Suman" <s-anna@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        Pawel Moll <pawel.moll@arm.com>, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>
+Subject: Re: [RFC 0/6] mailbox: add common framework and port drivers
+Message-ID: <20140215041119.GA29012@kroah.com>
+References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com>
+ <CAJe_ZhfgNUN5=azLrjyLLkh262zv2oBP-ioS8xtBWPonOPacrA@mail.gmail.com>
+ <20140215034046.GA26468@kroah.com>
+ <CAJe_Zhe-n6bYUYcbhfHhZ6Cc-8h5Ag7D69hd4G9AtFPjFkWsug@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2] cgroup: fix top cgroup refcnt leak
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJe_Zhe-n6bYUYcbhfHhZ6Cc-8h5Ag7D69hd4G9AtFPjFkWsug@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we mount the same cgroupfs in serveral mount points, and then
-umount all of them, kill_sb() will be called only once.
+On Sat, Feb 15, 2014 at 09:27:48AM +0530, Jassi Brar wrote:
+> On 15 February 2014 09:10, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Sat, Feb 15, 2014 at 09:02:07AM +0530, Jassi Brar wrote:
+> >> Hi,
+> >>
+> >> On 8 February 2014 06:20, Courtney Cavin <courtney.cavin@sonymobile.com> wrote:
+> >> > There is currently no common framework for mailbox drivers, so this is my
+> >> > attempt to come up with something suitable.  There seems to be a need for
+> >> > making this generic, so I have attempted to do just that.  Most of this is
+> >> > modeled pretty strongly after the pwm core, with some influences from the clock
+> >> > core.
+> >> >
+> >> > Looking at the existing use-cases, and some new ones, it would appear that the
+> >> > requirements here are rather simple. We need essentially two things for
+> >> > consumers:
+> >> >         - put_message
+> >> >         - callback for receiving messages
+> >> >
+> >> > The code currently uses atomic notifiers for callbacks.  The common omap core
+> >> > deals with fifos and work-queues in order to escape atomic contexts, but from
+> >> > what I can see, this is unneeded.  I am also of the opinion that the contexts
+> >> > can be much better managed in the drivers which are working with these
+> >> > contexts, rather than generically.
+> >> >
+> >> > Hopefully this will be suitable for the plethora of other drivers around the
+> >> > kernel which implement mailboxes, as well.  In any case, I'm rather interested
+> >> > to see what the rest of the world thinks.
+> >> >
+> >> > Keep in mind that while the pl320 & omap code should compile, I don't currently
+> >> > have a platform on which I can perform proper testing.  I also removed the
+> >> > context save/restore code from omap2 mailbox support, because I think it should
+> >> > be able to be done via driver suspend/resume, but haven't done a full
+> >> > investigation just yet.
+> >> >
+> >> > I'm also aware that breaking omap, just to fix it again probably isn't the best
+> >> > course of action, and I'm open to suggestions.
+> >> >
+> >> Did you try to look up the history of mailbox api development?  Google
+> >> search: 'mailbox common api'
+> >>
+> >> I (Linaro/Fujitsu), Suman Anna (TI), LeyFoon Tan (Intel), Craig
+> >> McGeachie(Broadcom) and Loic Pallardy(ST) already worked a generic
+> >> Mailbox framework and infact have controller drivers working over
+> >> them.
+> >>  For some confidentiality and some lazy and some confusion or whatever
+> >> reasons the final version of drivers and API wasn't submitted upstream
+> >> yet.
+> >
+> > Then, in all reality, it doesn't exist at all, and so, we will evaluate
+> > this submission instead.
+> >
+> > Just because you all can't send something for merging, doesn't mean you
+> > get to block someone else who has got their act together, that's not
+> > fair.
+> >
+> Yup probably not much fair. But then also one usually look for any
+> early development efforts. IIRC only I and Anna started. Others later
+> joined us looking at archives. Not to vindicate our gang though.
+> 
+>  Now we could either punish us and have this api tread the same
+> development path where everyone had their requirements (and the
+> only-waiting-for-approval controller drivers to convert) .... OR we
+> could see if our/original/old API just works for the purposes of Sony
+> as well (which it will most probably) and then we could upstream it
+> with one more 'works-for-me-too'.
 
-Therefore it's wrong to increment top_cgroup's refcnt when we find
-an existing cgroup_root.
-
-Try:
-        # mount -t cgroup -o cpuacct xxx /cgroup
-        # mount -t cgroup -o cpuacct xxx /cgroup2
-        # cat /proc/cgroups | grep cpuacct
-        cpuacct 2       1       1
-        # umount /cgroup
-        # umount /cgroup2
-        # cat /proc/cgroups | grep cpuacct
-        cpuacct 2       1       1
-
-You'll see cgroupfs will never be freed.
-
-v2: change to take the refcnt and drop it after kernfs_mount().
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 37d94a2..eaffc08 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1477,6 +1477,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	struct cgroup_sb_opts opts;
- 	struct dentry *dentry;
- 	int ret;
-+	bool new_root = false;
- 
- 	/*
- 	 * The first time anyone tries to mount a cgroup, enable the list
-@@ -1536,6 +1537,10 @@ retry:
- 		 * destruction to complete so that the subsystems are free.
- 		 * We can use wait_queue for the wait but this path is
- 		 * super cold.  Let's just sleep for a bit and retry.
-+		 *
-+		 * Take a reference so root won't be freed after we drop
-+		 * cgroup mutexes, and drop it after we've done the real
-+		 * mount through kernfs.
- 		 */
- 		if (!atomic_inc_not_zero(&root->top_cgroup.refcnt)) {
- 			mutex_unlock(&cgroup_mutex);
-@@ -1551,6 +1556,7 @@ retry:
- 	}
- 
- 	/* no such thing, create a new one */
-+	new_root = true;
- 	root = cgroup_root_from_opts(&opts);
- 	if (IS_ERR(root)) {
- 		ret = PTR_ERR(root);
-@@ -1572,7 +1578,7 @@ out_unlock:
- 		return ERR_PTR(ret);
- 
- 	dentry = kernfs_mount(fs_type, flags, root->kf_root);
--	if (IS_ERR(dentry))
-+	if (IS_ERR(dentry) || !new_root)
- 		cgroup_put(&root->top_cgroup);
- 	return dentry;
- }
--- 
-1.8.0.2
-
+What is stopping you submitting your patches right now?
