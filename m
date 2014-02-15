@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaBOGGb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 01:06:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36989 "EHLO mx2.suse.de"
+	id S1752516AbaBOGKw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 01:10:52 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:50422 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaBOGGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 01:06:30 -0500
-Date: Sat, 15 Feb 2014 07:06:16 +0100
-From: Borislav Petkov <bp@suse.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        "Luck, Tony" <tony.luck@intel.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI, APEI: Remove X86 redundant dependency for APEI
- Generic Hardware Error Source.
-Message-ID: <20140215060615.GA10430@pd.tnic>
-References: <1392049416-31240-1-git-send-email-tomasz.nowicki@linaro.org>
- <1611441.dxrnOY2zmW@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1611441.dxrnOY2zmW@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750747AbaBOGKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 01:10:51 -0500
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] spi: core: Validate lenght of the transfers in message
+Date: Sat, 15 Feb 2014 08:09:26 +0200
+Message-Id: <1392444566-23605-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 01:57:48AM +0100, Rafael J. Wysocki wrote:
-> On Monday, February 10, 2014 05:23:36 PM Tomasz Nowicki wrote:
-> > ACPI_APEI is already dependent on X86, hence, there is no need to
-> > define such dependency for ACPI_APEI_GHES again.
-> > 
-> > Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> 
-> Tony, Boris, if you're fine with this, I'll take it for 3.15.
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Acked-by: Borislav Petkov <bp@suse.de>
+SPI transfer lenght should be a power-of-two multiple
+of eight bits.
 
-Thanks.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/spi/spi.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index d0b28bb..9bed365 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1617,6 +1617,7 @@ static int __spi_validate(struct spi_device *spi, struct spi_message *message)
+ {
+ 	struct spi_master *master = spi->master;
+ 	struct spi_transfer *xfer;
++	int w_size, n_words;
+ 
+ 	if (list_empty(&message->transfers))
+ 		return -EINVAL;
+@@ -1668,6 +1669,22 @@ static int __spi_validate(struct spi_device *spi, struct spi_message *message)
+ 				return -EINVAL;
+ 		}
+ 
++		/*
++		 * SPI transfer length should be multiple of SPI word size
++		 * where SPI word size should be power-of-two multiple
++		 */
++		if (xfer->bits_per_word <= 8)
++			w_size = 1;
++		else if (xfer->bits_per_word <= 16)
++			w_size = 2;
++		else
++			w_size = 4;
++
++		n_words = xfer->len / w_size;
++		/* No partial transfers accepted */
++		if (!n_words || xfer->len % xfer->bits_per_word)
++			return -EINVAL;
++
+ 		if (xfer->speed_hz && master->min_speed_hz &&
+ 		    xfer->speed_hz < master->min_speed_hz)
+ 			return -EINVAL;
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
