@@ -1,98 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294AbaBOE0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 23:26:40 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:3785 "EHLO
+	id S1752474AbaBOE7v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 23:59:51 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:35688 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751661AbaBOE0j (ORCPT
+	by vger.kernel.org with ESMTP id S1751629AbaBOE7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 23:26:39 -0500
-Date: Fri, 14 Feb 2014 23:26:36 -0500
+	Fri, 14 Feb 2014 23:59:50 -0500
+Date: Fri, 14 Feb 2014 23:59:46 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 39/48] powerpc: Replace __get_cpu_var uses
-Message-ID: <20140214232636.0a683ca0@gandalf.local.home>
-In-Reply-To: <1392436208.10050.22.camel@pasglop>
-References: <20140214201841.826179349@linux.com>
-	<20140214201908.082769265@linux.com>
-	<1392436208.10050.22.camel@pasglop>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] sched/deadline: Fix bad accounting of nr_running
+Message-ID: <20140214235946.60a89b65@gandalf.local.home>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Feb 2014 14:50:08 +1100
-Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+My test suite was locking up hard when enabling mmiotracer. This was due
+to the mmiotracer placing all but one CPU offline. I found this out
+when I was able to reproduce the bug with just my stress-cpu-hotplug
+test. This bug baffled me because it would not always trigger, and
+would only trigger on the first run after boot up. The
+stress-cpu-hotplug test would crash hard the first run, or never crash
+at all. But a new reboot may cause it to crash on the first run again.
 
-> For some reason Im still getting these as attachments instead of inline
-> in the email, which makes reviewing a major PITA. Christoph, I'm not
-> sure what you are doing wrong here but you should consider fixing it :-)
+I spent all week bisecting this, as I couldn't find a consistent
+reproducer. I finally narrowed it down to the sched deadline patches,
+and even more peculiar, to the commit that added the sched
+deadline boot up self test to the latency tracer. Then it dawned on me
+to what the bug was.
 
-Get a better email client ;-)
+All it took was to run a task under sched deadline to screw up the CPU
+hot plugging. This explained why it would lock up only on the first run
+of the stress-cpu-hotplug test. The bug happened when the boot up self
+test of the schedule latency tracer would test a deadline task. The
+deadline task would corrupt something that would cause CPU hotplug to
+fail. If it didn't corrupt it, the stress test would always work
+(there's no other sched deadline tasks that would run to cause
+problems). If it did corrupt on boot up, the first test would lockup
+hard.
 
-They show up fine for me. Looking at the raw format, could it possibly
-be the DKIM-Signature? Here's (most of) the header:
+I proved this theory by running my deadline test program on another box,
+and then run the stress-cpu-hotplug test, and it would now consistently
+lock up. I could run stress-cpu-hotplug over and over with no problem,
+but once I ran the deadline test, the next run of the
+stress-cpu-hotplug would lock hard.
 
-Return-Path: cl@linux.com
-X-Spam-Checker-Version: SpamAssassin 3.3.2 (2011-06-06) on goliath
-X-Spam-Level: 
-X-Spam-Status: No, score=-0.3 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
-	LOCAL_SUBJECT_PATCH,RCVD_IN_DNSWL_NONE autolearn=unavailable version=3.3.2
-Delivered-To: rostedt@goodmis.org
-X-FDA: 68539149672.07.nose31_2242917219f26
-X-HE-Tag: nose31_2242917219f26
-X-Filterd-Recvd-Size: 34239
-Received: from mail.hover.com.cust.hostedemail.com [216.40.42.134]
-	by goliath with IMAP (fetchmail-6.3.26)
-	for <rostedt@localhost> (single-drop); Fri, 14 Feb 2014 15:23:03 -0500 (EST)
-Received: from qmta09.emeryville.ca.mail.comcast.net (qmta09.emeryville.ca.mail.comcast.net [76.96.30.96])
-	by imf20.hostedemail.com (Postfix) with ESMTP
-	for <rostedt@goodmis.org>; Fri, 14 Feb 2014 20:20:35 +0000 (UTC)
-Received: from omta15.emeryville.ca.mail.comcast.net ([76.96.30.71])
-	by qmta09.emeryville.ca.mail.comcast.net with comcast
-	id SKft1n0011Y3wxoA9LLbGd; Fri, 14 Feb 2014 20:20:35 +0000
-Received: from gentwo.org ([98.213.233.247])
-	by omta15.emeryville.ca.mail.comcast.net with comcast
-	id SLLY1n0095Lw0ES8bLLZFV; Fri, 14 Feb 2014 20:20:34 +0000
-Received: by gentwo.org (Postfix, from userid 1001)
-	id 2941A68181; Fri, 14 Feb 2014 14:19:08 -0600 (CST)
-Message-Id: <20140214201908.082769265@linux.com>
-Date: Fri, 14 Feb 2014 14:19:20 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org,
- rostedt@goodmis.org,
- linux-kernel@vger.kernel.org,
- Ingo Molnar <mingo@kernel.org>,
- Peter Zijlstra <peterz@infradead.org>,
- Thomas Gleixner <tglx@linutronix.de>,
- Benjamin Herrenschmidt <benh@kernel.crashing.org>,
- Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 39/48] powerpc: Replace __get_cpu_var uses
-References: <20140214201841.826179349@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_powerpc
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=comcast.net;
-	s=q20121106; t=1392409235;
-	bh=3eMNjwtVIqOOdbqtLUxQGKw+WvtREJiNlp1vuKEVub8=;
-	h=Received:Received:Received:Message-Id:Date:From:To:Subject:
-	 Content-Type;
-	b=AtOZLlCPJL9tvUnoSyw0qPmNQym1dGDConwMdjEnayz2rNubuobF/JYdewBUypgbZ
-	 3sq/JQoBriYX8NsMHQhzZL4bh+7gM6OPWhGSIczq6MNuzFvw7E9MVTeX+t+yhVXMNG
-	 O+sWkLbWkM18luLRPlJU7wD6ANEFrGgQvt7i1GqSrCVZ+qKgXq9brzu9NTsMp4ODzv
-	 Djs9LTZEBTjbYxllW+16x+lV/Y6zY9LYQzsB6VEEpjO2J5Z6Wbk12K4puGL0rPPKoW
-	 rpxrQjP44g+Tgr5iguuBUQAqIuzcgbDu3MtOwz+HllZuKiye+qQB+Eq/U5+CqtaIxl
-	 FN9CB0XgHTDJA==
+After adding lots of tracing to the code, I found the cause. The
+function tracer showed that migrate_tasks() was stuck in an infinite
+loop, where rq->nr_running never equaled 1 to break out of it. When I
+added a trace_printk() to see what that number was, it was 335 and
+never decrementing!
 
+Looking at the deadline code I found:
 
--- Steve
+static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int
+flags) {
+	dequeue_dl_entity(&p->dl);
+	dequeue_pushable_dl_task(rq, p);
+}
+
+static void dequeue_task_dl(struct rq *rq, struct task_struct *p, int
+flags) {
+	update_curr_dl(rq);
+	__dequeue_task_dl(rq, p, flags);
+
+	dec_nr_running(rq);
+}
+
+And this:
+
+	if (dl_runtime_exceeded(rq, dl_se)) {
+		__dequeue_task_dl(rq, curr, 0);
+		if (likely(start_dl_timer(dl_se, curr->dl.dl_boosted)))
+			dl_se->dl_throttled = 1;
+		else
+			enqueue_task_dl(rq, curr, ENQUEUE_REPLENISH);
+
+		if (!is_leftmost(curr, &rq->dl))
+			resched_task(curr);
+	}
+
+Notice how we call __dequeue_task_dl() and in the else case we
+call enqueue_task_dl()? Also notice that dequeue_task_dl() has
+underscores where enqueue_task_dl() does not. The enqueue_task_dl()
+calls inc_nr_running(rq), but __dequeue_task_dl() does not. This is
+where we get nr_running out of sync.
+
+By moving the dec_nr_running() from dequeue_task_dl() to
+__dequeue_task_dl(), everything works again. That is, I can run the
+deadline test program and then run the stress-cpu-hotplug() and all
+would be fine.
+
+For reference on my test programs:
+
+  http://rostedt.homelinux.com/private/stress-cpu-hotplug
+  http://rostedt.homelinux.com/private/deadline.c
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 0dd5e09..84c2454 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -844,14 +844,14 @@ static void __dequeue_task_dl(struct rq *rq,
+struct task_struct *p, int flags) {
+ 	dequeue_dl_entity(&p->dl);
+ 	dequeue_pushable_dl_task(rq, p);
++
++	dec_nr_running(rq);
+ }
+ 
+ static void dequeue_task_dl(struct rq *rq, struct task_struct *p, int
+flags) {
+ 	update_curr_dl(rq);
+ 	__dequeue_task_dl(rq, p, flags);
+-
+-	dec_nr_running(rq);
+ }
+ 
+ /*
