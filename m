@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740AbaBOTOj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 14:14:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53012 "EHLO
+	id S1753787AbaBOTPZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 14:15:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53021 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711AbaBOTOj (ORCPT
+	with ESMTP id S1753694AbaBOTPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 14:14:39 -0500
-Date: Sat, 15 Feb 2014 11:15:59 -0800
+	Sat, 15 Feb 2014 14:15:24 -0500
+Date: Sat, 15 Feb 2014 11:16:45 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Jassi Brar <jassisinghbrar@gmail.com>
 Cc: linux-kernel@vger.kernel.org, s-anna@ti.com, tony@atomide.com,
@@ -16,7 +16,7 @@ Cc: linux-kernel@vger.kernel.org, s-anna@ti.com, tony@atomide.com,
         rafael.j.wysocki@intel.com
 Subject: Re: [PATCHv3 6/6] mailbox: move the internal definitions into a
  private file
-Message-ID: <20140215191559.GE1801@kroah.com>
+Message-ID: <20140215191645.GF1801@kroah.com>
 References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
  <1392488822-18178-1-git-send-email-jaswinder.singh@linaro.org>
 MIME-Version: 1.0
@@ -37,16 +37,13 @@ On Sat, Feb 15, 2014 at 11:57:02PM +0530, Jassi Brar wrote:
 > 
 > Signed-off-by: Suman Anna <s-anna@ti.com>
 > ---
-
-You don't agree with this patch and sign off on it?
-
 >  drivers/mailbox/mailbox.c          | 62 +-----------------------------
 >  drivers/mailbox/mailbox_internal.h | 77 ++++++++++++++++++++++++++++++++++++++
 >  2 files changed, 78 insertions(+), 61 deletions(-)
 >  create mode 100644 drivers/mailbox/mailbox_internal.h
 
-Why not just do this in the first patch(s)?  Why wait for later in the
-series to "fix" things up?
+Also, this patch doesn't seem to be needed at all here, nothing breaks
+without it, so why include it in this series?
 
 thanks,
 
