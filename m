@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaBOAuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 19:50:19 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63481 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752605AbaBOAuR (ORCPT
+	id S1753373AbaBOAzU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 19:55:20 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45559 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052AbaBOAzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 19:50:17 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ACPI, PCI, ISA: Call ISA-specific code only for architectures which support ISA.
-Date: Sat, 15 Feb 2014 02:05 +0100
-Message-ID: <1463162.p1Ukb4737y@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1392037211-29349-1-git-send-email-tomasz.nowicki@linaro.org>
-References: <1392037211-29349-1-git-send-email-tomasz.nowicki@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 14 Feb 2014 19:55:14 -0500
+Message-Id: <20140215002742.507053194@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Sat, 15 Feb 2014 00:55:18 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Chris Ball <chris@printf.net>,
+        linux-mmc@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 0/2] genirq: Add functions to avoid driver hackery
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 10, 2014 02:00:10 PM Tomasz Nowicki wrote:
-> This commit enables ISA-specific code if and only if CONFIG_{E}ISA is set
-> in the kernel configuration so that we do not have to maintain
-> acpi_isa_irq_to_gsi() function for architectures which do not support ISA.
-> 
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> ---
->  drivers/acpi/pci_irq.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-> index 41c5e1b..b0e31b6 100644
-> --- a/drivers/acpi/pci_irq.c
-> +++ b/drivers/acpi/pci_irq.c
-> @@ -418,6 +418,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
->  	 * driver reported one, then use it. Exit in any case.
->  	 */
->  	if (gsi < 0) {
-> +#if IS_ENABLED(CONFIG_ISA) || IS_ENABLED(CONFIG_EISA)
+Russell tricked me to look into the homebrewn kthread hackery of
+drivers/mmc. I'm still trying to recover from that.
 
-Can you please move the code in question into a separate function and make
-that function depend on the above (with an empty stub for when they are not
-enabled)?
+But it spurred an interesting discussion how to improve things and the
+outcome was the following series of patches:
 
->  		u32 dev_gsi;
->  		/* Interrupt Line values above 0xF are forbidden */
->  		if (dev->irq > 0 && (dev->irq <= 0xF) &&
-> @@ -427,10 +428,9 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
->  			acpi_register_gsi(&dev->dev, dev_gsi,
->  					  ACPI_LEVEL_SENSITIVE,
->  					  ACPI_ACTIVE_LOW);
-> -		} else {
-> -			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
-> -				 pin_name(pin));
-> -		}
-> +		} else
-> +#endif
-> +		dev_warn(&dev->dev, "PCI INT %c: no GSI\n", pin_name(pin));
->  
->  		return 0;
->  	}
-> 
+1) Provide means to synchronize only hard irq context
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+2) Provide means to trigger a threaded irq handler from any context
+
+The main rationale is to cleanup the mess in drivers/mmc and other
+places but each of the patches has a justification for itself
+exemplified by the drivers/mmc use case, which is explained in detail
+in the changelogs of the individual patches.
+
+Russell has a working implementation for sdhci which relies on patch
+#1 ready and quite some ideas how to make use of #2 to kill the
+sdio_irq kthread hackery.
+
+Thanks,
+
+	tglx
+
+
+
