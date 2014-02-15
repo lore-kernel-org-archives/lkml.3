@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825AbaBOW26 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 17:28:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50553 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378AbaBOW25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 17:28:57 -0500
-Date: Sat, 15 Feb 2014 17:28:44 -0500
-From: Dave Jones <davej@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140215222844.GA18201@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Eric Sandeen <sandeen@sandeen.net>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-References: <20140212010941.GM18016@ZenIV.linux.org.uk>
- <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
- <20140212040358.GA25327@redhat.com>
- <20140212042215.GN18016@ZenIV.linux.org.uk>
- <20140212054043.GB13997@dastard>
- <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
- <20140212071829.GE13997@dastard>
- <20140214002427.GN13997@dastard>
- <20140214160123.GA28125@redhat.com>
- <20140215222356.GU13997@dastard>
+	id S1753885AbaBOWaK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 17:30:10 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56885 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689AbaBOWaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 17:30:08 -0500
+Date: Sat, 15 Feb 2014 23:30:06 +0100
+From: Pavel Machek <pavel@denx.de>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>
+Subject: Re: [PATCH v2] Bluetooth: Add hci_h4p driver
+Message-ID: <20140215223006.GA19186@amd.pavel.ucw.cz>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <201312301531.29768@pali>
+ <20131230145250.GA16904@earth.universe>
+ <201401082236.25135@pali>
+ <CAHYPw2EJC9RwgzXmGuQgh5_L6EMtS7MW8N3u2dR8KeVc0kb43g@mail.gmail.com>
+ <20140214172802.GA26969@earth.universe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140215222356.GU13997@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140214172802.GA26969@earth.universe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 16, 2014 at 09:23:56AM +1100, Dave Chinner wrote:
- 
- > There's a pretty massive difference between the actual stack usage
- > of the local variables and the amount of stack being used by the
- > compiled code.
- > 
- > What it appears to be is that the compiler is pushing 6-10 registers
- > to the stack on every function call. So a function that only has 3
- > local variables and does very little but allocate a structure and
- > call other functions saves an 6 registers to the stack before it
- > starts:
+Hi!
 
-I've got a shitload of debug options enabled, which may explain it.
-Or perhaps that new STACK_PROTECTOR_STRONG stuff ?
+> > >> > Firmware files are available for download from nemo project:
+> > >> >
+> > >> > https://api.merproject.org/public/source/nemo:devel:hw:ti:om
+> > >> > ap3:n900/bcm-bt-firmware/bcm-bt-firmware-0.21rc3.tar.bz2
+> > >> > https://api.merproject.org/public/source/nemo:devel:hw:ti:o
+> > >> > map3:n950-n9/ti-wl1273-bt-firmware/bt-firmware-ti1273_0.23+0
+> > >> > m6.tar.gz
+> > >>
+> > >> Would be nice to have them added to the linux-firmware.git.
+> > >
+> > Now when driver is queued for staging, can somebody add firmware files
+> > to linux-firmware repository? Note that without firmware files, driver
+> > not working...
+> 
+> I just had a look at the file for the Nokia N900
+> (bcm-bt-firmware-0.21rc3.tar.bz2) and I think the license is too
+> restrictive for linux-firmware.git. Actually I can't see any
+> statement allowing redistribution. For reference this is the license
+> text:
+> 
+> Copyright (c) Nokia Corporation 2010
+> All Rights Reserved.
+> 
+> This material, including documentation and any related computer programs, is
+> protected by copyright controlled by Nokia Corporation. All rights are
+> reserved. Modifying, adapting and/or translating, any or all of this material
+> requires the prior written consent of Nokia. Distribution for commercial
+> purposes not allowed without prior written approval from Nokia.
 
-	Dave
+With my lingvistics hat on, this says "distribution for non-commercial
+purposes is ok". (Because otherwise, they would say "Distribution not
+allowed without ...") 
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
