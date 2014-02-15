@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798AbaBOTWI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 14:22:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53053 "EHLO
+	id S1753843AbaBOTWv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 14:22:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53059 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612AbaBOTWE (ORCPT
+	with ESMTP id S1753804AbaBOTWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 14:22:04 -0500
-Date: Sat, 15 Feb 2014 11:23:25 -0800
+	Sat, 15 Feb 2014 14:22:50 -0500
+Date: Sat, 15 Feb 2014 11:24:10 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Kenneth Heitke <kheitke@codeaurora.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 1/6] spmi: Linux driver framework for SPMI
-Message-ID: <20140215192325.GB2280@kroah.com>
-References: <1391468739-20987-1-git-send-email-joshc@codeaurora.org>
- <1391468739-20987-2-git-send-email-joshc@codeaurora.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Alessandro Gardich <gremlin@gremlin.it>,
+        Dmitry Artamonow <mad_soft@inbox.ru>
+Subject: Re: [PATCH] RFC: MFD: driver for Atmel Microcontroller on iPaq h3xxx
+Message-ID: <20140215192410.GC2280@kroah.com>
+References: <1391175275-27347-1-git-send-email-linus.walleij@linaro.org>
+ <CACRpkdb1LFP45Oy0YJ6DSHriSorvHacH=RRWb4LmZ286LJJX0g@mail.gmail.com>
+ <20140210115318.GD22773@lee--X1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391468739-20987-2-git-send-email-joshc@codeaurora.org>
+In-Reply-To: <20140210115318.GD22773@lee--X1>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 05:05:33PM -0600, Josh Cartwright wrote:
-> From: Kenneth Heitke <kheitke@codeaurora.org>
+On Mon, Feb 10, 2014 at 11:53:18AM +0000, Lee Jones wrote:
+> > > This adds a driver for the Atmel Microcontroller found on the
+> > > iPAQ h3xxx series. This device handles some keys, the
+> > > touchscreen, and the battery monitoring.
+> > 
+> > Any opinions on this driver or should we queue it in MFD as-is?
 > 
-> System Power Management Interface (SPMI) is a specification
-> developed by the MIPI (Mobile Industry Process Interface) Alliance
-> optimized for the real time control of Power Management ICs (PMIC).
-> 
-> SPMI is a two-wire serial interface that supports up to 4 master
-> devices and up to 16 logical slaves.
-> 
-> The framework supports message APIs, multiple busses (1 controller
-> per bus) and multiple clients/slave devices per controller.
-> 
-> Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
-> Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-
-Looks good, nice bus code.
+> I have no problem taking this through the MFD tree with Greg's nod.
 
 Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
