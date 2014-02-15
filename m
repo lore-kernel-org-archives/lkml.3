@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaBOUdc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 15:33:32 -0500
-Received: from gate.crashing.org ([63.228.1.57]:48782 "EHLO gate.crashing.org"
+	id S1753874AbaBOUgS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 15:36:18 -0500
+Received: from sauhun.de ([89.238.76.85]:46691 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640AbaBOUdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 15:33:31 -0500
-Message-ID: <1392496342.10050.28.camel@pasglop>
-Subject: Re: [PATCH 39/48] powerpc: Replace __get_cpu_var uses
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@linux.com>,
-        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Mackerras <paulus@samba.org>
-Date: Sun, 16 Feb 2014 07:32:22 +1100
-In-Reply-To: <1392487922.9366.15.camel@i7.infradead.org>
-References: <20140214201841.826179349@linux.com>
-	 <20140214201908.082769265@linux.com> <1392436208.10050.22.camel@pasglop>
-	 <20140215094239.GF14089@laptop.programming.kicks-ass.net>
-	 <1392458479.10050.26.camel@pasglop>
-	 <20140215154502.GK14089@laptop.programming.kicks-ass.net>
-	 <1392487922.9366.15.camel@i7.infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753784AbaBOUgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 15:36:16 -0500
+Date: Sat, 15 Feb 2014 21:36:14 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.14
+Message-ID: <20140215203610.GA20244@katana>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-15 at 18:12 +0000, David Woodhouse wrote:
-> On Sat, 2014-02-15 at 16:45 +0100, Peter Zijlstra wrote:
-> > 
-> > David; in particular; quilt mail adds "Content-Disposition: inline"
-> > headers and Evo, in its infinite wisdom, makes the entire body into an
-> > attachment.
-> 
-> Hm, looking at the original email I see it as an inline part, displayed
-> by default. I can read it, select parts of it and hit 'reply' to cite
-> only the selected part... everything I can do with a normal email.
-> 
-> Ben, what precisely is it that makes it hard to read and review? All I
-> can see is a trivial cosmetic issue; it's a few pixels down and right
-> from where it would normally be.
-> 
-> But even that looks like it should be considered a bug. Please file in
-> GNOME bugzilla.
 
-In my case it doesn't have an inline part. I only get an attachment,
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'll file it in gnome bz.
+Linus,
 
-Cheers,
-Ben.
+i2c has a bugfix and documentation improvements for you. Please pull.
+
+Thanks,
+
+   Wolfram
 
 
+The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+
+  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
+
+for you to fetch changes up to fde1e418ab2c4269035f7f576e678b6ad3117d7d:
+
+  Documentation: i2c: mention ACPI method for instantiating devices (2014-02-15 19:46:34 +0100)
+
+----------------------------------------------------------------
+Wolfram Sang (3):
+      i2c: mv64xxx: refactor message start to ensure proper initialization
+      Documentation: i2c: describe devicetree method for instantiating devices
+      Documentation: i2c: mention ACPI method for instantiating devices
+
+ Documentation/i2c/instantiating-devices | 41 +++++++++++++++++++++++++++++++--
+ drivers/i2c/busses/i2c-mv64xxx.c        | 33 +++++++++++---------------
+ 2 files changed, 53 insertions(+), 21 deletions(-)
+
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS/8+6AAoJEBQN5MwUoCm2ngsP/iL9fPbWZoeLIm7GSCAqwPMO
+0Ej4okTvrGBBmLHsfe3EqirKsomH1T9J4LKy2kzLRHcmiWQP4THKkzqmvyGVFzFo
+xM6PGGelf/tpguFYnBUtewBd+JWTkRZ1CbRIa5qgTVE8pRIJbMs7gli1TBuneHbv
+LxSk3/NV/LgVH5GY2JiQXnWaUEX/FCpFq8Oq6QPSWCEZSEbsWh9xOsaGYtQdheLR
+Nx0RI5A+H3h5DaAh9THDV314VGiMgaqQuD7DipGbKFY2Hf3YMTHBV7RUOvnL3Hs5
+A+MsANbxCbRQz9thgNwvSoh6o+zcLKwMnu/1i2WTbh7+f2sJlkQD+6DbK8s+TQZ7
+Y2oXV5IvJ5hVWqooPaykzdeMYPnYWhJt7laZ9B0KFXB2gPJAKExqQbY2jPfMb94o
+ctk7IqlRKOpiaiBP8dW1zCqzp+qBTzDWMmc4xPmwK8bip7TzG4OtBJ7pBq5lrBdP
+5/dNkB0ivAjvB+sBuXsXngN2eHCciqrmAoDKFhtLtwFpnxWZ4YXC8UvlDDrP5IeZ
+EHho4hfsCtcAIbbJIgYJn6VV40iRJQM63hDWdhdhQ+oByb975U8zFTqAW+BtPX0p
+1PG+06Tuo2MptGaPhqVjEBXIviPCYCfzdOlz1u8xUjPZEKhRX7elOZwstf6wivUw
+I5T4wufH+CWAZBjJphq3
+=J1Ho
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
