@@ -1,192 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaBOSHq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 13:07:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25601 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753432AbaBOSHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 13:07:43 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <CA+55aFyQTE-CzOoNn=KfDgt9bTLrUxBCXzhQ2T9kNoTy+bRQrQ@mail.gmail.com>
-References: <1392183564.18779.2187.camel@triegel.csb>
-	 <20140212180739.GB4250@linux.vnet.ibm.com>
-	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	 <20140213002355.GI4250@linux.vnet.ibm.com>
-	 <1392321837.18779.3249.camel@triegel.csb>
-	 <20140214020144.GO4250@linux.vnet.ibm.com>
-	 <1392352981.18779.3800.camel@triegel.csb>
-	 <20140214172920.GQ4250@linux.vnet.ibm.com>
-	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	 <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	 <20140215020815.GS4250@linux.vnet.ibm.com>
-	 <CA+55aFyQTE-CzOoNn=KfDgt9bTLrUxBCXzhQ2T9kNoTy+bRQrQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 15 Feb 2014 10:07:07 -0800
-Message-ID: <1392487627.18779.6535.camel@triegel.csb>
+	id S1753568AbaBOSMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 13:12:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39036 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476AbaBOSMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 13:12:15 -0500
+Message-ID: <1392487922.9366.15.camel@i7.infradead.org>
+Subject: Re: [PATCH 39/48] powerpc: Replace __get_cpu_var uses
+From: David Woodhouse <dwmw2@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul Mackerras <paulus@samba.org>
+Date: Sat, 15 Feb 2014 18:12:02 +0000
+In-Reply-To: <20140215154502.GK14089@laptop.programming.kicks-ass.net>
+References: <20140214201841.826179349@linux.com>
+	 <20140214201908.082769265@linux.com> <1392436208.10050.22.camel@pasglop>
+	 <20140215094239.GF14089@laptop.programming.kicks-ass.net>
+	 <1392458479.10050.26.camel@pasglop>
+	 <20140215154502.GK14089@laptop.programming.kicks-ass.net>
+Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
+	boundary="=-RWAzKWw6WFNZFnn1Q8Y+"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-14 at 18:44 -0800, Linus Torvalds wrote:
-> On Fri, Feb 14, 2014 at 6:08 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > One way of looking at the discussion between Torvald and myself would be
-> > as a seller (Torvald) and a buyer (me) haggling over the fine print in
-> > a proposed contract (the standard).  Whether that makes you feel better
-> > or worse about the situation I cannot say.  ;-)
-> 
-> Oh, I'm perfectly fine with that. But we're not desperate to buy, and
-> I actually think the C11 people are - or at least should be - *way*
-> more desperate to sell their model to us than we are to take it.
-> 
-> Which means that as a buyer you should say "this is what we want, if
-> you don't give us this, we'll just walk away". Not try to see how much
-> we can pay for it. Because there is very little upside for us, and
-> _unless_ the C11 standard gets things right it's just extra complexity
-> for us, coupled with new compiler fragility and years of code
-> generation bugs.
 
-I think there is an upside to you, mainly in that it allows compiler
-testing tools, potentially verification tools for atomics, and tools
-like cppmem that show allowed executions of code.
+--=-RWAzKWw6WFNZFnn1Q8Y+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I agree that the Linux community has been working well without this, and
-it's big enough to make running it's own show viable.  This will be
-different for smaller projects, though.
+On Sat, 2014-02-15 at 16:45 +0100, Peter Zijlstra wrote:
+>=20
+> David; in particular; quilt mail adds "Content-Disposition: inline"
+> headers and Evo, in its infinite wisdom, makes the entire body into an
+> attachment.
 
-> Why would we want that extra complexity and inevitable compiler bugs?
-> If we then have to fight compiler writers that point to the standard
-> and say "..but look, the standard says we can do this", then at that
-> point it went from "extra complexity and compiler bugs" to a whole
-> 'nother level of frustration and pain.
+Hm, looking at the original email I see it as an inline part, displayed
+by default. I can read it, select parts of it and hit 'reply' to cite
+only the selected part... everything I can do with a normal email.
 
-I see your point, but flip side of the coin is that if you get the
-standard to say what you want, then you can tell the compiler writers to
-look at the standard.  Or show them bugs revealed by fuzz testing and
-such.
+Ben, what precisely is it that makes it hard to read and review? All I
+can see is a trivial cosmetic issue; it's a few pixels down and right
+from where it would normally be.
 
-> So just walk away unless the C11 standard gives us exactly what we
-> want. Not "something kind of like what we'd use". EXACTLY. Because I'm
-> not in the least interested in fighting compiler people that have a
-> crappy standard they can point to. Been there, done that, got the
-> T-shirt and learnt my lesson.
-> 
-> And the thing is, I suspect that the Linux kernel is the most complete
-> - and most serious - user of true atomics that the C11 people can sell
-> their solution to.
+But even that looks like it should be considered a bug. Please file in
+GNOME bugzilla.
 
-I agree, but there are likely also other big projects that could make
-use of C11 atomics on the userspace side (e.g., certain databases, ...).
+--=20
+dwmw2
 
-> If we don't buy it, they have no serious user.
+--=-RWAzKWw6WFNZFnn1Q8Y+
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
 
-I disagree with that.  That obviously depends on one's definition of
-"serious", but if you combine all C/C++ programs that use low-level
-atomics, then this is serious use as well.  There's lots of
-shared-memory synchronization in userspace as well.
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISxDCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGQjCCBSqg
+AwIBAgIDBoXOMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTMwNTAyMDYyMDQ2WhcNMTQwNTAzMTIxNDAyWjBdMRkwFwYDVQQNExBNd0k3ODIxNTRpV21lZVkw
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvWGuRDHiXVpOgaFkBaz8
+c3jQTfiEw7j0iKZnktCQi0xjY29QJ7GwL+fgQlbofXgYTm8E9fWERvw2tAy2BxHzAPguBzziS7JN
+hsGP9lf3L8hFJBvmdyyyj8b9A6Oi7s3JLtMRWIvyvE+DbuTkP+htuT4+XuTJr8Y5yIqd1WXr2gJk
+ANr77vTyjeNxceevP58Tqr0f+4v5g6+vNARO3bk3SaVQPDUTwGrpoPtLh3d+mQzZ4iiW3MwQS7Wr
+UVT3l2aTVHCpgtAaBs3zHWarvmIqhbWj8zdcnELNzwqTrOjaoWxuWY4k05GGfzmdjOBUiL7FDNvI
+ZwweJEPwJAQI72YhUwIDAQABo4IC2TCCAtUwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBSs0hZhUgQwqGVXzLuH6pJH0hMZwTAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASowLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0
+YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdh
+cyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRz
+IG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
+ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMu
+MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmww
+gY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9z
+dWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20v
+Y2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3Rh
+cnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEACFLDQnyO8+XA/TiTltjJ/ZAvM+qmBEKN43Vd
++Wio2lM/Wq/scJpkupXGHrl9CueobkDxMAogXbMxqLZYO13PvgjMh+PHxDPnQv8EGxOig+k/Hqvc
+qEdTlm9YEHcbXbWS6XB+zRO7VVIpGMYQ1f1qCOcukxmwIm6iMSHXbOr/7paQm4bO0ULptjBotfiO
+Zo6q8No6SroQlOSyc6v8FYSxTNIAXMaM2FYkjqrxgdnJmSIAfr11gROuF69WuOICxP0zTEjJle+7
+aO9lUWNaWMWPMyFSNCxF6kkRuvUCami7vlhLOTRC1kb+OMhx7keN9At3tdTI3rtuFeSB1Pa3VXVs
+0DCCBkIwggUqoAMCAQICAwaFzjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
+BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
+ZW50IENBMB4XDTEzMDUwMjA2MjA0NloXDTE0MDUwMzEyMTQwMlowXTEZMBcGA1UEDRMQTXdJNzgy
+MTU0aVdtZWVZMDEcMBoGA1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYT
+ZHdtdzJAaW5mcmFkZWFkLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL1hrkQx
+4l1aToGhZAWs/HN40E34hMO49IimZ5LQkItMY2NvUCexsC/n4EJW6H14GE5vBPX1hEb8NrQMtgcR
+8wD4Lgc84kuyTYbBj/ZX9y/IRSQb5ncsso/G/QOjou7NyS7TEViL8rxPg27k5D/obbk+Pl7kya/G
+OciKndVl69oCZADa++708o3jcXHnrz+fE6q9H/uL+YOvrzQETt25N0mlUDw1E8Bq6aD7S4d3fpkM
+2eIoltzMEEu1q1FU95dmk1RwqYLQGgbN8x1mq75iKoW1o/M3XJxCzc8Kk6zo2qFsblmOJNORhn85
+nYzgVIi+xQzbyGcMHiRD8CQECO9mIVMCAwEAAaOCAtkwggLVMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUrNIWYVIEMKhlV8y7
+h+qSR9ITGcEwHwYDVR0jBBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdt
+dzJAaW5mcmFkZWFkLm9yZzCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4G
+CCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcC
+AjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0
+aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJl
+cXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
+aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9i
+bGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1
+MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFy
+dHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
+cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAAhSw0J8jvPlwP04k5bYyf2Q
+LzPqpgRCjeN1XfloqNpTP1qv7HCaZLqVxh65fQrnqG5A8TAKIF2zMai2WDtdz74IzIfjx8Qz50L/
+BBsTooPpPx6r3KhHU5ZvWBB3G121kulwfs0Tu1VSKRjGENX9agjnLpMZsCJuojEh12zq/+6WkJuG
+ztFC6bYwaLX4jmaOqvDaOkq6EJTksnOr/BWEsUzSAFzGjNhWJI6q8YHZyZkiAH69dYETrhevVrji
+AsT9M0xIyZXvu2jvZVFjWljFjzMhUjQsRepJEbr1Ampou75YSzk0QtZG/jjIce5HjfQLd7XUyN67
+bhXkgdT2t1V1bNAxggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMG
+hc4wCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTQwMjE1MTgxMjAyWjAjBgkqhkiG9w0BCQQxFgQUV4b2e6AysnbjFCGx7ovjsgC0v9QwgaUG
+CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
+KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
+YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMGhc4wgacGCyqG
+SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
+cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwaFzjANBgkqhkiG
+9w0BAQEFAASCAQBo6h7LV+M+1Nvc5UXOR7ty8YAtRuV44ZmcU0k/GSxy63f3TbV923j1J0L3CW9Q
+d+xyW85Tz4aHpllAaqrf++nKFlf4eij0mv6KuBKELmQjUUEhGPf6hz6YKT/vIIRoI9noXRW7IkV0
+2LMqvAQvxCBRL4ZnkPCd07JMIK+AIFt0i97QH5ATecDfJlRx1agFLtli0p7Kegr2nAWRxq+beQeR
+SrRD2h6wFysqGJJOClVUauNRD17EZNnqnLWqFAWdPFU4c1wFH/sO8tOfEHWdeTJpNrXPoDpm/wHI
++HC2nHJvFr1CKL4E6YMXNiWaJPAoEWadP8RbSDAC7U8sNOYDI+NaAAAAAAAA
 
-> Sure, they'll have lots
-> of random other one-off users for their atomics, where each user wants
-> one particular thing, but I suspect that we'll have the only really
-> unified portable code base
 
-glibc is a counterexample that comes to mind, although it's a smaller
-code base.  (It's currently not using C11 atomics, but transitioning
-there makes sense, and some thing I want to get to eventually.)
-
-> that handles pretty much *all* the serious
-> odd cases that the C11 atomics can actually talk about to each other.
-
-You certainly have lots of odd cases, but I would disagree with the
-assumption that only the Linux kernel will do full "testing" of the
-implementations.  If you have plenty of userspace programs using the
-atomics, that's a pretty big test suite, and one that should help bring
-the compilers up to speed.  So that might be a benefit even to the Linux
-kernel if it would use the C11 atomics.
-
-> Oh, they'll push things through with or without us, and it will be a
-> collection of random stuff, where they tried to please everybody, with
-> particularly compiler/architecture people who have no f*cking clue
-> about how their stuff is used pushing to make it easy/efficient for
-> their particular compiler/architecture.
-
-I'll ignore this... :)
-
-> But we have real optimized uses of pretty much all relevant cases that
-> people actually care about.
-
-You certainly cover a lot of cases.  Finding out whether you cover all
-that "people care about" would require you to actually ask all people,
-which I'm sure you've done ;)
-
-> We can walk away from them, and not really lose anything but a small
-> convenience (and it's a convenience *only* if the standard gets things
-> right).
-> 
-> And conversely, the C11 people can walk away from us too. But if they
-> can't make us happy (and by "make us happy", I really mean no stupid
-> games on our part) I personally think they'll have a stronger
-> standard, and a real use case, and real arguments. I'm assuming they
-> want that.
-
-I agree.
-
-> That's why I complain when you talk about things like marking control
-> dependencies explicitly. That's *us* bending over backwards. And as a
-> buyer, we have absolutely zero reason to do that.
-
-As I understood the situation, it was rather like the buyer trying to
-wrestle in an additional feature without having a proper specification
-of what the feature should actually do.  That's why we've been talking
-about what it should actually do, and how ...
-
-> Tell the C11 people: "no speculative writes". Full stop. End of story.
-> Because we're not buying anything else.
-> 
-> Similarly, if we need to mark atomics "volatile", then now the C11
-> atomics are no longer even a "small convenience", now they are just
-> extra complexity wrt what we already have. So just make it clear that
-> if the C11 standard needs to mark atomics volatile in order to get
-> non-speculative and non-reloading behavior, then the C11 atomics are
-> useless to us, and we're not buying.
-
-I hope what I wrote previously removes those concerns.
-
-> Remember: a compiler can *always* do "as if" optimizations - if a
-> compiler writer can prove that the end result acts 100% the same using
-> an optimized sequence, then they can do whatever the hell they want.
-> That's not the issue.
-
-Good to know that we agree on that.
-
-> But if we can *ever* see semantic impact of
-> speculative writes, the compiler is buggy, and the compiler writers
-> need to be aware that it is buggy. No ifs, buts, maybes about it.
-
-Agreed.
-
-> So I'm perfectly fine with you seeing yourself as a buyer. But I want
-> you to be a really *picky* and anal buyer - one that knows he has the
-> upper hand, and can walk away with no downside.
-
-FWIW, I don't see myself as being the seller.  Instead, I'm hope we can
-improve the situation for everyone involved, whether that involves C11
-or something else.  I see a potential mutual benefit, and I want to try
-to exploit it.  Regarding the distributions I'm concerned about, the
-Linux kernel and GCC are very much in the same boat.
+--=-RWAzKWw6WFNZFnn1Q8Y+--
 
