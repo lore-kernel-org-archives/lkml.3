@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaBOWyr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 17:54:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaBOWyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 17:54:46 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1392326938-14405-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1392326938-14405-1-git-send-email-paul.gortmaker@windriver.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] kbuild: unconditionally clobber include/linux/version.h on distclean
-Date: Sat, 15 Feb 2014 22:54:41 +0000
-Message-ID: <16324.1392504881@warthog.procyon.org.uk>
+	id S1752261AbaBOW7x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 17:59:53 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:42124 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaBOW7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 17:59:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFz6feRh9+U7OY6C4CfNe68CqQZARCf_J9deJdsUUG_ryg@mail.gmail.com>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<87a9kkax0j.fsf@xmission.com>
+	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com>
+	<87ob28kqks.fsf_-_@xmission.com>
+	<87bny8kqik.fsf_-_@xmission.com>
+	<CA+55aFz6feRh9+U7OY6C4CfNe68CqQZARCf_J9deJdsUUG_ryg@mail.gmail.com>
+Date: Sat, 15 Feb 2014 14:59:50 -0800
+X-Google-Sender-Auth: H4EkUgCoSPKubDikq6RKGe48gew
+Message-ID: <CA+55aFzfa3=ukGq=XJbxj-xqud32DvbF7AcroBKL6-GY32or7Q@mail.gmail.com>
+Subject: Re: [PATCH 02/11] vfs: More precise tests in d_invalidate
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+On Sat, Feb 15, 2014 at 2:51 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> the whole check_submounts_and_drop thing walks the parent chain and
+> locks each parent with the renamelock held for writing.
 
-> As of v3.7, the UAPI changes relocated headers around such that the
-> kernel version header lived in a new place.
-> 
-> If a person is bisecting and if you go back to pre-UAPI days,
-> you will create an include/linux/version.h  -- then if you checkout a
-> post-UAPI kernel, and even run "make distclean" it still won't delete
-> that old version file.  So you get a situation like this:
-> 
-> $ grep -R LINUX_VERSION_CODE include/
-> include/generated/uapi/linux/version.h:#define LINUX_VERSION_CODE 200192
-> include/linux/version.h:#define LINUX_VERSION_CODE 132646
-> 
-> The value in that second line is representative of a v2.6.38 version.
-> And it will be sourced/used, hence leading to strange behaviours, such
-> as drivers/staging content (which typically hasn't been purged of version
-> ifdefs) failing to build.
-> 
-> Since it is a subtle mode of failure, lets always clobber the old
-> file when doing a distclean.
-> 
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: David Howells <dhowells@redhat.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Oops, my bad about the write lock, brainfart due to grepping and
+reading the wrong context...
 
-Acked-by: David Howells <dhowells@redhat.com>
+check_submounts_and_drop() doesn't do the parent walk with the rename
+lock held for writing, it just holds it for reading.
+
+But it does do that very complex "walk parents and check all siblings"
+and locks them, so the rest of the commentary was correct.
+
+                Linus
