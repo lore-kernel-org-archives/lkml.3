@@ -1,39 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238AbaBOA0T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 19:26:19 -0500
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:56808 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752397AbaBOA0S (ORCPT
+	id S1753195AbaBOAii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 19:38:38 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59287 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752440AbaBOAih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 19:26:18 -0500
-Date: Fri, 14 Feb 2014 18:26:15 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: David Rientjes <rientjes@google.com>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 2/9] slab: makes clear_obj_pfmemalloc() just return store
- masked value
-In-Reply-To: <alpine.DEB.2.02.1402141516540.13935@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.10.1402141824300.5204@nuc>
-References: <1392361043-22420-1-git-send-email-iamjoonsoo.kim@lge.com> <1392361043-22420-3-git-send-email-iamjoonsoo.kim@lge.com> <alpine.DEB.2.10.1402141225460.12887@nuc> <alpine.DEB.2.02.1402141516540.13935@chino.kir.corp.google.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 14 Feb 2014 19:38:37 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI / dock: Make 'docked' sysfs attribute work as documented
+Date: Sat, 15 Feb 2014 01:53:20 +0100
+Message-ID: <2379022.bUy4KDZIf7@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Feb 2014, David Rientjes wrote:
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-> Yeah, you don't need it, but don't you think it makes the code more
-> readable?  Otherwise this is going to be just doing
->
-> 	return (unsigned long)objp & ~SLAB_OBJ_PFMEMALLOC;
->
-> and you gotta figure out the function type to understand it's returned as
+After recent ACPI core changes acpi_bus_get_device() will always
+succeed for dock station ACPI device objects, so show_docked()
+should not use that function's return value as an indicator of
+whether or not the dock device is present.
 
-Isnt there something like PTR_ALIGN() for this case that would make it
-more readable?
+Make it use acpi_device_enumerated() for this purpose.
+
+Fixes: 202317a573b2 (ACPI / scan: Add acpi_device objects for all device nodes in the namespace)
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+
+3.14 material overlooked previously.
+
+And I actually was able to test this one some. :-)
+
+Thanks,
+Rafael
+
+---
+ drivers/acpi/dock.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+Index: linux-pm/drivers/acpi/dock.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/dock.c
++++ linux-pm/drivers/acpi/dock.c
+@@ -713,13 +713,11 @@ static acpi_status __init find_dock_devi
+ static ssize_t show_docked(struct device *dev,
+ 			   struct device_attribute *attr, char *buf)
+ {
+-	struct acpi_device *tmp;
+-
+ 	struct dock_station *dock_station = dev->platform_data;
++	struct acpi_device *adev = NULL;
+ 
+-	if (!acpi_bus_get_device(dock_station->handle, &tmp))
+-		return snprintf(buf, PAGE_SIZE, "1\n");
+-	return snprintf(buf, PAGE_SIZE, "0\n");
++	acpi_bus_get_device(dock_station->handle, &adev);
++	return snprintf(buf, PAGE_SIZE, "%u\n", acpi_device_enumerated(adev));
+ }
+ static DEVICE_ATTR(docked, S_IRUGO, show_docked, NULL);
+ 
 
