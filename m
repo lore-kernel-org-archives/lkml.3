@@ -1,107 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaBOXXb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 18:23:31 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:33461 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629AbaBOXX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 18:23:29 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+	id S1752587AbaBOXZN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 18:25:13 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39636 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751629AbaBOXZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 18:25:11 -0500
+Date: Sun, 16 Feb 2014 00:25:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: John <da_audiophile@yahoo.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "mlindner@marvell.com" <mlindner@marvell.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         "J. Bruce Fields" <bfields@fieldses.org>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
-	<87bny8kqik.fsf_-_@xmission.com>
-	<CA+55aFz6feRh9+U7OY6C4CfNe68CqQZARCf_J9deJdsUUG_ryg@mail.gmail.com>
-	<CA+55aFzfa3=ukGq=XJbxj-xqud32DvbF7AcroBKL6-GY32or7Q@mail.gmail.com>
-Date: Sat, 15 Feb 2014 15:23:20 -0800
-In-Reply-To: <CA+55aFzfa3=ukGq=XJbxj-xqud32DvbF7AcroBKL6-GY32or7Q@mail.gmail.com>
-	(Linus Torvalds's message of "Sat, 15 Feb 2014 14:59:50 -0800")
-Message-ID: <87a9ds55av.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Subject: Re: [BUG] unable to handle kernel NULL pointer dereference
+Message-ID: <20140215232508.GB4508@pd.tnic>
+References: <1392466251.41282.YahooMailNeo@web140003.mail.bf1.yahoo.com>
+ <1392494917.71728.YahooMailNeo@web140002.mail.bf1.yahoo.com>
+ <20140215203015.GA4528@pd.tnic>
+ <1392498262.98385.YahooMailNeo@web140003.mail.bf1.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18eQDl9RaWbsoIa0BVELtW00NTEPeR63vw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0096]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 02/11] vfs: More precise tests in d_invalidate
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392498262.98385.YahooMailNeo@web140003.mail.bf1.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Sat, Feb 15, 2014 at 01:04:22PM -0800, John wrote:
+> Thanks for the reply, Boris.  The .config is unmodified
+> from the Arch Distro default for 3.13.3-1 which can be found
+> here: http://pastebin.com/LPGZ8ZqA
 
-> On Sat, Feb 15, 2014 at 2:51 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> the whole check_submounts_and_drop thing walks the parent chain and
->> locks each parent with the renamelock held for writing.
->
-> Oops, my bad about the write lock, brainfart due to grepping and
-> reading the wrong context...
->
-> check_submounts_and_drop() doesn't do the parent walk with the rename
-> lock held for writing, it just holds it for reading.
->
-> But it does do that very complex "walk parents and check all siblings"
-> and locks them, so the rest of the commentary was correct.
+Yep, it is that struct net *net argument to put_pipe_version() which is NULL:
 
-Except that today d_invalidate drops the dcache lock and
-calls shrink_dcache_parent.  Which gets you into exactly the same
-complex "walk parents and check all siblings" code.
+  12:   55                      push   %ebp
+  13:   89 e5                   mov    %esp,%ebp
+  15:   56                      push   %esi
+  16:   53                      push   %ebx
+  17:   3e 8d 74 26 00          lea    %ds:0x0(%esi,%eiz,1),%esi
+  1c:   8b 1d 28 e9 a3 f8       mov    0xf8a3e928,%ebx
+  22:   89 c6                   mov    %eax,%esi
+  24:   e8 59 64 5f c8          call   0xc85f6482
+  29:   85 db                   test   %ebx,%ebx
+  2b:*  8b 86 58 08 00 00       mov    0x858(%esi),%eax         <-- trapping instruction
 
-The only difference between the shrink_dcache_parent and
-check_submounts_and_drop (not counting the final drop)
-is that check_submounts_and_drop aborts when it encounters a dentry
-with d_mountpoint set.
-
-
-So no I am not trying to hide something.  I called out that I changed
-this logic in particular and this particular patch all I am doing is
-killing the enforcing of 2.2 era logic.  Further I front loaded this
-change so I bisect could point it's fingers at this before any other
-substantial changes were made if this is indeed a problem.
-
-Beyond that check_submounts_and_drop is what well maintained distributed
-filesystems are calling from d_revalidate.
+put_pipe_version:
+	pushl	%ebp	#
+	movl	%esp, %ebp	#,
+	pushl	%esi	#
+	pushl	%ebx	#
+	call	mcount
+	movl	sunrpc_net_id, %ebx	# sunrpc_net_id, sunrpc_net_id.130
+	movl	%eax, %esi	# net, net
+	call	__rcu_read_lock	#
+	testl	%ebx, %ebx	# sunrpc_net_id.130
+	movl	2136(%esi), %eax	# MEM[(struct net_generic * const *)net_4(D) + 2136B], ng <-- trapping insn
 
 
-Now I would not be surprised if this change to d_invalidate is a
-challenge to get your head around.  It took me a while of reading the
-code to realize (a) how the code makes some degree of sense today,
-and (b) that the change is semantically safe.
+	[ 137.689996] ESI: 00000000 EDI: f56efc00 EBP: f568fee8 ESP: f568fee0
+			   ^^^^^^^^
+
+Here's the c/asm interleaved version:
+
+static void put_pipe_version(struct net *net)
+{
+     d80:       55                      push   %ebp
+     d81:       89 e5                   mov    %esp,%ebp
+     d83:       56                      push   %esi
+     d84:       53                      push   %ebx
+     d85:       e8 fc ff ff ff          call   d86 <put_pipe_version+0x6>
+                        d86: R_386_PC32 mcount
+        struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+     d8a:       8b 1d 00 00 00 00       mov    0x0,%ebx
+                        d8c: R_386_32   sunrpc_net_id
+        spin_unlock(&pipe_version_lock);
+        return ret;
+}
+
+static void put_pipe_version(struct net *net)
+{
+     d90:       89 c6                   mov    %eax,%esi
+ * block, but only when acquiring spinlocks that are subject to priority
+ * inheritance.
+ */
+static inline void rcu_read_lock(void)
+{
+        __rcu_read_lock();
+     d92:       e8 fc ff ff ff          call   d93 <put_pipe_version+0x13>
+                        d93: R_386_PC32 __rcu_read_lock
+        struct net_generic *ng;
+        void *ptr;
+
+        rcu_read_lock();
+        ng = rcu_dereference(net->gen);
+        BUG_ON(id == 0 || id > ng->len);
+     d97:       85 db                   test   %ebx,%ebx
+{
+        struct net_generic *ng;
+        void *ptr;
+
+        rcu_read_lock();
+        ng = rcu_dereference(net->gen);
+     d99:       8b 86 58 08 00 00       mov    0x858(%esi),%eax			<-- trapping insn
 
 
-But when shrink_dcache_parent and check_submounts_and_drop are
-effectiely the same function I can't possibly see how you can argue how
-the locking has changed or that I am trying to hide things.
+I guess you could avoid the crash if you did
 
-Eric
+	if (!net)
+		return;
+
+in put_pipe_version() but this hardly is the right solution. Someone
+else has to make sense of this thing, not me. :-)
+
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
