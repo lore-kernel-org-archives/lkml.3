@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaBOUxa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 15:53:30 -0500
-Received: from gate.crashing.org ([63.228.1.57]:48941 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753719AbaBOUx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 15:53:29 -0500
-Message-ID: <1392497560.24061.1.camel@pasglop>
-Subject: Re: [PATCH 39/48] powerpc: Replace __get_cpu_var uses
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@linux.com>,
-        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Mackerras <paulus@samba.org>
-Date: Sun, 16 Feb 2014 07:52:40 +1100
-In-Reply-To: <1392496342.10050.28.camel@pasglop>
-References: <20140214201841.826179349@linux.com>
-	 <20140214201908.082769265@linux.com> <1392436208.10050.22.camel@pasglop>
-	 <20140215094239.GF14089@laptop.programming.kicks-ass.net>
-	 <1392458479.10050.26.camel@pasglop>
-	 <20140215154502.GK14089@laptop.programming.kicks-ass.net>
-	 <1392487922.9366.15.camel@i7.infradead.org>
-	 <1392496342.10050.28.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3-0ubuntu3~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753719AbaBOVHY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 16:07:24 -0500
+Received: from nm33.bullet.mail.ne1.yahoo.com ([98.138.229.26]:46605 "EHLO
+	nm33.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752965AbaBOVHW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 16:07:22 -0500
+X-Yahoo-Newman-Property: ymail-4
+X-Yahoo-Newman-Id: 687079.35607.bm@omp1052.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=jmNR7GvrUTqw0hd4P/98+EEhjL7HgndOaHSyntBjTpLtSFFyyYk30YZf+WYAfK3YifRAJNjQ9DKXxBzebfJXaCpztqNAkAp3F2xfDNuq69FptnFxvjkUAjKa9jNZS01rvmHa1weWqyF/ru5qJ+gzP6PN6G2NuvHUbhgZ6WZHxIs=;
+X-YMail-OSG: vaffhaAVM1kZ8ebvAH26116A2Jh3zLkKS8oJA5zynZEsSlG
+ sP_ZtMoBK.O5bjsm7QErzlURA37_USaov_1jey1LOULbd9w--
+X-Rocket-MIMEInfo: 002.001,CgotLS0tLSBPcmlnaW5hbCBNZXNzYWdlIC0tLS0tCj4gRnJvbTogQm9yaXNsYXYgUGV0a292IDw.Cj4gU2VudDogU2F0dXJkYXksIEZlYnJ1YXJ5IDE1LCAyMDE0IDM6MzAgUE0KPiBTdWJqZWN0OiBSZTogW0JVR10gdW5hYmxlIHRvIGhhbmRsZSBrZXJuZWwgTlVMTCBwb2ludGVyIGRlcmVmZXJlbmNlCj4gCj4gSWYgSSdkIGhhdmUgdG8gZ3Vlc3MsIHRoYXQncyB0cnlpbmcgdG8gcmN1IGRlcmVmIHRoYXQgc3RydWN0IG5ldF9nZW5lcmljCj4gKm5nIGluIG5ldF9nZW5lcmljKCkgYnV0IHRoaXMgaXMgb25seSABMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.177.636
+References: <1392466251.41282.YahooMailNeo@web140003.mail.bf1.yahoo.com> <1392494917.71728.YahooMailNeo@web140002.mail.bf1.yahoo.com> <20140215203015.GA4528@pd.tnic>
+Message-ID: <1392498262.98385.YahooMailNeo@web140003.mail.bf1.yahoo.com>
+Date: Sat, 15 Feb 2014 13:04:22 -0800 (PST)
+From: John <da_audiophile@yahoo.com>
+Reply-To: John <da_audiophile@yahoo.com>
+Subject: Re: [BUG] unable to handle kernel NULL pointer dereference
+To: Borislav Petkov <bp@alien8.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "mlindner@marvell.com" <mlindner@marvell.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <20140215203015.GA4528@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Sun, 2014-02-16 at 07:32 +1100, Benjamin Herrenschmidt wrote:
 
-> > But even that looks like it should be considered a bug. Please file in
-> > GNOME bugzilla.
+----- Original Message -----
+> From: Borislav Petkov <>
+> Sent: Saturday, February 15, 2014 3:30 PM
+> Subject: Re: [BUG] unable to handle kernel NULL pointer dereference
 > 
-> In my case it doesn't have an inline part. I only get an attachment,
+> If I'd have to guess, that's trying to rcu deref that struct net_generic
+> *ng in net_generic() but this is only guesswork as I don't have your
+> .config.
 > 
-> I'll file it in gnome bz.
-
-Hah, story of my life: 3.8.x is marked "obsolete" in gnome BZ :)
-
-I suppose that's the price for using Ubuntu, the version of evolution is
-always just old enough that nobody cares about bugs in it anymore :-)
-
-Anyway, gnome3 PPA gave me 3.10.3 and the problem is still there, filing
-as https://bugzilla.gnome.org/show_bug.cgi?id=724437
-
-Cheers,
-Ben.
+> Anyway, adding some more people to CC.
+> 
 
 
+Thanks for the reply, Boris.  The .config is unmodified from the Arch Distro default for 3.13.3-1 which can be found here: http://pastebin.com/LPGZ8ZqA
