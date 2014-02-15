@@ -1,127 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587AbaBOXZN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 18:25:13 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39636 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751629AbaBOXZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 18:25:11 -0500
-Date: Sun, 16 Feb 2014 00:25:08 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: John <da_audiophile@yahoo.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "mlindner@marvell.com" <mlindner@marvell.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [BUG] unable to handle kernel NULL pointer dereference
-Message-ID: <20140215232508.GB4508@pd.tnic>
-References: <1392466251.41282.YahooMailNeo@web140003.mail.bf1.yahoo.com>
- <1392494917.71728.YahooMailNeo@web140002.mail.bf1.yahoo.com>
- <20140215203015.GA4528@pd.tnic>
- <1392498262.98385.YahooMailNeo@web140003.mail.bf1.yahoo.com>
+	id S1752669AbaBOX2V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 18:28:21 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:37200 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103AbaBOX2T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 18:28:19 -0500
+Date: Sat, 15 Feb 2014 15:27:29 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Pradeep Sawlani <pradeep.sawlani@gmail.com>
+cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, surim@lab126.com,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Dave Hansen <dave@sr71.net>, Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: KSM on Android
+In-Reply-To: <CAMrOTPgBtANS_ryRjan0-dTL97U7eRvtf3dCsss=Kn+Uk89fuA@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1402151344340.8605@eggly.anvils>
+References: <CAMrOTPgBtANS_ryRjan0-dTL97U7eRvtf3dCsss=Kn+Uk89fuA@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392498262.98385.YahooMailNeo@web140003.mail.bf1.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 01:04:22PM -0800, John wrote:
-> Thanks for the reply, Boris.  The .config is unmodified
-> from the Arch Distro default for 3.13.3-1 which can be found
-> here: http://pastebin.com/LPGZ8ZqA
+On Thu, 13 Feb 2014, Pradeep Sawlani wrote:
+> Re-sending this in plain text format (Apologies)
+> 
+> Hello,
+> 
+> In pursuit of saving memory on Android, I started experimenting with
+> Kernel Same Page Merging(KSM).
+> Number of pages shared because of KSM is reported by
+> /sys/kernel/mm/pages_sharing.
+> Documentation/vm/ksm.txt explains this as:
+> 
+> "pages_sharing    - how many more sites are sharing them i.e. how much saved"
+> 
+> After enabling KSM on Android device, this number was reported as 19666 pages.
+> Obvious optimization is to find out source of sharing and see if we
+> can avoid duplicate pages at first place.
+> In order to collect the data needed, It needed few
+> modifications(trace_printk) statement in mm/ksm.c.
+> Data should be collected from second cycle because that's when ksm
+> starts merging
+> pages. First KSM cycle is only used to calculate the checksum, pages
+> are added to
+> unstable tree and eventually moved to stable tree after this.
+> 
+> After analyzing data from second KSM cycle, few things which stood out:
+> 1.  In the same cycle, KSM can scan same page multiple times. Scanning
+> a page involves
+>     comparing page with pages in stable tree, if no match is found
+> checksum is calculated.
+>     From the look of it, it seems to be cpu intensive operation and
+> impacts dcache as well.
 
-Yep, it is that struct net *net argument to put_pipe_version() which is NULL:
+Yes.
 
-  12:   55                      push   %ebp
-  13:   89 e5                   mov    %esp,%ebp
-  15:   56                      push   %esi
-  16:   53                      push   %ebx
-  17:   3e 8d 74 26 00          lea    %ds:0x0(%esi,%eiz,1),%esi
-  1c:   8b 1d 28 e9 a3 f8       mov    0xf8a3e928,%ebx
-  22:   89 c6                   mov    %eax,%esi
-  24:   e8 59 64 5f c8          call   0xc85f6482
-  29:   85 db                   test   %ebx,%ebx
-  2b:*  8b 86 58 08 00 00       mov    0x858(%esi),%eax         <-- trapping instruction
+Of course you can adjust /sys/kernel/mm/ksm tunables to make it more
+or less cpu and dcache intensive, and correspondingly more or less
+effective in combining memory; but that's not really your interest.
 
-put_pipe_version:
-	pushl	%ebp	#
-	movl	%esp, %ebp	#,
-	pushl	%esi	#
-	pushl	%ebx	#
-	call	mcount
-	movl	sunrpc_net_id, %ebx	# sunrpc_net_id, sunrpc_net_id.130
-	movl	%eax, %esi	# net, net
-	call	__rcu_read_lock	#
-	testl	%ebx, %ebx	# sunrpc_net_id.130
-	movl	2136(%esi), %eax	# MEM[(struct net_generic * const *)net_4(D) + 2136B], ng <-- trapping insn
+> 
+> 2.  Same page which is already shared by multiple process can be
+> replaced by KSM page.
+>     In this case, let say a particular page is mapped 24 times and is
+> replaced by KSM page then
+>     eventually all 24 entries will point to KSM page. pages_sharing
+> will account for all 24 pages.
+>     so pages _sharing does not actually report amount of memory saved.
+> From the above example actual
+>     savings is one page.
 
+Yes.
 
-	[ 137.689996] ESI: 00000000 EDI: f56efc00 EBP: f568fee8 ESP: f568fee0
-			   ^^^^^^^^
+KSM was created mainly to support KVM, where forking is not an issue,
+I think.  I do remember fixing it early on, to stop it from converting
+every forked page to a KSM page.  But you're right that once there is
+a stable KSM page of particular content, forked instances of a page of
+the same content will be peeled off one by one to be shared with the
+KSM page, and the pages_sharing count claim more has been saved than
+is actually so.
 
-Here's the c/asm interleaved version:
+The easy fix to that is to remove "i.e. how much saved" from the
+Documentation, or better, to qualify it by your point on forking.
+But again, that's not really your interest.
 
-static void put_pipe_version(struct net *net)
-{
-     d80:       55                      push   %ebp
-     d81:       89 e5                   mov    %esp,%ebp
-     d83:       56                      push   %esi
-     d84:       53                      push   %ebx
-     d85:       e8 fc ff ff ff          call   d86 <put_pipe_version+0x6>
-                        d86: R_386_PC32 mcount
-        struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
-     d8a:       8b 1d 00 00 00 00       mov    0x0,%ebx
-                        d8c: R_386_32   sunrpc_net_id
-        spin_unlock(&pipe_version_lock);
-        return ret;
-}
+Coming up with a supportable alternative or fix to pages_sharing:
+it's not obvious to me how to go about that - whether or not to
+decrement the count once a write COWs off an instance of the page.
+Presumably it could be done, but at cost of recording more info in the
+rmap_items: I doubt it would be worth the extra memory and processing.
 
-static void put_pipe_version(struct net *net)
-{
-     d90:       89 c6                   mov    %eax,%esi
- * block, but only when acquiring spinlocks that are subject to priority
- * inheritance.
- */
-static inline void rcu_read_lock(void)
-{
-        __rcu_read_lock();
-     d92:       e8 fc ff ff ff          call   d93 <put_pipe_version+0x13>
-                        d93: R_386_PC32 __rcu_read_lock
-        struct net_generic *ng;
-        void *ptr;
+Easier and less consuming might be to provide a running statistic of
+the average page_mapcount of pages being shared into stable.  Or even
+a tunable to refuse sharing into stable above a certain mapcount,
+which could be set to 1 or something higher (or 0 for no limit).
 
-        rcu_read_lock();
-        ng = rcu_dereference(net->gen);
-        BUG_ON(id == 0 || id > ng->len);
-     d97:       85 db                   test   %ebx,%ebx
-{
-        struct net_generic *ng;
-        void *ptr;
+> 
+> Both cases happen very often with Android because of its architecture
+> - Zygote spawning(fork) multiple
+> applications. To calculate actual savings, we should account for same
+> page(pfn)replaced by same KSM page only once.
+> In the case 2 example, page_sharing should account only one page.
+> After recalculating memory saving comes out to be 8602 pages (~34MB).
+> 
+> I am trying to find out right solution to fix pages_sharing and
+> eventually optimize KSM to scan page
+> once even if it is mapped multiple times.
 
-        rcu_read_lock();
-        ng = rcu_dereference(net->gen);
-     d99:       8b 86 58 08 00 00       mov    0x858(%esi),%eax			<-- trapping insn
+To scan page once (each cycle) even if it is mapped multiple times:
+that does sound a useful enhancement to make for the Android case
+you describe.  I see two sides to that.
 
+One is mapping the replacement page into all sites at the same time.
+That sounds doable, but without actually attempting to do it, I'm
+not at all sure.  It's interesting that try_to_merge_with_ksm_page()
+works on one rmap_item and down_reads the corresponding mmap_sem,
+but try_to_merge_one_page() itself does not use the rmap_item.
+Lots to think about there: most particularly, what is that mmap_sem
+protecting here?  Because it would not be protecting the other
+instances that you replace.
 
-I guess you could avoid the crash if you did
+Something it does protect is VM_MERGEABLE in vma->vm_flags: it's
+a nuisance that VM_MERGEABLE might not be set in some of the vmas
+sharing this page.
 
-	if (!net)
-		return;
+(By the way, if break_cow() poses a problem for you - break_cow()
+being KSM's easy answer for backtracking, just COW back to ordinary
+anon page if something goes wrong - and I've a feeling it might,
+I do have a patch from a year ago which I never had time to write
+up and complete testing on, which eliminates its use.)
 
-in put_pipe_version() but this hardly is the right solution. Someone
-else has to make sense of this thing, not me. :-)
+The other side is cmp_and_merge_page() skipping a page which has
+already been scanned this cycle via another mapping.  I think
+the easiest way to accomplish that would be with two pageflags,
+using alternate flag each cycle.  But we certainly don't have
+two pageflags to spare on 32-bit, and I doubt it on 64-bit:
+everyone wants to use that space.  However, you could easily
+prototype it that way, to measure the savings and judge whether
+it's worth going further.
 
-HTH.
+Good luck.  Interesting work, but I can't find time for it.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Hugh
