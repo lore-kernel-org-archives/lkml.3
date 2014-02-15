@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432AbaBOP6p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 10:58:45 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53055 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385AbaBOP6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 10:58:44 -0500
-Date: Sat, 15 Feb 2014 15:58:38 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
-        Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140215155838.GA18016@ZenIV.linux.org.uk>
-References: <20140212113928.GO18016@ZenIV.linux.org.uk>
- <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
- <20140212211421.GP18016@ZenIV.linux.org.uk>
- <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com>
- <20140213174020.GA14455@redhat.com>
- <CA+55aFxwozCQ05axLB02R3huX8sj=20EoFfw0cSDDL8fBE_Y6Q@mail.gmail.com>
- <20140215052531.GX18016@ZenIV.linux.org.uk>
- <20140215142700.GA15540@redhat.com>
- <20140215152251.GY18016@ZenIV.linux.org.uk>
- <20140215153631.GZ18016@ZenIV.linux.org.uk>
+	id S1753447AbaBOQOo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 11:14:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45333 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396AbaBOQOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 11:14:42 -0500
+Message-ID: <52FF9236.1040205@redhat.com>
+Date: Sat, 15 Feb 2014 17:13:42 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140215153631.GZ18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
+References: <1391649046-4383-1-git-send-email-ast@plumgrid.com> <52F3670D.5090608@redhat.com> <CAMEtUuza3NuM7L0RnVVgU-MTfjE2M==8wb4UY2TAo0Pg6DKZqA@mail.gmail.com> <52FD2908.8000009@redhat.com> <52FD458D.6020107@redhat.com> <CAMEtUuwfSYr=7+_8jKryUMUTL1NE-wRV_h=PX7uKdkUebgGiPg@mail.gmail.com> <52FE4C0C.1090008@redhat.com> <CAMEtUuyZtE1hSBP5xXOjTy1sed2iV1JK8pEGQATiwmxsj+GUFw@mail.gmail.com>
+In-Reply-To: <CAMEtUuyZtE1hSBP5xXOjTy1sed2iV1JK8pEGQATiwmxsj+GUFw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 03:36:31PM +0000, Al Viro wrote:
-> On Sat, Feb 15, 2014 at 03:22:51PM +0000, Al Viro wrote:
-> > On Sat, Feb 15, 2014 at 03:27:00PM +0100, Oleg Nesterov wrote:
-> > 
-> > > 1. info->q can be already freed if SIGQUEUE_PREALLOC.
-> > > 
-> > >    Once get_signal_to_deliver() or any other caller drops ->siglock
-> > >    another thread can do sys_timer_delete()->sigqueue_free().
-> > 
-> > How the devil would it find the sucker?  It's off the list already.
-> 
-> Ouch...  I think I see what you mean.  Let me see if I got it right:
-> timer->sigq is *not* freed by collect_signal(); it's done by
-> release_posix_timer() instead, under siglock.  Frankly, this
->         /*
->          * If it is queued it will be freed when dequeued,
->          * like the "regular" sigqueue.
->          */
->         if (!list_empty(&q->list))
->                 q = NULL;
-> in sigqueue_free() smells like it's asking for races.  Sigh...
+On 02/14/2014 06:55 PM, Alexei Starovoitov wrote:
+> On Fri, Feb 14, 2014 at 9:02 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>> On 02/14/2014 01:59 AM, Alexei Starovoitov wrote:
+>> ...
+>>>>
+>>>> I'm very curious, do you also have any performance numbers, e.g. for
+>>>>
+>>>> networking by taking JIT'ed/non-JIT'ed BPF filters and compare them
+>>>> against
+>>>> JIT'ed/non-JIT'ed eBPF filters to see how many pps we gain or loose e.g.
+>>>> for a scenario with a middle box running cls_bpf .. or some other macro/
+>>>> micro benchmark just to get a picture where both stand in terms of
+>>>> performance? Who knows, maybe it would outperform nftables engine as
+>>>> well? ;-) How would that look on a 32bit arch with eBPF that is 64bit?
+>>>
+>>> I don't have jited/non-jited numbers, but I suspect for micro-benchmarks
+>>> the gap should be big. I was shooting for near native performance after
+>>> JIT.
+>>
+>> Ohh, I meant it would be interesting to see a comparison of e.g. common
+>> libpcap
+>> high-level filters that are in 32bit BPF + JIT (current code) vs 64bit BPF +
+>> JIT
+>> (new code). I'm wondering how 32bit-only archs should be handled to not
+>> regress
+>> in evaluation performance to the current code.
+>
+> Agreed. If we want to rip off old bpf interpreter and replace it with old->new
+> converter + new bpf interpreter, the performance of it should be very close.
+> In grand scheme some differences are ok, since libpcap bpf filters are not hot.
+> So much is happening before and after that tcpdump won't notice whether
+> filter was jited or not. cls_bpf is a different story, though I don't know what
+> specific use case you have there.
+> Could you define a bpf micro benchmark ? cls_bpf with pktgen?
 
-So basically we want a different condition for "can we just go ahead and
-free that sucker", right?  Instead of "it's on the list, shan't free it"
-it ought to be something like "it's on the list or it is referenced by
-ksiginfo".  Locking will be interesting, though... ;-/
-
-BTW, I really wonder how does that stuff interact with PTRACE_SETSIGINFO.
-What happens if tracer does PTRACE_GETSIGINFO, changes ->si_signo to
-something blocked, shoves it back with PTRACE_SETSIGINFO and does
-PTRACE_CONT with that new signal number?  Would we get two sigqueue instances
-with the same ->si_tid, one of them matching the timer->sigq and another
-- not?
+Well, that's just one example, it's not necessarily about cls_bpf, e.g. just
+a modified pktgen where skb goes through new/old BPF filters on local output
+path and the remote machine queries nic counters (e.g. ifpps, an ixia box or
+something else suitable). There's probably even something more simple and
+suitable for comparing both, so it doesn't necessarily has to be this scenario.
+It's just to have a basic comparison to see where we would stand e.g. in case
+of 32/64bit architectures. Otherwise, regarding your other email, sounds like
+convergence at least to _me_. Details can then still be discussed at particular
+steps, but integrating this step by step into the existing architecture would
+be a good start, imho.
