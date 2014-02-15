@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843AbaBOXub (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 18:50:31 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:59637 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaBOXua (ORCPT
+	id S1752940AbaBOXxw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 18:53:52 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:59264 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaBOXxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 18:50:30 -0500
+	Sat, 15 Feb 2014 18:53:51 -0500
+Date: Sat, 15 Feb 2014 15:53:06 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] swapoff tmpfs radix_tree: remember to rcu_read_unlock
+In-Reply-To: <20140213143005.9aea5709d5befd1df84b19a7@linux-foundation.org>
+Message-ID: <alpine.LSU.2.11.1402151529060.8605@eggly.anvils>
+References: <alpine.LSU.2.11.1402121840500.6398@eggly.anvils> <20140213143005.9aea5709d5befd1df84b19a7@linux-foundation.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140214002427.GN13997@dastard>
-References: <20140211210841.GM13647@dastard>
-	<52FA9ADA.9040803@sandeen.net>
-	<20140212004403.GA17129@redhat.com>
-	<20140212010941.GM18016@ZenIV.linux.org.uk>
-	<CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
-	<20140212040358.GA25327@redhat.com>
-	<20140212042215.GN18016@ZenIV.linux.org.uk>
-	<20140212054043.GB13997@dastard>
-	<CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
-	<20140212071829.GE13997@dastard>
-	<20140214002427.GN13997@dastard>
-Date: Sat, 15 Feb 2014 15:50:29 -0800
-X-Google-Sender-Auth: UkAlvS42Pt2YRlkKFqgQdi5_sso
-Message-ID: <CA+55aFx=i6dbzCUZ6TwCMqniyS4C=tJx9+72p=EA+dU8Vn=2jQ@mail.gmail.com>
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Jones <davej@redhat.com>,
-        Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added linux-mm to the participants list ]
+On Thu, 13 Feb 2014, Andrew Morton wrote:
+> On Wed, 12 Feb 2014 18:45:07 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
+> 
+> > Running fsx on tmpfs with concurrent memhog-swapoff-swapon, lots of
+> > 
+> > BUG: sleeping function called from invalid context at kernel/fork.c:606
+> > in_atomic(): 0, irqs_disabled(): 0, pid: 1394, name: swapoff
+> > 1 lock held by swapoff/1394:
+> >  #0:  (rcu_read_lock){.+.+.+}, at: [<ffffffff812520a1>] radix_tree_locate_item+0x1f/0x2b6
+> > followed by
+> > ================================================
+> > [ BUG: lock held when returning to user space! ]
+> > 3.14.0-rc1 #3 Not tainted
+> > ------------------------------------------------
+> > swapoff/1394 is leaving the kernel with locks still held!
+> > 1 lock held by swapoff/1394:
+> >  #0:  (rcu_read_lock){.+.+.+}, at: [<ffffffff812520a1>] radix_tree_locate_item+0x1f/0x2b6
+> > after which the system recovered nicely.
+> > 
+> > Whoops, I long ago forgot the rcu_read_unlock() on one unlikely branch.
+> > 
+> > Fixes: e504f3fdd63d ("tmpfs radix_tree: locate_item to speed up swapoff")
+> 
+> huh.  Venerable.  I'm surprised that such an obvious blooper wasn't
+> spotted at review.  Why didn't anyone else hit this.
 
-On Thu, Feb 13, 2014 at 4:24 PM, Dave Chinner <david@fromorbit.com> wrote:
->
-> Dave, the patch below should chop off the stack usage from
-> xfs_log_force_lsn() issuing IO by deferring it to the CIL workqueue.
-> Can you given this a run?
+No surprise that it missed review, obvious though it is in the fix.
 
-Ok, so DaveJ confirmed that DaveC's patch fixes his issue (damn,
-people, your parents were some seriously boring people, were they not?
-We've got too many Dave's around), but DaveC earlier pointed out that
-pretty much any memory allocation path can end up using 3kB of stack
-even without XFS being involved.
+And not much surprise that noone else hit this: for most people, even
+those using tmpfs and pushing out to swap, swapoff is just something
+that happens shortly before the screen goes blank when you shutdown
+(and, I haven't noticed how distros order it these days, but swapoff
+is anyway better done after unmounting tmpfss, to avoid its slowness).
 
-Which does bring up the question whether we should look (once more) at
-the VM direct-reclaim path, and try to avoid GFP_FS/IO direct
-reclaim..
+And it does need the swapped tmpfs file to be truncated or unlinked
+while swapoff is searching through it racily with RCU lookups.
 
-Direct reclaim historically used to be an important throttling
-mechanism, and I used to not be a fan of trying to avoid direct
-reclaim. But the stack depth issue really looks to be pretty bad, and
-I think we've gotten better at throttling explicitly, so..
+What puzzled me more was, why hadn't I seen it before?  I don't run
+that fsx test particularly often, but have certainly run it dozens
+of times between then and now.  I think the answer must be where I
+said "after which the system recovered nicely": I probably did hit
+it before, but wasn't attending to the screen at the time, the
+warnings got scrolled off by timestamps I was printing, and I
+failed to check dmesg or /var/log/messages afterwards.
 
-I *think* we already limit filesystem writeback to just kswapd (in
-shrink_page_list()), but DaveC posted a backtrace that goes through
-do_try_to_free_pages() to shrink_slab(), and through there to the
-filesystem and then IO. That looked like a disaster.
+> 
+> 
+> > Of course, the truth is that I had been hoping to break Johannes's
+> > patchset in mmotm, was thrilled to get this on that, then despondent
+> > to realize that the only bug I had found was mine.  Surprised I've
+> > not seen it before in 2.5 years: tried again on 3.14-rc1, got the
+> > same after 25 minutes.  Probably not serious enough for -stable,
+> > but please can we slip the fix into 3.14 - sorry, Johannes's
+> > mm-keep-page-cache-radix-tree-nodes-in-check.patch will need a refresh.
+> 
+> I fixed it up.
 
-And that's because (if I read things right) shrink_page_list() limits
-filesystem page writeback to kswapd, but not swap pages. Which I think
-probably made more sense back in the days than it does now (I
-certainly *hope* that swapping is less important today than it was,
-say, ten years ago)
+Thanks!
 
-So I'm wondering whether we should remove that page_is_file_cache()
-check from shrink_page_list()?
-
-And then there is that whole shrink_slab() case...
-
-               Linus
+Hugh
