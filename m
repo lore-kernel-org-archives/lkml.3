@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843AbaBOTWv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 14:22:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53059 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804AbaBOTWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 14:22:50 -0500
-Date: Sat, 15 Feb 2014 11:24:10 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Alessandro Gardich <gremlin@gremlin.it>,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: Re: [PATCH] RFC: MFD: driver for Atmel Microcontroller on iPaq h3xxx
-Message-ID: <20140215192410.GC2280@kroah.com>
-References: <1391175275-27347-1-git-send-email-linus.walleij@linaro.org>
- <CACRpkdb1LFP45Oy0YJ6DSHriSorvHacH=RRWb4LmZ286LJJX0g@mail.gmail.com>
- <20140210115318.GD22773@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140210115318.GD22773@lee--X1>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1753865AbaBOTYm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 14:24:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58585 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753722AbaBOTYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 14:24:41 -0500
+Message-ID: <1392492273.2771.44.camel@deneb.redhat.com>
+Subject: Re: [PATCH] c6x: Include init.h in asm/cache.h
+From: Mark Salter <msalter@redhat.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, Joe Perches <joe@perches.com>
+Date: Sat, 15 Feb 2014 14:24:33 -0500
+In-Reply-To: <52FFAAA7.6040104@roeck-us.net>
+References: <1391781742-32250-1-git-send-email-linux@roeck-us.net>
+	 <52FFAAA7.6040104@roeck-us.net>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 11:53:18AM +0000, Lee Jones wrote:
-> > > This adds a driver for the Atmel Microcontroller found on the
-> > > iPAQ h3xxx series. This device handles some keys, the
-> > > touchscreen, and the battery monitoring.
-> > 
-> > Any opinions on this driver or should we queue it in MFD as-is?
+On Sat, 2014-02-15 at 09:57 -0800, Guenter Roeck wrote:
+> On 02/07/2014 06:02 AM, Guenter Roeck wrote:
+> > arch/c6x/include/asm/cache.h uses __init and thus needs to include init.h.
+> > This fixes the following c6x build error.
+> >
+> > arch/c6x/include/asm/cache.h:63:20: error: expected '=', ',', ';',
+> > 'asm' or '__attribute__' before 'c6x_cache_init'
+> >   extern void __init c6x_cache_init(void);
+> >
+> > Problem was inadvertendly introduced with commit c28aa1f
+> > (printk/cache: mark printk_once test variable __read_mostly).
+> >
+> > Cc: Joe Perches <joe@perches.com>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> >   arch/c6x/include/asm/cache.h |    1 +
+> >   1 file changed, 1 insertion(+)
+> >
+> > diff --git a/arch/c6x/include/asm/cache.h b/arch/c6x/include/asm/cache.h
+> > index 09c5a0f..86648c0 100644
+> > --- a/arch/c6x/include/asm/cache.h
+> > +++ b/arch/c6x/include/asm/cache.h
+> > @@ -12,6 +12,7 @@
+> >   #define _ASM_C6X_CACHE_H
+> >
+> >   #include <linux/irqflags.h>
+> > +#include <linux/init.h>
+> >
+> >   /*
+> >    * Cache line size
+> >
 > 
-> I have no problem taking this through the MFD tree with Greg's nod.
+> ping ... c6x builds still fail in mainline due to this problem.
+> Anyone interested in a fix ?
+> 
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Yes, I'm interested. A fix has been in linux-next for a while but I
+haven't pushed it to Linus yet. Will do that this week.
+
+
