@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaBOXtq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 18:49:46 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57724 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaBOXtn (ORCPT
+	id S1752843AbaBOXub (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 18:50:31 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:59637 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516AbaBOXua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 18:49:43 -0500
-Date: Sat, 15 Feb 2014 17:47:48 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-arm-msm@vger.kernel.org>, Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Kenneth Heitke <kheitke@codeaurora.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 1/6] spmi: Linux driver framework for SPMI
-Message-ID: <20140215234748.GA26494@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1391468739-20987-1-git-send-email-joshc@codeaurora.org>
- <1391468739-20987-2-git-send-email-joshc@codeaurora.org>
+	Sat, 15 Feb 2014 18:50:30 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
-Content-Disposition: inline
-In-Reply-To: <1391468739-20987-2-git-send-email-joshc@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140214002427.GN13997@dastard>
+References: <20140211210841.GM13647@dastard>
+	<52FA9ADA.9040803@sandeen.net>
+	<20140212004403.GA17129@redhat.com>
+	<20140212010941.GM18016@ZenIV.linux.org.uk>
+	<CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+	<20140212040358.GA25327@redhat.com>
+	<20140212042215.GN18016@ZenIV.linux.org.uk>
+	<20140212054043.GB13997@dastard>
+	<CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+	<20140212071829.GE13997@dastard>
+	<20140214002427.GN13997@dastard>
+Date: Sat, 15 Feb 2014 15:50:29 -0800
+X-Google-Sender-Auth: UkAlvS42Pt2YRlkKFqgQdi5_sso
+Message-ID: <CA+55aFx=i6dbzCUZ6TwCMqniyS4C=tJx9+72p=EA+dU8Vn=2jQ@mail.gmail.com>
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---wRRV7LY7NUeQGEoC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ Added linux-mm to the participants list ]
 
-Hi,
+On Thu, Feb 13, 2014 at 4:24 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> Dave, the patch below should chop off the stack usage from
+> xfs_log_force_lsn() issuing IO by deferring it to the CIL workqueue.
+> Can you given this a run?
 
-On Mon, Feb 03, 2014 at 05:05:33PM -0600, Josh Cartwright wrote:
+Ok, so DaveJ confirmed that DaveC's patch fixes his issue (damn,
+people, your parents were some seriously boring people, were they not?
+We've got too many Dave's around), but DaveC earlier pointed out that
+pretty much any memory allocation path can end up using 3kB of stack
+even without XFS being involved.
 
-[ snip ]
+Which does bring up the question whether we should look (once more) at
+the VM direct-reclaim path, and try to avoid GFP_FS/IO direct
+reclaim..
 
-> +#ifdef CONFIG_PM_RUNTIME
-> +static int spmi_runtime_suspend(struct device *dev)
-> +{
-> +	struct spmi_device *sdev =3D to_spmi_device(dev);
-> +	int err;
-> +
-> +	err =3D pm_generic_runtime_suspend(dev);
-> +	if (err)
-> +		return err;
-> +
-> +	return spmi_command_sleep(sdev);
+Direct reclaim historically used to be an important throttling
+mechanism, and I used to not be a fan of trying to avoid direct
+reclaim. But the stack depth issue really looks to be pretty bad, and
+I think we've gotten better at throttling explicitly, so..
 
-shouldn't this too calls be swapped ? I mean, some pm_runtime
-implementations could be gating clocks at the driver's
-->runtime_suspend() callback.
+I *think* we already limit filesystem writeback to just kswapd (in
+shrink_page_list()), but DaveC posted a backtrace that goes through
+do_try_to_free_pages() to shrink_slab(), and through there to the
+filesystem and then IO. That looked like a disaster.
 
---=20
-balbi
+And that's because (if I read things right) shrink_page_list() limits
+filesystem page writeback to kswapd, but not swap pages. Which I think
+probably made more sense back in the days than it does now (I
+certainly *hope* that swapping is less important today than it was,
+say, ten years ago)
 
---wRRV7LY7NUeQGEoC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So I'm wondering whether we should remove that page_is_file_cache()
+check from shrink_page_list()?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+And then there is that whole shrink_slab() case...
 
-iQIcBAEBAgAGBQJS//ykAAoJEIaOsuA1yqREcpcQAKwE8hajiRzBBbFwMxszTE5w
-zMwRFR3vNP3fQfgbwPJrx3M5c+cUzISkW4Jr+SoBCifiYi2Das+h5/9bdCzbqMav
-4rihjDIN+yGaxHEYWwjZ4WnMKp2zf6UOYayjIvXTKQ7WkB6hFoe3gIwIlWJ3cOLl
-cQGGCvuc/W2Bj/u7tkPcAnhwu9/NKNJw3Zh7LRDFTyaJFddgu/+5sV/h41B6E847
-2Cj2s3DyF9SUbnDFywi3GhGaqYE58r9L5VhOqlXZAtDodkff0ZX5bK2eEaCQ9lQP
-Ou4hNtNUHmIfn5p/vLysuUyRveGl/L6ItM3VvgJH0sCJCyq8enBIXAfVt5eX7vU3
-i3Wrr/1ECgGaIFoBVovuhxLR8A3A8iDFFM5MrnLB8s8NLfnRa1hsodYvTTHqKZW2
-n6rocO4HaFRP0Yo4JHqaQM4THEvrOvZK7gxWu9DubsZKsDT5Fh+YRNSy8/rE2OrS
-L5OnpWsZXoKP+KUFlWKen3u8hwViMf7VJK8EhVFemOH89rabrRfpJzuhA/Up6U5m
-yZausLt02cGjnY6T4nHhl111hEcWKcIEe8O+ZMs9+tugZKN0YpCYivg2hg5cuWwA
-NQUZKvjnDsTB+zK/Y/x9nnmz8AlPRgvVuNLwzaAtMq3wMYux5FMIWmnECPAg4v+j
-hyvAKdriNGeJuPrXIQj2
-=92Za
------END PGP SIGNATURE-----
-
---wRRV7LY7NUeQGEoC--
+               Linus
