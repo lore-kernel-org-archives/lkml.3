@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaBOD5w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 22:57:52 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:33222 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956AbaBOD5t (ORCPT
+	id S1752363AbaBOD7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 22:59:47 -0500
+Received: from nm8-vm9.bullet.mail.gq1.yahoo.com ([98.136.218.232]:37829 "EHLO
+	nm8-vm9.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751242AbaBOD7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 22:57:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140215034046.GA26468@kroah.com>
-References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com>
-	<CAJe_ZhfgNUN5=azLrjyLLkh262zv2oBP-ioS8xtBWPonOPacrA@mail.gmail.com>
-	<20140215034046.GA26468@kroah.com>
-Date: Sat, 15 Feb 2014 09:27:48 +0530
-Message-ID: <CAJe_Zhe-n6bYUYcbhfHhZ6Cc-8h5Ag7D69hd4G9AtFPjFkWsug@mail.gmail.com>
-Subject: Re: [RFC 0/6] mailbox: add common framework and port drivers
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
-        "Anna, Suman" <s-anna@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
-	<omar.ramirez@copitl.com>,
-        Pawel Moll <pawel.moll@arm.com>, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Feb 2014 22:59:45 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=gcom1024; d=yahoo.com;
+	b=OPftbdWXFYdEK38T/rTwDfHMDQ7SroXLJSIoNAxHrLSTzokrft1SuhsSPDA9m/dHDRYRmTMhNUiESBXpAhYQzYLd3tuDgj7zDuKnrvt8kxepVGyT1uy26qC0atT1kxxfKJcdP4uX0kcVuXwPLzJeHuvdfqlT5W6DxMXMLx/X7HE=;
+X-Yahoo-Newman-Id: 155332.78158.bm@smtp227.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: qNgd5jgVM1muZqDIEQEtocUQdXSww54d4RehLamgx60XpZm
+ zOYyVgkTaOxHMerDXeP88RxQA_nLqtK.h7uqNa.SjNPA7TQAHGDr0VBzVJxD
+ uYzQvo5vgDnoJ646wOf4Lxqx1Txvza4P35Cz2u2WNj7bbmnlrbpUhimXtb2w
+ uiymOw3k5K3Uoxx82vt7bl2rJOXSKl72.QWAFgLMEycYYfsbYVxLlORaSx5H
+ __ZKWq56QRK97op3QtO27o4Vzba6sNTOz7UCucQxL2FyBa_a3R6rX_xW8egY
+ QH3VtUW2movOZwMbzCsCz24EvoiX5lcjavjSk1HJhuJCP.Bw4a8Ul.V0ZWxC
+ BPADZttrW__rHkEbMbcAA_Zcsr0h_SVyQHho6xD.gUoY9h6GYYObtokfUKrp
+ VxhPUIp7fSMHxenxA_YO52pHo_IgOX61Ub8KvodfkPONF_8nbI_1Q0Fi_8lN
+ 65Tj7OvHrg6QvLoR1ylPD1nAK74NEZ3r2cqIQLmwngcoINkZDZ6KBJ7QO5TY
+ NNjeKBxJXZnpedVnN77KvvQWj8h3yWIZO9BMxQ9A_wiYPTbBjDg--
+X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
+X-Rocket-Received: from localhost.localdomain (chase.southwood@130.126.255.116 with plain [98.138.105.21])
+        by smtp227.mail.gq1.yahoo.com with SMTP; 15 Feb 2014 03:59:45 +0000 UTC
+From: Chase Southwood <chase.southwood@yahoo.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@yahoo.com>
+Subject: [PATCH] Staging: comedi: kcomedilib: replace deprecated simple_strtoul() with kstrtouint()
+Date: Fri, 14 Feb 2014 21:59:40 -0600
+Message-Id: <1392436780-31184-1-git-send-email-chase.southwood@yahoo.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 February 2014 09:10, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sat, Feb 15, 2014 at 09:02:07AM +0530, Jassi Brar wrote:
->> Hi,
->>
->> On 8 February 2014 06:20, Courtney Cavin <courtney.cavin@sonymobile.com> wrote:
->> > There is currently no common framework for mailbox drivers, so this is my
->> > attempt to come up with something suitable.  There seems to be a need for
->> > making this generic, so I have attempted to do just that.  Most of this is
->> > modeled pretty strongly after the pwm core, with some influences from the clock
->> > core.
->> >
->> > Looking at the existing use-cases, and some new ones, it would appear that the
->> > requirements here are rather simple. We need essentially two things for
->> > consumers:
->> >         - put_message
->> >         - callback for receiving messages
->> >
->> > The code currently uses atomic notifiers for callbacks.  The common omap core
->> > deals with fifos and work-queues in order to escape atomic contexts, but from
->> > what I can see, this is unneeded.  I am also of the opinion that the contexts
->> > can be much better managed in the drivers which are working with these
->> > contexts, rather than generically.
->> >
->> > Hopefully this will be suitable for the plethora of other drivers around the
->> > kernel which implement mailboxes, as well.  In any case, I'm rather interested
->> > to see what the rest of the world thinks.
->> >
->> > Keep in mind that while the pl320 & omap code should compile, I don't currently
->> > have a platform on which I can perform proper testing.  I also removed the
->> > context save/restore code from omap2 mailbox support, because I think it should
->> > be able to be done via driver suspend/resume, but haven't done a full
->> > investigation just yet.
->> >
->> > I'm also aware that breaking omap, just to fix it again probably isn't the best
->> > course of action, and I'm open to suggestions.
->> >
->> Did you try to look up the history of mailbox api development?  Google
->> search: 'mailbox common api'
->>
->> I (Linaro/Fujitsu), Suman Anna (TI), LeyFoon Tan (Intel), Craig
->> McGeachie(Broadcom) and Loic Pallardy(ST) already worked a generic
->> Mailbox framework and infact have controller drivers working over
->> them.
->>  For some confidentiality and some lazy and some confusion or whatever
->> reasons the final version of drivers and API wasn't submitted upstream
->> yet.
->
-> Then, in all reality, it doesn't exist at all, and so, we will evaluate
-> this submission instead.
->
-> Just because you all can't send something for merging, doesn't mean you
-> get to block someone else who has got their act together, that's not
-> fair.
->
-Yup probably not much fair. But then also one usually look for any
-early development efforts. IIRC only I and Anna started. Others later
-joined us looking at archives. Not to vindicate our gang though.
+Since simple_strtoul() has been deprecated, replace it with kstrtouint().
+Also, since return code checking for this new function is enforced, add a
+check to ensure that the conversion has succeeded.
 
- Now we could either punish us and have this api tread the same
-development path where everyone had their requirements (and the
-only-waiting-for-approval controller drivers to convert) .... OR we
-could see if our/original/old API just works for the purposes of Sony
-as well (which it will most probably) and then we could upstream it
-with one more 'works-for-me-too'.
+Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+---
+ drivers/staging/comedi/kcomedilib/kcomedilib_main.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks.
+diff --git a/drivers/staging/comedi/kcomedilib/kcomedilib_main.c b/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
+index 7dc5a18..8923e65 100644
+--- a/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
++++ b/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
+@@ -41,7 +41,8 @@ struct comedi_device *comedi_open(const char *filename)
+ 	if (strncmp(filename, "/dev/comedi", 11) != 0)
+ 		return NULL;
+ 
+-	minor = simple_strtoul(filename + 11, NULL, 0);
++	if (kstrtouint(filename + 11, 0, &minor))
++		return NULL;
+ 
+ 	if (minor >= COMEDI_NUM_BOARD_MINORS)
+ 		return NULL;
+-- 
+1.8.5.3
+
