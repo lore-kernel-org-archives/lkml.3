@@ -1,141 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaBOTrx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 14:47:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40718 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582AbaBOTrv (ORCPT
+	id S1753640AbaBOTy6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 14:54:58 -0500
+Received: from s3.neomailbox.net ([178.209.62.157]:20011 "EHLO
+	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432AbaBOTy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 14:47:51 -0500
-Date: Sat, 15 Feb 2014 11:46:55 -0800
-Message-Id: <201402151946.s1FJktK0028092@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86 EFI fixes for v3.14-rc3
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Borislav Petkov <bp@suse.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Josh Triplett <josh@joshtriplett.org>, Lejun Zhu <lejun.zhu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Madper Xie <cxie@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Toshi Kani <toshi.kani@hp.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 15 Feb 2014 11:47:01 -0800 (PST)
+	Sat, 15 Feb 2014 14:54:56 -0500
+Message-ID: <52FFC5AD.4080003@meshcoding.com>
+Date: Sat, 15 Feb 2014 20:53:17 +0100
+From: Antonio Quartulli <antonio@meshcoding.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Johannes Berg <johannes@sipsolutions.net>,
+        Justin van Wijngaarden <justinvanwijngaarden@gmail.com>
+CC: linville@tuxdriver.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH] Drivers: net: wireless: mac80211_hwim fixed coding style
+ issues
+References: <1392465312-3780-1-git-send-email-justinvanwijngaarden@gmail.com>	 (sfid-20140215_125633_755512_88424C91) <1392488030.4298.5.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1392488030.4298.5.camel@jlt4.sipsolutions.net>
+X-Enigmail-Version: 1.6
+OpenPGP: id=43FD7307
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="u5sScl5giA9ifmmOjHseclV9SsTcuG5XF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--u5sScl5giA9ifmmOjHseclV9SsTcuG5XF
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-A few more EFI-related fixes.
+On 15/02/14 19:13, Johannes Berg wrote:
+> On Sat, 2014-02-15 at 12:55 +0100, Justin van Wijngaarden wrote:
+>=20
+>> @@ -1,19 +1,17 @@
+>> -/*
+>> - * mac80211_hwsim - software simulator of 802.11 radio(s) for mac8021=
+1
+>> +/* mac80211_hwsim - software simulator of 802.11 radio(s) for mac8021=
+1
+>=20
+> I don't see any point in this - lots of code exists both ways, that's
+> really just fluff. The difference isn't even interesting enough to be
+> worth fixing up.
 
-The following changes since commit 4640c7ee9b8953237d05a61ea3ea93981d1bc961:
+This is how David S. Miller wants multiline comments to start in files
+within the networking subsystem......but I know you don't like it ;)
+(I just wanted to justify Justin).
 
-  x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off (2014-02-13 08:40:52 -0800)
 
-are available in the git repository at:
+Cheers,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+--=20
+Antonio Quartulli
 
-for you to fetch changes up to 31fce91e7afc25c666276f65f019bc13fd27e216:
 
-  Merge remote-tracking branch 'efi/urgent' into x86/urgent (2014-02-14 11:11:18 -0800)
+--u5sScl5giA9ifmmOjHseclV9SsTcuG5XF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-----------------------------------------------------------------
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Borislav Petkov (1):
-      x86/efi: Fix 32-bit fallout
+iQIcBAEBCAAGBQJS/8WzAAoJEEKTMo6mOh1VCPUP/11uvQjLpB59ZHtdbtsZKbJC
+3zT0YeV+gKQfrxEYt2SbHxRYjxlcn/J66z30ihBq6lcxRe82XDkAH8+fIcsn2Lw5
+saEFbsoRMeTJZoHWn6D69rUYyYNEzElE2mv9j2Gql9w8AB7jK78QkSoLWUIqsq/I
+6fRwMBBq0aaaBj+lqz1yVDGr8dfiyxw4BzovY1fpzMymnIJigdJY5ZloezoR74Ap
+wrHOs8y6rLQcepR6wVTRhrMRjL/88Xph5Z4IbQeR1jmDtUnAoEd/cZ/jhrSNQo3d
+IXi7lOBqkGt9Vm/7+RNz0C/TpCUnMYE7G5nASynmxBlLadWFnsxOFBSf3iN3FX4R
+8BC+Z5ZZ5P4u8h9s+MS31G9e28Bbp4FdDPEaO46eplHaIVBNZDQ4++0e4msPgje+
+o2ECnPJ05BUtlWoCmsWkyNlr14pRDSz3+WAQFtihxVKC1CrMSE0jMCgzya1bV/EF
+rQTJJpM1G0RkHX0mawKQdCgxlqAHk08O7uy2VtBLoZUmPs8QHjmMko+8Loluhagt
+Gi/JKJU8b4qlqmIlLzd1aDyrQF7v7w1wuaqI3cynSRg66ZvmFpOodAxJFhbm7YGp
+pa2ek2frvz5pytQkBZ1E/Xrgt5EnDjbLwqi5dq/S45M0zir9t+zbxJDYmcsbL5Kh
+TfoPwL7XJd4eYPIQZlIB
+=Njal
+-----END PGP SIGNATURE-----
 
-H. Peter Anvin (1):
-      Merge remote-tracking branch 'efi/urgent' into x86/urgent
-
-Matt Fleming (1):
-      x86/efi: Check status field to validate BGRT header
-
- arch/x86/include/asm/efi.h       | 2 ++
- arch/x86/platform/efi/efi-bgrt.c | 2 +-
- arch/x86/platform/efi/efi.c      | 5 ++---
- arch/x86/platform/efi/efi_32.c   | 6 ++++++
- arch/x86/platform/efi/efi_64.c   | 9 +++++++++
- 5 files changed, 20 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 3b978c472d08..3d6b9f81cc68 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -132,6 +132,8 @@ extern void __init efi_map_region_fixed(efi_memory_desc_t *md);
- extern void efi_sync_low_kernel_mappings(void);
- extern void efi_setup_page_tables(void);
- extern void __init old_map_region(efi_memory_desc_t *md);
-+extern void __init runtime_code_page_mkexec(void);
-+extern void __init efi_runtime_mkexec(void);
- 
- struct efi_setup_data {
- 	u64 fw_vendor;
-diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
-index 4df9591eadad..f15103dff4b4 100644
---- a/arch/x86/platform/efi/efi-bgrt.c
-+++ b/arch/x86/platform/efi/efi-bgrt.c
-@@ -42,7 +42,7 @@ void __init efi_bgrt_init(void)
- 
- 	if (bgrt_tab->header.length < sizeof(*bgrt_tab))
- 		return;
--	if (bgrt_tab->version != 1)
-+	if (bgrt_tab->version != 1 || bgrt_tab->status != 1)
- 		return;
- 	if (bgrt_tab->image_type != 0 || !bgrt_tab->image_address)
- 		return;
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index d62ec87a2b26..1a201ac7cef8 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -792,7 +792,7 @@ void __init efi_set_executable(efi_memory_desc_t *md, bool executable)
- 		set_memory_nx(addr, npages);
- }
- 
--static void __init runtime_code_page_mkexec(void)
-+void __init runtime_code_page_mkexec(void)
- {
- 	efi_memory_desc_t *md;
- 	void *p;
-@@ -1069,8 +1069,7 @@ void __init efi_enter_virtual_mode(void)
- 	efi.update_capsule = virt_efi_update_capsule;
- 	efi.query_capsule_caps = virt_efi_query_capsule_caps;
- 
--	if (efi_enabled(EFI_OLD_MEMMAP) && (__supported_pte_mask & _PAGE_NX))
--		runtime_code_page_mkexec();
-+	efi_runtime_mkexec();
- 
- 	kfree(new_memmap);
- 
-diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
-index 249b183cf417..0b74cdf7f816 100644
---- a/arch/x86/platform/efi/efi_32.c
-+++ b/arch/x86/platform/efi/efi_32.c
-@@ -77,3 +77,9 @@ void efi_call_phys_epilog(void)
- 
- 	local_irq_restore(efi_rt_eflags);
- }
-+
-+void __init efi_runtime_mkexec(void)
-+{
-+	if (__supported_pte_mask & _PAGE_NX)
-+		runtime_code_page_mkexec();
-+}
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 6284f158a47d..0c2a234fef1e 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -233,3 +233,12 @@ void __init parse_efi_setup(u64 phys_addr, u32 data_len)
- {
- 	efi_setup = phys_addr + sizeof(struct setup_data);
- }
-+
-+void __init efi_runtime_mkexec(void)
-+{
-+	if (!efi_enabled(EFI_OLD_MEMMAP))
-+		return;
-+
-+	if (__supported_pte_mask & _PAGE_NX)
-+		runtime_code_page_mkexec();
-+}
+--u5sScl5giA9ifmmOjHseclV9SsTcuG5XF--
