@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaBOWnI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 17:43:08 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:34564 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320AbaBOWnF (ORCPT
+	id S1752039AbaBOWvR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 17:51:17 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:47210 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaBOWvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 17:43:05 -0500
+	Sat, 15 Feb 2014 17:51:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140215222844.GA18201@redhat.com>
-References: <20140212010941.GM18016@ZenIV.linux.org.uk>
-	<CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
-	<20140212040358.GA25327@redhat.com>
-	<20140212042215.GN18016@ZenIV.linux.org.uk>
-	<20140212054043.GB13997@dastard>
-	<CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
-	<20140212071829.GE13997@dastard>
-	<20140214002427.GN13997@dastard>
-	<20140214160123.GA28125@redhat.com>
-	<20140215222356.GU13997@dastard>
-	<20140215222844.GA18201@redhat.com>
-Date: Sat, 15 Feb 2014 14:43:03 -0800
-X-Google-Sender-Auth: swUowRsGrSNTEo6YcDhjGhC_ZE0
-Message-ID: <CA+55aFyGgjSgdJm=cBXGdrSO1pV95yxjVymC1QbjvonB-_GF8g@mail.gmail.com>
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+In-Reply-To: <87bny8kqik.fsf_-_@xmission.com>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<87a9kkax0j.fsf@xmission.com>
+	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com>
+	<87ob28kqks.fsf_-_@xmission.com>
+	<87bny8kqik.fsf_-_@xmission.com>
+Date: Sat, 15 Feb 2014 14:51:14 -0800
+X-Google-Sender-Auth: W9loE_-WFT2tvgl6GGbqhpu8LmQ
+Message-ID: <CA+55aFz6feRh9+U7OY6C4CfNe68CqQZARCf_J9deJdsUUG_ryg@mail.gmail.com>
+Subject: Re: [PATCH 02/11] vfs: More precise tests in d_invalidate
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 2:28 PM, Dave Jones <davej@redhat.com> wrote:
+On Sat, Feb 15, 2014 at 1:36 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
 >
-> I've got a shitload of debug options enabled, which may explain it.
-> Or perhaps that new STACK_PROTECTOR_STRONG stuff ?
+> The one difference between d_invalidate and check_submounts_and_drop
+> is that d_invalidate must respect it when a d_revalidate method has
+> earlier called d_drop so preserve the d_unhashed check in
+> d_invalidate.
 
-Well, a lot of it is just the callee-saved registers. The compiler
-will tend to preferentially allocate registers in the callee-trashed
-registers, but if the function isn't a leaf function, any registers
-that are live around a function call will have to be saved somewhere -
-either explicitly around the function call, or - more likely - in
-callee-saved registers that then get saved in the prologue/epilogue of
-the function. And this will happen even in leaf functions when there
-is enough register pressure that the callee-trashed registers aren't
-sufficient (which is pretty common).
+What?
 
-So saving 5-6 registers on the stack (in addition to any actual stack
-frame) is pretty much the norm for anything but the very simplest
-cases.
+There's another *huge* difference, namely locking. Your change has
+huge detrimental effects wrt d_lock - not only do you drop it for the
+local dentry (to then re-take it in check_submounts_and_drop()), but
+the whole check_submounts_and_drop thing walks the parent chain and
+locks each parent with the renamelock held for writing.
 
-But yeah, I'm sure some config options make it worse.
-STACK_PROTECTOR_STRONG could easily be one of those.
+So NAK on this patch, if for no other reason that you are not talking
+about the *huge* locking changes at all, and apparently completely
+ignored them.
 
-            Linus
+It's possible that you can argue that performance doesn't matter, and
+that all the extra huge locking overhead is immaterial because this is
+not commonly called, but no way in hell can I accept a patch with a
+commit message that basically lies by omission about what it is doing.
+
+This kills the whole series for me. I'm not going to bother trying to
+review the rest of the patches when the second patch already makes me
+go "Eric is trying to hide things". Because the locking changes aren't
+obvious in the patch without knowing what else is going on, and they
+certainly aren't mentioned in the commit message.
+
+                Linus
