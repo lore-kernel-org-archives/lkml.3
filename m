@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaBOPEQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 10:04:16 -0500
-Received: from www84.your-server.de ([213.133.104.84]:43113 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279AbaBOPEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 10:04:12 -0500
-Message-ID: <1392476701.17368.1.camel@wall-e.seibold.net>
-Subject: Re: [PATCH v16 0/10] Add 32 bit VDSO time function support
-From: Stefani Seibold <stefani@seibold.net>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Sat, 15 Feb 2014 16:05:01 +0100
-In-Reply-To: <CALCETrWhpmixwh4z6D1vBQVWvuNvg8-iTX9Vvi1J9-YMajrDdQ@mail.gmail.com>
-References: <1392367964-32118-1-git-send-email-stefani@seibold.net>
-	 <CALCETrWhpmixwh4z6D1vBQVWvuNvg8-iTX9Vvi1J9-YMajrDdQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	id S1753398AbaBOPOp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 10:14:45 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:12609 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753358AbaBOPOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 10:14:43 -0500
+X-IronPort-AV: E=Sophos;i="4.95,850,1384272000"; 
+   d="scan'208";a="9531914"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        stable@vger.kernel.org
+Subject: [PATCH] workqueue: ensure @task is valid across kthread_stop()
+Date: Sat, 15 Feb 2014 22:02:28 +0800
+Message-Id: <1392472948-2486-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/15 22:00:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/15 22:00:36,
+	Serialize complete at 2014/02/15 22:00:36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 14.02.2014, 14:40 -0800 schrieb Andy Lutomirski:
-> On Fri, Feb 14, 2014 at 12:52 AM, Stefani Seibold <stefani@seibold.net> wrote:
-> > This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
-> > and vdso_time() to the 32 bit VDSO.
-> 
-> Is there any chance you can shove this in a git tree somewhere for the
-> next version (in addition to sending patches)?  I don't have magic
-> scripts to make pulling these things in from gmail easy.
-> 
+When a worker is set WORKER_DIE, it may die very quickly,
+and kthread_stop() will access to a stale task stuct/stack.
+To avoid this, we use get_task_struct() to ensure @task is valid.
 
-Sorry, i don't think so, because it would be necessary to upload the
-whole kernel tree to git-hub. That is not practical for me.
+See more comments in kthread_create_on_node()&kthread_stop().
+Note: comments in kthread_create_on_node() does not elaborate
+any use case like this patch, but it is a valid way to use
+kthread_stop().
 
-- Stefani
+CC: stable@vger.kernel.org
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/workqueue.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 82ef9f3..783d5f2 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1856,9 +1856,12 @@ static void destroy_worker(struct worker *worker)
+ 
+ 	idr_remove(&pool->worker_idr, worker->id);
+ 
++	/* Enusre the @worker->task is valid across kthread_stop() */
++	get_task_struct(worker->task);
+ 	spin_unlock_irq(&pool->lock);
+ 
+ 	kthread_stop(worker->task);
++	put_task_struct(worker->task);
+ 	kfree(worker);
+ 
+ 	spin_lock_irq(&pool->lock);
+-- 
+1.7.7.6
 
