@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaBOUgS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 15:36:18 -0500
-Received: from sauhun.de ([89.238.76.85]:46691 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753784AbaBOUgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 15:36:16 -0500
-Date: Sat, 15 Feb 2014 21:36:14 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PULL REQUEST] i2c for 3.14
-Message-ID: <20140215203610.GA20244@katana>
+	id S1753885AbaBOUki (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 15:40:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53586 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783AbaBOUkh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 15:40:37 -0500
+Date: Sat, 15 Feb 2014 12:41:58 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: devel@driverdev.osuosl.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] staging: r8188eu: delete unnecessary field
+ initialization
+Message-ID: <20140215204158.GA15040@kroah.com>
+References: <1392449773-23429-2-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392449773-23429-2-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Feb 15, 2014 at 08:36:12AM +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> On success, the function netdev_alloc_skb initializes the dev field of its
+> result to its first argument, so this doesn't have to be done in the
+> calling context.
+> 
+> The semantic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression skb,privn,e;
+> @@
+> 
+> skb = netdev_alloc_skb(privn,...);
+> ... when strict
+> (
+> -skb->dev = privn;
+> |
+> ?skb = e
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  drivers/staging/rtl8188eu/hal/usb_ops_linux.c |    1 -
+>  1 file changed, 1 deletion(-)
 
---J2SCkAp4GZ/dPZZf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No longer applies to my tree :(
 
-Linus,
-
-i2c has a bugfix and documentation improvements for you. Please pull.
-
-Thanks,
-
-   Wolfram
-
-
-The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
-
-  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
-
-for you to fetch changes up to fde1e418ab2c4269035f7f576e678b6ad3117d7d:
-
-  Documentation: i2c: mention ACPI method for instantiating devices (2014-02-15 19:46:34 +0100)
-
-----------------------------------------------------------------
-Wolfram Sang (3):
-      i2c: mv64xxx: refactor message start to ensure proper initialization
-      Documentation: i2c: describe devicetree method for instantiating devices
-      Documentation: i2c: mention ACPI method for instantiating devices
-
- Documentation/i2c/instantiating-devices | 41 +++++++++++++++++++++++++++++++--
- drivers/i2c/busses/i2c-mv64xxx.c        | 33 +++++++++++---------------
- 2 files changed, 53 insertions(+), 21 deletions(-)
-
---J2SCkAp4GZ/dPZZf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS/8+6AAoJEBQN5MwUoCm2ngsP/iL9fPbWZoeLIm7GSCAqwPMO
-0Ej4okTvrGBBmLHsfe3EqirKsomH1T9J4LKy2kzLRHcmiWQP4THKkzqmvyGVFzFo
-xM6PGGelf/tpguFYnBUtewBd+JWTkRZ1CbRIa5qgTVE8pRIJbMs7gli1TBuneHbv
-LxSk3/NV/LgVH5GY2JiQXnWaUEX/FCpFq8Oq6QPSWCEZSEbsWh9xOsaGYtQdheLR
-Nx0RI5A+H3h5DaAh9THDV314VGiMgaqQuD7DipGbKFY2Hf3YMTHBV7RUOvnL3Hs5
-A+MsANbxCbRQz9thgNwvSoh6o+zcLKwMnu/1i2WTbh7+f2sJlkQD+6DbK8s+TQZ7
-Y2oXV5IvJ5hVWqooPaykzdeMYPnYWhJt7laZ9B0KFXB2gPJAKExqQbY2jPfMb94o
-ctk7IqlRKOpiaiBP8dW1zCqzp+qBTzDWMmc4xPmwK8bip7TzG4OtBJ7pBq5lrBdP
-5/dNkB0ivAjvB+sBuXsXngN2eHCciqrmAoDKFhtLtwFpnxWZ4YXC8UvlDDrP5IeZ
-EHho4hfsCtcAIbbJIgYJn6VV40iRJQM63hDWdhdhQ+oByb975U8zFTqAW+BtPX0p
-1PG+06Tuo2MptGaPhqVjEBXIviPCYCfzdOlz1u8xUjPZEKhRX7elOZwstf6wivUw
-I5T4wufH+CWAZBjJphq3
-=J1Ho
------END PGP SIGNATURE-----
-
---J2SCkAp4GZ/dPZZf--
