@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaBOP1k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 10:27:40 -0500
-Received: from sauhun.de ([89.238.76.85]:37351 "EHLO pokefinder.org"
+	id S1753421AbaBOPdv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 10:33:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19508 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753325AbaBOP1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 10:27:39 -0500
-Date: Sat, 15 Feb 2014 16:27:37 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-i2c@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: designware-pci: Add Baytrail PCI IDs
-Message-ID: <20140215152736.GF2579@katana>
-References: <1391524279-23409-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753357AbaBOPdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 10:33:50 -0500
+Date: Sat, 15 Feb 2014 16:33:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140215153341.GA18472@redhat.com>
+References: <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com> <20140212113928.GO18016@ZenIV.linux.org.uk> <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com> <20140212211421.GP18016@ZenIV.linux.org.uk> <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com> <20140213174020.GA14455@redhat.com> <CA+55aFxwozCQ05axLB02R3huX8sj=20EoFfw0cSDDL8fBE_Y6Q@mail.gmail.com> <20140215052531.GX18016@ZenIV.linux.org.uk> <20140215142700.GA15540@redhat.com> <20140215152251.GY18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HCdXmnRlPgeNBad2"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391524279-23409-1-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140215152251.GY18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/15, Al Viro wrote:
+>
+> On Sat, Feb 15, 2014 at 03:27:00PM +0100, Oleg Nesterov wrote:
+>
+> > 1. info->q can be already freed if SIGQUEUE_PREALLOC.
+> >
+> >    Once get_signal_to_deliver() or any other caller drops ->siglock
+> >    another thread can do sys_timer_delete()->sigqueue_free().
+>
+> How the devil would it find the sucker?
 
---HCdXmnRlPgeNBad2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It simply frees the SIGQUEUE_PREALLOC sigqueue, k_itimer->sigq.
 
-On Tue, Feb 04, 2014 at 04:31:19PM +0200, Mika Westerberg wrote:
-> Intel Baytrail I2C controllers can be enumerated from PCI as well as from
-> ACPI. In order to support this add the Baytrail PCI IDs to the driver.
->=20
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> It's off the list already.
 
-Basically fine, one question:
+Exactly, list_empty(q->list) == T. So release_posix_timer()->sigqueue_free()
+assumes we can safely free it.
 
-> -	snprintf(adap->name, sizeof(adap->name), "i2c-designware-pci-%d",
-> -		adap->nr);
-> +
-> +	if (adap->nr < 0)
-> +		snprintf(adap->name, sizeof(adap->name), "i2c-designware-pci");
-> +	else
-> +		snprintf(adap->name, sizeof(adap->name),
-> +			 "i2c-designware-pci-%d", adap->nr);
+> > 2. We need to move do_schedule_next_timer() from dequeue_signal()
+> >    here.
+> >
+> >    Otherwise ->q can be reused/overwritten by the next send_sigqueue()
+> >    right affter ->siglock is dropped.
+>
+> Ditto.  We rip them out of queue on collect_signal();
 
-Maybe we just drop the "-%d" suffix entirely?
+Yes, and dequeue_signal()->do_schedule_next_timer() can trigger another
+send_sigqueue() which uses the same SIGQUEUE_PREALLOC sigqueue once we
+drop ->siglock.
 
+This is not that bad, but at least ->si_overrun can be overwritten
+before __setup_rt_frame()->copy_siginfo_to_user().
 
---HCdXmnRlPgeNBad2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Oleg.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS/4doAAoJEBQN5MwUoCm2GB8P/j9VCAviKxfPzMl1/+dAV7nD
-qTbdMaUTqSN3hSiBFGEbYnSr8r2rJeliJGW9h/Hr2UjmtRky9SqXSV2lscenPOjM
-fqKOBUsvsbiqNcl40XhvSdqVA9n4KXW+5BXAUXCMSzzuZkafjy7vn3jyiWflavdK
-YNIP30fyIm4afPEONhBA+Wu/rsVnc9dnWdgmLe9sZsezSjSYB/c4zTqpScqgi9Py
-doLWbA/phExjqpunI5/v9arDRDi/ac75L6rwbIdkmEMqyARXpjgvwAPDwG/s8ugT
-ml7IU3EcvSYIxBqh9L1pg2Gi7rlSTRPjrboA2H4CRGZYhqzA6Tt/lkKVarUDHg1x
-TsvNW3QXWLGYme8EHT30o+6gEa6uxe3+974MhdXPzmczDw2u9M3AkVUTA15mCiEr
-RrIiifQgeuowZig8hCKrXdiy+lfkCpM82EZQac98r2vA/PN0OqfSzQ/9TfjndAYN
-tJJP0HyVNQYnNonvtyvGP1sfZbB4X575zDSY8K2iaAVoq1w1V+iuh6qPLnhY41TW
-sGpT4FKoupofmds3Xkashi0HuuPbszJR57lvdBiAJLtWDSc0xeR3ZX73c+ZgLqad
-fveVVnVhZBlI5u3y0Lg9BCnwK9pSncSkvYxukz0Z/497OncgBS6zK5Ls12ca9Ju0
-Tc3c4FAIXbOWSRSwvMEe
-=1GZm
------END PGP SIGNATURE-----
-
---HCdXmnRlPgeNBad2--
