@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbaBOOrB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 09:47:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41522 "EHLO mx1.redhat.com"
+	id S1753416AbaBOOsg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 09:48:36 -0500
+Received: from sauhun.de ([89.238.76.85]:33569 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752176AbaBOOrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 09:47:00 -0500
-Date: Sat, 15 Feb 2014 15:46:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140215144635.GA16759@redhat.com>
-References: <20140212042215.GN18016@ZenIV.linux.org.uk> <20140212054043.GB13997@dastard> <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com> <20140212113928.GO18016@ZenIV.linux.org.uk> <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com> <20140212211421.GP18016@ZenIV.linux.org.uk> <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com> <20140214161302.GA16416@infradead.org> <20140214161623.GU18016@ZenIV.linux.org.uk> <20140214161912.GB20909@infradead.org>
+	id S1752176AbaBOOse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 09:48:34 -0500
+Date: Sat, 15 Feb 2014 15:48:32 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/17] Documentation: i2c: describe devicetree method for
+ instantiating devices
+Message-ID: <20140215144832.GC2579@katana>
+References: <1392026654-5343-1-git-send-email-wsa@the-dreams.de>
+ <1392026654-5343-2-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="V88s5gaDVPzZ0KCq"
 Content-Disposition: inline
-In-Reply-To: <20140214161912.GB20909@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1392026654-5343-2-git-send-email-wsa@the-dreams.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Christoph Hellwig wrote:
->
-> Might aswell stick the discmiss into what was dequeue_signal_lock().
-> Which at that point should get a saner name (maybe thread_dequeue_signal ?)
-> and lose all argument except maybe task_struct
 
-No, task_struct argument should die, I think. It is misleading.
+--V88s5gaDVPzZ0KCq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-spin_lock(tsk->sighand->siglock) is simply wrong unless tsk == current.
+On Mon, Feb 10, 2014 at 11:03:55AM +0100, Wolfram Sang wrote:
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
 
-And dequeue_signal() assumes that tsk == current too, otherwise
-recalc_sigpending() is wrong.
+Applied to for-current, thanks!
 
-Oleg.
 
+--V88s5gaDVPzZ0KCq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS/35AAAoJEBQN5MwUoCm2GIYP/ReNt63f5cKc8A8DKV1507zk
+nAZGXkt8kDIGnt3sRSu2PijCWIPeN1glnQLZGz2eWsTDd79JjAQQVVQ7eemqnX4Z
+KGiAbzIn5nE3ZeL8FZhMSjSwWoBS2aHFCCVjcuY2EW55M/1h90XPAA9FO4t0qMYg
+Td6yaVx7MI2RBW4TBXwVUb5LW9o0CU4awsCj561NqnPAGneBQUWFhimPwZBjfF9o
+vbAjIZlD0/ypJ5X1GESsthA55D2z3e9OZb50KMLREhCmXjzLxP8uf88BBv07SY/C
+nICAlc29JaZk9qWJggR/7Jy1MudbybmWeLsM6/gzeX1jOv9wKjYbJz+dVIOfF97M
+IorDyTF/E9Tkr2PY0WsSHva+Eolzt8b68hxPISwW22AIv82hPi/M1HlRKnOa/mQk
+52RdWZDWNKde2tAfmZAYx+lLMzg8qrCJW0YuBsev942dsPi1xD807P6PUaHSVkuR
+DY3DkAd6Dmq2BWBHlV+KoKkgZCdXhXPltpYVqgbGR71I2h/b+PWh1Um9nhYozxRZ
+INIMmPIJBfKD7jO9ZSGGWmHlw81di4qL2uoO5Oze80+P3BkZvXU/hA+xYum0zoua
+2gPVDzB/u3BM/DUDhbaTrloQX87UCYMGFgTT5wZKhWq68uWBeB1Mm/7+Mf1WZzuG
+QGqd3yqx2Jxvucg1Xfw0
+=kK0N
+-----END PGP SIGNATURE-----
+
+--V88s5gaDVPzZ0KCq--
