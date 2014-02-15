@@ -1,215 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaBONWx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 08:22:53 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:35985 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753188AbaBONWQ (ORCPT
+	id S1753284AbaBONbp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 08:31:45 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:35827 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153AbaBONbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 08:22:16 -0500
-Message-Id: <20140215132214.827501401@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Sat, 15 Feb 2014 08:20:59 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 2/2] ftrace/x86: Use breakpoints for converting function graph caller
-References: <20140215132057.012974140@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-x86-Use-breakpoints-for-converting-function-g.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Sat, 15 Feb 2014 08:31:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392403586-30540-2-git-send-email-sre@debian.org>
+References: <20140214174040.GB26969@earth.universe>
+	<1392403586-30540-1-git-send-email-sre@debian.org>
+	<1392403586-30540-2-git-send-email-sre@debian.org>
+Date: Sat, 15 Feb 2014 14:31:41 +0100
+Message-ID: <CAAfyv36yfd0tSe9G2AnX+DzE-gObdRxYfgK+NKT8zwYmqt=QcQ@mail.gmail.com>
+Subject: Re: [RFCv1 2/4] mfd: twl4030-madc: Add DT support and convert to IIO framework
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Jonathan Cameron <jic23@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-iio@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Hi Sebastian,
 
-When the conversion was made to remove stop machine and use the breakpoint
-logic instead, the modification of the function graph caller is still
-done directly as though it was being done under stop machine.
+On Fri, Feb 14, 2014 at 7:46 PM, Sebastian Reichel <sre@debian.org> wrote:
+> This converts twl4030-madc module to use the Industrial IO ADC
+> framework and adds device tree support.
+>
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> ---
+>  drivers/mfd/twl4030-madc.c | 121 ++++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 114 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+> index 5458561..4da61c4 100644
+> --- a/drivers/mfd/twl4030-madc.c
+> +++ b/drivers/mfd/twl4030-madc.c
+> @@ -47,6 +47,10 @@
+>  #include <linux/gfp.h>
+>  #include <linux/err.h>
+>
+> +#include <linux/iio/iio.h>
+> +#include <linux/iio/machine.h>
+> +#include <linux/iio/driver.h>
+> +
+>  /*
+>   * struct twl4030_madc_data - a container for madc info
+>   * @dev - pointer to device structure for madc
+> @@ -59,10 +63,72 @@ struct twl4030_madc_data {
+>         struct device *dev;
+>         struct mutex lock;      /* mutex protecting this data structure */
+>         struct twl4030_madc_request requests[TWL4030_MADC_NUM_METHODS];
+> +       bool use_second_irq;
+>         int imr;
+>         int isr;
+>  };
+>
+> +static int twl4030_madc_read(struct iio_dev *iio_dev,
+> +                            const struct iio_chan_spec *chan,
+> +                            int *val, int *val2, long mask)
+> +{
+> +       struct twl4030_madc_data *madc = iio_priv(iio_dev);
+> +       struct twl4030_madc_request req;
+> +       int channel = chan->channel;
+> +       int ret;
+> +
+> +       req.method = madc->use_second_irq ? TWL4030_MADC_SW2 : TWL4030_MADC_SW1;
+> +
+> +       req.channels = BIT(channel);
+> +       req.active = 0;
+> +       req.func_cb = NULL;
+> +       req.raw = (mask & IIO_CHAN_INFO_PROCESSED) ? false : true;
+> +       req.do_avg = (mask & IIO_CHAN_INFO_AVERAGE_RAW) ? true : false;
+> +
+> +       ret = twl4030_madc_conversion(&req);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       *val = req.rbuf[channel];
+> +
+> +       return IIO_VAL_INT;
+> +}
+> +
+> +static const struct iio_info twl4030_madc_iio_info = {
+> +       .read_raw = &twl4030_madc_read,
+> +       .driver_module = THIS_MODULE,
+> +};
+> +
+> +#define ADC_CHANNEL(_channel, _type, _name, _mask) {   \
+> +       .type = _type,                                  \
+> +       .scan_type = IIO_ST('u', 10, 16, 0),            \
+> +       .channel = _channel,                            \
+> +       .info_mask_separate = _mask,                    \
+> +       .datasheet_name = _name,                        \
+> +       .indexed = 1,                                   \
+> +}
+> +
+> +static const struct iio_chan_spec twl4030_madc_iio_channels[] = {
+> +       ADC_CHANNEL(0, IIO_VOLTAGE, "ADCIN0", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(1, IIO_TEMP, "ADCIN1", BIT(IIO_CHAN_INFO_PROCESSED) |
+> +                                          BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(2, IIO_VOLTAGE, "ADCIN2", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(3, IIO_VOLTAGE, "ADCIN3", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(4, IIO_VOLTAGE, "ADCIN4", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(5, IIO_VOLTAGE, "ADCIN5", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(6, IIO_VOLTAGE, "ADCIN6", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(7, IIO_VOLTAGE, "ADCIN7", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(8, IIO_VOLTAGE, "ADCIN8", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(9, IIO_VOLTAGE, "ADCIN9", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(10, IIO_CURRENT, "ADCIN10", BIT(IIO_CHAN_INFO_PROCESSED) |
+> +                                               BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(11, IIO_VOLTAGE, "ADCIN11", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(12, IIO_VOLTAGE, "ADCIN12", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(13, IIO_VOLTAGE, "ADCIN13", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(14, IIO_VOLTAGE, "ADCIN14", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +       ADC_CHANNEL(15, IIO_VOLTAGE, "ADCIN15", BIT(IIO_CHAN_INFO_AVERAGE_RAW)),
+> +};
+> +
+>  static struct twl4030_madc_data *twl4030_madc;
+>
+>  struct twl4030_prescale_divider_ratios {
+> @@ -702,28 +768,49 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+>  {
+>         struct twl4030_madc_data *madc;
+>         struct twl4030_madc_platform_data *pdata = dev_get_platdata(&pdev->dev);
+> +       struct device_node *np = pdev->dev.of_node;
+>         int irq, ret;
+>         u8 regval;
+> +       struct iio_dev *iio_dev = NULL;
+>
+> -       if (!pdata) {
+> +       if (!pdata && !np) {
+>                 dev_err(&pdev->dev, "platform_data not available\n");
+>                 return -EINVAL;
+>         }
+> -       madc = devm_kzalloc(&pdev->dev, sizeof(*madc), GFP_KERNEL);
+> -       if (!madc)
+> +
+> +       iio_dev = devm_iio_device_alloc(&pdev->dev,
+> +                                       sizeof(struct twl4030_madc_data));
+> +       if (!iio_dev) {
+> +               dev_err(&pdev->dev, "failed allocating iio device\n");
+>                 return -ENOMEM;
+> +       }
+>
+> +       madc = iio_priv(iio_dev);
+>         madc->dev = &pdev->dev;
+>
+> +       iio_dev->name = dev_name(&pdev->dev);
+> +       iio_dev->dev.parent = &pdev->dev;
+> +       iio_dev->dev.of_node = pdev->dev.of_node;
+> +       iio_dev->info = &twl4030_madc_iio_info;
+> +       iio_dev->modes = INDIO_DIRECT_MODE;
+> +       iio_dev->channels = twl4030_madc_iio_channels;
+> +       iio_dev->num_channels = 16;
+> +
+>         /*
+>          * Phoenix provides 2 interrupt lines. The first one is connected to
+>          * the OMAP. The other one can be connected to the other processor such
+>          * as modem. Hence two separate ISR and IMR registers.
+>          */
+> -       madc->imr = (pdata->irq_line == 1) ?
+> +       if (pdata)
+> +               madc->use_second_irq = pdata->irq_line != 1;
+> +       else
+> +               madc->use_second_irq = false;
+Can we add some property to use second IRQ also in DT?
+> +
+> +       madc->imr = (madc->use_second_irq == 1) ?
+>             TWL4030_MADC_IMR1 : TWL4030_MADC_IMR2;
+> -       madc->isr = (pdata->irq_line == 1) ?
+> +       madc->isr = (madc->use_second_irq == 1) ?
+>             TWL4030_MADC_ISR1 : TWL4030_MADC_ISR2;
+> +
+>         ret = twl4030_madc_set_power(madc, 1);
+>         if (ret < 0)
+>                 return ret;
+> @@ -768,7 +855,7 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+>                 }
+>         }
+>
+> -       platform_set_drvdata(pdev, madc);
+> +       platform_set_drvdata(pdev, iio_dev);
+>         mutex_init(&madc->lock);
+>
+>         irq = platform_get_irq(pdev, 0);
+> @@ -780,7 +867,15 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+>                 goto err_i2c;
+>         }
+>         twl4030_madc = madc;
+> +
+> +       ret = iio_device_register(iio_dev);
+> +       if (ret) {
+> +               dev_dbg(&pdev->dev, "could not register iio device\n");
+> +               goto err_i2c;
+> +       }
+> +
+>         return 0;
+> +
+>  err_i2c:
+>         twl4030_madc_set_current_generator(madc, 0, 0);
+>  err_current_generator:
+> @@ -790,20 +885,32 @@ err_current_generator:
+>
+>  static int twl4030_madc_remove(struct platform_device *pdev)
+>  {
+> -       struct twl4030_madc_data *madc = platform_get_drvdata(pdev);
+> +       struct iio_dev *iio_dev = platform_get_drvdata(pdev);
+> +       struct twl4030_madc_data *madc = iio_priv(iio_dev);
+>
+>         twl4030_madc_set_current_generator(madc, 0, 0);
+>         twl4030_madc_set_power(madc, 0);
+>
+> +       iio_device_unregister(iio_dev);
+> +
+>         return 0;
+>  }
+>
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id twl_madc_of_match[] = {
+> +       {.compatible = "ti,twl4030-madc", },
+> +       { },
+> +};
+> +MODULE_DEVICE_TABLE(of, twl_madc_of_match);
+> +#endif
+> +
+>  static struct platform_driver twl4030_madc_driver = {
+>         .probe = twl4030_madc_probe,
+>         .remove = twl4030_madc_remove,
+>         .driver = {
+>                    .name = "twl4030_madc",
+>                    .owner = THIS_MODULE,
+> +                  .of_match_table = of_match_ptr(twl_madc_of_match),
+>                    },
+>  };
+>
+> --
+> 1.8.5.3
+>
 
-As it is not converted via stop machine anymore, there is a possibility
-that the code could be layed across cache lines and if another CPU is
-accessing that function graph call when it is being updated, it could
-cause a General Protection Fault.
+BR,
 
-Convert the update of the function graph caller to use the breakpoint
-method as well.
+marek
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: stable@vger.kernel.org # 3.5+
-Fixes: 08d636b6d4fb "ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/ftrace.c | 83 +++++++++++++++++++++++++++---------------------
- 1 file changed, 47 insertions(+), 36 deletions(-)
-
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index d4bdd25..e625319 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -77,8 +77,7 @@ within(unsigned long addr, unsigned long start, unsigned long end)
- 	return addr >= start && addr < end;
- }
- 
--static int
--do_ftrace_mod_code(unsigned long ip, const void *new_code)
-+static unsigned long text_ip_addr(unsigned long ip)
- {
- 	/*
- 	 * On x86_64, kernel text mappings are mapped read-only with
-@@ -91,7 +90,7 @@ do_ftrace_mod_code(unsigned long ip, const void *new_code)
- 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
- 		ip = (unsigned long)__va(__pa_symbol(ip));
- 
--	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
-+	return ip;
- }
- 
- static const unsigned char *ftrace_nop_replace(void)
-@@ -123,8 +122,10 @@ ftrace_modify_code_direct(unsigned long ip, unsigned const char *old_code,
- 	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
- 		return -EINVAL;
- 
-+	ip = text_ip_addr(ip);
-+
- 	/* replace the text with the new text */
--	if (do_ftrace_mod_code(ip, new_code))
-+	if (probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE))
- 		return -EPERM;
- 
- 	sync_core();
-@@ -221,37 +222,51 @@ int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
- 	return -EINVAL;
- }
- 
--int ftrace_update_ftrace_func(ftrace_func_t func)
-+static unsigned long ftrace_update_func;
-+
-+static int update_ftrace_func(unsigned long ip, void *new)
- {
--	unsigned long ip = (unsigned long)(&ftrace_call);
--	unsigned char old[MCOUNT_INSN_SIZE], *new;
-+	unsigned char old[MCOUNT_INSN_SIZE];
- 	int ret;
- 
--	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
--	new = ftrace_call_replace(ip, (unsigned long)func);
-+	memcpy(old, (void *)ip, MCOUNT_INSN_SIZE);
-+
-+	ftrace_update_func = ip;
-+	/* Make sure the breakpoints see the ftrace_update_func update */
-+	smp_wmb();
- 
- 	/* See comment above by declaration of modifying_ftrace_code */
- 	atomic_inc(&modifying_ftrace_code);
- 
- 	ret = ftrace_modify_code(ip, old, new);
- 
-+	atomic_dec(&modifying_ftrace_code);
-+
-+	return ret;
-+}
-+
-+int ftrace_update_ftrace_func(ftrace_func_t func)
-+{
-+	unsigned long ip = (unsigned long)(&ftrace_call);
-+	unsigned char *new;
-+	int ret;
-+
-+	new = ftrace_call_replace(ip, (unsigned long)func);
-+	ret = update_ftrace_func(ip, new);
-+
- 	/* Also update the regs callback function */
- 	if (!ret) {
- 		ip = (unsigned long)(&ftrace_regs_call);
--		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
- 		new = ftrace_call_replace(ip, (unsigned long)func);
--		ret = ftrace_modify_code(ip, old, new);
-+		ret = update_ftrace_func(ip, new);
- 	}
- 
--	atomic_dec(&modifying_ftrace_code);
--
- 	return ret;
- }
- 
- static int is_ftrace_caller(unsigned long ip)
- {
--	if (ip == (unsigned long)(&ftrace_call) ||
--		ip == (unsigned long)(&ftrace_regs_call))
-+	if (ip == ftrace_update_func)
- 		return 1;
- 
- 	return 0;
-@@ -677,45 +692,41 @@ int __init ftrace_dyn_arch_init(void *data)
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern void ftrace_graph_call(void);
- 
--static int ftrace_mod_jmp(unsigned long ip,
--			  int old_offset, int new_offset)
-+static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
- {
--	unsigned char code[MCOUNT_INSN_SIZE];
-+	static union ftrace_code_union calc;
- 
--	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
-+	/* Jmp not a call (ignore the .e8) */
-+	calc.e8		= 0xe9;
-+	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- 
--	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
--		return -EINVAL;
-+	/*
-+	 * ftrace external locks synchronize the access to the static variable.
-+	 */
-+	return calc.code;
-+}
- 
--	*(int *)(&code[1]) = new_offset;
-+static int ftrace_mod_jmp(unsigned long ip, void *func)
-+{
-+	unsigned char *new;
- 
--	if (do_ftrace_mod_code(ip, &code))
--		return -EPERM;
-+	new = ftrace_jmp_replace(ip, (unsigned long)func);
- 
--	return 0;
-+	return update_ftrace_func(ip, new);
- }
- 
- int ftrace_enable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
- 
--	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_mod_jmp(ip, &ftrace_graph_caller);
- }
- 
- int ftrace_disable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
--
--	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_mod_jmp(ip, &ftrace_stub);
- }
- 
- #endif /* !CONFIG_DYNAMIC_FTRACE */
 -- 
-1.8.4.3
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
