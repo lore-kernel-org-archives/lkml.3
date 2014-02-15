@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaBOCsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Feb 2014 21:48:05 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:53255 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaBOCsD (ORCPT
+	id S1751933AbaBOC7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Feb 2014 21:59:50 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:50848 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491AbaBOC7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Feb 2014 21:48:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyQTE-CzOoNn=KfDgt9bTLrUxBCXzhQ2T9kNoTy+bRQrQ@mail.gmail.com>
-References: <1392183564.18779.2187.camel@triegel.csb>
-	<20140212180739.GB4250@linux.vnet.ibm.com>
-	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	<20140213002355.GI4250@linux.vnet.ibm.com>
-	<1392321837.18779.3249.camel@triegel.csb>
-	<20140214020144.GO4250@linux.vnet.ibm.com>
-	<1392352981.18779.3800.camel@triegel.csb>
-	<20140214172920.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	<20140215020815.GS4250@linux.vnet.ibm.com>
-	<CA+55aFyQTE-CzOoNn=KfDgt9bTLrUxBCXzhQ2T9kNoTy+bRQrQ@mail.gmail.com>
-Date: Fri, 14 Feb 2014 18:48:02 -0800
-X-Google-Sender-Auth: nXutHgTmiJ1KaRJRJB7oVFEFvuY
-Message-ID: <CA+55aFzoqKGG3iJMZxfaGnDAtpiOCOZcXf7f6cA4+uw2ST2N9w@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 14 Feb 2014 21:59:48 -0500
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: netdev@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [RFC v2 0/4] net: bridge / ip optimizations for virtual net backends
+Date: Fri, 14 Feb 2014 18:59:36 -0800
+Message-Id: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 6:44 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> And conversely, the C11 people can walk away from us too. But if they
-> can't make us happy (and by "make us happy", I really mean no stupid
-> games on our part) I personally think they'll have a stronger
-> standard, and a real use case, and real arguments. I'm assuming they
-> want that.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-I should have somebody who proof-reads my emails before I send them out.
+This v2 series changes the approach from my original virtualization
+multicast patch series [0] by abandoning completely the multicast
+issues and instead generalizing an approach for virtualization
+backends. There are two things in common with virtualization
+backends:
 
-I obviously meant "if they *can* make us happy" (not "can't").
+  0) they should not become the root bridge
+  1) they don't need ipv4 / ipv6 interfaces
 
-            Linus
+Both qemu's usage of TAP interfaces and xen-netback's driver
+avoid getting their interfaces added to the root bridge by
+using a high MAC address. Lets just generalize the solution
+by making this a flag.
+
+The skipping of IPv4 / IPv6 interfaces is an optimization
+I observed possible while studying the xen-netback in a
+shared physical bridge environment. I haven't been able
+to test the NAT environment so I appreciate it if someone
+can test these patches for that case if I don't get to it
+eventually.
+
+The same flags can be embraced by TAP interfaces when needed,
+I tested this as a temporary patch as follows:
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 44c4db8..19b967e 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -940,6 +940,7 @@ static void tun_net_init(struct net_device *dev)
+ 		ether_setup(dev);
+ 		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 		dev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
++		dev->priv_flags |= IFF_BRIDGE_NON_ROOT | IFF_SKIP_IP;
+ 
+ 		eth_hw_addr_random(dev);
+ 
+
+a proper followup would be to specify the flags during open() or any
+way prior, just to register_netdevice(). Before that is done we'd
+need to evaluate all qemu use cases of the TAP interfaces both
+for the xen HVM case (which tests fine for me) and for KVM's
+use cases on both shared physical and in the NAT case. That is,
+test the above patch and this series for all KVM / xen use cases.
+
+[0] http://marc.info/?l=linux-netdev&m=139207142110536&w=2
+
+Luis R. Rodriguez (4):
+  bridge: enable interfaces to opt out from becoming the root bridge
+  net: enables interface option to skip IP
+  xen-netback: use a random MAC address
+  xen-netback: skip IPv4 and IPv6 interfaces
+
+ drivers/net/xen-netback/interface.c | 14 +++++---------
+ include/uapi/linux/if.h             |  2 ++
+ net/bridge/br_if.c                  |  2 ++
+ net/bridge/br_private.h             |  1 +
+ net/bridge/br_stp_if.c              |  2 ++
+ net/ipv4/devinet.c                  |  3 +++
+ net/ipv6/addrconf.c                 |  6 ++++++
+ 7 files changed, 21 insertions(+), 9 deletions(-)
+
+-- 
+1.8.5.2
+
