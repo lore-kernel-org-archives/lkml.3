@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046AbaBOMHc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 07:07:32 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:46888 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847AbaBOMHb (ORCPT
+	id S1753215AbaBOMHr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 07:07:47 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:54105 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873AbaBOMHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 07:07:31 -0500
-X-Auth-Info: Bc62P6LTAOCPx2UPZsG6ryPK9kOyQLDim0wVl7NEueo=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@linux.com>,
-        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 39/48] powerpc: Replace __get_cpu_var uses
-References: <20140214201841.826179349@linux.com>
-	<20140214201908.082769265@linux.com>
-	<1392436208.10050.22.camel@pasglop>
-	<20140215094239.GF14089@laptop.programming.kicks-ass.net>
-	<1392458479.10050.26.camel@pasglop>
-X-Yow: I can't think about that.  It doesn't go with HEDGES in the shape of
- LITTLE LULU -- or ROBOTS making BRICKS...
-Date: Sat, 15 Feb 2014 13:07:17 +0100
-In-Reply-To: <1392458479.10050.26.camel@pasglop> (Benjamin Herrenschmidt's
-	message of "Sat, 15 Feb 2014 21:01:19 +1100")
-Message-ID: <87lhxctw96.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 15 Feb 2014 07:07:44 -0500
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org
+Cc: levex@linux.com, lars@metafoo.de, andriy.shevchenko@linux.intel.com,
+        dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Srikanth Thokala <sthokal@xilinx.com>
+Subject: [PATCH v3 0/3] Add Xilinx AXI Video DMA Engine driver
+Date: Sat, 15 Feb 2014 17:30:16 +0530
+Message-Id: <1392465619-27614-1-git-send-email-sthokal@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
+Hi,
 
-> On Sat, 2014-02-15 at 10:42 +0100, Peter Zijlstra wrote:
->> On Sat, Feb 15, 2014 at 02:50:08PM +1100, Benjamin Herrenschmidt wrote:
->> > For some reason Im still getting these as attachments instead of inline
->> > in the email, which makes reviewing a major PITA. Christoph, I'm not
->> > sure what you are doing wrong here but you should consider fixing it :-)
->> 
->> Yeah, what the others have already said; evolution is a pile of steaming
->> crap. Get yourself a real MUA :-)
->
-> I yet have to find one that isn't a steaming pile ... :-) 
+This is the driver for Xilinx AXI Video Direct Memory Access Engine.
+It is a soft IP core, which provides high-bandwidth direct memory
+access between memory and AXI4-Stream video type target peripherals
+including peripherals which support AXI4-Stream Video Protocol. The
+core provides efficient two dimensional DMA operations with independent
+asynchronous read and write channel operation.
 
-Gnus.
+For more information on the IP, please refer to
+http://www.xilinx.com/support/documentation/ip_documentation/axi_vdma/v6_1/pg020_axi_vdma.pdf
 
-Andreas.
+This patch also provides a test client, which assumes read and write channels
+of the core are configured in a back-to-back connection.  It transfers
+data on the write channel, read and verify the data on the read channel.
+
+Use cases:
+++++++++++
+1. Xilinx Video Targeted Reference design
+   http://www.wiki.xilinx.com/Zynq+Base+TRD+14.5
+2. Common Display Framework
+   http://events.linuxfoundation.org/sites/events/files/slides/20131024-elce.pdf
+
+Regards,
+Srikanth
+
+Changes in v3:
+- Created a separate patch for the DT binding documentation as suggested by
+  Vinod, Thanks.
+- Added support for interleaved frames with non-contiguous memory as suggested
+  by Lars, Thanks.
+- Rebased on v3.14.0-rc2 
+
+Srikanth Thokala (3):
+  dma: Support multiple interleaved frames with non-contiguous memory
+  dma: Add Xilinx Video DMA DT Binding Documentation
+  dma: Add Xilinx AXI Video Direct Memory Access Engine driver support
+
+ .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   75 ++
+ Documentation/dmaengine.txt                        |    2 +-
+ drivers/dma/Kconfig                                |   14 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/imx-dma.c                              |    3 +-
+ drivers/dma/sirf-dma.c                             |    3 +-
+ drivers/dma/xilinx/Makefile                        |    1 +
+ drivers/dma/xilinx/xilinx_vdma.c                   | 1388 ++++++++++++++++++++
+ drivers/media/platform/m2m-deinterlace.c           |    2 +-
+ include/linux/amba/xilinx_dma.h                    |   46 +
+ include/linux/dmaengine.h                          |    6 +-
+ 11 files changed, 1534 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
+ create mode 100644 drivers/dma/xilinx/Makefile
+ create mode 100644 drivers/dma/xilinx/xilinx_vdma.c
+ create mode 100644 include/linux/amba/xilinx_dma.h
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.7.9.5
+
