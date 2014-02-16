@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaBPRIJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 12:08:09 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54882 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752643AbaBPRII (ORCPT
+	id S1753065AbaBPRLb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 12:11:31 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:40233 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaBPRL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 12:08:08 -0500
-Message-ID: <1392570485.28866.10.camel@x220>
-Subject: [PATCH] acpi: Remove Kconfig symbol ACPI_PROCFS
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 16 Feb 2014 18:08:05 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Feb 2014 17:08:06.0022 (UTC) FILETIME=[A8AF3A60:01CF2B39]
-X-RcptDomain: vger.kernel.org
+	Sun, 16 Feb 2014 12:11:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140216163928.GC28616@kroah.com>
+References: <1391862850-24620-1-git-send-email-ard.biesheuvel@linaro.org>
+	<CAKv+Gu_cVcT_796qnxEi2uSmXBpiptgjL2tc3t4TVHryEu9tvw@mail.gmail.com>
+	<20140216163928.GC28616@kroah.com>
+Date: Sun, 16 Feb 2014 18:11:27 +0100
+Message-ID: <CAKv+Gu8b7cZzq6dZJj3=yg5RE2iNszpJ_aeJmgW1Y3PGSRVT3g@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] generic CPU feature based udev module autoprobing
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing cares about ACPI_PROCFS. This has been the case since v2.6.38.
-This Kconfig symbol serves no purpose and its help text is now
-misleading. It can safely be removed. If this symbol would be needed
-again in the future it can be readded in a commit that adds code that
-actually uses it.
+On 16 February 2014 17:39, gregkh@linuxfoundation.org
+<gregkh@linuxfoundation.org> wrote:
+> On Sun, Feb 16, 2014 at 03:40:04PM +0100, Ard Biesheuvel wrote:
+>> Ping?
+>
+> Sorry, still digging out from the -rc1 backlog.  Give me a few days,
+> Monday is a holliday in the US.
+>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested with "git grep" only.
+Yes, please, whenever you have some time.
 
-Michael Opdenacker did a previous attempt in
-https://lkml.org/lkml/2013/10/27/15 . That patch that needed some
-context changes, so I redid it. I also wrote a new commit explanation.
-It also addresses the reasons not to accept Michael's patch.
-
- drivers/acpi/Kconfig | 13 -------------
- 1 file changed, 13 deletions(-)
-
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 4770de5..436111b 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -43,19 +43,6 @@ config ACPI_SLEEP
- 	depends on SUSPEND || HIBERNATION
- 	default y
- 
--config ACPI_PROCFS
--	bool "Deprecated /proc/acpi files"
--	depends on PROC_FS
--	help
--	  For backwards compatibility, this option allows
--	  deprecated /proc/acpi/ files to exist, even when
--	  they have been replaced by functions in /sys.
--
--	  This option has no effect on /proc/acpi/ files
--	  and functions which do not yet exist in /sys.
--
--	  Say N to delete /proc/acpi/ files that have moved to /sys/
--
- config ACPI_EC_DEBUGFS
- 	tristate "EC read/write access through /sys/kernel/debug/ec"
- 	default n
--- 
-1.8.5.3
-
+Regards,
+Ard.
