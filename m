@@ -1,134 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751197AbaBPJCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 04:02:33 -0500
-Received: from mout.web.de ([212.227.15.3]:63973 "EHLO mout.web.de"
+	id S1751797AbaBPJDj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 04:03:39 -0500
+Received: from ring0.de ([5.45.105.125]:38434 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaBPJCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 04:02:30 -0500
-Message-ID: <53007E9D.2050205@web.de>
-Date: Sun, 16 Feb 2014 10:02:21 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1751341AbaBPJCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 04:02:44 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Sun, 16 Feb 2014 10:02:39 +0100
+From: Sebastian Reichel <sre@debian.org>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-iio@vger.kernel.org
+Subject: Re: [RFCv1 2/4] mfd: twl4030-madc: Add DT support and convert to IIO
+ framework
+Message-ID: <20140216090238.GA9066@earth.universe>
+References: <20140214174040.GB26969@earth.universe>
+ <1392403586-30540-1-git-send-email-sre@debian.org>
+ <1392403586-30540-2-git-send-email-sre@debian.org>
+ <CAAfyv36yfd0tSe9G2AnX+DzE-gObdRxYfgK+NKT8zwYmqt=QcQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Plug racy xAPIC access of CPU hotplug code
-References: <52E6AFFE.3030004@siemens.com>
-In-Reply-To: <52E6AFFE.3030004@siemens.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="rvkW1aclxGFlPWAHHWtT4rlMLAIPtPTuf"
-X-Provags-ID: V03:K0:8wkHBvRdJrkUqd0OU7SpVEGeqwUmYRds3u4GNJ2maUPi2zvtgbS
- 3XkcEKewaZbF89trAuotaWbGdWydXGi6OVjBmCeIR5/yIhKbQgHZTSOLs8aE8vyYXG2XrUd
- Kz6sD038by2CnQwDOk7JvhhFjiF6zmkNTYxs+1BjdmVEiXhczZTclJrZG2qIIh/sBws4Ae1
- U5r7M7UOtVsH5npfMHPbw==
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
+Content-Disposition: inline
+In-Reply-To: <CAAfyv36yfd0tSe9G2AnX+DzE-gObdRxYfgK+NKT8zwYmqt=QcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---rvkW1aclxGFlPWAHHWtT4rlMLAIPtPTuf
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 2014-01-27 20:14, Jan Kiszka wrote:
-> apic_icr_write and its users in smpboot.c were apparently written under=
+--SUOF0GtieIMvvwua
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> the assumption that this code would only run during early boot. But
-> nowadays we also execute it when onlining a CPU later on while the
-> system is fully running. That will make wakeup_cpu_via_init_nmi and,
-> thus, also native_apic_icr_write run in plain process context. If we
-> migrate the caller to a different CPU at the wrong time or interrupt it=
+Hi Marek,
 
-> and write to ICR/ICR2 to send unrelated IPIs, we can end up sending
-> INIT, SIPI or NMIs to wrong CPUs.
->=20
-> Fix this by disabling interrupts during the write to the ICR halves and=
+On Sat, Feb 15, 2014 at 02:31:41PM +0100, Belisko Marek wrote:
+> >         /*
+> >          * Phoenix provides 2 interrupt lines. The first one is connected to
+> >          * the OMAP. The other one can be connected to the other processor such
+> >          * as modem. Hence two separate ISR and IMR registers.
+> >          */
+> > -       madc->imr = (pdata->irq_line == 1) ?
+> > +       if (pdata)
+> > +               madc->use_second_irq = pdata->irq_line != 1;
+> > +       else
+> > +               madc->use_second_irq = false;
+>
+> Can we add some property to use second IRQ also in DT?
 
-> disable preemption around waiting for ICR availability and using it.
->=20
-> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-> ---
->  arch/x86/kernel/apic/apic.c |  4 ++++
->  arch/x86/kernel/smpboot.c   | 11 +++++++++--
->  2 files changed, 13 insertions(+), 2 deletions(-)
->=20
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index 7f26c9a..06f90b8 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -283,8 +283,12 @@ u32 native_safe_apic_wait_icr_idle(void)
-> =20
->  void native_apic_icr_write(u32 low, u32 id)
->  {
-> +	unsigned long flags;
-> +
-> +	local_irq_save(flags);
->  	apic_write(APIC_ICR2, SET_APIC_DEST_FIELD(id));
->  	apic_write(APIC_ICR, low);
-> +	local_irq_restore(flags);
->  }
-> =20
->  u64 native_apic_icr_read(void)
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index a32da80..37e11e5 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -701,11 +701,15 @@ wakeup_cpu_via_init_nmi(int cpu, unsigned long st=
-art_ip, int apicid,
->  	int id;
->  	int boot_error;
-> =20
-> +	preempt_disable();
-> +
->  	/*
->  	 * Wake up AP by INIT, INIT, STARTUP sequence.
->  	 */
-> -	if (cpu)
-> -		return wakeup_secondary_cpu_via_init(apicid, start_ip);
-> +	if (cpu) {
-> +		boot_error =3D wakeup_secondary_cpu_via_init(apicid, start_ip);
-> +		goto out;
-> +	}
-> =20
->  	/*
->  	 * Wake up BSP by nmi.
-> @@ -725,6 +729,9 @@ wakeup_cpu_via_init_nmi(int cpu, unsigned long star=
-t_ip, int apicid,
->  		boot_error =3D wakeup_secondary_cpu_via_nmi(id, start_ip);
->  	}
-> =20
-> +out:
-> +	preempt_enable();
-> +
->  	return boot_error;
->  }
-> =20
->=20
+Sure, a boolean property like this could be added:
 
-What's the status of this? Waiting for further review, or is it queued
-somewhere by now? Would be good to have in 3.14, and then also in stable
-kernels.
+ti,system-uses-second-madc-irq;
 
-Jan
+I did not add support for it initially, since I could not find any
+board in the mainline kernel with this setup. If such a board is
+added at some later point the driver can be extended easily.
 
+-- Sebastian
 
---rvkW1aclxGFlPWAHHWtT4rlMLAIPtPTuf
+--SUOF0GtieIMvvwua
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1
 
-iEYEARECAAYFAlMAfqAACgkQitSsb3rl5xSxfACfaP3Qpz++STBZpe6cw2EnYEyU
-BhYAn0LW/E18PgPtfjItPV/fazoHELKO
-=/ScW
+iQIcBAEBCgAGBQJTAH6uAAoJENju1/PIO/qaQm0P/1RmmaLyDoooZPnL95GpfOdR
+stcpRhg01JGctEp5sFB+q8dYd+SxqCB3/Kk+m7I5PfzgMx+jsrnr0e+lDl3cbjeE
+H3yvcfQiKa2AbdMscN6/uq7ju+7rxIQcRFUFq5vKFzwswGnPs373nb10rb9/I44B
+AcK99HcgTK376Q+1KuMjOCzFuvu3khpj8HX2uwsciZ/LJvYIl3Nu1NqPSZVyS2JH
+mJXluIIt0Y5HWtydvSyzF7YXBmITfN6Y9i0CMtzgFStAuMstot7BJ31edNilesma
+uA3b9YSyWm9JE/1g2NYfWD1VymAB62K/5onDwot11IzfI4tWUcxwBejpEVJvRY6r
+/WhPwqfXblreUqTPbgYxj1qlbB1l1klZxajUxeuddg1L9632zCiH+cgf9XEwzN1D
+1JwWXOvApKOUKxx1D9HIljx6SSAR+fRph/q5kYoTD8EooxdrDZBmpClxkKpJsy+A
+gZH6n10pc6uaw7IPFmoSyEV2533PGWEtHxaU+ipo8+IKF73v594E4NdjN37pssGY
+dqk1tceSzaR3Kb2T65Jv32nzqbAz1zphyp/+atWCE8PbdC8YwPRToH9/2giTcRwB
+hlxsFJu6NxSEjzpRwaDBmtURdCSJGVu8ptBoxd2RPGBKl3ZcgaJk2AEtVe8wyrkJ
+WaIoYgsKXv9fxIK2Hiao
+=yLlO
 -----END PGP SIGNATURE-----
 
---rvkW1aclxGFlPWAHHWtT4rlMLAIPtPTuf--
+--SUOF0GtieIMvvwua--
