@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644AbaBPXim (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 18:38:42 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:49336 "HELO
+	id S1753507AbaBPXil (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 18:38:41 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53056 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752719AbaBPXii (ORCPT
+	with SMTP id S1752322AbaBPXii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Feb 2014 18:38:38 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
@@ -14,9 +14,9 @@ Cc: Alan Stern <stern@rowland.harvard.edu>,
         Aaron Lu <aaron.lu@intel.com>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3][Resend] PM / runtime: Routine for checking device status during system suspend
-Date: Mon, 17 Feb 2014 00:51:32 +0100
-Message-ID: <2606690.DpdlurHHNW@vostro.rjw.lan>
+Subject: [PATCH 3/3] ACPI / PM: Avoid resuming devices in ACPI PM domain during system suspend
+Date: Mon, 17 Feb 2014 00:52:26 +0100
+Message-ID: <4644785.jPoV06XLG5@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <1829141.MEZji1aIKp@vostro.rjw.lan>
 References: <5420830.W4laSGaAU9@vostro.rjw.lan> <1829141.MEZji1aIKp@vostro.rjw.lan>
@@ -29,74 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Add a new helper routine, pm_runtime_enabled_and_suspended(), to
-allow subsystems (or PM domains) to check the runtime PM status of
-devices during system suspend (possibly to avoid resuming those
-devices upfront at that time).
+Rework the ACPI PM domain's PM callbacks to avoid resuming devices
+during system suspend in order to modify their wakeup settings if
+that isn't necessary.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/base/power/runtime.c |   28 ++++++++++++++++++++++++++++
- include/linux/pm_runtime.h   |    2 ++
- 2 files changed, 30 insertions(+)
+ drivers/acpi/device_pm.c |   24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
 
-Index: linux-pm/include/linux/pm_runtime.h
+Index: linux-pm/drivers/acpi/device_pm.c
 ===================================================================
---- linux-pm.orig/include/linux/pm_runtime.h
-+++ linux-pm/include/linux/pm_runtime.h
-@@ -53,6 +53,7 @@ extern unsigned long pm_runtime_autosusp
- extern void pm_runtime_update_max_time_suspended(struct device *dev,
- 						 s64 delta_ns);
- extern void pm_runtime_set_memalloc_noio(struct device *dev, bool enable);
-+extern bool pm_runtime_enabled_and_suspended(struct device *dev);
- 
- static inline bool pm_children_suspended(struct device *dev)
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -900,12 +900,28 @@ EXPORT_SYMBOL_GPL(acpi_dev_resume_early)
+  */
+ int acpi_subsys_prepare(struct device *dev)
  {
-@@ -161,6 +162,7 @@ static inline unsigned long pm_runtime_a
- 				struct device *dev) { return 0; }
- static inline void pm_runtime_set_memalloc_noio(struct device *dev,
- 						bool enable){}
-+static inline bool pm_runtime_enabled_and_suspended(struct device *dev) { return false; }
- 
- #endif /* !CONFIG_PM_RUNTIME */
- 
-Index: linux-pm/drivers/base/power/runtime.c
-===================================================================
---- linux-pm.orig/drivers/base/power/runtime.c
-+++ linux-pm/drivers/base/power/runtime.c
-@@ -1194,6 +1194,34 @@ void pm_runtime_enable(struct device *de
- EXPORT_SYMBOL_GPL(pm_runtime_enable);
- 
- /**
-+ * pm_runtime_enabled_and_suspended - Check runtime PM status of a device.
-+ * @dev: Device to handle.
-+ *
-+ * This routine is to be executed during system suspend only, after
-+ * device_prepare() has been executed for @dev.
-+ *
-+ * Return false if runtime PM is disabled for the device.  Otherwise, wait
-+ * for pending transitions to complete and check the runtime PM status of the
-+ * device after that.  Return true if it is RPM_SUSPENDED.
-+ */
-+bool pm_runtime_enabled_and_suspended(struct device *dev)
-+{
-+	unsigned long flags;
-+	bool ret;
++	struct acpi_device *adev = ACPI_COMPANION(dev);
++	u32 target_state;
++	int error, state;
 +
-+	spin_lock_irqsave(&dev->power.lock, flags);
-+	if (dev->power.disable_depth) {
-+		ret = false;
-+	} else {
-+		__pm_runtime_barrier(dev);
-+		ret = pm_runtime_status_suspended(dev);
++	if (!adev || !pm_runtime_enabled_and_suspended(dev))
++		return pm_generic_prepare(dev);
++
++	target_state = acpi_target_system_state();
++	error = acpi_dev_pm_get_state(dev, adev, target_state, NULL, &state);
++	if (error || state != adev->power.state
++	    || device_may_wakeup(dev) != !!adev->wakeup.prepare_count) {
++		pm_runtime_resume(dev);
++		return pm_generic_prepare(dev);
 +	}
-+	spin_unlock_irqrestore(&dev->power.lock, flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(pm_runtime_enabled_and_suspended);
-+
-+/**
-  * pm_runtime_forbid - Block runtime PM of a device.
-  * @dev: Device to handle.
-  *
+ 	/*
+-	 * Follow PCI and resume devices suspended at run time before running
+-	 * their system suspend callbacks.
++	 * If this is a wakeup device, wakeup power has been enabled already for
++	 * it during the preceding runtime suspend.  Caveat: "sleep state" is
++	 * one of the _DSW arguments, but that shouldn't matter for the devices
++	 * using acpi_general_pm_domain.
+ 	 */
+-	pm_runtime_resume(dev);
+-	return pm_generic_prepare(dev);
++	error =  pm_generic_prepare(dev);
++	return error ? error : 1;
+ }
+ EXPORT_SYMBOL_GPL(acpi_subsys_prepare);
+ 
 
