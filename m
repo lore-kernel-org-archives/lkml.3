@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011AbaBPMSu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 07:18:50 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.138]:15625 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751477AbaBPMSs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 07:18:48 -0500
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-15.tower-178.messagelabs.com!1392553126!26425680!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: RE: [RFC V1] mfd: da9063: Add support for production silicon
- variant code
-Thread-Topic: [RFC V1] mfd: da9063: Add support for production silicon
- variant code
-Thread-Index: AQHPKWf9+CU+DQqgfkW1F75og72Z1Zq1DBLdgAK5ipA=
-Date: Sun, 16 Feb 2014 12:18:43 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB78F97D757@SW-EX-MBX02.diasemi.com>
-References: <201402131031.s1DAVWrJ023725@swsrvapps-01.diasemi.com>
- <20140214093435.GI3403@lee--X1>
- <6ED8E3B22081A4459DAC7699F3695FB78F97CB13@SW-EX-MBX02.diasemi.com>
- <20140214145643.GA4451@sirena.org.uk>
-In-Reply-To: <20140214145643.GA4451@sirena.org.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.50.31]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752138AbaBPM0K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 07:26:10 -0500
+Received: from fallback6.mail.ru ([94.100.176.134]:53169 "EHLO
+	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724AbaBPM0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 07:26:08 -0500
+From: Alexander Shiyan <shc_work@mail.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH] w1: Remove excess dependencies on W1 for masters and slaves
+Date: Sun, 16 Feb 2014 16:25:46 +0400
+Message-Id: <1392553546-9466-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.8.3.2
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 February 2014 14:57, Mark Brown [mailto:broonie@kernel.org] wrote:
+Configuration for masters and slaves is included only if W1 symbol
+enabled, so no reason to check it once more.
 
->On Fri, Feb 14, 2014 at 10:28:38AM +0000, Opensource [Steve Twiss] wrote:
->
->> The previous silicon was only sent out in sample form to selected customers
->> and will no longer be available. I have been informed that the new silicon
->> has been sent out, and everybody should have received the new variant by
->> now.
->
->> The new variant is the only one going into production and the previous silicon
->> variant will no longer be available. Also, the production silicon of DA9063
->> makes an alteration to the registers which makes the two register maps
->> incompatible.
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ drivers/w1/masters/Kconfig | 3 +--
+ drivers/w1/slaves/Kconfig  | 5 -----
+ 2 files changed, 1 insertion(+), 7 deletions(-)
 
-My apologies for not replying to this in time -- it appeared in my inbox after
-I had sent RFC V2.
+diff --git a/drivers/w1/masters/Kconfig b/drivers/w1/masters/Kconfig
+index efc7f07..6ffe120 100644
+--- a/drivers/w1/masters/Kconfig
++++ b/drivers/w1/masters/Kconfig
+@@ -36,13 +36,12 @@ config W1_MASTER_DS2482
+ 
+ config W1_MASTER_MXC
+ 	tristate "Freescale MXC 1-wire busmaster"
+-	depends on W1 && ARCH_MXC
++	depends on ARCH_MXC
+ 	help
+ 	  Say Y here to enable MXC 1-wire host
+ 
+ config W1_MASTER_DS1WM
+ 	tristate "Maxim DS1WM 1-wire busmaster"
+-	depends on W1
+ 	help
+ 	  Say Y here to enable the DS1WM 1-wire driver, such as that
+ 	  in HP iPAQ devices like h5xxx, h2200, and ASIC3-based like
+diff --git a/drivers/w1/slaves/Kconfig b/drivers/w1/slaves/Kconfig
+index 5e6a3c9..1cdce80 100644
+--- a/drivers/w1/slaves/Kconfig
++++ b/drivers/w1/slaves/Kconfig
+@@ -72,7 +72,6 @@ config W1_SLAVE_DS2433_CRC
+ 
+ config W1_SLAVE_DS2760
+ 	tristate "Dallas 2760 battery monitor chip (HP iPAQ & others)"
+-	depends on W1
+ 	help
+ 	  If you enable this you will have the DS2760 battery monitor
+ 	  chip support.
+@@ -85,7 +84,6 @@ config W1_SLAVE_DS2760
+ 
+ config W1_SLAVE_DS2780
+ 	tristate "Dallas 2780 battery monitor chip"
+-	depends on W1
+ 	help
+ 	  If you enable this you will have the DS2780 battery monitor
+ 	  chip support.
+@@ -98,7 +96,6 @@ config W1_SLAVE_DS2780
+ 
+ config W1_SLAVE_DS2781
+ 	tristate "Dallas 2781 battery monitor chip"
+-	depends on W1
+ 	help
+ 	  If you enable this you will have the DS2781 battery monitor
+ 	  chip support.
+@@ -111,7 +108,6 @@ config W1_SLAVE_DS2781
+ 
+ config W1_SLAVE_DS28E04
+ 	tristate "4096-Bit Addressable 1-Wire EEPROM with PIO (DS28E04-100)"
+-	depends on W1
+ 	select CRC16
+ 	help
+ 	  If you enable this you will have the DS28E04-100
+@@ -124,7 +120,6 @@ config W1_SLAVE_DS28E04
+ 
+ config W1_SLAVE_BQ27000
+ 	tristate "BQ27000 slave support"
+-	depends on W1
+ 	help
+ 	  Say Y here if you want to use a hdq
+ 	  bq27000 slave support.
+-- 
+1.8.3.2
 
->
->The usual thing if it's straightforward to do so is to keep support for
->old versions even if the early revisions are not expected to be widely
->available.
-
-Yes, I take your point here.
-
-Some registers in the new variant make backwards compatibility easy,
-however attempting to combine the two register maps in other components
-makes the driver a mess. 
-
-By drawing the line in the probe() function I am requesting that there be no
-support for older silicon. I have been requested to do this because that is 
-the line that Dialog Semiconductor Ltd wants to impose -- and this is not
-just at the level of the S/W driver.
-
-I realise that the Linux community will have different aims however and 
-I would like to support those as much as I can.
-
-> We do fairly often see problems with people still using old
->boards for various reasons - the fact that new silicon is available does
->not mean that the old silicon has been retired by users (even if just
->for comparison purposes while new board revisions are being brought up -
->"that worked on the rev A boards, did we break the software?") 
-
-I see -- yes.
-
-I don't see any straightforward way to support some of the components
-in parallel, and merging the registers.h file for both variants does make a
-mess even before reaching the driver code.
-
-I'm not sure how easy this will be, but if I can retain support for some of
-the older variant features already in the kernel I will try to do so during
-my upcoming submissions.
-
-Regards,
-Steve
