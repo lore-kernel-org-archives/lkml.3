@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaBPU3n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 15:29:43 -0500
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:40992 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752822AbaBPU3l (ORCPT
+	id S1753602AbaBPUac (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 15:30:32 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53150 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752822AbaBPUaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 15:29:41 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqYVACEfAVNbsll+/2dsb2JhbABZKIJegkJ9E7xuAgKBDxd0glMTHCMYgQI3iAkBykOPAR2EIgEDiUaOZQGSI4M6Lw
-Date: Sun, 16 Feb 2014 20:31:01 +0800
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs: xattr: Don't display attributes without read access
-Message-Id: <20140216203101.bf432a8b7b40703197a91462@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 16 Feb 2014 15:30:30 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Len Brown <lenb@kernel.org>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: Remove Kconfig symbol ACPI_PROCFS
+Date: Sun, 16 Feb 2014 21:45:17 +0100
+Message-ID: <49750510.SeydVA5ctE@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392570485.28866.10.camel@x220>
+References: <1392570485.28866.10.camel@x220>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any user can display extented attribute names without read
-access.
+On Sunday, February 16, 2014 06:08:05 PM Paul Bolle wrote:
+> Nothing cares about ACPI_PROCFS.
 
-eg: attr -l <filename>
+Some defconfigs set it.  Care to remove it from them too?
 
-This patch checks inode_permission in listxattr common
-function before executing vfs_listxattr.
+> This has been the case since v2.6.38.
+> This Kconfig symbol serves no purpose and its help text is now
+> misleading. It can safely be removed. If this symbol would be needed
+> again in the future it can be readded in a commit that adds code that
+> actually uses it.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Tested with "git grep" only.
+> 
+> Michael Opdenacker did a previous attempt in
+> https://lkml.org/lkml/2013/10/27/15 . That patch that needed some
+> context changes, so I redid it. I also wrote a new commit explanation.
+> It also addresses the reasons not to accept Michael's patch.
+> 
+>  drivers/acpi/Kconfig | 13 -------------
+>  1 file changed, 13 deletions(-)
+> 
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 4770de5..436111b 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -43,19 +43,6 @@ config ACPI_SLEEP
+>  	depends on SUSPEND || HIBERNATION
+>  	default y
+>  
+> -config ACPI_PROCFS
+> -	bool "Deprecated /proc/acpi files"
+> -	depends on PROC_FS
+> -	help
+> -	  For backwards compatibility, this option allows
+> -	  deprecated /proc/acpi/ files to exist, even when
+> -	  they have been replaced by functions in /sys.
+> -
+> -	  This option has no effect on /proc/acpi/ files
+> -	  and functions which do not yet exist in /sys.
+> -
+> -	  Say N to delete /proc/acpi/ files that have moved to /sys/
+> -
+>  config ACPI_EC_DEBUGFS
+>  	tristate "EC read/write access through /sys/kernel/debug/ec"
+>  	default n
+> 
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/xattr.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/fs/xattr.c b/fs/xattr.c
-index 3377dff..d26b280 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -543,6 +543,10 @@ listxattr(struct dentry *d, char __user *list, size_t size)
- 	char *klist = NULL;
- 	char *vlist = NULL;	/* If non-NULL, we used vmalloc() */
- 
-+	error = inode_permission(d->d_inode, MAY_READ);
-+	if (error)
-+		return error;
-+
- 	if (size) {
- 		if (size > XATTR_LIST_MAX)
- 			size = XATTR_LIST_MAX;
 -- 
-1.8.1.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
