@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751086AbaBPFLY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 00:11:24 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:54998 "EHLO kolab.o2s.ch"
+	id S1752103AbaBPFMN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 00:12:13 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:55085 "EHLO kolab.o2s.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794AbaBPFLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 00:11:04 -0500
-Subject: [PATCH v6 1/8] clk: sunxi: factors: automatic reparenting support
+	id S1751197AbaBPFMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 00:12:08 -0500
+Subject: [PATCH v6 6/8] ARM: dts: sun4i: Add support for mmc
 To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
         Mike Turquette <mturquette@linaro.org>,
@@ -20,8 +20,8 @@ To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         linux-arm-kernel@lists.infradead.org
 From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Sun, 16 Feb 2014 06:10:55 +0100
-Message-ID: <20140216051055.728.71900.stgit@dizzy-6.o2s.ch>
+Date: Sun, 16 Feb 2014 06:11:59 +0100
+Message-ID: <20140216051158.728.21593.stgit@dizzy-6.o2s.ch>
 In-Reply-To: <20140216050933.728.25526.stgit@dizzy-6.o2s.ch>
 References: <20140216050933.728.25526.stgit@dizzy-6.o2s.ch>
 User-Agent: StGit/0.16
@@ -32,68 +32,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio López <emilio@elopez.com.ar>
-
-This commit implements .determine_rate, so that our factor clocks can be
-reparented when needed.
-
-Signed-off-by: Emilio López <emilio@elopez.com.ar>
+Signed-off-by: David Lanzendörfer <david.lanzendoerfer@o2s.ch>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 ---
- drivers/clk/sunxi/clk-factors.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ arch/arm/boot/dts/sun4i-a10-a1000.dts      |    8 ++++
+ arch/arm/boot/dts/sun4i-a10-cubieboard.dts |    8 ++++
+ arch/arm/boot/dts/sun4i-a10.dtsi           |   54 ++++++++++++++++++++++++++++
+ 3 files changed, 70 insertions(+)
 
-diff --git a/drivers/clk/sunxi/clk-factors.c b/drivers/clk/sunxi/clk-factors.c
-index 9e23264..3806d97 100644
---- a/drivers/clk/sunxi/clk-factors.c
-+++ b/drivers/clk/sunxi/clk-factors.c
-@@ -77,6 +77,41 @@ static long clk_factors_round_rate(struct clk_hw *hw, unsigned long rate,
- 	return rate;
- }
+diff --git a/arch/arm/boot/dts/sun4i-a10-a1000.dts b/arch/arm/boot/dts/sun4i-a10-a1000.dts
+index d4b081d..a879ef3 100644
+--- a/arch/arm/boot/dts/sun4i-a10-a1000.dts
++++ b/arch/arm/boot/dts/sun4i-a10-a1000.dts
+@@ -35,6 +35,14 @@
+ 			};
+ 		};
  
-+static long clk_factors_determine_rate(struct clk_hw *hw, unsigned long rate,
-+				       unsigned long *best_parent_rate,
-+				       struct clk **best_parent_p)
-+{
-+	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
-+	int i, num_parents;
-+	unsigned long parent_rate, best = 0, child_rate, best_child_rate = 0;
++		mmc0: mmc@01c0f000 {
++			pinctrl-names = "default", "default";
++			pinctrl-0 = <&mmc0_pins_a>;
++			pinctrl-1 = <&mmc0_cd_pin_reference_design>;
++			cd-gpios = <&pio 7 1 0>; /* PH1 */
++			status = "okay";
++		};
 +
-+	/* find the parent that can help provide the fastest rate <= rate */
-+	num_parents = __clk_get_num_parents(clk);
-+	for (i = 0; i < num_parents; i++) {
-+		parent = clk_get_parent_by_index(clk, i);
-+		if (!parent)
-+			continue;
-+		if (__clk_get_flags(clk) & CLK_SET_RATE_PARENT)
-+			parent_rate = __clk_round_rate(parent, rate);
-+		else
-+			parent_rate = __clk_get_rate(parent);
-+
-+		child_rate = clk_factors_round_rate(hw, rate, &parent_rate);
-+
-+		if (child_rate <= rate && child_rate > best_child_rate) {
-+			best_parent = parent;
-+			best = parent_rate;
-+			best_child_rate = child_rate;
-+		}
-+	}
-+
-+	if (best_parent)
-+		*best_parent_p = best_parent;
-+	*best_parent_rate = best;
-+
-+	return best_child_rate;
-+}
-+
- static int clk_factors_set_rate(struct clk_hw *hw, unsigned long rate,
- 				unsigned long parent_rate)
- {
-@@ -113,6 +148,7 @@ static int clk_factors_set_rate(struct clk_hw *hw, unsigned long rate,
- }
+ 		pinctrl@01c20800 {
+ 			emac_power_pin_a1000: emac_power_pin@0 {
+ 				allwinner,pins = "PH15";
+diff --git a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
+index b139ee6..20b976a 100644
+--- a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
++++ b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
+@@ -33,6 +33,14 @@
+ 			};
+ 		};
  
- const struct clk_ops clk_factors_ops = {
-+	.determine_rate = clk_factors_determine_rate,
- 	.recalc_rate = clk_factors_recalc_rate,
- 	.round_rate = clk_factors_round_rate,
- 	.set_rate = clk_factors_set_rate,
++		mmc0: mmc@01c0f000 {
++			pinctrl-names = "default", "default";
++			pinctrl-0 = <&mmc0_pins_a>;
++			pinctrl-1 = <&mmc0_cd_pin_reference_design>;
++			cd-gpios = <&pio 7 1 0>; /* PH1 */
++			status = "okay";
++		};
++
+ 		pinctrl@01c20800 {
+ 			led_pins_cubieboard: led_pins@0 {
+ 				allwinner,pins = "PH20", "PH21";
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index 9044c53..cd14961 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -330,6 +330,46 @@
+ 			#size-cells = <0>;
+ 		};
+ 
++		mmc0: mmc@01c0f000 {
++			compatible = "allwinner,sun5i-a13-mmc";
++			reg = <0x01c0f000 0x1000>;
++			clocks = <&ahb_gates 8>, <&mmc0_clk>;
++			clock-names = "ahb", "mod";
++			interrupts = <32>;
++			bus-width = <4>;
++			status = "disabled";
++		};
++
++		mmc1: mmc@01c10000 {
++			compatible = "allwinner,sun5i-a13-mmc";
++			reg = <0x01c10000 0x1000>;
++			clocks = <&ahb_gates 9>, <&mmc1_clk>;
++			clock-names = "ahb", "mod";
++			interrupts = <33>;
++			bus-width = <4>;
++			status = "disabled";
++		};
++
++		mmc2: mmc@01c11000 {
++			compatible = "allwinner,sun5i-a13-mmc";
++			reg = <0x01c11000 0x1000>;
++			clocks = <&ahb_gates 10>, <&mmc2_clk>;
++			clock-names = "ahb", "mod";
++			interrupts = <34>;
++			bus-width = <4>;
++			status = "disabled";
++		};
++
++		mmc3: mmc@01c12000 {
++			compatible = "allwinner,sun5i-a13-mmc";
++			reg = <0x01c12000 0x1000>;
++			clocks = <&ahb_gates 11>, <&mmc3_clk>;
++			clock-names = "ahb", "mod";
++			interrupts = <35>;
++			bus-width = <4>;
++			status = "disabled";
++		};
++
+ 		intc: interrupt-controller@01c20400 {
+ 			compatible = "allwinner,sun4i-ic";
+ 			reg = <0x01c20400 0x400>;
+@@ -400,6 +440,20 @@
+ 				allwinner,drive = <0>;
+ 				allwinner,pull = <0>;
+ 			};
++
++			mmc0_pins_a: mmc0@0 {
++				allwinner,pins = "PF0","PF1","PF2","PF3","PF4","PF5";
++				allwinner,function = "mmc0";
++				allwinner,drive = <3>;
++				allwinner,pull = <0>;
++			};
++
++			mmc0_cd_pin_reference_design: mmc0_cd_pin@0 {
++				allwinner,pins = "PH1";
++				allwinner,function = "gpio_in";
++				allwinner,drive = <0>;
++				allwinner,pull = <1>;
++			};
+ 		};
+ 
+ 		timer@01c20c00 {
 
