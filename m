@@ -1,96 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaBPJDj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 04:03:39 -0500
-Received: from ring0.de ([5.45.105.125]:38434 "EHLO smtp.ring0.de"
+	id S1752032AbaBPJF3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 04:05:29 -0500
+Received: from mout.web.de ([212.227.15.4]:57688 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341AbaBPJCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 04:02:44 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sun, 16 Feb 2014 10:02:39 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-iio@vger.kernel.org
-Subject: Re: [RFCv1 2/4] mfd: twl4030-madc: Add DT support and convert to IIO
- framework
-Message-ID: <20140216090238.GA9066@earth.universe>
-References: <20140214174040.GB26969@earth.universe>
- <1392403586-30540-1-git-send-email-sre@debian.org>
- <1392403586-30540-2-git-send-email-sre@debian.org>
- <CAAfyv36yfd0tSe9G2AnX+DzE-gObdRxYfgK+NKT8zwYmqt=QcQ@mail.gmail.com>
+	id S1751890AbaBPJFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 04:05:23 -0500
+Message-ID: <53007F4F.8090309@web.de>
+Date: Sun, 16 Feb 2014 10:05:19 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-In-Reply-To: <CAAfyv36yfd0tSe9G2AnX+DzE-gObdRxYfgK+NKT8zwYmqt=QcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Len Brown <lenb@kernel.org>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] intel_idle: Add CPU model 54 (Atom N2000 series)
+References: <52E42B86.1020701@web.de> <CAJvTdKnt=75AEQhsa8aAdEft7nnySvhxc57_1BHmOS7+tbLeNQ@mail.gmail.com> <52F9B88E.3090601@web.de>
+In-Reply-To: <52F9B88E.3090601@web.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="NpK3n2rNXt9TgMxCtgrg9d8xU0n7GopW2"
+X-Provags-ID: V03:K0:7rQiCJakwtqCafjdkagA1y05Qeatktkzx4QWXM6uVHV7vKBL1Kz
+ tsu5maUuuZHr3B1YIPW9g3Bux8T5wwUAhWqjxvsiWoGgZOxAHf7s8GdzCO/DJ5zRMKX/jgt
+ +Ja7DEOK+R1avFV2bVLkREpFXfpkuXwT2ZGbNNiJAjl1ekbYqQK90BASfQcfOjrH+EYIN1p
+ 9YnVz8pHwoUx0Ew8qN/iw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--NpK3n2rNXt9TgMxCtgrg9d8xU0n7GopW2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 2014-02-11 06:43, Jan Kiszka wrote:
+> On 2014-02-11 01:01, Len Brown wrote:
+>> Please send the output of these two command before and after the patch=
+:
+>>
+>> dmesg | grep idle
+>> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
+>=20
+> Before:
+> # dmesg | grep idle
+> [    0.648783] cpuidle: using governor ladder
+> [    0.648787] cpuidle: using governor menu
+> [    1.053215] intel_idle: does not run on family 6 model 54
+> [    3.285430] ACPI: acpi_idle registered with cpuidle
+> # grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/desc:CPUIDLE CORE POLL IDLE=
 
-Hi Marek,
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/latency:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/name:POLL
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/power:4294967295
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/time:443
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/usage:5
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/desc:ACPI FFH INTEL MWAIT 0=
+x0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/latency:1
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/name:C1
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/time:420944
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/usage:1798
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/desc:ACPI FFH INTEL MWAIT 0=
+x10
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/latency:20
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/name:C2
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/time:119479360
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/usage:32863
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/desc:ACPI FFH INTEL MWAIT 0=
+x30
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/latency:100
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/name:C3
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/time:1673
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/usage:7
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/desc:ACPI FFH INTEL MWAIT 0=
+x52
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/latency:140
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/name:C4
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/time:125622
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/usage:63
+>=20
+> After:
+> # dmesg | grep idle
+> [    0.244640] cpuidle: using governor ladder
+> [    0.244645] cpuidle: using governor menu
+> [    0.654351] intel_idle: MWAIT substates: 0x3020220
+> [    0.654355] intel_idle: v0.4 model 0x36
+> [    0.654359] intel_idle: lapic_timer_reliable_states 0xffffffff
+> # grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/desc:CPUIDLE CORE POLL IDLE=
 
-On Sat, Feb 15, 2014 at 02:31:41PM +0100, Belisko Marek wrote:
-> >         /*
-> >          * Phoenix provides 2 interrupt lines. The first one is connected to
-> >          * the OMAP. The other one can be connected to the other processor such
-> >          * as modem. Hence two separate ISR and IMR registers.
-> >          */
-> > -       madc->imr = (pdata->irq_line == 1) ?
-> > +       if (pdata)
-> > +               madc->use_second_irq = pdata->irq_line != 1;
-> > +       else
-> > +               madc->use_second_irq = false;
->
-> Can we add some property to use second IRQ also in DT?
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/latency:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/name:POLL
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/power:4294967295
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/time:572
+> /sys/devices/system/cpu/cpu0/cpuidle/state0/usage:12
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/desc:MWAIT 0x00
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/latency:10
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/name:C1E-ATM
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/time:722013
+> /sys/devices/system/cpu/cpu0/cpuidle/state1/usage:3132
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/desc:MWAIT 0x10
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/latency:20
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/name:C2-ATM
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/time:4512127
+> /sys/devices/system/cpu/cpu0/cpuidle/state2/usage:9147
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/desc:MWAIT 0x30
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/latency:100
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/name:C4-ATM
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/time:1996954
+> /sys/devices/system/cpu/cpu0/cpuidle/state3/usage:2696
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/desc:MWAIT 0x52
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/disable:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/latency:140
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/name:C6-ATM
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/power:0
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/time:266926331
+> /sys/devices/system/cpu/cpu0/cpuidle/state4/usage:73695
+>=20
+>>
+>> How did you measure power on the the DN2800MT, and on what workload?
+>=20
+> I measured the input current of the board @12V. In both cases, the
+> system was idle in single-user mode, practically no processes running.
+>=20
+> Jan
+>=20
+>=20
 
-Sure, a boolean property like this could be added:
+Was this answering your questions sufficiently? Can it be merged?
 
-ti,system-uses-second-madc-irq;
+Jan
 
-I did not add support for it initially, since I could not find any
-board in the mainline kernel with this setup. If such a board is
-added at some later point the driver can be extended easily.
 
--- Sebastian
-
---SUOF0GtieIMvvwua
+--NpK3n2rNXt9TgMxCtgrg9d8xU0n7GopW2
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBCgAGBQJTAH6uAAoJENju1/PIO/qaQm0P/1RmmaLyDoooZPnL95GpfOdR
-stcpRhg01JGctEp5sFB+q8dYd+SxqCB3/Kk+m7I5PfzgMx+jsrnr0e+lDl3cbjeE
-H3yvcfQiKa2AbdMscN6/uq7ju+7rxIQcRFUFq5vKFzwswGnPs373nb10rb9/I44B
-AcK99HcgTK376Q+1KuMjOCzFuvu3khpj8HX2uwsciZ/LJvYIl3Nu1NqPSZVyS2JH
-mJXluIIt0Y5HWtydvSyzF7YXBmITfN6Y9i0CMtzgFStAuMstot7BJ31edNilesma
-uA3b9YSyWm9JE/1g2NYfWD1VymAB62K/5onDwot11IzfI4tWUcxwBejpEVJvRY6r
-/WhPwqfXblreUqTPbgYxj1qlbB1l1klZxajUxeuddg1L9632zCiH+cgf9XEwzN1D
-1JwWXOvApKOUKxx1D9HIljx6SSAR+fRph/q5kYoTD8EooxdrDZBmpClxkKpJsy+A
-gZH6n10pc6uaw7IPFmoSyEV2533PGWEtHxaU+ipo8+IKF73v594E4NdjN37pssGY
-dqk1tceSzaR3Kb2T65Jv32nzqbAz1zphyp/+atWCE8PbdC8YwPRToH9/2giTcRwB
-hlxsFJu6NxSEjzpRwaDBmtURdCSJGVu8ptBoxd2RPGBKl3ZcgaJk2AEtVe8wyrkJ
-WaIoYgsKXv9fxIK2Hiao
-=yLlO
+iEYEARECAAYFAlMAf08ACgkQitSsb3rl5xQOKQCgwPovXV4q34kZThTcqVjSdQxM
+TXgAn05rPkRmbig6jijexZ6Y5s30yKpV
+=vmmd
 -----END PGP SIGNATURE-----
 
---SUOF0GtieIMvvwua--
+--NpK3n2rNXt9TgMxCtgrg9d8xU0n7GopW2--
