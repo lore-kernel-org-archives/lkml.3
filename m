@@ -1,83 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaBPPvs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 10:51:48 -0500
-Received: from smtp3a.hushmail.com ([65.39.178.201]:45640 "EHLO
-	smtp3.hushmail.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751577AbaBPPvr (ORCPT
+	id S1752849AbaBPPxV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 10:53:21 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51228 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaBPPxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 10:51:47 -0500
+	Sun, 16 Feb 2014 10:53:19 -0500
+Message-ID: <5300DEC5.2080908@oracle.com>
+Date: Sun, 16 Feb 2014 16:52:37 +0100
+From: Vegard Nossum <vegard.nossum@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Date: Sun, 16 Feb 2014 15:51:46 +0000
-To: linux-kernel@vger.kernel.org, debian-devel@lists.debian.org
-Subject: Re: Honestly, fork systemd
-From: lynxred@hushmail.com
+To: Kalpak Shah <kalpak@clusterfs.com>, Andreas Dilger <adilger@clusterfs.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
+CC: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: ext4 info leak in creation times in latest mainline
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset="UTF-8"
-Message-Id: <20140216155146.5BCA4C047F@smtp.hushmail.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No, I will not be converted to systemd just because a few dictators
-made a decision.
+Hi,
 
-This needs to be overturned by whoever actually runs the debian
-non-profit corporation. I'm sure the tech-ctte isn't the board of
-directors.
-"Everyone then who hears these words of mine and does them will be
-like a wise man who built his house on the rock. And the rain fell,
-and the floods came, and the winds blew and beat on that house, but it
-did not fall, because it had been founded on the rock. 26 And everyone
-who hears these words of mine and does not do them will be like a
-foolish man who built his house on the sand. And the rain fell, and
-the floods came, and the winds blew and beat against that house, and
-it fell, and great was the fall of it."
-BDale has no right to make this decision for the rest of us.
-But that is just what he did.
+There seems to be a bug in ext4 where the i_crtime of struct 
+ext4_inode_info is not initialised, so (some) creation times contain 
+essentially random values. Here's a report from kmemcheck:
 
-The tech-ctte has no right to dictate that we all change
-the way we use linux on debian, but that's what four of them did.
+[   92.402035] WARNING: kmemcheck: Caught 64-bit read from uninitialized 
+memory (ffff8800168ab208)
+[   92.403724] 
+00000000000000000000000000000000000000000000000018b28a160088ffff
+[   92.406378]  i i i i i i i i u u u u u u u u i i i i i i i i i i i i 
+i i i i
+[   92.408990]                  ^
+[   92.409850] RIP: 0010:[<ffffffff8119d8b6>]  [<ffffffff8119d8b6>] 
+ext4_mark_iloc_dirty+0x176/0x670
+[   92.411749] RSP: 0018:ffff880016737c18  EFLAGS: 00010206
+[   92.412547] RAX: 000000000000009c RBX: ffff880016737c80 RCX: 
+0000000000000000
+[   92.413603] RDX: 0000000000000000 RSI: ffff8800168aaf70 RDI: 
+ffff8800168aaf20
+[   92.414664] RBP: ffff880016737c68 R08: 0000080000010000 R09: 
+ffff880017d11680
+[   92.415732] R10: ffff8800168aaf20 R11: 0000000000000000 R12: 
+ffff8800168611a0
+[   92.416789] R13: ffff880017d11600 R14: ffff880016683800 R15: 
+ffff8800168aafd0
+[   92.417859] FS:  00007f3997461700(0000) GS:ffff880017a00000(0000) 
+knlGS:0000000000000000
+[   92.419051] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   92.419891] CR2: ffff880017404160 CR3: 0000000016351000 CR4: 
+00000000000006f0
+[   92.420946] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
+0000000000000000
+[   92.422120] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 
+0000000000000400
+[   92.423371]  [<ffffffff8119dec1>] ext4_mark_inode_dirty+0x71/0x1b0
+[   92.424858]  [<ffffffff811a0b64>] ext4_dirty_inode+0x44/0x70
+[   92.425853]  [<ffffffff81148169>] __mark_inode_dirty+0x29/0x200
+[   92.427432]  [<ffffffff8113ae79>] update_time+0x79/0xc0
+[   92.428236]  [<ffffffff8113b09a>] touch_atime+0xfa/0x140
+[   92.429105]  [<ffffffff810d6cee>] generic_file_aio_read+0x4ae/0x6b0
+[   92.430076]  [<ffffffff81120d55>] do_sync_read+0x55/0x90
+[   92.430874]  [<ffffffff81121d46>] vfs_read+0xa6/0x180
+[   92.431648]  [<ffffffff81121fbd>] SyS_read+0x4d/0xa0
 
-*And no one else who is opposed to systemd should accept this either.
+RIP here corresponds to the line:
 
-Debian is the Universal Operating System.
-It is not BDale's OS. It is not Matthias OS. It is not Adrian OS.
-It is not Lennart OS.
+     EXT4_EINODE_SET_XTIME(i_crtime, ei, raw_inode);
 
-It is our operating system.
-Your four supporters have absolutly no right changing it from
-a unix system to a systemD operating system.
+in ext4_do_update_inode(), in particular the
 
-You have no right at all.
-And you need to be fought and stopped.
+     (raw_inode)->xtime = cpu_to_le32((einode)->xtime.tv_sec);
 
->If you insist on alegories, then the choice now stands between
->building on a solitary rock in the middle of a stormy sea or building
->on the sandy beaches of a popular costal town. Often it is easier to
->put in the work to drive down piles trought the sand down to bedrock
->and injecting some concrete where needed to form your own rock
->foundation rather than transport everything to that rocky island. And
->the end result for the users is a much more useful home. > >The
-choice in Debian has been made - we like the beachfront property.
->Help us make the best of it - investigate where the sand is weakest
->and inject concrete there, find the bedrock and drive some piles to
->it, add liquifaction protection where that is needed, be
-constructive. 
->The house will be build here. If you can help its construction and 
->help it be stronger - please help. If you are going
-to continue 
->advocating not building here - please don't. That one is
-settled.
- >I personally dislike systemd on a few technical and few
-social 
->grounds, but I respect the decision of Debian TC and will do
-what I 
->can to make systemd in Debian be the bast it can be and make
-Debian 
->with systemd the strongest system it can be. I hope others
-will do the same. 
->Best regards,
->    Aigars Mahinovs
->
+line of EXT4_EINODE_SET_XTIME. As an aside, kmemcheck reports a 64-bit 
+read, but that's just because gcc generates a 64-bit load followed by a 
+32-bit store, so it essentially just discards the upper 32 bits:
 
+ffffffff8119d8b6:       49 8b 87 38 02 00 00    mov    0x238(%r15),%rax
+ffffffff8119d8bd:       41 89 85 90 00 00 00    mov    %eax,0x90(%r13)
+
+A few of the weird crtimes I've observed (using debugfs):
+
+crtime: 0x00000101:00000000 -- Thu Jan  1 00:04:17 1970
+crtime: 0x00001000:00000000 -- Thu Jan  1 01:08:16 1970
+crtime: 0x02020202:00000002 -- Mon Jan 25 21:13:38 1971 (looks like some 
+kind of poison value?)
+crtime: 0x03030303:00000003 -- Sun Aug  8 19:50:27 1971
+crtime: 0x15406b80:00000000 -- Sun Apr 19 15:49:20 1981 (these look like 
+lower 32 bits of stack addresses/kernel pointers)
+crtime: 0x16be86a0:00000000 -- Wed Feb  3 11:50:56 1982
+crtime: 0x2f0d5ac1:00000000 -- Fri Jan  6 14:59:13 1995
+
+And enabling SLUB debugging removes any trace of a doubt:
+
+crtime: 0x5a5a5a5a:00000002 -- Sat Jan 13 19:13:30 2018
+
+I don't know if it's relevant, but the filesystem is actually ext3 
+mounted using ext4. It's 100% reproducible for me, so I can test patches.
+
+
+Vegard
