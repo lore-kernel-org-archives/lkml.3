@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaBPNVS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 08:21:18 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:57648 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaBPNVQ (ORCPT
+	id S1752363AbaBPNoW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 08:44:22 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:57771 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127AbaBPNoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 08:21:16 -0500
+	Sun, 16 Feb 2014 08:44:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140216123432.34BC8200F5@smtp.hushmail.com>
-References: <20140216123432.34BC8200F5@smtp.hushmail.com>
-Date: Sun, 16 Feb 2014 15:21:15 +0200
-X-Google-Sender-Auth: 2kAG-s_qks_FYo2eCLUkFPo5vKM
-Message-ID: <CABpYwDW+hHKY0Si1WRVw_JfVffNkO8bKTmbWrqvoe=EH19C0Mw@mail.gmail.com>
-Subject: Re: Honestly, fork systemd
-From: Aigars Mahinovs <aigarius@debian.org>
-To: redlynx@hush.com
-Cc: linux-kernel@vger.kernel.org,
-        "debian-devel@lists.debian.org" <debian-devel@lists.debian.org>,
-        debian-project@lists.debian.org,
-        ChaosEsque Team <chaosesqueteam@yahoo.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140215150345.GD2579@katana>
+References: <1392300547-23365-1-git-send-email-ulf.hansson@linaro.org>
+	<20140215150345.GD2579@katana>
+Date: Sun, 16 Feb 2014 14:44:07 +0100
+Message-ID: <CAPDyKFrt6QJVSypP5iD_oVxRUvNhzxGcbZ703zR1K8gwJ5uCeQ@mail.gmail.com>
+Subject: Re: [PATCH V2 11/17] i2c: nomadik: Convert to devm functions
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Chris Ball <chris@printf.net>, Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 February 2014 14:34,  <redlynx@hush.com> wrote:
-> The alternative is allready here. It's called SysV. Nothing needs to be
-> done.
-> It is a rock on which to build.
-> Not a shifting sands.
+On 15 February 2014 16:03, Wolfram Sang <wsa@the-dreams.de> wrote:
+> On Thu, Feb 13, 2014 at 03:09:02PM +0100, Ulf Hansson wrote:
+>> Use devm_* functions to simplify code and error handling.
+>>
+>> Cc: Alessandro Rubini <rubini@unipv.it>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Cc: Wolfram Sang <wsa@the-dreams.de>
+>> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+>> ---
+>>
+>> Changes in v2:
+>>       Rebased on top of latest i2c-nomadik branch.
+>
+> Since this depends on Linus' patch already, I think it would be cleaner
+> if I pick this kinda unrelated (but wanted) devm patch, and ack the
+> PM stuff. If this for some reason makes things more complicated, I can
+> also simply ack this one.
 
-If you insist on alegories, then the choice now stands between
-building on a solitary rock in the middle of a stormy sea or building
-on the sandy beaches of a popular costal town. Often it is easier to
-put in the work to drive down piles trought the sand down to bedrock
-and injecting some concrete where needed to form your own rock
-foundation rather than transport everything to that rocky island. And
-the end result for the users is a much more useful home.
+I think we will end up having merge conflicts, especially for the
+changes in the probe function if we decide to split it.
 
-The choice in Debian has been made - we like the beachfront property.
-Help us make the best of it - investigate where the sand is weakest
-and inject concrete there, find the bedrock and drive some piles to
-it, add liquifaction protection where that is needed, be constructive.
-The house will be build here. If you can help its construction and
-help it be stronger - please help. If you are going to continue
-advocating not building here - please don't. That one is settled.
+Would a way forward be to let you carry all the patches through your
+tree? I believe all but patch 17 can be safely merged. It is only this
+one that depends on the changes in the amba bus, so we can put this
+one on hold for a while.
 
-I personally dislike systemd on a few technical and few social
-grounds, but I respect the decision of Debian TC and will do what I
-can to make systemd in Debian be the bast it can be and make Debian
-with systemd the strongest system it can be. I hope others will do the
-same.
+Another option would be if you drop Linus' patch from you branch and
+let him collect all the patches in a pull request instead?
 
--- 
-Best regards,
-    Aigars Mahinovs        mailto:aigarius@debian.org
-  #--------------------------------------------------------------#
- | .''`.    Debian GNU/Linux (http://www.debian.org)            |
- | : :' :   Latvian Open Source Assoc. (http://www.laka.lv)     |
- | `. `'    Linux Administration and Free Software Consulting   |
- |   `-                                 (http://www.aiteki.com) |
- #--------------------------------------------------------------#
+I happy with whatever we thinks are easiest. :-)
+
+>
+>> -     dev->virtbase = ioremap(adev->res.start, resource_size(&adev->res));
+>> +     dev->virtbase = devm_ioremap(&adev->dev, adev->res.start,
+>> +                             resource_size(&adev->res));
+>>       if (!dev->virtbase) {
+>>               ret = -ENOMEM;
+>
+> IS_ERR()!
+
+Will fix in a v2!
+
+>
+
+Thanks!
+
+Kind regards
+Ulf Hansson
