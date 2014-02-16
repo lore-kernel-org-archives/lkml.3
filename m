@@ -1,143 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaBPV51 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 16:57:27 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:55980 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922AbaBPV50 (ORCPT
+	id S1753563AbaBPV5f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 16:57:35 -0500
+Received: from smtprelay0087.hostedemail.com ([216.40.44.87]:37399 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752922AbaBPV5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 16:57:26 -0500
-MIME-Version: 1.0
-Date: Sun, 16 Feb 2014 13:57:25 -0800
-X-Google-Sender-Auth: AdPnOvNZXRkoMZg56M4D7lQvsDg
-Message-ID: <CA+55aFyvQ4ko4J2oLbyVEZjb9=TvjcCF_PV-jGDZTR8_D+zseQ@mail.gmail.com>
-Subject: Linux 3.14-rc3
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 16 Feb 2014 16:57:32 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1345:1437:1534:1540:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:3138:3139:3140:3141:3142:3352:3653:3876:3877:4321:4605:5007:6114:6261:6642:10004:10026:10848:11026:11473:11657:11658:11914:12043:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: farm24_7baa313954104
+X-Filterd-Recvd-Size: 1518
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] checkpatch: Update octal permissions warning
+Date: Sun, 16 Feb 2014 13:57:26 -0800
+Message-Id: <c5b2c9b85c9c955208c5d4ca10f257496315e389.1392587681.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I made the rc2 announcement, I mentioned how nice and small it
-was. I also mentioned that I mistrusted you guys, and that I suspected
-that some people were giggling to themselves and holding back their
-pull requests, evil little creatures like you are.
+When checking permissions, make sure 4 octal digits are used,
+but allow a single 0 too.
 
-And I hate being right. rc2 was quite small, but rc3 makes up for it.
-I quietly took all the pull requests because clearly this wasn't a
-surprise, but I'm warning you - I'm going to start cursing at people
-if it looks like this trend is going to continue. You've been warned.
-
-Anyway, because the shortlog is pretty hefty, I'm doing my overview
-"mergelog" here, and will post the shortlog separately as a reply to
-this email for people who want more detail. The bulk is the networking
-and random drivers (net, staging, usb, block, infiniband..) but
-there's some arch updates too (powerpc, arm, x86) and some
-documentation updates.
-
-          Linus
-
-(And as always for my mergelog - the people credited are the people
-who send me the pull request, which is generally different from the
-author of the code. See the shortlog for actual code authorship)
-
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
+ scripts/checkpatch.pl | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-Andrew Morton (1):
-  misc fixes
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 1054283..9f12213 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4512,9 +4512,11 @@ sub process {
+ 				my $val = $1;
+ 				$val = $6 if ($skip_args ne "");
+ 
+-				if ($val =~ /^$Int$/ && $val !~ /^$Octal$/) {
++				if ($val !~ /^0$/ &&
++				    (($val =~ /^$Int$/ && $val !~ /^$Octal$/) ||
++				     length($val) ne 4)) {
+ 					ERROR("NON_OCTAL_PERMISSIONS",
+-					      "Use octal not decimal permissions\n" . $herecurr);
++					      "Use 4 digit octal (0777) not decimal permissions\n" . $herecurr);
+ 				}
+ 			}
+ 		}
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-Ben Herrenschmidt (1):
-  powerpc updates
-
-Borislav Petkov (1):
-  EDAC fixes
-
-Bruce Fields (1):
-  two nfsd bugfixes
-
-Chris Mason (1):
-  btrfs fixes
-
-Dave Airlie (1):
-  drm fixes
-
-David Miller (1):
-  networking updates
-
-Dmitry Eremin-Solenikov (1):
-  battery fixes
-
-Greg KH (5):
-  char/misc fixes
-  driver core fix
-  staging driver fixes
-  tty/serial driver fixes
-  USB fixes
-
-Guenter Roeck (1):
-  hwmon fix
-
-Jens Axboe (1):
-  block IO fixes
-
-Kevin Hilman (1):
-  ARM SoC fixes
-
-Konrad Rzeszutek Wilk (1):
-  Xen bugfixes
-
-Linus Walleij (1):
-  GPIO fixes
-
-Mark Brown (2):
-  spi fixes
-  regulator fixes
-
-Martin Schwidefsky (1):
-  s390 bugfixes
-
-Michal Simek (1):
-  microblaze fixes
-
-Neil Brown (1):
-  md fixes
-
-Nicholas Bellinger (1):
-  SCSI target fixes
-
-Paolo Bonzini (1):
-  KVM fixes
-
-Peter Anvin (2):
-  x86 fixes
-  x86 EFI fixes
-
-Rafael Wysocki (1):
-  ACPI and power management fixes
-
-Rob Herring (2):
-  DeviceTree fixes
-  devicetree fixes
-
-Roland Dreier (1):
-  RDMA/InfiniBand fixes
-
-Steve French (1):
-  CIFS fixes
-
-Steven Rostedt (1):
-  twi tracing fixes
-
-Takashi Iwai (1):
-  sound fixes
-
-Thomas Gleixner (2):
-  timer fixes
-  irq update
-
-Tomi Valkeinen (1):
-  fbdev fixes
-
-Wolfram Sang (1):
-  i2c fixes
