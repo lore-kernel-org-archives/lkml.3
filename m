@@ -1,104 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073AbaBPQlP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 11:41:15 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:56312 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508AbaBPQlN (ORCPT
+	id S1753142AbaBPQnF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 11:43:05 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:61214 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508AbaBPQnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 11:41:13 -0500
-Date: Sun, 16 Feb 2014 08:41:06 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Kevin Hilman <khilman@linaro.org>, Tejun Heo <tj@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
- workqueue
-Message-ID: <20140216164106.GD4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
- <52F8A51F.4090909@cn.fujitsu.com>
- <20140210184729.GL4250@linux.vnet.ibm.com>
- <20140212182336.GD5496@localhost.localdomain>
- <20140212190241.GD4250@linux.vnet.ibm.com>
- <20140212192354.GC26809@htj.dyndns.org>
- <7hk3cx46rw.fsf@paris.lan>
- <1392449804.5517.45.camel@marge.simpson.net>
+	Sun, 16 Feb 2014 11:43:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392449804.5517.45.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021616-0928-0000-0000-000006744D15
+In-Reply-To: <CAN+gG=EcXQLivrUPXCk8imrY0T2n3Twc9yujxPGmi=LeoOrsCg@mail.gmail.com>
+References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1392055139-19631-4-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4TjLJUts20nVYE3WT5FXu_eswKrM0CLwQAu25df3GEDig@mail.gmail.com>
+	<CAN+gG=EcXQLivrUPXCk8imrY0T2n3Twc9yujxPGmi=LeoOrsCg@mail.gmail.com>
+Date: Sun, 16 Feb 2014 17:43:02 +0100
+Message-ID: <CANq1E4SyECC2unw9hAxf5Z4Xm82ogvVJZapJTX_DLrO-SqPBag@mail.gmail.com>
+Subject: Re: [PATCH 03/14] HID: core: implement generic .request()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 08:36:44AM +0100, Mike Galbraith wrote:
-> On Fri, 2014-02-14 at 15:24 -0800, Kevin Hilman wrote: 
-> > Tejun Heo <tj@kernel.org> writes:
-> > 
-> > > Hello,
-> > >
-> > > On Wed, Feb 12, 2014 at 11:02:41AM -0800, Paul E. McKenney wrote:
-> > >> +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
-> > >> +	to force the WQ_SYSFS workqueues to run on the specified set
-> > >> +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
-> > >> +	"ls sys/devices/virtual/workqueue".
-> > >
-> > > One thing to be careful about is that once published, it becomes part
-> > > of userland visible interface.  Maybe adding some words warning
-> > > against sprinkling WQ_SYSFS willy-nilly is a good idea?
-> > 
-> > In the NO_HZ_FULL case, it seems to me we'd always want all unbound
-> > workqueues to have their affinity set to the housekeeping CPUs.
-> > 
-> > Is there any reason not to enable WQ_SYSFS whenever WQ_UNBOUND is set so
-> > the affinity can be controlled?  I guess the main reason would be that 
-> > all of these workqueue names would become permanent ABI.
-> > 
-> > At least for NO_HZ_FULL, maybe this should be automatic.  The cpumask of
-> > unbound workqueues should default to !tick_nohz_full_mask?  Any WQ_SYSFS
-> > workqueues could still be overridden from userspace, but at least the
-> > default would be sane, and help keep full dyntics CPUs isolated.
-> 
-> What I'm thinking is that it should be automatic, but not necessarily
-> based upon the nohz full mask, rather maybe based upon whether sched
-> domains exist, or perhaps a generic exclusive cpuset property, though
-> some really don't want anything to do with cpusets.
-> 
-> Why? Because there are jitter intolerant loads where nohz full isn't all
-> that useful, because you'll be constantly restarting and stopping the
-> tick, and eating the increased accounting overhead to no gain because
-> there are frequently multiple realtime tasks running.  For these loads
-> (I have a user with such a fairly hefty 80 core rt load), dynamically
-> turning the tick _on_ is currently a better choice than nohz_full.
-> Point being, control of where unbound workqueues are allowed to run
-> isn't only desirable for single task HPC loads, other loads exist.
-> 
-> For my particular fairly critical 80 core load, workqueues aren't a real
-> big hairy deal, because its jitter tolerance isn't _all_ that tight (30
-> us max is easy enough to meet with room to spare).  The load can slice
-> through workers well enough to meet requirements, but it would certainly
-> be a win to be able to keep them at bay.  (gonna measure it, less jitter
-> is better even if it's only a little bit better.. eventually somebody
-> will demand what's currently impossible to deliver)
+Hi
 
-So if there is NO_HZ_FULL, you have no objection to binding workqueues to
-the timekeeping CPUs, but that you would also like some form of automatic
-binding in the !NO_HZ_FULL case.  Of course, if a common mechanism could
-serve both cases, that would be good.  And yes, cpusets are frowned upon
-for some workloads.
+On Thu, Feb 13, 2014 at 4:21 PM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> On Wed, Feb 12, 2014 at 5:25 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> Hi
+>>
+>> On Mon, Feb 10, 2014 at 6:58 PM, Benjamin Tissoires
+>> <benjamin.tissoires@redhat.com> wrote:
+>>> .request() can be emulated through .raw_request()
+>>> we can implement this emulation in hid-core, and make .request
+>>> not mandatory for transport layer drivers.
+>>>
+>>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>>> ---
+>>>  drivers/hid/hid-core.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
+>>>  include/linux/hid.h    |  5 ++++-
+>>>  2 files changed, 48 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>>> index 18fe49b..f36778a 100644
+>>> --- a/drivers/hid/hid-core.c
+>>> +++ b/drivers/hid/hid-core.c
+>>> @@ -1248,6 +1248,11 @@ void hid_output_report(struct hid_report *report, __u8 *data)
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(hid_output_report);
+>>>
+>>> +static int hid_report_len(struct hid_report *report)
+>>> +{
+>>> +       return ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
+>>
+>> Just for clarity, this is equivalent to the following, right?
+>>
+>> return DIV_ROUND_UP(report->size, 8) + !!(report->id > 0) + 7;
+>
+> yes, it should (at least that's what I understand too :)
+>
+>>
+>> I always have to read that shifting code twice to get it.. Maybe add a
+>> comment explaining the different entries here.
+>
+> good idea.
+>
+>>
+>>> +}
+>>> +
+>>>  /*
+>>>   * Allocator for buffer that is going to be passed to hid_output_report()
+>>>   */
+>>> @@ -1258,7 +1263,7 @@ u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags)
+>>>          * of implement() working on 8 byte chunks
+>>>          */
+>>>
+>>> -       int len = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
+>>> +       int len = hid_report_len(report);
+>>>
+>>>         return kmalloc(len, flags);
+>>>  }
+>>> @@ -1314,6 +1319,44 @@ static struct hid_report *hid_get_report(struct hid_report_enum *report_enum,
+>>>         return report;
+>>>  }
+>>>
+>>> +/*
+>>> + * Implement a generic .request() callback, using .raw_request()
+>>> + * DO NOT USE in hid drivers directly, but through hid_hw_request instead.
+>>> + */
+>>> +void __hid_request(struct hid_device *hid, struct hid_report *report,
+>>> +               int reqtype)
+>>> +{
+>>> +       char *buf;
+>>> +       int ret;
+>>> +       int len;
+>>> +
+>>> +       if (!hid->ll_driver->raw_request)
+>>> +               return;
+>>> +
+>>> +       buf = hid_alloc_report_buf(report, GFP_KERNEL);
+>>> +       if (!buf)
+>>> +               return;
+>>> +
+>>> +       len = hid_report_len(report);
+>
+> actually, after sending the patches, I was wondering if we should use
+> the +7 in hid_report_len.
+> "len" is used in .raw_request(), and the +7 was only for the implement(), right?
+>
+> So maybe a device can reject this because the size of the report is too big...
+>
+> Jiri, David, any ideas?
 
-So maybe start with Kevin's patch, but augment with something else for
-the !NO_HZ_FULL case?
+Yeah, we should allocate the +7 size, but we shouldn't use it as
+"length" argument. We should just silently guarantee the buffer is big
+enough.
 
-							Thanx, Paul
+Thanks
+David
 
+> Cheers,
+> Benjamin
+>
+>>> +
+>>> +       if (reqtype == HID_REQ_SET_REPORT)
+>>> +               hid_output_report(report, buf);
+>>> +
+>>> +       ret = hid->ll_driver->raw_request(hid, report->id, buf, len,
+>>> +                                         report->type, reqtype);
+>>> +       if (ret < 0) {
+>>> +               dbg_hid("unable to complete request: %d\n", ret);
+>>> +               goto out;
+>>> +       }
+>>> +
+>>> +       if (reqtype == HID_REQ_GET_REPORT)
+>>> +               hid_input_report(hid, report->type, buf, ret, 0);
+>>> +
+>>> +out:
+>>> +       kfree(buf);
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(__hid_request);
+>>> +
+>>
+>> Looks good to me.
+>>
+>> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+>>
+>> Thanks
+>> David
+>>
+>>>  int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+>>>                 int interrupt)
+>>>  {
+>>> diff --git a/include/linux/hid.h b/include/linux/hid.h
+>>> index a837ede..09fbbd7 100644
+>>> --- a/include/linux/hid.h
+>>> +++ b/include/linux/hid.h
+>>> @@ -753,6 +753,7 @@ struct hid_field *hidinput_get_led_field(struct hid_device *hid);
+>>>  unsigned int hidinput_count_leds(struct hid_device *hid);
+>>>  __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
+>>>  void hid_output_report(struct hid_report *report, __u8 *data);
+>>> +void __hid_request(struct hid_device *hid, struct hid_report *rep, int reqtype);
+>>>  u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags);
+>>>  struct hid_device *hid_allocate_device(void);
+>>>  struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+>>> @@ -965,7 +966,9 @@ static inline void hid_hw_request(struct hid_device *hdev,
+>>>                                   struct hid_report *report, int reqtype)
+>>>  {
+>>>         if (hdev->ll_driver->request)
+>>> -               hdev->ll_driver->request(hdev, report, reqtype);
+>>> +               return hdev->ll_driver->request(hdev, report, reqtype);
+>>> +
+>>> +       __hid_request(hdev, report, reqtype);
+>>>  }
+>>>
+>>>  /**
+>>> --
+>>> 1.8.3.1
+>>>
