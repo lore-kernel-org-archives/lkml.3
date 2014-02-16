@@ -1,169 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaBPCxH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 21:53:07 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:58017 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524AbaBPCxF (ORCPT
+	id S1752877AbaBPCyt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 21:54:49 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:61218 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524AbaBPCyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 21:53:05 -0500
-Date: Sat, 15 Feb 2014 18:52:07 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Michal Hocko <mhocko@suse.cz>
-cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] memcg: barriers to see memcgs as fully initialized
-In-Reply-To: <20140213145314.GC11986@dhcp22.suse.cz>
-Message-ID: <alpine.LSU.2.11.1402151752530.9356@eggly.anvils>
-References: <alpine.LSU.2.11.1402121717420.5917@eggly.anvils> <alpine.LSU.2.11.1402121727050.5917@eggly.anvils> <20140213145314.GC11986@dhcp22.suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 15 Feb 2014 21:54:47 -0500
+From: Roman Pen <r.peniaev@gmail.com>
+Cc: Roman Pen <r.peniaev@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data integrity write
+Date: Sun, 16 Feb 2014 11:54:28 +0900
+Message-Id: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014, Michal Hocko wrote:
-> On Wed 12-02-14 17:29:09, Hugh Dickins wrote:
-> > Commit d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully
-> > initialized") is not bad, but Greg Thelen asks "Are barriers needed?"
-> > 
-> > Yes, I'm afraid so: this makes it a little heavier than the original,
-> > but there's no point in guaranteeing that mem_cgroup_iter() returns only
-> > fully initialized memcgs, if we don't guarantee that the initialization
-> > is visible.
-> > 
-> > If we move online_css()'s setting CSS_ONLINE after rcu_assign_pointer()
-> > (I don't see why not), we can reasonably rely on the smp_wmb() in that.
-> > But I can't find a pre-existing barrier at the mem_cgroup_iter() end,
-> > so add an smp_rmb() where __mem_cgroup_iter_next() returns non-NULL.
-> > 
-> > Fixes: d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully initialized")
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > Cc: stable@vger.kernel.org # 3.12+
-> > ---
-> > I'd have been happier not to have to add this patch: maybe you can see
-> > a better placement, or a way we can avoid this altogether.
-> 
-> I don't know. I have thought about this again and I really do not see
-> why we have to provide such a guarantee, to be honest.
-> 
-> Such a half initialized memcg wouldn't see its hierarchical parent
-> properly (including inheritted attributes) and it wouldn't have kmem
-> fully initialized. But it also wouldn't have any tasks in it IIRC so it
-> shouldn't matter much.
-> 
-> So I really don't know whether this all is worth all the troubles. 
-> I am not saying your patch is wrong (although I am not sure whether
-> css->flags vs. subsystem css association ordering is relevant and
-> ae7f164a09408 changelog didn't help me much) and it made sense when
-> you proposed it back then but the additional ordering requirements
-> complicates the thing.
+In case of wbc->sync_mode == WB_SYNC_ALL we need to do data integrity write,
+thus mark request as WRITE_SYNC.
 
-Your feelings match mine exactly: nice enough when it was just a matter
-of testing a flag, but rather a bore to have to go adding barriers.
-And Tejun didn't like it either, would prefer the barriers to be
-internal to memcg, if we really need them.
+Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: linux-fsdevel@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+---
+ fs/mpage.c | 23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
-No surprise: it's why I made it an easily skippable 2/2.
-Let's forget this patch - but I still don't want to remove the
-CSS_ONLINE check, not yet anyway.
+diff --git a/fs/mpage.c b/fs/mpage.c
+index 4979ffa..4e0af5a 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -462,6 +462,7 @@ static int __mpage_writepage(struct page *page, struct writeback_control *wbc,
+ 	struct buffer_head map_bh;
+ 	loff_t i_size = i_size_read(inode);
+ 	int ret = 0;
++	int wr = (wbc->sync_mode == WB_SYNC_ALL ?  WRITE_SYNC : WRITE);
+ 
+ 	if (page_has_buffers(page)) {
+ 		struct buffer_head *head = page_buffers(page);
+@@ -570,7 +571,7 @@ page_is_mapped:
+ 	 * This page will go to BIO.  Do we need to send this BIO off first?
+ 	 */
+ 	if (bio && mpd->last_block_in_bio != blocks[0] - 1)
+-		bio = mpage_bio_submit(WRITE, bio);
++		bio = mpage_bio_submit(wr, bio);
+ 
+ alloc_new:
+ 	if (bio == NULL) {
+@@ -587,7 +588,7 @@ alloc_new:
+ 	 */
+ 	length = first_unmapped << blkbits;
+ 	if (bio_add_page(bio, page, length, 0) < length) {
+-		bio = mpage_bio_submit(WRITE, bio);
++		bio = mpage_bio_submit(wr, bio);
+ 		goto alloc_new;
+ 	}
+ 
+@@ -620,7 +621,7 @@ alloc_new:
+ 	set_page_writeback(page);
+ 	unlock_page(page);
+ 	if (boundary || (first_unmapped != blocks_per_page)) {
+-		bio = mpage_bio_submit(WRITE, bio);
++		bio = mpage_bio_submit(wr, bio);
+ 		if (boundary_block) {
+ 			write_boundary_block(boundary_bdev,
+ 					boundary_block, 1 << blkbits);
+@@ -632,7 +633,7 @@ alloc_new:
+ 
+ confused:
+ 	if (bio)
+-		bio = mpage_bio_submit(WRITE, bio);
++		bio = mpage_bio_submit(wr, bio);
+ 
+ 	if (mpd->use_writepage) {
+ 		ret = mapping->a_ops->writepage(page, wbc);
+@@ -688,8 +689,11 @@ mpage_writepages(struct address_space *mapping,
+ 		};
+ 
+ 		ret = write_cache_pages(mapping, wbc, __mpage_writepage, &mpd);
+-		if (mpd.bio)
+-			mpage_bio_submit(WRITE, mpd.bio);
++		if (mpd.bio) {
++			int wr = (wbc->sync_mode == WB_SYNC_ALL ?
++				  WRITE_SYNC : WRITE);
++			mpage_bio_submit(wr, mpd.bio);
++		}
+ 	}
+ 	blk_finish_plug(&plug);
+ 	return ret;
+@@ -706,8 +710,11 @@ int mpage_writepage(struct page *page, get_block_t get_block,
+ 		.use_writepage = 0,
+ 	};
+ 	int ret = __mpage_writepage(page, wbc, &mpd);
+-	if (mpd.bio)
+-		mpage_bio_submit(WRITE, mpd.bio);
++	if (mpd.bio) {
++		int wr = (wbc->sync_mode == WB_SYNC_ALL ?
++			  WRITE_SYNC : WRITE);
++		mpage_bio_submit(wr, mpd.bio);
++	}
+ 	return ret;
+ }
+ EXPORT_SYMBOL(mpage_writepage);
+-- 
+1.8.5.2
 
-At the time I added that check, I only had out-of-tree changes
-and lockdep weirdness in support of it.  I did spend a little time
-yesterday looking to see if there's a stronger case, thought I'd
-found one, but looking again don't see it - I think I was muddling
-stats with RES_USAGE.
-
-The kind of case I was looking for was stats gathering doing a
-res_counter_read_u64() inside a for_each_mem_cgroup() loop.  On
-a 32-bit kernel, res_counter_read_u64() has to use the spinlock
-which is not initialized until mem_cgroup_css_online().  Which
-it should manage with unadorned ticket lock, but then the unlock
-might race with its initialization (I'm not sure how that will
-then behave).  But actually I don't think stats gathering ever
-does iterative res_counter_reads (and there may be good design
-reasons why that would never make sense).
-
-Now I do see the existing mem_cgroup_soft_reclaim() doing a 
-res_counter_soft_limit_excess() in a mem_cgroup_iter() loop:
-I guess that is vulnerable, even on 64-bit, and a lot safer
-with the CSS_ONLINE check, even lacking barriers.
-
-I'm thinking that we'd be safer if those res_counters
-initialized in mem_cgroup_css_online() could be initialized in
-mem_cgroup_css_alloc(), then updated in mem_cgroup_css_online();
-but I don't think res_counter.c offers that option today,
-not to change parent (or could parent be set from the start?
-maybe that gets into races with setting use_hierarchy).
-
-I haven't looked into what memcg_init_kmem() gets up to,
-and whether that's safe before it's initialized.
-
-Not something urgent I'm intending to rush into, and please don't
-feel you need rush to respond, these are just thoughts for later:
-let's move away from the CSS_ONLINE check and barriers, and
-towards having the struct mem_cgroup sensibly initialized earlier.
-
-Hugh
-
-> 
-> I will keep thinking about that.
-> 
-> >  kernel/cgroup.c |    8 +++++++-
-> >  mm/memcontrol.c |   11 +++++++++--
-> >  2 files changed, 16 insertions(+), 3 deletions(-)
-> > 
-> > --- 3.14-rc2+/kernel/cgroup.c	2014-02-02 18:49:07.737302111 -0800
-> > +++ linux/kernel/cgroup.c	2014-02-12 11:59:52.804041895 -0800
-> > @@ -4063,9 +4063,15 @@ static int online_css(struct cgroup_subs
-> >  	if (ss->css_online)
-> >  		ret = ss->css_online(css);
-> >  	if (!ret) {
-> > -		css->flags |= CSS_ONLINE;
-> >  		css->cgroup->nr_css++;
-> >  		rcu_assign_pointer(css->cgroup->subsys[ss->subsys_id], css);
-> > +		/*
-> > +		 * Set CSS_ONLINE after rcu_assign_pointer(), so that its
-> > +		 * smp_wmb() will guarantee that those seeing CSS_ONLINE
-> > +		 * can see the initialization done in ss->css_online() - if
-> > +		 * they provide an smp_rmb(), as in __mem_cgroup_iter_next().
-> > +		 */
-> > +		css->flags |= CSS_ONLINE;
-> >  	}
-> >  	return ret;
-> >  }
-> > --- 3.14-rc2+/mm/memcontrol.c	2014-02-12 11:55:02.836035004 -0800
-> > +++ linux/mm/memcontrol.c	2014-02-12 11:59:52.804041895 -0800
-> > @@ -1128,9 +1128,16 @@ skip_node:
-> >  	 */
-> >  	if (next_css) {
-> >  		if ((next_css == &root->css) ||
-> > -		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css)))
-> > +		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))) {
-> > +			/*
-> > +			 * Ensure that all memcg initialization, done before
-> > +			 * CSS_ONLINE was set, will be visible to our caller.
-> > +			 * This matches the smp_wmb() in online_css()'s
-> > +			 * rcu_assign_pointer(), before it set CSS_ONLINE.
-> > +			 */
-> > +			smp_rmb();
-> >  			return mem_cgroup_from_css(next_css);
-> > -
-> > +		}
-> >  		prev_css = next_css;
-> >  		goto skip_node;
-> >  	}
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
