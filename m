@@ -1,161 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaBPBvT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 20:51:19 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:40314 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935AbaBPBvR (ORCPT
+	id S1752720AbaBPB60 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 20:58:26 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42120 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307AbaBPB6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 20:51:17 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
-	<87txc0jbvt.fsf_-_@xmission.com>
-Date: Sat, 15 Feb 2014 17:50:33 -0800
-In-Reply-To: <87txc0jbvt.fsf_-_@xmission.com> (Eric W. Biederman's message of
-	"Sat, 15 Feb 2014 13:37:26 -0800")
-Message-ID: <87ob27zuza.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sat, 15 Feb 2014 20:58:25 -0500
+Date: Sun, 16 Feb 2014 09:58:07 +0800
+From: Mark Brown <broonie@kernel.org>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Michal Simek <monstr@monstr.eu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140216015807.GX4451@sirena.org.uk>
+References: <cover.1392045742.git.michal.simek@xilinx.com>
+ <5998a942a3dbfb2ef965d000168cbd7007315630.1392045742.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18bnD7owqeyKQJd/Zz+nn44K+nQuUbl8D8=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.0 T_FRT_OPPORTUN1 BODY: ReplaceTags: Oppertun (1)
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1731]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;Al Viro <viro@zeniv.linux.org.uk>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 05/11] vfs: Add a function to lazily unmount all mounts from any dentry.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9/9WPmgm2v60RN0g"
+Content-Disposition: inline
+In-Reply-To: <5998a942a3dbfb2ef965d000168cbd7007315630.1392045742.git.michal.simek@xilinx.com>
+X-Cookie: Your lucky color has faded.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 175.45.49.105
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH 1/3] regmap: Separate regmap dev initialization
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
 
-> v2: Always drop the lock when exiting early.
-> v3: Make detach_mounts robust about freeing several
->     mounts on the same mountpoint at one time, and remove
->     the unneeded mnt_list list test.
-> v4: Document the purpose of detach_mounts and why new_mountpoint is
->     safe to call.
->
-> Signed-off-by: Eric W. Biederman <ebiederman@twitter.com>
-> ---
->  fs/mount.h     |    2 ++
->  fs/namespace.c |   39 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 41 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/mount.h b/fs/mount.h
-> index 50a72d46e7a6..2b470f34e665 100644
-> --- a/fs/mount.h
-> +++ b/fs/mount.h
-> @@ -84,6 +84,8 @@ extern struct mount *__lookup_mnt_last(struct vfsmount *, struct dentry *);
->  
->  extern bool legitimize_mnt(struct vfsmount *, unsigned);
->  
-> +extern void detach_mounts(struct dentry *dentry);
+--9/9WPmgm2v60RN0g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-After Linus's rant about performance I took a second look, and lo and
-behold there is a significant optimization oppportunity missed here.
+On Mon, Feb 10, 2014 at 04:22:33PM +0100, Michal Simek wrote:
+> Create special function regmap_attach_dev
+> which can be called separately out of regmap_init.
 
-This should almost certainly be:
+Applied, thanks.  I've pushed a signed tag too so dependencies can pull
+this in:
 
-extern void __detach_mounts(struct dentry *dentry);
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/nodev
 
-static inline void detach_mounts(struct dentry *dentry)
-{
-	if (unlikely(d_mountpoint(dentry)))
-        	return;
-	__detach_mounts(dentry);
-}
+When sending things like this that add new functionality it's often
+helpful to send the patches adding users to review along with the core
+patch since this helps to review if the usage is actually sane and
+sensible.  From a purely regmap point of view this seems OK but...
 
-Just so I don't take the namespace lock when not necessary.
+--9/9WPmgm2v60RN0g
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Although wether this should be inline or at the start of detach_mounts
-and out of line I don't know.  Sigh.  I will have to play with this
-detail a bit more.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Eric
+iQIcBAEBAgAGBQJTABssAAoJELSic+t+oim94oEP/3+E03QGq1vIpUsdBsZUkjJr
+deibDwXk81tkfVOwjIGDycZPM0GU6oSSNTq3K3dUnnQRUhYprWB6GJIFW8fc8DQ+
+t4QCY1aDjLXu5mwLyTcBd+uqDQYfrKA2nkOlhqvwfYkQ9t2vL2TDW67iVXGa59/X
+oiMHtTfCdf9RiKFD0rilF5ozDUaCh1TkzwjlHvV4GfuUbRga07pyw+nK7tcrMLsD
+223Te72T3sf0vhcsznxopEY0Ev83oKZIQ3jv9TenbHUmJGZsa6FL6mEZzUrO8mR+
+S+WiVT9O9obDJsk6CmYV70SE8O1PIE44DaW7sy2M6mqyH8EUhrmrmAKqMa4Tj+si
+Rh3B9REaGvtOlsKbd2EszP9K44k5lYWblidIVWtD6vJGTYEftYMdQK5L5ajZJsdA
+F04KE9YHNqFmVRey9UPX7IzWP8hXi45L2+yyi/HKs2s1VHqWfWGM0NxYon4/FUSK
+gswLDEubgG7Ksw4z2A1aXvZ/Drghyb125Fv94BG5ZLFvleYsPQObf0eUthGzANsQ
+1h44sw+QxBm2gUkfP32vRyogCrEjW+tgGcDaAen7t3bQl/Q3bT7q7278cDEmWKBo
+uzPJKltjzUOPRe5IdXdrOSiRk95UCSRrri7kQzdUt4cYTFfcF53x54zPOaeS/RAg
+3y6sTE0Xop/S2nku9gKe
+=Py/5
+-----END PGP SIGNATURE-----
 
-
-
->  static inline void get_mnt_ns(struct mnt_namespace *ns)
->  {
->  	atomic_inc(&ns->count);
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 33db9e95bd5c..7abbf722ce18 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -1359,6 +1359,45 @@ static int do_umount(struct mount *mnt, int flags)
->  	return retval;
->  }
->  
-> +/*
-> + * detach_mounts - lazily unmount all mounts on the specified dentry
-> + *
-> + * During unlink, rmdir, and d_drop it is possible to loose the path
-> + * to an existing mountpoint, and wind up leaking the mount.
-> + * detach_mounts allows lazily unmounting those mounts instead of
-> + * leaking them.
-> + * 
-> + * The caller may hold dentry->d_inode->i_mutex.
-> + */
-> +void detach_mounts(struct dentry *dentry)
-> +{
-> +	struct mountpoint *mp;
-> +	struct mount *mnt;
-> +
-> +	namespace_lock();
-> +	if (!d_mountpoint(dentry))
-> +		goto out_unlock;
-> +
-> +	/* 
-> +	 * The namespace lock and d_mountpoint being set guarantees
-> +	 * that new_mountpoint will just be a lookup of the existing
-> +	 * mountpoint structure.
-> +	 */
-> +	mp = new_mountpoint(dentry);
-> +	if (IS_ERR(mp))
-> +		goto out_unlock;
-> +
-> +	lock_mount_hash();
-> +	while (!list_empty(&mp->m_list)) {
-> +		mnt = list_first_entry(&mp->m_list, struct mount, mnt_mp_list);
-> +		umount_tree(mnt, 1);
-> +	}
-> +	unlock_mount_hash();
-> +	put_mountpoint(mp);
-> +out_unlock:
-> +	namespace_unlock();
-> +}
-> +
->  /* 
->   * Is the caller allowed to modify his namespace?
->   */
+--9/9WPmgm2v60RN0g--
