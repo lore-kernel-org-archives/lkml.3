@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214AbaBPQnU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 11:43:20 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:47205 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508AbaBPQnR (ORCPT
+	id S1752922AbaBPQzr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 11:55:47 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.106]:14017
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752643AbaBPQzp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 11:43:17 -0500
-Date: Mon, 17 Feb 2014 00:42:05 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: catalin.marinas@arm.com
-Cc: rob@landley.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Documentation: update kmemleak.txt
-Message-ID: <20140216164205.GA5941@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	catalin.marinas@arm.com, rob@landley.net, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	Sun, 16 Feb 2014 11:55:45 -0500
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: =?utf-8?q?Gr=C3=BC=C3=9Fe_und_Komplimente!!!?=
+To: Recipients <hauandrw@hauandrew.onmicrosoft.com>
+From: Wang Yongli <hauandrw@hauandrew.onmicrosoft.com>
+Date: Sun, 16 Feb 2014 17:53:32 +0100
+Reply-To: <wangyongli1@aol.com>
+Message-ID: <ed411a76-3004-43b1-930a-871fe63072fa@AM3PR06MB356.eurprd06.prod.outlook.com>
+X-Originating-IP: [80.187.102.117]
+X-ClientProxiedBy: DBXPR07CA004.eurprd07.prod.outlook.com (10.255.191.162)
+ To AM3PR06MB356.eurprd06.prod.outlook.com (10.242.109.21)
+X-Forefront-PRVS: 01244308DF
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(6009001)(6049001)(199002)(189002)(76796001)(42186004)(76786001)(76576001)(74366001)(54356001)(51856001)(561924002)(50466002)(76176001)(77096001)(81816001)(81342001)(94316002)(69226001)(31696002)(95416001)(95666001)(86902001)(89136004)(64872006)(86442001)(94946001)(33646001)(56776001)(54316002)(74706001)(93136001)(76482001)(81686001)(93516002)(23756003)(74876001)(86362001)(87976001)(80976001)(47776003)(4396001)(63696002)(92726001)(87266001)(85306002)(49866001)(56816005)(46102001)(224303002)(90146001)(80022001)(79102001)(53256004)(81542001)(74316001)(66066001)(74502001)(65816001)(47736001)(74662001)(19580395003)(83322001)(43066001)(19580405001)(47446002)(47976001)(83072002)(85852003)(59766001)(50986001)(77982001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:AM3PR06MB356;H:[10.33.103.218];CLIP:80.187.102.117;FPR:B8A6E4BE.20B3C75B.63EF1F8B.F5CFCBB2.20158;PTR:InfoNoRecords;A:0;MX:1;LANG:de;
+X-OriginatorOrg: hauandrew.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update Documentatin/kmemleak.txt to
-reflect the following changes:
+Grüße und Komplimente
 
-Commit b69ec42b1b194cc88f04b3fbcda8d3f93182d6c3
-("Kconfig: clean up the long arch list for the DEBUG_KMEMLEAK config option")
-make we can't check supported architectures by read Kconfig.debug.
+Sehr geehrter  Damen und Herren,
 
-Commit 85d3a316c714197f94e75c1e5b2d37607d66e5de
-("kmemleak: use rbtree instead of prio tree")
-convert kmemleak to use rbtree instead of prio tree.
+  ich bin Herr Wang Yongli. Ich arbeite bei der BANK OF CHINA. Ich habe einen Business-Vorschlag in der Tonne von US $ 30.500.000 dem ich auf einem Offshore-Konto mit Ihrer Hilfe, wenn Sie bereit sind übertragen werde.
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- Documentation/kmemleak.txt | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+Bei Interesse sende ich Ihnen die vollen Angaben zur Transaktion nach Eingang Ihrer Antwort. Sie können mich auf meiner privaten E-Mail kontaktieren (wangyongli1@aol.com) und mir die folgenden Informationen zur Dokumentation senden
 
-diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
-index b6e3973..6dc8013 100644
---- a/Documentation/kmemleak.txt
-+++ b/Documentation/kmemleak.txt
-@@ -11,9 +11,7 @@ with the difference that the orphan objects are not freed but only
- reported via /sys/kernel/debug/kmemleak. A similar method is used by the
- Valgrind tool (memcheck --leak-check) to detect the memory leaks in
- user-space applications.
--
--Please check DEBUG_KMEMLEAK dependencies in lib/Kconfig.debug for supported
--architectures.
-+Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze, ppc, mips, s390, metag and tile.
- 
- Usage
- -----
-@@ -68,7 +66,7 @@ Basic Algorithm
- 
- The memory allocations via kmalloc, vmalloc, kmem_cache_alloc and
- friends are traced and the pointers, together with additional
--information like size and stack trace, are stored in a prio search tree.
-+information like size and stack trace, are stored in a rbtree.
- The corresponding freeing function calls are tracked and the pointers
- removed from the kmemleak data structures.
- 
-@@ -84,7 +82,7 @@ The scanning algorithm steps:
-   1. mark all objects as white (remaining white objects will later be
-      considered orphan)
-   2. scan the memory starting with the data section and stacks, checking
--     the values against the addresses stored in the prio search tree. If
-+     the values against the addresses stored in the rbtree. If
-      a pointer to a white object is found, the object is added to the
-      gray list
-   3. scan the gray objects for matching addresses (some white objects
--- 
-1.8.3.4.8.g69490f3.dirty
+1) Vollständige Namen 2) Aktuelle Wohnadresse 3) Private Telefonnummer
+
+   
+Mit freundlichen Grüßen
+
+Herr Wang Yongli
