@@ -1,89 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750848AbaBPFB6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 00:01:58 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:41725 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbaBPFB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 00:01:56 -0500
+	id S1750904AbaBPFLD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 00:11:03 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:54987 "EHLO kolab.o2s.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750794AbaBPFLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 00:11:00 -0500
+Subject: [PATCH v6 0/8] ARM: sunxi: Add driver for SD/MMC hosts found on
+ allwinner sunxi SOCs
+To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
+Date: Sun, 16 Feb 2014 06:10:42 +0100
+Message-ID: <20140216050933.728.25526.stgit@dizzy-6.o2s.ch>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1402151953180.10073@eggly.anvils>
-References: <000001cf2ac7$9abf23b0$d03d6b10$%yang@samsung.com>
-	<alpine.LSU.2.11.1402151953180.10073@eggly.anvils>
-Date: Sun, 16 Feb 2014 13:01:55 +0800
-Message-ID: <CAL1ERfO4yYMRBO8XEM0oCwBb6NOqZRVGq648ncerM9XuyPPJkw@mail.gmail.com>
-Subject: Re: [RFC PATCH] mm/vmscan: remove two un-needed mem_cgroup_page_lruvec()
- call
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Weijie Yang <weijie.yang@samsung.com>, riel@redhat.com,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 16, 2014 at 12:00 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Sun, 16 Feb 2014, Weijie Yang wrote:
->
->> In putback_inactive_pages() and move_active_pages_to_lru(),
->> lruvec is already an input parameter and pages are all from this lruvec,
->> therefore there is no need to call mem_cgroup_page_lruvec() in loop.
->>
->> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
->
-> Looks plausible but I believe it's incorrect.  The lruvec passed in
-> is the one we took the pages from, but there's a small but real chance
-> that the page has become uncharged meanwhile, and should now be put back
-> on the root_mem_cgroup's lruvec instead of the original memcg's lruvec.
+Hello
+The following patchset adds support for the SD/MMC host found in the Allwinner SoCs.
+It contains all the necessary modifications for clock environment and also the device
+tree script modification which add it to all the boards using it.
+The clock environment function needed for phase offset configuration has
+been proposed and implemented by Emilio.
+A lot of work and cleanup has been done by Hans de Goede. Special thanks to him!
+This patchset is the 4th attempt to send this driver upstream.
 
-Hi Hugh,
+Changes since v1:
+-Using mmc_of_parse instead of diy dt parsing
+-Adding nodes for all mmc controller to the dtsi files,
+ including sofar unused controllers
+-Using generic GPIO slot library for WP/CD
+-Adding additional MMC device nodes into DTSI files
 
-Thanks for your review.
-Frankly speaking, I am not very sure about it, that is why I add a RFC tag here.
-So,  do we need update the reclaim_stat meanwhile as we change the lruvec?
+Changes since v2:
+-Add missing Signed-off-by tags
+-Stop using __raw_readl / __raw_writel so that barriers are properly used
+-Adding missing new lines
+-Adding missing patch for automatic reparenting of clocks
 
-Regards,
+Changes since v3:
+-Move clk_enable / disable into host_init / exit (Hans)
+-Fix hang on boot caused by irq storm (Hans)
 
-> Hugh
->
->> ---
->>  mm/vmscan.c |    3 ---
->>  1 file changed, 3 deletions(-)
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index a9c74b4..4804fdb 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1393,8 +1393,6 @@ putback_inactive_pages(struct lruvec *lruvec, struct list_head *page_list)
->>                       continue;
->>               }
->>
->> -             lruvec = mem_cgroup_page_lruvec(page, zone);
->> -
->>               SetPageLRU(page);
->>               lru = page_lru(page);
->>               add_page_to_lru_list(page, lruvec, lru);
->> @@ -1602,7 +1600,6 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
->>
->>       while (!list_empty(list)) {
->>               page = lru_to_page(list);
->> -             lruvec = mem_cgroup_page_lruvec(page, zone);
->>
->>               VM_BUG_ON_PAGE(PageLRU(page), page);
->>               SetPageLRU(page);
->> --
->> 1.7.10.4
->>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
+Changes since v4:
+-moving sunxi-mci.{c/h} to sunxi-mmc.{c/h}
+-removing camel cases from the defines in  sunxi-mmc.h
+-moving defines out of the struct definition
+ since this is bad coding style
+-adding documentation for the device tree binding
+
+Changes since v5:
+-adding host initialization for when the sdio irq is enabled
+ (just to make sure having a defined state at all time)
+-add mmc support fixup: set pullup on cd pins
+-fixup: Don't set MMC_CAP_NEEDS_POLL /  MMC_CAP_4_BIT_DATA
+
+---
+
+David Lanzendörfer (5):
+      ARM: sunxi: Add driver for SD/MMC hosts found on Allwinner sunxi SoCs
+      ARM: dts: sun7i: Add support for mmc
+      ARM: dts: sun4i: Add support for mmc
+      ARM: dts: sun5i: Add support for mmc
+      ARM: sunxi: Add documentation for driver for SD/MMC hosts found on Allwinner sunxi SoCs
+
+Emilio López (2):
+      clk: sunxi: factors: automatic reparenting support
+      clk: sunxi: Implement MMC phase control
+
+Hans de Goede (1):
+      ARM: sunxi: clk: export clk_sunxi_mmc_phase_control
+
+
+ .../devicetree/bindings/mmc/sunxi-mmc.txt          |   32 +
+ arch/arm/boot/dts/sun4i-a10-a1000.dts              |    8 
+ arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |    8 
+ arch/arm/boot/dts/sun4i-a10.dtsi                   |   54 +
+ arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts   |   30 +
+ arch/arm/boot/dts/sun5i-a10s.dtsi                  |   44 +
+ arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts    |   15 
+ arch/arm/boot/dts/sun5i-a13-olinuxino.dts          |   15 
+ arch/arm/boot/dts/sun5i-a13.dtsi                   |   37 +
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |    8 
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |    8 
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts    |   23 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |   61 +
+ drivers/clk/sunxi/clk-factors.c                    |   36 +
+ drivers/clk/sunxi/clk-sunxi.c                      |   35 +
+ drivers/mmc/host/Kconfig                           |    7 
+ drivers/mmc/host/Makefile                          |    2 
+ drivers/mmc/host/sunxi-mmc.c                       |  876 ++++++++++++++++++++
+ drivers/mmc/host/sunxi-mmc.h                       |  239 +++++
+ include/linux/clk/sunxi.h                          |   22 +
+ 20 files changed, 1560 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
+ create mode 100644 drivers/mmc/host/sunxi-mmc.c
+ create mode 100644 drivers/mmc/host/sunxi-mmc.h
+ create mode 100644 include/linux/clk/sunxi.h
+
+-- 
+Signature
