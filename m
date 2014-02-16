@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaBPNKa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 08:10:30 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:61904 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751742AbaBPNK2 (ORCPT
+	id S1752286AbaBPNVS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 08:21:18 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:57648 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946AbaBPNVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 08:10:28 -0500
-Message-ID: <5300B95F.3040306@fb.com>
-Date: Sun, 16 Feb 2014 08:13:03 -0500
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sun, 16 Feb 2014 08:21:16 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-02-16_01:2014-02-14,2014-02-16,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=2.52575738102223e-13 kscore.compositescore=0
- circleOfTrustscore=28.9261618248808 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
- definitions=main-1402160054
-X-FB-Internal: deliver
+In-Reply-To: <20140216123432.34BC8200F5@smtp.hushmail.com>
+References: <20140216123432.34BC8200F5@smtp.hushmail.com>
+Date: Sun, 16 Feb 2014 15:21:15 +0200
+X-Google-Sender-Auth: 2kAG-s_qks_FYo2eCLUkFPo5vKM
+Message-ID: <CABpYwDW+hHKY0Si1WRVw_JfVffNkO8bKTmbWrqvoe=EH19C0Mw@mail.gmail.com>
+Subject: Re: Honestly, fork systemd
+From: Aigars Mahinovs <aigarius@debian.org>
+To: redlynx@hush.com
+Cc: linux-kernel@vger.kernel.org,
+        "debian-devel@lists.debian.org" <debian-devel@lists.debian.org>,
+        debian-project@lists.debian.org,
+        ChaosEsque Team <chaosesqueteam@yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 16 February 2014 14:34,  <redlynx@hush.com> wrote:
+> The alternative is allready here. It's called SysV. Nothing needs to be
+> done.
+> It is a rock on which to build.
+> Not a shifting sands.
 
-We have a small collection of fixes in my for-linus branch:
+If you insist on alegories, then the choice now stands between
+building on a solitary rock in the middle of a stormy sea or building
+on the sandy beaches of a popular costal town. Often it is easier to
+put in the work to drive down piles trought the sand down to bedrock
+and injecting some concrete where needed to form your own rock
+foundation rather than transport everything to that rocky island. And
+the end result for the users is a much more useful home.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+The choice in Debian has been made - we like the beachfront property.
+Help us make the best of it - investigate where the sand is weakest
+and inject concrete there, find the bedrock and drive some piles to
+it, add liquifaction protection where that is needed, be constructive.
+The house will be build here. If you can help its construction and
+help it be stronger - please help. If you are going to continue
+advocating not building here - please don't. That one is settled.
 
-The big thing that stands out is a revert of a new ioctl.  Users haven't
-shipped yet in btrfs-progs, and Dave Sterba found a better way to export
-the information.
+I personally dislike systemd on a few technical and few social
+grounds, but I respect the decision of Debian TC and will do what I
+can to make systemd in Debian be the bast it can be and make Debian
+with systemd the strongest system it can be. I hope others will do the
+same.
 
-Anand Jain (1) commits (+8/-2):
-    btrfs: fix null pointer deference at btrfs_sysfs_add_one+0x105
-
-Liu Bo (1) commits (+0/-1):
-    Btrfs: fix a lockdep warning when cleaning up aborted transaction
-
-Filipe David Borba Manana (1) commits (+10/-0):
-    Btrfs: use right clone root offset for compressed extents
-
-Mitch Harder (1) commits (+1/-1):
-    Btrfs: fix max_inline mount option
-
-Chris Mason (1) commits (+0/-17):
-    Revert "btrfs: add ioctl to export size of global metadata reservation"
-
-Josef Bacik (1) commits (+9/-2):
-    Btrfs: unset DCACHE_DISCONNECTED when mounting default subvol
-
-Total: (6) commits (+28/-23)
-
- fs/btrfs/disk-io.c         |  1 -
- fs/btrfs/inode.c           |  2 +-
- fs/btrfs/ioctl.c           | 16 ----------------
- fs/btrfs/send.c            | 10 ++++++++++
- fs/btrfs/super.c           | 11 +++++++++--
- fs/btrfs/sysfs.c           | 10 ++++++++--
- include/uapi/linux/btrfs.h |  1 -
- 7 files changed, 28 insertions(+), 23 deletions(-)
+-- 
+Best regards,
+    Aigars Mahinovs        mailto:aigarius@debian.org
+  #--------------------------------------------------------------#
+ | .''`.    Debian GNU/Linux (http://www.debian.org)            |
+ | : :' :   Latvian Open Source Assoc. (http://www.laka.lv)     |
+ | `. `'    Linux Administration and Free Software Consulting   |
+ |   `-                                 (http://www.aiteki.com) |
+ #--------------------------------------------------------------#
