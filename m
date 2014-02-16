@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699AbaBPV24 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 16:28:56 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:53099 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396AbaBPV2z (ORCPT
+	id S1753686AbaBPVhN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 16:37:13 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:34264 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320AbaBPVhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 16:28:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392585409.28866.94.camel@x220>
-References: <1392584137-24486-1-git-send-email-geert@linux-m68k.org>
-	<1392585409.28866.94.camel@x220>
-Date: Sun, 16 Feb 2014 22:28:54 +0100
-X-Google-Sender-Auth: pvvV6Xj3I4QzGBAu8VXcgJ4QPUY
-Message-ID: <CAMuHMdUMDPfCjaccz5zO7CXkz1tOYiXE3N01CKoi+mhQGmjCPA@mail.gmail.com>
-Subject: Re: [PATCH RFC] MAINTAINERS: Mark SuperH orphan
+	Sun, 16 Feb 2014 16:37:12 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Paul Mundt <paul.mundt@gmail.com>, Magnus Damm <magnus.damm@gmail.com>,
+To: Paul Mundt <paul.mundt@gmail.com>, Magnus Damm <magnus.damm@gmail.com>,
         Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
         Simon Horman <horms@verge.net.au>,
         Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: [PATCH v2] MAINTAINERS: Mark SuperH orphan
+Date: Sun, 16 Feb 2014 22:36:59 +0100
+Message-Id: <1392586619-27018-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 16, 2014 at 10:16 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Sun, 2014-02-16 at 21:55 +0100, Geert Uytterhoeven wrote:
->> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->>
->> Paul Mundt's email address bounces regularly, and he hasn't taken any
->> SuperH patches for about one year.
->>
->> Suggested-by: Paul Bolle <pebolle@tiscali.nl>
->> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->> ---
->>  MAINTAINERS |    4 +---
->>  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> I think Andrew prefers to add an entry in CREDITS when removing someone
-> from MAINTAINERS. As that is the courteous thing to do, I guess.
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Of course, how could I forget that. Sorry, Paul.
+Paul Mundt's email address bounces regularly, and he hasn't taken any
+SuperH patches for about one year.
 
-Gr{oetje,eeting}s,
+Suggested-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+v2: Add a CREDITS entry
 
-                        Geert
+ CREDITS     |    4 ++++
+ MAINTAINERS |    4 +---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --git a/CREDITS b/CREDITS
+index e371c5504a50..acab035edcfc 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -2564,6 +2564,10 @@ N. Wolfgang Muees
+ E: wolfgang@iksw-muees.de
+ D: Auerswald USB driver
+ 
++N: Paul Mundt
++E: paul.mundt@gmail.com
++D: SuperH maintainer
++
+ N: Ian A. Murdock
+ E: imurdock@gnu.ai.mit.edu
+ D: Creator of Debian distribution
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b2cf5cfb4d29..2d294561ebdc 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -8372,12 +8372,10 @@ S:	Maintained
+ F:	drivers/net/ethernet/dlink/sundance.c
+ 
+ SUPERH
+-M:	Paul Mundt <lethal@linux-sh.org>
+ L:	linux-sh@vger.kernel.org
+ W:	http://www.linux-sh.org
+ Q:	http://patchwork.kernel.org/project/linux-sh/list/
+-T:	git git://github.com/pmundt/linux-sh.git sh-latest
+-S:	Supported
++S:	Orphan
+ F:	Documentation/sh/
+ F:	arch/sh/
+ F:	drivers/sh/
+-- 
+1.7.9.5
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
