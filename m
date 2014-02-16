@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaBPXaE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 18:30:04 -0500
-Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:45508 "EHLO
-	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752363AbaBPXaC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 18:30:02 -0500
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Feb 2014 18:30:02 EST
-From: "Banerjee, Debabrata" <dbanerje@akamai.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeff Mahoney <jeffm@suse.com>,
-        "dbavatar@gmail.com" <dbavatar@gmail.com>,
-        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
-Date: Sun, 16 Feb 2014 18:23:43 -0500
-Subject: Re: [PATCH] printk: Fix discarding of records
-Thread-Topic: [PATCH] printk: Fix discarding of records
-Thread-Index: Ac8rbiKUlWevkHVVRPm9wEHCByk4jA==
-Message-ID: <CF26B239.2E7B4%dbanerje@akamai.com>
-References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
- <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
-In-Reply-To: <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.9.131030
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753586AbaBPXbg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 18:31:36 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:58851 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752737AbaBPXbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 18:31:35 -0500
+Message-ID: <1392593492.28648.11.camel@x220>
+Subject: Re: [PATCH] arm: msm: remove MACH_MSM7X30_SURF
+From: Paul Bolle <pebolle@tiscali.nl>
+To: dwalker@fifo99.com
+Cc: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Richard Weinberger <richard@nod.at>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 17 Feb 2014 00:31:32 +0100
+In-Reply-To: <20140216231407.GA18892@fifo99.com>
+References: <1392572080.28866.19.camel@x220>
+	 <20140216231407.GA18892@fifo99.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Feb 2014 23:31:32.0780 (UTC) FILETIME=[39C7E6C0:01CF2B6F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/16/14, 2:28 PM, "Linus Torvalds" <torvalds@linux-foundation.org>
-wrote:
+Daniel,
 
->Why are *those* particular two "prev = msg->flags" incorrect, when
->every other case where we walk the messages they are required?
->
->The code/logic makes no sense. You remove the "prev = msg->flags" at
->line 1070, when the *identical* loop just above it has it. So now the
->two loops count the number of characters differently. That makes no
->sense.
->
->So I don't think this fixes the fundamental problem. I'm more inclined
->to believe that LOG_CONT is wrongly set somewhere, for example because
->a continuation wasn't actually originally printed due to coming from
->different users or something like that.
->
->Or at the very least I want a coherent explanation why one loop would
->do this and the other would not, and why counting up *different*
->numbers could possibly make sense.
+On Sun, 2014-02-16 at 23:14 +0000, dwalker@fifo99.com wrote:
+> On Sun, Feb 16, 2014 at 06:34:40PM +0100, Paul Bolle wrote:
+> > The Kconfig symbol MACH_MSM7X30_SURF was added in v2.6.35. It has never
+> > been used. Setting it has no effect. There are no calls for
+> > machine_is_mach_msm7x30(). This symbol can safely be removed.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Tested only with "git grep".
+> > 
+> >  arch/arm/mach-msm/Kconfig | 7 -------
+> >  1 file changed, 7 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+> > index 9625cf3..dab941a 100644
+> > --- a/arch/arm/mach-msm/Kconfig
+> > +++ b/arch/arm/mach-msm/Kconfig
+> > @@ -62,7 +62,6 @@ config ARCH_MSM7X30
+> >  	select ARCH_MSM_SCORPION
+> >  	select CPU_V7
+> >  	select GPIO_MSM_V1
+> > -	select MACH_MSM7X30_SURF # if !
+> >  	select MSM_GPIOMUX
+> >  	select MSM_PROC_COMM
+> >  	select MSM_SMD
+> > @@ -115,12 +114,6 @@ config MACH_TROUT
+> >  	help
+> >  	  Support for the HTC Dream, T-Mobile G1, Android ADP1 devices.
+> >  
+> > -config MACH_MSM7X30_SURF
+> > -	depends on ARCH_MSM7X30
+> > -	bool "MSM7x30 SURF"
+> > -	help
+> > -	  Support for the Qualcomm MSM7x30 SURF eval board.
+> > -
+> 
+> 
+> It's not really enough .. There are support files for this platform, if you remove it you need to remove
+> those files also. You could also go the other way and connect the config option to those files.
 
-The explanation is: the loops look identical but they are not. When a
-record is printed first, its size can expand due to adding the prefix and
-timestamp. The second loop is calculating len with the first line printed
-possibly changing every iteration.
+What support files are you thinking about here?
+
+(Note that I need to rethink this patch anyway. The discussion about the
+patch that removes MACH_MXLADS showed me that machine_is_mach_msm7x30()
+is used in a more subtle way than I remembered. I hope to revisit this
+and similar patches in a few days to review them myself.)
+
+Thanks,
 
 
->
->Because as it is, there clearly is some problem, but the patch does
->not look sensible to me.
-
-You are right, the patch is still flawed, sending V2.
-
-
--Debabrata
+Paul Bolle
 
