@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaBPLkX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 06:40:23 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:58226 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408AbaBPLkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 06:40:22 -0500
-Message-ID: <5300A3B2.4030405@gmail.com>
-Date: Sun, 16 Feb 2014 19:40:34 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752011AbaBPMSu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 07:18:50 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.138]:15625 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751477AbaBPMSs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 07:18:48 -0500
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-15.tower-178.messagelabs.com!1392553126!26425680!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: RE: [RFC V1] mfd: da9063: Add support for production silicon
+ variant code
+Thread-Topic: [RFC V1] mfd: da9063: Add support for production silicon
+ variant code
+Thread-Index: AQHPKWf9+CU+DQqgfkW1F75og72Z1Zq1DBLdgAK5ipA=
+Date: Sun, 16 Feb 2014 12:18:43 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB78F97D757@SW-EX-MBX02.diasemi.com>
+References: <201402131031.s1DAVWrJ023725@swsrvapps-01.diasemi.com>
+ <20140214093435.GI3403@lee--X1>
+ <6ED8E3B22081A4459DAC7699F3695FB78F97CB13@SW-EX-MBX02.diasemi.com>
+ <20140214145643.GA4451@sirena.org.uk>
+In-Reply-To: <20140214145643.GA4451@sirena.org.uk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.50.31]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: hskinnemoen@gmail.com, egtvedt@samfundet.no,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: avr32: Makefile: add '-D__linux__' flag for gcc-4.4.7
- using.
-References: <52ECEA2A.8070307@gmail.com> <CAFLxGvyEx4NJ-pT4EXT_e6NaFxAwpfpAGL=CPm0o_SM96twaLg@mail.gmail.com> <52ECFAA7.60109@gmail.com>
-In-Reply-To: <52ECFAA7.60109@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+On 14 February 2014 14:57, Mark Brown [mailto:broonie@kernel.org] wrote:
 
-Please help check this patch, when you have free time.
+>On Fri, Feb 14, 2014 at 10:28:38AM +0000, Opensource [Steve Twiss] wrote:
+>
+>> The previous silicon was only sent out in sample form to selected customers
+>> and will no longer be available. I have been informed that the new silicon
+>> has been sent out, and everybody should have received the new variant by
+>> now.
+>
+>> The new variant is the only one going into production and the previous silicon
+>> variant will no longer be available. Also, the production silicon of DA9063
+>> makes an alteration to the registers which makes the two register maps
+>> incompatible.
 
-Thanks.
+My apologies for not replying to this in time -- it appeared in my inbox after
+I had sent RFC V2.
 
+>
+>The usual thing if it's straightforward to do so is to keep support for
+>old versions even if the early revisions are not expected to be widely
+>available.
 
-On 02/01/2014 09:46 PM, Chen Gang wrote:
-> On 02/01/2014 08:56 PM, Richard Weinberger wrote:
->> On Sat, Feb 1, 2014 at 1:35 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>> For avr32 cross compiler, do not define '__linux__' internally, so it
->>> will cause issue with allmodconfig.
->>
->> Isn't this a toolchain bug?
-> 
-> Hmm... for me, it is not toolchain's bug, it is a feature issue in gcc
-> old version, and in newer version it is OK (in my memory, after gcc-4.7,
-> it is OK).
-> 
-> In our "arch/*", really contents some another architectures which
-> already use "-D__linux__" in their "Makefile". :-)
-> 
-> Thanks.
-> 
->>
->>> The related error:
->>>
->>>     CC [M]  fs/coda/psdev.o
->>>   In file included from include/linux/coda.h:64,
->>>                    from fs/coda/psdev.c:45:
->>>   include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
->>>
->>> The related toolchain version (which only download, not re-compile):
->>>
->>>   [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
->>>   Using built-in specs.
->>>   Target: avr32
->>>   Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http:/
-/
-> www
->>> .atmel.com/avr
->>>   Thread model: single
->>>   gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>> ---
->>>  arch/avr32/Makefile | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/arch/avr32/Makefile b/arch/avr32/Makefile
->>> index 22fb665..dba48a5 100644
->>> --- a/arch/avr32/Makefile
->>> +++ b/arch/avr32/Makefile
->>> @@ -11,7 +11,7 @@ all: uImage vmlinux.elf
->>>
->>>  KBUILD_DEFCONFIG       := atstk1002_defconfig
->>>
->>> -KBUILD_CFLAGS  += -pipe -fno-builtin -mno-pic
->>> +KBUILD_CFLAGS  += -pipe -fno-builtin -mno-pic -D__linux__
->>>  KBUILD_AFLAGS  += -mrelax -mno-pic
->>>  KBUILD_CFLAGS_MODULE += -mno-relax
->>>  LDFLAGS_vmlinux        += --relax
->>> --
->>> 1.7.11.7
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->>
-> 
-> 
+Yes, I take your point here.
 
+Some registers in the new variant make backwards compatibility easy,
+however attempting to combine the two register maps in other components
+makes the driver a mess. 
 
--- 
-Chen Gang
+By drawing the line in the probe() function I am requesting that there be no
+support for older silicon. I have been requested to do this because that is 
+the line that Dialog Semiconductor Ltd wants to impose -- and this is not
+just at the level of the S/W driver.
 
-Open, share and attitude like air, water and life which God blessed
+I realise that the Linux community will have different aims however and 
+I would like to support those as much as I can.
+
+> We do fairly often see problems with people still using old
+>boards for various reasons - the fact that new silicon is available does
+>not mean that the old silicon has been retired by users (even if just
+>for comparison purposes while new board revisions are being brought up -
+>"that worked on the rev A boards, did we break the software?") 
+
+I see -- yes.
+
+I don't see any straightforward way to support some of the components
+in parallel, and merging the registers.h file for both variants does make a
+mess even before reaching the driver code.
+
+I'm not sure how easy this will be, but if I can retain support for some of
+the older variant features already in the kernel I will try to do so during
+my upcoming submissions.
+
+Regards,
+Steve
