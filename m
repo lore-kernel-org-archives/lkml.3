@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaBPX0O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 18:26:14 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59875 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752381AbaBPX0L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 18:26:11 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "pavel@ucw.cz" <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: Re: [PATCH 0/5] Enabling the asynchronous threads for other phases
-Date: Mon, 17 Feb 2014 00:40:59 +0100
-Message-ID: <9364493.5ysfSuJl7g@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01C1AF9E@SHSMSX101.ccr.corp.intel.com>
-References: <1390207479-26064-1-git-send-email-chuansheng.liu@intel.com> <2360514.bLFmJYMItS@vostro.rjw.lan> <27240C0AC20F114CBF8149A2696CBE4A01C1AF9E@SHSMSX101.ccr.corp.intel.com>
+	id S1753344AbaBPXaE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 18:30:04 -0500
+Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:45508 "EHLO
+	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752363AbaBPXaC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 18:30:02 -0500
+X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Feb 2014 18:30:02 EST
+From: "Banerjee, Debabrata" <dbanerje@akamai.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        "dbavatar@gmail.com" <dbavatar@gmail.com>,
+        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
+Date: Sun, 16 Feb 2014 18:23:43 -0500
+Subject: Re: [PATCH] printk: Fix discarding of records
+Thread-Topic: [PATCH] printk: Fix discarding of records
+Thread-Index: Ac8rbiKUlWevkHVVRPm9wEHCByk4jA==
+Message-ID: <CF26B239.2E7B4%dbanerje@akamai.com>
+References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
+ <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+In-Reply-To: <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.9.131030
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 10, 2014 08:36:57 AM Liu, Chuansheng wrote:
-> Hello Rafael,
-> 
-> > -----Original Message-----
-> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > Sent: Thursday, February 06, 2014 5:53 AM
-> > To: Liu, Chuansheng
-> > Cc: gregkh@linuxfoundation.org; pavel@ucw.cz; Brown, Len;
-> > linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi
-> > Subject: Re: [PATCH 0/5] Enabling the asynchronous threads for other phases
-> > 
-> > On Monday, January 20, 2014 04:44:34 PM Liu, Chuansheng wrote:
-> > > Hello,
-> > >
-> > > This patch series are for enabling the asynchronous threads for the phases
-> > > resume_noirq, resume_early, suspend_noirq and suspend_late.
-> > >
-> > > Just like commit 5af84b82701a and 97df8c12995, with async threads it will
-> > > reduce the system suspending and resuming time significantly.
-> > >
-> > > With these patches, in my test platform, it saved 80% time in resume_noirq
-> > > phase.
-> > >
-> > > Has done the suspend-resume stress test for a long time, please help to
-> > > review.
-> > >
-> > > Best Regards,
-> > >
-> > > [PATCH 1/5] PM: Adding two flags for async suspend_noirq and
-> > > [PATCH 2/5] PM: Enabling the asynchronous threads for resume_noirq
-> > > [PATCH 3/5] PM: Enabling the asyncronous threads for resume_early
-> > > [PATCH 4/5] PM: Enabling the asyncronous threads for suspend_noirq
-> > > [PATCH 5/5] PM: Enabling the asyncronous threads for suspend_late
-> > 
-> > I've applied this to the bleeding-edge branch of the linux-pm.git tree, with
-> > minor changes related to coding style, white space etc.
-> Thanks your help.
+On 2/16/14, 2:28 PM, "Linus Torvalds" <torvalds@linux-foundation.org>
+wrote:
 
-Unfortunately, I've just realized that your patches don't add any mechanism
-ensuring that parent devices' .suspend_noirq() will be called *after* the
-.suspend_noirq() of all their children.  Of course, analogously for
-.suspend_late() and for the resume part (where children have to wait for
-their parents).
+>Why are *those* particular two "prev = msg->flags" incorrect, when
+>every other case where we walk the messages they are required?
+>
+>The code/logic makes no sense. You remove the "prev = msg->flags" at
+>line 1070, when the *identical* loop just above it has it. So now the
+>two loops count the number of characters differently. That makes no
+>sense.
+>
+>So I don't think this fixes the fundamental problem. I'm more inclined
+>to believe that LOG_CONT is wrongly set somewhere, for example because
+>a continuation wasn't actually originally printed due to coming from
+>different users or something like that.
+>
+>Or at the very least I want a coherent explanation why one loop would
+>do this and the other would not, and why counting up *different*
+>numbers could possibly make sense.
 
-In the original async suspend/resume code that is implemented using
-power.completion and I suppose you can do the same thing here.
+The explanation is: the loops look identical but they are not. When a
+record is printed first, its size can expand due to adding the prefix and
+timestamp. The second loop is calculating len with the first line printed
+possibly changing every iteration.
 
-I have to drop the series for the time being.
 
-Thanks!
+>
+>Because as it is, there clearly is some problem, but the patch does
+>not look sensible to me.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+You are right, the patch is still flawed, sending V2.
+
+
+-Debabrata
+
