@@ -1,96 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaBPX6W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 18:58:22 -0500
-Received: from mail.efficios.com ([78.47.125.74]:52511 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaBPX6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 18:58:21 -0500
-Date: Sun, 16 Feb 2014 23:58:21 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <1459243542.25793.1392595101293.JavaMail.zimbra@efficios.com>
-In-Reply-To: <878uteecu0.fsf@rustcorp.com.au>
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com> <20140211072738.GA24232@gmail.com> <20140211234534.6bc34e57@gandalf.local.home> <877g8zg0ed.fsf@rustcorp.com.au> <20140213161156.3548df43@gandalf.local.home> <878uteecu0.fsf@rustcorp.com.au>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
+	id S1753618AbaBPX7y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 18:59:54 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34326 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975AbaBPX7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 18:59:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-Thread-Index: LTdzGWYE83Hmr/o2mXD/Xu772q6pXg==
+In-Reply-To: <CF26B239.2E7B4%dbanerje@akamai.com>
+References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
+	<CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+	<CF26B239.2E7B4%dbanerje@akamai.com>
+Date: Sun, 16 Feb 2014 15:59:51 -0800
+X-Google-Sender-Auth: puVQShdJTJm7PF6ooArjOYvR0ew
+Message-ID: <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
+Subject: Re: [PATCH] printk: Fix discarding of records
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Banerjee, Debabrata" <dbanerje@akamai.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        "dbavatar@gmail.com" <dbavatar@gmail.com>,
+        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Rusty Russell" <rusty@rustcorp.com.au>
-> To: "Steven Rostedt" <rostedt@goodmis.org>
-> Cc: "Ingo Molnar" <mingo@kernel.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
-> linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>, "David
-> Howells" <dhowells@redhat.com>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-> Sent: Thursday, February 13, 2014 7:51:19 PM
-> Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-> 
-> Steven Rostedt <rostedt@goodmis.org> writes:
-> > On Thu, 13 Feb 2014 13:54:42 +1030
-> > Rusty Russell <rusty@rustcorp.com.au> wrote:
-> >
-> >
-> >> I'm ambivalent towards out-of-tree modules, so not tempted unless I see
-> >> a bug report indicating a concrete problem.  Then we can discuss...
-> >
-> > As I replied in another email, this is a concrete problem, and affects
-> > in-tree kernel modules.
-> >
-> > If you have the following in your .config:
-> >
-> > CONFIG_MODULE_SIG=y
-> > # CONFIG_MODULE_SIG_FORCE is not set
-> > # CONFIG_MODULE_SIG_ALL is not set
-> 
-> This means you've set the "I will arrange my own module signing" config
-> option:
-> 
-> 	  Sign all modules during make modules_install. Without this option,
-> 	  modules must be signed manually, using the scripts/sign-file tool.
-> 
-> comment "Do not forget to sign required modules with scripts/sign-file"
-> 	depends on MODULE_SIG_FORCE && !MODULE_SIG_ALL
-> 
-> Then you didn't do that.  You broke it, you get to keep both pieces.
-> 
-> Again: is there an actual valid use case?
+On Sun, Feb 16, 2014 at 3:23 PM, Banerjee, Debabrata
+<dbanerje@akamai.com> wrote:
+>
+> The explanation is: the loops look identical but they are not. When a
+> record is printed first, its size can expand due to adding the prefix and
+> timestamp. The second loop is calculating len with the first line printed
+> possibly changing every iteration.
 
-One use-case where this is biting us for in-tree modules is when a user or
-developer recompile modules against a distribution kernel which has
-CONFIG_MODULE_SIG set (and possibly CONFIG_MODULE_SIG_ALL), but do not
-recompile the kernel per se. That user/developer might want to try out a
-local modification to one of his modules (which is something within the
-user's rights given by the GPL), or want to add tracepoints to a module to
-figure out what is going wrong. It is then not possible to sign the
-recompiled modules, since it makes no sense to expect distribution vendors
-to ever distribute their private signing keys; that would defeat the whole
-point of signing.
+That still makes zero sense.
 
-In those cases, when loaded in a kernel that is not enforcing module
-signature, the recompiled modules will taint the kernel and modules with
-"TAINT_FORCED_MODULE" (which is a lie: the modules can be loaded without
---force), and the tracepoints sitting in that module are silently ignored
-(which is a bug).
+The size should damn well not change, because we *should* be calling
+it with the exact same flags. If the size changes, something is wrong.
+The logic is:
 
-Thanks,
+ - first traverse all log indexes to find out the total length
 
-Mathieu
+ - then traverse *again* all the indexes, until you have traversed
+enough that the remainder fits in the given buffer size.
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+For this to make sense, that second pass absolutely *has* to use the
+exact same lengths as the first pass did. Otherwise the whole logic is
+totally broken.
+
+Now, *once* you have found the right record (so that the rest should
+fit), the problem is that the *third* loop (that traverses that "rest"
+part) is now done with a "prev" value that does not match the original
+"let's figure out the size".
+
+So my suspicion is that the *real* bug is that
+
+    prev = 0;
+
+before that *third* loop, because it means that the first time through
+that loop (when we did *not* reset "seq/idx" to the beginning, we use
+the wrong "prev" value.
+
+So my (totally and utterly untested, and obviously whitespace-damaged)
+suggested patch would be something along the lines of this:
+
+    diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+    index b1d255f04135..053c3c1a4061 100644
+    --- a/kernel/printk/printk.c
+    +++ b/kernel/printk/printk.c
+    @@ -1076,7 +1076,6 @@ static int syslog_print_all(char __user
+*buf, int size, bool clear)
+                    next_seq = log_next_seq;
+
+                    len = 0;
+    -               prev = 0;
+                    while (len >= 0 && seq < next_seq) {
+                            struct printk_log *msg = log_from_idx(idx);
+                            int textlen;
+
+because at least this makes sense. It means that "prev" is only zero
+when we start from "clear_idx", at all other times it's actually the
+msg->flags of the previous message.
+
+But maybe I'm missing something. That code really is messy. But
+clearing "prev" there in the middle really looks wrong to me.
+
+               Linus
