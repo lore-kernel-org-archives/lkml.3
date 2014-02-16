@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaBPFMB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 00:12:01 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:55015 "EHLO kolab.o2s.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944AbaBPFLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 00:11:17 -0500
-Subject: [PATCH v6 2/8] clk: sunxi: Implement MMC phase control
-To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
-        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Sun, 16 Feb 2014 06:11:08 +0100
-Message-ID: <20140216051107.728.17511.stgit@dizzy-6.o2s.ch>
-In-Reply-To: <20140216050933.728.25526.stgit@dizzy-6.o2s.ch>
-References: <20140216050933.728.25526.stgit@dizzy-6.o2s.ch>
-User-Agent: StGit/0.16
+	id S1750924AbaBPF0c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 00:26:32 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:59159 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaBPF0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 00:26:30 -0500
+Date: Sat, 15 Feb 2014 21:25:39 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+cc: Hugh Dickins <hughd@google.com>, Weijie Yang <weijie.yang@samsung.com>,
+        riel@redhat.com, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH] mm/vmscan: remove two un-needed mem_cgroup_page_lruvec()
+ call
+In-Reply-To: <CAL1ERfO4yYMRBO8XEM0oCwBb6NOqZRVGq648ncerM9XuyPPJkw@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1402152121180.13768@eggly.anvils>
+References: <000001cf2ac7$9abf23b0$d03d6b10$%yang@samsung.com> <alpine.LSU.2.11.1402151953180.10073@eggly.anvils> <CAL1ERfO4yYMRBO8XEM0oCwBb6NOqZRVGq648ncerM9XuyPPJkw@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio López <emilio@elopez.com.ar>
+On Sun, 16 Feb 2014, Weijie Yang wrote:
+> On Sun, Feb 16, 2014 at 12:00 PM, Hugh Dickins <hughd@google.com> wrote:
+> > On Sun, 16 Feb 2014, Weijie Yang wrote:
+> >
+> >> In putback_inactive_pages() and move_active_pages_to_lru(),
+> >> lruvec is already an input parameter and pages are all from this lruvec,
+> >> therefore there is no need to call mem_cgroup_page_lruvec() in loop.
+> >>
+> >> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> >
+> > Looks plausible but I believe it's incorrect.  The lruvec passed in
+> > is the one we took the pages from, but there's a small but real chance
+> > that the page has become uncharged meanwhile, and should now be put back
+> > on the root_mem_cgroup's lruvec instead of the original memcg's lruvec.
+> 
+> Hi Hugh,
+> 
+> Thanks for your review.
+> Frankly speaking, I am not very sure about it, that is why I add a RFC tag here.
+> So,  do we need update the reclaim_stat meanwhile as we change the lruvec?
 
-Signed-off-by: Emilio López <emilio@elopez.com.ar>
----
- drivers/clk/sunxi/clk-sunxi.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+No, it's not worth bothering about, it's only for stats and this is an
+unlikely case; whereas wrong memcg can be a significant correctness issue.
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index abb6c5a..33b9977 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -377,6 +377,41 @@ static void sun7i_a20_get_out_factors(u32 *freq, u32 parent_rate,
- 
- 
- /**
-+ * clk_sunxi_mmc_phase_control() - configures MMC clock phase control
-+ */
-+
-+void clk_sunxi_mmc_phase_control(struct clk_hw *hw, u8 sample, u8 output)
-+{
-+	#define to_clk_composite(_hw) container_of(_hw, struct clk_composite, hw)
-+	#define to_clk_factors(_hw) container_of(_hw, struct clk_factors, hw)
-+
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	struct clk_hw *rate_hw = composite->rate_hw;
-+	struct clk_factors *factors = to_clk_factors(rate_hw);
-+	unsigned long flags = 0;
-+	u32 reg;
-+
-+	if (factors->lock)
-+		spin_lock_irqsave(factors->lock, flags);
-+
-+	reg = readl(factors->reg);
-+
-+	/* set sample clock phase control */
-+	reg &= ~(0x7 << 20);
-+	reg |= ((sample & 0x7) << 20);
-+
-+	/* set output clock phase control */
-+	reg &= ~(0x7 << 8);
-+	reg |= ((output & 0x7) << 8);
-+
-+	writel(reg, factors->reg);
-+
-+	if (factors->lock)
-+		spin_unlock_irqrestore(factors->lock, flags);
-+}
-+
-+
-+/**
-  * sunxi_factors_clk_setup() - Setup function for factor clocks
-  */
- 
-
+Hugh
