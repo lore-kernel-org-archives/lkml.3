@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaBPXXp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 18:23:45 -0500
-Received: from ec2-54-201-57-178.us-west-2.compute.amazonaws.com ([54.201.57.178]:59992
-	"EHLO ip-172-31-12-36.us-west-2.compute.internal"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751197AbaBPXXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 18:23:44 -0500
-X-Greylist: delayed 508 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Feb 2014 18:23:44 EST
-Date: Sun, 16 Feb 2014 23:14:07 +0000
-From: dwalker@fifo99.com
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Richard Weinberger <richard@nod.at>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: msm: remove MACH_MSM7X30_SURF
-Message-ID: <20140216231407.GA18892@fifo99.com>
-References: <1392572080.28866.19.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392572080.28866.19.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753421AbaBPXZS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 18:25:18 -0500
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:14673 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751197AbaBPXZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 18:25:17 -0500
+From: Debabrata Banerjee <dbanerje@akamai.com>
+To: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <^Cegkh@linuxfoundation.org>
+Cc: dbavatar@gmail.com, johunt@akamai.com,
+        Debabrata Banerjee <dbanerje@akamai.com>, stable@vger.kernel.org
+Subject: [PATCH v2] printk: Fix discarding of records
+Date: Sun, 16 Feb 2014 18:24:13 -0500
+Message-Id: <1392593053-7900-1-git-send-email-dbanerje@akamai.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+References: <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 16, 2014 at 06:34:40PM +0100, Paul Bolle wrote:
-> The Kconfig symbol MACH_MSM7X30_SURF was added in v2.6.35. It has never
-> been used. Setting it has no effect. There are no calls for
-> machine_is_mach_msm7x30(). This symbol can safely be removed.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Tested only with "git grep".
-> 
->  arch/arm/mach-msm/Kconfig | 7 -------
->  1 file changed, 7 deletions(-)
-> 
-> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-> index 9625cf3..dab941a 100644
-> --- a/arch/arm/mach-msm/Kconfig
-> +++ b/arch/arm/mach-msm/Kconfig
-> @@ -62,7 +62,6 @@ config ARCH_MSM7X30
->  	select ARCH_MSM_SCORPION
->  	select CPU_V7
->  	select GPIO_MSM_V1
-> -	select MACH_MSM7X30_SURF # if !
->  	select MSM_GPIOMUX
->  	select MSM_PROC_COMM
->  	select MSM_SMD
-> @@ -115,12 +114,6 @@ config MACH_TROUT
->  	help
->  	  Support for the HTC Dream, T-Mobile G1, Android ADP1 devices.
->  
-> -config MACH_MSM7X30_SURF
-> -	depends on ARCH_MSM7X30
-> -	bool "MSM7x30 SURF"
-> -	help
-> -	  Support for the Qualcomm MSM7x30 SURF eval board.
-> -
+Found another buffer overflow in this code that was introduced by
+e3756477aec028427fec767957c0d4b6cfb87208 trying to solve a related overflow.
 
+strace still shows a problem:
 
-It's not really enough .. There are support files for this platform, if you remove it you need to remove
-those files also. You could also go the other way and connect the config option to those files.
+	syslog(0x3, 0x7fffd65375d0, 0x1000)     = 4107
 
-Daniel
+The first record output was in the middle of a LOG_CONT line:
+
+	<4>[    2.974999] 0x0000000000000500-0x000000000000052f SystemIO conflicts with Region \GPIO 1 (20130328/utaddress-251)
+
+This happens because when discarding records to be less than size, the first
+line may expand due to there being no previous record. So we must use prev = 0
+to calculate if it fits or we should continue discarding.
+
+CC: stable@vger.kernel.org
+Signed-off-by: Debabrata Banerjee <dbanerje@akamai.com>
+---
+ kernel/printk/printk.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index b1d255f..bc67990 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1063,13 +1063,17 @@ static int syslog_print_all(char __user *buf, int size, bool clear)
+ 		seq = clear_seq;
+ 		idx = clear_idx;
+ 		prev = 0;
+-		while (len > size && seq < log_next_seq) {
++		while (seq < log_next_seq) {
+ 			struct printk_log *msg = log_from_idx(idx);
+ 
+-			len -= msg_print_text(msg, prev, true, NULL, 0);
+-			prev = msg->flags;
+ 			idx = log_next(idx);
+ 			seq++;
++
++			if (len - msg_print_text(msg, 0, true, NULL, 0) <= size)
++				break;
++
++			len -= msg_print_text(msg, prev, true, NULL, 0);
++			prev = msg->flags;
+ 		}
+ 
+ 		/* last message fitting into this dump */
+@@ -2774,12 +2778,16 @@ bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
+ 	seq = dumper->cur_seq;
+ 	idx = dumper->cur_idx;
+ 	prev = 0;
+-	while (l > size && seq < dumper->next_seq) {
++	while (seq < dumper->next_seq) {
+ 		struct printk_log *msg = log_from_idx(idx);
+ 
+-		l -= msg_print_text(msg, prev, true, NULL, 0);
+ 		idx = log_next(idx);
+ 		seq++;
++
++		if ( l - msg_print_text(msg, 0, true, NULL, 0) <= size)
++			break;
++
++		l -= msg_print_text(msg, prev, true, NULL, 0);
+ 		prev = msg->flags;
+ 	}
+ 
+-- 
+1.8.3.4
+
