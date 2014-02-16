@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953AbaBPQj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 11:39:59 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:50026 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508AbaBPQj5 (ORCPT
+	id S1753073AbaBPQlP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 11:41:15 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:56312 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508AbaBPQlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 11:39:57 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <5300E9DA.501@roeck-us.net>
-Date: Sun, 16 Feb 2014 08:39:54 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 16 Feb 2014 11:41:13 -0500
+Date: Sun, 16 Feb 2014 08:41:06 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Kevin Hilman <khilman@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
+ workqueue
+Message-ID: <20140216164106.GD4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
+ <52F8A51F.4090909@cn.fujitsu.com>
+ <20140210184729.GL4250@linux.vnet.ibm.com>
+ <20140212182336.GD5496@localhost.localdomain>
+ <20140212190241.GD4250@linux.vnet.ibm.com>
+ <20140212192354.GC26809@htj.dyndns.org>
+ <7hk3cx46rw.fsf@paris.lan>
+ <1392449804.5517.45.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: Belisko Marek <marek.belisko@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>
-CC: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "jdelvare@suse.de" <jdelvare@suse.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "hns@goldelico.com" <hns@goldelico.com>
-Subject: Re: [PATCH] hwmon: twl4030-madc-hwmon: Add device tree support.
-References: <1392384058-14240-1-git-send-email-marek@goldelico.com>	<20140214133101.GA17796@e106331-lin.cambridge.arm.com> <CAAfyv36Eo578K1LAdFJdKKjs800Gz2_kfJqvEcdD_U1qRCKY6w@mail.gmail.com>
-In-Reply-To: <CAAfyv36Eo578K1LAdFJdKKjs800Gz2_kfJqvEcdD_U1qRCKY6w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392449804.5517.45.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021616-0928-0000-0000-000006744D15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 06:08 AM, Belisko Marek wrote:
-> On Fri, Feb 14, 2014 at 2:31 PM, Mark Rutland <mark.rutland@arm.com> wrote:
->> On Fri, Feb 14, 2014 at 01:20:58PM +0000, Marek Belisko wrote:
->>> Signed-off-by: Marek Belisko <marek@goldelico.com>
->>> ---
->>>   Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt |  9 +++++++++
->>>   drivers/hwmon/twl4030-madc-hwmon.c                             | 10 ++++++++++
->>>   2 files changed, 19 insertions(+)
->>>   create mode 100644 Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt b/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
->>> new file mode 100644
->>> index 0000000..e8016d1
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/hwmon/twl4030-madc-hwmon.txt
->>> @@ -0,0 +1,9 @@
->>> +TWL4030 MADC hwmon.
->>> +
->>> +Required properties:
->>> +- compatible: "ti,twl4030-madc-hwmon"
->>> +
->>> +Example:
->>> +madc-hwmon {
->>> +     compatible = "ti,twl4030-madc-hwmon";
->>> +};
->>
->> Huh?
->>
->> What is this a binding for? From a look at the driver in mainline this
->> just calls into functions from the twl4030 madc driver (which doesn't
->> seem to have a binding).
-> I post bindings for twl4030-madc [1]. Without probing this driver
-> other things will not work (twl4030-madc-battery e.g.).
-> Is there better way to handle this situation?
+On Sat, Feb 15, 2014 at 08:36:44AM +0100, Mike Galbraith wrote:
+> On Fri, 2014-02-14 at 15:24 -0800, Kevin Hilman wrote: 
+> > Tejun Heo <tj@kernel.org> writes:
+> > 
+> > > Hello,
+> > >
+> > > On Wed, Feb 12, 2014 at 11:02:41AM -0800, Paul E. McKenney wrote:
+> > >> +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
+> > >> +	to force the WQ_SYSFS workqueues to run on the specified set
+> > >> +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
+> > >> +	"ls sys/devices/virtual/workqueue".
+> > >
+> > > One thing to be careful about is that once published, it becomes part
+> > > of userland visible interface.  Maybe adding some words warning
+> > > against sprinkling WQ_SYSFS willy-nilly is a good idea?
+> > 
+> > In the NO_HZ_FULL case, it seems to me we'd always want all unbound
+> > workqueues to have their affinity set to the housekeeping CPUs.
+> > 
+> > Is there any reason not to enable WQ_SYSFS whenever WQ_UNBOUND is set so
+> > the affinity can be controlled?  I guess the main reason would be that 
+> > all of these workqueue names would become permanent ABI.
+> > 
+> > At least for NO_HZ_FULL, maybe this should be automatic.  The cpumask of
+> > unbound workqueues should default to !tick_nohz_full_mask?  Any WQ_SYSFS
+> > workqueues could still be overridden from userspace, but at least the
+> > default would be sane, and help keep full dyntics CPUs isolated.
+> 
+> What I'm thinking is that it should be automatic, but not necessarily
+> based upon the nohz full mask, rather maybe based upon whether sched
+> domains exist, or perhaps a generic exclusive cpuset property, though
+> some really don't want anything to do with cpusets.
+> 
+> Why? Because there are jitter intolerant loads where nohz full isn't all
+> that useful, because you'll be constantly restarting and stopping the
+> tick, and eating the increased accounting overhead to no gain because
+> there are frequently multiple realtime tasks running.  For these loads
+> (I have a user with such a fairly hefty 80 core rt load), dynamically
+> turning the tick _on_ is currently a better choice than nohz_full.
+> Point being, control of where unbound workqueues are allowed to run
+> isn't only desirable for single task HPC loads, other loads exist.
+> 
+> For my particular fairly critical 80 core load, workqueues aren't a real
+> big hairy deal, because its jitter tolerance isn't _all_ that tight (30
+> us max is easy enough to meet with room to spare).  The load can slice
+> through workers well enough to meet requirements, but it would certainly
+> be a win to be able to keep them at bay.  (gonna measure it, less jitter
+> is better even if it's only a little bit better.. eventually somebody
+> will demand what's currently impossible to deliver)
 
-Since you are converting twl4030-madc to be an iio driver,
-can't you simply use the iio_hwmon bridge and declare this driver
-obsolete ?
+So if there is NO_HZ_FULL, you have no objection to binding workqueues to
+the timekeeping CPUs, but that you would also like some form of automatic
+binding in the !NO_HZ_FULL case.  Of course, if a common mechanism could
+serve both cases, that would be good.  And yes, cpusets are frowned upon
+for some workloads.
 
-Guenter
+So maybe start with Kevin's patch, but augment with something else for
+the !NO_HZ_FULL case?
+
+							Thanx, Paul
 
