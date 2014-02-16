@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaBPEoU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 23:44:20 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:45769 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaBPEoT (ORCPT
+	id S1750848AbaBPFB6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 00:01:58 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:41725 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaBPFB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 23:44:19 -0500
-Message-ID: <5300421B.1020901@acm.org>
-Date: Sat, 15 Feb 2014 22:44:11 -0600
-From: Corey Minyard <minyard@acm.org>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 16 Feb 2014 00:01:56 -0500
 MIME-Version: 1.0
-To: Xie XiuQi <xiexiuqi@huawei.com>
-CC: Hushiyuan <hushiyuan@huawei.com>, openipmi-developer@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rocky Craig <rocky.craig@hp.com>
-Subject: Re: [Openipmi-developer] [PATCH] ipmi: fix BT reset for a while when
- cmd timeout
-References: <52F9FAC4.4040105@huawei.com>
-In-Reply-To: <52F9FAC4.4040105@huawei.com>
+In-Reply-To: <alpine.LSU.2.11.1402151953180.10073@eggly.anvils>
+References: <000001cf2ac7$9abf23b0$d03d6b10$%yang@samsung.com>
+	<alpine.LSU.2.11.1402151953180.10073@eggly.anvils>
+Date: Sun, 16 Feb 2014 13:01:55 +0800
+Message-ID: <CAL1ERfO4yYMRBO8XEM0oCwBb6NOqZRVGq648ncerM9XuyPPJkw@mail.gmail.com>
+Subject: Re: [RFC PATCH] mm/vmscan: remove two un-needed mem_cgroup_page_lruvec()
+ call
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Weijie Yang <weijie.yang@samsung.com>, riel@redhat.com,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't really understand the error that is happening.  I see that it
-continues to time out, but I don't know why.  If you can get in to this
-situation here, it makes me worried that there is some other issue. 
-issuing the warm reset, even if the command is not supported, should be
-harmless.  Maybe the warm reset actually happens and it takes longer
-than 5 seconds?
+On Sun, Feb 16, 2014 at 12:00 PM, Hugh Dickins <hughd@google.com> wrote:
+> On Sun, 16 Feb 2014, Weijie Yang wrote:
+>
+>> In putback_inactive_pages() and move_active_pages_to_lru(),
+>> lruvec is already an input parameter and pages are all from this lruvec,
+>> therefore there is no need to call mem_cgroup_page_lruvec() in loop.
+>>
+>> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+>
+> Looks plausible but I believe it's incorrect.  The lruvec passed in
+> is the one we took the pages from, but there's a small but real chance
+> that the page has become uncharged meanwhile, and should now be put back
+> on the root_mem_cgroup's lruvec instead of the original memcg's lruvec.
 
-The following patch is certainly not the right fix.  I would actually
-prefer to just remove the reset operation from the driver, but I'd
-really like to fix the fundamental issue.  To me this looks like a bug
-in the BMC.
+Hi Hugh,
 
-I'm copying Rocky Craig, who wrote this state machine.
+Thanks for your review.
+Frankly speaking, I am not very sure about it, that is why I add a RFC tag here.
+So,  do we need update the reclaim_stat meanwhile as we change the lruvec?
 
--corey
+Regards,
 
-On 02/11/2014 04:26 AM, Xie XiuQi wrote:
-> I fould a problem: when a cmd timeout and just
-> in that time bt->seq < 2, system will alway keep
-> retrying and we can't send any cmd to bmc.
+> Hugh
 >
-> the error message is like this:
-> [  530.908621] IPMI BT: timeout in RD_WAIT [ ] 1 retries left
-> [  582.661329] IPMI BT: timeout in RD_WAIT [ ]
-> [  582.661334] failed 2 retries, sending error response
-> [  582.661337] IPMI: BT reset (takes 5 secs)
-> [  693.335307] IPMI BT: timeout in RD_WAIT [ ]
-> [  693.335312] failed 2 retries, sending error response
-> [  693.335315] IPMI: BT reset (takes 5 secs)
-> [  804.825161] IPMI BT: timeout in RD_WAIT [ ]
-> [  804.825166] failed 2 retries, sending error response
-> [  804.825169] IPMI: BT reset (takes 5 secs)
-> ...
->
-> When BT reset, a cmd "warm reset" will be sent to bmc, but this cmd
-> is Optional in spec(refer to ipmi-interface-spec-v2). Some machines
-> don't support this cmd.
->
-> So, bt->init is introduced. Only during insmod, we do BT reset when
-> response timeout to avoid system crash.
->
-> Reported-by: Hu Shiyuan <hushiyuan@huawei.com>
-> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
-> Cc: stable@vger.kernel.org	# 3.4+
-> ---
->  drivers/char/ipmi/ipmi_bt_sm.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
-> index a22a7a5..b4a7b2a 100644
-> --- a/drivers/char/ipmi/ipmi_bt_sm.c
-> +++ b/drivers/char/ipmi/ipmi_bt_sm.c
-> @@ -107,6 +107,7 @@ struct si_sm_data {
->  	int		BT_CAP_outreqs;
->  	long		BT_CAP_req2rsp;
->  	int		BT_CAP_retries;	/* Recommended retries */
-> +	int		init;
->  };
->
->  #define BT_CLR_WR_PTR	0x01	/* See IPMI 1.5 table 11.6.4 */
-> @@ -438,8 +439,8 @@ static enum si_sm_result error_recovery(struct si_sm_data *bt,
->  	if (!bt->nonzero_status)
->  		printk(KERN_ERR "IPMI BT: stuck, try power cycle\n");
->
-> -	/* this is most likely during insmod */
-> -	else if (bt->seq <= (unsigned char)(bt->BT_CAP_retries & 0xFF)) {
-> +	/* only during insmod */
-> +	else if (!bt->init) {
->  		printk(KERN_WARNING "IPMI: BT reset (takes 5 secs)\n");
->  		bt->state = BT_STATE_RESET1;
->  		return SI_SM_CALL_WITHOUT_DELAY;
-> @@ -589,6 +590,10 @@ static enum si_sm_result bt_event(struct si_sm_data *bt, long time)
->  			BT_STATE_CHANGE(BT_STATE_READ_WAIT,
->  					SI_SM_CALL_WITHOUT_DELAY);
->  		bt->state = bt->complete;
-> +
-> +		if (!bt->init && bt->seq)
-> +			bt->init = 1;
-> +
->  		return bt->state == BT_STATE_IDLE ?	/* where to next? */
->  			SI_SM_TRANSACTION_COMPLETE :	/* normal */
->  			SI_SM_CALL_WITHOUT_DELAY;	/* Startup magic */
-
+>> ---
+>>  mm/vmscan.c |    3 ---
+>>  1 file changed, 3 deletions(-)
+>>
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index a9c74b4..4804fdb 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -1393,8 +1393,6 @@ putback_inactive_pages(struct lruvec *lruvec, struct list_head *page_list)
+>>                       continue;
+>>               }
+>>
+>> -             lruvec = mem_cgroup_page_lruvec(page, zone);
+>> -
+>>               SetPageLRU(page);
+>>               lru = page_lru(page);
+>>               add_page_to_lru_list(page, lruvec, lru);
+>> @@ -1602,7 +1600,6 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
+>>
+>>       while (!list_empty(list)) {
+>>               page = lru_to_page(list);
+>> -             lruvec = mem_cgroup_page_lruvec(page, zone);
+>>
+>>               VM_BUG_ON_PAGE(PageLRU(page), page);
+>>               SetPageLRU(page);
+>> --
+>> 1.7.10.4
+>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
