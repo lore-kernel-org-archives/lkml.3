@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaBPVZJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 16:25:09 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51602 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396AbaBPVZH (ORCPT
+	id S1753699AbaBPV24 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 16:28:56 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:53099 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396AbaBPV2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 16:25:07 -0500
-From: vegard.nossum@oracle.com
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Vegard Nossum <vegard.nossum@oracle.com>,
-        Dario Faggioli <raistlin@linux.it>, Juri Lelli <juri.lelli@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] sched: fix information leak in sys_sched_getattr()
-Date: Sun, 16 Feb 2014 22:24:17 +0100
-Message-Id: <1392585857-10725-1-git-send-email-vegard.nossum@oracle.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Sun, 16 Feb 2014 16:28:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392585409.28866.94.camel@x220>
+References: <1392584137-24486-1-git-send-email-geert@linux-m68k.org>
+	<1392585409.28866.94.camel@x220>
+Date: Sun, 16 Feb 2014 22:28:54 +0100
+X-Google-Sender-Auth: pvvV6Xj3I4QzGBAu8VXcgJ4QPUY
+Message-ID: <CAMuHMdUMDPfCjaccz5zO7CXkz1tOYiXE3N01CKoi+mhQGmjCPA@mail.gmail.com>
+Subject: Re: [PATCH RFC] MAINTAINERS: Mark SuperH orphan
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Paul Mundt <paul.mundt@gmail.com>, Magnus Damm <magnus.damm@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vegard Nossum <vegard.nossum@oracle.com>
+On Sun, Feb 16, 2014 at 10:16 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Sun, 2014-02-16 at 21:55 +0100, Geert Uytterhoeven wrote:
+>> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>>
+>> Paul Mundt's email address bounces regularly, and he hasn't taken any
+>> SuperH patches for about one year.
+>>
+>> Suggested-by: Paul Bolle <pebolle@tiscali.nl>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>> ---
+>>  MAINTAINERS |    4 +---
+>>  1 file changed, 1 insertion(+), 3 deletions(-)
+>
+> I think Andrew prefers to add an entry in CREDITS when removing someone
+> from MAINTAINERS. As that is the courteous thing to do, I guess.
 
-We're copying the on-stack structure to userspace, but forgot to give
-the right number of bytes to copy. This allows the calling process to
-obtain up to PAGE_SIZE bytes from the stack (and possibly adjacent
-kernel memory).
+Of course, how could I forget that. Sorry, Paul.
 
-This fix copies only as much as we actually have on the stack
-(attr->size defaults to the size of the struct) and leaves the rest of
-the userspace-provided buffer untouched.
+Gr{oetje,eeting}s,
 
-Found using kmemcheck + trinity.
+                        Geert
 
-Fixes: d50dde5a10f30 ("sched: Add new scheduler syscalls to support an extended scheduling parameters ABI")
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: Juri Lelli <juri.lelli@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
----
- kernel/sched/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..ac939c3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3786,7 +3786,7 @@ static int sched_read_attr(struct sched_attr __user *uattr,
- 		attr->size = usize;
- 	}
- 
--	ret = copy_to_user(uattr, attr, usize);
-+	ret = copy_to_user(uattr, attr, attr->size);
- 	if (ret)
- 		return -EFAULT;
- 
--- 
-1.7.10.4
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
