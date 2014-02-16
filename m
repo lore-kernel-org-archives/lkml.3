@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaBPRMF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 12:12:05 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:43724 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127AbaBPRMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 12:12:03 -0500
-Date: Sun, 16 Feb 2014 18:11:59 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Jan Beulich <jbeulich@suse.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Issue a warning if number of present CPUs > maxcpus
- and CONFIG_HOTPLUG=n
-Message-ID: <20140216171159.GB25047@pd.tnic>
-References: <20140215150223.63bb52fb@hananiah.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140215150223.63bb52fb@hananiah.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753127AbaBPRPa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 12:15:30 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:49967 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752643AbaBPRP3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 12:15:29 -0500
+Message-ID: <1392570927.28866.12.camel@x220>
+Subject: [PATCH] s390: remove HAVE_MARCH_Z9?0_FEATURES
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 16 Feb 2014 18:15:27 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Feb 2014 17:15:27.0865 (UTC) FILETIME=[B00B1E90:01CF2B3A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 03:02:23PM +0100, Petr Tesarik wrote:
-> Note that the check against i (value passed as maxcpus, but at least 1)
-> is repeated further down, including the warning, but since possible is
-> already clamped to max_cpus at that time, it is never printed. In fact,
-> for the non-hotplug case, the warning about exceeding maxcpus is only
-> ever printed if "possible_cpus" was also specified on the command line.
-> 
-> I strongly believe that such limitation was unintentional.
-> 
-> I also changed the message slightly -- the kernel parameter name is
-> maxcpus, not max_cpus.
-> 
-> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
-> ---
->  arch/x86/kernel/smpboot.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index a32da80..376b6c6 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1226,9 +1226,6 @@ __init void prefill_possible_map(void)
->  #ifdef CONFIG_HOTPLUG_CPU
->  		if (setup_max_cpus)
->  			possible += disabled_cpus;
-> -#else
-> -		if (possible > i)
-> -			possible = i;
+The Kconfig symbols HAVE_MARCH_Z900_FEATURES and
+HAVE_MARCH_Z990_FEATURES were added in v3.5. They have never been used.
+Apparently they are not needed. They can safely be removed.
 
-Hmm, ok, this function is not the easiest to parse and provided I'm not
-missing some corner case, the cleanup makes sense to me.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested only with "git grep".
 
-Acked-by: Borislav Petkov <bp@suse.de>
+ arch/s390/Kconfig | 10 ----------
+ 1 file changed, 10 deletions(-)
 
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 65a0775..b853d0d 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -152,16 +152,8 @@ source "kernel/Kconfig.freezer"
+ 
+ menu "Processor type and features"
+ 
+-config HAVE_MARCH_Z900_FEATURES
+-	def_bool n
+-
+-config HAVE_MARCH_Z990_FEATURES
+-	def_bool n
+-	select HAVE_MARCH_Z900_FEATURES
+-
+ config HAVE_MARCH_Z9_109_FEATURES
+ 	def_bool n
+-	select HAVE_MARCH_Z990_FEATURES
+ 
+ config HAVE_MARCH_Z10_FEATURES
+ 	def_bool n
+@@ -188,7 +180,6 @@ config MARCH_G5
+ 
+ config MARCH_Z900
+ 	bool "IBM zSeries model z800 and z900"
+-	select HAVE_MARCH_Z900_FEATURES if 64BIT
+ 	help
+ 	  Select this to enable optimizations for model z800/z900 (2064 and
+ 	  2066 series). This will enable some optimizations that are not
+@@ -196,7 +187,6 @@ config MARCH_Z900
+ 
+ config MARCH_Z990
+ 	bool "IBM zSeries model z890 and z990"
+-	select HAVE_MARCH_Z990_FEATURES if 64BIT
+ 	help
+ 	  Select this to enable optimizations for model z890/z990 (2084 and
+ 	  2086 series). The kernel will be slightly faster but will not work
 -- 
-Regards/Gruss,
-    Boris.
+1.8.5.3
 
-Sent from a fat crate under my desk. Formatting is fine.
---
