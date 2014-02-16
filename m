@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaBPTF2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 14:05:28 -0500
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:52461 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752987AbaBPTF1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 14:05:27 -0500
-Message-ID: <1392577524.28866.32.camel@x220>
-Subject: [PATCH] arm: sti: Remove SOC_STIH415 and SOC_STIH416
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Richard Weinberger <richard@nod.at>, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, linux-kernel@vger.kernel.org
-Date: Sun, 16 Feb 2014 20:05:24 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+	id S1753471AbaBPTHB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 14:07:01 -0500
+Received: from f161.i.mail.ru ([94.100.178.81]:45180 "EHLO f161.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752987AbaBPTHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 14:07:00 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?UGF1bCBCb2xsZQ==?= <pebolle@tiscali.nl>
+Cc: =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
+        =?UTF-8?B?UmljaGFyZCBXZWluYmVyZ2Vy?= <richard@nod.at>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?U2FzY2hhIEhhdWVy?= <kernel@pengutronix.de>,
+        =?UTF-8?B?U2hhd24gR3Vv?= <shawn.guo@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gYXJtOiBpbXg6IHJlbW92ZSBNQUNIX01YTEFEUw==?=
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Feb 2014 19:05:25.0308 (UTC) FILETIME=[0C6D07C0:01CF2B4A]
-X-RcptDomain: vger.kernel.org
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Sun, 16 Feb 2014 23:06:55 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1392577615.265469392@f161.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <1392576223.28866.24.camel@x220>
+References: <1392573811.28866.22.camel@x220>
+ <1392574562.956803244@f244.i.mail.ru>
+ <1392576223.28866.24.camel@x220>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1GJ79u6012761
 
-The Kconfig symbols SOC_STIH415 and SOC_STIH416 were added in v3.11.
-They have never been used. They default to "y" but nothing cares. They
-can safely be removed.
+–í–æ—Å–∫—Ä–µ—Å–µ–Ω—å–µ, 16 —Ñ–µ–≤—Ä–∞–ª—è 2014, 19:43 +01:00 –æ—Ç Paul Bolle <pebolle@tiscali.nl>:
+> On Sun, 2014-02-16 at 22:16 +0400, Alexander Shiyan wrote:
+> > –í–æ—Å–∫—Ä–µ—Å–µ–Ω—å–µ, 16 —Ñ–µ–≤—Ä–∞–ª—è 2014, 19:03 +01:00 –æ—Ç Paul Bolle
+> <pebolle@tiscali.nl>:
+> > > The Kconfig symbol MACH_MXLADS was added in v2.6.29. It has never been
+> > > used. Setting it has no effect. There are no calls for
+> > > machine_is_mxlads(). This symbol can safely be removed.
+> > > 
+> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > 
+> > This is used by mach-mx1ads.c
+> 
+> How is it used?
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Kconfig selects MACH_MXLADS, this enables machine_arch_type
+from include/generated/mach-types.h which used for machine_is_xx() macro,
+so if multiple boards is defined in the kernel, this cause to incorrect matching.
+Russel, Arnd, fixme.
+
 ---
-Tested with "git grep".
-
- arch/arm/mach-sti/Kconfig | 23 -----------------------
- 1 file changed, 23 deletions(-)
-
-diff --git a/arch/arm/mach-sti/Kconfig b/arch/arm/mach-sti/Kconfig
-index d71654b..c360ae1 100644
---- a/arch/arm/mach-sti/Kconfig
-+++ b/arch/arm/mach-sti/Kconfig
-@@ -21,26 +21,3 @@ menuconfig ARCH_STI
- 	  for discovery
- 	  More information at Documentation/arm/STiH41x and
- 	  at Documentation/devicetree
--
--
--if ARCH_STI
--
--config SOC_STIH415
--	bool "STiH415 STMicroelectronics Consumer Electronics family"
--	default y
--	help
--	  This enables support for STMicroelectronics Digital Consumer
--	  Electronics family StiH415 parts, primarily targeted at set-top-box
--	  and other digital audio/video applications using Flattned Device
--	  Trees.
--
--config SOC_STIH416
--	bool "STiH416 STMicroelectronics Consumer Electronics family"
--	default y
--	help
--	  This enables support for STMicroelectronics Digital Consumer
--	  Electronics family StiH416 parts, primarily targeted at set-top-box
--	  and other digital audio/video applications using Flattened Device
--	  Trees.
--
--endif
--- 
-1.8.5.3
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
