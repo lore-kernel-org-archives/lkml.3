@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302AbaBPXFj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 18:05:39 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:55195 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953AbaBPXFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 18:05:37 -0500
+	id S1752929AbaBPXXp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 18:23:45 -0500
+Received: from ec2-54-201-57-178.us-west-2.compute.amazonaws.com ([54.201.57.178]:59992
+	"EHLO ip-172-31-12-36.us-west-2.compute.internal"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751197AbaBPXXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 18:23:44 -0500
+X-Greylist: delayed 508 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Feb 2014 18:23:44 EST
+Date: Sun, 16 Feb 2014 23:14:07 +0000
+From: dwalker@fifo99.com
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Richard Weinberger <richard@nod.at>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: msm: remove MACH_MSM7X30_SURF
+Message-ID: <20140216231407.GA18892@fifo99.com>
+References: <1392572080.28866.19.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <20140216204754.GA16757@kroah.com>
-References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
- <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com> <20140216204754.GA16757@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Mon, 17 Feb 2014 00:05:15 +0100
-Message-ID: <CAPXgP12qGJwzmDw_Zf0N-sp6FQ3-0M8rK2QEwUGivD+j0siS0g@mail.gmail.com>
-Subject: Re: [PATCH] printk: Fix discarding of records
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Debabrata Banerjee <dbanerje@akamai.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeff Mahoney <jeffm@suse.com>, dbavatar@gmail.com, johunt@akamai.com,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392572080.28866.19.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 16, 2014 at 9:47 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sun, Feb 16, 2014 at 11:28:36AM -0800, Linus Torvalds wrote:
->> Adding Kay and Greg, since the original code is from commit
->> 7ff9554bb578 ("printk: convert byte-buffer to variable-length record
->> buffer") and all the "prev" flag tweaks end up building on top of
->> that.
->>
->> The whole "prev flags" is messed up, and LOG_CONT is done very confusingly.
->>
->> Why are *those* particular two "prev = msg->flags" incorrect, when
->> every other case where we walk the messages they are required?
->>
->> The code/logic makes no sense. You remove the "prev = msg->flags" at
->> line 1070, when the *identical* loop just above it has it. So now the
->> two loops count the number of characters differently. That makes no
->> sense.
->>
->> So I don't think this fixes the fundamental problem. I'm more inclined
->> to believe that LOG_CONT is wrongly set somewhere, for example because
->> a continuation wasn't actually originally printed due to coming from
->> different users or something like that.
->>
->> Or at the very least I want a coherent explanation why one loop would
->> do this and the other would not, and why counting up *different*
->> numbers could possibly make sense.
->>
->> Because as it is, there clearly is some problem, but the patch does
->> not look sensible to me.
->
-> Yeah, it doesn't make much sense to me either.
->
-> Kay had a printk() test module that would stress these types of paths
-> out a bunch, Kay, is that module around somewhere that we could maybe
-> add it to the kernel tree so it could be used to test changes like this?
+On Sun, Feb 16, 2014 at 06:34:40PM +0100, Paul Bolle wrote:
+> The Kconfig symbol MACH_MSM7X30_SURF was added in v2.6.35. It has never
+> been used. Setting it has no effect. There are no calls for
+> machine_is_mach_msm7x30(). This symbol can safely be removed.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Tested only with "git grep".
+> 
+>  arch/arm/mach-msm/Kconfig | 7 -------
+>  1 file changed, 7 deletions(-)
+> 
+> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+> index 9625cf3..dab941a 100644
+> --- a/arch/arm/mach-msm/Kconfig
+> +++ b/arch/arm/mach-msm/Kconfig
+> @@ -62,7 +62,6 @@ config ARCH_MSM7X30
+>  	select ARCH_MSM_SCORPION
+>  	select CPU_V7
+>  	select GPIO_MSM_V1
+> -	select MACH_MSM7X30_SURF # if !
+>  	select MSM_GPIOMUX
+>  	select MSM_PROC_COMM
+>  	select MSM_SMD
+> @@ -115,12 +114,6 @@ config MACH_TROUT
+>  	help
+>  	  Support for the HTC Dream, T-Mobile G1, Android ADP1 devices.
+>  
+> -config MACH_MSM7X30_SURF
+> -	depends on ARCH_MSM7X30
+> -	bool "MSM7x30 SURF"
+> -	help
+> -	  Support for the Qualcomm MSM7x30 SURF eval board.
+> -
 
-The module hack only tested the new stuff, not the legacy syslog() interface.
 
-There is a bug in syslog_print_all(). We calculate the size of the
-entire buffer for the plain text output including all the needed
-headers, then we start to drop messages from the start, until the
-result fits into the output buffer, and we start copying it.
+It's not really enough .. There are support files for this platform, if you remove it you need to remove
+those files also. You could also go the other way and connect the config option to those files.
 
-Some of the lines get a header printed, cont lines don't. While
-dropping messages from the start, if we end up at a line that did not
-get a header added in the size calculation, we still add the header
-now when copying it out as the first line.
-
-We don't account for the size of this one additional header, and
-therefore might end up writing up to 18 chars (syslog + time) to many.
-
-I'll fix that tomorrow. Dropping the prev = in the loop avoids the
-problem, but it will also result in fewer messages to be copied than
-we could. We only have to account for the first header.
-
-Thanks,
-Kay
+Daniel
