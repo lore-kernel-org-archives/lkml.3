@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaBPTnd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 14:43:33 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:48003 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588AbaBPTnc (ORCPT
+	id S1753529AbaBPTpo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 14:45:44 -0500
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:55408 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753283AbaBPTpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 14:43:32 -0500
-Date: Sun, 16 Feb 2014 20:43:30 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org, eranian@google.com,
-        linux-kernel@vger.kernel.org,
-        Markus Metzger <markus.t.metzger@intel.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, nmi: fix unknown NMI warning
-Message-ID: <20140216194330.GE32005@two.firstfloor.org>
-References: <1392425048-5309-1-git-send-email-andi@firstfloor.org>
- <20140215095843.GJ14089@laptop.programming.kicks-ass.net>
- <20140216183850.GD32005@two.firstfloor.org>
- <20140216192312.GM14089@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140216192312.GM14089@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 16 Feb 2014 14:45:43 -0500
+Message-ID: <1392579941.28866.55.camel@x220>
+Subject: [PATCH 1/2] usb: host: remove USB_ARCH_HAS_?HCI
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>
+Cc: Richard Weinberger <richard@nod.at>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 16 Feb 2014 20:45:41 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Feb 2014 19:45:42.0010 (UTC) FILETIME=[ACE47DA0:01CF2B4F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+USB_ARCH_HAS_EHCI, USB_ARCH_HAS_OHCI, and USB_ARCH_HAS_XHCI were made
+obsolete in v3.11. They have not been used ever since. Setting them has
+no effect. They can safely be removed.
 
-The best APIC documentation are the old data sheets for the external
-APIC chips. I don't know if they cover things in such detail.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested with "git grep".
 
-> In this case the latter NMI will actually have an overflow state to
-> process so it's not a spurious NMI.
+Note that the comment in this Kconfig file (that is also removed)
+suggests to first remove the select statements for these symbols and
+then the symbols themselves. But I think it makes more sense to first
+delete these three symbols and then remove the selects statements (as
+that is removing a second order effect). But it could just as well be
+done with just one patch, I'd say.
 
-But we cannot distinguish it right? The spurious detector would
-trigger in any case.
+ drivers/usb/Kconfig | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-> 
-> > And if we're in a state that PMIs get re-raised quickly, we should either
-> > regulate the period down or start throttling.
-> 
-> It could be a different counter; where both run at 'normal' periods but
-> just near miss each other by accident.
+diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+index 2e6b832..e0cad44 100644
+--- a/drivers/usb/Kconfig
++++ b/drivers/usb/Kconfig
+@@ -2,10 +2,6 @@
+ # USB device configuration
+ #
+ 
+-# These are unused now, remove them once they are no longer selected
+-config USB_ARCH_HAS_OHCI
+-	bool
+-
+ config USB_OHCI_BIG_ENDIAN_DESC
+ 	bool
+ 
+@@ -17,18 +13,12 @@ config USB_OHCI_LITTLE_ENDIAN
+ 	default n if STB03xxx || PPC_MPC52xx
+ 	default y
+ 
+-config USB_ARCH_HAS_EHCI
+-	bool
+-
+ config USB_EHCI_BIG_ENDIAN_MMIO
+ 	bool
+ 
+ config USB_EHCI_BIG_ENDIAN_DESC
+ 	bool
+ 
+-config USB_ARCH_HAS_XHCI
+-	bool
+-
+ menuconfig USB_SUPPORT
+ 	bool "USB support"
+ 	depends on HAS_IOMEM
+-- 
+1.8.5.3
 
-That's true.
-
-It would be only a problem if they somehow become synchronized that
-this happens very commonly. The usual defense against things like 
-that is to add a little randomization (I remember Stephane had
-a patch for that some time ago). Also I believe it helps to have
-the periods be prime numbers. But right now don't have any evidence
-it's a real problem. I presume there's enough noise on a typical
-setup that any such states disappear again quickly enough.
-
--Andi
