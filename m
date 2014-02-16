@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaBPEAz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Feb 2014 23:00:55 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:65269 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587AbaBPEAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Feb 2014 23:00:54 -0500
-Date: Sat, 15 Feb 2014 20:00:03 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Weijie Yang <weijie.yang@samsung.com>
-cc: riel@redhat.com, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, weijie.yang.kh@gmail.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH] mm/vmscan: remove two un-needed mem_cgroup_page_lruvec()
- call
-In-Reply-To: <000001cf2ac7$9abf23b0$d03d6b10$%yang@samsung.com>
-Message-ID: <alpine.LSU.2.11.1402151953180.10073@eggly.anvils>
-References: <000001cf2ac7$9abf23b0$d03d6b10$%yang@samsung.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752835AbaBPEQR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Feb 2014 23:16:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43673 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752587AbaBPEQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Feb 2014 23:16:16 -0500
+Message-ID: <53003B43.4080909@zytor.com>
+Date: Sat, 15 Feb 2014 20:14:59 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stefani Seibold <stefani@seibold.net>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
+        john.stultz@linaro.org, luto@amacapital.net, xemul@parallels.com,
+        gorcunov@openvz.org, andriy.shevchenko@linux.intel.com
+CC: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com
+Subject: Re: [PATCH v17 0/10] Add 32 bit VDSO time function support
+References: <1392481976-6370-1-git-send-email-stefani@seibold.net>
+In-Reply-To: <1392481976-6370-1-git-send-email-stefani@seibold.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Feb 2014, Weijie Yang wrote:
+On 02/15/2014 08:32 AM, Stefani Seibold wrote:
+> This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
+> and vdso_time() to the 32 bit VDSO.
 
-> In putback_inactive_pages() and move_active_pages_to_lru(),
-> lruvec is already an input parameter and pages are all from this lruvec,
-> therefore there is no need to call mem_cgroup_page_lruvec() in loop.
-> 
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+x86-64 allyesconfig:
 
-Looks plausible but I believe it's incorrect.  The lruvec passed in
-is the one we took the pages from, but there's a small but real chance
-that the page has become uncharged meanwhile, and should now be put back
-on the root_mem_cgroup's lruvec instead of the original memcg's lruvec.
+  AS      arch/x86/vdso/vdso32/int80.o
+/home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:128:4: warning:
+symbol 'hpet_page' was not declared
+. Should it be static?
+/home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:134:33:
+warning: incorrect type in argument 1 (diff
+erent address spaces)
+/home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:134:33:
+   expected void const volatile [noderef] <
+asn:2>*addr
+/home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:134:33:
+   got unsigned char [toplevel] *
+/home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:294:13:
+warning: symbol '__vdso_clock_gettime' was
+not declared. Should it be static?
+/home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:322:13:
+warning: symbol '__vdso_gettimeofday' was n
+ot declared. Should it be static?
+/home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:343:16:
+warning: symbol '__vdso_time' was not decla
+red. Should it be static?
+  CC      arch/x86/vdso/vdso32/vclock_gettime.o
+/home/hpa/kernel/distwork/arch/x86/vdso/vdso32/vclock_gettime.c:1:0:
+sorry, unimplemented: -mfentry isn’t supported fo
+r 32-bit in combination with -fpic
+ #define BUILD_VDSO32
+ ^
+make[4]: *** [arch/x86/vdso/vdso32/vclock_gettime.o] Error 1
 
-Hugh
 
-> ---
->  mm/vmscan.c |    3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a9c74b4..4804fdb 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1393,8 +1393,6 @@ putback_inactive_pages(struct lruvec *lruvec, struct list_head *page_list)
->  			continue;
->  		}
->  
-> -		lruvec = mem_cgroup_page_lruvec(page, zone);
-> -
->  		SetPageLRU(page);
->  		lru = page_lru(page);
->  		add_page_to_lru_list(page, lruvec, lru);
-> @@ -1602,7 +1600,6 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
->  
->  	while (!list_empty(list)) {
->  		page = lru_to_page(list);
-> -		lruvec = mem_cgroup_page_lruvec(page, zone);
->  
->  		VM_BUG_ON_PAGE(PageLRU(page), page);
->  		SetPageLRU(page);
-> -- 
-> 1.7.10.4
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+My patience is wearing really thin.  If I get another patchset that
+doesn't compile in allyesconfig, allmodconfig, allnoconfig and defconfig
+on both i386 and x86-64, I will put this patchset at the very bottom of
+my priority list.
+
+I strongly suggest also installing sparse and compiling with C=1 and
+fixing all *those* warnings.
+
+Sorry.
+
+	-hpa
+
