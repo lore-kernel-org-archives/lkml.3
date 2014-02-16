@@ -1,136 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaBPTBN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 14:01:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:32873 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaBPTBL (ORCPT
+	id S1753437AbaBPTF2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 14:05:28 -0500
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:52461 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752987AbaBPTF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 14:01:11 -0500
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@pengutronix.de, Markus Pargmann <mpa@pengutronix.de>,
-        stable@vger.kernel.org
-Subject: [PATCH] regulator: core bugfix: Use normal enable for always_on regulators
-Date: Sun, 16 Feb 2014 20:00:56 +0100
-Message-Id: <1392577256-20475-1-git-send-email-mpa@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.3
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sun, 16 Feb 2014 14:05:27 -0500
+Message-ID: <1392577524.28866.32.camel@x220>
+Subject: [PATCH] arm: sti: Remove SOC_STIH415 and SOC_STIH416
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Richard Weinberger <richard@nod.at>, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, linux-kernel@vger.kernel.org
+Date: Sun, 16 Feb 2014 20:05:24 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Feb 2014 19:05:25.0308 (UTC) FILETIME=[0C6D07C0:01CF2B4A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-always_on regulators are currently enabled at registration using the
-enable function of struct regulator_ops.
+The Kconfig symbols SOC_STIH415 and SOC_STIH416 were added in v3.11.
+They have never been used. They default to "y" but nothing cares. They
+can safely be removed.
 
-The regulator framework does support gpios to enable/disable regulators.
-gpios are not handled through struct regulator_ops functions as they are
-a basic component of the framework. Instead they are handled within
-_regulator_do_enable(). Unfortunately always-on regulator do not use
-this function, to gpio-controlled always-on regulators which are not
-enabled on boot. Furthermore they are disabled the whole time because
-regulator_enable() does not call _regulator_do_enable() for always-on
-regulator.
-
-This patch seperates _regulator_do_enable_no_delay from the
-_regulator_do_enable function to be able to call the enable function
-without delays. It then fixes the always_on behaviour by using this
-function.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/regulator/core.c | 45 +++++++++++++++++++++++++++------------------
- 1 file changed, 27 insertions(+), 18 deletions(-)
+Tested with "git grep".
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 16a309e..8469244 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -953,6 +953,8 @@ static int machine_constraints_current(struct regulator_dev *rdev,
- 	return 0;
- }
- 
-+static int _regulator_do_enable_no_delay(struct regulator_dev *rdev);
-+
- /**
-  * set_machine_constraints - sets regulator constraints
-  * @rdev: regulator source
-@@ -1013,9 +1015,8 @@ static int set_machine_constraints(struct regulator_dev *rdev,
- 	/* If the constraints say the regulator should be on at this point
- 	 * and we have control then make sure it is enabled.
- 	 */
--	if ((rdev->constraints->always_on || rdev->constraints->boot_on) &&
--	    ops->enable) {
--		ret = ops->enable(rdev);
-+	if (rdev->constraints->always_on || rdev->constraints->boot_on) {
-+		ret = _regulator_do_enable_no_delay(rdev);
- 		if (ret < 0) {
- 			rdev_err(rdev, "failed to enable\n");
- 			goto out;
-@@ -1745,6 +1746,24 @@ static int regulator_ena_gpio_ctrl(struct regulator_dev *rdev, bool enable)
- 	return 0;
- }
- 
-+static int _regulator_do_enable_no_delay(struct regulator_dev *rdev)
-+{
-+	int ret;
-+
-+	if (rdev->ena_pin) {
-+		ret = regulator_ena_gpio_ctrl(rdev, true);
-+		if (ret < 0)
-+			return ret;
-+		rdev->ena_gpio_state = 1;
-+	} else if (rdev->desc->ops->enable) {
-+		ret = rdev->desc->ops->enable(rdev);
-+	} else {
-+		ret = -EINVAL;
-+	}
-+
-+	return ret;
-+}
-+
- static int _regulator_do_enable(struct regulator_dev *rdev)
- {
- 	int ret, delay;
-@@ -1760,18 +1779,9 @@ static int _regulator_do_enable(struct regulator_dev *rdev)
- 
- 	trace_regulator_enable(rdev_get_name(rdev));
- 
--	if (rdev->ena_pin) {
--		ret = regulator_ena_gpio_ctrl(rdev, true);
--		if (ret < 0)
--			return ret;
--		rdev->ena_gpio_state = 1;
--	} else if (rdev->desc->ops->enable) {
--		ret = rdev->desc->ops->enable(rdev);
--		if (ret < 0)
--			return ret;
--	} else {
--		return -EINVAL;
--	}
-+	ret = _regulator_do_enable_no_delay(rdev);
-+	if (ret)
-+		return ret;
- 
- 	/* Allow the regulator to ramp; it would be useful to extend
- 	 * this for bulk operations so that the regulators can ramp
-@@ -3633,9 +3643,8 @@ int regulator_suspend_finish(void)
- 		struct regulator_ops *ops = rdev->desc->ops;
- 
- 		mutex_lock(&rdev->mutex);
--		if ((rdev->use_count > 0  || rdev->constraints->always_on) &&
--				ops->enable) {
--			error = ops->enable(rdev);
-+		if (rdev->use_count > 0  || rdev->constraints->always_on) {
-+			error = _regulator_do_enable_no_delay(rdev);
- 			if (error)
- 				ret = error;
- 		} else {
+ arch/arm/mach-sti/Kconfig | 23 -----------------------
+ 1 file changed, 23 deletions(-)
+
+diff --git a/arch/arm/mach-sti/Kconfig b/arch/arm/mach-sti/Kconfig
+index d71654b..c360ae1 100644
+--- a/arch/arm/mach-sti/Kconfig
++++ b/arch/arm/mach-sti/Kconfig
+@@ -21,26 +21,3 @@ menuconfig ARCH_STI
+ 	  for discovery
+ 	  More information at Documentation/arm/STiH41x and
+ 	  at Documentation/devicetree
+-
+-
+-if ARCH_STI
+-
+-config SOC_STIH415
+-	bool "STiH415 STMicroelectronics Consumer Electronics family"
+-	default y
+-	help
+-	  This enables support for STMicroelectronics Digital Consumer
+-	  Electronics family StiH415 parts, primarily targeted at set-top-box
+-	  and other digital audio/video applications using Flattned Device
+-	  Trees.
+-
+-config SOC_STIH416
+-	bool "STiH416 STMicroelectronics Consumer Electronics family"
+-	default y
+-	help
+-	  This enables support for STMicroelectronics Digital Consumer
+-	  Electronics family StiH416 parts, primarily targeted at set-top-box
+-	  and other digital audio/video applications using Flattened Device
+-	  Trees.
+-
+-endif
 -- 
 1.8.5.3
 
