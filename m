@@ -1,103 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaBPQRy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 11:17:54 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:36016 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451AbaBPQRw (ORCPT
+	id S1752929AbaBPQaU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 11:30:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58826 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474AbaBPQaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 11:17:52 -0500
-Date: Sun, 16 Feb 2014 08:17:45 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH 24/48] rcu: Replace __this_cpu_ptr uses with raw_cpu_ptr
-Message-ID: <20140216161745.GC4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140214201841.826179349@linux.com>
- <20140214201906.486328867@linux.com>
+	Sun, 16 Feb 2014 11:30:19 -0500
+Date: Sun, 16 Feb 2014 08:32:41 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Subject: Re: [PATCH v17 0/10] Add 32 bit VDSO time function support
+Message-ID: <20140216163241.GA28616@kroah.com>
+References: <1392481976-6370-1-git-send-email-stefani@seibold.net>
+ <53003B43.4080909@zytor.com>
+ <1392539375.6513.20.camel@wall-e.seibold.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140214201906.486328867@linux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021616-6688-0000-0000-0000069F4B88
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392539375.6513.20.camel@wall-e.seibold.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 02:19:05PM -0600, Christoph Lameter wrote:
-> [Patch depends on another patch in this series that introduces raw_cpu_ops]
+On Sun, Feb 16, 2014 at 09:29:35AM +0100, Stefani Seibold wrote:
+> Am Samstag, den 15.02.2014, 20:14 -0800 schrieb H. Peter Anvin:
+> > On 02/15/2014 08:32 AM, Stefani Seibold wrote:
+> > > This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
+> > > and vdso_time() to the 32 bit VDSO.
+> > 
+> > x86-64 allyesconfig:
+> > 
+> >   AS      arch/x86/vdso/vdso32/int80.o
+> > /home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:128:4: warning:
+> > symbol 'hpet_page' was not declared
+> > . Should it be static?
+> > /home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:134:33:
+> > warning: incorrect type in argument 1 (diff
+> > erent address spaces)
+> > /home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:134:33:
+> >    expected void const volatile [noderef] <
+> > asn:2>*addr
+> > /home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:134:33:
+> >    got unsigned char [toplevel] *
+> > /home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:294:13:
+> > warning: symbol '__vdso_clock_gettime' was
+> > not declared. Should it be static?
+> > /home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:322:13:
+> > warning: symbol '__vdso_gettimeofday' was n
+> > ot declared. Should it be static?
+> > /home/hpa/kernel/distwork/arch/x86/vdso/vdso32/../vclock_gettime.c:343:16:
+> > warning: symbol '__vdso_time' was not decla
+> > red. Should it be static?
+> >   CC      arch/x86/vdso/vdso32/vclock_gettime.o
+> > /home/hpa/kernel/distwork/arch/x86/vdso/vdso32/vclock_gettime.c:1:0:
+> > sorry, unimplemented: -mfentry isn’t supported fo
+> > r 32-bit in combination with -fpic
+> >  #define BUILD_VDSO32
+> >  ^
+> > make[4]: *** [arch/x86/vdso/vdso32/vclock_gettime.o] Error 1
+> > 
+> > 
+> > My patience is wearing really thin.  If I get another patchset that
+> > doesn't compile in allyesconfig, allmodconfig, allnoconfig and defconfig
+> > on both i386 and x86-64, I will put this patchset at the very bottom of
+> > my priority list.
+> > 
+> > I strongly suggest also installing sparse and compiling with C=1 and
+> > fixing all *those* warnings.
+> > 
 > 
-> __this_cpu_ptr is being phased out.
+> All of the "__vdso__... was not declared" warnings was not introduced by
+> me. But i can fix if you like.
 > 
-> One special case is increment_cpu_stall_ticks().
-> A per cpu variable is incremented so use raw_cpu_inc().
+> The "sorry, unimplemented: -mfentry isn’t supported for 32-bit in
+> combination with -fpic" did not occur on my system. I think it is a
+> compiler issues, i am using for x86_64 the gcc 4.3.4.
 > 
-> Cc: Dipankar Sarma <dipankar@in.ibm.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+> I will add a
+> 
+> KBUILD_CFLAGS_32 := $(filter-out -mfentry,$(KBUILD_CFLAGS_32))
+> 
+> to the arch/x86/vdso/Makefile.
+> 
+> Hope this solve your problem.
+> 
+> Since i have only a 7 year old system with am intel quad "Core 2" 2.54
+> GHz and a SATA II interface i am not able to run the suggested ktest
+> tool. This would take days! A simple allyesconfig for a X86_64 takes
+> about 2 hours.
+> 
+> What i will do now is run again a allyesconfig for i386 and X86_64 and
+> next a allnoconfig and defconfig. I see no reason to a allmodconfig
+> since there is no module dependency in this patch set.
+> 
+> I will not test the X86_X32 since i have no environment for this. Nor
+> the CONFIG_CRYPTO_AES_NI_INTEL since my compiler does not support this.
+> 
+> That is the best effort i currently can do in my spare time. If this is
+> not enough i have no idea how to continue.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+If you do that, and there are still problems, I have access to faster
+machines that can do the other builds for testing and fixing up, just
+let me know.
 
-> Index: linux/kernel/rcu/tree.c
-> ===================================================================
-> --- linux.orig/kernel/rcu/tree.c	2014-02-03 13:23:21.855072103 -0600
-> +++ linux/kernel/rcu/tree.c	2014-02-03 13:23:21.845072311 -0600
-> @@ -1951,7 +1951,7 @@
->  static void rcu_adopt_orphan_cbs(struct rcu_state *rsp, unsigned long flags)
->  {
->  	int i;
-> -	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
-> +	struct rcu_data *rdp = raw_cpu_ptr(rsp->rda);
-> 
->  	/* No-CBs CPUs are handled specially. */
->  	if (rcu_nocb_adopt_orphan_cbs(rsp, rdp, flags))
-> @@ -2334,7 +2334,7 @@
->  __rcu_process_callbacks(struct rcu_state *rsp)
->  {
->  	unsigned long flags;
-> -	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
-> +	struct rcu_data *rdp = raw_cpu_ptr(rsp->rda);
-> 
->  	WARN_ON_ONCE(rdp->beenonline == 0);
-> 
-> @@ -2936,7 +2936,7 @@
->  static void rcu_barrier_func(void *type)
->  {
->  	struct rcu_state *rsp = type;
-> -	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
-> +	struct rcu_data *rdp = raw_cpu_ptr(rsp->rda);
-> 
->  	_rcu_barrier_trace(rsp, "IRQ", -1, rsp->n_barrier_done);
->  	atomic_inc(&rsp->barrier_cpu_count);
-> Index: linux/kernel/rcu/tree_plugin.h
-> ===================================================================
-> --- linux.orig/kernel/rcu/tree_plugin.h	2014-02-03 13:23:21.855072103 -0600
-> +++ linux/kernel/rcu/tree_plugin.h	2014-02-03 13:23:21.845072311 -0600
-> @@ -1848,7 +1848,7 @@
->  	struct rcu_data *rdp;
-> 
->  	for_each_rcu_flavor(rsp) {
-> -		rdp = __this_cpu_ptr(rsp->rda);
-> +		rdp = raw_cpu_ptr(rsp->rda);
->  		if (rdp->qlen_lazy != 0) {
->  			atomic_inc(&oom_callback_count);
->  			rsp->call(&rdp->oom_head, rcu_oom_callback);
-> @@ -1990,7 +1990,7 @@
->  	struct rcu_state *rsp;
-> 
->  	for_each_rcu_flavor(rsp)
-> -		__this_cpu_ptr(rsp->rda)->ticks_this_gp++;
-> +		raw_cpu_inc(rsp->rda->ticks_this_gp);
->  }
-> 
->  #else /* #ifdef CONFIG_RCU_CPU_STALL_INFO */
-> 
+thanks,
 
+greg k-h
