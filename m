@@ -1,40 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065AbaBPRLb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 12:11:31 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:40233 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886AbaBPRL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 12:11:29 -0500
+	id S1753265AbaBPRMF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 12:12:05 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43724 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753127AbaBPRMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 12:12:03 -0500
+Date: Sun, 16 Feb 2014 18:11:59 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Jan Beulich <jbeulich@suse.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Issue a warning if number of present CPUs > maxcpus
+ and CONFIG_HOTPLUG=n
+Message-ID: <20140216171159.GB25047@pd.tnic>
+References: <20140215150223.63bb52fb@hananiah.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20140216163928.GC28616@kroah.com>
-References: <1391862850-24620-1-git-send-email-ard.biesheuvel@linaro.org>
-	<CAKv+Gu_cVcT_796qnxEi2uSmXBpiptgjL2tc3t4TVHryEu9tvw@mail.gmail.com>
-	<20140216163928.GC28616@kroah.com>
-Date: Sun, 16 Feb 2014 18:11:27 +0100
-Message-ID: <CAKv+Gu8b7cZzq6dZJj3=yg5RE2iNszpJ_aeJmgW1Y3PGSRVT3g@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] generic CPU feature based udev module autoprobing
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140215150223.63bb52fb@hananiah.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 February 2014 17:39, gregkh@linuxfoundation.org
-<gregkh@linuxfoundation.org> wrote:
-> On Sun, Feb 16, 2014 at 03:40:04PM +0100, Ard Biesheuvel wrote:
->> Ping?
->
-> Sorry, still digging out from the -rc1 backlog.  Give me a few days,
-> Monday is a holliday in the US.
->
+On Sat, Feb 15, 2014 at 03:02:23PM +0100, Petr Tesarik wrote:
+> Note that the check against i (value passed as maxcpus, but at least 1)
+> is repeated further down, including the warning, but since possible is
+> already clamped to max_cpus at that time, it is never printed. In fact,
+> for the non-hotplug case, the warning about exceeding maxcpus is only
+> ever printed if "possible_cpus" was also specified on the command line.
+> 
+> I strongly believe that such limitation was unintentional.
+> 
+> I also changed the message slightly -- the kernel parameter name is
+> maxcpus, not max_cpus.
+> 
+> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+> ---
+>  arch/x86/kernel/smpboot.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index a32da80..376b6c6 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -1226,9 +1226,6 @@ __init void prefill_possible_map(void)
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  		if (setup_max_cpus)
+>  			possible += disabled_cpus;
+> -#else
+> -		if (possible > i)
+> -			possible = i;
 
-Yes, please, whenever you have some time.
+Hmm, ok, this function is not the easiest to parse and provided I'm not
+missing some corner case, the cleanup makes sense to me.
 
-Regards,
-Ard.
+Acked-by: Borislav Petkov <bp@suse.de>
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
