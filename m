@@ -1,97 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaBPM0K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 07:26:10 -0500
-Received: from fallback6.mail.ru ([94.100.176.134]:53169 "EHLO
-	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724AbaBPM0I (ORCPT
+	id S1752113AbaBPMqp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 07:46:45 -0500
+Received: from fallback4.mail.ru ([94.100.176.42]:36874 "EHLO
+	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742AbaBPMqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 07:26:08 -0500
-From: Alexander Shiyan <shc_work@mail.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH] w1: Remove excess dependencies on W1 for masters and slaves
-Date: Sun, 16 Feb 2014 16:25:46 +0400
-Message-Id: <1392553546-9466-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.8.3.2
-X-Spam: Not detected
+	Sun, 16 Feb 2014 07:46:44 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?RXZnZW5peSBQb2x5YWtvdg==?= <zbr@ioremap.net>
+Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gdzE6IFJlbW92ZSBleGNlc3MgZGVwZW5kZW5jaWVzIG9u?=
+ =?UTF-8?B?IFcxIGZvciBtYXN0ZXJzIGFuZCBzbGF2ZXM=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Sun, 16 Feb 2014 16:46:29 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1392554789.844074023@f431.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
 X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <1392553546-9466-1-git-send-email-shc_work@mail.ru>
+References: <1392553546-9466-1-git-send-email-shc_work@mail.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1GCkokt011717
 
-Configuration for masters and slaves is included only if W1 symbol
-enabled, so no reason to check it once more.
+–í–æ—Å–∫—Ä–µ—Å–µ–Ω—å–µ, 16 —Ñ–µ–≤—Ä–∞–ª—è 2014, 16:25 +04:00 –æ—Ç Alexander Shiyan <shc_work@mail.ru>:
+> Configuration for masters and slaves is included only if W1 symbol
+> enabled, so no reason to check it once more.
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Looks like this patch broke build drivers as modules.
+Please forget it, sorry for noise.
+
 ---
- drivers/w1/masters/Kconfig | 3 +--
- drivers/w1/slaves/Kconfig  | 5 -----
- 2 files changed, 1 insertion(+), 7 deletions(-)
-
-diff --git a/drivers/w1/masters/Kconfig b/drivers/w1/masters/Kconfig
-index efc7f07..6ffe120 100644
---- a/drivers/w1/masters/Kconfig
-+++ b/drivers/w1/masters/Kconfig
-@@ -36,13 +36,12 @@ config W1_MASTER_DS2482
- 
- config W1_MASTER_MXC
- 	tristate "Freescale MXC 1-wire busmaster"
--	depends on W1 && ARCH_MXC
-+	depends on ARCH_MXC
- 	help
- 	  Say Y here to enable MXC 1-wire host
- 
- config W1_MASTER_DS1WM
- 	tristate "Maxim DS1WM 1-wire busmaster"
--	depends on W1
- 	help
- 	  Say Y here to enable the DS1WM 1-wire driver, such as that
- 	  in HP iPAQ devices like h5xxx, h2200, and ASIC3-based like
-diff --git a/drivers/w1/slaves/Kconfig b/drivers/w1/slaves/Kconfig
-index 5e6a3c9..1cdce80 100644
---- a/drivers/w1/slaves/Kconfig
-+++ b/drivers/w1/slaves/Kconfig
-@@ -72,7 +72,6 @@ config W1_SLAVE_DS2433_CRC
- 
- config W1_SLAVE_DS2760
- 	tristate "Dallas 2760 battery monitor chip (HP iPAQ & others)"
--	depends on W1
- 	help
- 	  If you enable this you will have the DS2760 battery monitor
- 	  chip support.
-@@ -85,7 +84,6 @@ config W1_SLAVE_DS2760
- 
- config W1_SLAVE_DS2780
- 	tristate "Dallas 2780 battery monitor chip"
--	depends on W1
- 	help
- 	  If you enable this you will have the DS2780 battery monitor
- 	  chip support.
-@@ -98,7 +96,6 @@ config W1_SLAVE_DS2780
- 
- config W1_SLAVE_DS2781
- 	tristate "Dallas 2781 battery monitor chip"
--	depends on W1
- 	help
- 	  If you enable this you will have the DS2781 battery monitor
- 	  chip support.
-@@ -111,7 +108,6 @@ config W1_SLAVE_DS2781
- 
- config W1_SLAVE_DS28E04
- 	tristate "4096-Bit Addressable 1-Wire EEPROM with PIO (DS28E04-100)"
--	depends on W1
- 	select CRC16
- 	help
- 	  If you enable this you will have the DS28E04-100
-@@ -124,7 +120,6 @@ config W1_SLAVE_DS28E04
- 
- config W1_SLAVE_BQ27000
- 	tristate "BQ27000 slave support"
--	depends on W1
- 	help
- 	  Say Y here if you want to use a hdq
- 	  bq27000 slave support.
--- 
-1.8.3.2
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
