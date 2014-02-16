@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbaBPU4W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 15:56:22 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46628 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649AbaBPU4N (ORCPT
+	id S1753652AbaBPVQw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 16:16:52 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:49201 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753396AbaBPVQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 15:56:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392581854.28866.74.camel@x220>
-References: <1392577203.28866.29.camel@x220>
-	<1392577801.28866.35.camel@x220>
-	<CAMuHMdVDjFmo4eQpbFVr_-T08c=kFSYUYjF=f2xfN+EXu4ZLsg@mail.gmail.com>
-	<1392581854.28866.74.camel@x220>
-Date: Sun, 16 Feb 2014 21:56:13 +0100
-X-Google-Sender-Auth: KbTdBo0wqC9zRO-Ee2cHFysK3dc
-Message-ID: <CAMuHMdXMiK-2VU8ze9ey4JhZKJqoU5LB+oOUwQ5LdhEmaDUFaw@mail.gmail.com>
-Subject: Re: [PATCH] sh: remove SH_ALPHA_BOARD
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Richard Weinberger <richard@nod.at>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 16 Feb 2014 16:16:51 -0500
+Message-ID: <1392585409.28866.94.camel@x220>
+Subject: Re: [PATCH RFC] MAINTAINERS: Mark SuperH orphan
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Paul Mundt <paul.mundt@gmail.com>, Magnus Damm <magnus.damm@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Date: Sun, 16 Feb 2014 22:16:49 +0100
+In-Reply-To: <1392584137-24486-1-git-send-email-geert@linux-m68k.org>
+References: <1392584137-24486-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Feb 2014 21:16:49.0880 (UTC) FILETIME=[67FF3D80:01CF2B5C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 16, 2014 at 9:17 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Sun, 2014-02-16 at 21:14 +0100, Geert Uytterhoeven wrote:
->> On Sun, Feb 16, 2014 at 8:10 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
->> > Paul Mundt's address triggers a bounce. I received a bounce for a
->> > message I sent Paul last week too. Do other people have problems sending
->> > to lethal@linux-sh.org too?
->>
->> Yes, it sometimes fails.
->>
->> Anyway, AFAIK Paul is no longer taking sh-patches.
->
-> If that's the case could someone please make MAINTAINERS reflect that
-> situation?
+On Sun, 2014-02-16 at 21:55 +0100, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> 
+> Paul Mundt's email address bounces regularly, and he hasn't taken any
+> SuperH patches for about one year.
+> 
+> Suggested-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> ---
+>  MAINTAINERS |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 
-Sent out an RFC.
+I think Andrew prefers to add an entry in CREDITS when removing someone
+from MAINTAINERS. As that is the courteous thing to do, I guess. 
 
-> And, by the way, is there somebody that does take patches for sh?
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index b2cf5cfb4d29..2d294561ebdc 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -8372,12 +8372,10 @@ S:	Maintained
+>  F:	drivers/net/ethernet/dlink/sundance.c
+>  
+>  SUPERH
+> -M:	Paul Mundt <lethal@linux-sh.org>
+>  L:	linux-sh@vger.kernel.org
+>  W:	http://www.linux-sh.org
+>  Q:	http://patchwork.kernel.org/project/linux-sh/list/
+> -T:	git git://github.com/pmundt/linux-sh.git sh-latest
+> -S:	Supported
+> +S:	Orphan
+>  F:	Documentation/sh/
+>  F:	arch/sh/
+>  F:	drivers/sh/
 
-Andrew Morton?
 
-Gr{oetje,eeting}s,
+Paul Bolle
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
