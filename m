@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaBQJuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:50:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55620 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341AbaBQJub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:50:31 -0500
-Message-ID: <5301DB4B.2030103@zytor.com>
-Date: Mon, 17 Feb 2014 01:50:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753328AbaBQJuv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:50:51 -0500
+Received: from cassarossa.samfundet.no ([193.35.52.29]:35473 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314AbaBQJut convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 04:50:49 -0500
+Date: Mon, 17 Feb 2014 10:50:48 +0100
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: hskinnemoen@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: avr32: Makefile: add '-D__linux__' flag for
+ gcc-4.4.7 using.
+Message-ID: <20140217095048.GA20665@samfundet.no>
+References: <52ECEA2A.8070307@gmail.com>
 MIME-Version: 1.0
-To: Stefani Seibold <stefani@seibold.net>
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com, linux-tip-commits@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [tip:x86/vdso] x86, vdso: Instead of dummy functions, include
- < linux/spinlock_up.h>
-References: <1392587568-7325-10-git-send-email-stefani@seibold.net>	 <tip-bd9ee7fd99f127ee1306289415141d45792c97f3@git.kernel.org>	 <53018ABA.20005@zytor.com> <1392622944.1036.13.camel@wall-e.seibold.net>	 <5301D615.8090907@zytor.com> <1392630366.15660.6.camel@wall-e.seibold.net>
-In-Reply-To: <1392630366.15660.6.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <52ECEA2A.8070307@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 01:46 AM, Stefani Seibold wrote:
-> Am Montag, den 17.02.2014, 01:27 -0800 schrieb H. Peter Anvin:
->> On 02/16/2014 11:42 PM, Stefani Seibold wrote:
->>> I think for the first time it will be okay to kick out the
->>> _ASM_X86_SPINLOCK_H hack and accept the C=1 warnings.
->>>
->>> At next step it is necessary to make the whole BUILD_VDSO32 path in
->>> vclock_gettime.c independent from the kernel headers, only uapi/ should
->>> be included.
->>>
->>> The use of cycle_t must be replaced with u64.
->>>
->>> We need a own copy of __native_read_tsc(), __iter_div_u64_rem, smp_rmb()
->>> and cpu_relax().
->>
->> All of which are quite trivial.
->>
->>> For the non BUILD_VDSO32 path we must only move the #includes inside
->>> this #ifndef BUILD_VDSO32
->>
->> Sorry, didn't quite follow that.
->>
->
-> The solution is quite simple: In case of a 32 bit VDSO for a 64 bit
-> kernel fake a 32 bit kernel configuration. Than everything is fine and
-> all kernel headers will compile without warnings or errors, also make
-> C=1 will give no complains.
->
-> The arch/x86/vdso/vdso32/vclock_gettime.c will now look like:
->
-> #define BUILD_VDSO32
->
-> #ifdef CONFIG_X86_64
->
-> /*
->   * in case of a 32 bit VDSO for a 64 bit kernel fake a 32 bit kernel
->   * configuration
->   */
-> #undef CONFIG_64BIT
-> #undef CONFIG_X86_64
-> #undef CONFIG_ILLEGAL_POINTER_VALUE
->
-> #define CONFIG_X86_32 1
-> #define CONFIG_PAGE_OFFSET 0
-> #define CONFIG_ILLEGAL_POINTER_VALUE 0
->
-> #define BUILD_VDSO32_64
->
-> #endif
->
-> #include "../vclock_gettime.c"
->
-> and the following modifications for arch/x86/include/asm/vgtod.h:
->
-> #ifdef BUILD_VDSO32_64
-> typedef u64 gtod_long_t;
-> #else
-> typedef unsigned long gtod_long_t;
-> #endif
->
-> I tested it and i see no side effects. What do you think?
->
+Around Sat 01 Feb 2014 20:35:54 +0800 or thereabout, Chen Gang wrote:
+> For avr32 cross compiler, do not define '__linux__' internally, so it
+> will cause issue with allmodconfig.
+> 
+> The related error:
+> 
+>     CC [M]  fs/coda/psdev.o
+>   In file included from include/linux/coda.h:64,
+>                    from fs/coda/psdev.c:45:
+>   include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
+> 
+> The related toolchain version (which only download, not re-compile):
+> 
+>   [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
+>   Using built-in specs.
+>   Target: avr32
+>   Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
+> .atmel.com/avr
+>   Thread model: single
+>   gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435) 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-Clever.  It is still a hack of course, and it would be better to getting 
-to the point where we don't include random kernel headers but only uapi 
-headers plus special headers sanitized specifically for the vdso, but 
-the above looks like a good intermediate hack.
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-	-hpa
+I will merge this into the avr32 tree in the for-linus branch. AFAICT this is
+also suitable for stable, so I'll add the appropriate CC.
 
-
+> ---
+>  arch/avr32/Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/avr32/Makefile b/arch/avr32/Makefile
+> index 22fb665..dba48a5 100644
+> --- a/arch/avr32/Makefile
+> +++ b/arch/avr32/Makefile
+> @@ -11,7 +11,7 @@ all: uImage vmlinux.elf
+>  
+>  KBUILD_DEFCONFIG	:= atstk1002_defconfig
+>  
+> -KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
+> +KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
+>  KBUILD_AFLAGS	+= -mrelax -mno-pic
+>  KBUILD_CFLAGS_MODULE += -mno-relax
+>  LDFLAGS_vmlinux	+= --relax
+-- 
+mvh
+Hans-Christian Egtvedt
