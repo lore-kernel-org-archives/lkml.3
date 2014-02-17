@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387AbaBQUbD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 15:31:03 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57923 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847AbaBQUbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 15:31:00 -0500
-Date: Mon, 17 Feb 2014 21:30:57 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: John <da_audiophile@yahoo.com>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "mlindner@marvell.com" <mlindner@marvell.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [BUG] unable to handle kernel NULL pointer dereference
-Message-ID: <20140217203057.GJ4559@pd.tnic>
-References: <1392466251.41282.YahooMailNeo@web140003.mail.bf1.yahoo.com>
- <1392494917.71728.YahooMailNeo@web140002.mail.bf1.yahoo.com>
- <20140215203015.GA4528@pd.tnic>
- <1392498262.98385.YahooMailNeo@web140003.mail.bf1.yahoo.com>
- <20140215232508.GB4508@pd.tnic>
- <1392571653.44773.4.camel@leira.trondhjem.org>
- <1392667974.22806.YahooMailNeo@web140003.mail.bf1.yahoo.com>
+	id S1754326AbaBQUgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 15:36:23 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:43575 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280AbaBQUgW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 15:36:22 -0500
+Date: Mon, 17 Feb 2014 12:36:18 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: fix sparse warning for rcu_expedited from
+ kernel/ksysfs.c
+Message-ID: <20140217203618.GA24824@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1392153012-14378-1-git-send-email-paul.gortmaker@windriver.com>
+ <20140214003207.GN4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392667974.22806.YahooMailNeo@web140003.mail.bf1.yahoo.com>
+In-Reply-To: <20140214003207.GN4250@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021720-1344-0000-0000-000005D5247E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 12:12:54PM -0800, John wrote:
-> Trond.  Yes, your patch fixes the regression for me; tested on
-> v3.13.3,  I do not know the process by which patches get into
-> the next stable release (minor version).  My hope is that once
-> peer-reviewed, this patch gets into the 3.13.4 and since the 3.12
-> series is not EOL yet, into 3.12.12 as well.  Thank you for the time
-> and effort!
+On Thu, Feb 13, 2014 at 04:32:07PM -0800, Paul E. McKenney wrote:
+> On Tue, Feb 11, 2014 at 04:10:12PM -0500, Paul Gortmaker wrote:
+> > To fix:
+> > 
+> > kernel/ksysfs.c:143:5: warning: symbol 'rcu_expedited' was not declared. Should it be static?
+> > 
+> > Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> 
+> Queued, thank you!
 
-Basically you say
+Upon further review, I moved the rcu_expedited declaration to
+include/linux/rcupdate.h in order to avoid including RCU-specific
+kernel/rcu/rcu.h into non-RCU files.  This resulted in the patch below.
+Please let me know if you have any objections to this change.
 
-Tested-by: John <da_audiophile@yahoo.com>
+							Thanx, Paul
 
-Trond adds stable to CC, sends it to Linus and it trickles down to
-3.12.x and 3.13.x stable.
+------------------------------------------------------------------------
 
--- 
-Regards/Gruss,
-    Boris.
+rcu: Fix sparse warning for rcu_expedited from kernel/ksysfs.c
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+This commit fixes the follwoing warning:
+
+kernel/ksysfs.c:143:5: warning: symbol 'rcu_expedited' was not declared. Should it be static?
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+[ paulmck: Moved the declaration to include/linux/rcupdate.h to avoid
+   including the RCU-internal rcu.h file outside of RCU. ]
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 55b605b49315..e4be6263807e 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -46,6 +46,7 @@
+ #include <linux/compiler.h>
+ #include <asm/barrier.h>
+ 
++extern int rcu_expedited; /* for sysctl */
+ #ifdef CONFIG_RCU_TORTURE_TEST
+ extern int rcutorture_runnable; /* for sysctl */
+ #endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
+diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+index d945a949760f..e660964086e2 100644
+--- a/kernel/ksysfs.c
++++ b/kernel/ksysfs.c
+@@ -19,6 +19,8 @@
+ #include <linux/sched.h>
+ #include <linux/capability.h>
+ 
++#include <linux/rcupdate.h>	/* rcu_expedited */
++
+ #define KERNEL_ATTR_RO(_name) \
+ static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
+ 
+diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
+index 1bd787fddcb2..af2e60a8425d 100644
+--- a/kernel/rcu/rcu.h
++++ b/kernel/rcu/rcu.h
+@@ -116,8 +116,6 @@ static inline bool __rcu_reclaim(const char *rn, struct rcu_head *head)
+ 	}
+ }
+ 
+-extern int rcu_expedited;
+-
+ #ifdef CONFIG_RCU_STALL_COMMON
+ 
+ extern int rcu_cpu_stall_suppress;
+
