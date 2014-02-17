@@ -1,96 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaBQVsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:48:41 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59392 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752885AbaBQVsj (ORCPT
+	id S1752390AbaBQVvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:51:07 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:35421 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaBQVvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:48:39 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: swarren@nvidia.com, linaro-kernel@lists.linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: remove sysfs link when a cpu != policy->cpu, is removed
-Date: Mon, 17 Feb 2014 23:03:27 +0100
-Message-ID: <1848612.IZFZXgfmHj@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <324f43fc664f51eec355b08b6c2d4cedd2140b4c.1392628861.git.viresh.kumar@linaro.org>
-References: <324f43fc664f51eec355b08b6c2d4cedd2140b4c.1392628861.git.viresh.kumar@linaro.org>
+	Mon, 17 Feb 2014 16:51:05 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 17 Feb 2014 13:50:53 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/3] rcu: Optimize rcu_is_nocb_cpu() for
+ RCU_NOCB_CPU_ALL
+Message-ID: <20140217215053.GE7941@thin>
+References: <20140217214007.GA6609@linux.vnet.ibm.com>
+ <1392673227-7066-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392673227-7066-1-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 17, 2014 02:52:11 PM Viresh Kumar wrote:
-> Earlier patch tried to do this but missed this piece of code to fix.
+On Mon, Feb 17, 2014 at 01:40:25PM -0800, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> 42f921a cpufreq: remove sysfs files for CPUs which failed to come back after
-> resume
+> If CONFIG_RCU_NOCB_CPU_ALL=y, then rcu_is_nocb_cpu() will always
+> return true, however, the current version nevertheless checks
+> rcu_nocb_mask.  This commit therefore creates a static inline
+> implementation of rcu_is_nocb_cpu() that unconditionally returns
+> true when CONFIG_RCU_NOCB_CPU_ALL=y.
 > 
-> Currently we are getting this on suspend/resume:
-> 
-> ------------[ cut here ]------------
-> WARNING: CPU: 0 PID: 877 at fs/sysfs/dir.c:52 sysfs_warn_dup+0x68/0x84()
-> sysfs: cannot create duplicate filename '/devices/system/cpu/cpu1/cpufreq'
-> Modules linked in: brcmfmac brcmutil
-> CPU: 0 PID: 877 Comm: test-rtc-resume Not tainted 3.14.0-rc2-00259-g9398a10cd964 #12
-> [<c0015bac>] (unwind_backtrace) from [<c0011850>] (show_stack+0x10/0x14)
-> [<c0011850>] (show_stack) from [<c056e018>] (dump_stack+0x80/0xcc)
-> [<c056e018>] (dump_stack) from [<c0025e44>] (warn_slowpath_common+0x64/0x88)
-> [<c0025e44>] (warn_slowpath_common) from [<c0025efc>] (warn_slowpath_fmt+0x30/0x40)
-> [<c0025efc>] (warn_slowpath_fmt) from [<c012776c>] (sysfs_warn_dup+0x68/0x84)
-> [<c012776c>] (sysfs_warn_dup) from [<c0127a54>] (sysfs_do_create_link_sd+0xb0/0xb8)
-> [<c0127a54>] (sysfs_do_create_link_sd) from [<c038ef64>] (__cpufreq_add_dev.isra.27+0x2a8/0x814)
-> [<c038ef64>] (__cpufreq_add_dev.isra.27) from [<c038f548>] (cpufreq_cpu_callback+0x70/0x8c)
-> [<c038f548>] (cpufreq_cpu_callback) from [<c0043864>] (notifier_call_chain+0x44/0x84)
-> [<c0043864>] (notifier_call_chain) from [<c0025f60>] (__cpu_notify+0x28/0x44)
-> [<c0025f60>] (__cpu_notify) from [<c00261e8>] (_cpu_up+0xf0/0x140)
-> [<c00261e8>] (_cpu_up) from [<c0569eb8>] (enable_nonboot_cpus+0x68/0xb0)
-> [<c0569eb8>] (enable_nonboot_cpus) from [<c006339c>] (suspend_devices_and_enter+0x198/0x2dc)
-> [<c006339c>] (suspend_devices_and_enter) from [<c0063654>] (pm_suspend+0x174/0x1e8)
-> [<c0063654>] (pm_suspend) from [<c00624e0>] (state_store+0x6c/0xbc)
-> [<c00624e0>] (state_store) from [<c01fc200>] (kobj_attr_store+0x14/0x20)
-> [<c01fc200>] (kobj_attr_store) from [<c0126e50>] (sysfs_kf_write+0x44/0x48)
-> [<c0126e50>] (sysfs_kf_write) from [<c012a274>] (kernfs_fop_write+0xb4/0x14c)
-> [<c012a274>] (kernfs_fop_write) from [<c00d4818>] (vfs_write+0xa8/0x180)
-> [<c00d4818>] (vfs_write) from [<c00d4bb8>] (SyS_write+0x3c/0x70)
-> [<c00d4bb8>] (SyS_write) from [<c000e620>] (ret_fast_syscall+0x0/0x30)
-> ---[ end trace 76969904b614c18f ]---
-> 
-> Fix this by removing sysfs link for cpufreq directory when cpu removed isn't
-> policy->cpu.
-> 
-> Reported-by: Stephen Warren <swarren@nvidia.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> 
-> Fix for 3.14 only.
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Queued up for 3.14, thanks!
+One suggestion below.  With or without that change:
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  drivers/cpufreq/cpufreq.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+>  include/linux/rcupdate.h | 4 ++++
+>  kernel/rcu/tree_plugin.h | 2 ++
+>  2 files changed, 6 insertions(+)
 > 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 08ca8c9..cb003a6 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1323,8 +1323,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
->  	up_read(&policy->rwsem);
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 72bf3a01a4ee..92365b1fede4 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -1016,7 +1016,11 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+>  	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
 >  
->  	if (cpu != policy->cpu) {
-> -		if (!frozen)
-> -			sysfs_remove_link(&dev->kobj, "cpufreq");
-> +		sysfs_remove_link(&dev->kobj, "cpufreq");
->  	} else if (cpus > 1) {
->  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu);
->  		if (new_cpu >= 0) {
-> 
+>  #ifdef CONFIG_RCU_NOCB_CPU
+> +#ifdef CONFIG_RCU_NOCB_CPU_ALL
+> +static inline bool rcu_is_nocb_cpu(int cpu) { return true; }
+> +#else /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
+>  bool rcu_is_nocb_cpu(int cpu);
+> +#endif /* #else #ifdef CONFIG_RCU_NOCB_CPU_ALL */
+>  #else
+>  static inline bool rcu_is_nocb_cpu(int cpu) { return false; }
+>  #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+This seem clearer if written without the nesting:
+
+#if defined(CONFIG_RCU_NOCB_CPU_ALL)
+static inline bool rcu_is_nocb_cpu(int cpu) { return true; }
+#elif defined(CONFIG_RCU_NOCB_CPU)
+bool rcu_is_nocb_cpu(int cpu);
+#else
+static inline bool rcu_is_nocb_cpu(int cpu) { return false; }
+#endif
+
+That clearly distinguishes the three cases: all, some, none.
+
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 6e2ef4b2b920..39a50b918bff 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2101,6 +2101,7 @@ static void rcu_init_one_nocb(struct rcu_node *rnp)
+>  	init_waitqueue_head(&rnp->nocb_gp_wq[1]);
+>  }
+>  
+> +#ifndef CONFIG_RCU_NOCB_CPU_ALL
+>  /* Is the specified CPU a no-CPUs CPU? */
+>  bool rcu_is_nocb_cpu(int cpu)
+>  {
+> @@ -2108,6 +2109,7 @@ bool rcu_is_nocb_cpu(int cpu)
+>  		return cpumask_test_cpu(cpu, rcu_nocb_mask);
+>  	return false;
+>  }
+> +#endif /* #ifndef CONFIG_RCU_NOCB_CPU_ALL */
+>  
+>  /*
+>   * Enqueue the specified string of rcu_head structures onto the specified
+> -- 
+> 1.8.1.5
+> 
