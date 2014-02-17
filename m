@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaBQKIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 05:08:53 -0500
-Received: from www84.your-server.de ([213.133.104.84]:39183 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032AbaBQKDP (ORCPT
+	id S1753841AbaBQKIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 05:08:51 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59274 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753308AbaBQKIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 05:03:15 -0500
-From: Stefani Seibold <stefani@seibold.net>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v19 04/10] vclock_gettime.c __vdso_clock_gettime cleanup
-Date: Mon, 17 Feb 2014 11:03:38 +0100
-Message-Id: <1392631424-32205-5-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1392631424-32205-1-git-send-email-stefani@seibold.net>
-References: <1392631424-32205-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Mon, 17 Feb 2014 05:08:47 -0500
+Date: Mon, 17 Feb 2014 10:08:27 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Robert Richter <rric@kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>,
+        "sdu.liu@huawei.com" <sdu.liu@huawei.com>
+Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in
+ op_overflow_handler()
+Message-ID: <20140217100827.GA26312@mudshark.cambridge.arm.com>
+References: <52D5EC44.30101@huawei.com>
+ <20140115102445.GE20315@rric.localhost>
+ <52D73148.4090408@huawei.com>
+ <52D7A750.50906@huawei.com>
+ <20140116115245.GB8360@rric.localhost>
+ <20140116193652.GD22105@mudshark.cambridge.arm.com>
+ <52D8A56F.1010507@huawei.com>
+ <52F9A82F.3060806@huawei.com>
+ <20140211155207.GK8693@mudshark.cambridge.arm.com>
+ <52FED3C5.1060703@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52FED3C5.1060703@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a small code cleanup for the __vdso_clock_gettime() function.
+On Sat, Feb 15, 2014 at 02:41:09AM +0000, Weng Meiling wrote:
+> Hi Will,
+> 
+>  I test kernel with this patch, the problem has be fixed. When the
+>  event's sample_period is small, the cpu will not stall except printing
+>  warning "oprofile: ignoring spurious overflow ignoring spurious overflow".
+>  This is normal for unregistered event.
+> 
+>  So would you please send a formal one? :) Thanks very much!
 
-It removes the unneeded return values from do_monotonic_coarse() and
-do_realtime_coarse() and add a fallback label for doing the kernel
-gettimeofday() system call.
+It's already in -next.
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/vdso/vclock_gettime.c | 27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index bbc8065..fd074dd 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -209,7 +209,7 @@ notrace static int do_monotonic(struct timespec *ts)
- 	return mode;
- }
- 
--notrace static int do_realtime_coarse(struct timespec *ts)
-+notrace static void do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -217,10 +217,9 @@ notrace static int do_realtime_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--	return 0;
- }
- 
--notrace static int do_monotonic_coarse(struct timespec *ts)
-+notrace static void do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -228,30 +227,32 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--
--	return 0;
- }
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- {
--	int ret = VCLOCK_NONE;
--
- 	switch (clock) {
- 	case CLOCK_REALTIME:
--		ret = do_realtime(ts);
-+		if (do_realtime(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_MONOTONIC:
--		ret = do_monotonic(ts);
-+		if (do_monotonic(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_REALTIME_COARSE:
--		return do_realtime_coarse(ts);
-+		do_realtime_coarse(ts);
-+		break;
- 	case CLOCK_MONOTONIC_COARSE:
--		return do_monotonic_coarse(ts);
-+		do_monotonic_coarse(ts);
-+		break;
-+	default:
-+		goto fallback;
- 	}
- 
--	if (ret == VCLOCK_NONE)
--		return vdso_fallback_gettime(clock, ts);
- 	return 0;
-+fallback:
-+	return vdso_fallback_gettime(clock, ts);
- }
- int clock_gettime(clockid_t, struct timespec *)
- 	__attribute__((weak, alias("__vdso_clock_gettime")));
--- 
-1.8.5.5
-
+Will
