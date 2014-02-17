@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412AbaBQTXb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 14:23:31 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:54068 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbaBQTX3 (ORCPT
+	id S1754341AbaBQTYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 14:24:55 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16726 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978AbaBQTYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 14:23:29 -0500
-Date: Mon, 17 Feb 2014 11:23:22 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Andrew Duggan <aduggan@synaptics.com>,
-        Vincent Huang <vincent.huang@tw.synaptics.com>,
-        Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/11] Input: synaptics-rmi4 - do not update
- configuration in rmi_f01_probe()
-Message-ID: <20140217192321.GC19223@core.coreip.homeip.net>
-References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com>
- <1392269277-16391-3-git-send-email-dmitry.torokhov@gmail.com>
- <52FD1BC0.1050009@synaptics.com>
- <20140213215432.GA6225@core.coreip.homeip.net>
- <52FEA01B.7040604@synaptics.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FEA01B.7040604@synaptics.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Feb 2014 14:24:54 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18/ZGB7FqByN2QitpYGeAAQRsofDrxg9wc=
+X-DKIM: OpenDKIM Filter v2.0.1 titan B216A52A91F
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [RESEND PATCH] ARM: dove: dt: revert PMU interrupt controller node
+Date: Mon, 17 Feb 2014 19:24:33 +0000
+Message-Id: <1392665073-25831-1-git-send-email-jason@lakedaemon.net>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <20140207180836.GE8533@titan.lakedaemon.net>
+References: <20140207180836.GE8533@titan.lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 03:00:43PM -0800, Christopher Heiny wrote:
-> On 02/13/2014 01:54 PM, Dmitry Torokhov wrote:
-> >On Thu, Feb 13, 2014 at 11:23:44AM -0800, Christopher Heiny wrote:
-> >>>On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
-> >>>> >Do not write configuration data in probe(), we have config() for that.
-> >>>
-> >>>Then we should call config() in rmi_function_probe() to ensure that
-> >>>any platform data or device tree configuration settings get written
-> >>>to the device.
-> >
-> >Well, yes, we may elect to update device configuration in probe, but
-> >then we should not be doing that 2nd time in ->config(). We shoudl pick
-> >either one or another.
-> 
-> But as the code currently stands, config() is only called when a
-> device reset is detected, not during initialization.  So if there's
-> platform specific configuration data that needs to be written to a
-> function, it won't get written until after a device reset occurs,
-> which might never happen.  So either we need to write that data (or
-> call config()) in each function's probe(), or in
-> rmi_function_probe().
+The corresponding driver didn't make it into v3.14, so we need to remove
+the node.  Dove systems fail to boot with the node present and no
+driver.
 
-Ah, I missed the fact that we do not normally call ->config() unless
-device was reset. BTW, if device was reset, shouldn't we tear down
-everything and then reenumerate all functions?
+This node will be re-added when the driver makes it to mainline.
 
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+---
+Sorry for the resend, infradead.org didn't like the way I specified the list
+address.
+
+And after more careful reading, I missed a '>' in my cut-n-paste of Andrew's
+email address.  Sorry for the unnecessary noise.
+
+Also, I plan to submit this in mvebu/dt-fixes for v3.14
+
+ arch/arm/boot/dts/dove.dtsi | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+index 2b76524f4aa7..967898528062 100644
+--- a/arch/arm/boot/dts/dove.dtsi
++++ b/arch/arm/boot/dts/dove.dtsi
+@@ -379,15 +379,6 @@
+ 				#clock-cells = <1>;
+ 			};
+ 
+-			pmu_intc: pmu-interrupt-ctrl@d0050 {
+-				compatible = "marvell,dove-pmu-intc";
+-				interrupt-controller;
+-				#interrupt-cells = <1>;
+-				reg = <0xd0050 0x8>;
+-				interrupts = <33>;
+-				marvell,#interrupts = <7>;
+-			};
+-
+ 			pinctrl: pin-ctrl@d0200 {
+ 				compatible = "marvell,dove-pinctrl";
+ 				reg = <0xd0200 0x10>;
 -- 
-Dmitry
+1.8.5.5
+
