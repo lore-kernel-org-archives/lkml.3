@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478AbaBQNPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:15:06 -0500
+	id S1753893AbaBQNRi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 08:17:38 -0500
 Received: from mga02.intel.com ([134.134.136.20]:45352 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414AbaBQNPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 08:15:02 -0500
+	id S1753367AbaBQNO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 08:14:58 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,860,1384329600"; 
-   d="scan'208";a="456852947"
+   d="scan'208";a="456852912"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>,
         Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc-next 10/11] mei: wd: simplify wd_send command
-Date: Mon, 17 Feb 2014 15:13:26 +0200
-Message-Id: <1392642807-8878-11-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 05/11] mei: wd and amthif use mei_cl_ api for dis/connection
+Date: Mon, 17 Feb 2014 15:13:21 +0200
+Message-Id: <1392642807-8878-6-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
 References: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
@@ -24,126 +24,287 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add reduce credits to wd_send to remove code
-repetition and simplify error handling
+Connect wd and amthif through regular mei_cl_connect API
+as there is no reason to connect in asynchronous mode.
+Also use mei_cl_is_connected in order to protect flows
+instead of depending on wd_pending and amthif_timer
+
+Now we can remove all the special handling in hbm layer
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 ---
- drivers/misc/mei/interrupt.c |  7 +++---
- drivers/misc/mei/wd.c        | 52 +++++++++++++++++++++++---------------------
- 2 files changed, 30 insertions(+), 29 deletions(-)
+ drivers/misc/mei/amthif.c    | 13 +++----
+ drivers/misc/mei/hbm.c       | 89 +++++++++++++++-----------------------------
+ drivers/misc/mei/interrupt.c |  5 ++-
+ drivers/misc/mei/mei_dev.h   |  2 +-
+ drivers/misc/mei/wd.c        | 37 ++++++++++++------
+ 5 files changed, 66 insertions(+), 80 deletions(-)
 
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 31cb345..834220a 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -480,10 +480,9 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- 	if (mei_cl_is_connected(&dev->wd_cl)) {
- 		if (dev->wd_pending &&
- 		    mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
--			if (mei_wd_send(dev))
--				dev_dbg(&dev->pdev->dev, "wd send failed.\n");
--			else if (mei_cl_flow_ctrl_reduce(&dev->wd_cl))
--				return -EIO;
-+			ret = mei_wd_send(dev);
-+			if (ret)
-+				return ret;
- 			dev->wd_pending = false;
- 		}
- 	}
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index 4644b62..13bb7a9 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -111,13 +111,16 @@ int mei_wd_host_init(struct mei_device *dev)
-  * returns 0 if success,
-  *	-EIO when message send fails
-  *	-EINVAL when invalid message is to be sent
-+ *	-ENODEV on flow control failure
-  */
- int mei_wd_send(struct mei_device *dev)
- {
-+	struct mei_cl *cl = &dev->wd_cl;
- 	struct mei_msg_hdr hdr;
-+	int ret;
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index b8dfc61..708bbb6 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -115,14 +115,11 @@ int mei_amthif_host_init(struct mei_device *dev)
  
--	hdr.host_addr = dev->wd_cl.host_client_id;
--	hdr.me_addr = dev->wd_cl.me_client_id;
-+	hdr.host_addr = cl->host_client_id;
-+	hdr.me_addr = cl->me_client_id;
- 	hdr.msg_complete = 1;
- 	hdr.reserved = 0;
- 	hdr.internal = 0;
-@@ -126,10 +129,24 @@ int mei_wd_send(struct mei_device *dev)
- 		hdr.length = MEI_WD_START_MSG_SIZE;
- 	else if (!memcmp(dev->wd_data, mei_stop_wd_params, MEI_WD_HDR_SIZE))
- 		hdr.length = MEI_WD_STOP_MSG_SIZE;
--	else
-+	else {
-+		dev_err(&dev->pdev->dev, "wd: invalid message is to be sent, aborting\n");
- 		return -EINVAL;
-+	}
-+
-+	ret = mei_write_message(dev, &hdr, dev->wd_data);
-+	if (ret) {
-+		dev_err(&dev->pdev->dev, "wd: write message failed\n");
-+		return ret;
-+	}
+ 	cl->state = MEI_FILE_CONNECTING;
  
--	return mei_write_message(dev, &hdr, dev->wd_data);
-+	ret = mei_cl_flow_ctrl_reduce(cl);
-+	if (ret) {
-+		dev_err(&dev->pdev->dev, "wd: flow_ctrl_reduce failed.\n");
-+		return ret;
-+	}
+-	if (mei_hbm_cl_connect_req(dev, cl)) {
+-		dev_dbg(&dev->pdev->dev, "amthif: Failed to connect to ME client\n");
+-		cl->state = MEI_FILE_DISCONNECTED;
+-		cl->host_client_id = 0;
+-	} else {
+-		cl->timer_count = MEI_CONNECT_TIMEOUT;
+-	}
+-	return 0;
++	ret = mei_cl_connect(cl, NULL);
 +
-+	return 0;
++	dev->iamthif_state = MEI_IAMTHIF_IDLE;
++
++	return ret;
  }
  
  /**
-@@ -159,16 +176,9 @@ int mei_wd_stop(struct mei_device *dev)
- 		goto out;
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index d360e9a..46743e2 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -134,30 +134,6 @@ bool mei_hbm_cl_addr_equal(struct mei_cl *cl, void *buf)
  
- 	if (ret && mei_hbuf_acquire(dev)) {
--		ret = 0;
--
--		if (!mei_wd_send(dev)) {
--			ret = mei_cl_flow_ctrl_reduce(&dev->wd_cl);
--			if (ret)
--				goto out;
--		} else {
--			dev_err(&dev->pdev->dev, "wd: send stop failed\n");
--		}
--
-+		ret = mei_wd_send(dev);
-+		if (ret)
-+			goto out;
- 		dev->wd_pending = false;
- 	} else {
- 		dev->wd_pending = true;
-@@ -289,18 +299,10 @@ static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
  
- 		dev_dbg(&dev->pdev->dev, "wd: sending ping\n");
+ /**
+- * is_treat_specially_client - checks if the message belongs
+- * to the file private data.
+- *
+- * @cl: private data of the file object
+- * @rs: connect response bus message
+- *
+- */
+-static bool is_treat_specially_client(struct mei_cl *cl,
+-		struct hbm_client_connect_response *rs)
+-{
+-	if (mei_hbm_cl_addr_equal(cl, rs)) {
+-		if (rs->status == MEI_CL_CONN_SUCCESS)
+-			cl->state = MEI_FILE_CONNECTED;
+-		else
+-			cl->state = MEI_FILE_DISCONNECTED;
+-		cl->status = mei_cl_conn_status_to_errno(rs->status);
+-		cl->timer_count = 0;
+-
+-		return true;
+-	}
+-	return false;
+-}
+-
+-/**
+  * mei_hbm_idle - set hbm to idle state
+  *
+  * @dev: the device structure
+@@ -467,22 +443,22 @@ static void mei_hbm_cl_disconnect_res(struct mei_device *dev,
+ 		struct hbm_client_connect_response *rs)
+ {
+ 	struct mei_cl *cl;
+-	struct mei_cl_cb *pos = NULL, *next = NULL;
++	struct mei_cl_cb *cb, *next;
  
--		if (mei_wd_send(dev)) {
--			dev_err(&dev->pdev->dev, "wd: send failed.\n");
--			ret = -EIO;
-+		ret = mei_wd_send(dev);
-+		if (ret)
- 			goto end;
+ 	dev_dbg(&dev->pdev->dev, "hbm: disconnect response cl:host=%02d me=%02d status=%d\n",
+ 			rs->me_addr, rs->host_addr, rs->status);
+ 
+-	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
+-		cl = pos->cl;
++	list_for_each_entry_safe(cb, next, &dev->ctrl_rd_list.list, list) {
++		cl = cb->cl;
+ 
+-		if (!cl) {
+-			list_del(&pos->list);
++		/* this should not happen */
++		if (WARN_ON(!cl)) {
++			list_del(&cb->list);
+ 			return;
+ 		}
+ 
+-		dev_dbg(&dev->pdev->dev, "list_for_each_entry_safe in ctrl_rd_list.\n");
+ 		if (mei_hbm_cl_addr_equal(cl, rs)) {
+-			list_del(&pos->list);
++			list_del(&cb->list);
+ 			if (rs->status == MEI_CL_DISCONN_SUCCESS)
+ 				cl->state = MEI_FILE_DISCONNECTED;
+ 
+@@ -523,40 +499,41 @@ static void mei_hbm_cl_connect_res(struct mei_device *dev,
+ {
+ 
+ 	struct mei_cl *cl;
+-	struct mei_cl_cb *pos = NULL, *next = NULL;
++	struct mei_cl_cb *cb, *next;
+ 
+ 	dev_dbg(&dev->pdev->dev, "hbm: connect response cl:host=%02d me=%02d status=%s\n",
+ 			rs->me_addr, rs->host_addr,
+ 			mei_cl_conn_status_str(rs->status));
+ 
+-	/* if WD or iamthif client treat specially */
++	cl = NULL;
+ 
+-	if (is_treat_specially_client(&dev->wd_cl, rs)) {
+-		dev_dbg(&dev->pdev->dev, "successfully connected to WD client.\n");
+-		mei_watchdog_register(dev);
++	list_for_each_entry_safe(cb, next, &dev->ctrl_rd_list.list, list) {
+ 
+-		return;
+-	}
++		cl = cb->cl;
++		/* this should not happen */
++		if (WARN_ON(!cl)) {
++			list_del_init(&cb->list);
++			continue;
++		}
+ 
+-	if (is_treat_specially_client(&dev->iamthif_cl, rs)) {
+-		dev->iamthif_state = MEI_IAMTHIF_IDLE;
+-		return;
+-	}
+-	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
++		if (cb->fop_type !=  MEI_FOP_CONNECT)
++			continue;
+ 
+-		cl = pos->cl;
+-		if (!cl) {
+-			list_del(&pos->list);
+-			return;
 -		}
--
--		if (mei_cl_flow_ctrl_reduce(&dev->wd_cl)) {
--			dev_err(&dev->pdev->dev, "wd: mei_cl_flow_ctrl_reduce() failed.\n");
--			ret = -EIO;
--			goto end;
--		}
--
-+		dev->wd_pending = false;
- 	} else {
- 		dev->wd_pending = true;
+-		if (pos->fop_type == MEI_FOP_CONNECT) {
+-			if (is_treat_specially_client(cl, rs)) {
+-				list_del(&pos->list);
+-				cl->timer_count = 0;
+-				break;
+-			}
++		if (mei_hbm_cl_addr_equal(cl, rs)) {
++			list_del(&cb->list);
++			break;
+ 		}
  	}
++
++	if (!cl)
++		return;
++
++	cl->timer_count = 0;
++	if (rs->status == MEI_CL_CONN_SUCCESS)
++		cl->state = MEI_FILE_CONNECTED;
++	else
++		cl->state = MEI_FILE_DISCONNECTED;
++	cl->status = mei_cl_conn_status_to_errno(rs->status);
+ }
+ 
+ 
+@@ -582,10 +559,6 @@ static int mei_hbm_fw_disconnect_req(struct mei_device *dev,
+ 					disconnect_req->me_addr);
+ 			cl->state = MEI_FILE_DISCONNECTED;
+ 			cl->timer_count = 0;
+-			if (cl == &dev->wd_cl)
+-				dev->wd_pending = false;
+-			else if (cl == &dev->iamthif_cl)
+-				dev->iamthif_timer = 0;
+ 
+ 			cb = mei_io_cb_init(cl, NULL);
+ 			if (!cb)
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 8fbdb59..7d37d83 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -477,7 +477,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 		wake_up_interruptible(&dev->wait_stop_wd);
+ 	}
+ 
+-	if (dev->dev_state == MEI_DEV_ENABLED) {
++	if (mei_cl_is_connected(&dev->wd_cl)) {
+ 		if (dev->wd_pending &&
+ 		    mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
+ 			if (mei_wd_send(dev))
+@@ -595,6 +595,9 @@ void mei_timer(struct work_struct *work)
+ 		}
+ 	}
+ 
++	if (!mei_cl_is_connected(&dev->iamthif_cl))
++		goto out;
++
+ 	if (dev->iamthif_stall_timer) {
+ 		if (--dev->iamthif_stall_timer == 0) {
+ 			dev_err(&dev->pdev->dev, "timer: amthif  hanged.\n");
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index c59c56b..36640b9 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -543,7 +543,7 @@ int mei_wd_host_init(struct mei_device *dev);
+  *   once we got connection to the WD Client
+  * @dev - mei device
+  */
+-void mei_watchdog_register(struct mei_device *dev);
++int mei_watchdog_register(struct mei_device *dev);
+ /*
+  * mei_watchdog_unregister  - Unregistering watchdog interface
+  * @dev - mei device
+diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
+index a769fb1..afe976a 100644
+--- a/drivers/misc/mei/wd.c
++++ b/drivers/misc/mei/wd.c
+@@ -87,15 +87,20 @@ int mei_wd_host_init(struct mei_device *dev)
+ 
+ 	cl->state = MEI_FILE_CONNECTING;
+ 
+-	if (mei_hbm_cl_connect_req(dev, cl)) {
+-		dev_err(&dev->pdev->dev, "wd: failed to connect to the client\n");
+-		cl->state = MEI_FILE_DISCONNECTED;
+-		cl->host_client_id = 0;
+-		return -EIO;
++	ret = mei_cl_connect(cl, NULL);
++
++	if (ret) {
++		dev_err(&dev->pdev->dev, "wd: failed to connect = %d\n", ret);
++		mei_cl_unlink(cl);
++		return ret;
+ 	}
+-	cl->timer_count = MEI_CONNECT_TIMEOUT;
+ 
+-	return 0;
++	ret = mei_watchdog_register(dev);
++	if (ret) {
++		mei_cl_disconnect(cl);
++		mei_cl_unlink(cl);
++	}
++	return ret;
+ }
+ 
+ /**
+@@ -363,17 +368,25 @@ static struct watchdog_device amt_wd_dev = {
+ };
+ 
+ 
+-void mei_watchdog_register(struct mei_device *dev)
++int mei_watchdog_register(struct mei_device *dev)
+ {
+-	if (watchdog_register_device(&amt_wd_dev)) {
+-		dev_err(&dev->pdev->dev,
+-			"wd: unable to register watchdog device.\n");
+-		return;
++
++	int ret;
++
++	/* unlock to perserve correct locking order */
++	mutex_unlock(&dev->device_lock);
++	ret = watchdog_register_device(&amt_wd_dev);
++	mutex_lock(&dev->device_lock);
++	if (ret) {
++		dev_err(&dev->pdev->dev, "wd: unable to register watchdog device = %d.\n",
++			ret);
++		return ret;
+ 	}
+ 
+ 	dev_dbg(&dev->pdev->dev,
+ 		"wd: successfully register watchdog interface.\n");
+ 	watchdog_set_drvdata(&amt_wd_dev, dev);
++	return 0;
+ }
+ 
+ void mei_watchdog_unregister(struct mei_device *dev)
 -- 
 1.8.5.3
 
