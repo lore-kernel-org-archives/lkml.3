@@ -1,79 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaBQEni (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 23:43:38 -0500
-Received: from fallback1.mail.ru ([94.100.176.18]:45715 "EHLO
-	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaBQEng (ORCPT
+	id S1751786AbaBQEs3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 23:48:29 -0500
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:46478 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaBQEs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 23:43:36 -0500
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?UGF1bCBCb2xsZQ==?= <pebolle@tiscali.nl>
-Cc: =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
-        =?UTF-8?B?UmljaGFyZCBXZWluYmVyZ2Vy?= <richard@nod.at>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?B?U2FzY2hhIEhhdWVy?= <kernel@pengutronix.de>,
-        =?UTF-8?B?U2hhd24gR3Vv?= <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gYXJtOiBpbXg6IHJlbW92ZSBNQUNIX01YTEFEUw==?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Mon, 17 Feb 2014 08:43:07 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1392612187.657010375@f87.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <1392582900.28866.85.camel@x220>
-References: <1392573811.28866.22.camel@x220>
- <1392578464.996901773@f49.i.mail.ru>
- <1392582900.28866.85.camel@x220>
+	Sun, 16 Feb 2014 23:48:28 -0500
+X-AuditID: 85900ec0-d3b2cb9000001514-d4-5301948cfd30
+Subject: [PATCH V2] serial/uart: Add tunable RX interrupt trigger I/F of
+ FIFO buffers
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Mon, 17 Feb 2014 13:48:12 +0900
+Message-ID: <20140217044812.4868.28106.stgit@yunodevel>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1H4hgFf014679
 
-–í–æ—Å–∫—Ä–µ—Å–µ–Ω—å–µ, 16 —Ñ–µ–≤—Ä–∞–ª—è 2014, 21:35 +01:00 –æ—Ç Paul Bolle <pebolle@tiscali.nl>:
-> On Sun, 2014-02-16 at 23:21 +0400, Alexander Shiyan wrote:
-> > –í–æ—Å–∫—Ä–µ—Å–µ–Ω—å–µ, 16 —Ñ–µ–≤—Ä–∞–ª—è 2014, 20:12 +01:00 –æ—Ç Paul Bolle
-> <pebolle@tiscali.nl>:
-> > > On Sun, 2014-02-16 at 23:06 +0400, Alexander Shiyan wrote:
-> > > > Kconfig selects MACH_MXLADS, this enables machine_arch_type
-> > > > from include/generated/mach-types.h which used for machine_is_xx()
-> macro,
-> > > > so if multiple boards is defined in the kernel, this cause to incorrect
-> > > matching.
-> > > 
-> > > But, as I stated in the commit explanation, there are no users of
-> > > machine_is_mxlads().
-> > 
-> > If you have MXLADS and FOO boards support in the kernel (for example)
-> > and you want to start MXLADS version, your machine_is_FOO() will be
-> positive,
-> > since machine_arch_type will be constant value FOO in this case.
-> 
-> I think it might be helpful - for people trying to understand this
-> thread - to add a quote from https://lkml.org/lkml/2013/3/8/473 :
-> So, the result is that:
-> - de-selected platforms have their if (machine_is_xxx()) { } optimised
-> out of the kernel.
-> - for a kernel built targetting one platform, all the
-> if (machine_is_xxx()) tests are optimised away, leaving only the
-> relevant code behind.
-> - otherwise, we get the _appropriate_ conditional code for the
-> configuration generated.
-> 
-> Back to the issue at hand: without my patch ARCH_MX1ADS selects
-> MACH_MXLADS. So it seems in this case people will have to select
-> ARCH_MX1ADS besides selecting FOO. Wouldn't that solve this problem?
-> Note that the MACH_MXLADS is now basically meant to be selected by
-> ARCH_MX1ADS and not set directly anyway.
+Add tunable RX interrupt trigger I/F of FIFO buffers.
+Serial devices are used as not only message communication devices but control
+or sending communication devices. For the latter uses, normally small data
+will be exchanged, so user applications want to receive data unit as soon as
+possible for real-time tendency. If we have a sensor which sends a 1 byte data
+each time and must control a device based on the sensor feedback, the RX
+interrupt should be triggered for each data.
 
-It seems that even in the current state, Kconfig for i.MX contains an error.
-As a start, we should rename ARCH_MX1ADS to MACH_MX1ADS first.
+According to HW specification of serial UART devices, RX interrupt trigger
+can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
+in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
+the trigger to only 8bytes.
 
+This patch makes a 16550A device change RX interrupt trigger from userland.
+
+<How to use>
+unsigned char rx_trig_byte = 1;
+fd = open(TTY_PASS, O_RDWR | O_NONBLOCK);
+ioctl(fd, TIOCSFIFOTRIG, rx_trig_byte);
+read(fd, buf, size);
+
+<Support uart device>
+- 16550A (1, 4, 8, or 14 bytes)
+
+Changed in V2:
+ - Use _IOW for TIOCSFIFORTRIG definition
+ - Pass the interrupt trigger value itself
+
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+ drivers/tty/serial/8250/8250_core.c |   58 +++++++++++++++++++++++++++++++++++
+ include/uapi/asm-generic/ioctls.h   |    1 +
+ 2 files changed, 59 insertions(+)
+
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 61ecd70..429f3a6 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2699,6 +2699,63 @@ serial8250_verify_port(struct uart_port *port, struct serial_struct *ser)
+ 	return 0;
+ }
+ 
++static int convert_val2rxtrig(struct uart_8250_port *up, unsigned char val)
++{
++	switch (up->port.type) {
++	case PORT_16550A:
++		if (val == 1)
++			return UART_FCR_R_TRIG_00;
++		else if (val == 4)
++			return UART_FCR_R_TRIG_01;
++		else if (val == 8)
++			return UART_FCR_R_TRIG_10;
++		else if (val == 14)
++			return UART_FCR_R_TRIG_11;
++		break;
++	default:
++		pr_info("Not support RX-trigger setting for this serial %u\n",
++			up->port.type);
++	}
++	return -EINVAL;
++}
++
++static int set_fifo_rx_trigger(struct uart_8250_port *up, unsigned char val)
++{
++	unsigned char fcr;
++	int rx_trig;
++
++	rx_trig = convert_val2rxtrig(up, val);
++	if (rx_trig < 0)
++		return rx_trig;
++
++	fcr = uart_config[up->port.type].fcr;
++	serial8250_clear_fifos(up);
++	fcr &= ~UART_FCR_TRIGGER_MASK;
++	fcr |= (unsigned char)rx_trig;
++	serial_out(up, UART_FCR, fcr);
++	return 0;
++}
++
++static int
++serial8250_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
++{
++	struct uart_8250_port *up =
++		container_of(port, struct uart_8250_port, port);
++	int ret;
++
++	if (!(up->capabilities & UART_CAP_FIFO) || port->fifosize <= 1)
++		return -EINVAL;
++
++	switch (cmd) {
++	case TIOCSFIFORTRIG:
++		ret = set_fifo_rx_trigger(up, (unsigned char)arg);
++		break;
++	default:
++		ret = -ENOIOCTLCMD;
++	}
++	return ret;
++}
++
+ static const char *
+ serial8250_type(struct uart_port *port)
+ {
+@@ -2728,6 +2785,7 @@ static struct uart_ops serial8250_pops = {
+ 	.request_port	= serial8250_request_port,
+ 	.config_port	= serial8250_config_port,
+ 	.verify_port	= serial8250_verify_port,
++	.ioctl		= serial8250_ioctl,
+ #ifdef CONFIG_CONSOLE_POLL
+ 	.poll_get_char = serial8250_get_poll_char,
+ 	.poll_put_char = serial8250_put_poll_char,
+diff --git a/include/uapi/asm-generic/ioctls.h b/include/uapi/asm-generic/ioctls.h
+index 143dacb..9504dca 100644
+--- a/include/uapi/asm-generic/ioctls.h
++++ b/include/uapi/asm-generic/ioctls.h
+@@ -77,6 +77,7 @@
+ #define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
+ #define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
+ #define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
++#define TIOCSFIFORTRIG	_IOW('T', 0x41, unsigned char) /* Set RX int. trigger */
+ 
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+
