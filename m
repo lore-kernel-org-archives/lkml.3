@@ -1,76 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaBQWAc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:00:32 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:53717 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483AbaBQWA1 (ORCPT
+	id S1753589AbaBQV7H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:59:07 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:65086 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317AbaBQV7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:00:27 -0500
-X-Originating-IP: 50.43.14.201
-Date: Mon, 17 Feb 2014 14:00:15 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH tip/core/rcu 09/12] fs: Substitute rcu_access_pointer()
- for rcu_dereference_raw()
-Message-ID: <20140217220014.GH7941@thin>
-References: <20140217213533.GA5387@linux.vnet.ibm.com>
- <1392672959-6386-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672959-6386-9-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392672959-6386-9-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Feb 2014 16:59:04 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 09/14] staging: ion: Make sure all clients are exposed in debugfs
+Date: Mon, 17 Feb 2014 13:58:37 -0800
+Message-Id: <1392674322-9036-10-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
+References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 01:35:56PM -0800, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> (Trivial patch.)
-> 
-> If the code is looking at the RCU-protected pointer itself, but not
-> dereferencing it, the rcu_dereference() functions can be downgraded to
-> rcu_access_pointer().  This commit makes this downgrade in __alloc_fd(),
-> which simply compares the RCU-protected pointer against NULL with no
-> dereferencing.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: linux-fsdevel@vger.kernel.org
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
 
-I'm beginning to wonder if this common pattern ought to have an
-rcu_pointer_is_null(), which would not return the pointer, only the
-boolean.
+Currently, if multiple Ion clients are created with the same name, only
+the first one shows up in debugfs. Rectify this by adding a
+monotonically-increasing serial number to the debug names of Ion
+clients.
 
-Regardless, for this patch:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+[jstultz: Minor commit subject tweaks]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/ion/ion.c | 38 ++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 36 insertions(+), 2 deletions(-)
 
->  fs/file.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/file.c b/fs/file.c
-> index db25c2bdfe46..18f7d27855c4 100644
-> --- a/fs/file.c
-> +++ b/fs/file.c
-> @@ -497,7 +497,7 @@ repeat:
->  	error = fd;
->  #if 1
->  	/* Sanity check */
-> -	if (rcu_dereference_raw(fdt->fd[fd]) != NULL) {
-> +	if (rcu_access_pointer(fdt->fd[fd]) != NULL) {
->  		printk(KERN_WARNING "alloc_fd: slot %d not NULL!\n", fd);
->  		rcu_assign_pointer(fdt->fd[fd], NULL);
->  	}
-> -- 
-> 1.8.1.5
-> 
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index eac4bce..5776697 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -72,6 +72,8 @@ struct ion_device {
+  * @idr:		an idr space for allocating handle ids
+  * @lock:		lock protecting the tree of handles
+  * @name:		used for debugging
++ * @display_name:	used for debugging (unique version of @name)
++ * @display_serial:	used for debugging (to make display_name unique)
+  * @task:		used for debugging
+  *
+  * A client represents a list of buffers this client may access.
+@@ -85,6 +87,8 @@ struct ion_client {
+ 	struct idr idr;
+ 	struct mutex lock;
+ 	const char *name;
++	char *display_name;
++	int display_serial;
+ 	struct task_struct *task;
+ 	pid_t pid;
+ 	struct dentry *debug_root;
+@@ -711,6 +715,21 @@ static const struct file_operations debug_client_fops = {
+ 	.release = single_release,
+ };
+ 
++static int ion_get_client_serial(const struct rb_root *root,
++					const unsigned char *name)
++{
++	int serial = -1;
++	struct rb_node *node;
++	for (node = rb_first(root); node; node = rb_next(node)) {
++		struct ion_client *client = rb_entry(node, struct ion_client,
++						node);
++		if (strcmp(client->name, name))
++			continue;
++		serial = max(serial, client->display_serial);
++	}
++	return serial + 1;
++}
++
+ struct ion_client *ion_client_create(struct ion_device *dev,
+ 				     const char *name)
+ {
+@@ -721,6 +740,11 @@ struct ion_client *ion_client_create(struct ion_device *dev,
+ 	struct ion_client *entry;
+ 	pid_t pid;
+ 
++	if (!name) {
++		pr_err("%s: Name cannot be null\n", __func__);
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	get_task_struct(current->group_leader);
+ 	task_lock(current->group_leader);
+ 	pid = task_pid_nr(current->group_leader);
+@@ -749,6 +773,13 @@ struct ion_client *ion_client_create(struct ion_device *dev,
+ 		goto err_free_client;
+ 
+ 	down_write(&dev->lock);
++	client->display_serial = ion_get_client_serial(&dev->clients, name);
++	client->display_name = kasprintf(
++		GFP_KERNEL, "%s-%d", name, client->display_serial);
++	if (!client->display_name) {
++		up_write(&dev->lock);
++		goto err_free_client_name;
++	}
+ 	p = &dev->clients.rb_node;
+ 	while (*p) {
+ 		parent = *p;
+@@ -762,20 +793,22 @@ struct ion_client *ion_client_create(struct ion_device *dev,
+ 	rb_link_node(&client->node, parent, p);
+ 	rb_insert_color(&client->node, &dev->clients);
+ 
+-	client->debug_root = debugfs_create_file(name, 0664,
++	client->debug_root = debugfs_create_file(client->display_name, 0664,
+ 						dev->clients_debug_root,
+ 						client, &debug_client_fops);
+ 	if (!client->debug_root) {
+ 		char buf[256], *path;
+ 		path = dentry_path(dev->clients_debug_root, buf, 256);
+ 		pr_err("Failed to create client debugfs at %s/%s\n",
+-			path, name);
++			path, client->display_name);
+ 	}
+ 
+ 	up_write(&dev->lock);
+ 
+ 	return client;
+ 
++err_free_client_name:
++	kfree(client->name);
+ err_free_client:
+ 	kfree(client);
+ err_put_task_struct:
+@@ -806,6 +839,7 @@ void ion_client_destroy(struct ion_client *client)
+ 	debugfs_remove_recursive(client->debug_root);
+ 	up_write(&dev->lock);
+ 
++	kfree(client->display_name);
+ 	kfree(client->name);
+ 	kfree(client);
+ }
+-- 
+1.8.3.2
+
