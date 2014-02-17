@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaBQRym (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 12:54:42 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:35384 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaBQRyl (ORCPT
+	id S1754043AbaBQR4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 12:56:04 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51446 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752436AbaBQR4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 12:54:41 -0500
+	Mon, 17 Feb 2014 12:56:02 -0500
+Date: Mon, 17 Feb 2014 17:55:52 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "olof@lixom.net" <olof@lixom.net>, "arnd@arndb.de" <arnd@arndb.de>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "cov@codeaurora.org" <cov@codeaurora.org>
+Subject: Re: [PATCH v9 4/5] arm64: introduce CONFIG_PARAVIRT,
+ PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+Message-ID: <20140217175552.GB8361@arm.com>
+References: <alpine.DEB.2.02.1401091755390.21510@kaball.uk.xensource.com>
+ <1389292336-9292-4-git-send-email-stefano.stabellini@eu.citrix.com>
+ <alpine.DEB.2.02.1402171225000.27926@kaball.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <s5hk3cxzce0.wl%tiwai@suse.de>
-References: <CAAJw_ZvX2AfS8COiNdN9gi_1xJ4L_vL=ROCzcLL3u0h51kuX3Q@mail.gmail.com>
-	<52FCFD92.7040109@hurleysoftware.com>
-	<s5hiosi3osp.wl%tiwai@suse.de>
-	<CAAJw_ZsoO=kd6cVM3HYrkim5K0RKrnDXYGgodNNQmHVYs19a8A@mail.gmail.com>
-	<s5hha8123vu.wl%tiwai@suse.de>
-	<CAAJw_ZtviRCtaC4-3_ubkYuEt+LYstwbi6qus-5GOoOLYhfecw@mail.gmail.com>
-	<s5hk3cxzce0.wl%tiwai@suse.de>
-Date: Tue, 18 Feb 2014 01:54:40 +0800
-Message-ID: <CAAJw_ZtK+jTOhCPZKhCu_f2nHwUahE8jcR8G4+FbocEc66Ei4g@mail.gmail.com>
-Subject: Re: Lenovo X240 (haswell) suspend-to-ram hangs on 3-14.0-rc2
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        lkml <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402171225000.27926@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 4:07 AM, Takashi Iwai <tiwai@suse.de> wrote:
+On Mon, Feb 17, 2014 at 12:25:42PM +0000, Stefano Stabellini wrote:
+> On Thu, 9 Jan 2014, Stefano Stabellini wrote:
+> > Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM64.
+> > Necessary duplication of paravirt.h and paravirt.c with ARM.
+> > 
+> > The only paravirt interface supported is pv_time_ops.steal_clock, so no
+> > runtime pvops patching needed.
+> > 
+> > This allows us to make use of steal_account_process_tick for stolen
+> > ticks accounting.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > CC: will.deacon@arm.com
+> > CC: nico@linaro.org
+> > CC: marc.zyngier@arm.com
+> > CC: cov@codeaurora.org
+> > CC: arnd@arndb.de
+> > CC: olof@lixom.net
+> > CC: Catalin.Marinas@arm.com
+> 
+> Catalin, Will, are you happy with this patch for 3.15?
 
->> # bad
->> CONFIG_SND_HDA_CODEC_HDMI =y
->> CONFIG_SND_HDA_INTEL=y
->> CONFIG_SND_HDA_INPUT_BEEP=y
- CONFIG_SND_HDA_GENERIC=m
->
-> It might be the remaining bugs of modularization in 3.14-rc2.
-> A few patches are found in for-linus branch of sound git tree, which
-> are included in Today's pull request.  Could you give it a try?
+It's pretty small and looks fine to me. However, I would like someone
+with more virtualisation experience than me to ack it (e.g. Marc Z).
 
-Pulled, but still the same. Modularized works fine -- even the modules
-remains, s2r works. But setting to "Yes" ... won't suspend. I don't
-kow how to capture those errors above the screens :(
+Some nitpicks:
 
-Any suggestion on how to debug this? bisect? Ted, does your T540p work
-with CONFIG_SND_HDA_INTEL=y instead of "m" ?
+> > +config PARAVIRT
+> > +	bool "Enable paravirtualization code"
+> > +	---help---
+> > +	  This changes the kernel so it can modify itself when it is run
+> > +	  under a hypervisor, potentially improving performance significantly
+> > +	  over full virtualization.
+> > +
+> > +config PARAVIRT_TIME_ACCOUNTING
+> > +	bool "Paravirtual steal time accounting"
+> > +	select PARAVIRT
+> > +	default n
+> > +	---help---
 
-Thanks,
-Jeff
+For consistency with this file, just use "help" rather than
+"---help---".
+
+> > --- /dev/null
+> > +++ b/arch/arm64/include/asm/paravirt.h
+> > @@ -0,0 +1,20 @@
+> > +#ifndef _ASM_ARM64_PARAVIRT_H
+> > +#define _ASM_ARM64_PARAVIRT_H
+
+__ASM_PARAVIRT_H for consistency.
+
+-- 
+Catalin
