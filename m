@@ -1,108 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334AbaBQWCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:02:49 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:61207 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaBQWCp (ORCPT
+	id S1753216AbaBQV65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:58:57 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:38034 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081AbaBQV6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:02:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392672063.18779.6940.camel@triegel.csb>
-References: <20140207180216.GP4250@linux.vnet.ibm.com>
-	<1391992071.18779.99.camel@triegel.csb>
-	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	<1392183564.18779.2187.camel@triegel.csb>
-	<20140212180739.GB4250@linux.vnet.ibm.com>
-	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	<20140213002355.GI4250@linux.vnet.ibm.com>
-	<1392321837.18779.3249.camel@triegel.csb>
-	<20140214020144.GO4250@linux.vnet.ibm.com>
-	<1392352981.18779.3800.camel@triegel.csb>
-	<20140214172920.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	<1392486310.18779.6447.camel@triegel.csb>
-	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	<1392666947.18779.6838.camel@triegel.csb>
-	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	<1392672063.18779.6940.camel@triegel.csb>
-Date: Mon, 17 Feb 2014 14:02:44 -0800
-X-Google-Sender-Auth: XCmDqZ7VVbCWpYnjk6aI4z1f1Sk
-Message-ID: <CA+55aFyay_ck4eb6HEWvD4bTS=3OYY7wX1MVNKAcpUYN0ssWhA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 17 Feb 2014 16:58:54 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 02/14] staging: android: Split uapi out of android_alarm.h
+Date: Mon, 17 Feb 2014 13:58:30 -0800
+Message-Id: <1392674322-9036-3-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
+References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 1:21 PM, Torvald Riegel <triegel@redhat.com> wrote:
-> On Mon, 2014-02-17 at 12:18 -0800, Linus Torvalds wrote:
->> and then it is read by people (compiler writers) that intentionally
->> try to mis-use the words and do language-lawyering ("that depends on
->> what the meaning of 'is' is").
->
-> That assumption about people working on compilers is a little too broad,
-> don't you think?
+From: Colin Cross <ccross@android.com>
 
-Let's just say that *some* are that way, and those are the ones that I
-end up butting heads with.
+Move the userspace interface of android_alarm.h to
+drivers/staging/android/uapi/android_alarm.h
 
-The sane ones I never have to argue with - point them at a bug, and
-they just say "yup, bug". The insane ones say "we don't need to fix
-that, because if you read this copy of the standards that have been
-translated to chinese and back, it clearly says that this is
-acceptable".
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Colin Cross <ccross@android.com>
+[jstultz: minor commit msg tweak]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/android_alarm.h      | 44 +-------------------
+ drivers/staging/android/uapi/android_alarm.h | 62 ++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+), 42 deletions(-)
+ create mode 100644 drivers/staging/android/uapi/android_alarm.h
 
->> The whole "lvalue vs rvalue expression
->> vs 'what is a volatile access'" thing for C++ was/is a great example
->> of that.
->
-> I'm not aware of the details of this.
+diff --git a/drivers/staging/android/android_alarm.h b/drivers/staging/android/android_alarm.h
+index 4fd32f3..495b20c 100644
+--- a/drivers/staging/android/android_alarm.h
++++ b/drivers/staging/android/android_alarm.h
+@@ -16,50 +16,10 @@
+ #ifndef _LINUX_ANDROID_ALARM_H
+ #define _LINUX_ANDROID_ALARM_H
+ 
+-#include <linux/ioctl.h>
+-#include <linux/time.h>
+ #include <linux/compat.h>
++#include <linux/ioctl.h>
+ 
+-enum android_alarm_type {
+-	/* return code bit numbers or set alarm arg */
+-	ANDROID_ALARM_RTC_WAKEUP,
+-	ANDROID_ALARM_RTC,
+-	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
+-	ANDROID_ALARM_ELAPSED_REALTIME,
+-	ANDROID_ALARM_SYSTEMTIME,
+-
+-	ANDROID_ALARM_TYPE_COUNT,
+-
+-	/* return code bit numbers */
+-	/* ANDROID_ALARM_TIME_CHANGE = 16 */
+-};
+-
+-enum android_alarm_return_flags {
+-	ANDROID_ALARM_RTC_WAKEUP_MASK = 1U << ANDROID_ALARM_RTC_WAKEUP,
+-	ANDROID_ALARM_RTC_MASK = 1U << ANDROID_ALARM_RTC,
+-	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK =
+-				1U << ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
+-	ANDROID_ALARM_ELAPSED_REALTIME_MASK =
+-				1U << ANDROID_ALARM_ELAPSED_REALTIME,
+-	ANDROID_ALARM_SYSTEMTIME_MASK = 1U << ANDROID_ALARM_SYSTEMTIME,
+-	ANDROID_ALARM_TIME_CHANGE_MASK = 1U << 16
+-};
+-
+-/* Disable alarm */
+-#define ANDROID_ALARM_CLEAR(type)           _IO('a', 0 | ((type) << 4))
+-
+-/* Ack last alarm and wait for next */
+-#define ANDROID_ALARM_WAIT                  _IO('a', 1)
+-
+-#define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
+-/* Set alarm */
+-#define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
+-#define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
+-#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
+-#define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
+-#define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
+-#define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
+-
++#include "uapi/android_alarm.h"
+ 
+ #ifdef CONFIG_COMPAT
+ #define ANDROID_ALARM_SET_COMPAT(type)		ALARM_IOW(2, type, \
+diff --git a/drivers/staging/android/uapi/android_alarm.h b/drivers/staging/android/uapi/android_alarm.h
+new file mode 100644
+index 0000000..aa013f6
+--- /dev/null
++++ b/drivers/staging/android/uapi/android_alarm.h
+@@ -0,0 +1,62 @@
++/* drivers/staging/android/uapi/android_alarm.h
++ *
++ * Copyright (C) 2006-2007 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _UAPI_LINUX_ANDROID_ALARM_H
++#define _UAPI_LINUX_ANDROID_ALARM_H
++
++#include <linux/ioctl.h>
++#include <linux/time.h>
++
++enum android_alarm_type {
++	/* return code bit numbers or set alarm arg */
++	ANDROID_ALARM_RTC_WAKEUP,
++	ANDROID_ALARM_RTC,
++	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
++	ANDROID_ALARM_ELAPSED_REALTIME,
++	ANDROID_ALARM_SYSTEMTIME,
++
++	ANDROID_ALARM_TYPE_COUNT,
++
++	/* return code bit numbers */
++	/* ANDROID_ALARM_TIME_CHANGE = 16 */
++};
++
++enum android_alarm_return_flags {
++	ANDROID_ALARM_RTC_WAKEUP_MASK = 1U << ANDROID_ALARM_RTC_WAKEUP,
++	ANDROID_ALARM_RTC_MASK = 1U << ANDROID_ALARM_RTC,
++	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK =
++				1U << ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
++	ANDROID_ALARM_ELAPSED_REALTIME_MASK =
++				1U << ANDROID_ALARM_ELAPSED_REALTIME,
++	ANDROID_ALARM_SYSTEMTIME_MASK = 1U << ANDROID_ALARM_SYSTEMTIME,
++	ANDROID_ALARM_TIME_CHANGE_MASK = 1U << 16
++};
++
++/* Disable alarm */
++#define ANDROID_ALARM_CLEAR(type)           _IO('a', 0 | ((type) << 4))
++
++/* Ack last alarm and wait for next */
++#define ANDROID_ALARM_WAIT                  _IO('a', 1)
++
++#define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
++/* Set alarm */
++#define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
++#define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
++#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
++#define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
++#define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
++#define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
++
++#endif
+-- 
+1.8.3.2
 
-The argument was that an lvalue doesn't actually "access" the memory
-(an rvalue does), so this:
-
-   volatile int *p = ...;
-
-   *p;
-
-doesn't need to generate a load from memory, because "*p" is still an
-lvalue (since you could assign things to it).
-
-This isn't an issue in C, because in C, expression statements are
-always rvalues, but C++ changed that. The people involved with the C++
-standards have generally been totally clueless about their subtle
-changes.
-
-I may have misstated something, but basically some C++ people tried
-very hard to make "volatile" useless.
-
-We had other issues too. Like C compiler people who felt that the
-type-based aliasing should always override anything else, even if the
-variable accessed (through different types) was statically clearly
-aliasing and used the exact same pointer. That made it impossible to
-do a syntactically clean model of "this aliases", since the _only_
-exception to the type-based aliasing rule was to generate a union for
-every possible access pairing.
-
-We turned off type-based aliasing (as I've mentioned before, I think
-it's a fundamentally broken feature to begin with, and a horrible
-horrible hack that adds no value for anybody but the HPC people).
-
-Gcc eventually ended up having some sane syntax for overriding it, but
-by then I was too disgusted with the people involved to even care.
-
-               Linus
