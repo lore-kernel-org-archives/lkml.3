@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161AbaBQONW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 09:13:22 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35006 "EHLO
-	alan.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751086AbaBQONV (ORCPT
+	id S1753407AbaBQOOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 09:14:05 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39160 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750958AbaBQOOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 09:13:21 -0500
-Subject: [PATCH] et131x: fix allocation failures
-To: devel@driverdev.osuosl.org, mark.einon@gmail.com, gamerh2o@gmail.com,
-        linux-kernel@vger.kernel.org, greg@kroah.com
-From: Alan <gnomes@lxorguk.ukuu.org.uk>
-Date: Mon, 17 Feb 2014 14:13:08 +0000
-Message-ID: <20140217141252.26738.33549.stgit@alan.etchedpixels.co.uk>
-User-Agent: StGit/0.15
+	Mon, 17 Feb 2014 09:14:02 -0500
+Date: Mon, 17 Feb 2014 11:13:37 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>,
+        Emilio =?utf-8?B?TMOzcGV6?= <emilio@elopez.com.ar>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+Message-ID: <20140217141336.GA2765@localhost>
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140205183457.GW8533@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140205183457.GW8533@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should check the ring allocations don't fail.
-If we get a fail we need to clean up properly. The allocator assumes the
-deallocator will be used on failure, but it isn't. Make sure the
-right deallocator is always called and add a missing check against
-fbr allocation failure.
+On Wed, Feb 05, 2014 at 01:34:57PM -0500, Jason Cooper wrote:
+> On Sat, Jan 25, 2014 at 07:19:06PM +0100, Sebastian Hesselbarth wrote:
+> > This patch set fixes clk init order that went upside-down with
+> > v3.14. I haven't really investigated what caused this, but I assume
+> > it is related with DT node reordering by addresses.
+> > 
+> > Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
+> > registered before core clocks driver. Unfortunately, we cannot
+> > return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
+> > init order for our drivers is always core clocks before clock gating,
+> > we maintain init order ourselves by hooking CLK_OF_DECLARE to one
+> > init function that will register core clocks before clock gating
+> > driver.
+> > 
+> > This patch is based on pre-v3.14-rc1 mainline and should go in as
+> > fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
+> > I suggest Jason picks it up as a topic branch.
+> > 
+> > The patches have been boot tested on Dove and compile-tested only
+> > for Kirkwood, Armada 370 and XP.
+> > 
+> > Sebastian Hesselbarth (4):
+> >   clk: mvebu: armada-370: maintain clock init order
+> >   clk: mvebu: armada-xp: maintain clock init order
+> >   clk: mvebu: dove: maintain clock init order
+> >   clk: mvebu: kirkwood: maintain clock init order
+> > 
+> >  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
+> >  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
+> >  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
+> >  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
+> >  4 files changed, 44 insertions(+), 50 deletions(-)
+> 
+> Whole series applied to mvebu/clk-fixes.
+> 
 
-[v2]: Correct check logic
+Are we still in time to consider Emilio's oneline proposal?
+(Emilio: would you mind preparing a suitable patch against dove,
+kirkwood, armada370/xp, so we can see the real thing?).
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
- drivers/staging/et131x/et131x.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Sebastian fix works perfect, and it easy to understand. However, it has
+quite a large diffstat. When compared to Emilio's oneline proposal, it
+seems to me it would be preferable, unless it's broken.
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 6413500..cc600df 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -2124,7 +2124,11 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 
- 	/* Alloc memory for the lookup table */
- 	rx_ring->fbr[0] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
-+	if (rx_ring->fbr[0] == NULL)
-+		return -ENOMEM;
- 	rx_ring->fbr[1] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
-+	if (rx_ring->fbr[1] == NULL)
-+		return -ENOMEM;
- 
- 	/* The first thing we will do is configure the sizes of the buffer
- 	 * rings. These will change based on jumbo packet support.  Larger
-@@ -2289,7 +2293,7 @@ static void et131x_rx_dma_memory_free(struct et131x_adapter *adapter)
- 	for (id = 0; id < NUM_FBRS; id++) {
- 		fbr = rx_ring->fbr[id];
- 
--		if (!fbr->ring_virtaddr)
-+		if (!fbr || !fbr->ring_virtaddr)
- 			continue;
- 
- 		/* First the packet memory */
-@@ -3591,6 +3595,7 @@ static int et131x_adapter_memory_alloc(struct et131x_adapter *adapter)
- 	if (status) {
- 		dev_err(&adapter->pdev->dev,
- 			  "et131x_tx_dma_memory_alloc FAILED\n");
-+		et131x_tx_dma_memory_free(adapter);
- 		return status;
- 	}
- 	/* Receive buffer memory allocation */
-@@ -3598,7 +3603,7 @@ static int et131x_adapter_memory_alloc(struct et131x_adapter *adapter)
- 	if (status) {
- 		dev_err(&adapter->pdev->dev,
- 			  "et131x_rx_dma_memory_alloc FAILED\n");
--		et131x_tx_dma_memory_free(adapter);
-+		et131x_adapter_memory_free(adapter);
- 		return status;
- 	}
- 
+Workaround or not, the fact is this code will be in v3.14, so maybe we
+can spend some time considering a cleaner option.
 
+Or is this just rubbish?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
