@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaBQKBp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 05:01:45 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:58767 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaBQKBm (ORCPT
+	id S1752888AbaBQKCU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 05:02:20 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:36837 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445AbaBQKCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 05:01:42 -0500
+	Mon, 17 Feb 2014 05:02:18 -0500
+Date: Mon, 17 Feb 2014 10:02:11 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Roger <rogerable@realtek.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <chris@printf.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
+Subject: Re: [PATCH v4 1/3] mfd: Add realtek USB card reader driver
+Message-ID: <20140217100211.GE17875@lee--X1>
+References: <1392199238-14500-1-git-send-email-rogerable@realtek.com>
+ <1392199238-14500-2-git-send-email-rogerable@realtek.com>
+ <20140214094427.GA7380@lee--X1>
+ <5301A786.8040607@realtek.com>
+ <20140217082222.GA17875@lee--X1>
+ <5301D369.5010100@realtek.com>
 MIME-Version: 1.0
-In-Reply-To: <52FE3A91.1090107@samsung.com>
-References: <1386151747-3209-2-git-send-email-gautam.vivek@samsung.com>
-	<1390225363-24210-1-git-send-email-gautam.vivek@samsung.com>
-	<52F39710.80101@samsung.com>
-	<CAFp+6iFYoN1w_BX7mMEa-Xx5ADaPTTKeDzjsSbQmwVKdSEsmOw@mail.gmail.com>
-	<52FE3A91.1090107@samsung.com>
-Date: Mon, 17 Feb 2014 15:31:41 +0530
-Message-ID: <CAFp+6iF+-C0KgRW9EXPxEeKnkWOjp2UueAGeSUUqs6coAftgFQ@mail.gmail.com>
-Subject: Re: [PATCH v3] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        kishon <kishon@ti.com>, Kamil Debski <k.debski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Julius Werner <jwerner@chromium.org>, Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5301D369.5010100@realtek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+> >>>>From: Roger Tseng <rogerable@realtek.com>
+> >>>>
+> >>>>Realtek USB card reader provides a channel to transfer command or data to flash
+> >>>>memory cards. This driver exports host instances for mmc and memstick subsystems
+> >>>>and handles basic works.
+> >>>>
+> >>>>Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> >>>>---
+> >>>>  drivers/mfd/Kconfig          |  10 +
+> >>>>  drivers/mfd/Makefile         |   1 +
+> >>>>  drivers/mfd/rtsx_usb.c       | 760 +++++++++++++++++++++++++++++++++++++++++++
+> >>>>  include/linux/mfd/rtsx_usb.h | 628 +++++++++++++++++++++++++++++++++++
+> >>>>  4 files changed, 1399 insertions(+)
+> >>>>  create mode 100644 drivers/mfd/rtsx_usb.c
+> >>>>  create mode 100644 include/linux/mfd/rtsx_usb.h
+> >>>
+> >>>Applied again, thanks.
+> >>>
+> >>Would you also apply patch 2/3 and 3/3 that to make the device fully
+> >>operational for users? Or should they be applied by maintainers of
+> >>mmc/memstick subsystems?
+> >>
+> >>Chris, would you give some comment?
+> >
+> >I can apply them, but I need the other Maintainer Acks.
+> >
+> >If they are build orthogonal i.e. there are no build dependencies
+> >between them, it's probably better that they go into their associated
+> >trees separately.
+> >
+> I think it would be better to apply them together since the later
+> patches really depend on the 1st one,so now we are waiting for Acks
+> from mmc/memstick subsystems.
 
+When you say "depend on", do you mean as a build depenency, or won't
+run without the first patch applied?
 
-On Fri, Feb 14, 2014 at 9:17 PM, Tomasz Figa <t.figa@samsung.com> wrote:
-
-mistakenly didn't do "Reply All", so sending it again.
-
-> Hi Vivek,
->
->
-> On 14.02.2014 14:53, Vivek Gautam wrote:
->>>>
->>>> Changes from v2:
->>>> 1) Added support for multiple PHYs (UTMI+ and PIPE3) and
->>>>      related changes in the driver structuring.
->>>
->>>
->>>
->>> I'm a bit skeptical about this separation. Can the PHY operate with just
->>> the
->>> UTMI+ or PIPE3 part enabled alone without the other? Can any PHY consumer
->>> operate this way?
->>
->>
->> Yes :-)
->> As also pointed by Kishon the PHY consumer (which is DWC3 in case of
->> Exynos5 SoC series)
->> should theoretically be able use either UTMI+ phy for High speed
->> operations or both (UTMI+ and PIPE3)
->> for Super Speed operations.
->
->
-> OK, that's fine then. This is the explanation I needed, thanks.
->
->
->>>
->>> I believe the right thing to do here is to do all the initialization in
->>> .power_on() and let the driver simply call phy_power_on() when it needs
->>> the
->>> PHY and phy_power_off() otherwise.
->>
->>
->> If this is what we should be doing then what will be the purpose of
->> two separate APIs :
->> phy_power_on() and phy_init().
->> Am i missing while understanding the things.
->>
->
-> I don't understand this separation as well. Operations that should be done
-> together shouldn't be separated. Is there any case when you can call one of
-> phy_power_on() and phy_init() without calling another one right before/after
-> it?
-
-Most of the PHY consumers need to call phy_power_on() as well as phy_init()
-to get PHY working (if the PHY provider gives callback to both).
-I think the idea would have been to separate out the initialization
-related and power related
-jobs (which may include setting up the PMUs and may be regulators ?)
-But, i think it's true, if the PHY provider callback for both
-phy_power_on() and phy_init()
-then the consumer __has__ to call both to get things working.
-
-
+> But there is no one specified for "memstick/host/" in MAINTAINERS.
+> Could anyone else Ack this?
 
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
