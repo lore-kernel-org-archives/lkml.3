@@ -1,82 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaBQUuj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 15:50:39 -0500
-Received: from nm39.bullet.mail.ne1.yahoo.com ([98.138.229.32]:22052 "HELO
-	nm39.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752667AbaBQUuh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 15:50:37 -0500
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 780258.24265.bm@omp1096.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=a+wKaVjyMzuwBHWGUmHb7M2N2dwlKs+g/OXn/SLsD9aYg49amXQwsTYdJ25jYdmQxh6vln0ZhlWypD3USulxBvvhA0encn77zlMahmLpJg164cdjNyXO+RUSTY2zAVxs6XsnDoHhV8+1ZB4LbeUXFkIf6BLiMpu7u0pxnaYynVQ=;
-X-YMail-OSG: ff.dR5IVM1ngpZIY.iDYsdhPF46c43NiXmxUTvLmyQ4v3ld
- M6W6Ot4zJ9qmOgesms.XYazFHENPJ_hI_9AAdGke68ehECy28YlZoTokbYR8
- QJcj43N3NJ3jpZCrldLysawS7xxoKqtONFdVPtoE7GUm9Pu8zFoKCebbNjIF
- 4ceMP_L4wwFi7EwWt3n1c4FCuyIye9DF_ZtCcnP9PFOPNMksiTYK_ngjPdog
- o3DtpH8GQzq_Le0w6WyY8cLXuM5L.LFLCLk75Cc3ig.FX.VoAEKTrAvnFXsp
- SgSO3e9nlHpCwgFZ0TVQR8EP9yEDoMJPPG.W5dktIsQ0.joOmVs2XdWhYlGW
- RvjcQm06Z9vu3i9KvxAwb3.fQdysbeylATQF2.5FLEAqL2ZAwDe4Vy8GammZ
- BFMExjrNLstGmH84VkVlRw_K0GQv5FsflkjdDsXENdcjazbGH4_nWTWYLsRZ
- kYLmFj_nU7DtEPBZdtIz8mMJNJL8k2cWRXRm8Mkrfs1aEdf80ZIH3i6_nc2F
- Tghy3nvdZMYMHf2fFV5_5kUFMvvyZiFs57S7P
-X-Rocket-MIMEInfo: 002.001,Pk9uIE1vbmRheSwgRmVicnVhcnkgMTcsIDIwMTQgNzoxOCBBTSwgSWFuIEFiYm90dCA8YWJib3R0aUBtZXYuY28udWs.IHdyb3RlOgoKPj5PbiAyMDE0LTAyLTE2IDA4OjQxLCBDaGFzZSBTb3V0aHdvb2Qgd3JvdGU6Cj4.Cj4.IFRoaXMgcGF0Y2ggZm9yIGh3ZHJ2X2FwY2kwMzUuYyBjaGFuZ2VzIGEgcHJpbnRrKCkgY2FsbCB0byBhIGRldl9lcnIgY2FsbAo.PiBzaW5jZSB0aGlzIGlzIGdlbmVyYWxseSBwcmVmZXJyZWQuCj4.Cj4.IFNpZ25lZC1vZmYtYnk6IENoYXNlIFNvdXRod29vZCA8Y2hhc2Uuc291dGgBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.177.636
-References: <1392540006-25972-1-git-send-email-chase.southwood@yahoo.com> <1392540082-26064-1-git-send-email-chase.southwood@yahoo.com> <53020BFE.9020400@mev.co.uk>
-Message-ID: <1392670074.22877.YahooMailNeo@web164006.mail.gq1.yahoo.com>
-Date: Mon, 17 Feb 2014 12:47:54 -0800 (PST)
-From: Chase Southwood <chase.southwood@yahoo.com>
-Reply-To: Chase Southwood <chase.southwood@yahoo.com>
-Subject: Re: [PATCH 3/4] Staging: comedi: addi-data: convert printk() to dev_err()
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <53020BFE.9020400@mev.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753216AbaBQU4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 15:56:12 -0500
+Received: from sauhun.de ([89.238.76.85]:41067 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254AbaBQU4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 15:56:06 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <damm@opensource.se>, khilman@linaro.org, arnd@arndb.de,
+        linux-sh@vger.kernel.org, daniel.lezcano@linaro.org,
+        horms@verge.net.au, john.stultz@linaro.org, olof@lixom.net,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: [PATCH V6 2/3] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
+Date: Mon, 17 Feb 2014 21:55:31 +0100
+Message-Id: <1392670532-21523-3-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1392670532-21523-1-git-send-email-wsa@the-dreams.de>
+References: <1392670532-21523-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Monday, February 17, 2014 7:18 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
+From: Magnus Damm <damm@opensource.se>
 
->>On 2014-02-16 08:41, Chase Southwood wrote:
->>
->> This patch for hwdrv_apci035.c changes a printk() call to a dev_err call
->> since this is generally preferred.
->>
->> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
->> ---
->>   drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
->> index 90d5801..f02b714 100644
->> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
->> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
->> @@ -227,7 +227,7 @@ static int i_APCI035_ConfigTimerWatchdog(struct comedi_device *dev,
->>               ui_Command = ui_Command & 0xFFF819E2UL;
->>
->>           } else {
->> -            printk("\n The parameter for Timer/watchdog selection is in error\n");
->> +            dev_err(dev->class_dev, "\n The parameter for Timer/watchdog selection is in error\n");
->>               return -EINVAL;>>
->>           }
->>       }
->>
->
->It'd be great if you could get rid of the initial "\n " in the error 
->string too.
->
+Now when drivers/clocksource/Kconfig has been
+updated with entires for CMT, TMU and STI
+it is safe to remove these from mach-shmobile.
 
-Excellent, thanks for the feedback.  I'll resend without that newline!
+Also select timers per SoC via SYS_SUPPORTS_xxx.
 
-Thanks,
-Chase
+Signed-off-by: Magnus Damm <damm@opensource.se>
+Acked-by: John Stultz <john.stultz@linaro.org>
+[wsa: rebased to renesas-devel-v3.14-rc3-20140217]
+Signed-off-by: Wolfram Sang <wsa@sang-engineering.com>
+---
+ arch/arm/mach-shmobile/Kconfig | 35 +++++++++++++++++------------------
+ 1 file changed, 17 insertions(+), 18 deletions(-)
+
+diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+index 4b89116..d80df50 100644
+--- a/arch/arm/mach-shmobile/Kconfig
++++ b/arch/arm/mach-shmobile/Kconfig
+@@ -25,17 +25,21 @@ comment "Renesas ARM SoCs System Type"
+ 
+ config ARCH_EMEV2
+ 	bool "Emma Mobile EV2"
++	select SYS_SUPPORTS_EM_STI
+ 
+ config ARCH_R7S72100
+ 	bool "RZ/A1H (R7S72100)"
++	select SYS_SUPPORTS_SH_MTU2
+ 
+ config ARCH_R8A7790
+ 	bool "R-Car H2 (R8A77900)"
+ 	select RENESAS_IRQC
++	select SYS_SUPPORTS_SH_CMT
+ 
+ config ARCH_R8A7791
+ 	bool "R-Car M2 (R8A77910)"
+ 	select RENESAS_IRQC
++	select SYS_SUPPORTS_SH_CMT
+ 
+ comment "Renesas ARM SoCs Board Type"
+ 
+@@ -72,6 +76,8 @@ config ARCH_SH7372
+ 	select ARM_CPU_SUSPEND if PM || CPU_IDLE
+ 	select CPU_V7
+ 	select SH_CLK_CPG
++	select SYS_SUPPORTS_SH_CMT
++	select SYS_SUPPORTS_SH_TMU
+ 
+ config ARCH_SH73A0
+ 	bool "SH-Mobile AG5 (R8A73A00)"
+@@ -81,6 +87,8 @@ config ARCH_SH73A0
+ 	select I2C
+ 	select SH_CLK_CPG
+ 	select RENESAS_INTC_IRQPIN
++	select SYS_SUPPORTS_SH_CMT
++	select SYS_SUPPORTS_SH_TMU
+ 
+ config ARCH_R8A73A4
+ 	bool "R-Mobile APE6 (R8A73A40)"
+@@ -91,6 +99,8 @@ config ARCH_R8A73A4
+ 	select RENESAS_IRQC
+ 	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_OPP
++	select SYS_SUPPORTS_SH_CMT
++	select SYS_SUPPORTS_SH_TMU
+ 
+ config ARCH_R8A7740
+ 	bool "R-Mobile A1 (R8A77400)"
+@@ -99,6 +109,8 @@ config ARCH_R8A7740
+ 	select CPU_V7
+ 	select SH_CLK_CPG
+ 	select RENESAS_INTC_IRQPIN
++	select SYS_SUPPORTS_SH_CMT
++	select SYS_SUPPORTS_SH_TMU
+ 
+ config ARCH_R8A7778
+ 	bool "R-Car M1A (R8A77781)"
+@@ -108,6 +120,7 @@ config ARCH_R8A7778
+ 	select ARM_GIC
+ 	select USB_ARCH_HAS_EHCI
+ 	select USB_ARCH_HAS_OHCI
++	select SYS_SUPPORTS_SH_TMU
+ 
+ config ARCH_R8A7779
+ 	bool "R-Car H1 (R8A77790)"
+@@ -118,6 +131,7 @@ config ARCH_R8A7779
+ 	select USB_ARCH_HAS_EHCI
+ 	select USB_ARCH_HAS_OHCI
+ 	select RENESAS_INTC_IRQPIN
++	select SYS_SUPPORTS_SH_TMU
+ 
+ config ARCH_R8A7790
+ 	bool "R-Car H2 (R8A77900)"
+@@ -128,6 +142,7 @@ config ARCH_R8A7790
+ 	select SH_CLK_CPG
+ 	select RENESAS_IRQC
+ 	select ARCH_DMA_ADDR_T_64BIT if ARM_LPAE
++	select SYS_SUPPORTS_SH_CMT
+ 
+ config ARCH_R8A7791
+ 	bool "R-Car M2 (R8A77910)"
+@@ -138,6 +153,7 @@ config ARCH_R8A7791
+ 	select SH_CLK_CPG
+ 	select RENESAS_IRQC
+ 	select ARCH_DMA_ADDR_T_64BIT if ARM_LPAE
++	select SYS_SUPPORTS_SH_CMT
+ 
+ config ARCH_R7S72100
+ 	bool "RZ/A1H (R7S72100)"
+@@ -145,6 +161,7 @@ config ARCH_R7S72100
+ 	select ARM_GIC
+ 	select CPU_V7
+ 	select SH_CLK_CPG
++	select SYS_SUPPORTS_SH_MTU2
+ 
+ comment "Renesas ARM SoCs Board Type"
+ 
+@@ -325,24 +342,6 @@ config SHMOBILE_TIMER_HZ
+ 	  want to select a HZ value such as 128 that can evenly divide RCLK.
+ 	  A HZ value that does not divide evenly may cause timer drift.
+ 
+-config SH_TIMER_CMT
+-	bool "CMT timer driver"
+-	default y
+-	help
+-	  This enables build of the CMT timer driver.
+-
+-config SH_TIMER_TMU
+-	bool "TMU timer driver"
+-	default y
+-	help
+-	  This enables build of the TMU timer driver.
+-
+-config EM_TIMER_STI
+-	bool "STI timer driver"
+-	default y
+-	help
+-	  This enables build of the STI timer driver.
+-
+ endmenu
+ 
+ endif
+-- 
+1.8.5.1
 
