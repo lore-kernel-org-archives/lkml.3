@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768AbaBQV2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:28:13 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44678 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027AbaBQV1D (ORCPT
+	id S1753878AbaBQV22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:28:28 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:51327 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097AbaBQV2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:27:03 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 3/6] Documentation/memory-barriers.txt: Conditional must use prior load
-Date: Mon, 17 Feb 2014 13:26:50 -0800
-Message-Id: <1392672413-5114-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021721-0928-0000-0000-000006C2FE5A
+	Mon, 17 Feb 2014 16:28:25 -0500
+Date: Mon, 17 Feb 2014 16:28:20 -0500 (EST)
+Message-Id: <20140217.162820.1092957787354922201.davem@davemloft.net>
+To: tommie@gannert.se
+Cc: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] irtty-sir.c: Do not set_termios() on irtty_close()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5302750C.6080407@gannert.se>
+References: <52FC87B6.4070001@gannert.se>
+	<5302750C.6080407@gannert.se>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 17 Feb 2014 13:28:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Tommie Gannert <tommie@gannert.se>
+Date: Mon, 17 Feb 2014 20:46:04 +0000
 
-A control dependency consists of a load, a conditional that depends on
-that load, and a store.  This commit emphasizes this point in the
-summary.
+> From: Tommie Gannert <tommie@gannert.se>
+> 
+> Issuing set_termios() from irtty_close() causes kernel Oops for
+> unplugged usb-serial devices.
+> 
+> Since no other tty_ldisc calls set_termios() on close and no tty driver
+> seem to check if tty->device_data is NULL or not on entry to set_termios(),
+> the only solution I can come up with is to remove the irtty_stop_receiver()
+> call, which only updates termios.
+> 
+> Signed-off-by: Tommie Gannert <tommie@gannert.se>
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- Documentation/memory-barriers.txt | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index ad6db1d48f1f..f2668c19807e 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -724,7 +724,8 @@ In summary:
-       later loads, smp_mb().
- 
-   (*) Control dependencies require at least one run-time conditional
--      between the prior load and the subsequent store.  If the compiler
-+      between the prior load and the subsequent store, and this
-+      conditional must involve the prior load.  If the compiler
-       is able to optimize the conditional away, it will have also
-       optimized away the ordering.  Careful use of ACCESS_ONCE() can
-       help to preserve the needed conditional.
--- 
-1.8.1.5
-
+Applied, thank you.
