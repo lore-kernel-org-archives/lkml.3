@@ -1,131 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaBQDwF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 22:52:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52966 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaBQDwC (ORCPT
+	id S1752305AbaBQD6a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 22:58:30 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:41709 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaBQD61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 22:52:02 -0500
-Date: Sun, 16 Feb 2014 19:51:41 -0800
-From: "tip-bot for stefani@seibold.net" <tipbot@zytor.com>
-Message-ID: <tip-eccca441fe1f6b416a3592d764686edb9fbd2ac6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        stefani@seibold.net, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stefani@seibold.net, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1392587568-7325-11-git-send-email-stefani@seibold.net>
-References: <1392587568-7325-11-git-send-email-stefani@seibold.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso:
-  Do conditional fixmap of VVAR and HPET page
-Git-Commit-ID: eccca441fe1f6b416a3592d764686edb9fbd2ac6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 16 Feb 2014 22:58:27 -0500
+Message-ID: <53018813.7030409@huawei.com>
+Date: Mon, 17 Feb 2014 11:54:59 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 16 Feb 2014 19:51:47 -0800 (PST)
+To: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH] sysfs: fix namespace refcnt leak
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eccca441fe1f6b416a3592d764686edb9fbd2ac6
-Gitweb:     http://git.kernel.org/tip/eccca441fe1f6b416a3592d764686edb9fbd2ac6
-Author:     stefani@seibold.net <stefani@seibold.net>
-AuthorDate: Sun, 16 Feb 2014 22:52:48 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sun, 16 Feb 2014 19:48:52 -0800
+Hi Tejun,
 
-x86, vdso: Do conditional fixmap of VVAR and HPET page
+I think we have to fix kernfs in order to fix refcnt leak in sysfs
+and cgroupfs. This fix is for 3.14, but it creates conflicts for
+cgroup-next.
 
-This patch adds conditional fixmap of the VVAR and HPET pages for the
-32 bit kernel.
+====================
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
-Link: http://lkml.kernel.org/r/1392587568-7325-11-git-send-email-stefani@seibold.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+As mount() and kill_sb() is not a one-to-one match, we shoudn't get
+ns refcnt unconditionally in sysfs_mount(), and instead we should
+get the refcnt only when kernfs_mount() allocated a new superblock.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- arch/x86/include/asm/vdso.h   | 6 ++++++
- arch/x86/kernel/hpet.c        | 5 +++++
- arch/x86/kernel/vsyscall_32.c | 4 ++++
- arch/x86/vdso/vdso32-setup.c  | 6 ------
- 4 files changed, 15 insertions(+), 6 deletions(-)
+ fs/kernfs/mount.c      | 7 ++++++-
+ fs/sysfs/mount.c       | 5 +++--
+ include/linux/kernfs.h | 9 +++++----
+ 3 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-index fe3cef9..6db8b23 100644
---- a/arch/x86/include/asm/vdso.h
-+++ b/arch/x86/include/asm/vdso.h
-@@ -1,6 +1,12 @@
- #ifndef _ASM_X86_VDSO_H
- #define _ASM_X86_VDSO_H
- 
-+enum {
-+	VDSO_DISABLED = 0,
-+	VDSO_ENABLED = 1,
-+	VDSO_COMPAT = 2,
-+};
-+
- #if defined CONFIG_X86_32 || defined CONFIG_COMPAT
- 
- #include <asm/vdso32.h>
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 54263f0..b99544b 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -15,6 +15,7 @@
- #include <asm/fixmap.h>
- #include <asm/hpet.h>
- #include <asm/time.h>
-+#include <asm/elf.h>
- 
- #define HPET_MASK			CLOCKSOURCE_MASK(32)
- 
-@@ -74,6 +75,10 @@ static inline void hpet_writel(unsigned int d, unsigned int a)
- static inline void hpet_set_mapping(void)
+diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+index 405279b..53ce420 100644
+--- a/fs/kernfs/mount.c
++++ b/fs/kernfs/mount.c
+@@ -132,6 +132,7 @@ const void *kernfs_super_ns(struct super_block *sb)
+  * @flags: mount flags specified for the mount
+  * @root: kernfs_root of the hierarchy being mounted
+  * @ns: optional namespace tag of the mount
++ * @new: tell the caller if we allocated a new superblock
+  *
+  * This is to be called from each kernfs user's file_system_type->mount()
+  * implementation, which should pass through the specified @fs_type and
+@@ -141,12 +142,15 @@ const void *kernfs_super_ns(struct super_block *sb)
+  * The return value can be passed to the vfs layer verbatim.
+  */
+ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+-			       struct kernfs_root *root, const void *ns)
++			       struct kernfs_root *root, const void *ns,
++			       bool *new_sb)
  {
- 	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
-+#ifdef CONFIG_X86_32
-+	if (vdso_enabled != VDSO_COMPAT)
-+		return;
-+#endif
- 	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
+ 	struct super_block *sb;
+ 	struct kernfs_super_info *info;
+ 	int error;
+ 
++	*new_sb = false;
++
+ 	info = kzalloc(sizeof(*info), GFP_KERNEL);
+ 	if (!info)
+ 		return ERR_PTR(-ENOMEM);
+@@ -166,6 +170,7 @@ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+ 			return ERR_PTR(error);
+ 		}
+ 		sb->s_flags |= MS_ACTIVE;
++		*new_sb = true;
+ 	}
+ 
+ 	return dget(sb->s_root);
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 5c7fdd9..f5bea79 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -27,6 +27,7 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ {
+ 	struct dentry *root;
+ 	void *ns;
++	bool new_sb;
+ 
+ 	if (!(flags & MS_KERNMOUNT)) {
+ 		if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
+@@ -37,8 +38,8 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ 	}
+ 
+ 	ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
+-	root = kernfs_mount_ns(fs_type, flags, sysfs_root, ns);
+-	if (IS_ERR(root))
++	root = kernfs_mount_ns(fs_type, flags, sysfs_root, ns, &new_sb);
++	if (IS_ERR(root) || !new_sb)
+ 		kobj_ns_drop(KOBJ_NS_TYPE_NET, ns);
+ 	return root;
+ }
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 649497a..1b1849f 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -279,7 +279,8 @@ void kernfs_notify(struct kernfs_node *kn);
+ 
+ const void *kernfs_super_ns(struct super_block *sb);
+ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+-			       struct kernfs_root *root, const void *ns);
++			       struct kernfs_root *root, const void *ns,
++			       bool *new_sb);
+ void kernfs_kill_sb(struct super_block *sb);
+ 
+ void kernfs_init(void);
+@@ -372,7 +373,7 @@ static inline const void *kernfs_super_ns(struct super_block *sb)
+ 
+ static inline struct dentry *
+ kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+-		struct kernfs_root *root, const void *ns)
++		struct kernfs_root *root, const void *ns, bool *new_sb)
+ { return ERR_PTR(-ENOSYS); }
+ 
+ static inline void kernfs_kill_sb(struct super_block *sb) { }
+@@ -430,9 +431,9 @@ static inline int kernfs_rename(struct kernfs_node *kn,
+ 
+ static inline struct dentry *
+ kernfs_mount(struct file_system_type *fs_type, int flags,
+-	     struct kernfs_root *root)
++	     struct kernfs_root *root, bool *new_sb)
+ {
+-	return kernfs_mount_ns(fs_type, flags, root, NULL);
++	return kernfs_mount_ns(fs_type, flags, root, NULL, new_sb);
  }
  
-diff --git a/arch/x86/kernel/vsyscall_32.c b/arch/x86/kernel/vsyscall_32.c
-index 4b94c47..0cbf94b 100644
---- a/arch/x86/kernel/vsyscall_32.c
-+++ b/arch/x86/kernel/vsyscall_32.c
-@@ -13,8 +13,12 @@
- #include <asm/vsyscall.h>
- #include <asm/pgtable.h>
- #include <asm/fixmap.h>
-+#include <asm/elf.h>
- 
- void __init map_vsyscall(void)
- {
-+	if (vdso_enabled != VDSO_COMPAT)
-+		return;
-+
- 	__set_fixmap(VVAR_PAGE, __pa_symbol(&__vvar_page), PAGE_KERNEL_VVAR);
- }
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 9b57770..6b74a46 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -29,12 +29,6 @@
- #include <asm/hpet.h>
- #include <asm/vvar.h>
- 
--enum {
--	VDSO_DISABLED = 0,
--	VDSO_ENABLED = 1,
--	VDSO_COMPAT = 2,
--};
--
- #ifdef CONFIG_COMPAT_VDSO
- #define VDSO_DEFAULT	VDSO_COMPAT
- #else
+ #endif	/* __LINUX_KERNFS_H */
+-- 
+1.8.0.2
