@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaBQLlE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 06:41:04 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:40345 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533AbaBQLlD (ORCPT
+	id S1752583AbaBQLoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 06:44:12 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39161 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaBQLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 06:41:03 -0500
-Message-ID: <5301F4FC.30301@huawei.com>
-Date: Mon, 17 Feb 2014 19:39:40 +0800
-From: Weng Meiling <wengmeiling.weng@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 17 Feb 2014 06:44:11 -0500
+Message-ID: <5301F603.8010605@hitachi.com>
+Date: Mon, 17 Feb 2014 20:44:03 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Robert Richter <rric@kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>,
-        "sdu.liu@huawei.com" <sdu.liu@huawei.com>
-Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in op_overflow_handler()
-References: <52D5EC44.30101@huawei.com> <20140115102445.GE20315@rric.localhost> <52D73148.4090408@huawei.com> <52D7A750.50906@huawei.com> <20140116115245.GB8360@rric.localhost> <20140116193652.GD22105@mudshark.cambridge.arm.com> <52D8A56F.1010507@huawei.com> <52F9A82F.3060806@huawei.com> <20140211155207.GK8693@mudshark.cambridge.arm.com> <52FED3C5.1060703@huawei.com> <20140217100827.GA26312@mudshark.cambridge.arm.com>
-In-Reply-To: <20140217100827.GA26312@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip v3 01/11] [BUGFIX] perf-probe: Fix to do exit call
+ for symbol maps
+References: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <20140206053204.29635.28334.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <87bny6xjdj.fsf@sejong.aot.lge.com>
+In-Reply-To: <87bny6xjdj.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.66]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/17 18:08, Will Deacon wrote:
-> On Sat, Feb 15, 2014 at 02:41:09AM +0000, Weng Meiling wrote:
->> Hi Will,
+(2014/02/17 16:56), Namhyung Kim wrote:
+> Hi Masami,
+> 
+> On Thu, 06 Feb 2014 05:32:04 +0000, Masami Hiramatsu wrote:
+>> Some perf-probe commands do symbol_init() but doesn't
+>> do exit call. This fixes that to call symbol_exit()
+>> and releases machine if needed.
+>> This also merges init_vmlinux() and init_user_exec()
+>> because both of them are doing similar things.
+>> (init_user_exec() just skips init vmlinux related
+>>  symbol maps)
 >>
->>  I test kernel with this patch, the problem has be fixed. When the
->>  event's sample_period is small, the cpu will not stall except printing
->>  warning "oprofile: ignoring spurious overflow ignoring spurious overflow".
->>  This is normal for unregistered event.
+>> Changes from v2:
+>>  - Not to set symbol_conf.try_vmlinux_path in init_symbol_maps()
+>>    (Thanks to Namhyung Kim!)
 >>
->>  So would you please send a formal one? :) Thanks very much!
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 > 
-> It's already in -next.
+> [SNIP]
+>> -int show_line_range(struct line_range *lr, const char *module)
+>> +static int __show_line_range(struct line_range *lr, const char *module)
+>>  {
+>>  	int l = 1;
+>>  	struct line_node *ln;
+>> @@ -573,10 +568,6 @@ int show_line_range(struct line_range *lr, const char *module)
+>>  	char *tmp;
+>>  
+>>  	/* Search a line range */
+>> -	ret = init_vmlinux();
+>> -	if (ret < 0)
+>> -		return ret;
+>> -
+>>  	dinfo = open_debuginfo(module);
+>>  	if (!dinfo) {
+>>  		pr_warning("Failed to open debuginfo file.\n");
+>> @@ -646,6 +637,19 @@ end:
+>>  	return ret;
+>>  }
+>>  
+>> +int show_line_range(struct line_range *lr, const char *module)
+>> +{
+>> +	int ret;
+>> +
+>> +	ret = init_symbol_maps(false);
+>> +	if (ret < 0)
+>> +		return ret;
+>> +	ret = __show_line_range(lr, module);
+>> +	exit_symbol_maps();
 > 
-> Will
-> 
-> 
+> Wouldn't it be better moving init/exit_symbol_maps() to a common
+> location if they're used by every operations?
 
-OK, Thanks~
+Oh, that's a good idea.:)
+Since this just introduces init/exit_symbol_maps() to fix issue
+by replacing old one. I think it's better to be done after this series.
+
+Thank you,
+
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
