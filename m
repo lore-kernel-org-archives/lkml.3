@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaBQVKy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:10:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:49081 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097AbaBQVKw (ORCPT
+	id S1752901AbaBQVLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:11:53 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:54803 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141AbaBQVLw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:10:52 -0500
-Message-ID: <53027AD5.7060808@oracle.com>
-Date: Mon, 17 Feb 2014 22:10:45 +0100
-From: Vegard Nossum <vegard.nossum@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 17 Feb 2014 16:11:52 -0500
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: inotify cookie regression/info leak in latest mainline
-References: <52FFDE9A.2030109@oracle.com> <20140217125954.GD3686@quack.suse.cz>
-In-Reply-To: <20140217125954.GD3686@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <530279EC.5010605@infradead.org>
+References: <CAMuHMdUYZLv4X3VBEOgcf+Dr22Pi1xWx-6oMPX7usBk6HJHTMw@mail.gmail.com>
+	<530279EC.5010605@infradead.org>
+Date: Mon, 17 Feb 2014 22:11:51 +0100
+X-Google-Sender-Auth: duVr9hzNd_oNpJJNJ9GU807Fyv8
+Message-ID: <CAMuHMdUnCdEoyD+seYXJD+e4bED9=ceUCC7NYsoRa1_vc3g4Hw@mail.gmail.com>
+Subject: Re: New bcache compiler warning (was: Re: bcache: Minor fixes from
+ kbuild robot)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Kent Overstreet <kmo@daterainc.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 01:59 PM, Jan Kara wrote:
->    Hello,
+On Mon, Feb 17, 2014 at 10:06 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 02/17/2014 01:00 PM, Geert Uytterhoeven wrote:
+>> On Fri, Feb 14, 2014 at 8:04 PM, Linux Kernel Mailing List
+>> <linux-kernel@vger.kernel.org> wrote:
+>>>    bcache: Minor fixes from kbuild robot
+>>
+>>> diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+>>> index 4f6b594..3f74b4b 100644
+>>> --- a/drivers/md/bcache/bset.c
+>>> +++ b/drivers/md/bcache/bset.c
+>>> @@ -23,7 +23,7 @@ void bch_dump_bset(struct btree_keys *b, struct bset *i, unsigned set)
+>>>         for (k = i->start; k < bset_bkey_last(i); k = next) {
+>>>                 next = bkey_next(k);
+>>>
+>>> -               printk(KERN_ERR "block %u key %zi/%u: ", set,
+>>> +               printk(KERN_ERR "block %u key %li/%u: ", set,
+>>>                        (uint64_t *) k - i->d, i->keys);
+>>>
+>>>                 if (b->ops->key_dump)
+>>
+>> On 32-bit (m68k):
+>> drivers/md/bcache/bset.c: In function ‘bch_dump_bset’:
+>> drivers/md/bcache/bset.c:27: warning: format ‘%li’ expects type ‘long
+>> int’, but argument 3 has type ‘int’
+>>
+>> What are you trying to print here? It looks a bit strange to me.
+>> Technically, the difference between two pointers is of type ptrdiff_.
+>> The kernel had
+>>
+>> typedef __kernel_ptrdiff_t      ptrdiff_t;
+>>
+>> and
+>>
+>> #if __BITS_PER_LONG != 64
+>> typedef unsigned int    __kernel_size_t;
+>> typedef int             __kernel_ssize_t;
+>> typedef int             __kernel_ptrdiff_t;
+>> #else
+>> typedef __kernel_ulong_t __kernel_size_t;
+>> typedef __kernel_long_t __kernel_ssize_t;
+>> typedef __kernel_long_t __kernel_ptrdiff_t;
+>> #endif
+>>
+>> So I'd expect "%zi" to be the right way, and a quick test compile on
+>> 32-bit (m68k)
+>> and 64-bit (amd64) comfirms that. What was wrong with it?
 >
-> On Sat 15-02-14 22:39:38, Vegard Nossum wrote:
->> It would seem that
->>
->> commit 7053aee26a3548ebaba046ae2e52396ccf56ac6c
->> Author: Jan Kara <jack@suse.cz>
->> Date:   Tue Jan 21 15:48:14 2014 -0800
->>
->>      fsnotify: do not share events between notification groups
->>
->> introduced a bug where the cookie field of struct inotify_event
->> never gets initialised. In particular, it used to be initialised
->> when send_to_group() called fsnotify_create_event(), but that no
->> longer happens, and the 'cookie' parameter of send_to_group() never
->> gets used.
->>
->> The problem manifests itself in copy_event_to_user() where the
->> cookie field is copied to userspace without being initialised.
->>
->> I tested this with a simple userspace program, I seem to get mostly
->> 0xffff8800 in the cookie field for non-move events (which should
->> always have 0 here).
->    That's a really embarassing bug. I've extented LTP inotify tests to
-> verify the cookie value is sane (so far the tests completely ignored the
-> value which is why I didn't notice the breakage).
->
-> Attached patch fixes the problem for me. I'll send it to Linus tomorrow.
-> Thanks for spotting the problem!
+> The kernel supports 't' (%t) for ptrdiff_t (same as glibc),
+> so %ti should work (or %tu).
 
-That seems to fix it for me too, thanks for the quick fix!
+Yes, that compiles without warnings, too.
 
+And after more decyphering, "(uint64_t *) k - i->d" seems to be positive,
+so "%tu" should be OK.
 
-Vegard
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
