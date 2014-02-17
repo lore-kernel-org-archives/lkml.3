@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaBQP3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 10:29:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44582 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035AbaBQP3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 10:29:07 -0500
-Date: Mon, 17 Feb 2014 16:28:59 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: x86_pmu_start WARN_ON.
-Message-ID: <20140217152859.GF15586@twins.programming.kicks-ass.net>
-References: <20140130190253.GA11819@redhat.com>
- <alpine.DEB.2.10.1402101620170.29602@vincent-weaver-1.um.maine.edu>
- <20140211132956.GY9987@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402121559350.20738@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
+	id S1753803AbaBQPbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 10:31:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32470 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752097AbaBQPbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 10:31:10 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] FS-Cache: Handle removal of unadded object to the
+ fscache_object_list rb tree
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: neilb@suse.de, linux-fsdevel@vger.kernel.org, linux-cachefs@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 17 Feb 2014 15:01:47 +0000
+Message-ID: <20140217150147.10752.50186.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 05:13:20PM -0500, Vince Weaver wrote:
-> On Thu, 13 Feb 2014, Vince Weaver wrote:
-> 
-> > The plot thickens.  The WARN_ON is not caused by the cycles event that we 
-> > open, but it's caused by the NMI Watchdog cycles event.
-> 
-> The WARN_ON_ONCE at line 1076 in perf_event.c is triggering because
-> in x86_pmu_enable() is calling x86_pmu_start() for all of the active x86 
-> events (three plus the NMI watchdog) the NMI watchdog is unexpectedly
-> not having PERF_HES_STOPPED set (it's hw.state is 0).
+When FS-Cache allocates an object, the following sequence of events can occur:
 
-Cute, that is indeed unexpected.
+ -->fscache_alloc_object()
+    -->cachefiles_alloc_object() [via cache->ops->alloc_object]
+    <--[returns new object]
+    -->fscache_attach_object()
+    <--[failed]
+    -->cachefiles_put_object() [via cache->ops->put_object]
+       -->fscache_object_destroy()
+          -->fscache_objlist_remove()
+             -->rb_erase() to remove the object from fscache_object_list.
 
-> What's the deal with the PERF_HES_STOPPED name?  Is HES an acronym?
-> Or is it just a male event?  
+resulting in a crash in the rbtree code.
 
-Hardware Event State
+The problem is that the object is only added to fscache_object_list on the
+success path of fscache_attach_object() where it calls fscache_objlist_add().
 
-> Also it's not really clear what PERF_HES_ARCH indicates.
+So if fscache_attach_object() fails, the object won't have been added to the
+objlist rbtree.  We do, however, unconditionally try to remove the object from
+the tree.
 
-I ran out of names it seems; its used in the reschedule case where we
-relocate a stopped event. We save the STOPPED state into ARCH (because
-we're going to destroy the STOPPED state by stopping everybody), so that
-we know not to (re)enable the event when its on its new location.
+Thanks to NeilBrown for finding this and suggesting this solution.
 
-The comment in x86_pmu_enable() near where we set ARCH was supposed to
-communicate this.
+Reported-by: NeilBrown <neilb@suse.de>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: (a customer of) NeilBrown <neilb@suse.de>
+---
 
-> Things rapidly get complicated beyond that, as the NMI watchdog is a 
-> kernel-created event bound to the CPU, wheras 2 of the events are x86 hw 
-> events with a breakpoint-event groupleader (and the fact one of the events 
-> has precise set).
+ fs/fscache/object-list.c |    5 +++++
+ fs/fscache/object.c      |    3 +++
+ 2 files changed, 8 insertions(+)
 
-For this code that _should_ not matter much; they're 3 events and we
-mapped them into hardware counters.
+diff --git a/fs/fscache/object-list.c b/fs/fscache/object-list.c
+index e1959efad64f..b5ebc2d7d80d 100644
+--- a/fs/fscache/object-list.c
++++ b/fs/fscache/object-list.c
+@@ -50,6 +50,8 @@ void fscache_objlist_add(struct fscache_object *obj)
+ 	struct fscache_object *xobj;
+ 	struct rb_node **p = &fscache_object_list.rb_node, *parent = NULL;
+ 
++	ASSERT(RB_EMPTY_NODE(&obj->objlist_link));
++
+ 	write_lock(&fscache_object_list_lock);
+ 
+ 	while (*p) {
+@@ -75,6 +77,9 @@ void fscache_objlist_add(struct fscache_object *obj)
+  */
+ void fscache_objlist_remove(struct fscache_object *obj)
+ {
++	if (RB_EMPTY_NODE(&obj->objlist_link))
++		return;
++
+ 	write_lock(&fscache_object_list_lock);
+ 
+ 	BUG_ON(RB_EMPTY_ROOT(&fscache_object_list));
+diff --git a/fs/fscache/object.c b/fs/fscache/object.c
+index 53d35c504240..d3b4539f1651 100644
+--- a/fs/fscache/object.c
++++ b/fs/fscache/object.c
+@@ -314,6 +314,9 @@ void fscache_object_init(struct fscache_object *object,
+ 	object->cache = cache;
+ 	object->cookie = cookie;
+ 	object->parent = NULL;
++#ifdef CONFIG_FSCACHE_OBJECT_LIST
++	RB_CLEAR_NODE(&object->objlist_link);
++#endif
+ 
+ 	object->oob_event_mask = 0;
+ 	for (t = object->oob_table; t->events; t++)
 
-So the precise has to run on cnt0 on Core2, the NMI is simple enough to
-fit (and we prefer) fixed purpose counters. So there _should_ not be a
-reshuffle.
-
-Although I should probably assert these _should_ thingies.
-
-> From the stacktrace it looks like it is the close of a completely 
-> unrelated tracepoint event that triggers this all off, but I'm not
-> sure why a list_del_event() call of the tracepoint name would
-> trigger a schedule_timeout() and an ensuing __perf_event_task_sched_in()
-> which is what eventually triggers the problem.
-
-Enable CONFIG_FRAME_POINTER for better stack traces; I suspect the
-list_del_event() is just random stack garbage. The path that makes sense
-is:
-  wait_rcu()->__wait_for_common()->schedule_timeout()
-
-> Scattering printks around doesn't see to work because a lot of the related 
-> calls are happening in contexts where printks don't really work.
-> 
-> Anyway I just wanted to summarize my findings as I might not have a chance 
-> to look at this again for a while.  For completion I'm including the 
-> backtrace below.
-
-Sure, much appreciated. I'll go read up on the event schedule code, its
-been a while since I stared at that in too much detail.
