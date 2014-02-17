@@ -1,125 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaBQHI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 02:08:57 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:57387 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaBQHIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 02:08:55 -0500
-Message-ID: <5301B4AF.1040305@huawei.com>
-Date: Mon, 17 Feb 2014 15:05:19 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: <linux@arm.linux.org.uk>
-CC: Ben Dooks <ben.dooks@codethink.co.uk>, <will.deacon@arm.com>,
-        <gregkh@linuxfoundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Li Zefan" <lizefan@huawei.com>, Wang Nan <wangnan0@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] ARM: mm: support big-endian page tables
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.155]
-X-CFilter-Loop: Reflected
+	id S1751644AbaBQHJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 02:09:50 -0500
+Received: from mx.nrchpc.ac.cn ([211.103.180.228]:43887 "EHLO mx.bwstor.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750793AbaBQHJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 02:09:49 -0500
+From: shaobingqing <shaobingqing@bwstor.com.cn>
+To: trond.myklebust@primarydata.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shaobingqing <shaobingqing@bwstor.com.cn>
+Subject: [PATCH v3] NFSv4.1: new layout stateid can not be overwrite by one out of date
+Date: Mon, 17 Feb 2014 15:08:01 +0800
+Message-Id: <1392620881-26561-1-git-send-email-shaobingqing@bwstor.com.cn>
+X-Mailer: git-send-email 1.7.4.2
+In-Reply-To: <N>
+References: <N>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When enable LPAE and big-endian in a hisilicon board, while specify
-mem=384M mem=512M@7680M, will get bad page state:
+If initiate_file_draining returned NFS4ERR_DELAY, all the lsegs of
+a file might be released before the retrying cb_layout request arriving
+at the client. In this situation,the list lo->plh_segs is empty, 
+layoutget request of the file will use open stateid to obtain a new 
+layout stateid. And if the retrying cb_layout request arrived at the 
+client after the layoutget reply, new layout stateid would be overwrite 
+by one out of date.
 
-Freeing unused kernel memory: 180K (c0466000 - c0493000)
-BUG: Bad page state in process init  pfn:fa442
-page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
-page flags: 0x40000400(reserved)
-Modules linked in:
-CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
-[<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
-[<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
-[<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
-[<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
-[<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
-[<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
-[<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
-[<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
-[<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
-
-The bad pfn:fa442 is not system memory(mem=384M mem=512M@7680M), after debugging,
-I find in page fault handler, will get wrong pfn from pte just after set pte,
-as follow:
-do_anonymous_page()
-{
-	...
-	set_pte_at(mm, address, page_table, entry);
-	
-	//debug code
-	pfn = pte_pfn(entry);
-	pr_info("pfn:0x%lx, pte:0x%llx\n", pfn, pte_val(entry));
-
-	//read out the pte just set
-	new_pte = pte_offset_map(pmd, address);
-	new_pfn = pte_pfn(*new_pte);
-	pr_info("new pfn:0x%lx, new pte:0x%llx\n", pfn, pte_val(entry));
-	...
-}
-
-pfn:   0x1fa4f5,     pte:0xc00001fa4f575f
-new_pfn:0xfa4f5, new_pte:0xc00000fa4f5f5f	//new pfn/pte is wrong.
-
-The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
-when pte is 64-bit, for little-endian, will store low 32-bit in r2,
-high 32-bit in r3; for big-endian, will store low 32-bit in r3,
-high 32-bit in r2, this will cause wrong pfn stored in pte,
-so we should exchange r2 and r3 for big-endian.
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
 ---
- arch/arm/mm/proc-v7-3level.S |   18 +++++++++++++-----
- 1 files changed, 13 insertions(+), 5 deletions(-)
+ fs/nfs/callback_proc.c |    9 +++++++--
+ fs/nfs/pnfs.c          |    3 ++-
+ fs/nfs/pnfs.h          |    1 +
+ 3 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index 01a719e..22e3ad6 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -64,6 +64,14 @@ ENTRY(cpu_v7_switch_mm)
- 	mov	pc, lr
- ENDPROC(cpu_v7_switch_mm)
+diff --git a/fs/nfs/callback_proc.c b/fs/nfs/callback_proc.c
+index ae2e87b..5b20ace 100644
+--- a/fs/nfs/callback_proc.c
++++ b/fs/nfs/callback_proc.c
+@@ -170,10 +170,15 @@ static u32 initiate_file_draining(struct nfs_client *clp,
+ 	spin_lock(&ino->i_lock);
+ 	if (test_bit(NFS_LAYOUT_BULK_RECALL, &lo->plh_flags) ||
+ 	    pnfs_mark_matching_lsegs_invalid(lo, &free_me_list,
+-					&args->cbl_range))
++					&args->cbl_range)) {
++		if (!test_and_set_bit(NFS_LAYOUT_BC_DELAY, &lo->plh_flags))
++			pnfs_get_layout_hdr(lo);
+ 		rv = NFS4ERR_DELAY;
+-	else
++	} else {
++		if (test_and_clear_bit(NFS_LAYOUT_BC_DELAY, &lo->plh_flags))
++			pnfs_put_layout_hdr(lo);
+ 		rv = NFS4ERR_NOMATCHING_LAYOUT;
++	}
+ 	pnfs_set_layout_stateid(lo, &args->cbl_stateid, true);
+ 	spin_unlock(&ino->i_lock);
+ 	pnfs_free_lseg_list(&free_me_list);
+diff --git a/fs/nfs/pnfs.c b/fs/nfs/pnfs.c
+index cb34024..998bc82 100644
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -721,7 +721,8 @@ pnfs_choose_layoutget_stateid(nfs4_stateid *dst, struct pnfs_layout_hdr *lo,
+ 		status = -EAGAIN;
+ 	} else if (!nfs4_valid_open_stateid(open_state)) {
+ 		status = -EBADF;
+-	} else if (list_empty(&lo->plh_segs)) {
++	} else if (list_empty(&lo->plh_segs) &&
++			!test_bit(NFS_LAYOUT_BC_DELAY, &lo->plh_flags)) {
+ 		int seq;
  
-+#ifdef __ARMEB__
-+#define rl r3
-+#define rh r2
-+#else
-+#define rl r2
-+#define rh r3
-+#endif
-+
- /*
-  * cpu_v7_set_pte_ext(ptep, pte)
-  *
-@@ -73,13 +81,13 @@ ENDPROC(cpu_v7_switch_mm)
-  */
- ENTRY(cpu_v7_set_pte_ext)
- #ifdef CONFIG_MMU
--	tst	r2, #L_PTE_VALID
-+	tst	rl, #L_PTE_VALID
- 	beq	1f
--	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
--	bicne	r2, #L_PTE_VALID
-+	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
-+	bicne	rl, #L_PTE_VALID
- 	bne	1f
--	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
--	orreq	r2, #L_PTE_RDONLY
-+	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
-+	orreq	rl, #L_PTE_RDONLY
- 1:	strd	r2, r3, [r0]
- 	ALT_SMP(W(nop))
- 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
+ 		do {
+diff --git a/fs/nfs/pnfs.h b/fs/nfs/pnfs.h
+index a4f4181..fb9b37e 100644
+--- a/fs/nfs/pnfs.h
++++ b/fs/nfs/pnfs.h
+@@ -63,6 +63,7 @@ enum {
+ 	NFS_LAYOUT_BULK_RECALL,		/* bulk recall affecting layout */
+ 	NFS_LAYOUT_ROC,			/* some lseg had roc bit set */
+ 	NFS_LAYOUT_RETURN,		/* Return this layout ASAP */
++	NFS_LAYOUT_BC_DELAY,	/*cb_layout are delayed*/
+ };
+ 
+ enum layoutdriver_policy_flags {
 -- 
-1.7.1
-
+1.7.4.2
 
