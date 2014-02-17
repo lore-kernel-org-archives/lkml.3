@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaBQVsE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:48:04 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62716 "HELO
+	id S1753469AbaBQVsl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:48:41 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59392 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751100AbaBQVsC (ORCPT
+	with SMTP id S1752885AbaBQVsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:48:02 -0500
+	Mon, 17 Feb 2014 16:48:39 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Pierre Ossman <pierre-list@ossman.eu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq, powernow-k8: Initialize per-cpu data-structures properly
-Date: Mon, 17 Feb 2014 23:02:50 +0100
-Message-ID: <1851033.kRQPL2X90T@vostro.rjw.lan>
+Cc: swarren@nvidia.com, linaro-kernel@lists.linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: remove sysfs link when a cpu != policy->cpu, is removed
+Date: Mon, 17 Feb 2014 23:03:27 +0100
+Message-ID: <1848612.IZFZXgfmHj@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpo=nYQpZFh5=2g=REDyf-LKaMqJvnZ=pSncawLFpr1K_+Q@mail.gmail.com>
-References: <20140217104821.21147.71463.stgit@srivatsabhat.in.ibm.com> <CAKohpo=nYQpZFh5=2g=REDyf-LKaMqJvnZ=pSncawLFpr1K_+Q@mail.gmail.com>
+In-Reply-To: <324f43fc664f51eec355b08b6c2d4cedd2140b4c.1392628861.git.viresh.kumar@linaro.org>
+References: <324f43fc664f51eec355b08b6c2d4cedd2140b4c.1392628861.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,81 +25,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 17, 2014 04:35:08 PM Viresh Kumar wrote:
-> On 17 February 2014 16:18, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> > The powernow-k8 driver maintains a per-cpu data-structure called powernow_data
-> > that is used to perform the frequency transitions. It initializes this data-
-> > structure only for the policy->cpu. So, accesses to this data-structure by
-> > other CPUs results in various problems because they would have been
-> > uninitialized.
-> >
-> > Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get() function,
-> > it returns 0 as the KHz value, since its per-cpu memory doesn't point to
-> > anything valid. This causes problems during suspend/resume since
-> > cpufreq_update_policy() tries to enforce this (0 KHz) as the current frequency
-> > of the CPU, and this madness gets propagated to adjust_jiffies() as well.
-> > Eventually, lots of things start breaking down, including the r8169 ethernet
-> > card, in one particularly interesting case reported by Pierre Ossman.
-> >
-> > https://bugzilla.kernel.org/show_bug.cgi?id=70311
-> >
-> > Fix this by initializing the per-cpu data-structures of _all_ the CPUs
-> > in the policy appropriately.
-> >
-> > Cc: stable@vger.kernel.org
-> > Reported-by: Pierre Ossman <pierre@ossman.eu>
-> > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > ---
-> >
-> >  drivers/cpufreq/powernow-k8.c |   10 +++++++---
-> >  1 file changed, 7 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> > index e10b646..6684e03 100644
-> > --- a/drivers/cpufreq/powernow-k8.c
-> > +++ b/drivers/cpufreq/powernow-k8.c
-> > @@ -1076,7 +1076,7 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
-> >  {
-> >         struct powernow_k8_data *data;
-> >         struct init_on_cpu init_on_cpu;
-> > -       int rc;
-> > +       int rc, cpu;
-> >
-> >         smp_call_function_single(pol->cpu, check_supported_cpu, &rc, 1);
-> >         if (rc)
-> > @@ -1140,7 +1140,9 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
-> >         pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
-> >                  data->currfid, data->currvid);
-> >
-> > -       per_cpu(powernow_data, pol->cpu) = data;
-> > +       /* Point all the CPUs in this policy to the same data */
-> > +       for_each_cpu(cpu, pol->cpus)
-> > +               per_cpu(powernow_data, cpu) = data;
-> >
-> >         return 0;
-> >
-> > @@ -1155,6 +1157,7 @@ err_out:
-> >  static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
-> >  {
-> >         struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
-> > +       int cpu;
-> >
-> >         if (!data)
-> >                 return -EINVAL;
-> > @@ -1165,7 +1168,8 @@ static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
-> >
-> >         kfree(data->powernow_table);
-> >         kfree(data);
-> > -       per_cpu(powernow_data, pol->cpu) = NULL;
-> > +       for_each_cpu(cpu, pol->cpus)
-> > +               per_cpu(powernow_data, cpu) = NULL;
-> >
-> >         return 0;
+On Monday, February 17, 2014 02:52:11 PM Viresh Kumar wrote:
+> Earlier patch tried to do this but missed this piece of code to fix.
 > 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> 42f921a cpufreq: remove sysfs files for CPUs which failed to come back after
+> resume
+> 
+> Currently we are getting this on suspend/resume:
+> 
+> ------------[ cut here ]------------
+> WARNING: CPU: 0 PID: 877 at fs/sysfs/dir.c:52 sysfs_warn_dup+0x68/0x84()
+> sysfs: cannot create duplicate filename '/devices/system/cpu/cpu1/cpufreq'
+> Modules linked in: brcmfmac brcmutil
+> CPU: 0 PID: 877 Comm: test-rtc-resume Not tainted 3.14.0-rc2-00259-g9398a10cd964 #12
+> [<c0015bac>] (unwind_backtrace) from [<c0011850>] (show_stack+0x10/0x14)
+> [<c0011850>] (show_stack) from [<c056e018>] (dump_stack+0x80/0xcc)
+> [<c056e018>] (dump_stack) from [<c0025e44>] (warn_slowpath_common+0x64/0x88)
+> [<c0025e44>] (warn_slowpath_common) from [<c0025efc>] (warn_slowpath_fmt+0x30/0x40)
+> [<c0025efc>] (warn_slowpath_fmt) from [<c012776c>] (sysfs_warn_dup+0x68/0x84)
+> [<c012776c>] (sysfs_warn_dup) from [<c0127a54>] (sysfs_do_create_link_sd+0xb0/0xb8)
+> [<c0127a54>] (sysfs_do_create_link_sd) from [<c038ef64>] (__cpufreq_add_dev.isra.27+0x2a8/0x814)
+> [<c038ef64>] (__cpufreq_add_dev.isra.27) from [<c038f548>] (cpufreq_cpu_callback+0x70/0x8c)
+> [<c038f548>] (cpufreq_cpu_callback) from [<c0043864>] (notifier_call_chain+0x44/0x84)
+> [<c0043864>] (notifier_call_chain) from [<c0025f60>] (__cpu_notify+0x28/0x44)
+> [<c0025f60>] (__cpu_notify) from [<c00261e8>] (_cpu_up+0xf0/0x140)
+> [<c00261e8>] (_cpu_up) from [<c0569eb8>] (enable_nonboot_cpus+0x68/0xb0)
+> [<c0569eb8>] (enable_nonboot_cpus) from [<c006339c>] (suspend_devices_and_enter+0x198/0x2dc)
+> [<c006339c>] (suspend_devices_and_enter) from [<c0063654>] (pm_suspend+0x174/0x1e8)
+> [<c0063654>] (pm_suspend) from [<c00624e0>] (state_store+0x6c/0xbc)
+> [<c00624e0>] (state_store) from [<c01fc200>] (kobj_attr_store+0x14/0x20)
+> [<c01fc200>] (kobj_attr_store) from [<c0126e50>] (sysfs_kf_write+0x44/0x48)
+> [<c0126e50>] (sysfs_kf_write) from [<c012a274>] (kernfs_fop_write+0xb4/0x14c)
+> [<c012a274>] (kernfs_fop_write) from [<c00d4818>] (vfs_write+0xa8/0x180)
+> [<c00d4818>] (vfs_write) from [<c00d4bb8>] (SyS_write+0x3c/0x70)
+> [<c00d4bb8>] (SyS_write) from [<c000e620>] (ret_fast_syscall+0x0/0x30)
+> ---[ end trace 76969904b614c18f ]---
+> 
+> Fix this by removing sysfs link for cpufreq directory when cpu removed isn't
+> policy->cpu.
+> 
+> Reported-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> 
+> Fix for 3.14 only.
 
-Queued up as a fix for 3.14, thanks!
+Queued up for 3.14, thanks!
+
+>  drivers/cpufreq/cpufreq.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 08ca8c9..cb003a6 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1323,8 +1323,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>  	up_read(&policy->rwsem);
+>  
+>  	if (cpu != policy->cpu) {
+> -		if (!frozen)
+> -			sysfs_remove_link(&dev->kobj, "cpufreq");
+> +		sysfs_remove_link(&dev->kobj, "cpufreq");
+>  	} else if (cpus > 1) {
+>  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu);
+>  		if (new_cpu >= 0) {
+> 
 
 -- 
 I speak only for myself.
