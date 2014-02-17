@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425AbaBQTbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 14:31:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48059 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753237AbaBQTbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 14:31:07 -0500
-Date: Mon, 17 Feb 2014 20:31:02 +0100
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Jan Beulich <JBeulich@suse.com>, Borislav Petkov <bp@alien8.de>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: Issue a warning if number of present CPUs >
- maxcpus and CONFIG_HOTPLUG=n
-Message-ID: <20140217203102.7af3fd28@hananiah.suse.cz>
-In-Reply-To: <20140217190704.GA24390@khazad-dum.debian.net>
-References: <20140215150223.63bb52fb@hananiah.suse.cz>
-	<5301D7AA020000780011CBE9@nat28.tlf.novell.com>
-	<20140217110402.7e4fc211@hananiah.suse.cz>
-	<20140217134006.GA14786@khazad-dum.debian.net>
-	<20140217151626.5ff99027@hananiah.suse.cz>
-	<20140217190704.GA24390@khazad-dum.debian.net>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754540AbaBQTcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 14:32:41 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38515 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754137AbaBQTcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 14:32:39 -0500
+Date: Mon, 17 Feb 2014 19:32:10 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "wad@chromium.org" <wad@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH 2/2] arm64: is_compat_task is defined both in
+ asm/compat.h and linux/compat.h
+Message-ID: <20140217193210.GI26590@mudshark.cambridge.arm.com>
+References: <1391767892-5395-1-git-send-email-takahiro.akashi@linaro.org>
+ <1391767892-5395-3-git-send-email-takahiro.akashi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391767892-5395-3-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014 16:07:04 -0300
-Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-
-> On Mon, 17 Feb 2014, Petr Tesarik wrote:
-> > This results in:
-> > 
-> >   total_cpus = 1008   /* this is purely informative, it is *NOT* used
-> >                          to size anything */
-> >   possible = 48       /* clamped to nr_cpu_ids */
-> > 
-> > A warning message (with or without my patch):
-> >   1024 Processors exceeds NR_CPUS limit of 48
-> > 
-> > Informative message:
-> >   Allowing 16 CPUs, 32 hotplug CPUs
-> > 
-> > No other warning (with or without my patch).
+On Fri, Feb 07, 2014 at 10:11:32AM +0000, AKASHI Takahiro wrote:
+> kernel/seccomp.c includes linux/compat.h and, indicrectly, asm/compat.h
+> via asm/syscall.h. Due to the duplicated definition of is_compat_task,
+> compiling this file will fail in the case of !CONFIG_COMPAT.
+> This patch makes the definition in asm/compat.h valid only if necessary.
 > 
-> I'd rather no warnings were printed at all (user asked for that nr_cpus,
-> there is no reason to warn him about it),
->[...]
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/include/asm/compat.h |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
+> index fda2704..72f3b18 100644
+> --- a/arch/arm64/include/asm/compat.h
+> +++ b/arch/arm64/include/asm/compat.h
+> @@ -305,10 +305,12 @@ static inline int is_compat_thread(struct thread_info *thread)
+>  
+>  #else /* !CONFIG_COMPAT */
+>  
+> +#ifndef is_compat_task /* it's there in linux/compat.h */
+>  static inline int is_compat_task(void)
+>  {
+>  	return 0;
+>  }
+> +#endif
 
-Agreed. This needs some cleanup.
+This is horrible! Can we instead include linux/compat.h where we need this
+macro and then remove this definition?
 
-This code used to check against NR_CPUS, which is a compile-time
-constant, so the warning was printed when the user booted a kernel
-incapable of using all available CPUs in the system. And this was a
-good thing, because there was no (easy) way to find out this constant
-from a given kernel binary.
-
-I can post a clean-up patch that doesn't issue any warnings for user
-overrides (but does issue warnings for exceeding hard-coded kernel
-limits).
-
-But I'll do it separately and only after I know if the current patch
-gets accepted or not. ;-)
-
-Petr Tesarik
+Will
