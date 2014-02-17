@@ -1,107 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429AbaBQT2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 14:28:14 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38376 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141AbaBQT2M (ORCPT
+	id S1754491AbaBQT3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 14:29:35 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:50768 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753903AbaBQT3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 14:28:12 -0500
-Date: Mon, 17 Feb 2014 11:28:03 -0800
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-Message-ID: <20140217192803.GA14586@linux.vnet.ibm.com>
-References: <52F8C556.6090006@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
- <52FC6F2A.30905@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
- <52FC98A6.1000701@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
- <20140214001438.GB1651@linux.vnet.ibm.com>
- <CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
- <20140214043235.GA21999@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402140244330.12099@chino.kir.corp.google.com>
+	Mon, 17 Feb 2014 14:29:33 -0500
+Date: Mon, 17 Feb 2014 11:29:28 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [PATCH V2] ONKEY: da9052: Use correct register bit for key status
+Message-ID: <20140217192927.GD19223@core.coreip.homeip.net>
+References: <201402121518.s1CFIkDP009092@swsrvapps-02.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402140244330.12099@chino.kir.corp.google.com>
-X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+In-Reply-To: <201402121518.s1CFIkDP009092@swsrvapps-02.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021719-1344-0000-0000-000005D3A4F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.02.2014 [02:54:06 -0800], David Rientjes wrote:
-> On Thu, 13 Feb 2014, Nishanth Aravamudan wrote:
+On Wed, Feb 12, 2014 at 02:11:34PM +0000, Anthony Olech wrote:
+> The wrong register bit of the DA9052/3 PMIC registers was
+> used to determine the status on the ONKEY.
 > 
-> > There is an open issue on powerpc with memoryless nodes (inasmuch as we
-> > can have them, but the kernel doesn't support it properly). There is a
-> > separate discussion going on on linuxppc-dev about what is necessary for
-> > CONFIG_HAVE_MEMORYLESS_NODES to be supported.
-> > 
+> Also a failure in reading the status register will no longer
+> result in the work queue being rescheduled as that would result
+> in a (potentially) endless retry.
 > 
-> Yeah, and this is causing problems with the slub allocator as well.
-> 
-> > Apologies for hijacking the thread, my comments below were purely about
-> > the memoryless node support, not about readahead specifically.
-> > 
-> 
-> Neither you nor Raghavendra have any reason to apologize to anybody.  
-> Memoryless node support on powerpc isn't working very well right now and 
-> you're trying to fix it, that fix is needed both in this thread and in 
-> your fixes for slub.  It's great to see both of you working hard on your 
-> platform to make it work the best.
-> 
-> I think what you'll need to do in addition to your 
-> CONFIG_HAVE_MEMORYLESS_NODE fix, which is obviously needed, is to enable 
-> CONFIG_USE_PERCPU_NUMA_NODE_ID for the same NUMA configurations and then 
-> use set_numa_node() or set_cpu_numa_node() to properly store the mapping 
-> between cpu and node rather than numa_cpu_lookup_table.  Then you should 
-> be able to do away with your own implementation of cpu_to_node().
-> 
-> After that, I think it should be as simple as doing
-> 
-> 	set_numa_node(cpu_to_node(cpu));
-> 	set_numa_mem(local_memory_node(cpu_to_node(cpu)));
-> 
-> probably before taking vector_lock in smp_callin().  The cpu-to-node 
-> mapping should be done much earlier in boot while the nodes are being 
-> initialized, I don't think there should be any problem there.
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> Acked-by: David Dajun Chen <david.chen@diasemi.com>
 
-vector_lock/smp_callin are ia64 specific things, I believe? I think the
-equivalent is just in start_secondary() for powerpc? (which in fact is
-what calls smp_callin on powerpc).
+Applied, thank you.
 
-Here is what I'm running into now:
-
-setup_arch ->
-	do_init_bootmem ->
-		cpu_numa_callback ->
-			numa_setup_cpu ->
-				map_cpu_to_node -> 
-					update_numa_cpu_lookup_table
-
-Which current updates the powerpc specific numa_cpu_lookup_table. I
-would like to update that function to use set_cpu_numa_node() and
-set_cpu_numa_mem(), but local_memory_node() is not yet functional
-because build_all_zonelists is called later in start_kernel. Would it
-make sense for first_zones_zonelist() to return NUMA_NO_NODE if we
-don't have a zone?
-
-Thanks,
-Nish
-
+-- 
+Dmitry
