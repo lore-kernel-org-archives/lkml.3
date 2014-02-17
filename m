@@ -1,78 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827AbaBQBmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 20:42:15 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:45428 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaBQBmN (ORCPT
+	id S1753716AbaBQBoS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 20:44:18 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58811 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477AbaBQBoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 20:42:13 -0500
+	Sun, 16 Feb 2014 20:44:16 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
+Date: Mon, 17 Feb 2014 02:45:22 +0100
+Message-ID: <35710038.vGLtzuIoLe@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CANqRtoROALpUqi8rKWRpQk7LGc0BqU14AKg-2MgYBMNoEFGA4Q@mail.gmail.com>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1790131.DSZsj6HrSK@avalon> <CANqRtoROALpUqi8rKWRpQk7LGc0BqU14AKg-2MgYBMNoEFGA4Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPXgP13oJt5CT=YswPNNM8m9fNOeLLkAmqJF_gVtcg_i=Rk6FA@mail.gmail.com>
-References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
- <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
- <CF26B239.2E7B4%dbanerje@akamai.com> <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
- <CF26BC6D.2E80E%dbanerje@akamai.com> <CA+55aFyywOm7pWrX4=04LTEJ6xYK4xDTxGRqes-MOT212PnWPw@mail.gmail.com>
- <CAPXgP12ZUMqgAx6jJK1q7GkQ5r21zNLhLCCH-rN83vzgOsZFYQ@mail.gmail.com>
- <CA+55aFxxPSdEkmvAP0fJ_3XN2udz=wCi+Yfeg9Kf-TpL349Srg@mail.gmail.com> <CAPXgP13oJt5CT=YswPNNM8m9fNOeLLkAmqJF_gVtcg_i=Rk6FA@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Mon, 17 Feb 2014 02:41:52 +0100
-Message-ID: <CAPXgP11O80cTZD-LzP_k9YkmcVrcheeWmUNUwZtTNtii-pLELg@mail.gmail.com>
-Subject: Re: [PATCH] printk: Fix discarding of records
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Banerjee, Debabrata" <dbanerje@akamai.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeff Mahoney <jeffm@suse.com>,
-        "dbavatar@gmail.com" <dbavatar@gmail.com>,
-        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 2:19 AM, Kay Sievers <kay@vrfy.org> wrote:
-> On Mon, Feb 17, 2014 at 1:57 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Sun, Feb 16, 2014 at 4:50 PM, Kay Sievers <kay@vrfy.org> wrote:
->>>
->>> That should avoid the overflow, yes. I expect it will not print the
->>> first line with a prefix, which we probably should.?
->>
->> Well, it's not printing out the prefix, but it's also not printing out
->> the whole first part of the line, so quite frankly, I think that's
->> actually "more correct".
->>
->> After all, it has already skipped the beginning of the line.
->> Prepending the prefix, then skipping part of the line, and then
->> printing the last part, that sounds truly insane, no?
->
-> Yeah, it depends on the idea of what a "line" is; being it a single
-> printk() call or a reconstructed continuation line, which happens when
-> printk calls could not be merged for some reason into a single record.
->
-> But sure, your patch, it sounds fine to just skip the prefix.
->
-> The syslog() dump interface never made any promises, and it is not
-> used that much anymore today (even dmesg switched away from it since
-> quite a while).
->
-> For the dumpers, who might use that interface to "page" through the
-> data, not printing the prefix sounds actually like the better option
-> looking at the stream of pages they ask for.
+Hi Magnus,
 
-Your patch seems to work fine here. We now start in the middle of a
-cont *line*, with the next cont *record*; do not print the header, and
-also do not print more than we should:
+On Saturday 15 February 2014 02:22:00 Magnus Damm wrote:
+> On Sat, Feb 15, 2014 at 1:12 AM, Laurent Pinchart wrote:
+> > On Saturday 15 February 2014 01:01:30 Magnus Damm wrote:
+> >> On Sat, Feb 15, 2014 at 12:53 AM, Laurent Pinchart wrote:
+> >> > On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
+> >> >> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
+> >> >> > +Channels Optional Properties:
+> >> >> > +
+> >> >> > +  - clock-source-rating: rating of the timer as a clock source
+> >> >> > device.
+> >> >> > +  - clock-event-rating: rating of the timer as a clock event
+> >> >> > device.
+> >> >> 
+> >> >> This feels like a leak of Linux internals. Why do you need this?
+> >> > 
+> >> > You're right, it is. The clock source and clock event ratings are
+> >> > currently configured through platform data, I'll need to find a way to
+> >> > compute them in the driver instead.
+> >> 
+> >> That would be very good!
+> > 
+> > Any pointer would be appreciated :-) How did you compute the various
+> > ratings used in platform data all over the place ?
+> 
+> Historically we used the rating to select between CMT and TMU. For
+> clock sources I suppose you also have the jiffy rating to consider.
+> And for the SMP parts we have ARM IP for TWD and arch timers that have
+> their ratings too. So you need to check all the timers on a particular
+> system and consider what you want to have operating by default. The
+> ARM IP timers should be preferred if available. For clock sources the
+> rule is probably the higher resolution the better.
+> 
+> >> > There's still one piece of Linux-specific data I need though, as I need
+> >> > to specify for each channel whether to use it as a clock source device,
+> >> > a clock event device, both of them or none. That's configuration
+> >> > information that needs to be provided somehow.
+> >> 
+> >> I think you can decide clock source or clock event assignment based on
+> >> number of channels available. If you have only a single channel then both
+> >> clock event and clock source need to be supported. Otherwise use one
+> >> channel for clock source and the rest for clock events.
+> > 
+> > That won't match the current situation. Look at CMT0 in r8a7790 for
+> > instance. There's two hardware channels available, and we only use the
+> > first one, for clock events only.
+> 
+> You are correct. The reason for that is that the CMT driver today is
+> optimized for combined clock event and clock source operation.
+> 
+> Historically the hardware it initially was written for (sh-mobile on
+> the SH arch) only had a single timer channel so combined operation was
+> required for tickless to work. But since you're asking how to allocate
+> channels then I propose checking numbers of channels available and go
+> from there. With that the r8a7790 support can only get better. =)
+> 
+> >> This is probably out of scope for this DT conversion, but it would be
+> >> neat if you somehow could specify the CPU affinity for a channel to tie a
+> >> clock event to an individual CPU core. This would make a a per-cpu timer
+> >> unless I'm mistaken. But that's more of a software policy than anything
+> >> else.
+> > 
+> > Yes, that's a configuration that needs to be specified somewhere. I don't
+> > know where though.
+> 
+> As long as you have per-channel interrupts described in DT you can
+> probably handle this in a generic way in the driver.
 
-  syslog(SYSLOG_ACTION_READ_ALL, "<6>[   73.671533] ---\n<6>[
-73.673677] ...", 1088) = 704
-  syslog(SYSLOG_ACTION_READ_ALL, "268---------...", 1089) = 1089
-  syslog(SYSLOG_ACTION_READ_ALL, "268---------... 1090) = 1089
+But how do we decide whether to use a single timer channel or one channel per 
+CPU ? Will the kernel use one clock event device per CPU automatically ? I 
+have to confess I have no idea how this works.
 
-The current code before the patch does this:
+-- 
+Regards,
 
-  syslog(SYSLOG_ACTION_READ_ALL, "<4>[  210.190007]
-268---------26"..., 445) = 463
+Laurent Pinchart
 
-Kay
