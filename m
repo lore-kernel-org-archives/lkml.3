@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaBQV1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:27:11 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44679 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083AbaBQV1D (ORCPT
+	id S1753438AbaBQV1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:27:07 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:41611 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017AbaBQV1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Feb 2014 16:27:03 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,113 +16,57 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need barriers() for some control dependencies
-Date: Mon, 17 Feb 2014 13:26:52 -0800
-Message-Id: <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 4/6] Documentation/kernel-per-CPU-kthreads.txt: Workqueue affinity
+Date: Mon, 17 Feb 2014 13:26:51 -0800
+Message-Id: <1392672413-5114-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140217212625.GA4083@linux.vnet.ibm.com>
  <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021721-0928-0000-0000-000006C2FE5D
+x-cbid: 14021721-7164-0000-0000-000006266566
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Current compilers can "speculate" stores in the case where both legs
-of the "if" statement start with identical stores.  Because the stores
-are identical, the compiler knows that the store will unconditionally
-execute regardless of the "if" condition, and so the compiler is within
-its rights to hoist the store to precede the condition.  Such hoisting
-destroys the control-dependency ordering.  This ordering can be restored
-by placing a barrier() at the beginning of each leg of the "if" statement.
-This commit adds this requirement to the control-dependencies section.
+This commit documents the ability to apply CPU affinity to WQ_SYSFS
+workqueues, thus offloading them from the desired worker CPUs.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- Documentation/memory-barriers.txt | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ Documentation/kernel-per-CPU-kthreads.txt | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index f2668c19807e..adfaca831a90 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -608,26 +608,30 @@ as follows:
- 	b = p;  /* BUG: Compiler can reorder!!! */
- 	do_something();
- 
--The solution is again ACCESS_ONCE(), which preserves the ordering between
--the load from variable 'a' and the store to variable 'b':
-+The solution is again ACCESS_ONCE() and barrier(), which preserves the
-+ordering between the load from variable 'a' and the store to variable 'b':
- 
- 	q = ACCESS_ONCE(a);
- 	if (q) {
-+		barrier();
- 		ACCESS_ONCE(b) = p;
- 		do_something();
- 	} else {
-+		barrier();
- 		ACCESS_ONCE(b) = p;
- 		do_something_else();
- 	}
- 
--You could also use barrier() to prevent the compiler from moving
--the stores to variable 'b', but barrier() would not prevent the
--compiler from proving to itself that a==1 always, so ACCESS_ONCE()
--is also needed.
-+The initial ACCESS_ONCE() is required to prevent the compiler from
-+proving the value of 'a', and the pair of barrier() invocations are
-+required to prevent the compiler from pulling the two identical stores
-+to 'b' out from the legs of the "if" statement.
- 
- It is important to note that control dependencies absolutely require a
- a conditional.  For example, the following "optimized" version of
--the above example breaks ordering:
-+the above example breaks ordering, which is why the barrier() invocations
-+are absolutely required if you have identical stores in both legs of
-+the "if" statement:
- 
- 	q = ACCESS_ONCE(a);
- 	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
-@@ -643,9 +647,11 @@ It is of course legal for the prior load to be part of the conditional,
- for example, as follows:
- 
- 	if (ACCESS_ONCE(a) > 0) {
-+		barrier();
- 		ACCESS_ONCE(b) = q / 2;
- 		do_something();
- 	} else {
-+		barrier();
- 		ACCESS_ONCE(b) = q / 3;
- 		do_something_else();
- 	}
-@@ -659,9 +665,11 @@ the needed conditional.  For example:
- 
- 	q = ACCESS_ONCE(a);
- 	if (q % MAX) {
-+		barrier();
- 		ACCESS_ONCE(b) = p;
- 		do_something();
- 	} else {
-+		barrier();
- 		ACCESS_ONCE(b) = p;
- 		do_something_else();
- 	}
-@@ -723,6 +731,10 @@ In summary:
-       use smb_rmb(), smp_wmb(), or, in the case of prior stores and
-       later loads, smp_mb().
- 
-+  (*) If both legs of the "if" statement begin with identical stores
-+      to the same variable, a barrier() statement is required at the
-+      beginning of each leg of the "if" statement.
-+
-   (*) Control dependencies require at least one run-time conditional
-       between the prior load and the subsequent store, and this
-       conditional must involve the prior load.  If the compiler
+diff --git a/Documentation/kernel-per-CPU-kthreads.txt b/Documentation/kernel-per-CPU-kthreads.txt
+index 827104fb9364..f3cd299fcc41 100644
+--- a/Documentation/kernel-per-CPU-kthreads.txt
++++ b/Documentation/kernel-per-CPU-kthreads.txt
+@@ -162,7 +162,18 @@ Purpose: Execute workqueue requests
+ To reduce its OS jitter, do any of the following:
+ 1.	Run your workload at a real-time priority, which will allow
+ 	preempting the kworker daemons.
+-2.	Do any of the following needed to avoid jitter that your
++2.	A given workqueue can be made visible in the sysfs filesystem
++	by passing the WQ_SYSFS to that workqueue's alloc_workqueue().
++	Such a workqueue can be confined to a given subset of the
++	CPUs using the /sys/devices/virtual/workqueue/*/cpumask sysfs
++	files.	The set of WQ_SYSFS workqueues can be displayed using
++	"ls sys/devices/virtual/workqueue".  That said, the workqueues
++	maintainer would like to caution people against indiscriminately
++	sprinkling WQ_SYSFS across all the workqueues.	The reason for
++	caution is that it is easy to add WQ_SYSFS, but because sysfs is
++	part of the formal user/kernel API, it can be nearly impossible
++	to remove it, even if its addition was a mistake.
++3.	Do any of the following needed to avoid jitter that your
+ 	application cannot tolerate:
+ 	a.	Build your kernel with CONFIG_SLUB=y rather than
+ 		CONFIG_SLAB=y, thus avoiding the slab allocator's periodic
 -- 
 1.8.1.5
 
