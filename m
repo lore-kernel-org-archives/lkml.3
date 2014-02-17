@@ -1,219 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635AbaBQNPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:15:15 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10925 "EHLO mga02.intel.com"
+	id S1753709AbaBQNPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 08:15:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39808 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753413AbaBQNPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 08:15:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,860,1384329600"; 
-   d="scan'208";a="456852936"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 09/11] mei: don't of list_for_each_entry_safe when not deleting
-Date: Mon, 17 Feb 2014 15:13:25 +0200
-Message-Id: <1392642807-8878-10-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
-References: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
+	id S1752744AbaBQNPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 08:15:25 -0500
+Date: Mon, 17 Feb 2014 14:15:20 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 7/9] HID: remove hid_get_raw_report in struct
+ hid_device
+In-Reply-To: <1391636004-29354-8-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1402171414490.1192@pobox.suse.cz>
+References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com> <1391636004-29354-8-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use simply list_for_each_entry if there is no
-entry removal
+On Wed, 5 Feb 2014, Benjamin Tissoires wrote:
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/amthif.c    | 12 +++++-------
- drivers/misc/mei/bus.c       |  4 ++--
- drivers/misc/mei/client.c    | 23 +++++++++++------------
- drivers/misc/mei/hbm.c       |  9 ++++-----
- drivers/misc/mei/interrupt.c | 13 ++++++-------
- 5 files changed, 28 insertions(+), 33 deletions(-)
+> dev->hid_get_raw_report(X) and hid_hw_raw_request(X, HID_REQ_GET_REPORT)
+> are strictly equivalent. Switch the hid subsystem to the hid_hw notation
+> and remove the field .hid_get_raw_report in struct hid_device.
+> 
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  drivers/hid/hid-input.c       | 6 +++---
+>  drivers/hid/hid-sony.c        | 3 ++-
+>  drivers/hid/hidraw.c          | 7 ++++---
+>  drivers/hid/i2c-hid/i2c-hid.c | 1 -
+>  drivers/hid/uhid.c            | 1 -
+>  drivers/hid/usbhid/hid-core.c | 1 -
+>  include/linux/hid.h           | 3 ---
+>  net/bluetooth/hidp/core.c     | 1 -
+>  8 files changed, 9 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+> index 68db2db..6253e95 100644
+> --- a/drivers/hid/hid-input.c
+> +++ b/drivers/hid/hid-input.c
+> @@ -350,9 +350,9 @@ static int hidinput_get_battery_property(struct power_supply *psy,
+>  			ret = -ENOMEM;
+>  			break;
+>  		}
+> -		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
+> -					      buf, 2,
+> -					      dev->battery_report_type);
+> +		ret = hid_hw_raw_request(dev, dev->battery_report_id, buf, 2,
+> +					 dev->battery_report_type,
+> +					 HID_REQ_GET_REPORT);
+>  
+>  		if (ret != 2) {
+>  			ret = -ENODATA;
+> diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+> index 2bd3f13..b51db79 100644
+> --- a/drivers/hid/hid-sony.c
+> +++ b/drivers/hid/hid-sony.c
+> @@ -810,7 +810,8 @@ static int sixaxis_set_operational_usb(struct hid_device *hdev)
+>  	if (!buf)
+>  		return -ENOMEM;
+>  
+> -	ret = hdev->hid_get_raw_report(hdev, 0xf2, buf, 17, HID_FEATURE_REPORT);
+> +	ret = hid_hw_raw_request(hdev, 0xf2, buf, 17, HID_FEATURE_REPORT,
+> +				 HID_REQ_GET_REPORT);
+>  
+>  	if (ret < 0)
+>  		hid_err(hdev, "can't set operational mode\n");
+> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+> index cb0137b..4b2dc95 100644
+> --- a/drivers/hid/hidraw.c
+> +++ b/drivers/hid/hidraw.c
+> @@ -189,7 +189,7 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t
+>  
+>  	dev = hidraw_table[minor]->hid;
+>  
+> -	if (!dev->hid_get_raw_report) {
+> +	if (!dev->ll_driver->raw_request) {
+>  		ret = -ENODEV;
+>  		goto out;
+>  	}
+> @@ -216,14 +216,15 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t
+>  
+>  	/*
+>  	 * Read the first byte from the user. This is the report number,
+> -	 * which is passed to dev->hid_get_raw_report().
+> +	 * which is passed to hid_hw_raw_request().
+>  	 */
+>  	if (copy_from_user(&report_number, buffer, 1)) {
+>  		ret = -EFAULT;
+>  		goto out_free;
+>  	}
+>  
+> -	ret = dev->hid_get_raw_report(dev, report_number, buf, count, report_type);
+> +	ret = hid_hw_raw_request(dev, report_number, buf, count, report_type,
+> +				 HID_REQ_GET_REPORT);
+>  
+>  	if (ret < 0)
+>  		goto out_free;
+> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> index 923ff81..f57de7f 100644
+> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> @@ -1003,7 +1003,6 @@ static int i2c_hid_probe(struct i2c_client *client,
+>  
+>  	hid->driver_data = client;
+>  	hid->ll_driver = &i2c_hid_ll_driver;
+> -	hid->hid_get_raw_report = i2c_hid_get_raw_report;
+>  	hid->hid_output_raw_report = i2c_hid_output_raw_report;
+>  	hid->dev.parent = &client->dev;
+>  	ACPI_COMPANION_SET(&hid->dev, ACPI_COMPANION(&client->dev));
+> diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
+> index f5a2b19..12439e1 100644
+> --- a/drivers/hid/uhid.c
+> +++ b/drivers/hid/uhid.c
+> @@ -404,7 +404,6 @@ static int uhid_dev_create(struct uhid_device *uhid,
+>  	hid->uniq[63] = 0;
+>  
+>  	hid->ll_driver = &uhid_hid_driver;
+> -	hid->hid_get_raw_report = uhid_hid_get_raw;
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index c0b54a0..f05d54d 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -132,14 +132,12 @@ int mei_amthif_host_init(struct mei_device *dev)
- struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
- 						struct file *file)
- {
--	struct mei_cl_cb *pos = NULL;
--	struct mei_cl_cb *next = NULL;
-+	struct mei_cl_cb *cb;
- 
--	list_for_each_entry_safe(pos, next,
--				&dev->amthif_rd_complete_list.list, list) {
--		if (pos->cl && pos->cl == &dev->iamthif_cl &&
--			pos->file_object == file)
--			return pos;
-+	list_for_each_entry(cb, &dev->amthif_rd_complete_list.list, list) {
-+		if (cb->cl && cb->cl == &dev->iamthif_cl &&
-+			cb->file_object == file)
-+			return cb;
- 	}
- 	return NULL;
- }
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index cf4cc0b..463ae51 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -145,9 +145,9 @@ static struct device_type mei_cl_device_type = {
- static struct mei_cl *mei_bus_find_mei_cl_by_uuid(struct mei_device *dev,
- 						uuid_le uuid)
- {
--	struct mei_cl *cl, *next;
-+	struct mei_cl *cl;
- 
--	list_for_each_entry_safe(cl, next, &dev->device_list, device_link) {
-+	list_for_each_entry(cl, &dev->device_list, device_link) {
- 		if (!uuid_le_cmp(uuid, cl->device_uuid))
- 			return cl;
- 	}
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index ec19e38..aac7cdb 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -251,10 +251,9 @@ struct mei_cl *mei_cl_allocate(struct mei_device *dev)
- struct mei_cl_cb *mei_cl_find_read_cb(struct mei_cl *cl)
- {
- 	struct mei_device *dev = cl->dev;
--	struct mei_cl_cb *cb = NULL;
--	struct mei_cl_cb *next = NULL;
-+	struct mei_cl_cb *cb;
- 
--	list_for_each_entry_safe(cb, next, &dev->read_list.list, list)
-+	list_for_each_entry(cb, &dev->read_list.list, list)
- 		if (mei_cl_cmp_id(cl, cb->cl))
- 			return cb;
- 	return NULL;
-@@ -474,17 +473,17 @@ free:
- bool mei_cl_is_other_connecting(struct mei_cl *cl)
- {
- 	struct mei_device *dev;
--	struct mei_cl *pos;
--	struct mei_cl *next;
-+	struct mei_cl *ocl; /* the other client */
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return false;
- 
- 	dev = cl->dev;
- 
--	list_for_each_entry_safe(pos, next, &dev->file_list, link) {
--		if ((pos->state == MEI_FILE_CONNECTING) &&
--		    (pos != cl) && cl->me_client_id == pos->me_client_id)
-+	list_for_each_entry(ocl, &dev->file_list, link) {
-+		if (ocl->state == MEI_FILE_CONNECTING &&
-+		    ocl != cl &&
-+		    cl->me_client_id == ocl->me_client_id)
- 			return true;
- 
- 	}
-@@ -919,9 +918,9 @@ void mei_cl_complete(struct mei_cl *cl, struct mei_cl_cb *cb)
- 
- void mei_cl_all_disconnect(struct mei_device *dev)
- {
--	struct mei_cl *cl, *next;
-+	struct mei_cl *cl;
- 
--	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
-+	list_for_each_entry(cl, &dev->file_list, link) {
- 		cl->state = MEI_FILE_DISCONNECTED;
- 		cl->mei_flow_ctrl_creds = 0;
- 		cl->timer_count = 0;
-@@ -936,8 +935,8 @@ void mei_cl_all_disconnect(struct mei_device *dev)
-  */
- void mei_cl_all_wakeup(struct mei_device *dev)
- {
--	struct mei_cl *cl, *next;
--	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
-+	struct mei_cl *cl;
-+	list_for_each_entry(cl, &dev->file_list, link) {
- 		if (waitqueue_active(&cl->rx_wait)) {
- 			cl_dbg(dev, cl, "Waking up reading client!\n");
- 			wake_up_interruptible(&cl->rx_wait);
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 023173d..9555791 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -380,8 +380,7 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
- static void mei_hbm_cl_flow_control_res(struct mei_device *dev,
- 		struct hbm_flow_control *flow_control)
- {
--	struct mei_cl *cl = NULL;
--	struct mei_cl *next = NULL;
-+	struct mei_cl *cl;
- 
- 	if (!flow_control->host_addr) {
- 		/* single receive buffer */
-@@ -390,7 +389,7 @@ static void mei_hbm_cl_flow_control_res(struct mei_device *dev,
- 	}
- 
- 	/* normal connection */
--	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
-+	list_for_each_entry(cl, &dev->file_list, link) {
- 		if (mei_hbm_cl_addr_equal(cl, flow_control)) {
- 			cl->mei_flow_ctrl_creds++;
- 			dev_dbg(&dev->pdev->dev, "flow ctrl msg for host %d ME %d.\n",
-@@ -557,10 +556,10 @@ static void mei_hbm_cl_connect_res(struct mei_device *dev,
- static int mei_hbm_fw_disconnect_req(struct mei_device *dev,
- 		struct hbm_client_connect_request *disconnect_req)
- {
--	struct mei_cl *cl, *next;
-+	struct mei_cl *cl;
- 	struct mei_cl_cb *cb;
- 
--	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
-+	list_for_each_entry(cl, &dev->file_list, link) {
- 		if (mei_hbm_cl_addr_equal(cl, disconnect_req)) {
- 			dev_dbg(&dev->pdev->dev, "disconnect request host client %d ME client %d.\n",
- 					disconnect_req->host_addr,
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 5df04fc..31cb345 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -556,8 +556,7 @@ EXPORT_SYMBOL_GPL(mei_irq_write_handler);
- void mei_timer(struct work_struct *work)
- {
- 	unsigned long timeout;
--	struct mei_cl *cl_pos = NULL;
--	struct mei_cl *cl_next = NULL;
-+	struct mei_cl *cl;
- 	struct mei_cl_cb  *cb_pos = NULL;
- 	struct mei_cl_cb  *cb_next = NULL;
- 
-@@ -585,9 +584,9 @@ void mei_timer(struct work_struct *work)
- 		goto out;
- 
- 	/*** connect/disconnect timeouts ***/
--	list_for_each_entry_safe(cl_pos, cl_next, &dev->file_list, link) {
--		if (cl_pos->timer_count) {
--			if (--cl_pos->timer_count == 0) {
-+	list_for_each_entry(cl, &dev->file_list, link) {
-+		if (cl->timer_count) {
-+			if (--cl->timer_count == 0) {
- 				dev_err(&dev->pdev->dev, "timer: connect/disconnect timeout.\n");
- 				mei_reset(dev);
- 				goto out;
-@@ -637,10 +636,10 @@ void mei_timer(struct work_struct *work)
- 			list_for_each_entry_safe(cb_pos, cb_next,
- 				&dev->amthif_rd_complete_list.list, list) {
- 
--				cl_pos = cb_pos->file_object->private_data;
-+				cl = cb_pos->file_object->private_data;
- 
- 				/* Finding the AMTHI entry. */
--				if (cl_pos == &dev->iamthif_cl)
-+				if (cl == &dev->iamthif_cl)
- 					list_del(&cb_pos->list);
- 			}
- 			mei_io_cb_free(dev->iamthif_current_cb);
+I'll queue a followup patch on top of this that completely removes 
+uhid_hid_get_raw(), as it's unused now.
+
 -- 
-1.8.5.3
-
+Jiri Kosina
+SUSE Labs
