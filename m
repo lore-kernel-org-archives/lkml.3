@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaBQGCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 01:02:46 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:53804 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaBQGCo (ORCPT
+	id S1752484AbaBQGC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 01:02:59 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:58757 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129AbaBQGC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 01:02:44 -0500
+	Mon, 17 Feb 2014 01:02:56 -0500
 MIME-Version: 1.0
-In-Reply-To: <5301A4DC.4020208@yahoo.com.au>
-References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
-	<5301A4DC.4020208@yahoo.com.au>
-Date: Mon, 17 Feb 2014 11:32:43 +0530
-Message-ID: <CAJe_ZhfjaiVxC_AX48KMdMA6XQqLcAJMd2A1GyLDP8e=ihZrVg@mail.gmail.com>
-Subject: Re: [PATCHv3] Generic Mailbox API
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Craig McGeachie <slapdau@yahoo.com.au>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Anna, Suman" <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
-	<omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+In-Reply-To: <52FE7AFD.2040203@wwwdotorg.org>
+References: <cover.1392273722.git.viresh.kumar@linaro.org>
+	<52FE71BD.3020103@wwwdotorg.org>
+	<52FE7AFD.2040203@wwwdotorg.org>
+Date: Mon, 17 Feb 2014 11:32:55 +0530
+Message-ID: <CAKohpo=JVUPV81hFmwpuweWrfoEGZ0S_pkb9Fd+-SCXy+O+QCQ@mail.gmail.com>
+Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
+        jinchoi@broadcom.com, Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 February 2014 11:27, Craig McGeachie <slapdau@yahoo.com.au> wrote:
-> On 16/02/14 07:22, Jassi Brar wrote:
->>
->> Hello,
->>
->>    Here is what the generic mailbox api looks like after modifications
->> to make it work with 5 different platforms.
->>   Major feedback from Suman Anna(TI), LeyFoon Tan(Intel),
->> Craig McGeachie(Broadcom) and Loic Pallardy(ST).
->>
->> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
->>
->
-> Important point of clarification.  I don't work for Broadcom.  I have no
-> current or past affiliation with Broadcom.  I was fairly certain that I'd
-> given no indication that I did.  I'm just some guy who purchased a single
-> board computer based on one of their products.  I do work for an IT company,
-> but that isn't relevant to what I do after hours on my own time.
->
-I saw the Broadcom driver being worked upon by you and assumed you
-either work for or on contract with Broadcom. It doesn't matter much
-anyways by virtue of the beauty of open-source :)
- So you still have a say on the mailbox code.
+On 15 February 2014 01:52, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> BTW, I also happened to test these on a Tegra114 system, on which there
+> is no cpufreq driver, and this series (applied on top of commit
+> 9398a10cd964 Merge tag 'regulator-v3.14-rc2') causes the following
+> during suspend:
 
-Thanks
-Jassi
+Ahh, that's a obvious bug. Following would fix it, thanks:
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index c13c100..2dfbb7e 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1617,6 +1617,9 @@ void cpufreq_suspend(void)
+ {
+        struct cpufreq_policy *policy;
+
++       if (!cpufreq_driver)
++               return;
++
+        if (!has_target())
+                return;
+
+@@ -1645,6 +1648,9 @@ void cpufreq_resume(void)
+ {
+        struct cpufreq_policy *policy;
+
++       if (!cpufreq_driver)
++               return;
++
+        if (!has_target())
+                return;
