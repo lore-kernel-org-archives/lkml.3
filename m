@@ -1,54 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaBQP0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 10:26:51 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:47833 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537AbaBQP0t (ORCPT
+	id S1753913AbaBQP2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 10:28:04 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:54978 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688AbaBQP2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 10:26:49 -0500
-Message-ID: <1392650807.24974.12.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
- corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
- VMFS creation takes 15 minutes vs 26 seconds]
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Linux Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 17 Feb 2014 07:26:47 -0800
-In-Reply-To: <20140217140821.GD6211@glanzmann.de>
-References: <20140206153640.GB4103@glanzmann.de>
-	 <1391727771.14985.41.camel@haakon3.risingtidesystems.com>
-	 <20140207051500.GB10916@glanzmann.de> <20140207075536.GB17815@glanzmann.de>
-	 <1391801597.1155.28.camel@haakon3.risingtidesystems.com>
-	 <20140207205142.GA8609@glanzmann.de> <20140208093808.GD16336@glanzmann.de>
-	 <1391865273.10160.76.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208133744.GA20512@glanzmann.de>
-	 <1391868564.10160.91.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140217140821.GD6211@glanzmann.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 17 Feb 2014 10:28:01 -0500
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: nicolas.ferre@atmel.com, mturquette@linaro.org
+Cc: b.brezillon@overkiz.com, jason@lakedaemon.net,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: [PATCH v2] clk: at91: optimization of the set_rate callback
+Date: Mon, 17 Feb 2014 16:24:51 +0100
+Message-Id: <1392650691-20215-1-git-send-email-jjhiblot@traphandler.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <52F1FC52.1040205@overkiz.com>
+References: <52F1FC52.1040205@overkiz.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-17 at 15:08 +0100, Thomas Glanzmann wrote:
-> Hello Eric,
-> may submit your latest patch for upstream? Or do you plan on doing that
-> yourself?
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+---
 
-Unfortunately you did not had good results with the MSG_MORE applied to
-the page fragments.
+Hi,
+this fixes the commit's log as indicated by Boris.
+cheers,
+Jean-jacques
 
-I think I'll submit the part only dealing with the metadata.
+ drivers/clk/at91/clk-programmable.c | 38 ++++++++-----------------------------
+ 1 file changed, 8 insertions(+), 30 deletions(-)
 
-Then later we might take care of the page themselves.
-
+diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
+index 7bcc725..62e2509 100644
+--- a/drivers/clk/at91/clk-programmable.c
++++ b/drivers/clk/at91/clk-programmable.c
+@@ -139,43 +139,21 @@ static int clk_programmable_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	struct clk_programmable *prog = to_clk_programmable(hw);
+ 	struct at91_pmc *pmc = prog->pmc;
+ 	const struct clk_programmable_layout *layout = prog->layout;
+-	unsigned long best_rate = parent_rate;
+-	unsigned long best_diff;
+-	unsigned long new_diff;
+-	unsigned long cur_rate;
++	unsigned long div = parent_rate / rate;
+ 	int shift = 0;
+ 	u32 tmp = pmc_read(pmc, AT91_PMC_PCKR(prog->id)) &
+ 		  ~(PROG_PRES_MASK << layout->pres_shift);
+ 
+-	if (rate > parent_rate)
+-		return parent_rate;
+-	else
+-		best_diff = parent_rate - rate;
++	if (!div)
++		return -EINVAL;
+ 
+-	if (!best_diff) {
+-		pmc_write(pmc, AT91_PMC_PCKR(prog->id), tmp | shift);
+-		return 0;
+-	}
+-
+-	for (shift = 1; shift < PROG_PRES_MASK; shift++) {
+-		cur_rate = parent_rate >> shift;
+-
+-		if (cur_rate > rate)
+-			new_diff = cur_rate - rate;
+-		else
+-			new_diff = rate - cur_rate;
+-
+-		if (!new_diff)
+-			break;
++	shift = fls(div) - 1;
+ 
+-		if (new_diff < best_diff) {
+-			best_diff = new_diff;
+-			best_rate = cur_rate;
+-		}
++	if (div != (1<<shift))
++		return -EINVAL;
+ 
+-		if (rate > cur_rate)
+-			break;
+-	}
++	if (shift >= PROG_PRES_MASK)
++		return -EINVAL;
+ 
+ 	pmc_write(pmc, AT91_PMC_PCKR(prog->id),
+ 		  tmp | (shift << layout->pres_shift));
+-- 
+1.8.5.3
 
