@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaBQVHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:07:53 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:43930 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaBQVHv (ORCPT
+	id S1752749AbaBQVIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:08:16 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49880 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015AbaBQVIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:07:51 -0500
+	Mon, 17 Feb 2014 16:08:15 -0500
+Message-ID: <53027A12.9090106@oracle.com>
+Date: Mon, 17 Feb 2014 16:07:30 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140217182312.GV7862@titan.lakedaemon.net>
-References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
-	<201402121251.06280.arnd@arndb.de>
-	<20140217155419.682F7C401D4@trevor.secretlab.ca>
-	<1418981.0py7JxXCp8@wuerfel>
-	<20140217182312.GV7862@titan.lakedaemon.net>
-Date: Mon, 17 Feb 2014 22:07:50 +0100
-X-Google-Sender-Auth: M13dnXBfjJGmWNw1fP0pbkHU7TA
-Message-ID: <CAMuHMdW7S=o4oHVsNtYo0i_giB5cgWhygo-GgSaA1Kur6m3vng@mail.gmail.com>
-Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+To: Michael wang <wangyun@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: fair: NULL ptr deref in check_preempt_wakeup
+References: <52FFF7F8.2070801@oracle.com> <5301C41D.5000009@linux.vnet.ibm.com>
+In-Reply-To: <5301C41D.5000009@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 7:23 PM, Jason Cooper <jason@lakedaemon.net> wrote:
->> Could we use a faster hash function that scans the entire device tree and
->> then just feed the output of that into add_device_randomness? We probably
->> can't expect that there is a lot of entropy in the DT blob, so the
->> result wouldn't be all that different in terms of quality of the random
->> seed.
+On 02/17/2014 03:11 AM, Michael wang wrote:
+> Hi, Sasha
 >
-> I think it would be easier to identify the few attributes that differ
-> from board to board (mac address, serial number, etc), and differ from
-> boot to boot (random-seed, timestamp) and just extract and feed those
-> in.
+> On 02/16/2014 07:27 AM, Sasha Levin wrote:
+>> Hi folks,
+>>
+>> While fuzzing with trinity inside a KVM tools guest running latest -next
+>> kernel, I've
+>> stumbled on the following:
+>
+> I've reproduced the same issue with tip/master, and below patch fixed the
+> problem on my box along with some rcu stall info disappeared, would you
+> like to have a try?
+>
+> BTW, I reproduced it by steps:
+> 1. change current to RT
+> 2. move to a different depth cpu-cgroup
+> 3. change it back to FAIR
+>
+> Seems like it was caused by that RT has no task_move_group() implemented
+> which could maintain depth, and that lead to a wrong depth after switched
+> back to FAIR...
 
-Isn't identifying those (mostly) a manual process?
-Calculating a fast hash is fully automatic.
+I *think* it works. There seems to be another sched issue that causes lockups,
+so I can't say for certain that this one doesn't occur anymore.
 
-Gr{oetje,eeting}s,
+I'm still working on collecting data for the other issue, I'll mail about it soon.
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thanks,
+Sasha
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
