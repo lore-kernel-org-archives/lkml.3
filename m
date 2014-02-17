@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956AbaBQOqa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 09:46:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43524 "EHLO
+	id S1753267AbaBQOug (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 09:50:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43617 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537AbaBQOq2 (ORCPT
+	with ESMTP id S1750830AbaBQOue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 09:46:28 -0500
-Date: Mon, 17 Feb 2014 15:46:17 +0100
+	Mon, 17 Feb 2014 09:50:34 -0500
+Date: Mon, 17 Feb 2014 15:50:27 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v1 07/11] x86: perf: intel_pt: Intel PT PMU driver
-Message-ID: <20140217144617.GT27965@twins.programming.kicks-ass.net>
-References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1391683834-29868-8-git-send-email-alexander.shishkin@linux.intel.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
+        juri.lelli@gmail.com
+Subject: Re: [PATCH] sched/deadline: Test for CPU's presence explicitly
+Message-ID: <20140217145027.GU27965@twins.programming.kicks-ass.net>
+References: <1392646353-1874-1-git-send-email-boris.ostrovsky@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391683834-29868-8-git-send-email-alexander.shishkin@linux.intel.com>
+In-Reply-To: <1392646353-1874-1-git-send-email-boris.ostrovsky@oracle.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 12:50:30PM +0200, Alexander Shishkin wrote:
-> Add support for Intel Processor Trace (PT) to kernel's perf/itrace events.
-> PT is an extension of Intel Architecture that collects information about
-> software execuction such as control flow, execution modes and timings and
-> formats it into highly compressed binary packets. Even being compressed,
-> these packets are generated at hundreds of megabytes per second per core,
-> which makes it impractical to decode them on the fly in the kernel. Thus,
-> buffers containing this binary stream are zero-copy mapped to the debug
-> tools in userspace for subsequent decoding and analysis.
+On Mon, Feb 17, 2014 at 09:12:33AM -0500, Boris Ostrovsky wrote:
+> A hot-removed CPU may have ID that is numerically larger than the number of
+> existing CPUs in the system (e.g. we can unplug CPU 4 from a system that
+> has CPUs 0, 1 and 4).
 > 
-> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-> ---
->  arch/x86/include/uapi/asm/msr-index.h     |  18 +
->  arch/x86/kernel/cpu/Makefile              |   1 +
->  arch/x86/kernel/cpu/intel_pt.h            | 127 ++++
->  arch/x86/kernel/cpu/perf_event.c          |   4 +
->  arch/x86/kernel/cpu/perf_event_intel.c    |  10 +
->  arch/x86/kernel/cpu/perf_event_intel_pt.c | 991 ++++++++++++++++++++++++++++++
->  6 files changed, 1151 insertions(+)
->  create mode 100644 arch/x86/kernel/cpu/intel_pt.h
->  create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
+> Thus the WARN_ONs should check whether the CPU in question is currently
+> present, not whether its ID value is less than num_present_cpus().
+> 
+> Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-Andi said that when itrace is enabled the LBR is wrecked; this patch
-seems to fail to deal with that.
+Thanks!, please also always CC the author of the code in question.
+
+> ---
+>  kernel/sched/cpudeadline.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
+> index 045fc74..5b8838b 100644
+> --- a/kernel/sched/cpudeadline.c
+> +++ b/kernel/sched/cpudeadline.c
+> @@ -70,7 +70,7 @@ static void cpudl_heapify(struct cpudl *cp, int idx)
+>  
+>  static void cpudl_change_key(struct cpudl *cp, int idx, u64 new_dl)
+>  {
+> -	WARN_ON(idx > num_present_cpus() || idx == IDX_INVALID);
+> +	WARN_ON(!cpu_present(idx) || idx == IDX_INVALID);
+>  
+>  	if (dl_time_before(new_dl, cp->elements[idx].dl)) {
+>  		cp->elements[idx].dl = new_dl;
+> @@ -117,7 +117,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+>  	}
+>  
+>  out:
+> -	WARN_ON(best_cpu > num_present_cpus() && best_cpu != -1);
+> +	WARN_ON(!cpu_present(best_cpu) && best_cpu != -1);
+>  
+>  	return best_cpu;
+>  }
+> @@ -137,7 +137,7 @@ void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid)
+>  	int old_idx, new_cpu;
+>  	unsigned long flags;
+>  
+> -	WARN_ON(cpu > num_present_cpus());
+> +	WARN_ON(!cpu_present(cpu));
+>  
+>  	raw_spin_lock_irqsave(&cp->lock, flags);
+>  	old_idx = cp->cpu_to_idx[cpu];
+> -- 
+> 1.8.1.4
+> 
