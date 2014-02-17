@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196AbaBQW5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:57:25 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:54479 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445AbaBQW5Y (ORCPT
+	id S1753652AbaBQW5b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:57:31 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:2540
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751445AbaBQW51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:57:24 -0500
+	Mon, 17 Feb 2014 17:57:27 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zzbb2dI98dI9371Ie0eah1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh1155h)
+X-WSS-ID: 0N15W4T-07-6DY-02
+X-M-MSG: 
+Message-ID: <53028EE8.20106@amd.com>
+Date: Mon, 17 Feb 2014 16:36:24 -0600
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140214074305.GF5160@quack.suse.cz>
-References: <52F88C16.70204@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
-	<52F8C556.6090006@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
-	<52FC6F2A.30905@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
-	<52FC98A6.1000701@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
-	<20140214001438.GB1651@linux.vnet.ibm.com>
-	<CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
-	<20140214074305.GF5160@quack.suse.cz>
-Date: Mon, 17 Feb 2014 14:57:23 -0800
-X-Google-Sender-Auth: MvKY-qQIFJJHsnDHuUkV2xvRYU8
-Message-ID: <CA+55aFxeCM_GTzVBQMbk0eKY7+eeA1ngF6RFZ0O=PbuNs_FMxg@mail.gmail.com>
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@alien8.de>
+CC: <dougthompson@xmission.com>, <linux-edac@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] EDAC, MCE, AMD: Fix code to prevent NULL dereference
+References: <1392659391-2411-1-git-send-email-Aravind.Gopalakrishnan@amd.com> <20140217182729.GE4559@pd.tnic> <5302625C.4050700@amd.com> <20140217194153.GG4559@pd.tnic>
+In-Reply-To: <20140217194153.GG4559@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 11:43 PM, Jan Kara <jack@suse.cz> wrote:
->
->   max_sane_readahead() is also used for limiting amount of readahead for
-> [fm]advice(2) WILLNEED and that is used e.g. by a dynamic linker to preload
-> shared libraries into memory. So I'm convinced this usecase *will* notice
-> the change - effectively we limit preloading of shared libraries to the
-> first 512KB in the file but libraries get accessed in a rather random manner.
->
-> Maybe limits for WILLNEED and for standard readahead should be different.
-> It makes sence to me and people seem to keep forgetting that
-> max_sane_readahead() limits also WILLNEED preloading.
+On 2/17/2014 1:41 PM, Borislav Petkov wrote:
+> On Mon, Feb 17, 2014 at 01:26:20PM -0600, Aravind Gopalakrishnan wrote:
+>>>   	if (c->x86_vendor != X86_VENDOR_AMD)
+>>> -		return 0;
+>>> +		return -ENODEV;
+>>>   	if (c->x86 < 0xf || c->x86 > 0x16)
+>>> -		return 0;
+>>> +		return -ENODEV;
+>>
+> But we still need a fix, I guess the one I sent you does the job, yes,
+> no?
 
-Good point. But it's probably overly complex to have two different
-limits. The "512kB" thing was entirely random - the only real issue is
-that it should be small enough that it won't be a problem on any
-reasonable current machines, and big enough to get perfectly fine IO
-patterns unless your IO subsystem sucks so bad that it's not even
-worth worrying about.
+Actually, the changes you sent above does the job only if 'edac-mce-amd' 
+is configured as module.
+If it is built-in (and looks like this is what Kconfig recommends as 
+well..), then -
+   * We can still modprobe mce_amd_inj
+   * inject error
+   * mce_amd_inj calls into amd_decode_mce and
+   * this for mc0, mc1 and mc2 will lead to NULL dereference if family 
+is unsupported.
 
-If we just add a third requirement that it be "big enough that
-reasonable uses of [fm]advice() will work well enough", then your
-shared library example might well be grounds for saying "let's just do
-2MB instead". That's still small enough that it won't really hurt any
-modern machines.
+So we'd still need the patch I sent earlier.
+I guess what we really need is a mash-up of both changes..
 
-And if it means that WILLNEED won't necessarily always read the whole
-file for big files - well, we never guaranteed that to begin with.
+> If not, I'd need more background info though - you're loading this on an
+> unsupported family, right?
+Yes. (more or less :) )
+(background info to make things clear-)
+someone did try this on unsupported HW and got kernel oops.
+But since I can't get my hands on one,  I am simulating it by using a 
+fam15, M30h box and setting the init condition as
+      if (c->x86 < 0xf || c->x86 > 0x14)
 
-                                Linus
+snapshot of the oops from simulating on my system:
+[   28.846200] [Hardware Error]: MC0 Error:
+[   28.846218] BUG: unable to handle kernel NULL pointer dereference 
+at           (null)
+[   28.846232] IP: [<ffffffff81608526>] amd_decode_mce+0x526/0x900
+[   28.846247] PGD 40bc9e067 PUD 40c677067 PMD 0
+[   28.846257] Oops: 0000 [#1] SMP
+[   28.846264] Modules linked in: mce_amd_inj amd64_edac_mod r8169
+
+
+here's a sample mc0 error injected after applying both sets of changes 
+to the code:
+[   94.109090] [Hardware Error]: MC0 Error:
+[   94.109103] fam_ops structure not alloc-ed. Cannot provide detailed 
+family/model specific error decoding.
+[   94.109119] [Hardware Error]: Error Status: Uncorrected, software 
+containable error.
+[   94.109132] [Hardware Error]: CPU:0 (15:30:0) 
+MC0_STATUS[-|UE|-|-|-|-|-]: 0xa000000000010f0f
+[   94.109146] [Hardware Error]: cache level: L3/GEN, mem/io: GEN, 
+mem-tx: GEN, part-proc: GEN (timed out)
+
+
+Shall I work up the patch with both sets of changes and resend?
+
+Thanks,
+-Aravind.
+
