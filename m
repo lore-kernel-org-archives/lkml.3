@@ -1,136 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709AbaBQNPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:15:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39808 "EHLO mx2.suse.de"
+	id S1753594AbaBQNPN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 08:15:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:45352 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744AbaBQNPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 08:15:25 -0500
-Date: Mon, 17 Feb 2014 14:15:20 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 7/9] HID: remove hid_get_raw_report in struct
- hid_device
-In-Reply-To: <1391636004-29354-8-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1402171414490.1192@pobox.suse.cz>
-References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com> <1391636004-29354-8-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753418AbaBQNPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 08:15:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,860,1384329600"; 
+   d="scan'208";a="456852953"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 11/11] mei: wd: fix stop completion failure
+Date: Mon, 17 Feb 2014 15:13:27 +0200
+Message-Id: <1392642807-8878-12-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
+References: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014, Benjamin Tissoires wrote:
+While running Documentation/watchdog/src/watchdog-simple.c
+and quiting by Ctrl-C, fallowing error is displayed:
+mei_me 0000:00:16.0: wd: stop failed to complete ret=-512.
 
-> dev->hid_get_raw_report(X) and hid_hw_raw_request(X, HID_REQ_GET_REPORT)
-> are strictly equivalent. Switch the hid subsystem to the hid_hw notation
-> and remove the field .hid_get_raw_report in struct hid_device.
-> 
-> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/hid-input.c       | 6 +++---
->  drivers/hid/hid-sony.c        | 3 ++-
->  drivers/hid/hidraw.c          | 7 ++++---
->  drivers/hid/i2c-hid/i2c-hid.c | 1 -
->  drivers/hid/uhid.c            | 1 -
->  drivers/hid/usbhid/hid-core.c | 1 -
->  include/linux/hid.h           | 3 ---
->  net/bluetooth/hidp/core.c     | 1 -
->  8 files changed, 9 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 68db2db..6253e95 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -350,9 +350,9 @@ static int hidinput_get_battery_property(struct power_supply *psy,
->  			ret = -ENOMEM;
->  			break;
->  		}
-> -		ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
-> -					      buf, 2,
-> -					      dev->battery_report_type);
-> +		ret = hid_hw_raw_request(dev, dev->battery_report_id, buf, 2,
-> +					 dev->battery_report_type,
-> +					 HID_REQ_GET_REPORT);
->  
->  		if (ret != 2) {
->  			ret = -ENODATA;
-> diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-> index 2bd3f13..b51db79 100644
-> --- a/drivers/hid/hid-sony.c
-> +++ b/drivers/hid/hid-sony.c
-> @@ -810,7 +810,8 @@ static int sixaxis_set_operational_usb(struct hid_device *hdev)
->  	if (!buf)
->  		return -ENOMEM;
->  
-> -	ret = hdev->hid_get_raw_report(hdev, 0xf2, buf, 17, HID_FEATURE_REPORT);
-> +	ret = hid_hw_raw_request(hdev, 0xf2, buf, 17, HID_FEATURE_REPORT,
-> +				 HID_REQ_GET_REPORT);
->  
->  	if (ret < 0)
->  		hid_err(hdev, "can't set operational mode\n");
-> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-> index cb0137b..4b2dc95 100644
-> --- a/drivers/hid/hidraw.c
-> +++ b/drivers/hid/hidraw.c
-> @@ -189,7 +189,7 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t
->  
->  	dev = hidraw_table[minor]->hid;
->  
-> -	if (!dev->hid_get_raw_report) {
-> +	if (!dev->ll_driver->raw_request) {
->  		ret = -ENODEV;
->  		goto out;
->  	}
-> @@ -216,14 +216,15 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t
->  
->  	/*
->  	 * Read the first byte from the user. This is the report number,
-> -	 * which is passed to dev->hid_get_raw_report().
-> +	 * which is passed to hid_hw_raw_request().
->  	 */
->  	if (copy_from_user(&report_number, buffer, 1)) {
->  		ret = -EFAULT;
->  		goto out_free;
->  	}
->  
-> -	ret = dev->hid_get_raw_report(dev, report_number, buf, count, report_type);
-> +	ret = hid_hw_raw_request(dev, report_number, buf, count, report_type,
-> +				 HID_REQ_GET_REPORT);
->  
->  	if (ret < 0)
->  		goto out_free;
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 923ff81..f57de7f 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -1003,7 +1003,6 @@ static int i2c_hid_probe(struct i2c_client *client,
->  
->  	hid->driver_data = client;
->  	hid->ll_driver = &i2c_hid_ll_driver;
-> -	hid->hid_get_raw_report = i2c_hid_get_raw_report;
->  	hid->hid_output_raw_report = i2c_hid_output_raw_report;
->  	hid->dev.parent = &client->dev;
->  	ACPI_COMPANION_SET(&hid->dev, ACPI_COMPANION(&client->dev));
-> diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
-> index f5a2b19..12439e1 100644
-> --- a/drivers/hid/uhid.c
-> +++ b/drivers/hid/uhid.c
-> @@ -404,7 +404,6 @@ static int uhid_dev_create(struct uhid_device *uhid,
->  	hid->uniq[63] = 0;
->  
->  	hid->ll_driver = &uhid_hid_driver;
-> -	hid->hid_get_raw_report = uhid_hid_get_raw;
+The whatchdog core framework is not able to propagate
+-ESYSRESTART or -EINTR. Also There is no much sense in
+restarting the close system call so instead of using
+wait_event_interruptible_timeout we can use wait_event_timeout
+with reasonable 10 msecs timeout.
 
-I'll queue a followup patch on top of this that completely removes 
-uhid_hid_get_raw(), as it's unused now.
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/interrupt.c |  2 +-
+ drivers/misc/mei/wd.c        | 32 +++++++++++++++++---------------
+ 2 files changed, 18 insertions(+), 16 deletions(-)
 
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 834220a..5aab335 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -474,7 +474,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 
+ 	if (dev->wd_state == MEI_WD_STOPPING) {
+ 		dev->wd_state = MEI_WD_IDLE;
+-		wake_up_interruptible(&dev->wait_stop_wd);
++		wake_up(&dev->wait_stop_wd);
+ 	}
+ 
+ 	if (mei_cl_is_connected(&dev->wd_cl)) {
+diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
+index 13bb7a9..e084adf 100644
+--- a/drivers/misc/mei/wd.c
++++ b/drivers/misc/mei/wd.c
+@@ -155,9 +155,11 @@ int mei_wd_send(struct mei_device *dev)
+  * @dev: the device structure
+  * @preserve: indicate if to keep the timeout value
+  *
+- * returns 0 if success,
+- *	-EIO when message send fails
++ * returns 0 if success
++ * on error:
++ *	-EIO    when message send fails
+  *	-EINVAL when invalid message is to be sent
++ *	-ETIME  on message timeout
+  */
+ int mei_wd_stop(struct mei_device *dev)
+ {
+@@ -173,12 +175,12 @@ int mei_wd_stop(struct mei_device *dev)
+ 
+ 	ret = mei_cl_flow_ctrl_creds(&dev->wd_cl);
+ 	if (ret < 0)
+-		goto out;
++		goto err;
+ 
+ 	if (ret && mei_hbuf_acquire(dev)) {
+ 		ret = mei_wd_send(dev);
+ 		if (ret)
+-			goto out;
++			goto err;
+ 		dev->wd_pending = false;
+ 	} else {
+ 		dev->wd_pending = true;
+@@ -186,21 +188,21 @@ int mei_wd_stop(struct mei_device *dev)
+ 
+ 	mutex_unlock(&dev->device_lock);
+ 
+-	ret = wait_event_interruptible_timeout(dev->wait_stop_wd,
+-					dev->wd_state == MEI_WD_IDLE,
+-					msecs_to_jiffies(MEI_WD_STOP_TIMEOUT));
++	ret = wait_event_timeout(dev->wait_stop_wd,
++				dev->wd_state == MEI_WD_IDLE,
++				msecs_to_jiffies(MEI_WD_STOP_TIMEOUT));
+ 	mutex_lock(&dev->device_lock);
+-	if (dev->wd_state == MEI_WD_IDLE) {
+-		dev_dbg(&dev->pdev->dev, "wd: stop completed ret=%d.\n", ret);
+-		ret = 0;
+-	} else {
+-		if (!ret)
+-			ret = -ETIME;
++	if (dev->wd_state != MEI_WD_IDLE) {
++		/* timeout */
++		ret = -ETIME;
+ 		dev_warn(&dev->pdev->dev,
+ 			"wd: stop failed to complete ret=%d.\n", ret);
++		goto err;
+ 	}
+-
+-out:
++	dev_dbg(&dev->pdev->dev, "wd: stop completed after %u msec\n",
++			MEI_WD_STOP_TIMEOUT - jiffies_to_msecs(ret));
++	return 0;
++err:
+ 	return ret;
+ }
+ 
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.5.3
+
