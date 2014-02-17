@@ -1,110 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbaBQW0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:26:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752819AbaBQW0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:26:17 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <CA+55aFyay_ck4eb6HEWvD4bTS=3OYY7wX1MVNKAcpUYN0ssWhA@mail.gmail.com>
-References: <20140207180216.GP4250@linux.vnet.ibm.com>
-	 <1391992071.18779.99.camel@triegel.csb>
-	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	 <1392183564.18779.2187.camel@triegel.csb>
-	 <20140212180739.GB4250@linux.vnet.ibm.com>
-	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	 <20140213002355.GI4250@linux.vnet.ibm.com>
-	 <1392321837.18779.3249.camel@triegel.csb>
-	 <20140214020144.GO4250@linux.vnet.ibm.com>
-	 <1392352981.18779.3800.camel@triegel.csb>
-	 <20140214172920.GQ4250@linux.vnet.ibm.com>
-	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	 <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	 <1392486310.18779.6447.camel@triegel.csb>
-	 <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	 <1392666947.18779.6838.camel@triegel.csb>
-	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	 <1392672063.18779.6940.camel@triegel.csb>
-	 <CA+55aFyay_ck4eb6HEWvD4bTS=3OYY7wX1MVNKAcpUYN0ssWhA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Feb 2014 23:25:39 +0100
-Message-ID: <1392675939.18779.7063.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753810AbaBQWNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:13:18 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54838 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185AbaBQWNM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 17:13:12 -0500
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 05/55] rcutorture: Move common qemu flags to kvm-test-1.sh
+Date: Mon, 17 Feb 2014 14:12:09 -0800
+Message-Id: <1392675179-11560-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140217221231.GA8419@linux.vnet.ibm.com>
+ <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021722-3532-0000-0000-000005BEDC53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-17 at 14:02 -0800, Linus Torvalds wrote:
-> On Mon, Feb 17, 2014 at 1:21 PM, Torvald Riegel <triegel@redhat.com> wrote:
-> > On Mon, 2014-02-17 at 12:18 -0800, Linus Torvalds wrote:
-> >> and then it is read by people (compiler writers) that intentionally
-> >> try to mis-use the words and do language-lawyering ("that depends on
-> >> what the meaning of 'is' is").
-> >
-> > That assumption about people working on compilers is a little too broad,
-> > don't you think?
-> 
-> Let's just say that *some* are that way, and those are the ones that I
-> end up butting heads with.
-> 
-> The sane ones I never have to argue with - point them at a bug, and
-> they just say "yup, bug". The insane ones say "we don't need to fix
-> that, because if you read this copy of the standards that have been
-> translated to chinese and back, it clearly says that this is
-> acceptable".
-> 
-> >> The whole "lvalue vs rvalue expression
-> >> vs 'what is a volatile access'" thing for C++ was/is a great example
-> >> of that.
-> >
-> > I'm not aware of the details of this.
-> 
-> The argument was that an lvalue doesn't actually "access" the memory
-> (an rvalue does), so this:
-> 
->    volatile int *p = ...;
-> 
->    *p;
-> 
-> doesn't need to generate a load from memory, because "*p" is still an
-> lvalue (since you could assign things to it).
-> 
-> This isn't an issue in C, because in C, expression statements are
-> always rvalues, but C++ changed that.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Huhh.  I can see the problems that this creates in terms of C/C++
-compatibility.
+Currently, most qemu flags are calculated in kvm-test-1-rcu.sh,
+except that -nographics is set up by kvm.sh.  This commit promotes
+one-stop shopping by consolidating the determination of qemu flags into
+kvm-test-1-rcu.sh.
 
-> The people involved with the C++
-> standards have generally been totally clueless about their subtle
-> changes.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh | 1 +
+ tools/testing/selftests/rcutorture/bin/kvm.sh            | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-This isn't a fair characterization.  There are many people that do care,
-and certainly not all are clueless.  But it's a limited set of people,
-bugs happen, and not all of them will have the same goals.
-
-I think one way to prevent such problems in the future could be to have
-someone in the kernel community volunteer to look through standard
-revisions before they are published.  The standard needs to be fixed,
-because compilers need to conform to the standard (e.g., a compiler's
-extension "fixing" the above wouldn't be conforming anymore because it
-emits more volatile reads than specified).
-
-Or maybe those of us working on the standard need to flag potential
-changes of interest to the kernel folks.  But that may be less reliable
-than someone from the kernel side looking at them; I don't know.
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
+index c3a396518113..a06a0a6ce5ac 100755
+--- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
+@@ -126,6 +126,7 @@ echo ' ---' `date`: Starting kernel
+ QEMU="`identify_qemu $builddir/vmlinux.o`"
+ 
+ # Generate -smp qemu argument.
++qemu_args="-nographic $qemu_args"
+ cpu_count=`configNR_CPUS.sh $config_template`
+ vcpus=`identify_qemu_vcpus`
+ if test $cpu_count -gt $vcpus
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+index 979881baa80f..f2113493bbfc 100644
+--- a/tools/testing/selftests/rcutorture/bin/kvm.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+@@ -203,7 +203,7 @@ do
+ 	fi
+ 	mkdir "${rd}"
+ 	echo Results directory: $rd
+-	kvm-test-1-rcu.sh $CONFIGFRAG/$kversion/$CF $builddir $rd $dur "-nographic $RCU_QEMU_ARG" "$RCU_BOOTARGS"
++	kvm-test-1-rcu.sh $CONFIGFRAG/$kversion/$CF $builddir $rd $dur "$RCU_QEMU_ARG" "$RCU_BOOTARGS"
+ done
+ # Tracing: trace_event=rcu:rcu_grace_period,rcu:rcu_future_grace_period,rcu:rcu_grace_period_init,rcu:rcu_nocb_wake,rcu:rcu_preempt_task,rcu:rcu_unlock_preempted_task,rcu:rcu_quiescent_state_report,rcu:rcu_fqs,rcu:rcu_callback,rcu:rcu_kfree_callback,rcu:rcu_batch_start,rcu:rcu_invoke_callback,rcu:rcu_invoke_kfree_callback,rcu:rcu_batch_end,rcu:rcu_torture_read,rcu:rcu_barrier
+ 
+-- 
+1.8.1.5
 
