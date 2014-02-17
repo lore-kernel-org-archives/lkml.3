@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaBQOcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 09:32:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46367 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838AbaBQOcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 09:32:42 -0500
-Date: Mon, 17 Feb 2014 09:32:36 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sb_edac: degrade log level for "EDAC sbridge: Seeking
- for: dev 1d.3 PCI ID xxxx"
-Message-ID: <20140217143236.GS15457@redhat.com>
-References: <1392613824-11230-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1753337AbaBQOda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 09:33:30 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39430 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750838AbaBQOd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 09:33:28 -0500
+Message-ID: <53021D4A.6080901@free-electrons.com>
+Date: Mon, 17 Feb 2014 15:31:38 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392613824-11230-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@linaro.org>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] clk: respect the clock dependencies in of_clk_init
+References: <1392054179-28830-1-git-send-email-gregory.clement@free-electrons.com> <20140211173203.4e6c7b22@skate>
+In-Reply-To: <20140211173203.4e6c7b22@skate>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 01:10:23PM +0800, Jiang Liu wrote:
-> On a system with four Intel processor, it generates too many messages
-> "EDAC sbridge: Seeking for: dev 1d.3 PCI ID xxxx". And it doesn't
-> give many useful information for normal users, so change log level
-> from INFO to DEBUG.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  drivers/edac/sb_edac.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-> index 54e2abe..347c7a1 100644
-> --- a/drivers/edac/sb_edac.c
-> +++ b/drivers/edac/sb_edac.c
-> @@ -1263,7 +1263,7 @@ static int sbridge_get_onedevice(struct pci_dev **prev,
->  	struct pci_dev *pdev = NULL;
->  	u8 bus = 0;
->  
-> -	sbridge_printk(KERN_INFO,
-> +	sbridge_printk(KERN_DEBUG,
->  		"Seeking for: dev %02x.%d PCI ID %04x:%04x\n",
->  		dev_descr->dev, dev_descr->func,
->  		PCI_VENDOR_ID_INTEL, dev_descr->dev_id);
+Hi Mike,
 
-ACK
+I would like to know if you consider to take the following patch.
+If you don't then I will have to amend the patch set adding support
+to Armada 375/38x SoC with the same kind of solution that Sebastian
+used for the other mvebu clocks.
+
+Thanks,
+
+Gregory
+
+
+On 11/02/2014 17:32, Thomas Petazzoni wrote:
+> Hello,
+> 
+> On Mon, 10 Feb 2014 18:42:59 +0100, Gregory CLEMENT wrote:
+>> Until now the clock providers were initialized in the order found in
+>> the device tree. This led to have the dependencies between the clocks
+>> not respected: children clocks could be initialized before their
+>> parent clocks.
+>>
+>> Instead of forcing each platform to manage its own initialization order,
+>> this patch adds this work inside the framework itself.
+>>
+>> Using the data of the device tree the of_clk_init function now delayed
+>> the initialization of a clock provider if its parent provider was not
+>> ready yet.
+>>
+>> The strict dependency check (all parents of a given clk must be
+>> initialized) was added by Boris BREZILLON
+>>
+>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>> ---
+>>
+>> Since the v1, I have merged the  strict dependency check from Boris.
+>> And of course tested on my Armada 370 and Armada XP based board
+>>
+>>  drivers/clk/clk.c | 109 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>>  1 file changed, 106 insertions(+), 3 deletions(-)
+> 
+> Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> 
+> On the newly proposed Armada 375 platform.
+> 
+> Thomas
+> 
+
 
 -- 
-Aristeu
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
