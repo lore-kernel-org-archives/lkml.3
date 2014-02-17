@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaBQMDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 07:03:35 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:65301 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838AbaBQMDd (ORCPT
+	id S1752107AbaBQMOz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 07:14:55 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34182 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaBQMOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 07:03:33 -0500
-Date: Mon, 17 Feb 2014 12:03:26 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger <rogerable@realtek.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4 1/3] mfd: Add realtek USB card reader driver
-Message-ID: <20140217120326.GC20218@lee--X1>
-References: <1392199238-14500-1-git-send-email-rogerable@realtek.com>
- <1392199238-14500-2-git-send-email-rogerable@realtek.com>
- <20140214094427.GA7380@lee--X1>
- <5301A786.8040607@realtek.com>
- <20140217082222.GA17875@lee--X1>
- <5301D369.5010100@realtek.com>
- <20140217100211.GE17875@lee--X1>
- <5301E376.8010000@realtek.com>
+	Mon, 17 Feb 2014 07:14:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5301E376.8010000@realtek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140217115540.GA23509@verge.net.au>
+References: <1392586619-27018-1-git-send-email-geert@linux-m68k.org>
+	<20140217115540.GA23509@verge.net.au>
+Date: Mon, 17 Feb 2014 13:14:53 +0100
+X-Google-Sender-Auth: i0OVB_kznXH5-tOUybwHqlmM34g
+Message-ID: <CAMuHMdXG+L1umNA1eBMizJnvw599Z-qbcSpSt8PsNyk1YESBjA@mail.gmail.com>
+Subject: Re: [PATCH v2] MAINTAINERS: Mark SuperH orphan
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Simon Horman <horms@verge.net.au>
+Cc: Paul Mundt <paul.mundt@gmail.com>, Magnus Damm <magnus.damm@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>>>>From: Roger Tseng <rogerable@realtek.com>
-> >>>>>>
-> >>>>>>Realtek USB card reader provides a channel to transfer command or data to flash
-> >>>>>>memory cards. This driver exports host instances for mmc and memstick subsystems
-> >>>>>>and handles basic works.
-> >>>>>>
-> >>>>>>Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> >>>>>>---
-> >>>>>>  drivers/mfd/Kconfig          |  10 +
-> >>>>>>  drivers/mfd/Makefile         |   1 +
-> >>>>>>  drivers/mfd/rtsx_usb.c       | 760 +++++++++++++++++++++++++++++++++++++++++++
-> >>>>>>  include/linux/mfd/rtsx_usb.h | 628 +++++++++++++++++++++++++++++++++++
-> >>>>>>  4 files changed, 1399 insertions(+)
-> >>>>>>  create mode 100644 drivers/mfd/rtsx_usb.c
-> >>>>>>  create mode 100644 include/linux/mfd/rtsx_usb.h
-> >>>>>
-> >>>>>Applied again, thanks.
-> >>>>>
-> >>>>Would you also apply patch 2/3 and 3/3 that to make the device fully
-> >>>>operational for users? Or should they be applied by maintainers of
-> >>>>mmc/memstick subsystems?
-> >>>>
-> >>>>Chris, would you give some comment?
-> >>>
-> >>>I can apply them, but I need the other Maintainer Acks.
-> >>>
-> >>>If they are build orthogonal i.e. there are no build dependencies
-> >>>between them, it's probably better that they go into their associated
-> >>>trees separately.
-> >>>
-> >>I think it would be better to apply them together since the later
-> >>patches really depend on the 1st one,so now we are waiting for Acks
-> >>from mmc/memstick subsystems.
-> >
-> >When you say "depend on", do you mean as a build depenency, or won't
-> >run without the first patch applied?
-> 
-> The later 2 patches actually invoke symbols defined in the first
-> patch and won't compile if it is not applied first. The Kconfig
-> changes for the later oness also specified this by "depends on".
-> 
-> I'm not sure if this means "build dependency". Sorry for my unclear words.
+Hi Simon,
 
-Yes, that sounds like a build dependency i.e. will not build without
-errors or warnings without the previous patch applied.
+On Mon, Feb 17, 2014 at 12:55 PM, Simon Horman <horms@verge.net.au> wrote:
+> The change includes the maintenance of drivers/sh/ and I believe that
+> the CPG driver in drivers/sh/clk, the INTC driver in drivers/sh/intc and
+> the code in pm_runtime.c is used by Renesas ARM based SoCs.
+> It seems somewhat unsatisfactory to orphan that code.
 
-> >>But there is no one specified for "memstick/host/" in MAINTAINERS.
-> >>Could anyone else Ack this?
+Indeed, everything but drivers/sh/intc/balancing.c, drivers/sh/maple/
+and drivers/sh/superhyway/ is also used on ARM/SHMOBILE.
+But that's in-se unrelated to marking the SuperH architecture as orphaned.
 
-Andrew (CC'ed) has been Acking these thus far.
+> What I propose is adding entries for them, either stand-alone or part of
+> the SHMOBILE (a.k.a. Renesas ARM based SoCs) entry so that are maintained
+> by someone.  I am happy for my name to go against that.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Apparently the "ARM/SHMOBILE ARM ARCHITECTURE" entry already
+has drivers/sh/ listed, so you (and Magnus) are already in charge.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
