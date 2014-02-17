@@ -1,74 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118AbaBQRGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 12:06:00 -0500
-Received: from smtp-out-028.synserver.de ([212.40.185.28]:1107 "EHLO
-	smtp-out-025.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751516AbaBQRF7 (ORCPT
+	id S1753255AbaBQRJG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 12:09:06 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61797 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750958AbaBQRJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 12:05:59 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 32064
-Message-ID: <5302417B.3070408@metafoo.de>
-Date: Mon, 17 Feb 2014 18:06:03 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Mon, 17 Feb 2014 12:09:04 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: gregkh@linuxfoundation.org, len.brown@intel.com, pavel@ucw.cz,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhuangzhi.li@intel.com
+Subject: Re: [PATCH v3 2/5] PM / sleep: Asynchronous threads for resume_noirq
+Date: Mon, 17 Feb 2014 18:23:51 +0100
+Message-ID: <58040349.lgGLVMn62V@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392617954-5292-3-git-send-email-chuansheng.liu@intel.com>
+References: <1392617954-5292-3-git-send-email-chuansheng.liu@intel.com>
 MIME-Version: 1.0
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-CC: broonie@kernel.org, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        dmitry.torokhov@gmail.com, lgirdwood@gmail.com, peter.ujfalusi@ti.com,
-        jarkko.nikula@bitmer.com, eric.y.miao@gmail.com,
-        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH 02/15] ASoC: dapm: Add locked version of snd_soc_dapm_xxxx_pin
- functions
-References: <1392655903-24537-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1392655903-24537-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-In-Reply-To: <1392655903-24537-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> +int snd_soc_dapm_enable_pin_locked(struct snd_soc_dapm_context *dapm,
-> +				   const char *pin)
+On Monday, February 17, 2014 02:19:11 PM Chuansheng Liu wrote:
+> In analogy with commits 5af84b82701a and 97df8c12995, using
+> asynchronous threads can improve the overall resume_noirq time
+> significantly.
+> 
+> One typical case is:
+> In resume_noirq phase and for the PCI devices, the function
+> pci_pm_resume_noirq() will be called, and there is one d3_delay
+> (10ms) at least.
+> 
+> With the way of asynchronous threads, we just need wait d3_delay
+> time once in parallel for each calling, which saves much time to
+> resume quickly.
+> 
+> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> ---
+>  drivers/base/power/main.c | 66 +++++++++++++++++++++++++++++++++++------------
+>  1 file changed, 50 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index 00c53eb..89172aa 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -469,7 +469,7 @@ static void dpm_watchdog_clear(struct dpm_watchdog *wd)
+>   * The driver of @dev will not receive interrupts while this function is being
+>   * executed.
+>   */
+> -static int device_resume_noirq(struct device *dev, pm_message_t state)
+> +static int device_resume_noirq(struct device *dev, pm_message_t state, bool async)
+>  {
+>  	pm_callback_t callback = NULL;
+>  	char *info = NULL;
+> @@ -481,6 +481,8 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
+>  	if (dev->power.syscore)
+>  		goto Out;
+>  
+> +	dpm_wait(dev->parent, async);
+> +
+
+That is too early to wait.  Please move it under the next check.
+
+>  	if (!dev->power.is_noirq_suspended)
+>  		goto Out;
+>  
+> @@ -507,10 +509,29 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
+>  	dev->power.is_noirq_suspended = false;
+>  
+>   Out:
+> +	complete_all(&dev->power.completion);
+>  	TRACE_RESUME(error);
+>  	return error;
+>  }
+>  
+> +static bool is_async(struct device *dev)
 > +{
-> +	return snd_soc_dapm_set_pin(dapm, pin, 1);
+> +	return dev->power.async_suspend && pm_async_enabled
+> +		&& !pm_trace_is_enabled();
 > +}
-> +EXPORT_SYMBOL_GPL(snd_soc_dapm_enable_pin_locked);
 > +
-> +/**
->    * snd_soc_dapm_enable_pin - enable pin.
->    * @dapm: DAPM context
->    * @pin: pin name
->    *
->    * Enables input/output pin and its parents or children widgets iff there is
->    * a valid audio route and active audio stream.
-> + *
->    * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
->    * do any widget power switching.
->    */
->   int snd_soc_dapm_enable_pin(struct snd_soc_dapm_context *dapm, const char *pin)
->   {
-> -	return snd_soc_dapm_set_pin(dapm, pin, 1);
-> +	int ret;
+> +static void async_resume_noirq(void *data, async_cookie_t cookie)
+> +{
+> +	struct device *dev = (struct device *)data;
+> +	int error;
 > +
-> +	mutex_lock_nested(&dapm->card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+> +	error = device_resume_noirq(dev, pm_transition, true);
+> +	if (error)
+> +		pm_dev_err(dev, pm_transition, " async", error);
 > +
-> +	ret = snd_soc_dapm_set_pin(dapm, pin, 1);
+> +	put_device(dev);
+> +}
 > +
-> +	mutex_unlock(&dapm->card->dapm_mutex);
+>  /**
+>   * dpm_resume_noirq - Execute "noirq resume" callbacks for all devices.
+>   * @state: PM transition of the system being carried out.
+> @@ -520,29 +541,48 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
+>   */
+>  static void dpm_resume_noirq(pm_message_t state)
+>  {
+> +	struct device *dev;
+>  	ktime_t starttime = ktime_get();
+>  
+>  	mutex_lock(&dpm_list_mtx);
+> -	while (!list_empty(&dpm_noirq_list)) {
+> -		struct device *dev = to_device(dpm_noirq_list.next);
+> -		int error;
+> +	pm_transition = state;
 > +
-> +	return ret;
->   }
+> +	/*
+> +	 * Advanced the async threads upfront,
+> +	 * in case the starting of async threads is
+> +	 * delayed by non-async resuming devices.
+> +	 */
+> +	list_for_each_entry(dev, &dpm_noirq_list, power.entry) {
+> +		reinit_completion(&dev->power.completion);
+> +		if (is_async(dev)) {
+> +			get_device(dev);
+> +			async_schedule(async_resume_noirq, dev);
+> +		}
+> +	}
+>  
+> +	while (!list_empty(&dpm_noirq_list)) {
+> +		dev = to_device(dpm_noirq_list.next);
+>  		get_device(dev);
+>  		list_move_tail(&dev->power.entry, &dpm_late_early_list);
+>  		mutex_unlock(&dpm_list_mtx);
+>  
+> -		error = device_resume_noirq(dev, state);
+> -		if (error) {
+> -			suspend_stats.failed_resume_noirq++;
+> -			dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
+> -			dpm_save_failed_dev(dev_name(dev));
+> -			pm_dev_err(dev, state, " noirq", error);
+> +		if (!is_async(dev)) {
+> +			int error;
+> +
+> +			error = device_resume_noirq(dev, state, false);
+> +			if (error) {
+> +				suspend_stats.failed_resume_noirq++;
+> +				dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
+> +				dpm_save_failed_dev(dev_name(dev));
+> +				pm_dev_err(dev, state, " noirq", error);
+> +			}
+>  		}
+>  
+>  		mutex_lock(&dpm_list_mtx);
+>  		put_device(dev);
+>  	}
+>  	mutex_unlock(&dpm_list_mtx);
+> +	async_synchronize_full();
+>  	dpm_show_time(starttime, state, "noirq");
+>  	resume_device_irqs();
+>  	cpuidle_resume();
+> @@ -742,12 +782,6 @@ static void async_resume(void *data, async_cookie_t cookie)
+>  	put_device(dev);
+>  }
+>  
+> -static bool is_async(struct device *dev)
+> -{
+> -	return dev->power.async_suspend && pm_async_enabled
+> -		&& !pm_trace_is_enabled();
+> -}
+> -
+>  /**
+>   * dpm_resume - Execute "resume" callbacks for non-sysdev devices.
+>   * @state: PM transition of the system being carried out.
+> 
 
-Hm, this is a bit confusing. For other functions in ASoC when we have a pair 
-of functions with the _locked suffix and without the one with _locked takes 
-the lock, the other one doesn't. E.g. snd_soc_update_bits_locked. Here we do 
-it the other way around.
-
-- Lars
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
