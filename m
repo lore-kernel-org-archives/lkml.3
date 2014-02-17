@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbaBQI7e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:59:34 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:48150 "EHLO comal.ext.ti.com"
+	id S1752564AbaBQI7i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:59:38 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34158 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982AbaBQI7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:59:32 -0500
+	id S1750982AbaBQI7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 03:59:34 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>
 CC: <kishon@ti.com>
-Subject: [PATCH 2/8] usb: phy: twl4030-usb: Remove redundant semicolon
-Date: Mon, 17 Feb 2014 14:29:19 +0530
-Message-ID: <1392627565-1829-3-git-send-email-kishon@ti.com>
+Subject: [PATCH 4/8] phy,phy-bcm-kona-usb2.c: Add dependency on HAS_IOMEM
+Date: Mon, 17 Feb 2014 14:29:21 +0530
+Message-ID: <1392627565-1829-5-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1392627565-1829-1-git-send-email-kishon@ti.com>
 References: <1392627565-1829-1-git-send-email-kishon@ti.com>
@@ -21,29 +21,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+From: Richard Weinberger <richard@nod.at>
 
-Semicolon after switch statement is not needed.
+On archs like S390 or um this driver cannot build nor work.
+Make it depend on HAS_IOMEM to bypass build failures.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+drivers/phy/phy-bcm-kona-usb2.c:114: undefined reference to `devm_ioremap_resource'
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-twl4030-usb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/phy/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
-index 254c72c..ab64182 100644
---- a/drivers/phy/phy-twl4030-usb.c
-+++ b/drivers/phy/phy-twl4030-usb.c
-@@ -338,7 +338,7 @@ static void twl4030_usb_set_mode(struct twl4030_usb *twl, int mode)
- 		dev_err(twl->dev, "unsupported T2 transceiver mode %d\n",
- 				mode);
- 		break;
--	};
-+	}
- }
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index afa2354..79e3c70 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -61,6 +61,7 @@ config PHY_EXYNOS_DP_VIDEO
+ config BCM_KONA_USB2_PHY
+ 	tristate "Broadcom Kona USB2 PHY Driver"
+ 	depends on GENERIC_PHY
++	depends on HAS_IOMEM
+ 	help
+ 	  Enable this to support the Broadcom Kona USB 2.0 PHY.
  
- static void twl4030_i2c_access(struct twl4030_usb *twl, int on)
 -- 
 1.7.10.4
 
