@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342AbaBQItE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:49:04 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52239 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaBQItC (ORCPT
+	id S1752226AbaBQIuo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:50:44 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:60010 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751148AbaBQIun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:49:02 -0500
-Message-ID: <5301CBAE.3000102@linux.vnet.ibm.com>
-Date: Mon, 17 Feb 2014 14:13:26 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pierre-list@ossman.eu
-Subject: Re: [PATCH 2/2] cpufreq: don't call cpufreq_update_policy() on CPU
- addition
-References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org> <8f2fc4d6240b567fdb69a0b47f073d174b7ef9b2.1392375504.git.viresh.kumar@linaro.org>
-In-Reply-To: <8f2fc4d6240b567fdb69a0b47f073d174b7ef9b2.1392375504.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Feb 2014 03:50:43 -0500
+Message-ID: <1392627040.10966.18.camel@x220>
+Subject: Re: [PATCH] s390: remove HAVE_MARCH_Z9?0_FEATURES
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 17 Feb 2014 09:50:40 +0100
+In-Reply-To: <20140217082035.GA4651@osiris>
+References: <1392570927.28866.12.camel@x220> <20140217082035.GA4651@osiris>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021708-2000-0000-0000-00000FC2DA9A
+X-OriginalArrivalTime: 17 Feb 2014 08:50:41.0989 (UTC) FILETIME=[56AAEF50:01CF2BBD]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 04:30 PM, Viresh Kumar wrote:
-> cpufreq_update_policy() is called from two places currently. From a workqueue
-> handled queued from cpufreq_bp_resume() for boot CPU and from
-> cpufreq_cpu_callback() whenever a CPU is added.
-> 
-> The first one makes sure that boot CPU is running on the frequency present in
-> policy->cpu. But we don't really need a call from cpufreq_cpu_callback(),
-> because we always call cpufreq_driver->init() (which will set policy->cur
-> correctly) whenever first CPU of any policy is added back. And so every policy
-> structure is guaranteed to have the right frequency in policy->cur.
->
+On Mon, 2014-02-17 at 09:20 +0100, Heiko Carstens wrote:
+> On Sun, Feb 16, 2014 at 06:15:27PM +0100, Paul Bolle wrote:
+> No, I want to keep them, so there is a config symbol for each cpu generation
+> and we don't have to add the config symbols again, if we actually use them.
 
-This wording is slightly inaccurate. ->init() may or may not set policy->cur
-(for example, powernowk8 driver doesn't set it in the init routine)..
-But we set it for sure in __cpufreq_add_dev():
+Yes, that's the idea: only add Kconfig symbols that you are actually
+going to use.
 
-1117         if (cpufreq_driver->get) {
-1118                 policy->cur = cpufreq_driver->get(policy->cpu);
-1119                 if (!policy->cur) {
-1120                         pr_err("%s: ->get() failed\n", __func__);
-1121                         goto err_get_freq;
-1122                 }
-1123         }
+> It's a question of completeness in this case, not if they are being used.
 
- 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Completeness of what?
 
-The reasoning and the code looks good to me.
+Anyhow, perhaps you can comment this stuff out if you want to have it in
+the tree. See, these symbols will pop up each time that people run their
+scripts to discover problems in the kconfig space. I suppose this was
+probably not the first time these two were reported. And people not
+aware of this thread might do that again, and again...
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Thanks,
 
-Regards,
-Srivatsa S. Bhat
 
-> ---
->  drivers/cpufreq/cpufreq.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 383362b..b6eb4ed 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -2194,7 +2194,6 @@ static int cpufreq_cpu_callback(struct notifier_block *nfb,
->  		switch (action & ~CPU_TASKS_FROZEN) {
->  		case CPU_ONLINE:
->  			__cpufreq_add_dev(dev, NULL, frozen);
-> -			cpufreq_update_policy(cpu);
->  			break;
-> 
->  		case CPU_DOWN_PREPARE:
-> 
+Paul Bolle
 
