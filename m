@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaBQQx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 11:53:57 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:53318 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaBQQxy (ORCPT
+	id S1753113AbaBQQyl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 11:54:41 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:60560 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaBQQyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 11:53:54 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2 1/5] drivers: of: add initialization code for reserved memory
-To: Josh Cartwright <joshc@codeaurora.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>
-In-Reply-To: <20140213194840.GO841@joshc.qualcomm.com>
-References: <1391515773-6112-2-git-send-email-m.szyprowski@samsung.com> < 20140205110538.99E47C40A89@trevor.secretlab.ca> <52FA0D6E.9090304@samsung. com> <20140211121316.24032C40C4D@trevor.secretlab.ca> <52FA33E2.4050004@ samsung.com> <20140211190104.7E6C5C4140E@trevor.secretlab.ca> <1392148971. 3835.15.camel@pasglop> <52FA8245.5050707@gmail.com> <20140211201933.GI841@ joshc.qualcomm.com> <52FA87B8.8040203@gmail.com> <20140213194840.GO841@ joshc.qualcomm.com>
-Date: Mon, 17 Feb 2014 16:53:46 +0000
-Message-Id: <20140217165346.4C5B3C403B4@trevor.secretlab.ca>
+	Mon, 17 Feb 2014 11:54:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140217155725.20337.52848.stgit@patser>
+References: <20140217155056.20337.25254.stgit@patser>
+	<20140217155725.20337.52848.stgit@patser>
+Date: Mon, 17 Feb 2014 11:54:37 -0500
+Message-ID: <CAF6AEGu6wMTg6HBgO3jjq+-muzOmN_BD0r9u26m=FWJWLJXyhA@mail.gmail.com>
+Subject: Re: [PATCH 5/6] reservation: add support for fences to enable
+ cross-device synchronisation
+From: Rob Clark <robdclark@gmail.com>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Colin Cross <ccross@google.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Feb 2014 13:48:40 -0600, Josh Cartwright <joshc@codeaurora.org> wrote:
-> On Tue, Feb 11, 2014 at 09:27:36PM +0100, Tomasz Figa wrote:
-> > On 11.02.2014 21:19, Josh Cartwright wrote:
-> > >On Tue, Feb 11, 2014 at 09:04:21PM +0100, Tomasz Figa wrote:
-> > > >On 11.02.2014 21:02, Benjamin Herrenschmidt wrote:
-> > > > >On Tue, 2014-02-11 at 19:01 +0000, Grant Likely wrote:
-> > > > > > > except that the former IMHO better suits the definition of memory
-> > > > > > > region, which I see as a single contiguous range of memory and can be
-> > > > > > > simplified to have a single reg entry per region.
-> > > > > >
-> > > > > > My point is rather if multiple reg tuples are found in a reserved memory
-> > > > > > node, the kernel must respect them and reserve the memory. I'm not
-> > > > > > arguing about whether or not that makes for a good binding.
-> > > > >
-> > > > > agreed.
-> > > >
-> > > > My point is why, if the binding defines that just a single tuple should be
-> > > > provided.
-> > >
-> > > FWIW, the usecase I had mentioned in reply to Grant in the patch 5/5
-> > > thread [1] could make use of this.  The shared memory region is split
-> > > into a main chunk and several "auxiliary" chunk, but collectively these
-> > > regions all share the same heap state.
-> > >
-> > >   Josh
-> > >
-> > > 1: http://lkml.kernel.org/r/20140205192502.GO20228@joshc.qualcomm.com
-> >
-> > The use case seems fine, but I believe it could be properly represented in
-> > device tree using multiple single-reg regions as well, unless the consumer
-> > can request a block of memory that crosses boundary of two sub-regions
-> > specified by reg entries of single region.
-> 
-> I could probably make a only-one-reg-entry policy work for me, but it
-> makes things a bit more awkward.  I'd lose the ability to describe
-> "this set of regions need to be logically handled together" directly in
-> the reserved memory node, and would need to push it up a layer.
-> 
-> 	reserved-memory {
-> 		smem: smem {
-> 			reg = <...>;
-> 		};
-> 		aux1: auxiliary1 {
-> 			reg = <...>;
-> 		};
-> 		aux2: auxiliary2 {
-> 			reg = <...>;
-> 		};
-> 		...
-> 	};
+On Mon, Feb 17, 2014 at 10:58 AM, Maarten Lankhorst
+<maarten.lankhorst@canonical.com> wrote:
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-If the regions are used for different purposes, it makes sense I think
-to have a separate node for each. Multiple tuples would make more sense
-for something like valid DMA regions for a broken device that can only
-DMA into a few windows; you could have one tuple per window within a
-single node.
+Reviewed-by: Rob Clark <robdclark@gmail.com>
 
-It would be possible to collect multiple associated nodes under one
-parent node which in turn has reserved-memory for its parent:
 
-	reserved-memory {
-		ranges;
-		reserved-group {
-			ranges;
-			smem: smem {
-				reg = <...>;
-			};
-			aux1: auxiliary1 {
-				reg = <...>;
-			};
-			aux2: auxiliary2 {
-				reg = <...>;
-			};
-		};
-		...
-	};
-
-g.
+> ---
+>  include/linux/reservation.h |   18 +++++++++++++++++-
+>  1 file changed, 17 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/reservation.h b/include/linux/reservation.h
+> index 813dae960ebd..92c4851b5a39 100644
+> --- a/include/linux/reservation.h
+> +++ b/include/linux/reservation.h
+> @@ -6,7 +6,7 @@
+>   * Copyright (C) 2012 Texas Instruments
+>   *
+>   * Authors:
+> - * Rob Clark <rob.clark@linaro.org>
+> + * Rob Clark <robdclark@gmail.com>
+>   * Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>   * Thomas Hellstrom <thellstrom-at-vmware-dot-com>
+>   *
+> @@ -40,22 +40,38 @@
+>  #define _LINUX_RESERVATION_H
+>
+>  #include <linux/ww_mutex.h>
+> +#include <linux/fence.h>
+>
+>  extern struct ww_class reservation_ww_class;
+>
+>  struct reservation_object {
+>         struct ww_mutex lock;
+> +
+> +       struct fence *fence_excl;
+> +       struct fence **fence_shared;
+> +       u32 fence_shared_count, fence_shared_max;
+>  };
+>
+>  static inline void
+>  reservation_object_init(struct reservation_object *obj)
+>  {
+>         ww_mutex_init(&obj->lock, &reservation_ww_class);
+> +
+> +       obj->fence_shared_count = obj->fence_shared_max = 0;
+> +       obj->fence_shared = NULL;
+> +       obj->fence_excl = NULL;
+>  }
+>
+>  static inline void
+>  reservation_object_fini(struct reservation_object *obj)
+>  {
+> +       int i;
+> +
+> +       if (obj->fence_excl)
+> +               fence_put(obj->fence_excl);
+> +       for (i = 0; i < obj->fence_shared_count; ++i)
+> +               fence_put(obj->fence_shared[i]);
+> +
+>         ww_mutex_destroy(&obj->lock);
+>  }
+>
+>
