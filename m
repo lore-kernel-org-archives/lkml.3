@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaBQSOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:14:45 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:24745 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958AbaBQSOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:14:44 -0500
-X-IronPort-AV: E=Sophos;i="4.95,862,1384272000"; 
-   d="scan'208";a="9545760"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] workqueue: free worker earlier in worker_thread()
-Date: Tue, 18 Feb 2014 00:24:01 +0800
-Message-Id: <1392654243-2829-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1392654243-2829-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1392472948-2486-1-git-send-email-laijs@cn.fujitsu.com>
- <1392654243-2829-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/18 00:22:09,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/18 00:22:11,
-	Serialize complete at 2014/02/18 00:22:11
+	id S1754150AbaBQSQa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:16:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40081 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754130AbaBQSQ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 13:16:29 -0500
+Date: Mon, 17 Feb 2014 10:18:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stanislav Meduna <stano@meduna.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        hjk@hansjkoch.de
+Subject: Re: UIO and memory from dma_alloc_coherent - UIO_MEM_PHYS?
+Message-ID: <20140217181854.GA7119@kroah.com>
+References: <53024FAD.2000709@meduna.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53024FAD.2000709@meduna.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When @worker is set %WORKER_DIE, it is moved out from
-idle_list&idr, no one can access it excepct kthread_data().
+On Mon, Feb 17, 2014 at 07:06:37PM +0100, Stanislav Meduna wrote:
+> Hi,
+> 
+> what is the correct way for a UIO driver to pass a memory allocated
+> using dma_alloc_coherent to userspace? I have googled for examples
+> but I was not able to find a definitive answer.
+> 
+> My device needs two 128 kB chunks of DMA-able memory. First I tried
+> 
+>   pdev->tx_vaddr = dma_zalloc_coherent(&dev->dev, pdev->dma_len,
+>                      &pdev->tx_paddr, GFP_KERNEL | GFP_DMA);
+> 
+>   info->mem[2].name = "txdma";
+>   info->mem[2].addr = (phys_addr_t) pdev->tx_vaddr;
+>   info->mem[2].size = pdev->dma_len;
+>   info->mem[2].memtype = UIO_MEM_LOGICAL;
+> 
+> This seemed to work at the first try, but tends to panic in various
+> ways when unmapping. It probably only maps the first page or something
+> like that and accessing past some limit overwrites something.
 
-And in worker_thread, its task is clearred %PF_WQ_WORKER,
-no one can access the @worker via kthread_data(),
-we can safely free it.
+Have you tried the uio_dmem_genirq.c driver?  Or are you writing a new
+one?
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> If I change this to
+> 
+>   info->mem[2].addr = (phys_addr_t) pdev->tx_paddr;
+>   info->mem[2].memtype = UIO_MEM_PHYS;
+> 
+> it seems to work at least on x86 with < 4GB memory. The uio_pruss.c
+> (or uio_dmem_genirq.c in newer kernels) do this as well.
+> 
+> I have a bad feeling here - if I am allocating something that
+> is a virtual memory in the kernel, I don't expect to pretend I am
+> accessing something else. The UIO howto explicitely states
+> that UIO_MEM_PHYS is meant for a "physical memory on your card".
+> 
+> Is this really a recommended way of doing this and is it portable
+> to other architectures?
+> 
+> I am using 3.4 kernel with realtime patches.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 783d5f2..fc05700 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1862,7 +1862,6 @@ static void destroy_worker(struct worker *worker)
- 
- 	kthread_stop(worker->task);
- 	put_task_struct(worker->task);
--	kfree(worker);
- 
- 	spin_lock_irq(&pool->lock);
- }
-@@ -2297,6 +2296,8 @@ woke_up:
- 		spin_unlock_irq(&pool->lock);
- 		WARN_ON_ONCE(!list_empty(&worker->entry));
- 		worker->task->flags &= ~PF_WQ_WORKER;
-+		/* No one can access to @worker now, free it. */
-+		kfree(worker);
- 		return 0;
- 	}
- 
--- 
-1.7.7.6
+The uio_dmem_genirq.c driver showed up in 3.8, so it might be good for
+you to update your kernel if you want to do DMA memory with a UIO
+driver, as lots of other things in this area was fixed to accomplish
+this.
 
+Hope this helps,
+
+greg k-h
