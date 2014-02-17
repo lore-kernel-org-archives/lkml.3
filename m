@@ -1,79 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaBQMZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 07:25:57 -0500
-Received: from nbl-ex10-fe01.nebula.fi ([188.117.32.121]:43862 "EHLO
-	ex10.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752972AbaBQMZz (ORCPT
+	id S1753003AbaBQMZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 07:25:54 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:25714 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaBQMZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 07:25:55 -0500
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Feb 2014 07:25:54 EST
-Message-ID: <1392639647.29849.11.camel@ultrabook>
-Subject: [PATCH] hfsplus: fix concurrent acess of alloc_blocks
-From: Sougata Santra <sougata@tuxera.com>
-Reply-To: <sougata@tuxera.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Christoph Hellwig <hch@lst.de>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Vyacheslav Dubeyko <slava@dubeyko.com>,
-        "Joe Perches" <joe@perches.com>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>
-Date: Mon, 17 Feb 2014 14:20:47 +0200
-Organization: Tuxera
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Mon, 17 Feb 2014 07:25:53 -0500
+X-IronPort-AV: E=Sophos;i="4.95,860,1384300800"; 
+   d="scan'208";a="101401564"
+Date: Mon, 17 Feb 2014 12:25:42 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <Catalin.Marinas@arm.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
+        <marc.zyngier@arm.com>, <will.deacon@arm.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <linux@arm.linux.org.uk>,
+        <olof@lixom.net>, <arnd@arndb.de>, <catalin.marinas@arm.com>,
+        <nico@linaro.org>, <cov@codeaurora.org>,
+        <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH v9 4/5] arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING
+ and pv_time_ops
+In-Reply-To: <1389292336-9292-4-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.DEB.2.02.1402171225000.27926@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1401091755390.21510@kaball.uk.xensource.com> <1389292336-9292-4-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [194.100.106.164]
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 9 Jan 2014, Stefano Stabellini wrote:
+> Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM64.
+> Necessary duplication of paravirt.h and paravirt.c with ARM.
+> 
+> The only paravirt interface supported is pv_time_ops.steal_clock, so no
+> runtime pvops patching needed.
+> 
+> This allows us to make use of steal_account_process_tick for stolen
+> ticks accounting.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: will.deacon@arm.com
+> CC: nico@linaro.org
+> CC: marc.zyngier@arm.com
+> CC: cov@codeaurora.org
+> CC: arnd@arndb.de
+> CC: olof@lixom.net
+> CC: Catalin.Marinas@arm.com
 
-Concurrent access to alloc_blocks in hfsplus_inode_info is
-protected by extents_lock mutex. This patch fixes two
-instances where alloc_blocks modification was not protected
-with this lock. This fixes possible allocation bitmap
-corruption in race conditions while extending and truncating
-files.
+Catalin, Will, are you happy with this patch for 3.15?
 
-Signed-off-by: Sougata Santra <sougata@tuxera.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
----
- fs/hfsplus/extents.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/fs/hfsplus/extents.c b/fs/hfsplus/extents.c
-index fbb212f..314c858 100644
---- a/fs/hfsplus/extents.c
-+++ b/fs/hfsplus/extents.c
-@@ -498,11 +498,13 @@ int hfsplus_file_extend(struct inode *inode)
- 			goto insert_extent;
- 	}
- out:
--	mutex_unlock(&hip->extents_lock);
- 	if (!res) {
- 		hip->alloc_blocks += len;
-+		mutex_unlock(&hip->extents_lock);
- 		hfsplus_mark_inode_dirty(inode, HFSPLUS_I_ALLOC_DIRTY);
-+		return 0;
- 	}
-+	mutex_unlock(&hip->extents_lock);
- 	return res;
  
- insert_extent:
-@@ -592,9 +594,9 @@ void hfsplus_file_truncate(struct inode *inode)
- 		hfs_brec_remove(&fd);
- 	}
- 	hfs_find_exit(&fd);
--	mutex_unlock(&hip->extents_lock);
- 
- 	hip->alloc_blocks = blk_cnt;
-+	mutex_unlock(&hip->extents_lock);
- out:
- 	hip->phys_size = inode->i_size;
- 	hip->fs_blocks = (inode->i_size + sb->s_blocksize - 1) >>
--- 
-1.8.1.4
-
-
-
+> Changes in v7:
+> - ifdef CONFIG_PARAVIRT the content of paravirt.h.
+> ---
+>  arch/arm64/Kconfig                |   20 ++++++++++++++++++++
+>  arch/arm64/include/asm/paravirt.h |   20 ++++++++++++++++++++
+>  arch/arm64/kernel/Makefile        |    1 +
+>  arch/arm64/kernel/paravirt.c      |   25 +++++++++++++++++++++++++
+>  4 files changed, 66 insertions(+)
+>  create mode 100644 arch/arm64/include/asm/paravirt.h
+>  create mode 100644 arch/arm64/kernel/paravirt.c
+> 
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 6d4dd22..d1003ba 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -212,6 +212,25 @@ config HAVE_ARCH_TRANSPARENT_HUGEPAGE
+>  
+>  source "mm/Kconfig"
+>  
+> +config PARAVIRT
+> +	bool "Enable paravirtualization code"
+> +	---help---
+> +	  This changes the kernel so it can modify itself when it is run
+> +	  under a hypervisor, potentially improving performance significantly
+> +	  over full virtualization.
+> +
+> +config PARAVIRT_TIME_ACCOUNTING
+> +	bool "Paravirtual steal time accounting"
+> +	select PARAVIRT
+> +	default n
+> +	---help---
+> +	  Select this option to enable fine granularity task steal time
+> +	  accounting. Time spent executing other tasks in parallel with
+> +	  the current vCPU is discounted from the vCPU power. To account for
+> +	  that, there can be a small performance impact.
+> +
+> +	  If in doubt, say N here.
+> +
+>  config XEN_DOM0
+>  	def_bool y
+>  	depends on XEN
+> @@ -220,6 +239,7 @@ config XEN
+>  	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
+>  	depends on ARM64 && OF
+>  	select SWIOTLB_XEN
+> +	select PARAVIRT
+>  	help
+>  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM64.
+>  
+> diff --git a/arch/arm64/include/asm/paravirt.h b/arch/arm64/include/asm/paravirt.h
+> new file mode 100644
+> index 0000000..fd5f428
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/paravirt.h
+> @@ -0,0 +1,20 @@
+> +#ifndef _ASM_ARM64_PARAVIRT_H
+> +#define _ASM_ARM64_PARAVIRT_H
+> +
+> +#ifdef CONFIG_PARAVIRT
+> +struct static_key;
+> +extern struct static_key paravirt_steal_enabled;
+> +extern struct static_key paravirt_steal_rq_enabled;
+> +
+> +struct pv_time_ops {
+> +	unsigned long long (*steal_clock)(int cpu);
+> +};
+> +extern struct pv_time_ops pv_time_ops;
+> +
+> +static inline u64 paravirt_steal_clock(int cpu)
+> +{
+> +	return pv_time_ops.steal_clock(cpu);
+> +}
+> +#endif
+> +
+> +#endif
+> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+> index 5ba2fd4..1dee735 100644
+> --- a/arch/arm64/kernel/Makefile
+> +++ b/arch/arm64/kernel/Makefile
+> @@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
+>  arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
+>  arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
+>  arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
+> +arm64-obj-$(CONFIG_PARAVIRT)		+= paravirt.o
+>  
+>  obj-y					+= $(arm64-obj-y) vdso/
+>  obj-m					+= $(arm64-obj-m)
+> diff --git a/arch/arm64/kernel/paravirt.c b/arch/arm64/kernel/paravirt.c
+> new file mode 100644
+> index 0000000..53f371e
+> --- /dev/null
+> +++ b/arch/arm64/kernel/paravirt.c
+> @@ -0,0 +1,25 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Copyright (C) 2013 Citrix Systems
+> + *
+> + * Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> + */
+> +
+> +#include <linux/export.h>
+> +#include <linux/jump_label.h>
+> +#include <linux/types.h>
+> +#include <asm/paravirt.h>
+> +
+> +struct static_key paravirt_steal_enabled;
+> +struct static_key paravirt_steal_rq_enabled;
+> +
+> +struct pv_time_ops pv_time_ops;
+> +EXPORT_SYMBOL_GPL(pv_time_ops);
+> -- 
+> 1.7.10.4
+> 
