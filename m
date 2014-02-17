@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694AbaBQOnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 09:43:32 -0500
-Received: from relay.parallels.com ([195.214.232.42]:45476 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaBQOnb (ORCPT
+	id S1753798AbaBQOnn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 09:43:43 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25647 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740AbaBQOnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 09:43:31 -0500
-Message-ID: <1392648219.5384.93.camel@tkhai>
-Subject: Re: [PATCH] sched/core: Create new task with twice disabled
- preemption
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, "tkhai@yandex.ru" <tkhai@yandex.ru>
-Date: Mon, 17 Feb 2014 18:43:39 +0400
-In-Reply-To: <20140214154906.GF10590@arm.com>
-References: <1392306716.5384.3.camel@tkhai> <20140214123536.GA12304@arm.com>
-	 <1392381841.5384.43.camel@tkhai> <20140214154906.GF10590@arm.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Mon, 17 Feb 2014 09:43:40 -0500
+Date: Mon, 17 Feb 2014 09:43:08 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Weinberger <richard@nod.at>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Ingo Molnar <mingo@redhat.com>, xen-devel@lists.xenproject.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen: remove XEN_PRIVILEGED_GUEST
+Message-ID: <20140217144307.GB28658@localhost.localdomain>
+References: <201402171223.s1HCNG0S023567@userz7022.oracle.com>
+ <1392642197.13000.20.camel@x220>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392642197.13000.20.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Птн, 14/02/2014 в 15:49 +0000, Catalin Marinas пишет:
-> On Fri, Feb 14, 2014 at 12:44:01PM +0000, Kirill Tkhai wrote:
-> > В Птн, 14/02/2014 в 12:35 +0000, Catalin Marinas пишет:
-> > > On Thu, Feb 13, 2014 at 07:51:56PM +0400, Kirill Tkhai wrote:
-> > > > Preemption state on enter in finish_task_switch() is different
-> > > > in cases of context_switch() and schedule_tail().
-> > > > 
-> > > > In the first case we have it twice disabled: at the start of
-> > > > schedule() and during spin locking. In the second it is only
-> > > > once: the value which was set in init_task_preempt_count().
-> > > > 
-> > > > For archs without __ARCH_WANT_UNLOCKED_CTXSW set this means
-> > > > that all newly created tasks execute finish_arch_post_lock_switch()
-> > > > and post_schedule() with preemption enabled.
-> > > > 
-> > > > It seems there is possible a problem in rare situations on arm64,
-> > > > when one freshly created thread preempts another before
-> > > > finish_arch_post_lock_switch() has finished. If mm is the same,
-> > > > then TIF_SWITCH_MM on the second won't be set.
-> > > > 
-> > > > The second rare but possible issue is zeroing of post_schedule()
-> > > > on a wrong cpu.
-> > > > 
-> > > > So, lets fix this and unify preempt_count state.
-> > > 
-> > > An alternative to your patch:
-> > 
-> > It looks better, than the initial.
-> > 
-> > You may add my Acked-by if you want.
+On Mon, Feb 17, 2014 at 02:03:17PM +0100, Paul Bolle wrote:
+> On Mon, 2014-02-17 at 07:23 -0500, Konrad Rzeszutek Wilk wrote:
+> > On Feb 16, 2014 3:07 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > Please look in the grub git tree. They have fixed their code to not do
+> > this anymore. This should be reflected in the patch description.
 > 
-> Thanks for the ack. But apart from arm64, are there any other problems
-> with running part of finish_task_switch() and post_schedule() with
-> preemption enabled?
-
-1)We have architecture-dependent finish_arch_post_lock_switch()
-  which is possible(?) to be fixed for every arch at the moment,
-  but someone may run into it in the future.
-
-2)The second is fire_sched_in_preempt_notifiers(). It's generic interface
-  which is currently unused. It notifies about preemption, so it's bad
-  if additional preemption happens when it has not finished.
-
-3)tick_nohz_task_switch() seems to be without problems. Just very-very
-  slightly performance.
-
-4)If post_schedule() happens on wrong CPU, the system may occur imbalanced
-  for a short period. This happens, when post_schedule() of wrong class
-  is executed.
-
-If we fix that once in scheduler we'll decide everything above now and
-in the future. Also we'll decrease number of rare situations.
-
-> The finish_arch_post_lock_switch() is currently only used by arm and
-> arm64 (the former UP only) and arm no longer has the preemption problem
-> (see commit bdae73cd374e2). So I can either disable the preemption
-> around schedule_tail() call in arm64 or do it globally as per yours or
-> my patch.
+> Thanks, I didn't know that. That turned out to be grub commit
+> ec824e0f2a399ce2ab3a2e3353d372a236595059 ("Implement grub_file tool and
+> use it to implement generating of config"), see
+> http://git.savannah.gnu.org/cgit/grub.git/commit/util/grub.d/20_linux_xen.in?id=ec824e0f2a399ce2ab3a2e3353d372a236595059
 > 
-> Peter, Ingo, any thoughts? Do we care about preempt count consistency
-> across finish_task_switch() and post_schedule()?
+> > Lastly please check which distro has this new grub version so that we
+> > know which distros won't be affected.
 > 
-> Thanks.
+> No distro should be affected. See, the test that grub2 used to do was
+> (edited for clarity):
+>     grep -qx "CONFIG_XEN_DOM0=y" "${config}" || grep -qx "CONFIG_XEN_PRIVILEGED_GUEST=y" "${config}"
 > 
+> But the Kconfig entry for XEN_PRIVILEGED_GUEST reads:
+>     config XEN_PRIVILEGED_GUEST
+>             def_bool XEN_DOM0
+> 
+> Ie, XEN_PRIVILEGED_GUEST is equal to XEN_DOM0 by definition, so the
+> second part of that test is superfluous. (We discussed this last year.
+> If lkml.org weren't down I'd provide a link.) Or am I misreading this
+> Kconfig entry?
 
+Ah, forgot about the second test for 'XEN_DOM0'. Yes that should work.
 
+Thanks!
+> 
+> I hope to send a v2, with an updated commit explanation, in a few days.
+> 
+> 
+> Paul Bolle
+> 
