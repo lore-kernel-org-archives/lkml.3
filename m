@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbaBQUTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 15:19:12 -0500
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:38971 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaBQUTK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 15:19:10 -0500
-X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Feb 2014 15:19:10 EST
-Date: Mon, 17 Feb 2014 21:11:51 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Daniel J Blueman <daniel@quora.org>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: USB keyboard occasional key stuck
-Message-ID: <20140217211151.02f8afbe@neptune.home>
-In-Reply-To: <CAMVG2ss9nA4zcOT3c47EwEMrR7Z_gAQU-HTYGjdWcdYzihSnbg@mail.gmail.com>
-References: <CAMVG2ss9nA4zcOT3c47EwEMrR7Z_gAQU-HTYGjdWcdYzihSnbg@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754476AbaBQUT4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 15:19:56 -0500
+Received: from nm39.bullet.mail.bf1.yahoo.com ([72.30.239.69]:37439 "EHLO
+	nm39.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753280AbaBQUTz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 15:19:55 -0500
+X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Feb 2014 15:19:55 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 76791.65262.bm@omp1036.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=1cPUZ5dDo1+SfcDU0MCzc3irvLhjpm9BGjFdafRQMzHLPGY2YUdJgOdtnEcJy0+sOYyfMfVTChzptKnnOrCGrcv1tAhspHSIRclbAA6+fn0Te8xaPZeBJ6W3pIw+4hC8+mjupZHFtlABCiUmdVV20U3AI1Du5Br4hVePkj85rbQ=;
+X-YMail-OSG: 8AYHC.wVM1mXfWroOlaYAbD2ocOsSn1y3jLhl0gZeJGnpgW
+ UhF2.DdWsc51pkILAZ2mRIzwsfPBpVcTljGfqeDhDRADY1xwAdo06014wi2P
+ vYABDzKgBP0XECUjSFqohCNbGB2S_mZwJU65xAPOxaIN6o02h4dDTQOGXDi_
+ q0bY6WOlAWyQyzhBodIeaLd1xjBrxwS4Pw2WeEaNPIIqisG3QefKcKahby_y
+ PvzK2CSwULbn7.fzVwEur1v5P5HG07B4i2Rn5f8ypU4WvdokKln0c6qdi9T1
+ Ztc0wQ_yb8QNWj1i05YubMxBbguWFCDY.VbL2Lo2xSYaYY6tkMpeeRZTbKX7
+ w2wtuehQ.y5u8qfnFRCj9f0OUjdRErBdJzO9VIK3GaXaz74o1OqcT3UvhcLg
+ stnMYk1Fy9RIhcMe0z3pJ1nOlkGur5y._YdalymiI_hTCC7GJr0qcq0AnulB
+ KiLUPDQx6RVv7UzbL0s2royw1ZqoFCmtAS6dDtT6PVQ_0m7_c7Pzd3lOjqFw
+ 4PmaggmCTqgVrichwV_ljEMoa441CTUHYuIquizvbdt.y_JoJ2_DlR4dp7sQ
+ 8nH0bOwPC2lE9OWQ8mV.O
+X-Rocket-MIMEInfo: 002.001,CgoKCi0tLS0tIE9yaWdpbmFsIE1lc3NhZ2UgLS0tLS0KPiBGcm9tOiBUcm9uZCBNeWtsZWJ1c3QgPHRyb25kLm15a2xlYnVzdEBwcmltYXJ5ZGF0YS5jb20.Cj4gVG86IEJvcmlzbGF2IFBldGtvdiA8YnBAYWxpZW44LmRlPjsgTGludXggTkZTIE1haWxpbmcgTGlzdCA8bGludXgtbmZzQHZnZXIua2VybmVsLm9yZz4KPiBDYzogSm9obiA8ZGFfYXVkaW9waGlsZUB5YWhvby5jb20.OyBsa21sIDxsaW51eC1rZXJuZWxAdmdlci5rZXJuZWwub3JnPjsgIm5ldGRldkB2Z2VyLmtlcm5lbC5vcmciIDxuZXRkZXZAdmcBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.177.636
+References: <1392466251.41282.YahooMailNeo@web140003.mail.bf1.yahoo.com>	 <1392494917.71728.YahooMailNeo@web140002.mail.bf1.yahoo.com>	 <20140215203015.GA4528@pd.tnic>	 <1392498262.98385.YahooMailNeo@web140003.mail.bf1.yahoo.com>	 <20140215232508.GB4508@pd.tnic> <1392571653.44773.4.camel@leira.trondhjem.org>
+Message-ID: <1392667974.22806.YahooMailNeo@web140003.mail.bf1.yahoo.com>
+Date: Mon, 17 Feb 2014 12:12:54 -0800 (PST)
+From: John <da_audiophile@yahoo.com>
+Reply-To: John <da_audiophile@yahoo.com>
+Subject: Re: [BUG] unable to handle kernel NULL pointer dereference
+To: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "mlindner@marvell.com" <mlindner@marvell.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <1392571653.44773.4.camel@leira.trondhjem.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 February 2014 Daniel J Blueman <daniel@quora.org> wrote:
-> Across 5+ years of kernels, I've been seeing occasional (1-2 times per
-> day) key-stuck issues where eg a fn+delete combo repeats delete until
-> I press delete again. I've seen this happen with fn+ctrl+left, leaving
-> left held and likewise with right.
+
+
+
+
+----- Original Message -----
+> From: Trond Myklebust <trond.myklebust@primarydata.com>
+> To: Borislav Petkov <bp@alien8.de>; Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+> Cc: John <da_audiophile@yahoo.com>; lkml <linux-kernel@vger.kernel.org>; "netdev@vger.kernel.org" <netdev@vger.kernel.org>; "stephen@networkplumber.org" <stephen@networkplumber.org>; "mlindner@marvell.com" <mlindner@marvell.com>; J. Bruce Fields <bfields@fieldses.org>
+> Sent: Sunday, February 16, 2014 12:27 PM
+> Subject: Re: [BUG] unable to handle kernel NULL pointer dereference
 > 
-> This has occurred on Apple laptops, external USB keyboards and Dell
-> laptops, so seems like a linux USB input issue, as I haven't seen
-> occur on Windows or MacOS on the same hardware.
+> Please ensure that you post to the linux-nfs@vger.kernel.org when
+> reporting NFS and RPC related bugs.
+>  
+> Does the following patch help?
 > 
-> It seems a good move for me to rebuild and run a kernel with some USB
-> HID instrumentation to locate this issue over time. Without apriori
-> knowledge of the linux USB input stack, what is a good initial
-> approach?
-
-I've seen some similar behavior on servers connected to a KVM switch
-(USB keyboard/mouse) where without apparent reason the ENTER key became
-pressed and did continuously send repeat events.
-
-Physically touching the KVM keyboard or unbinding&rebinding the HID
-keyboard solved the issue (on a console that triggers a busy loop of
-agettys on active vt).
-
-I've been tempted to attribute it to the KVM switch doing something
-when switching to another server via key-press (yes, some co-worker
-as at the KVM terminal when the getty load started).
-
-On the other hand, some other co-worker had "dead keyboard" issues
-though only under X, things still worked at console level, for quite
-some time now. Annoying but not regular enough to look further into it.
 
 
-If you want to look at what happens for you, monitoring the USB activity
-for your keyboard (in combination with output from event device) might
-be the most useful way (it would also catch details on when the USB
-side goes into power-saving, if at all).
-
-Bruno
+Trond.  Yes, your patch fixes the regression for me; tested on v3.13.3,  I do not know the process by which patches get into the next stable release (minor version).  My hope is that once peer-reviewed, this patch gets into the 3.13.4 and since the 3.12 series is not EOL yet, into 3.12.12 as well.  Thank you for the time and effort!
