@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaBQF6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 00:58:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:45882 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925AbaBQF6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 00:58:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,858,1384329600"; 
-   d="scan'208";a="341486027"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] IA64: fix warning in make defconfig
-Date: Mon, 17 Feb 2014 13:59:30 +0800
-Message-Id: <1392616774-8620-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752267AbaBQGCq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 01:02:46 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:53804 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaBQGCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 01:02:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <5301A4DC.4020208@yahoo.com.au>
+References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
+	<5301A4DC.4020208@yahoo.com.au>
+Date: Mon, 17 Feb 2014 11:32:43 +0530
+Message-ID: <CAJe_ZhfjaiVxC_AX48KMdMA6XQqLcAJMd2A1GyLDP8e=ihZrVg@mail.gmail.com>
+Subject: Re: [PATCHv3] Generic Mailbox API
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Craig McGeachie <slapdau@yahoo.com.au>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Anna, Suman" <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now the ACPI container and ACPI PCI hotplug driver has been converted
-as built-in modules, so reflect these changes in IA64 defconfig file.
+On 17 February 2014 11:27, Craig McGeachie <slapdau@yahoo.com.au> wrote:
+> On 16/02/14 07:22, Jassi Brar wrote:
+>>
+>> Hello,
+>>
+>>    Here is what the generic mailbox api looks like after modifications
+>> to make it work with 5 different platforms.
+>>   Major feedback from Suman Anna(TI), LeyFoon Tan(Intel),
+>> Craig McGeachie(Broadcom) and Loic Pallardy(ST).
+>>
+>> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+>>
+>
+> Important point of clarification.  I don't work for Broadcom.  I have no
+> current or past affiliation with Broadcom.  I was fairly certain that I'd
+> given no indication that I did.  I'm just some guy who purchased a single
+> board computer based on one of their products.  I do work for an IT company,
+> but that isn't relevant to what I do after hours on my own time.
+>
+I saw the Broadcom driver being worked upon by you and assumed you
+either work for or on contract with Broadcom. It doesn't matter much
+anyways by virtue of the beauty of open-source :)
+ So you still have a say on the mailbox code.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/ia64/configs/generic_defconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/ia64/configs/generic_defconfig b/arch/ia64/configs/generic_defconfig
-index efbd292..6404acb 100644
---- a/arch/ia64/configs/generic_defconfig
-+++ b/arch/ia64/configs/generic_defconfig
-@@ -30,9 +30,9 @@ CONFIG_ACPI_BUTTON=m
- CONFIG_ACPI_FAN=m
- CONFIG_ACPI_DOCK=y
- CONFIG_ACPI_PROCESSOR=m
--CONFIG_ACPI_CONTAINER=m
-+CONFIG_ACPI_CONTAINER=y
- CONFIG_HOTPLUG_PCI=y
--CONFIG_HOTPLUG_PCI_ACPI=m
-+CONFIG_HOTPLUG_PCI_ACPI=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
- CONFIG_INET=y
--- 
-1.7.10.4
-
+Thanks
+Jassi
