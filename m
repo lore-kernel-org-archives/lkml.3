@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaBQTcw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 14:32:52 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32820 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278AbaBQTct (ORCPT
+	id S1754463AbaBQTcj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 14:32:39 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38514 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753222AbaBQTci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 14:32:49 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18zUknBvt/a01tI/DZQylXIsRKhzRPBkxs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan E804F52A941
-Date: Mon, 17 Feb 2014 14:32:30 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] irqchip: dove: drivers for v3.14
-Message-ID: <20140217193230.GW7862@titan.lakedaemon.net>
-References: <20131201172914.GV2879@titan.lakedaemon.net>
- <20131211175037.GY10053@titan.lakedaemon.net>
- <20140110183430.GO19878@titan.lakedaemon.net>
- <20140128173531.GT29184@titan.lakedaemon.net>
- <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
- <20140204211219.GK8533@titan.lakedaemon.net>
- <alpine.DEB.2.02.1402042230230.24986@ionos.tec.linutronix.de>
- <20140207180836.GE8533@titan.lakedaemon.net>
+	Mon, 17 Feb 2014 14:32:38 -0500
+Date: Mon, 17 Feb 2014 19:29:36 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH v3 5/6] arm64: ftrace: Add system call tracepoint
+Message-ID: <20140217192936.GH26590@mudshark.cambridge.arm.com>
+References: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org>
+ <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
+ <1391768336-5642-6-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207180836.GE8533@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1391768336-5642-6-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
-
-On Fri, Feb 07, 2014 at 01:08:36PM -0500, Jason Cooper wrote:
-> On Tue, Feb 04, 2014 at 10:30:53PM +0100, Thomas Gleixner wrote:
-> > On Tue, 4 Feb 2014, Jason Cooper wrote:
-> > 
-> > > On Tue, Feb 04, 2014 at 07:59:58PM +0100, Thomas Gleixner wrote:
-> > > > On Tue, 28 Jan 2014, Jason Cooper wrote:
-> > > > > I see you pulled in mvebu/irqchip-fixes.  Thanks for that.  It's getting
-> > > > > near to the end of the merge window and there's been no activity on this
-> > > > > pull request.
-> > > > > 
-> > > > > Please let us know if there's anything we can do to assist.
-> > > > 
-> > > > Nah. I simply forgot about it. About to send a pull request to Linus.
-> > > 
-> > > hmmm.  I see the pull request contains the patches from
-> > > mvebu/irqchip-fixes (armada), but not the patches from mvebu/irqchip
-> > > (dove):
-> > > 
-> > >   40b367d95fb3 irqchip: irq-dove: Add PMU interrupt controller.
-> > > 
-> > > which is what this thread was originally a pull request for.
-> > > 
-> > > 
-> > > Are you planning to send a second pull request to Linus?
-> > 
-> > Duh. I'll pick that up tomorrow
+On Fri, Feb 07, 2014 at 10:18:55AM +0000, AKASHI Takahiro wrote:
+> This patch allows system call entry or exit to be traced as ftrace events,
+> ie. sys_enter_*/sys_exit_*, if CONFIG_FTRACE_SYSCALLS is enabled.
+> Those events appear and can be controlled under
+>     ${sysfs}/tracing/events/syscalls/
 > 
-> Ping?
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/Kconfig               |    1 +
+>  arch/arm64/include/asm/syscall.h |    1 +
+>  arch/arm64/include/asm/unistd.h  |    2 ++
+>  arch/arm64/kernel/ptrace.c       |    5 +++++
+>  4 files changed, 9 insertions(+)
+> 
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 43fce76..9bdaf5c 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -42,6 +42,7 @@ config ARM64
+>  	select HAVE_HW_BREAKPOINT if PERF_EVENTS
+>  	select HAVE_MEMBLOCK
+>  	select HAVE_PERF_EVENTS
+> +	select HAVE_SYSCALL_TRACEPOINTS
+>  	select IRQ_DOMAIN
+>  	select MODULES_USE_ELF_RELA
+>  	select NO_BOOTMEM
+> diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
+> index 70ba9d4..383771e 100644
+> --- a/arch/arm64/include/asm/syscall.h
+> +++ b/arch/arm64/include/asm/syscall.h
+> @@ -18,6 +18,7 @@
+>  
+>  #include <linux/err.h>
+>  
+> +extern const void *sys_call_table[];
+>  
+>  static inline int syscall_get_nr(struct task_struct *task,
+>  				 struct pt_regs *regs)
+> diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+> index 82ce217..c335479 100644
+> --- a/arch/arm64/include/asm/unistd.h
+> +++ b/arch/arm64/include/asm/unistd.h
+> @@ -28,3 +28,5 @@
+>  #endif
+>  #define __ARCH_WANT_SYS_CLONE
+>  #include <uapi/asm/unistd.h>
+> +
+> +#define NR_syscalls (__NR_syscalls)
+> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+> index 64ce39f..f4c3c4e 100644
+> --- a/arch/arm64/kernel/ptrace.c
+> +++ b/arch/arm64/kernel/ptrace.c
+> @@ -41,6 +41,9 @@
+>  #include <asm/traps.h>
+>  #include <asm/system_misc.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/syscalls.h>
+> +
+>  /*
+>   * TODO: does not yet catch signals sent when the child dies.
+>   * in exit.c or in signal.c.
+> @@ -1076,10 +1079,12 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+>  	}
+>  
+>  	if (dir) {
+> +		trace_sys_exit(regs, regs->syscallno);
+>  		tracehook_report_syscall_exit(regs, 0);
+>  	} else {
+>  		if (tracehook_report_syscall_entry(regs))
+>  			regs->syscallno = ~0UL;
+> +		trace_sys_enter(regs, regs->syscallno);
 
-I think it's safe to say that the Dove PMU interrupt controller isn't
-going to make it in to v3.14.  I've posted a patch to remove the DT node
-for v3.14.
+Shouldn't these calls be guarded by a TIF_SYSCALL_TRACEPOINT check?
 
-If you don't mind, I'll go ahead and take this pull request through the
-mvebu tree for v3.15.  So that way it's off your plate and you don't
-have to worry about it.
-
-There's more mvebu irqchip stuff on the way :)
-
-thx,
-
-Jason.
+Will
