@@ -1,153 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786AbaBQEs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 23:48:29 -0500
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:46478 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaBQEs2 (ORCPT
+	id S1752122AbaBQEu3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 23:50:29 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:65004 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaBQEu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 23:48:28 -0500
-X-AuditID: 85900ec0-d3b2cb9000001514-d4-5301948cfd30
-Subject: [PATCH V2] serial/uart: Add tunable RX interrupt trigger I/F of
- FIFO buffers
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Mon, 17 Feb 2014 13:48:12 +0900
-Message-ID: <20140217044812.4868.28106.stgit@yunodevel>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Sun, 16 Feb 2014 23:50:28 -0500
+Message-ID: <1392612613.5565.78.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
+ workqueue
+From: Mike Galbraith <bitbucket@online.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: Kevin Hilman <khilman@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Date: Mon, 17 Feb 2014 05:50:13 +0100
+In-Reply-To: <20140216164106.GD4250@linux.vnet.ibm.com>
+References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
+	 <52F8A51F.4090909@cn.fujitsu.com>
+	 <20140210184729.GL4250@linux.vnet.ibm.com>
+	 <20140212182336.GD5496@localhost.localdomain>
+	 <20140212190241.GD4250@linux.vnet.ibm.com>
+	 <20140212192354.GC26809@htj.dyndns.org> <7hk3cx46rw.fsf@paris.lan>
+	 <1392449804.5517.45.camel@marge.simpson.net>
+	 <20140216164106.GD4250@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:/qPihr+D4g91Ao8t3oQushbrICjSj6coN3pm2VvQ4cH
+ f13+Un7sLGsznQMWR4Xh+40CFKGpUcSLgGK/97wlrvf5RjGFd0
+ 8P4XA5H5A2TitjpMcyCYj+kLFi7bdRdzXjdOkX1xsqR2j+zI5M
+ c03XmVRDMg8WV9kYcNXUcYgN4bKb7Ja+Rzhz9bKaA94/2oHJ38
+ Nsbrv5rWgC2va+WXIIwTGqhSyD79R480Cf7brLzo2kbalE1WMB
+ 3K/xgE0yBKSaJW7pZ5Tr17vAGtrYBRdnqne8odDPs5hS/sOUiO
+ mU/3Z1qo4xvfBCR4EspBT24+VcWq4r07HPfSOaRaqpnMSxHpQD
+ 1dD396Q1LFvhAa34jSZ/V4IBft91JTGozyeukVKw63hbMR6G7O
+ 73GSpkWbN9ZCA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add tunable RX interrupt trigger I/F of FIFO buffers.
-Serial devices are used as not only message communication devices but control
-or sending communication devices. For the latter uses, normally small data
-will be exchanged, so user applications want to receive data unit as soon as
-possible for real-time tendency. If we have a sensor which sends a 1 byte data
-each time and must control a device based on the sensor feedback, the RX
-interrupt should be triggered for each data.
+On Sun, 2014-02-16 at 08:41 -0800, Paul E. McKenney wrote:
 
-According to HW specification of serial UART devices, RX interrupt trigger
-can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
-in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
-the trigger to only 8bytes.
+> So if there is NO_HZ_FULL, you have no objection to binding workqueues to
+> the timekeeping CPUs, but that you would also like some form of automatic
+> binding in the !NO_HZ_FULL case.  Of course, if a common mechanism could
+> serve both cases, that would be good.  And yes, cpusets are frowned upon
+> for some workloads.
 
-This patch makes a 16550A device change RX interrupt trigger from userland.
+I'm not _objecting_, I'm not driving, Frederic's doing that ;-)
 
-<How to use>
-unsigned char rx_trig_byte = 1;
-fd = open(TTY_PASS, O_RDWR | O_NONBLOCK);
-ioctl(fd, TIOCSFIFOTRIG, rx_trig_byte);
-read(fd, buf, size);
+That said, isolation seems to be turning into a property of nohz mode,
+but as I see it, nohz_full is an extension to generic isolation.
 
-<Support uart device>
-- 16550A (1, 4, 8, or 14 bytes)
+> So maybe start with Kevin's patch, but augment with something else for
+> the !NO_HZ_FULL case?
 
-Changed in V2:
- - Use _IOW for TIOCSFIFORTRIG definition
- - Pass the interrupt trigger value itself
+Sure (hm, does it work without workqueue.disable_numa ?).
 
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/tty/serial/8250/8250_core.c |   58 +++++++++++++++++++++++++++++++++++
- include/uapi/asm-generic/ioctls.h   |    1 +
- 2 files changed, 59 insertions(+)
+It just seems to me that tying it to sched domain construction would be
+a better fit.  That way, it doesn't matter what your isolation requiring
+load is, whether you run a gaggle of realtime tasks or one HPC task your
+business, the generic requirement is isolation, not tick mode.  For one
+HPC task per core, you want no tick, if you're running all SCHED_FIFO,
+maybe you want that too, depends on the impact of nohz_full mode.  All
+sensitive loads want the isolation, but they may not like the price.
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 61ecd70..429f3a6 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2699,6 +2699,63 @@ serial8250_verify_port(struct uart_port *port, struct serial_struct *ser)
- 	return 0;
- }
- 
-+static int convert_val2rxtrig(struct uart_8250_port *up, unsigned char val)
-+{
-+	switch (up->port.type) {
-+	case PORT_16550A:
-+		if (val == 1)
-+			return UART_FCR_R_TRIG_00;
-+		else if (val == 4)
-+			return UART_FCR_R_TRIG_01;
-+		else if (val == 8)
-+			return UART_FCR_R_TRIG_10;
-+		else if (val == 14)
-+			return UART_FCR_R_TRIG_11;
-+		break;
-+	default:
-+		pr_info("Not support RX-trigger setting for this serial %u\n",
-+			up->port.type);
-+	}
-+	return -EINVAL;
-+}
-+
-+static int set_fifo_rx_trigger(struct uart_8250_port *up, unsigned char val)
-+{
-+	unsigned char fcr;
-+	int rx_trig;
-+
-+	rx_trig = convert_val2rxtrig(up, val);
-+	if (rx_trig < 0)
-+		return rx_trig;
-+
-+	fcr = uart_config[up->port.type].fcr;
-+	serial8250_clear_fifos(up);
-+	fcr &= ~UART_FCR_TRIGGER_MASK;
-+	fcr |= (unsigned char)rx_trig;
-+	serial_out(up, UART_FCR, fcr);
-+	return 0;
-+}
-+
-+static int
-+serial8250_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
-+{
-+	struct uart_8250_port *up =
-+		container_of(port, struct uart_8250_port, port);
-+	int ret;
-+
-+	if (!(up->capabilities & UART_CAP_FIFO) || port->fifosize <= 1)
-+		return -EINVAL;
-+
-+	switch (cmd) {
-+	case TIOCSFIFORTRIG:
-+		ret = set_fifo_rx_trigger(up, (unsigned char)arg);
-+		break;
-+	default:
-+		ret = -ENOIOCTLCMD;
-+	}
-+	return ret;
-+}
-+
- static const char *
- serial8250_type(struct uart_port *port)
- {
-@@ -2728,6 +2785,7 @@ static struct uart_ops serial8250_pops = {
- 	.request_port	= serial8250_request_port,
- 	.config_port	= serial8250_config_port,
- 	.verify_port	= serial8250_verify_port,
-+	.ioctl		= serial8250_ioctl,
- #ifdef CONFIG_CONSOLE_POLL
- 	.poll_get_char = serial8250_get_poll_char,
- 	.poll_put_char = serial8250_put_poll_char,
-diff --git a/include/uapi/asm-generic/ioctls.h b/include/uapi/asm-generic/ioctls.h
-index 143dacb..9504dca 100644
---- a/include/uapi/asm-generic/ioctls.h
-+++ b/include/uapi/asm-generic/ioctls.h
-@@ -77,6 +77,7 @@
- #define TIOCGPKT	_IOR('T', 0x38, int) /* Get packet mode state */
- #define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
- #define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
-+#define TIOCSFIFORTRIG	_IOW('T', 0x41, unsigned char) /* Set RX int. trigger */
- 
- #define FIONCLEX	0x5450
- #define FIOCLEX		0x5451
+I personally like the cpuset way.  Being able to partition boxen on the
+fly makes them very flexible.  In a perfect world, you'd be able to
+quiesce and configure offloading and nohz_full on the fly too, and not
+end up with some hodgepodge like this needs boot option foo, that
+happens invisibly because of config option bar, the other thing you have
+to do manually.. and you get to eat 937 kthreads and tons of overhead on
+all CPUs if you want the ability to _maybe_ run a critical task or two.
+
+-Mike
 
