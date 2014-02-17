@@ -1,92 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618AbaBPX7y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 18:59:54 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:34326 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaBPX7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 18:59:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <CF26B239.2E7B4%dbanerje@akamai.com>
-References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
-	<CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
-	<CF26B239.2E7B4%dbanerje@akamai.com>
-Date: Sun, 16 Feb 2014 15:59:51 -0800
-X-Google-Sender-Auth: puVQShdJTJm7PF6ooArjOYvR0ew
-Message-ID: <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
-Subject: Re: [PATCH] printk: Fix discarding of records
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Banerjee, Debabrata" <dbanerje@akamai.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeff Mahoney <jeffm@suse.com>,
-        "dbavatar@gmail.com" <dbavatar@gmail.com>,
-        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753806AbaBQABd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 19:01:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44314 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753770AbaBQABc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 19:01:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,857,1384329600"; 
+   d="scan'208";a="456569431"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org, john.stultz@linaro.org
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH V2] staging: ion: replace ion_phys_addr_t with phys_addr_t
+Date: Mon, 17 Feb 2014 02:00:06 +0200
+Message-Id: <1392595206-6650-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 16, 2014 at 3:23 PM, Banerjee, Debabrata
-<dbanerje@akamai.com> wrote:
->
-> The explanation is: the loops look identical but they are not. When a
-> record is printed first, its size can expand due to adding the prefix and
-> timestamp. The second loop is calculating len with the first line printed
-> possibly changing every iteration.
+Looks like phys_addr_t's are fully plumbed in the kernel.
 
-That still makes zero sense.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+V2: remove one more comment regarding ion_phys_addr_t
 
-The size should damn well not change, because we *should* be calling
-it with the exact same flags. If the size changes, something is wrong.
-The logic is:
+ drivers/staging/android/ion/ion.c               |  2 +-
+ drivers/staging/android/ion/ion.h               | 12 +++---------
+ drivers/staging/android/ion/ion_carveout_heap.c | 14 +++++++-------
+ drivers/staging/android/ion/ion_chunk_heap.c    |  2 +-
+ drivers/staging/android/ion/ion_cma_heap.c      |  2 +-
+ drivers/staging/android/ion/ion_priv.h          | 10 +++++-----
+ drivers/staging/android/ion/ion_system_heap.c   |  2 +-
+ 7 files changed, 19 insertions(+), 25 deletions(-)
 
- - first traverse all log indexes to find out the total length
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 14cb6c6..fb0d105 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -547,7 +547,7 @@ void ion_free(struct ion_client *client, struct ion_handle *handle)
+ EXPORT_SYMBOL(ion_free);
+ 
+ int ion_phys(struct ion_client *client, struct ion_handle *handle,
+-	     ion_phys_addr_t *addr, size_t *len)
++	     phys_addr_t *addr, size_t *len)
+ {
+ 	struct ion_buffer *buffer;
+ 	int ret;
+diff --git a/drivers/staging/android/ion/ion.h b/drivers/staging/android/ion/ion.h
+index dcd2a0c..43b76f3 100644
+--- a/drivers/staging/android/ion/ion.h
++++ b/drivers/staging/android/ion/ion.h
+@@ -28,12 +28,6 @@ struct ion_mapper;
+ struct ion_client;
+ struct ion_buffer;
+ 
+-/* This should be removed some day when phys_addr_t's are fully
+-   plumbed in the kernel, and all instances of ion_phys_addr_t should
+-   be converted to phys_addr_t.  For the time being many kernel interfaces
+-   do not accept phys_addr_t's that would have to */
+-#define ion_phys_addr_t unsigned long
+-
+ /**
+  * struct ion_platform_heap - defines a heap in the given platform
+  * @type:	type of the heap from ion_heap_type enum
+@@ -52,9 +46,9 @@ struct ion_platform_heap {
+ 	enum ion_heap_type type;
+ 	unsigned int id;
+ 	const char *name;
+-	ion_phys_addr_t base;
++	phys_addr_t base;
+ 	size_t size;
+-	ion_phys_addr_t align;
++	phys_addr_t align;
+ 	void *priv;
+ };
+ 
+@@ -145,7 +139,7 @@ void ion_free(struct ion_client *client, struct ion_handle *handle);
+  * holding a reference.
+  */
+ int ion_phys(struct ion_client *client, struct ion_handle *handle,
+-	     ion_phys_addr_t *addr, size_t *len);
++	     phys_addr_t *addr, size_t *len);
+ 
+ /**
+  * ion_map_dma - return an sg_table describing a handle
+diff --git a/drivers/staging/android/ion/ion_carveout_heap.c b/drivers/staging/android/ion/ion_carveout_heap.c
+index 3cb05b9..295340e 100644
+--- a/drivers/staging/android/ion/ion_carveout_heap.c
++++ b/drivers/staging/android/ion/ion_carveout_heap.c
+@@ -28,10 +28,10 @@
+ struct ion_carveout_heap {
+ 	struct ion_heap heap;
+ 	struct gen_pool *pool;
+-	ion_phys_addr_t base;
++	phys_addr_t base;
+ };
+ 
+-ion_phys_addr_t ion_carveout_allocate(struct ion_heap *heap,
++phys_addr_t ion_carveout_allocate(struct ion_heap *heap,
+ 				      unsigned long size,
+ 				      unsigned long align)
+ {
+@@ -45,7 +45,7 @@ ion_phys_addr_t ion_carveout_allocate(struct ion_heap *heap,
+ 	return offset;
+ }
+ 
+-void ion_carveout_free(struct ion_heap *heap, ion_phys_addr_t addr,
++void ion_carveout_free(struct ion_heap *heap, phys_addr_t addr,
+ 		       unsigned long size)
+ {
+ 	struct ion_carveout_heap *carveout_heap =
+@@ -58,11 +58,11 @@ void ion_carveout_free(struct ion_heap *heap, ion_phys_addr_t addr,
+ 
+ static int ion_carveout_heap_phys(struct ion_heap *heap,
+ 				  struct ion_buffer *buffer,
+-				  ion_phys_addr_t *addr, size_t *len)
++				  phys_addr_t *addr, size_t *len)
+ {
+ 	struct sg_table *table = buffer->priv_virt;
+ 	struct page *page = sg_page(table->sgl);
+-	ion_phys_addr_t paddr = PFN_PHYS(page_to_pfn(page));
++	phys_addr_t paddr = PFN_PHYS(page_to_pfn(page));
+ 
+ 	*addr = paddr;
+ 	*len = buffer->size;
+@@ -75,7 +75,7 @@ static int ion_carveout_heap_allocate(struct ion_heap *heap,
+ 				      unsigned long flags)
+ {
+ 	struct sg_table *table;
+-	ion_phys_addr_t paddr;
++	phys_addr_t paddr;
+ 	int ret;
+ 
+ 	if (align > PAGE_SIZE)
+@@ -111,7 +111,7 @@ static void ion_carveout_heap_free(struct ion_buffer *buffer)
+ 	struct ion_heap *heap = buffer->heap;
+ 	struct sg_table *table = buffer->priv_virt;
+ 	struct page *page = sg_page(table->sgl);
+-	ion_phys_addr_t paddr = PFN_PHYS(page_to_pfn(page));
++	phys_addr_t paddr = PFN_PHYS(page_to_pfn(page));
+ 
+ 	ion_heap_buffer_zero(buffer);
+ 
+diff --git a/drivers/staging/android/ion/ion_chunk_heap.c b/drivers/staging/android/ion/ion_chunk_heap.c
+index d40f5f8..86b467e 100644
+--- a/drivers/staging/android/ion/ion_chunk_heap.c
++++ b/drivers/staging/android/ion/ion_chunk_heap.c
+@@ -27,7 +27,7 @@
+ struct ion_chunk_heap {
+ 	struct ion_heap heap;
+ 	struct gen_pool *pool;
+-	ion_phys_addr_t base;
++	phys_addr_t base;
+ 	unsigned long chunk_size;
+ 	unsigned long size;
+ 	unsigned long allocated;
+diff --git a/drivers/staging/android/ion/ion_cma_heap.c b/drivers/staging/android/ion/ion_cma_heap.c
+index f0f9889..f1e9211 100644
+--- a/drivers/staging/android/ion/ion_cma_heap.c
++++ b/drivers/staging/android/ion/ion_cma_heap.c
+@@ -129,7 +129,7 @@ static void ion_cma_free(struct ion_buffer *buffer)
+ 
+ /* return physical address in addr */
+ static int ion_cma_phys(struct ion_heap *heap, struct ion_buffer *buffer,
+-			ion_phys_addr_t *addr, size_t *len)
++			phys_addr_t *addr, size_t *len)
+ {
+ 	struct ion_cma_heap *cma_heap = to_cma_heap(buffer->heap);
+ 	struct device *dev = cma_heap->dev;
+diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
+index 0942a7f..f16e70f 100644
+--- a/drivers/staging/android/ion/ion_priv.h
++++ b/drivers/staging/android/ion/ion_priv.h
+@@ -42,7 +42,7 @@ struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);
+  * @priv_virt:		private data to the buffer representable as
+  *			a void *
+  * @priv_phys:		private data to the buffer representable as
+- *			an ion_phys_addr_t (and someday a phys_addr_t)
++ *			an phys_addr_t
+  * @lock:		protects the buffers cnt fields
+  * @kmap_cnt:		number of times the buffer is mapped to the kernel
+  * @vaddr:		the kenrel mapping if kmap_cnt is not zero
+@@ -69,7 +69,7 @@ struct ion_buffer {
+ 	size_t size;
+ 	union {
+ 		void *priv_virt;
+-		ion_phys_addr_t priv_phys;
++		phys_addr_t priv_phys;
+ 	};
+ 	struct mutex lock;
+ 	int kmap_cnt;
+@@ -106,7 +106,7 @@ struct ion_heap_ops {
+ 			unsigned long align, unsigned long flags);
+ 	void (*free)(struct ion_buffer *buffer);
+ 	int (*phys)(struct ion_heap *heap, struct ion_buffer *buffer,
+-		    ion_phys_addr_t *addr, size_t *len);
++		    phys_addr_t *addr, size_t *len);
+ 	struct sg_table * (*map_dma)(struct ion_heap *heap,
+ 				     struct ion_buffer *buffer);
+ 	void (*unmap_dma)(struct ion_heap *heap, struct ion_buffer *buffer);
+@@ -282,9 +282,9 @@ void ion_cma_heap_destroy(struct ion_heap *);
+  * kernel api to allocate/free from carveout -- used when carveout is
+  * used to back an architecture specific custom heap
+  */
+-ion_phys_addr_t ion_carveout_allocate(struct ion_heap *heap, unsigned long size,
++phys_addr_t ion_carveout_allocate(struct ion_heap *heap, unsigned long size,
+ 				      unsigned long align);
+-void ion_carveout_free(struct ion_heap *heap, ion_phys_addr_t addr,
++void ion_carveout_free(struct ion_heap *heap, phys_addr_t addr,
+ 		       unsigned long size);
+ /**
+  * The carveout heap returns physical addresses, since 0 may be a valid
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index 9849f39..79422c3 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -442,7 +442,7 @@ static void ion_system_contig_heap_free(struct ion_buffer *buffer)
+ 
+ static int ion_system_contig_heap_phys(struct ion_heap *heap,
+ 				       struct ion_buffer *buffer,
+-				       ion_phys_addr_t *addr, size_t *len)
++				       phys_addr_t *addr, size_t *len)
+ {
+ 	struct sg_table *table = buffer->priv_virt;
+ 	struct page *page = sg_page(table->sgl);
+-- 
+1.8.5.3
 
- - then traverse *again* all the indexes, until you have traversed
-enough that the remainder fits in the given buffer size.
-
-For this to make sense, that second pass absolutely *has* to use the
-exact same lengths as the first pass did. Otherwise the whole logic is
-totally broken.
-
-Now, *once* you have found the right record (so that the rest should
-fit), the problem is that the *third* loop (that traverses that "rest"
-part) is now done with a "prev" value that does not match the original
-"let's figure out the size".
-
-So my suspicion is that the *real* bug is that
-
-    prev = 0;
-
-before that *third* loop, because it means that the first time through
-that loop (when we did *not* reset "seq/idx" to the beginning, we use
-the wrong "prev" value.
-
-So my (totally and utterly untested, and obviously whitespace-damaged)
-suggested patch would be something along the lines of this:
-
-    diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-    index b1d255f04135..053c3c1a4061 100644
-    --- a/kernel/printk/printk.c
-    +++ b/kernel/printk/printk.c
-    @@ -1076,7 +1076,6 @@ static int syslog_print_all(char __user
-*buf, int size, bool clear)
-                    next_seq = log_next_seq;
-
-                    len = 0;
-    -               prev = 0;
-                    while (len >= 0 && seq < next_seq) {
-                            struct printk_log *msg = log_from_idx(idx);
-                            int textlen;
-
-because at least this makes sense. It means that "prev" is only zero
-when we start from "clear_idx", at all other times it's actually the
-msg->flags of the previous message.
-
-But maybe I'm missing something. That code really is messy. But
-clearing "prev" there in the middle really looks wrong to me.
-
-               Linus
