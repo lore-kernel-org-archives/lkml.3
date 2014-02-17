@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaBQBzw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 20:55:52 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:45577 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127AbaBQBzv (ORCPT
+	id S1753930AbaBQB4G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 20:56:06 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:37322 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127AbaBQB4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 20:55:51 -0500
+	Sun, 16 Feb 2014 20:56:02 -0500
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
 Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
@@ -17,29 +17,40 @@ Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
         akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
         fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
         wangyun@linux.vnet.ibm.com
-Subject: [PATCH v2 0/11] remove cpu_load in rq 
-Date: Mon, 17 Feb 2014 09:55:06 +0800
-Message-Id: <1392602117-20773-1-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH v2 01/11] sched: shortcut to remove load_idx
+Date: Mon, 17 Feb 2014 09:55:07 +0800
+Message-Id: <1392602117-20773-2-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1392602117-20773-1-git-send-email-alex.shi@linaro.org>
+References: <1392602117-20773-1-git-send-email-alex.shi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu_load decays on time according past cpu load of rq. The sched_avg also decays tasks' load on time. Now we has 2 kind decay for cpu_load. That is a kind of redundancy. And increase the system load by decay calculation. This patch try to remove the cpu_load decay.
+Shortcut to remove rq->cpu_load[load_idx] effect in scheduler.
+In five load idx, only busy_idx, idle_idx are not zero.
+Newidle_idx, wake_idx and fork_idx are all zero in all archs.
 
-There are 5 load_idx used for cpu_load in sched_domain. busy_idx and idle_idx are not zero usually, but newidle_idx, wake_idx and forkexec_idx are all zero on every arch. A shortcut to remove cpu_Load decay in the first patch. just one line patch for this change.
+So, change the idx to zero here can fully remove load_idx effect.
 
-V2,
-1, This version do some tuning on load bias of target load, to maximum match current code logical.
-2, Got further to remove the cpu_load in rq.
-3, Revert the patch 'Limit sd->*_idx range on sysctl' since no needs
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Any testing/comments are appreciated.
-
-This patch rebase on latest tip/master.
-The git tree for this patchset at:
- git@github.com:alexshi/power-scheduling.git noload
-
-Thanks
-Alex
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 235cfa7..4fcc3a3 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5908,7 +5908,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ 	if (child && child->flags & SD_PREFER_SIBLING)
+ 		prefer_sibling = 1;
+ 
+-	load_idx = get_sd_load_idx(env->sd, env->idle);
++	load_idx = 0;
+ 
+ 	do {
+ 		struct sg_lb_stats *sgs = &tmp_sgs;
+-- 
+1.8.1.2
 
