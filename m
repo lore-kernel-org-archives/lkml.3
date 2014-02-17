@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaBQImv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:42:51 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:38460 "EHLO
+	id S1752270AbaBQIko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:40:44 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:38453 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279AbaBQIkp (ORCPT
+	with ESMTP id S1751277AbaBQIkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:40:45 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-42-5301cb0cadd8
+	Mon, 17 Feb 2014 03:40:40 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-b1-5301cb05d60f
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
@@ -17,89 +17,62 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v3 11/13] Documentation: mfd: s2mps11: Document support for
- S2MPS14
-Date: Mon, 17 Feb 2014 09:40:25 +0100
-Message-id: <1392626427-4518-12-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v3 01/13] mfd: sec: Add maximum RTC register for regmap config
+Date: Mon, 17 Feb 2014 09:40:15 +0100
+Message-id: <1392626427-4518-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1392626427-4518-1-git-send-email-k.kozlowski@samsung.com>
 References: <1392626427-4518-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xK7q8pxmDDTbGWGycsZ7VYurDJ2wW
-	84+cY7Xof7OQ1eLcq5WMFq9fGFqcbXrDbnH/61FGi29XOpgsLu+aw2Yx4/w+Jou1R+6yWyy9
-	fpHJYsL0tSwWrXuPsFuc7ma1uLjiC5PF+hmvWSzmTH/H5CDssWbeGkaPy329TB47Z91l91i5
-	/Aubx6ZVnWwed67tYfOYdzLQo2/LKkaPz5vkAjijuGxSUnMyy1KL9O0SuDJmXb7CVHBJoOLl
-	h58sDYynebsYOTkkBEwkZl/cxgRhi0lcuLeerYuRi0NIYCmjxOH29cwQTh+TxJobPSwgVWwC
-	xhKbly8BqxIR2Mwosfj7VVYQh1lgD4vEhp+H2LsYOTiEBUIljrQZgjSwCKhK7FiykRnE5hVw
-	l9j77wszSImEgILEnEk2IGFOoPDTvqmsIGEhATeJ/RvDJjDyLmBkWMUomlqaXFCclJ5rqFec
-	mFtcmpeul5yfu4kREuxfdjAuPmZ1iFGAg1GJh9egmjFYiDWxrLgy9xCjBAezkgiv7TqgEG9K
-	YmVValF+fFFpTmrxIUYmDk6pBkadBQu/LasKFclzO6yT/dH3XdxhSZGptsV8UpF69x8lbTFS
-	KLG1LNyi1dGfdWFdROPNlbvWSXB+vp9/bO6XfUfWm7bM/bWA+VNei/DvG/Urnx698Zqt12id
-	1W7dY8/OlwhPmHQsviv8BffkmVx9l1foXZ/z8zHb63lH5p7YVfhrxonoMxJFXFz+SizFGYmG
-	WsxFxYkAUcWOf1QCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPJMWRmVeSWpSXmKPExsVy+t/xK7qspxmDDY6eM7fYOGM9q8XrF4YW
+	Z5vesFvc/3qU0eLyrjlsFjPO72OyWHvkLrvF6W5Wi4srvjBZrJ/xmsVizvR3TA7cHneu7WHz
+	mHcy0KNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy5jRNYy04wFExZydrA2MrexcjO4eEgInE
+	xdouRk4gS0ziwr31bF2MXBxCAksZJU73rWeCcPqYJO5cPcAMUsUmYCyxefkSsCoRgc2MEou/
+	X2UFcZgFZjJJ/Ln5gAmkSljAT2LFlVPsIDaLgKrEn/lLwWxeATeJK4sbWboYOYD2KUjMmWQD
+	EuYUcJd42jeVFSQsBFSyf2PYBEbeBYwMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCAu3r
+	Dsalx6wOMQpwMCrx8BpUMwYLsSaWFVfmHmKU4GBWEuG1XQcU4k1JrKxKLcqPLyrNSS0+xMjE
+	wSnVwLi8fk3BUrvsm/vn3PK4+2/b9pI1nn3lcq33m14d2B+dlKMSw7RYNjxHvy3pw55XnIqO
+	WxKOfP/QJ1YudPXGb5ngS3seKj9Ufr1YRP7HrsjJexVu/W4X3lG2tWhu74Gvpd11mnk31918
+	t8/3TszX067vWrfOmW30YJvyRpdlR/70XIp/cfIUQ3qJEktxRqKhFnNRcSIAVMdT2BICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bindings documentation for S2MPS14 device to the s2mps11 driver.
+Add maximum register to the regmap used by rtc-s5m driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Cc: devicetree@vger.kernel.org
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Acked-by: Tomasz Figa <t.figa@samsung.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- Documentation/devicetree/bindings/mfd/s2mps11.txt |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/mfd/sec-core.c          |    2 ++
+ include/linux/mfd/samsung/rtc.h |    2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-index 15ee89c3cc7b..f69bec294f02 100644
---- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-+++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-@@ -1,5 +1,5 @@
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 7c6ce2e4aaa6..6021c54f74cf 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -141,6 +141,8 @@ static const struct regmap_config s5m8767_regmap_config = {
+ static const struct regmap_config sec_rtc_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 8,
++
++	.max_register = SEC_RTC_REG_MAX,
+ };
  
--* Samsung S2MPS11 Voltage and Current Regulator
-+* Samsung S2MPS11 and S2MPS14 Voltage and Current Regulator
+ #ifdef CONFIG_OF
+diff --git a/include/linux/mfd/samsung/rtc.h b/include/linux/mfd/samsung/rtc.h
+index 94b7cd6d8891..4627f59ebd84 100644
+--- a/include/linux/mfd/samsung/rtc.h
++++ b/include/linux/mfd/samsung/rtc.h
+@@ -43,6 +43,8 @@ enum sec_rtc_reg {
+ 	SEC_RTC_STATUS,
+ 	SEC_WTSR_SMPL_CNTL,
+ 	SEC_RTC_UDR_CON,
++
++	SEC_RTC_REG_MAX,
+ };
  
- The Samsung S2MPS11 is a multi-function device which includes voltage and
- current regulators, RTC, charger controller and other sub-blocks. It is
-@@ -7,7 +7,7 @@ interfaced to the host controller using an I2C interface. Each sub-block is
- addressed by the host system using different I2C slave addresses.
- 
- Required properties:
--- compatible: Should be "samsung,s2mps11-pmic".
-+- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic".
- - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
- 
- Optional properties:
-@@ -59,10 +59,14 @@ supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
- as per the datasheet of s2mps11.
- 
- 	- LDOn
--		  - valid values for n are 1 to 38
-+		  - valid values for n are:
-+			- S2MPS11: 1 to 38
-+			- S2MPS14: 1 to 25
- 		  - Example: LDO1, LD02, LDO28
- 	- BUCKn
--		  - valid values for n are 1 to 10.
-+		  - valid values for n are:
-+			- S2MPS11: 1 to 10
-+			- S2MPS14: 1 to 5
- 		  - Example: BUCK1, BUCK2, BUCK9
- 
- Example:
+ #define RTC_I2C_ADDR		(0x0C >> 1)
 -- 
 1.7.9.5
 
