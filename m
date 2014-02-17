@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaBQATq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 19:19:46 -0500
-Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:55348 "EHLO
-	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751622AbaBQATp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 19:19:45 -0500
-From: "Banerjee, Debabrata" <dbanerje@akamai.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Kay Sievers <kay.sievers@vrfy.org>,
+	id S1753690AbaBQAlL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 19:41:11 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:33054 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327AbaBQAlJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 19:41:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <CF26BC6D.2E80E%dbanerje@akamai.com>
+References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
+	<CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+	<CF26B239.2E7B4%dbanerje@akamai.com>
+	<CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
+	<CF26BC6D.2E80E%dbanerje@akamai.com>
+Date: Sun, 16 Feb 2014 16:41:06 -0800
+X-Google-Sender-Auth: _4QomGMjnG9pJbgFHLGj_DdIEJE
+Message-ID: <CA+55aFyywOm7pWrX4=04LTEJ6xYK4xDTxGRqes-MOT212PnWPw@mail.gmail.com>
+Subject: Re: [PATCH] printk: Fix discarding of records
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Banerjee, Debabrata" <dbanerje@akamai.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeff Mahoney <jeffm@suse.com>,
         "dbavatar@gmail.com" <dbavatar@gmail.com>,
         "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
-Date: Sun, 16 Feb 2014 19:19:41 -0500
-Subject: Re: [PATCH] printk: Fix discarding of records
-Thread-Topic: [PATCH] printk: Fix discarding of records
-Thread-Index: Ac8rdfR5i1XleUpcSTeOStTazDXN/A==
-Message-ID: <CF26BC6D.2E80E%dbanerje@akamai.com>
-References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
- <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
- <CF26B239.2E7B4%dbanerje@akamai.com>
- <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
-In-Reply-To: <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.9.131030
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=001a1136b61042d79804f28f69da
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/16/14, 6:59 PM, "Linus Torvalds" <torvalds@linux-foundation.org>
-wrote:
+--001a1136b61042d79804f28f69da
+Content-Type: text/plain; charset=UTF-8
 
->On Sun, Feb 16, 2014 at 3:23 PM, Banerjee, Debabrata
-><dbanerje@akamai.com> wrote:
->>
->> The explanation is: the loops look identical but they are not. When a
->> record is printed first, its size can expand due to adding the prefix
->>and
->> timestamp. The second loop is calculating len with the first line
->>printed
->> possibly changing every iteration.
+On Sun, Feb 16, 2014 at 4:19 PM, Banerjee, Debabrata
+<dbanerje@akamai.com> wrote:
 >
->That still makes zero sense.
->
->The size should damn well not change, because we *should* be calling
->it with the exact same flags. If the size changes, something is wrong.
+> No that can't be right, the prev value after every loop is the msg->flags
+> from the *last* line in the list, which has no relation to the *first*, so
+> reusing it for the top of the next loop is nonsense.
 
-The problem is that it starts discarding records from the top of the list,
-and the size of the first line is based on the previous line. When we
-discard the *first* line off the list, then the size of the next line can
-change since it is the new first line. My v1 patch was flawed because it
-didn't consider just the first line.
+Please, Debabrata, humor me, and just try the patch.
 
->So my suspicion is that the *real* bug is that
->
->    prev = 0;
->
->before that *third* loop, because it means that the first time through
->that loop (when we did *not* reset "seq/idx" to the beginning, we use
->the wrong "prev" value.
+And try reading the source code. Because your statement is BS.
 
-No that can't be right, the prev value after every loop is the msg->flags
-from the *last* line in the list, which has no relation to the *first*, so
-reusing it for the top of the next loop is nonsense. seq is not reset
-because the second loop seeks to the seq where the third loop starts
-printing.
+The third loop does *not* start again from the first line! It
+*continues* from where the second loop ended. Which is exactly why
+clearing "prev" is *wrong*. Because the *last* line that the second
+loop processes is indeed the previous line before the *first* line
+that the third loop starts processing.
 
-I think I really fixed it properly with my v2 patch, please take a look.
+No, I haven't tested my patch, and maybe it's broken for some subtle
+reason I'm missing too. But neither of your patches really make sense,
+although I can believe that your second patch happens to get the
+buffer size right almost by accident. Why? It's by virtue of the
+"prefix" for a line generally being the same length, so when you
+discount the prefix of the last line that you *don't* print, you by
+accident get as much room as the - extraneous - prefix of the *next*
+line that then actually gets copied. See?
 
--Debabrata
+(Btw, just to clarify: kmsg_dump_get_buffer() has the exact same logic
+and the exact same bug, so as with your patches, you should remove the
+"prev = 0" from before the third loop from that function too. Because
+exactly as with syslog_print_all(), the third loop *continues* where
+the second loop stops, and thus clearing "prev" is actually wrong).
 
+That extended patch attached, now without whitespace damage. But still
+completely and utterly untested.
+
+                         Linus
+
+--001a1136b61042d79804f28f69da
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hrr0o4lj0
+
+IGtlcm5lbC9wcmludGsvcHJpbnRrLmMgfCAyIC0tCiAxIGZpbGUgY2hhbmdlZCwgMiBkZWxldGlv
+bnMoLSkKCmRpZmYgLS1naXQgYS9rZXJuZWwvcHJpbnRrL3ByaW50ay5jIGIva2VybmVsL3ByaW50
+ay9wcmludGsuYwppbmRleCBiMWQyNTVmMDQxMzUuLjRkYWU5Y2JlOTI1OSAxMDA2NDQKLS0tIGEv
+a2VybmVsL3ByaW50ay9wcmludGsuYworKysgYi9rZXJuZWwvcHJpbnRrL3ByaW50ay5jCkBAIC0x
+MDc2LDcgKzEwNzYsNiBAQCBzdGF0aWMgaW50IHN5c2xvZ19wcmludF9hbGwoY2hhciBfX3VzZXIg
+KmJ1ZiwgaW50IHNpemUsIGJvb2wgY2xlYXIpCiAJCW5leHRfc2VxID0gbG9nX25leHRfc2VxOwog
+CiAJCWxlbiA9IDA7Ci0JCXByZXYgPSAwOwogCQl3aGlsZSAobGVuID49IDAgJiYgc2VxIDwgbmV4
+dF9zZXEpIHsKIAkJCXN0cnVjdCBwcmludGtfbG9nICptc2cgPSBsb2dfZnJvbV9pZHgoaWR4KTsK
+IAkJCWludCB0ZXh0bGVuOwpAQCAtMjc4OCw3ICsyNzg3LDYgQEAgYm9vbCBrbXNnX2R1bXBfZ2V0
+X2J1ZmZlcihzdHJ1Y3Qga21zZ19kdW1wZXIgKmR1bXBlciwgYm9vbCBzeXNsb2csCiAJbmV4dF9p
+ZHggPSBpZHg7CiAKIAlsID0gMDsKLQlwcmV2ID0gMDsKIAl3aGlsZSAoc2VxIDwgZHVtcGVyLT5u
+ZXh0X3NlcSkgewogCQlzdHJ1Y3QgcHJpbnRrX2xvZyAqbXNnID0gbG9nX2Zyb21faWR4KGlkeCk7
+CiAK
+--001a1136b61042d79804f28f69da--
