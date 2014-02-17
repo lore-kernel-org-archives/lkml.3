@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaBQMsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 07:48:17 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:55552 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751552AbaBQMsP (ORCPT
+	id S1752946AbaBQMvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 07:51:43 -0500
+Received: from relay.parallels.com ([195.214.232.42]:52650 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043AbaBQMvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 07:48:15 -0500
-Message-ID: <1392641293.13000.9.camel@x220>
-Subject: Re: [PATCH] arm: omap3: cm-t35: remove MACH_CM_T3730
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        Richard Weinberger <richard@nod.at>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 17 Feb 2014 13:48:13 +0100
-In-Reply-To: <5302017F.40900@compulab.co.il>
-References: <1392571560.28866.16.camel@x220> <5302017F.40900@compulab.co.il>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	Mon, 17 Feb 2014 07:51:42 -0500
+Message-ID: <530205D9.1010908@parallels.com>
+Date: Mon, 17 Feb 2014 16:51:37 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Unkillable R-state process stuck in sendfile
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Feb 2014 12:48:13.0888 (UTC) FILETIME=[85762400:01CF2BDE]
-X-RcptDomain: vger.kernel.org
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Igor,
+Hi,
 
-On Mon, 2014-02-17 at 14:33 +0200, Igor Grinberg wrote:
-> On 02/16/14 19:26, Paul Bolle wrote:
-> > The Kconfig symbol MACH_CM_T3730 was added in v3.1. It has never been
-> > used. Setting it has no effect. There are no calls for
-> > machine_is_cm_t3730(). This symbol can safely be removed.
-> 
-> Indeed...
+While running trinity syscall fuzzer I noticed that sometimes it does
+not get killed immediately, even by SIGKILL - it takes several minutes
+before it exits. What is interesting it "hangs" in R-state consuming
+100% of CPU time. Analyzing its trace I found that it loops in
+sendfile(2) with the out fd pointing to an evenfd object, i.e. it does
+something like this:
 
-Please note that I now doubt my reasoning was correct here. I'm going to
-revisit my recent batch of patches regarding, in short, arm Kconfig
-symbols used in mach-types.h. (lkml.org is sort of down, so I can't
-provide a link.)
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/eventfd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <err.h>
 
-> Is it such a burden to keep it just until we switch OMAP3 to DT?
-> Because, it makes a bit harder to hack on the kernel.
-> Well, not too much as it can be reverted, but still one needs
-> to remember to do this...
+#define SIZE            INT_MAX
 
-No, not really. The worst that could happen, from your perspective, is
-that if it turns out this was the right thing to do, I might send a
-reminder in a few months.
+int main()
+{
+        int in_fd, out_fd;
+        ssize_t ret;
 
-> I'd like to keep it just until we remove the board files, please.
+        in_fd = open("tmpfile", O_RDWR|O_CREAT, 0666);
+        if (in_fd < 0)
+                err(1, "open");
+        if (ftruncate64(in_fd, SIZE) < 0)
+                err(1, "ftruncate");
+        out_fd = eventfd(0, 0);
+        if (out_fd < 0)
+                err(1, "eventfd");
+        ret = sendfile64(out_fd, in_fd, NULL, SIZE);
+        if (ret < 0)
+                err(1, "sendfile");
+}
 
-Thanks,
+This program will ignore SIGKILL for 2-5 minutes depending on how fast
+the host processor is. This happens, because eventfd_write does not
+check for pending signals when making progress (not waiting), neither
+does file read.
 
+I'm not sure if this is actually bad and should be fixed, but perhaps
+it's worth making do_generic_file_read() check for fatal signals pending
+and break the read loop if so?
 
-Paul Bolle
+FWIW, generic_perform_write() isn't prone to this problem, because
+recently it was made interruptible by a fatal signal - see commit
+a50527b19c62c ("fs: Make write(2) interruptible by a fatal signal").
 
+Thanks.
