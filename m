@@ -1,81 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189AbaBQTta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 14:49:30 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:36212 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238AbaBQTt2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 14:49:28 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH] of: Turn of_match_node into a static inline when CONFIG_OF isn't set
-Date: Mon, 17 Feb 2014 20:50:34 +0100
-Message-ID: <1740750.ctOzzXhXsT@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140217181829.B5F80C40372@trevor.secretlab.ca>
-References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com> <20140217181829.B5F80C40372@trevor.secretlab.ca>
+	id S1754327AbaBQTu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 14:50:28 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:33257 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752966AbaBQTu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 14:50:27 -0500
+Date: Mon, 17 Feb 2014 21:49:55 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if
+ they are in page cache
+Message-ID: <20140217194955.GA30908@node.dhcp.inet.fi>
+References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Monday 17 February 2014 18:18:29 Grant Likely wrote:
-> On Tue, 11 Feb 2014 13:36:51 +0100, Laurent Pinchart wrote:
-> > when CONFIG_OF is disabled of_match_node is defined as a macro that
-> > evaluates to NULL. This breaks compilation of drivers that dereference
-> > the function's return value directly. Fix it by turning the macro into a
-> > static inline function that returns NULL.
+On Mon, Feb 17, 2014 at 11:01:58AM -0800, Linus Torvalds wrote:
+> On Mon, Feb 17, 2014 at 10:38 AM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> >
+> > Now we have ->fault_nonblock() to ask filesystem for a page, if it's
+> > reachable without blocking. We request one page a time. It's not terribly
+> > efficient and I will probably re-think the interface once again to expose
+> > iterator or something...
 > 
-> Is it not more problematic that code is dereferencing the return value
-> directly *without* checking to see if it is NULL first? I suppose it
-> will cause a runtime oops on all platforms except no-mmu, but still.
-> Compile time catches are better.
+> Hmm. Yeah, clearly this isn't working, since the real workloads all
+> end up looking like
+> 
+> >        115,493,976      minor-faults                                                  ( +-  0.00% ) [100.00%]
+> >       59.686645587 seconds time elapsed                                          ( +-  0.30% )
+>  becomes
+> >         47,428,068      minor-faults                                                  ( +-  0.00% ) [100.00%]
+> >       60.241766430 seconds time elapsed                                          ( +-  0.85% )
+> 
+> and
+> 
+> >        268,039,365      minor-faults                                                 [100.00%]
+> >      132.830612471 seconds time elapsed
+> becomes
+> >        193,550,437      minor-faults                                                 [100.00%]
+> >      132.851823758 seconds time elapsed
+> 
+> and
+> 
+> >          4,967,540      minor-faults                                                  ( +-  0.06% ) [100.00%]
+> >       27.215434226 seconds time elapsed                                          ( +-  0.18% )
+> becomes
+> >          2,285,563      minor-faults                                                  ( +-  0.26% ) [100.00%]
+> >       27.292854546 seconds time elapsed                                          ( +-  0.29% )
+> 
+> ie it shows a clear reduction in faults, but the added costs clearly
+> eat up any wins and it all becomes (just _slightly_) slower.
+> 
+> Sad.
+> 
+> I do wonder if we really need to lock the pages we fault in. We lock
+> them in order to test for being up-to-date and still mapped. The
+> up-to-date check we don't really need to worry about: that we can test
+> without locking by just reading "page->flags" atomically and verifying
+> that it's uptodate and not locked.
+> 
+> The other reason to lock the page is:
+> 
+>  - for anonymous pages we need the lock for rmap, so the VM generally
+> always locks the page. But that's not an issue for file-backed pages:
+> the "rmap" for a filebacked page is just the page mapcount and the
+> cgroup statistics, and those don't need the page lock.
+> 
+>  - the whole truncation/unmapping thing
+> 
+> So the complex part is racing with truncate/unmapping the page. But
+> since we hold the page table lock, I *think* what we should be able to
+> do is:
+> 
+>  - increment the page _mapcount (iow, do "page_add_file_rmap()"
+> early). This guarantees that any *subsequent* unmap activity on this
+> page will walk the file mapping lists, and become serialized by the
+> page table lock we hold.
+> 
+>  - mb_after_atomic_inc() (this is generally free)
+> 
+>  - test that the page is still unlocked and uptodate, and the page
+> mapping still points to our page.
+> 
+>  - if that is true, we're all good, we can use the page, otherwise we
+> decrement the mapcount (page_remove_rmap()) and skip the page.
+> 
+> Hmm? Doing something like this means that we would never lock the
+> pages we prefault, and you can go back to your gang lookup rather than
+> that "one page at a time". And the race case is basically never going
+> to trigger.
+> 
+> Comments?
 
-There should be no risk of oops if the of_match_ptr() call is guarded by a 
-compiler (as opposed to preprocessor) IS_ENABLED(CONFIG_OF) check. Now, if the 
-check is missing, we'll oops at runtime, but the problem already exists before 
-this patch.
+Sounds reasonable to me. I'll take a closer look tomorrow.
 
-Anyway I've decided to drop this patch and use an intermediate variable.
-
-> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > ---
-> > 
-> >  include/linux/of.h | 8 +++++++-
-> >  1 file changed, 7 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/include/linux/of.h b/include/linux/of.h
-> > index 70c64ba..719e69f 100644
-> > --- a/include/linux/of.h
-> > +++ b/include/linux/of.h
-> > @@ -560,7 +560,13 @@ static inline const char *of_prop_next_string(struct
-> > property *prop,> 
-> >  }
-> >  
-> >  #define of_match_ptr(_ptr)	NULL
-> > 
-> > -#define of_match_node(_matches, _node)	NULL
-> > +
-> > +static inline const struct of_device_id *of_match_node(
-> > +	const struct of_device_id *matches, const struct device_node *node)
-> > +{
-> > +	return NULL;
-> > +}
-> > +
-> > 
-> >  #endif /* CONFIG_OF */
-> >  
-> >  #if defined(CONFIG_OF) && defined(CONFIG_NUMA)
+But it could be safer to keep locking in place and reduce lookup cost by
+exposing something like ->fault_iter_init() and ->fault_iter_next(). It
+will still return one page a time, but it will keep radix-tree context
+around for cheaper next-page lookup.
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+ Kirill A. Shutemov
