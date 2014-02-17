@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaBQWVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:21:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8361 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527AbaBQWVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:21:30 -0500
-Date: Mon, 17 Feb 2014 17:20:56 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: David Miller <davem@davemloft.net>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mcree@orcon.net.nz,
-        mattst88@gmail.com, mathieu.desnoyers@efficios.com,
-        jay.estabrook@gmail.com
-Subject: Re: [PATCH] csum_partial_copy_from_user: clean up inconsistencies
- in implementations
-In-Reply-To: <20140217.162105.899153264722449005.davem@davemloft.net>
-Message-ID: <alpine.LRH.2.02.1402171714030.21254@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1402151044010.25662@file01.intranet.prod.int.rdu2.redhat.com> <20140217.162105.899153264722449005.davem@davemloft.net>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754781AbaBQWUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:20:08 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:51097 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918AbaBQWNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 17:13:20 -0500
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 33/55] rcutorture: Clean up rcu_torture_init() error checking
+Date: Mon, 17 Feb 2014 14:12:37 -0800
+Message-Id: <1392675179-11560-33-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140217221231.GA8419@linux.vnet.ibm.com>
+ <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021722-1344-0000-0000-000005D5BE19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
+This commit applies some simple cleanups to rcu_torture_init() error
+checking.
 
-On Mon, 17 Feb 2014, David Miller wrote:
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcu/rcutorture.c | 31 ++++++++++---------------------
+ 1 file changed, 10 insertions(+), 21 deletions(-)
 
-> From: Mikulas Patocka <mpatocka@redhat.com>
-> Date: Sat, 15 Feb 2014 10:49:54 -0500 (EST)
-> 
-> > Here I'm sending a patch for networking to clean up inconsistent 
-> > implementations of csum_partial_copy_from_user in various architectures. 
-> > This patch doesn't fix any bug, but the confusion in implementations 
-> > caused a bug in the past. The patch should be queued for the kernel 3.15.
-> > 
-> > Mikulas
-> 
-> Please do not add commentary to the main body text of a patch submission,
-> otherwise I have to edit it out.
-> 
-> The proper way to add commentary is to put it after the "---" delimiter
-> at the end of the commit message and before the actual patch.
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 9f42d320531d..4402b95b376b 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -1459,7 +1459,6 @@ rcu_torture_init(void)
+ 	int i;
+ 	int cpu;
+ 	int firsterr = 0;
+-	int retval;
+ 	static struct rcu_torture_ops *torture_ops[] = {
+ 		&rcu_ops, &rcu_bh_ops, &srcu_ops, &sched_ops,
+ 	};
+@@ -1628,33 +1627,23 @@ rcu_torture_init(void)
+ 		for_each_possible_cpu(i) {
+ 			if (cpu_is_offline(i))
+ 				continue;  /* Heuristic: CPU can go offline. */
+-			retval = rcutorture_booster_init(i);
+-			if (retval < 0) {
+-				firsterr = retval;
++			firsterr = rcutorture_booster_init(i);
++			if (firsterr)
+ 				goto unwind;
+-			}
+ 		}
+ 	}
+-	i = torture_shutdown_init(shutdown_secs, rcu_torture_cleanup);
+-	if (i != 0) {
+-		firsterr = i;
++	firsterr = torture_shutdown_init(shutdown_secs, rcu_torture_cleanup);
++	if (firsterr)
+ 		goto unwind;
+-	}
+-	i = torture_onoff_init(onoff_holdoff * HZ, onoff_interval * HZ);
+-	if (i != 0) {
+-		firsterr = i;
++	firsterr = torture_onoff_init(onoff_holdoff * HZ, onoff_interval * HZ);
++	if (firsterr)
+ 		goto unwind;
+-	}
+-	i = rcu_torture_stall_init();
+-	if (i != 0) {
+-		firsterr = i;
++	firsterr = rcu_torture_stall_init();
++	if (firsterr)
+ 		goto unwind;
+-	}
+-	retval = rcu_torture_barrier_init();
+-	if (retval != 0) {
+-		firsterr = retval;
++	firsterr = rcu_torture_barrier_init();
++	if (firsterr)
+ 		goto unwind;
+-	}
+ 	if (object_debug)
+ 		rcu_test_debug_objects();
+ 	rcutorture_record_test_transition();
+-- 
+1.8.1.5
 
-Interesting - I used "---" as a delimiter between the commentary and the 
-git message in the past and some people said that their patch parser can't 
-detect "---" and that I should use "From:" line as a delimiter. And now I 
-see that your patch parser doesn't detect "From:" and needs "---".
-
-> > From: Mikulas Patocka <mpatocka@redhat.com>
-> > 
-> > csum_partial_copy_from_user is called only from csum_and_copy_from_user in
-> > include/net/checksum.h. csum_and_copy_from_user verifies the userspace
-> > range with access_ok, so there is no need to repeat access_ok in the
-> > implementation of csum_partial_copy_from_user.
-
-...
-
-> > The purpose of this patch is to make all the implementations of
-> > csum_partial_copy_from_user consistent, so that people will keep them
-> > consistent in the future.
-> > 
-> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> 
-> That is mainly a cleanup and entirely independent of fixing the Alpha
-> bug.
-> 
-> You should submit the Alpha bug fix through the usual arch channels
-> and get that into Linus's tree.
-> 
-> Then, after that fix propagates, you can do the access_ok() global
-> cleanup as a separate patch targetting net-next.
-> 
-> Thanks.
-
-I already pushed the alpha bug fix to the upstream kernel and affected 
-stable kernels.
-
-This patch is a cleanup that removes code bloat, intended for the next 
-kernel cycle.
-
-Mikulas
