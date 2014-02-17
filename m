@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556AbaBQNPK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:15:10 -0500
-Received: from mga02.intel.com ([134.134.136.20]:45352 "EHLO mga02.intel.com"
+	id S1753635AbaBQNPP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 08:15:15 -0500
+Received: from mga02.intel.com ([134.134.136.20]:10925 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248AbaBQNPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 08:15:00 -0500
+	id S1753413AbaBQNPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 08:15:02 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,860,1384329600"; 
-   d="scan'208";a="456852922"
+   d="scan'208";a="456852936"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 07/11] mei: use helper function to find me client by id
-Date: Mon, 17 Feb 2014 15:13:23 +0200
-Message-Id: <1392642807-8878-8-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 09/11] mei: don't of list_for_each_entry_safe when not deleting
+Date: Mon, 17 Feb 2014 15:13:25 +0200
+Message-Id: <1392642807-8878-10-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
 References: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
@@ -24,178 +23,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+We can use simply list_for_each_entry if there is no
+entry removal
 
-We already have a helper to find me client by id, let's
-use it in all relevant places.
-
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/client.c | 62 +++++++++++++++++++++++------------------------
- drivers/misc/mei/hbm.c    | 42 +++++++++++++++++++-------------
- 2 files changed, 56 insertions(+), 48 deletions(-)
+ drivers/misc/mei/amthif.c    | 12 +++++-------
+ drivers/misc/mei/bus.c       |  4 ++--
+ drivers/misc/mei/client.c    | 23 +++++++++++------------
+ drivers/misc/mei/hbm.c       |  9 ++++-----
+ drivers/misc/mei/interrupt.c | 13 ++++++-------
+ 5 files changed, 28 insertions(+), 33 deletions(-)
 
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index c0b54a0..f05d54d 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -132,14 +132,12 @@ int mei_amthif_host_init(struct mei_device *dev)
+ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
+ 						struct file *file)
+ {
+-	struct mei_cl_cb *pos = NULL;
+-	struct mei_cl_cb *next = NULL;
++	struct mei_cl_cb *cb;
+ 
+-	list_for_each_entry_safe(pos, next,
+-				&dev->amthif_rd_complete_list.list, list) {
+-		if (pos->cl && pos->cl == &dev->iamthif_cl &&
+-			pos->file_object == file)
+-			return pos;
++	list_for_each_entry(cb, &dev->amthif_rd_complete_list.list, list) {
++		if (cb->cl && cb->cl == &dev->iamthif_cl &&
++			cb->file_object == file)
++			return cb;
+ 	}
+ 	return NULL;
+ }
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index cf4cc0b..463ae51 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -145,9 +145,9 @@ static struct device_type mei_cl_device_type = {
+ static struct mei_cl *mei_bus_find_mei_cl_by_uuid(struct mei_device *dev,
+ 						uuid_le uuid)
+ {
+-	struct mei_cl *cl, *next;
++	struct mei_cl *cl;
+ 
+-	list_for_each_entry_safe(cl, next, &dev->device_list, device_link) {
++	list_for_each_entry(cl, &dev->device_list, device_link) {
+ 		if (!uuid_le_cmp(uuid, cl->device_uuid))
+ 			return cl;
+ 	}
 diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 488edd0..35c84ac 100644
+index ec19e38..aac7cdb 100644
 --- a/drivers/misc/mei/client.c
 +++ b/drivers/misc/mei/client.c
-@@ -567,7 +567,8 @@ out:
- int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
+@@ -251,10 +251,9 @@ struct mei_cl *mei_cl_allocate(struct mei_device *dev)
+ struct mei_cl_cb *mei_cl_find_read_cb(struct mei_cl *cl)
+ {
+ 	struct mei_device *dev = cl->dev;
+-	struct mei_cl_cb *cb = NULL;
+-	struct mei_cl_cb *next = NULL;
++	struct mei_cl_cb *cb;
+ 
+-	list_for_each_entry_safe(cb, next, &dev->read_list.list, list)
++	list_for_each_entry(cb, &dev->read_list.list, list)
+ 		if (mei_cl_cmp_id(cl, cb->cl))
+ 			return cb;
+ 	return NULL;
+@@ -474,17 +473,17 @@ free:
+ bool mei_cl_is_other_connecting(struct mei_cl *cl)
  {
  	struct mei_device *dev;
--	int i;
-+	struct mei_me_client *me_cl;
-+	int id;
+-	struct mei_cl *pos;
+-	struct mei_cl *next;
++	struct mei_cl *ocl; /* the other client */
  
  	if (WARN_ON(!cl || !cl->dev))
- 		return -EINVAL;
-@@ -580,19 +581,19 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
- 	if (cl->mei_flow_ctrl_creds > 0)
- 		return 1;
- 
--	for (i = 0; i < dev->me_clients_num; i++) {
--		struct mei_me_client  *me_cl = &dev->me_clients[i];
--		if (me_cl->client_id == cl->me_client_id) {
--			if (me_cl->mei_flow_ctrl_creds) {
--				if (WARN_ON(me_cl->props.single_recv_buf == 0))
--					return -EINVAL;
--				return 1;
--			} else {
--				return 0;
--			}
--		}
-+	id = mei_me_cl_by_id(dev, cl->me_client_id);
-+	if (id < 0) {
-+		cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
-+		return id;
- 	}
--	return -ENOENT;
-+
-+	me_cl = &dev->me_clients[id];
-+	if (me_cl->mei_flow_ctrl_creds) {
-+		if (WARN_ON(me_cl->props.single_recv_buf == 0))
-+			return -EINVAL;
-+		return 1;
-+	}
-+	return 0;
- }
- 
- /**
-@@ -608,32 +609,31 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
- int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
- {
- 	struct mei_device *dev;
--	int i;
-+	struct mei_me_client *me_cl;
-+	int id;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -EINVAL;
+ 		return false;
  
  	dev = cl->dev;
  
--	if (!dev->me_clients_num)
--		return -ENOENT;
-+	id = mei_me_cl_by_id(dev, cl->me_client_id);
-+	if (id < 0) {
-+		cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
-+		return id;
-+	}
+-	list_for_each_entry_safe(pos, next, &dev->file_list, link) {
+-		if ((pos->state == MEI_FILE_CONNECTING) &&
+-		    (pos != cl) && cl->me_client_id == pos->me_client_id)
++	list_for_each_entry(ocl, &dev->file_list, link) {
++		if (ocl->state == MEI_FILE_CONNECTING &&
++		    ocl != cl &&
++		    cl->me_client_id == ocl->me_client_id)
+ 			return true;
  
--	for (i = 0; i < dev->me_clients_num; i++) {
--		struct mei_me_client  *me_cl = &dev->me_clients[i];
--		if (me_cl->client_id == cl->me_client_id) {
--			if (me_cl->props.single_recv_buf != 0) {
--				if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0))
--					return -EINVAL;
--				dev->me_clients[i].mei_flow_ctrl_creds--;
--			} else {
--				if (WARN_ON(cl->mei_flow_ctrl_creds <= 0))
--					return -EINVAL;
--				cl->mei_flow_ctrl_creds--;
--			}
--			return 0;
--		}
-+	me_cl = &dev->me_clients[id];
-+	if (me_cl->props.single_recv_buf != 0) {
-+		if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0))
-+			return -EINVAL;
-+		me_cl->mei_flow_ctrl_creds--;
-+	} else {
-+		if (WARN_ON(cl->mei_flow_ctrl_creds <= 0))
-+			return -EINVAL;
-+		cl->mei_flow_ctrl_creds--;
  	}
--	return -ENOENT;
-+	return 0;
- }
+@@ -919,9 +918,9 @@ void mei_cl_complete(struct mei_cl *cl, struct mei_cl_cb *cb)
  
- /**
+ void mei_cl_all_disconnect(struct mei_device *dev)
+ {
+-	struct mei_cl *cl, *next;
++	struct mei_cl *cl;
+ 
+-	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
++	list_for_each_entry(cl, &dev->file_list, link) {
+ 		cl->state = MEI_FILE_DISCONNECTED;
+ 		cl->mei_flow_ctrl_creds = 0;
+ 		cl->timer_count = 0;
+@@ -936,8 +935,8 @@ void mei_cl_all_disconnect(struct mei_device *dev)
+  */
+ void mei_cl_all_wakeup(struct mei_device *dev)
+ {
+-	struct mei_cl *cl, *next;
+-	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
++	struct mei_cl *cl;
++	list_for_each_entry(cl, &dev->file_list, link) {
+ 		if (waitqueue_active(&cl->rx_wait)) {
+ 			cl_dbg(dev, cl, "Waking up reading client!\n");
+ 			wake_up_interruptible(&cl->rx_wait);
 diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 46743e2..7e99e41 100644
+index 023173d..9555791 100644
 --- a/drivers/misc/mei/hbm.c
 +++ b/drivers/misc/mei/hbm.c
-@@ -22,6 +22,7 @@
- #include "mei_dev.h"
- #include "hbm.h"
- #include "hw-me.h"
-+#include "client.h"
+@@ -380,8 +380,7 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
+ static void mei_hbm_cl_flow_control_res(struct mei_device *dev,
+ 		struct hbm_flow_control *flow_control)
+ {
+-	struct mei_cl *cl = NULL;
+-	struct mei_cl *next = NULL;
++	struct mei_cl *cl;
  
- static const char *mei_cl_conn_status_str(enum mei_cl_connect_status status)
- {
-@@ -340,27 +341,34 @@ int mei_hbm_cl_flow_control_req(struct mei_device *dev, struct mei_cl *cl)
-  *
-  * @dev: the device structure
-  * @flow: flow control.
-+ *
-+ * return 0 on success, < 0 otherwise
-  */
--static void mei_hbm_add_single_flow_creds(struct mei_device *dev,
-+static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
- 				  struct hbm_flow_control *flow)
- {
--	struct mei_me_client *client;
--	int i;
--
--	for (i = 0; i < dev->me_clients_num; i++) {
--		client = &dev->me_clients[i];
--		if (client && flow->me_addr == client->client_id) {
--			if (client->props.single_recv_buf) {
--				client->mei_flow_ctrl_creds++;
--				dev_dbg(&dev->pdev->dev, "recv flow ctrl msg ME %d (single).\n",
--				    flow->me_addr);
--				dev_dbg(&dev->pdev->dev, "flow control credentials =%d.\n",
--				    client->mei_flow_ctrl_creds);
--			} else {
--				BUG();	/* error in flow control */
--			}
--		}
-+	struct mei_me_client *me_cl;
-+	int id;
-+
-+	id = mei_me_cl_by_id(dev, flow->me_addr);
-+	if (id < 0) {
-+		dev_err(&dev->pdev->dev, "no such me client %d\n",
-+			flow->me_addr);
-+		return id;
+ 	if (!flow_control->host_addr) {
+ 		/* single receive buffer */
+@@ -390,7 +389,7 @@ static void mei_hbm_cl_flow_control_res(struct mei_device *dev,
  	}
-+
-+	me_cl = &dev->me_clients[id];
-+	if (me_cl->props.single_recv_buf) {
-+		me_cl->mei_flow_ctrl_creds++;
-+		dev_dbg(&dev->pdev->dev, "recv flow ctrl msg ME %d (single).\n",
-+		    flow->me_addr);
-+		dev_dbg(&dev->pdev->dev, "flow control credentials =%d.\n",
-+		    me_cl->mei_flow_ctrl_creds);
-+	} else {
-+		BUG();	/* error in flow control */
-+	}
-+
-+	return 0;
- }
  
- /**
+ 	/* normal connection */
+-	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
++	list_for_each_entry(cl, &dev->file_list, link) {
+ 		if (mei_hbm_cl_addr_equal(cl, flow_control)) {
+ 			cl->mei_flow_ctrl_creds++;
+ 			dev_dbg(&dev->pdev->dev, "flow ctrl msg for host %d ME %d.\n",
+@@ -557,10 +556,10 @@ static void mei_hbm_cl_connect_res(struct mei_device *dev,
+ static int mei_hbm_fw_disconnect_req(struct mei_device *dev,
+ 		struct hbm_client_connect_request *disconnect_req)
+ {
+-	struct mei_cl *cl, *next;
++	struct mei_cl *cl;
+ 	struct mei_cl_cb *cb;
+ 
+-	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
++	list_for_each_entry(cl, &dev->file_list, link) {
+ 		if (mei_hbm_cl_addr_equal(cl, disconnect_req)) {
+ 			dev_dbg(&dev->pdev->dev, "disconnect request host client %d ME client %d.\n",
+ 					disconnect_req->host_addr,
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 5df04fc..31cb345 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -556,8 +556,7 @@ EXPORT_SYMBOL_GPL(mei_irq_write_handler);
+ void mei_timer(struct work_struct *work)
+ {
+ 	unsigned long timeout;
+-	struct mei_cl *cl_pos = NULL;
+-	struct mei_cl *cl_next = NULL;
++	struct mei_cl *cl;
+ 	struct mei_cl_cb  *cb_pos = NULL;
+ 	struct mei_cl_cb  *cb_next = NULL;
+ 
+@@ -585,9 +584,9 @@ void mei_timer(struct work_struct *work)
+ 		goto out;
+ 
+ 	/*** connect/disconnect timeouts ***/
+-	list_for_each_entry_safe(cl_pos, cl_next, &dev->file_list, link) {
+-		if (cl_pos->timer_count) {
+-			if (--cl_pos->timer_count == 0) {
++	list_for_each_entry(cl, &dev->file_list, link) {
++		if (cl->timer_count) {
++			if (--cl->timer_count == 0) {
+ 				dev_err(&dev->pdev->dev, "timer: connect/disconnect timeout.\n");
+ 				mei_reset(dev);
+ 				goto out;
+@@ -637,10 +636,10 @@ void mei_timer(struct work_struct *work)
+ 			list_for_each_entry_safe(cb_pos, cb_next,
+ 				&dev->amthif_rd_complete_list.list, list) {
+ 
+-				cl_pos = cb_pos->file_object->private_data;
++				cl = cb_pos->file_object->private_data;
+ 
+ 				/* Finding the AMTHI entry. */
+-				if (cl_pos == &dev->iamthif_cl)
++				if (cl == &dev->iamthif_cl)
+ 					list_del(&cb_pos->list);
+ 			}
+ 			mei_io_cb_free(dev->iamthif_current_cb);
 -- 
 1.8.5.3
 
