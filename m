@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141AbaBQKDP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 05:03:15 -0500
-Received: from www84.your-server.de ([213.133.104.84]:39173 "EHLO
+	id S1753867AbaBQKIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 05:08:53 -0500
+Received: from www84.your-server.de ([213.133.104.84]:39183 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986AbaBQKDM (ORCPT
+	with ESMTP id S1753032AbaBQKDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 05:03:12 -0500
+	Mon, 17 Feb 2014 05:03:15 -0500
 From: Stefani Seibold <stefani@seibold.net>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
@@ -15,141 +15,96 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
         Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v19 00/10] Add 32 bit VDSO time function support
-Date: Mon, 17 Feb 2014 11:03:34 +0100
-Message-Id: <1392631424-32205-1-git-send-email-stefani@seibold.net>
+Subject: [PATCH v19 04/10] vclock_gettime.c __vdso_clock_gettime cleanup
+Date: Mon, 17 Feb 2014 11:03:38 +0100
+Message-Id: <1392631424-32205-5-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1392631424-32205-1-git-send-email-stefani@seibold.net>
+References: <1392631424-32205-1-git-send-email-stefani@seibold.net>
 X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
-and vdso_time() to the 32 bit VDSO.
+This patch is a small code cleanup for the __vdso_clock_gettime() function.
 
-The reason to do this was to get a fast reliable time stamp. Many developers
-uses TSC to get a fast time stamp, without knowing the pitfalls. VDSO
-time functions a fast and a reliable way, because the kernel knows the
-best time source and the P- and C-state of the CPU.
+It removes the unneeded return values from do_monotonic_coarse() and
+do_realtime_coarse() and add a fallback label for doing the kernel
+gettimeofday() system call.
 
-The helper library to use the VDSO functions can be download at
-http://http://seibold.net/vdso.c
-The libary is very small, only 228 lines of code. Compile it with
-gcc -Wall -O3 -fpic vdso.c -lrt -shared -o libvdso.so
-and use it with LD_PRELOAD=<path>/libvdso.so
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ arch/x86/vdso/vclock_gettime.c | 27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
 
-This kind of helper must be integrated into glibc, for x86 64 bit and
-PowerPC it is already there.
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index bbc8065..fd074dd 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -209,7 +209,7 @@ notrace static int do_monotonic(struct timespec *ts)
+ 	return mode;
+ }
+ 
+-notrace static int do_realtime_coarse(struct timespec *ts)
++notrace static void do_realtime_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+@@ -217,10 +217,9 @@ notrace static int do_realtime_coarse(struct timespec *ts)
+ 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+-	return 0;
+ }
+ 
+-notrace static int do_monotonic_coarse(struct timespec *ts)
++notrace static void do_monotonic_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+@@ -228,30 +227,32 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
+ 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+-
+-	return 0;
+ }
+ 
+ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ {
+-	int ret = VCLOCK_NONE;
+-
+ 	switch (clock) {
+ 	case CLOCK_REALTIME:
+-		ret = do_realtime(ts);
++		if (do_realtime(ts) == VCLOCK_NONE)
++			goto fallback;
+ 		break;
+ 	case CLOCK_MONOTONIC:
+-		ret = do_monotonic(ts);
++		if (do_monotonic(ts) == VCLOCK_NONE)
++			goto fallback;
+ 		break;
+ 	case CLOCK_REALTIME_COARSE:
+-		return do_realtime_coarse(ts);
++		do_realtime_coarse(ts);
++		break;
+ 	case CLOCK_MONOTONIC_COARSE:
+-		return do_monotonic_coarse(ts);
++		do_monotonic_coarse(ts);
++		break;
++	default:
++		goto fallback;
+ 	}
+ 
+-	if (ret == VCLOCK_NONE)
+-		return vdso_fallback_gettime(clock, ts);
+ 	return 0;
++fallback:
++	return vdso_fallback_gettime(clock, ts);
+ }
+ int clock_gettime(clockid_t, struct timespec *)
+ 	__attribute__((weak, alias("__vdso_clock_gettime")));
+-- 
+1.8.5.5
 
-Some linux 32 bit kernel benchmark results (all measurements are in nano
-seconds):
-
-Intel(R) Celeron(TM) CPU 400MHz
-
-Average time kernel call:
- gettimeofday(): 1039
- clock_gettime(): 1578
- time(): 526
-Average time VDSO call:
- gettimeofday(): 378
- clock_gettime(): 303
- time(): 60
-
-Celeron(R) Dual-Core CPU T3100 1.90GHz
-
-Average time kernel call:
- gettimeofday(): 209
- clock_gettime(): 406
- time(): 135
-Average time VDSO call:
- gettimeofday(): 51
- clock_gettime(): 43
- time(): 10
-
-So you can see a performance increase between 4 and 13, depending on the
-CPU and the function.
-
-The address layout of the VDSO has changed, because there is no fixed
-address space available on a x86 32 bit kernel, despite the name. Because
-someone decided to add an offset to the __FIXADDR_TOP for virtualization.
-
-Also the IA32 Emulation uses the whole 4 GB address space, so there is no
-fixed address available.
-
-This was the reason not depend on this kind of address and change the layout
-of the VDSO. The VDSO for a 32 bit application has now three pages:
-
-^ Higher Address
-|
-+----------------------------------------+
-+ VDSO page (includes code) ro+x         +
-+----------------------------------------+
-+ VVAR page (export kernel variables) ro +
-+----------------------------------------+
-+ HPET page (mapped registers) ro 
-+----------------------------------------+
-|
-^ Lower Address
-
-The VDSO page for a 32 bit resided still on 0xffffe000, the the VVAR and
-HPET page are mapped before.
-
-In the non compat mode the VMA of the VDSO is now 3 pages for a 32 bit kernel.
-So this decrease the available logical address room by 2 pages.
-
-The patch is against kernel 3.14 (e7651b819e90da924991d727d3c007200a18670d)
-
-Changelog:
-25.11.2012 - first release and proof of concept for linux 3.4
-11.12.2012 - Port to linux 3.7 and code cleanup
-12.12.2012 - fixes suggested by Andy Lutomirski
-           - fixes suggested by John Stultz
-           - use call VDSO32_vsyscall instead of int 80
-           - code cleanup
-17.12.2012 - support for IA32_EMULATION, this includes
-             - code cleanup
-             - include cleanup to fix compile warnings and errors
-             - move out seqcount from seqlock, enable use in VDSO
-             - map FIXMAP and HPET into the 32 bit address space
-18.12.2012 - split into separate patches
-30.01.2014 - revamp the code
-             - code clean up
-             - VDSO layout changed
-             - no fixed addresses
-             - port to 3.14
-01.02.2014 - code cleanup
-02.02.2014 - code cleanup
-             - split into more patches
-             - use HPET_COUNTER instead of hard coded value
-             - fix changelog to the right year ;-)
-02.02.2014 - reverse the mapping, this make the new VDSO 32 bit support
-             full compatible.
-03.02.2014 - code cleanup
-             - fix comment
-             - fix ABI break in vdso32.lds.S
-04.02.2014 - revamp IA32 emulation support
-             - introduce VVAR macro
-             - rearranged vsyscall_gtod_data struture for IA32 emulation support
-             - code cleanup
-05.02.2014 - revamp IA32 emulation support
-             - replace seqcount_t by an unsigned, to make the vsyscall_gtod_data
-               structure independed of kernel config and functions.
-08.02.2014 - revamp IA32 emulation support
-             - replace all internal structures by fix size elements
-10.02.2014 - code cleanup
-             - add commets
-             - revamp inline assembly
-12.02.2014 - add conditional fixmap of vvar and hpet pages for 32 bit kernel
-14.02.2014 - fix CONFIG_PARAVIRT_CLOCK, which is not supported in 32 bit VDSO
-15.02.2014 - fix tsc
-             code cleanup
-             tested make ARCH=i386 allyesconfig and make allyesconfig
-16.02.2014 - code cleanup
-             - fix all C=1 warnings, also some one not introduced by this patch
-             - hack to fix C=1 32 bit VDSO spinlock for a 64 bit kernel
-             - fix VDSO Makefile for newer gcc
-             tested for gcc 4.3.4 and 4.8.1
-             tested ARCH=i386 allyesconfig, defconfig and allmodconfig
-             tested X86_64 allyesconfig, defconfig and allmodconfig
-17.02.2014 - In case of a 32 bit VDSO for a 64 bit kernel fake a 32 bit kernel
-             configuration.
