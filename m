@@ -1,127 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbaBQVmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:42:35 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:36838 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaBQVme (ORCPT
+	id S1752154AbaBQVpr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:45:47 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51517 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751100AbaBQVpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:42:34 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
-Date: Mon, 17 Feb 2014 22:43:41 +0100
-Message-ID: <3240866.imZR2oMAtf@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CANqRtoRVCK0jgadwvreMRt1HVVyUmb-CLt5mFEGmvju_VFFbPQ@mail.gmail.com>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <35710038.vGLtzuIoLe@avalon> <CANqRtoRVCK0jgadwvreMRt1HVVyUmb-CLt5mFEGmvju_VFFbPQ@mail.gmail.com>
+	Mon, 17 Feb 2014 16:45:44 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pierre Ossman <pierre-list@ossman.eu>
+Subject: Re: [PATCH 1/2] cpufreq: Return error if ->get() failed in cpufreq_update_policy()
+Date: Mon, 17 Feb 2014 23:00:32 +0100
+Message-ID: <1489022.1IbaesBAQQ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5301CE86.9020105@linux.vnet.ibm.com>
+References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org> <CAKohpo=mQWxoKTduR8FrrB4Qz45qXQrJjSudq=FkCJtHBTbo2Q@mail.gmail.com> <5301CE86.9020105@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
-
-On Monday 17 February 2014 10:48:55 Magnus Damm wrote:
-> On Mon, Feb 17, 2014 at 10:45 AM, Laurent Pinchart wrote:
-> > On Saturday 15 February 2014 02:22:00 Magnus Damm wrote:
-> >> On Sat, Feb 15, 2014 at 1:12 AM, Laurent Pinchart wrote:
-> >> > On Saturday 15 February 2014 01:01:30 Magnus Damm wrote:
-> >> >> On Sat, Feb 15, 2014 at 12:53 AM, Laurent Pinchart wrote:
-> >> >> > On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
-> >> >> >> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
-> >> >> >> > +Channels Optional Properties:
-> >> >> >> > +
-> >> >> >> > +  - clock-source-rating: rating of the timer as a clock source
-> >> >> >> > device.
-> >> >> >> > +  - clock-event-rating: rating of the timer as a clock event
-> >> >> >> > device.
-> >> >> >> 
-> >> >> >> This feels like a leak of Linux internals. Why do you need this?
-> >> >> > 
-> >> >> > You're right, it is. The clock source and clock event ratings are
-> >> >> > currently configured through platform data, I'll need to find a way
-> >> >> > to compute them in the driver instead.
-> >> >> 
-> >> >> That would be very good!
-> >> > 
-> >> > Any pointer would be appreciated :-) How did you compute the various
-> >> > ratings used in platform data all over the place ?
-> >> 
-> >> Historically we used the rating to select between CMT and TMU. For
-> >> clock sources I suppose you also have the jiffy rating to consider.
-> >> And for the SMP parts we have ARM IP for TWD and arch timers that have
-> >> their ratings too. So you need to check all the timers on a particular
-> >> system and consider what you want to have operating by default. The
-> >> ARM IP timers should be preferred if available. For clock sources the
-> >> rule is probably the higher resolution the better.
-> >> 
-> >> >> > There's still one piece of Linux-specific data I need though, as I
-> >> >> > need to specify for each channel whether to use it as a clock source
-> >> >> > device, a clock event device, both of them or none. That's
-> >> >> > configuration information that needs to be provided somehow.
-> >> >> 
-> >> >> I think you can decide clock source or clock event assignment based on
-> >> >> number of channels available. If you have only a single channel then
-> >> >> both clock event and clock source need to be supported. Otherwise use
-> >> >> one channel for clock source and the rest for clock events.
-> >> > 
-> >> > That won't match the current situation. Look at CMT0 in r8a7790 for
-> >> > instance. There's two hardware channels available, and we only use the
-> >> > first one, for clock events only.
-> >> 
-> >> You are correct. The reason for that is that the CMT driver today is
-> >> optimized for combined clock event and clock source operation.
-> >> 
-> >> Historically the hardware it initially was written for (sh-mobile on
-> >> the SH arch) only had a single timer channel so combined operation was
-> >> required for tickless to work. But since you're asking how to allocate
-> >> channels then I propose checking numbers of channels available and go
-> >> from there. With that the r8a7790 support can only get better. =)
-> >> 
-> >> >> This is probably out of scope for this DT conversion, but it would be
-> >> >> neat if you somehow could specify the CPU affinity for a channel to
-> >> >> tie a clock event to an individual CPU core. This would make a a per-
-> >> >> cpu timer unless I'm mistaken. But that's more of a software policy
-> >> >> than anything else.
-> >> > 
-> >> > Yes, that's a configuration that needs to be specified somewhere. I
-> >> > don't know where though.
-> >> 
-> >> As long as you have per-channel interrupts described in DT you can
-> >> probably handle this in a generic way in the driver.
+On Monday, February 17, 2014 02:25:34 PM Srivatsa S. Bhat wrote:
+> On 02/17/2014 02:09 PM, Viresh Kumar wrote:
+> > On 17 February 2014 13:49, Srivatsa S. Bhat
+> > <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> >> Quick question: Looking at cpufreq_update_policy() and cpufreq_out_of_sync(),
+> >> I understand that if the cpufreq subsystem's notion of the current frequency
+> >> does not match with the actual frequency of the CPU, it tries to adjust and
+> >> notify everyone that the current frequency is so-and-so, as read from the
+> >> hardware. Instead, why can't we simply set the frequency to the value that
+> >> we _want_ it to be at? I mean, if cpufreq subsystem thinks it is X KHz and
+> >> the actual frequency is Y KHz, we can as well fix the anomaly by setting the
+> >> frequency immediately to X KHz right?
+> >>
+> >> The reason I ask this is that, if we follow this approach, then we can avoid
+> >> ambiguities in dealing with the out-of-sync situation. That is, it becomes
+> >> very straightforward to decide _what_ to do, when we detect scenarios where
+> >> the frequency goes out of sync.
 > > 
-> > But how do we decide whether to use a single timer channel or one channel
-> > per CPU ? Will the kernel use one clock event device per CPU
-> > automatically ? I have to confess I have no idea how this works.
+> > Hmm, it is just about doing all that stuff in a single line, like:
+> > __cpufreq_driver_target(...) ??
+> > 
+> > There are few problems here:
+> > - If we simply call above routine with X, then it will simply return as
+> > X == policy->cur. And I don't want to hack this code in a bad way now :)
+> > 
+> > - So, probably the way it is implemented is right, as we do that the most
+> > efficient way. We just broadcast the new freq in case there is a difference
+> > otherwise nothing.
 > 
-> I guess that's the tricky bit about timer support, it is a mix of
-> hardware description and software configuration. So it sounds to me
-> that we need some kind of software configuration interface. But it can
-> probably be considered when/if we add such kind of support to the
-> driver. Probably out of scope for now.
+> Specifically, I'm referring to the problem where there _is_ a difference,
+> but the ->get() is not reporting it properly, like returning a 0 for example.
+> In such a case, instead of erroring out (and thereby perhaps opening the doors
+> to more problems down the line), won't it be better to simply set the CPU's
+> frequency to what we want it to be?
 > 
-> Regardless it seems to me that the hardware description in DT doesn't
-> need to care about this.
+> That is, I'm concerned about this part of your patch:
+> 
+>  	if (cpufreq_driver->get) {
+>  		new_policy.cur = cpufreq_driver->get(cpu);
+> +
+> +		if (!new_policy.cur) {
+> +			pr_err("%s: ->get() returned 0 KHz\n", __func__);
+> +			ret = -EINVAL;
+> +			goto no_policy;
+> +		}
+> +
+> 
+> Why go to no_policy when we can actually set things right?
+> 
+> Anyway, I am not arguing against this strongly. I just wanted to share my
+> thoughts, since this is the approach that made more sense to me.
 
-I'll revisit that later. Per-CPU timers is not a high priority for now, so 
-I'll just return -EAGAIN :-)
-
-Nonetheless, specifying which timer channel to use as a clock source and which 
-channel to use as a clock event device might need to be specified in DT (or 
-somewhere else, but I'm not sure what other options we have here).
+And I agree with that.  In particular, since we're going to set the new
+policy *anyway* at this point, we can adjust the current frequency just fine
+in the process, can't we?
 
 -- 
-Regards,
-
-Laurent Pinchart
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
