@@ -1,128 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729AbaBQBle (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 20:41:34 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:57308 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265AbaBQBlc (ORCPT
+	id S1753827AbaBQBmP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 20:42:15 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:45428 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaBQBmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 20:41:32 -0500
+	Sun, 16 Feb 2014 20:42:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <7782053.5pYg74TXhN@avalon>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-	<1392339605-20691-12-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-	<alpine.DEB.2.02.1402151345450.21991@ionos.tec.linutronix.de>
-	<7782053.5pYg74TXhN@avalon>
-Date: Mon, 17 Feb 2014 10:41:31 +0900
-Message-ID: <CANqRtoSQ53E-xbe0PM_-=NY0ouVkhW8tac-5ZuLYYwAO072aTg@mail.gmail.com>
-Subject: Re: [PATCH 11/27] clocksource: sh_cmt: Add support for multiple
- channels per device
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAPXgP13oJt5CT=YswPNNM8m9fNOeLLkAmqJF_gVtcg_i=Rk6FA@mail.gmail.com>
+References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
+ <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+ <CF26B239.2E7B4%dbanerje@akamai.com> <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
+ <CF26BC6D.2E80E%dbanerje@akamai.com> <CA+55aFyywOm7pWrX4=04LTEJ6xYK4xDTxGRqes-MOT212PnWPw@mail.gmail.com>
+ <CAPXgP12ZUMqgAx6jJK1q7GkQ5r21zNLhLCCH-rN83vzgOsZFYQ@mail.gmail.com>
+ <CA+55aFxxPSdEkmvAP0fJ_3XN2udz=wCi+Yfeg9Kf-TpL349Srg@mail.gmail.com> <CAPXgP13oJt5CT=YswPNNM8m9fNOeLLkAmqJF_gVtcg_i=Rk6FA@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 17 Feb 2014 02:41:52 +0100
+Message-ID: <CAPXgP11O80cTZD-LzP_k9YkmcVrcheeWmUNUwZtTNtii-pLELg@mail.gmail.com>
+Subject: Re: [PATCH] printk: Fix discarding of records
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Banerjee, Debabrata" <dbanerje@akamai.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        "dbavatar@gmail.com" <dbavatar@gmail.com>,
+        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-
-On Mon, Feb 17, 2014 at 3:18 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Thomas,
->
-> On Saturday 15 February 2014 13:46:54 Thomas Gleixner wrote:
->> On Fri, 14 Feb 2014, Laurent Pinchart wrote:
->> > CMT hardware devices can support multiple channels, with global
->> > registers and per-channel registers. The sh_cmt driver currently models
->> > the hardware with one Linux device per channel. This model makes it
->> > difficult to handle global registers in a clean way.
->> >
->> > Add support for a new model that uses one Linux device per timer with
->> > multiple channels per device. This requires changes to platform data,
->> > add new channel configuration fields.
->> >
->> > Support for the legacy model is kept and will be removed after all
->> > platforms switch to the new model.
->> >
->> > Signed-off-by: Laurent Pinchart
->> > <laurent.pinchart+renesas@ideasonboard.com>
->> > ---
->> >
->> >  drivers/clocksource/sh_cmt.c | 299 +++++++++++++++++++++++++++++---------
->> >  include/linux/sh_timer.h     |   9 ++
->> >  2 files changed, 239 insertions(+), 69 deletions(-)
->> >
->> > diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
->> > index 5280231..8390f0f 100644
->> > --- a/drivers/clocksource/sh_cmt.c
->> > +++ b/drivers/clocksource/sh_cmt.c
->> > @@ -53,7 +53,16 @@ struct sh_cmt_device;
->> >
->> >   * channel registers block. All other versions have a shared start/stop
->> >   register * located in the global space.
->> >   *
->> >
->> > - * Note that CMT0 on r8a73a4, r8a7790 and r8a7791, while implementing
->> > 32-bit + * Channels are indexed from 0 to N-1 in the documentation. The
->> > channel index + * infers the start/stop bit position in the control
->> > register and the channel + * registers block address. Some CMT instances
->> > have a subset of channels + * available, in which case the index in the
->> > documentation doesn't match the + * "real" index as implemented in
->> > hardware. This is for instance the case with + * CMT0 on r8a7740, which
->> > is a 32-bit variant with a single channel numbered 0 + * in the
->> > documentation but using start/stop bit 5 and having its registers + *
->> > block at 0x60.
->> > + *
->> > + * Similarly CMT0 on r8a73a4, r8a7790 and r8a7791, while implementing
->> > 32-bit>
->> >   * channels only, is a 48-bit gen2 CMT with the 48-bit channels
->> >   unavailable.
->> >   */
->> >
->> > @@ -85,11 +94,15 @@ struct sh_cmt_info {
->> >
->> >  struct sh_cmt_channel {
->> >
->> >     struct sh_cmt_device *cmt;
->> >
->> > -   unsigned int index;
->> >
->> > -   void __iomem *base;
->> > +   unsigned int index;     /* Index in the documentation */
->> > +   unsigned int hwidx;     /* Real hardware index */
->> > +
->> > +   void __iomem *iostart;
->> > +   void __iomem *ioctrl;
->> >
->> >     struct irqaction irqaction;
+On Mon, Feb 17, 2014 at 2:19 AM, Kay Sievers <kay@vrfy.org> wrote:
+> On Mon, Feb 17, 2014 at 1:57 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Sun, Feb 16, 2014 at 4:50 PM, Kay Sievers <kay@vrfy.org> wrote:
+>>>
+>>> That should avoid the overflow, yes. I expect it will not print the
+>>> first line with a prefix, which we probably should.?
 >>
->> While you are at it, can you please get rid of that irqaction and use
->> request_irq() ?
+>> Well, it's not printing out the prefix, but it's also not printing out
+>> the whole first part of the line, so quite frankly, I think that's
+>> actually "more correct".
+>>
+>> After all, it has already skipped the beginning of the line.
+>> Prepending the prefix, then skipping part of the line, and then
+>> printing the last part, that sounds truly insane, no?
 >
-> The driver claims it can't use request_irq() because the function is not
-> available for early platform devices. If the situation has changed I'd gladly
-> get rid of irqaction.
+> Yeah, it depends on the idea of what a "line" is; being it a single
+> printk() call or a reconstructed continuation line, which happens when
+> printk calls could not be merged for some reason into a single record.
+>
+> But sure, your patch, it sounds fine to just skip the prefix.
+>
+> The syslog() dump interface never made any promises, and it is not
+> used that much anymore today (even dmesg switched away from it since
+> quite a while).
+>
+> For the dumpers, who might use that interface to "page" through the
+> data, not printing the prefix sounds actually like the better option
+> looking at the stream of pages they ask for.
 
-With the risk of stating the obvious, this depends on how early the
-early platform device stuff is being run. The actual location may not
-be the same on SH and ARM for instance.
+Your patch seems to work fine here. We now start in the middle of a
+cont *line*, with the next cont *record*; do not print the header, and
+also do not print more than we should:
 
-On ARM we are doing all we can to initialize these devices as late as
-ever possible in the MULTIPLAFORM (DT reference) case. Once we manage
-to remove the legacy ARM case then there is one less user of early
-platform timers.
+  syslog(SYSLOG_ACTION_READ_ALL, "<6>[   73.671533] ---\n<6>[
+73.673677] ...", 1088) = 704
+  syslog(SYSLOG_ACTION_READ_ALL, "268---------...", 1089) = 1089
+  syslog(SYSLOG_ACTION_READ_ALL, "268---------... 1090) = 1089
 
-One perhaps reasonable way forward could be to use request_irq() in
-case of DT and leave the legacy platform data case to rely on
-irqaction.
+The current code before the patch does this:
 
-Cheers,
+  syslog(SYSLOG_ACTION_READ_ALL, "<4>[  210.190007]
+268---------26"..., 445) = 463
 
-/ magnus
+Kay
