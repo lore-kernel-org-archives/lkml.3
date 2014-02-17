@@ -1,114 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaBQXdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 18:33:40 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:55194 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855AbaBQXdi (ORCPT
+	id S1753125AbaBQXj2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 18:39:28 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59639 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaBQXj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 18:33:38 -0500
-Date: Mon, 17 Feb 2014 15:33:31 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/3] rcu: Optimize rcu_is_nocb_cpu() for
- RCU_NOCB_CPU_ALL
-Message-ID: <20140217233331.GR4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140217214007.GA6609@linux.vnet.ibm.com>
- <1392673227-7066-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217215053.GE7941@thin>
+	Mon, 17 Feb 2014 18:39:27 -0500
+Date: Tue, 18 Feb 2014 08:39:11 +0900
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Message-ID: <20140217233911.GB2669@sirena.org.uk>
+References: <201402131031.s1DAVWrJ023725@swsrvapps-01.diasemi.com>
+ <20140214093435.GI3403@lee--X1>
+ <6ED8E3B22081A4459DAC7699F3695FB78F97CB13@SW-EX-MBX02.diasemi.com>
+ <20140214145643.GA4451@sirena.org.uk>
+ <6ED8E3B22081A4459DAC7699F3695FB78F97D757@SW-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qcHopEYAB45HaUaB"
 Content-Disposition: inline
-In-Reply-To: <20140217215053.GE7941@thin>
+In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB78F97D757@SW-EX-MBX02.diasemi.com>
+X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021723-0928-0000-0000-000006C3BC12
+X-SA-Exim-Connect-IP: 106.188.99.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC V1] mfd: da9063: Add support for production silicon variant
+ code
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 01:50:53PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 01:40:25PM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > If CONFIG_RCU_NOCB_CPU_ALL=y, then rcu_is_nocb_cpu() will always
-> > return true, however, the current version nevertheless checks
-> > rcu_nocb_mask.  This commit therefore creates a static inline
-> > implementation of rcu_is_nocb_cpu() that unconditionally returns
-> > true when CONFIG_RCU_NOCB_CPU_ALL=y.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> One suggestion below.  With or without that change:
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-I like the change -- applied both it and your Reviewed-by.
+--qcHopEYAB45HaUaB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-							Thanx, Paul
+On Sun, Feb 16, 2014 at 12:18:43PM +0000, Opensource [Steve Twiss] wrote:
 
-> >  include/linux/rcupdate.h | 4 ++++
-> >  kernel/rcu/tree_plugin.h | 2 ++
-> >  2 files changed, 6 insertions(+)
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 72bf3a01a4ee..92365b1fede4 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -1016,7 +1016,11 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
-> >  	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
-> >  
-> >  #ifdef CONFIG_RCU_NOCB_CPU
-> > +#ifdef CONFIG_RCU_NOCB_CPU_ALL
-> > +static inline bool rcu_is_nocb_cpu(int cpu) { return true; }
-> > +#else /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
-> >  bool rcu_is_nocb_cpu(int cpu);
-> > +#endif /* #else #ifdef CONFIG_RCU_NOCB_CPU_ALL */
-> >  #else
-> >  static inline bool rcu_is_nocb_cpu(int cpu) { return false; }
-> >  #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
-> 
-> This seem clearer if written without the nesting:
-> 
-> #if defined(CONFIG_RCU_NOCB_CPU_ALL)
-> static inline bool rcu_is_nocb_cpu(int cpu) { return true; }
-> #elif defined(CONFIG_RCU_NOCB_CPU)
-> bool rcu_is_nocb_cpu(int cpu);
-> #else
-> static inline bool rcu_is_nocb_cpu(int cpu) { return false; }
-> #endif
-> 
-> That clearly distinguishes the three cases: all, some, none.
-> 
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index 6e2ef4b2b920..39a50b918bff 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
-> > @@ -2101,6 +2101,7 @@ static void rcu_init_one_nocb(struct rcu_node *rnp)
-> >  	init_waitqueue_head(&rnp->nocb_gp_wq[1]);
-> >  }
-> >  
-> > +#ifndef CONFIG_RCU_NOCB_CPU_ALL
-> >  /* Is the specified CPU a no-CPUs CPU? */
-> >  bool rcu_is_nocb_cpu(int cpu)
-> >  {
-> > @@ -2108,6 +2109,7 @@ bool rcu_is_nocb_cpu(int cpu)
-> >  		return cpumask_test_cpu(cpu, rcu_nocb_mask);
-> >  	return false;
-> >  }
-> > +#endif /* #ifndef CONFIG_RCU_NOCB_CPU_ALL */
-> >  
-> >  /*
-> >   * Enqueue the specified string of rcu_head structures onto the specified
-> > -- 
-> > 1.8.1.5
-> > 
-> 
+> Some registers in the new variant make backwards compatibility easy,
+> however attempting to combine the two register maps in other components
+> makes the driver a mess.=20
 
+OK, that makes sense - if the changes really are substantial then
+dropping the old revisions can be reasonable.
+
+> I realise that the Linux community will have different aims however and=
+=20
+> I would like to support those as much as I can.
+
+It's not just the community here - it's just a general thing with users,
+the same issues face people using out of tree drivers (though
+communication with the developers is often weaker there).
+
+--qcHopEYAB45HaUaB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTAp2cAAoJELSic+t+oim9LZIP/2U3mYYkC/7+BmKq6l2QfWfs
+kDWJ3+abdyD44Dat/DWdL+cS0SFK1cmP/EDqL0GYKCwM9sPl6UzEWZpdvzVV7FQ/
+Qtwnplkv3HOVga9L4M/h3rX73iLwF1wyvAKT+9HN8Q972k+na5kZjcMxE2VqCqiV
+lOskmdpa/MuUMpHnLlfO8tutY9RXeCgh2UeCPgOLl4mW4nKh4b1+SLe2GK7ejMwK
+Q8zxFMmfRA6YRalE6sEiAtg+4LCO/8bkQoy2dFAcK/wK+Ui/JMvCyVz9YhutwSKv
+rTZWTx0ROYBG6+9MVgXI+ASXJYDiFI4tnVvHr6kC2bvUHZ0bq3kiUScseP6kkffs
+uynib0+D9/axIwFQ7wg4eEO02vtJiEvD/Km1zHHFnVuBS9nYUjAjyjzAOTJgjOiC
+anOFgGsCRhVvLPCBq8Okux+I0Ig7qvT3cLTJcxHUzG6fZYnUWYXjz8S/fqrwMYCb
+dHXR2qmWU6Zvggj/DtN3V/3Km9SblZPs9JT1w0WOeS2eBtolyb9W2k/PDIx86b7k
+0+5UCx1zPx4jTIZazZSIlyV7QlAuEFg+CUKbm4cixFUTQDula52MrdQJn8Moo40P
+X/B28b0VpequyzmprGkfMyaJc4y+6BAJCbGQemOuSZnIXT1bRUzwfcSefziDW031
+rSxDQPwd8DHqSRcGke2w
+=VFdC
+-----END PGP SIGNATURE-----
+
+--qcHopEYAB45HaUaB--
