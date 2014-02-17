@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaBQWxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:53:00 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42897 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030AbaBQWw7 (ORCPT
+	id S1753196AbaBQW5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:57:25 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:54479 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445AbaBQW5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:52:59 -0500
-Date: Mon, 17 Feb 2014 14:52:53 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 2/6] Documentation/memory-barriers.txt:
- ACCESS_ONCE() provides cache coherence
-Message-ID: <20140217225253.GM4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672413-5114-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217214056.GB7941@thin>
+	Mon, 17 Feb 2014 17:57:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140217214056.GB7941@thin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021722-1542-0000-0000-0000065316EE
+In-Reply-To: <20140214074305.GF5160@quack.suse.cz>
+References: <52F88C16.70204@linux.vnet.ibm.com>
+	<alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
+	<52F8C556.6090006@linux.vnet.ibm.com>
+	<alpine.DEB.2.02.1402101333160.15624@chino.kir.corp.google.com>
+	<52FC6F2A.30905@linux.vnet.ibm.com>
+	<alpine.DEB.2.02.1402130003320.11689@chino.kir.corp.google.com>
+	<52FC98A6.1000701@linux.vnet.ibm.com>
+	<alpine.DEB.2.02.1402131416430.13899@chino.kir.corp.google.com>
+	<20140214001438.GB1651@linux.vnet.ibm.com>
+	<CA+55aFwH8BqyLSqyLL7g-08nOtnOrJ9vKj4ebiSqrxc5ooEjLw@mail.gmail.com>
+	<20140214074305.GF5160@quack.suse.cz>
+Date: Mon, 17 Feb 2014 14:57:23 -0800
+X-Google-Sender-Auth: MvKY-qQIFJJHsnDHuUkV2xvRYU8
+Message-ID: <CA+55aFxeCM_GTzVBQMbk0eKY7+eeA1ngF6RFZ0O=PbuNs_FMxg@mail.gmail.com>
+Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 01:40:56PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 01:26:49PM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > The ACCESS_ONCE() primitive provides cache coherence, but the
-> > documentation does not clearly state this.  This commit therefore upgrades
-> > the documentation.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Punctuation nit below; otherwise:
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> >  Documentation/memory-barriers.txt | 17 +++++++++++++++++
-> >  1 file changed, 17 insertions(+)
-> > 
-> > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> > index 102dc19c4119..ad6db1d48f1f 100644
-> > --- a/Documentation/memory-barriers.txt
-> > +++ b/Documentation/memory-barriers.txt
-> > @@ -1249,6 +1249,23 @@ The ACCESS_ONCE() function can prevent any number of optimizations that,
-> >  while perfectly safe in single-threaded code, can be fatal in concurrent
-> >  code.  Here are some examples of these sorts of optimizations:
-> >  
-> > + (*) The compiler is within its rights to reorder loads and stores
-> > +     to the same variable, and in some cases, the CPU is within its
-> > +     rights to reorder loads to the same variable.  This means that
-> > +     the following code:
-> > +
-> > +	a[0] = x;
-> > +	a[1] = x;
-> > +
-> > +     Might result in an older value of x stored in a[1] than in a[0].
-> > +     Prevent both the compiler and the CPU from doing this as follows:
-> > +
-> > +	a[0] = ACCESS_ONCE(x);
-> > +	a[1] = ACCESS_ONCE(x);
-> > +
-> > +     In short, ACCESS_ONCE() provides "cache coherence" for accesses from
-> > +     multiple CPUs to a single variable.
-> 
-> You don't need to "quote" the well-established term "cache coherence".
+On Thu, Feb 13, 2014 at 11:43 PM, Jan Kara <jack@suse.cz> wrote:
+>
+>   max_sane_readahead() is also used for limiting amount of readahead for
+> [fm]advice(2) WILLNEED and that is used e.g. by a dynamic linker to preload
+> shared libraries into memory. So I'm convinced this usecase *will* notice
+> the change - effectively we limit preloading of shared libraries to the
+> first 512KB in the file but libraries get accessed in a rather random manner.
+>
+> Maybe limits for WILLNEED and for standard readahead should be different.
+> It makes sence to me and people seem to keep forgetting that
+> max_sane_readahead() limits also WILLNEED preloading.
 
-Good point, fixed and applied your Reviewed-by, thank you!
+Good point. But it's probably overly complex to have two different
+limits. The "512kB" thing was entirely random - the only real issue is
+that it should be small enough that it won't be a problem on any
+reasonable current machines, and big enough to get perfectly fine IO
+patterns unless your IO subsystem sucks so bad that it's not even
+worth worrying about.
 
-							Thanx, Paul
+If we just add a third requirement that it be "big enough that
+reasonable uses of [fm]advice() will work well enough", then your
+shared library example might well be grounds for saying "let's just do
+2MB instead". That's still small enough that it won't really hurt any
+modern machines.
 
-> >   (*) The compiler is within its rights to merge successive loads from
-> >       the same variable.  Such merging can cause the compiler to "optimize"
-> >       the following code:
-> > -- 
-> > 1.8.1.5
-> > 
-> 
+And if it means that WILLNEED won't necessarily always read the whole
+file for big files - well, we never guaranteed that to begin with.
 
+                                Linus
