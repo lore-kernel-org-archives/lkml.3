@@ -1,99 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaBQKG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 05:06:57 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:59767 "EHLO kolab.o2s.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997AbaBQKDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 05:03:43 -0500
-Subject: [PATCH v7 1/8] clk: sunxi: factors: automatic reparenting support
-To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
-        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Mon, 17 Feb 2014 11:02:15 +0100
-Message-ID: <20140217100215.15040.63745.stgit@pagira.o2s.ch>
-In-Reply-To: <20140217095907.15040.81893.stgit@pagira.o2s.ch>
-References: <20140217095907.15040.81893.stgit@pagira.o2s.ch>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+	id S1753226AbaBQKDR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 05:03:17 -0500
+Received: from www84.your-server.de ([213.133.104.84]:39174 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018AbaBQKDM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 05:03:12 -0500
+From: Stefani Seibold <stefani@seibold.net>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v19 03/10] revamp vclock_gettime.c
+Date: Mon, 17 Feb 2014 11:03:37 +0100
+Message-Id: <1392631424-32205-4-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1392631424-32205-1-git-send-email-stefani@seibold.net>
+References: <1392631424-32205-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio López <emilio@elopez.com.ar>
+This intermediate patch revamps the vclock_gettime.c by moving some functions
+around. It is only for spliting purpose, to make whole the 32 bit vdso timer
+patch easier to review.
 
-This commit implements .determine_rate, so that our factor clocks can be
-reparented when needed.
-
-Signed-off-by: Emilio López <emilio@elopez.com.ar>
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- drivers/clk/sunxi/clk-factors.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ arch/x86/vdso/vclock_gettime.c | 85 +++++++++++++++++++++---------------------
+ 1 file changed, 42 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/clk/sunxi/clk-factors.c b/drivers/clk/sunxi/clk-factors.c
-index 9e23264..3806d97 100644
---- a/drivers/clk/sunxi/clk-factors.c
-+++ b/drivers/clk/sunxi/clk-factors.c
-@@ -77,6 +77,41 @@ static long clk_factors_round_rate(struct clk_hw *hw, unsigned long rate,
- 	return rate;
- }
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index eb5d7a5..bbc8065 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -26,41 +26,26 @@
  
-+static long clk_factors_determine_rate(struct clk_hw *hw, unsigned long rate,
-+				       unsigned long *best_parent_rate,
-+				       struct clk **best_parent_p)
-+{
-+	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
-+	int i, num_parents;
-+	unsigned long parent_rate, best = 0, child_rate, best_child_rate = 0;
-+
-+	/* find the parent that can help provide the fastest rate <= rate */
-+	num_parents = __clk_get_num_parents(clk);
-+	for (i = 0; i < num_parents; i++) {
-+		parent = clk_get_parent_by_index(clk, i);
-+		if (!parent)
-+			continue;
-+		if (__clk_get_flags(clk) & CLK_SET_RATE_PARENT)
-+			parent_rate = __clk_round_rate(parent, rate);
-+		else
-+			parent_rate = __clk_get_rate(parent);
-+
-+		child_rate = clk_factors_round_rate(hw, rate, &parent_rate);
-+
-+		if (child_rate <= rate && child_rate > best_child_rate) {
-+			best_parent = parent;
-+			best = parent_rate;
-+			best_child_rate = child_rate;
-+		}
-+	}
-+
-+	if (best_parent)
-+		*best_parent_p = best_parent;
-+	*best_parent_rate = best;
-+
-+	return best_child_rate;
-+}
-+
- static int clk_factors_set_rate(struct clk_hw *hw, unsigned long rate,
- 				unsigned long parent_rate)
+ #define gtod (&VVAR(vsyscall_gtod_data))
+ 
+-notrace static cycle_t vread_tsc(void)
++static notrace cycle_t vread_hpet(void)
  {
-@@ -113,6 +148,7 @@ static int clk_factors_set_rate(struct clk_hw *hw, unsigned long rate,
+-	cycle_t ret;
+-	u64 last;
+-
+-	/*
+-	 * Empirically, a fence (of type that depends on the CPU)
+-	 * before rdtsc is enough to ensure that rdtsc is ordered
+-	 * with respect to loads.  The various CPU manuals are unclear
+-	 * as to whether rdtsc can be reordered with later loads,
+-	 * but no one has ever seen it happen.
+-	 */
+-	rdtsc_barrier();
+-	ret = (cycle_t)vget_cycles();
+-
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
+-
+-	if (likely(ret >= last))
+-		return ret;
++	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
++}
+ 
+-	/*
+-	 * GCC likes to generate cmov here, but this branch is extremely
+-	 * predictable (it's just a funciton of time and the likely is
+-	 * very likely) and there's a data dependence, so force GCC
+-	 * to generate a branch instead.  I don't barrier() because
+-	 * we don't actually need a barrier, and if this function
+-	 * ever gets inlined it will generate worse code.
+-	 */
+-	asm volatile ("");
+-	return last;
++notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
++{
++	long ret;
++	asm("syscall" : "=a" (ret) :
++	    "0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
++	return ret;
  }
  
- const struct clk_ops clk_factors_ops = {
-+	.determine_rate = clk_factors_determine_rate,
- 	.recalc_rate = clk_factors_recalc_rate,
- 	.round_rate = clk_factors_round_rate,
- 	.set_rate = clk_factors_set_rate,
+-static notrace cycle_t vread_hpet(void)
++notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
+ {
+-	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
++	long ret;
++
++	asm("syscall" : "=a" (ret) :
++	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
++	return ret;
+ }
+ 
+ #ifdef CONFIG_PARAVIRT_CLOCK
+@@ -133,23 +118,37 @@ static notrace cycle_t vread_pvclock(int *mode)
+ }
+ #endif
+ 
+-notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
++notrace static cycle_t vread_tsc(void)
+ {
+-	long ret;
+-	asm("syscall" : "=a" (ret) :
+-	    "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
+-	return ret;
+-}
++	cycle_t ret;
++	u64 last;
+ 
+-notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
+-{
+-	long ret;
++	/*
++	 * Empirically, a fence (of type that depends on the CPU)
++	 * before rdtsc is enough to ensure that rdtsc is ordered
++	 * with respect to loads.  The various CPU manuals are unclear
++	 * as to whether rdtsc can be reordered with later loads,
++	 * but no one has ever seen it happen.
++	 */
++	rdtsc_barrier();
++	ret = (cycle_t)vget_cycles();
+ 
+-	asm("syscall" : "=a" (ret) :
+-	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
+-	return ret;
+-}
++	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
+ 
++	if (likely(ret >= last))
++		return ret;
++
++	/*
++	 * GCC likes to generate cmov here, but this branch is extremely
++	 * predictable (it's just a funciton of time and the likely is
++	 * very likely) and there's a data dependence, so force GCC
++	 * to generate a branch instead.  I don't barrier() because
++	 * we don't actually need a barrier, and if this function
++	 * ever gets inlined it will generate worse code.
++	 */
++	asm volatile ("");
++	return last;
++}
+ 
+ notrace static inline u64 vgetsns(int *mode)
+ {
+-- 
+1.8.5.5
 
