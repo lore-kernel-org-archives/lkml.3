@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210AbaBQUSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 15:18:25 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:56725 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaBQUSW (ORCPT
+	id S1754293AbaBQUTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 15:19:12 -0500
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:38971 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847AbaBQUTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 15:18:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392666947.18779.6838.camel@triegel.csb>
-References: <20140207180216.GP4250@linux.vnet.ibm.com>
-	<1391992071.18779.99.camel@triegel.csb>
-	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	<1392183564.18779.2187.camel@triegel.csb>
-	<20140212180739.GB4250@linux.vnet.ibm.com>
-	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	<20140213002355.GI4250@linux.vnet.ibm.com>
-	<1392321837.18779.3249.camel@triegel.csb>
-	<20140214020144.GO4250@linux.vnet.ibm.com>
-	<1392352981.18779.3800.camel@triegel.csb>
-	<20140214172920.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	<1392486310.18779.6447.camel@triegel.csb>
-	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	<1392666947.18779.6838.camel@triegel.csb>
-Date: Mon, 17 Feb 2014 12:18:21 -0800
-X-Google-Sender-Auth: 3nI--o_Se4gNPjJN6C0VE6LanSo
-Message-ID: <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 17 Feb 2014 15:19:10 -0500
+X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Feb 2014 15:19:10 EST
+Date: Mon, 17 Feb 2014 21:11:51 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Daniel J Blueman <daniel@quora.org>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: USB keyboard occasional key stuck
+Message-ID: <20140217211151.02f8afbe@neptune.home>
+In-Reply-To: <CAMVG2ss9nA4zcOT3c47EwEMrR7Z_gAQU-HTYGjdWcdYzihSnbg@mail.gmail.com>
+References: <CAMVG2ss9nA4zcOT3c47EwEMrR7Z_gAQU-HTYGjdWcdYzihSnbg@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 11:55 AM, Torvald Riegel <triegel@redhat.com> wrote:
->
-> Which example do you have in mind here?  Haven't we resolved all the
-> debated examples, or did I miss any?
+On Mon, 17 February 2014 Daniel J Blueman <daniel@quora.org> wrote:
+> Across 5+ years of kernels, I've been seeing occasional (1-2 times per
+> day) key-stuck issues where eg a fn+delete combo repeats delete until
+> I press delete again. I've seen this happen with fn+ctrl+left, leaving
+> left held and likewise with right.
+> 
+> This has occurred on Apple laptops, external USB keyboards and Dell
+> laptops, so seems like a linux USB input issue, as I haven't seen
+> occur on Windows or MacOS on the same hardware.
+> 
+> It seems a good move for me to rebuild and run a kernel with some USB
+> HID instrumentation to locate this issue over time. Without apriori
+> knowledge of the linux USB input stack, what is a good initial
+> approach?
 
-Well, Paul seems to still think that the standard possibly allows
-speculative writes or possibly value speculation in ways that break
-the hardware-guaranteed orderings.
+I've seen some similar behavior on servers connected to a KVM switch
+(USB keyboard/mouse) where without apparent reason the ENTER key became
+pressed and did continuously send repeat events.
 
-And personally, I can't read standards paperwork. It is invariably
-written in some basically impossible-to-understand lawyeristic mode,
-and then it is read by people (compiler writers) that intentionally
-try to mis-use the words and do language-lawyering ("that depends on
-what the meaning of 'is' is"). The whole "lvalue vs rvalue expression
-vs 'what is a volatile access'" thing for C++ was/is a great example
-of that.
+Physically touching the KVM keyboard or unbinding&rebinding the HID
+keyboard solved the issue (on a console that triggers a busy loop of
+agettys on active vt).
 
-So quite frankly, as a result I refuse to have anything to do with the
-process directly.
+I've been tempted to attribute it to the KVM switch doing something
+when switching to another server via key-press (yes, some co-worker
+as at the KVM terminal when the getty load started).
 
-                 Linus
+On the other hand, some other co-worker had "dead keyboard" issues
+though only under X, things still worked at console level, for quite
+some time now. Annoying but not regular enough to look further into it.
+
+
+If you want to look at what happens for you, monitoring the USB activity
+for your keyboard (in combination with output from event device) might
+be the most useful way (it would also catch details on when the USB
+side goes into power-saving, if at all).
+
+Bruno
