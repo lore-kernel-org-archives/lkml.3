@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaBQIHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:07:41 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:42902 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930AbaBQIHj (ORCPT
+	id S1751867AbaBQIJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:09:52 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:30965 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaBQIJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:07:39 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-ae-5301c3485361
-Message-id: <1392624454.3755.12.camel@AMDC1943>
+	Mon, 17 Feb 2014 03:09:50 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-74-5301c3cb14fc
+Message-id: <1392624586.3755.13.camel@AMDC1943>
 Subject: Re: [PATCH v2 11/14] regulator: s2mps11: Add opmode for S2MPS14
  regulators
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Mark Brown <broonie@kernel.org>
-Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Tomasz Figa <t.figa@samsung.com>
-Date: Mon, 17 Feb 2014 09:07:34 +0100
-In-reply-to: <20140214210502.GX4451@sirena.org.uk>
+        Liam Girdwood <lgirdwood@gmail.com>
+Date: Mon, 17 Feb 2014 09:09:46 +0100
+In-reply-to: <20140214205915.GW4451@sirena.org.uk>
 References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
  <1392282847-25444-12-git-send-email-k.kozlowski@samsung.com>
- <CAKew6eWcwVm1EAUAdFu48y_O5puu+eGvGW3k6923MdXfMa3UAw@mail.gmail.com>
- <1392383156.12506.20.camel@AMDC1943> <20140214210502.GX4451@sirena.org.uk>
+ <20140213192835.GD28112@sirena.org.uk> <1392365712.29133.16.camel@AMDC1943>
+ <20140214205915.GW4451@sirena.org.uk>
 Content-type: text/plain; charset=UTF-8
 X-Mailer: Evolution 3.2.3-0ubuntu6
 Content-transfer-encoding: 7bit
 MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t/xK7oehxmDDTo38VtsnLGe1WLqwyds
-	Fte/PGe1ONv0ht3i/tejjBbfrnQwWVzeNYfNYsb5fUwWa4/cZbc43c1qcXHFFyaL9TNes1jM
-	/d3I6sDrsXPWXXaPTas62TzuXNvD5jHvZKBH35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZbQ+
-	nMtWsI+novegdAPjF84uRk4OCQETiW8rN7FC2GISF+6tZ+ti5OIQEljKKLHkdReU85lR4ujK
-	J2wgVbwC+hLNG8+D2cICoRKX1v1gAbHZBIwlNi9fAhYXEVCWuPp9LwtIM7NAN4vE5z/XGLsY
-	OThYBFQltj7IAqnhFDCS2DNvFtSCWUwSn89OAhvELKAuMWneImaIk5Qkdrd3skPE5SU2r3nL
-	DHGEoMSPyfdYJjAKzELSMgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihETK
-	lx2Mi49ZHWIU4GBU4uE1qGYMFmJNLCuuzD3EKMHBrCTCa7sOKMSbklhZlVqUH19UmpNafIiR
-	iYNTqoExdOn3WROPrmh3inW/qyexX5/zaSEXz9brZmpHXIM8O4qt7F/v5NFjlJgfs0HaSOhx
-	hZ9xttBE4/VfyrsT9+k7OIXNf+3a1eXyLYT7Zv20TQIsl909n0prtWd1Tkvb0vEgVXOV/cPg
-	0ruHPovVTVj2fH3zh0M7GwzXJf1Yv3G7QuAVj3pRjRQlluKMREMt5qLiRACy4Y/AcgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xy7qnDzMGG3z8qm2xccZ6VoupD5+w
+	WVz/8pzV4mzTG3aL+1+PMlp8u9LBZHF51xw2ixnn9zFZrD1yl93idDerxcUVX5gcuD12zrrL
+	7rFpVSebx51re9g85p0M9OjbsorR4/MmuQC2KC6blNSczLLUIn27BK6MmZ8OMRbsZ6/Yv2km
+	awPjW9YuRk4OCQETib1/N7NA2GISF+6tZ+ti5OIQEljKKLFxGojDCeR8ZpQ4ucgYxOYV0Jfo
+	u7QGrEFYIFTi0rofYDabgLHE5uVLwOpFBJQlrn7fywIyiFlgErPEn5PdTCAJFgFViZvP5jCC
+	2JwCRhLfF99jgtj2h1Gi58gbsEnMAuoSk+YtYoY4SUlid3snO0RcXmLzmrfMEFcISvyYfI9l
+	AqPALCQts5CUzUJStoCReRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSFx82cG4+JjVIUYB
+	DkYlHl6DasZgIdbEsuLK3EOMEhzMSiK8tuuAQrwpiZVVqUX58UWlOanFhxiZODilGhitvj2f
+	vt7f+GrWBaljO8yTnNWzo09PTGbfKNcYJzkhWTN6yuPT181ntiWyf/82ZUOo2THjlSuOJd5+
+	8Dh+vkSn4dWSlA8CMyWdFgj1nLk83eahh9KRfRt/NX/doq/5/8umJ6/1Jn6JzT+X8/rR5+KI
+	x0ePfDJa4/hUWe+00vuShB2/5u8Oyv6TrsRSnJFoqMVcVJwIACYRUwRpAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-14 at 21:05 +0000, Mark Brown wrote:
-> On Fri, Feb 14, 2014 at 02:05:56PM +0100, Krzysztof Kozlowski wrote:
-> > On Thu, 2014-02-13 at 17:46 +0530, Yadwinder Singh Brar wrote:
+On Fri, 2014-02-14 at 20:59 +0000, Mark Brown wrote:
+> On Fri, Feb 14, 2014 at 09:15:12AM +0100, Krzysztof Kozlowski wrote:
 > 
-> >  - low-power mode;
-> >  - low-power mode controlled by PWREN;
-> > Although not all are present for each regulator.
+> > My initial idea was to do this similarly to the S5M8767 regulator (where
+> > there is also 4th mode: low power). The presence of GPIO in DTS can
+> > simplify the bindings but on the other hand it wouldn't be compatible
+> > with S5M8767 regulator driver. This may complicate the merge of these
+> > drivers.
 > 
-> What exactly is low power mode and how does it interact with the enable?
-> The name suggests it's a more efficient mode for use with low current
-> drain, is that right?
+> They can always use separate ops.
+> 
+> > What is your opinion on this - should I abandon the "op_mode" idea and
+> > use presence of GPIO?
+> 
+> Yes, that's better - especially since the framework has support for
+> enable GPIOs.  It can do things like handle cases where the hardware has
+> tied the enables for several regulators together so they all need to be
+> enabled and disabled as one.
 
-Yes, it is (i.e. ground current on battery load typically reduced from
-8mA to 1.5mA). In this mode for Buck5 and LDO-s the regulator is enabled
-but output current is limited to 5 mA.
-
-> 
-> > A generic solution for operating mode of regulators (not only s2mps11
-> > and s5m8767) could cover all of these above or just a subset, for
-> > example regulator bindings could look like:
-> >  - regulator-mode-suspend; /* PWR controls: on/off or low-power mode */
-> >  - regulator-mode-low-power; /* Low power mode */
-> 
-> Those properties have awfully generic names and part of what I was
-> wondering above is if the low power mode maps onto the idle or standby
-> modes that the API defines?  We don't cover those in the bindings yet
-> since they are unfortunately fuzzy but perhaps we need to do so.
-
-The low power maps to REGULATOR_MODE_IDLE or REGULATOR_MODE_STANDBY
-(depending on the understanding of "more efficient" and "most efficient"
-for light loads). However the suspend mode of S5M8767/S2MPS14 is more
-like automatic regulator disable by SoC.
+OK. I'll rewrite this patch and send later when S2MPS14 will be
+accepted.
 
 Best regards,
 Krzysztof
-
 
