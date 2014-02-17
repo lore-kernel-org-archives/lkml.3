@@ -1,259 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaBQJob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:44:31 -0500
-Received: from smtp-out-223.synserver.de ([212.40.185.223]:1068 "EHLO
-	smtp-out-011.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751663AbaBQJo3 (ORCPT
+	id S1752659AbaBQJpF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:45:05 -0500
+Received: from www84.your-server.de ([213.133.104.84]:38075 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572AbaBQJpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:44:29 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10140
-Message-ID: <5301DA0A.8030400@metafoo.de>
-Date: Mon, 17 Feb 2014 10:44:42 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Srikanth Thokala <sthokal@xilinx.com>
-CC: Vinod Koul <vinod.koul@intel.com>, dan.j.williams@intel.com,
-        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
-        robh+dt@kernel.org, Levente Kurusa <levex@linux.com>,
-        andriy.shevchenko@linux.jf.intel.com, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] dma: Support multiple interleaved frames with
- non-contiguous memory
-References: <1392465619-27614-1-git-send-email-sthokal@xilinx.com> <1392465619-27614-2-git-send-email-sthokal@xilinx.com> <20140217084316.GY10628@intel.com> <CA+mB=1K4_RpgfpWCfLy=PYOCzPThNf0Z6oSEK5Vrjh=W_YabhQ@mail.gmail.com> <5301D7CD.5000405@metafoo.de> <CA+mB=1LjuVKYWZCaje14UtHRZ4UoLWEhYV05XyjUMgM=uKH2_A@mail.gmail.com>
-In-Reply-To: <CA+mB=1LjuVKYWZCaje14UtHRZ4UoLWEhYV05XyjUMgM=uKH2_A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 17 Feb 2014 04:45:02 -0500
+Message-ID: <1392630366.15660.6.camel@wall-e.seibold.net>
+Subject: Re: [tip:x86/vdso] x86, vdso: Instead of dummy functions, include <
+ linux/spinlock_up.h>
+From: Stefani Seibold <stefani@seibold.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com, linux-tip-commits@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 17 Feb 2014 10:46:06 +0100
+In-Reply-To: <5301D615.8090907@zytor.com>
+References: <1392587568-7325-10-git-send-email-stefani@seibold.net>
+	 <tip-bd9ee7fd99f127ee1306289415141d45792c97f3@git.kernel.org>
+	 <53018ABA.20005@zytor.com> <1392622944.1036.13.camel@wall-e.seibold.net>
+	 <5301D615.8090907@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 10:42 AM, Srikanth Thokala wrote:
-> On Mon, Feb 17, 2014 at 3:05 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> On 02/17/2014 10:29 AM, Srikanth Thokala wrote:
->>>
->>> On Mon, Feb 17, 2014 at 2:13 PM, Vinod Koul <vinod.koul@intel.com> wrote:
->>>>
->>>> On Sat, Feb 15, 2014 at 05:30:17PM +0530, Srikanth Thokala wrote:
->>>>>
->>>>> The current implementation of interleaved DMA API support multiple
->>>>> frames only when the memory is contiguous by incrementing src_start/
->>>>> dst_start members of interleaved template.
->>>>>
->>>>> But, when the memory is non-contiguous it will restrict slave device
->>>>> to not submit multiple frames in a batch.  This patch handles this
->>>>> issue by allowing the slave device to send array of interleaved dma
->>>>> templates each having a different memory location.
->>>>
->>>> This seems to be missing the numbers of templates you are sending,
->>>> wouldnt this
->>>> require sending ARRAY_SiZE too?
->>>>
->>>> And why send double pointer?
->>>
->>>
->>> Array size is not required, when we pass the double pointer.  The last
->>> element would be
->>> pointed to NULL and we could get the number of templates from this
->>> condition.
->>> Here is an example snippet,
->>>
->>> In slave device driver,
->>>
->>>           struct dma_interleaved_template **xts;
->>>
->>>           xts = kcalloc(frm_cnt+1, sizeof(struct
->>> dma_interleaved_template *), GFP_KERNEL);
->>>           /* Error check for xts */
->>>           for (i = 0; i < frm_cnt; i++) {
->>>                   xts[i] = kmalloc(sizeof(struct
->>> dma_interleaved_template), GFP_KERNEL);
->>>                   /* Error check for xts[i] */
->>>           }
->>>           xts[i] = NULL;
->>>
->>> In DMA engine driver,  we could get the number of frames by,
->>>
->>>           for (; xts[frmno] != NULL; frmno++);
->>>
->>> I felt this way is simpler than adding an extra argument to the API.
->>> Please let me know
->>> your opinion and suggest me a better way.
->>
->>
->> I think Vinod's suggestion of passing in an array of interleaved_templates
->> and the size of the array is better than what you are currently doing.
->
-> Ok, Lars.  I will update with this in my v4. Thanks.
->
->>
->> Btw. you also need to update the current implementations and users of the
->> API accordingly.
->
-> Yes, I have updated them in this patch.
+Am Montag, den 17.02.2014, 01:27 -0800 schrieb H. Peter Anvin:
+> On 02/16/2014 11:42 PM, Stefani Seibold wrote:
+> > I think for the first time it will be okay to kick out the
+> > _ASM_X86_SPINLOCK_H hack and accept the C=1 warnings.
+> >
+> > At next step it is necessary to make the whole BUILD_VDSO32 path in
+> > vclock_gettime.c independent from the kernel headers, only uapi/ should
+> > be included.
+> >
+> > The use of cycle_t must be replaced with u64.
+> >
+> > We need a own copy of __native_read_tsc(), __iter_div_u64_rem, smp_rmb()
+> > and cpu_relax().
+> 
+> All of which are quite trivial.
+> 
+> > For the non BUILD_VDSO32 path we must only move the #includes inside
+> > this #ifndef BUILD_VDSO32
+> 
+> Sorry, didn't quite follow that.
+> 
 
-But you didn't update them accordingly to your proposed semantics. The 
-caller didn't NULL terminate the array and the drivers did blindly assume 
-there will always be exactly one transfer.
+The solution is quite simple: In case of a 32 bit VDSO for a 64 bit
+kernel fake a 32 bit kernel configuration. Than everything is fine and
+all kernel headers will compile without warnings or errors, also make
+C=1 will give no complains.
 
->
-> Thanks
-> Srikanth
->
->
->>
->>
->>>
->>>>
->>>> --
->>>> ~Vinod
->>>>
->>>>>
->>>>> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
->>>>> ---
->>>>>    Documentation/dmaengine.txt              |    2 +-
->>>>>    drivers/dma/imx-dma.c                    |    3 ++-
->>>>>    drivers/dma/sirf-dma.c                   |    3 ++-
->>>>>    drivers/media/platform/m2m-deinterlace.c |    2 +-
->>>>>    include/linux/dmaengine.h                |    6 +++---
->>>>>    5 files changed, 9 insertions(+), 7 deletions(-)
->>>>>
->>>>> diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
->>>>> index 879b6e3..c642614 100644
->>>>> --- a/Documentation/dmaengine.txt
->>>>> +++ b/Documentation/dmaengine.txt
->>>>> @@ -94,7 +94,7 @@ The slave DMA usage consists of following steps:
->>>>>                 size_t period_len, enum dma_data_direction direction);
->>>>>
->>>>>         struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->>>>> -             struct dma_chan *chan, struct dma_interleaved_template
->>>>> *xt,
->>>>> +             struct dma_chan *chan, struct dma_interleaved_template
->>>>> **xts,
->>>>>                 unsigned long flags);
->>>>>
->>>>>       The peripheral driver is expected to have mapped the scatterlist
->>>>> for
->>>>> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
->>>>> index 6f9ac20..e2c52ce 100644
->>>>> --- a/drivers/dma/imx-dma.c
->>>>> +++ b/drivers/dma/imx-dma.c
->>>>> @@ -954,12 +954,13 @@ static struct dma_async_tx_descriptor
->>>>> *imxdma_prep_dma_memcpy(
->>>>>    }
->>>>>
->>>>>    static struct dma_async_tx_descriptor *imxdma_prep_dma_interleaved(
->>>>> -     struct dma_chan *chan, struct dma_interleaved_template *xt,
->>>>> +     struct dma_chan *chan, struct dma_interleaved_template **xts,
->>>>>         unsigned long flags)
->>>>>    {
->>>>>         struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
->>>>>         struct imxdma_engine *imxdma = imxdmac->imxdma;
->>>>>         struct imxdma_desc *desc;
->>>>> +     struct dma_interleaved_template *xt = *xts;
->>>>>
->>>>>         dev_dbg(imxdma->dev, "%s channel: %d src_start=0x%llx
->>>>> dst_start=0x%llx\n"
->>>>>                 "   src_sgl=%s dst_sgl=%s numf=%zu frame_size=%zu\n",
->>>>> __func__,
->>>>> diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
->>>>> index d4d3a31..b6a150b 100644
->>>>> --- a/drivers/dma/sirf-dma.c
->>>>> +++ b/drivers/dma/sirf-dma.c
->>>>> @@ -509,12 +509,13 @@ sirfsoc_dma_tx_status(struct dma_chan *chan,
->>>>> dma_cookie_t cookie,
->>>>>    }
->>>>>
->>>>>    static struct dma_async_tx_descriptor *sirfsoc_dma_prep_interleaved(
->>>>> -     struct dma_chan *chan, struct dma_interleaved_template *xt,
->>>>> +     struct dma_chan *chan, struct dma_interleaved_template **xts,
->>>>>         unsigned long flags)
->>>>>    {
->>>>>         struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
->>>>>         struct sirfsoc_dma_chan *schan =
->>>>> dma_chan_to_sirfsoc_dma_chan(chan);
->>>>>         struct sirfsoc_dma_desc *sdesc = NULL;
->>>>> +     struct dma_interleaved_template *xt = *xts;
->>>>>         unsigned long iflags;
->>>>>         int ret;
->>>>>
->>>>> diff --git a/drivers/media/platform/m2m-deinterlace.c
->>>>> b/drivers/media/platform/m2m-deinterlace.c
->>>>> index 6bb86b5..468110a 100644
->>>>> --- a/drivers/media/platform/m2m-deinterlace.c
->>>>> +++ b/drivers/media/platform/m2m-deinterlace.c
->>>>> @@ -343,7 +343,7 @@ static void deinterlace_issue_dma(struct
->>>>> deinterlace_ctx *ctx, int op,
->>>>>         ctx->xt->dst_sgl = true;
->>>>>         flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
->>>>>
->>>>> -     tx = dmadev->device_prep_interleaved_dma(chan, ctx->xt, flags);
->>>>> +     tx = dmadev->device_prep_interleaved_dma(chan, &ctx->xt, flags);
->>>>>         if (tx == NULL) {
->>>>>                 v4l2_warn(&pcdev->v4l2_dev, "DMA interleaved prep
->>>>> error\n");
->>>>>                 return;
->>>>> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
->>>>> index c5c92d5..2f77a9a 100644
->>>>> --- a/include/linux/dmaengine.h
->>>>> +++ b/include/linux/dmaengine.h
->>>>> @@ -675,7 +675,7 @@ struct dma_device {
->>>>>                 size_t period_len, enum dma_transfer_direction direction,
->>>>>                 unsigned long flags, void *context);
->>>>>         struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->>>>> -             struct dma_chan *chan, struct dma_interleaved_template
->>>>> *xt,
->>>>> +             struct dma_chan *chan, struct dma_interleaved_template
->>>>> **xts,
->>>>>                 unsigned long flags);
->>>>>         int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd
->>>>> cmd,
->>>>>                 unsigned long arg);
->>>>> @@ -752,10 +752,10 @@ static inline struct dma_async_tx_descriptor
->>>>> *dmaengine_prep_dma_cyclic(
->>>>>    }
->>>>>
->>>>>    static inline struct dma_async_tx_descriptor
->>>>> *dmaengine_prep_interleaved_dma(
->>>>> -             struct dma_chan *chan, struct dma_interleaved_template
->>>>> *xt,
->>>>> +             struct dma_chan *chan, struct dma_interleaved_template
->>>>> **xts,
->>>>>                 unsigned long flags)
->>>>>    {
->>>>> -     return chan->device->device_prep_interleaved_dma(chan, xt, flags);
->>>>> +     return chan->device->device_prep_interleaved_dma(chan, xts,
->>>>> flags);
->>>>>    }
->>>>>
->>>>>    static inline int dma_get_slave_caps(struct dma_chan *chan, struct
->>>>> dma_slave_caps *caps)
->>>>> --
->>>>> 1.7.9.5
->>>>>
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>>>
->>>> --
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>>> in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+The arch/x86/vdso/vdso32/vclock_gettime.c will now look like:
+
+#define BUILD_VDSO32
+
+#ifdef CONFIG_X86_64
+
+/*
+ * in case of a 32 bit VDSO for a 64 bit kernel fake a 32 bit kernel
+ * configuration
+ */
+#undef CONFIG_64BIT
+#undef CONFIG_X86_64
+#undef CONFIG_ILLEGAL_POINTER_VALUE
+
+#define CONFIG_X86_32 1
+#define CONFIG_PAGE_OFFSET 0
+#define CONFIG_ILLEGAL_POINTER_VALUE 0
+
+#define BUILD_VDSO32_64
+
+#endif
+
+#include "../vclock_gettime.c"
+
+and the following modifications for arch/x86/include/asm/vgtod.h:
+
+#ifdef BUILD_VDSO32_64
+typedef u64 gtod_long_t;
+#else
+typedef unsigned long gtod_long_t;
+#endif
+
+I tested it and i see no side effects. What do you think?
+
+- Stefani
+
 
