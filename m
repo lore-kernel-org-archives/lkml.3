@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaBQJpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:45:16 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:55424 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118AbaBQJpL (ORCPT
+	id S1753297AbaBQJse (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:48:34 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:14618 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733AbaBQJpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:45:11 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-46-5301da257b99
+	Mon, 17 Feb 2014 04:45:17 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-5e-5301da2b933e
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
         herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, davem@davemloft.net
-Subject: [PATCH 2/9 v7] crypto:s5p-sss: Add device tree support
-Date: Mon, 17 Feb 2014 15:14:28 +0530
-Message-id: <1392630275-8667-3-git-send-email-ch.naveen@samsung.com>
+        cpgs@samsung.com, davem@davemloft.net,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 6/9 v7] ARM: dts: exynos5250/5420: add dt node for sss module
+Date: Mon, 17 Feb 2014 15:14:32 +0530
+Message-id: <1392630275-8667-7-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1392630275-8667-1-git-send-email-ch.naveen@samsung.com>
 References: <1392630275-8667-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsWyRsSkWlf1FmOwwZw5xhYvD2lazDnfwmLR
-	/UrG4v69n0wWl3fNYbOYcX4fk8Wibf+ZLc7OOcTkwOGxZeVNJo+ds+6ye2w7oOrRt2UVo8fn
-	TXIBrFFcNimpOZllqUX6dglcGQ137zEX7BCr6Lxt1sB4VqiLkZNDQsBE4uK+XSwQtpjEhXvr
-	2boYuTiEBJYySpzpvcfaxcgBVvT3YyhEfBGjxPFJp1ghnH4miYMzuthAutkEzCQOLlrNDmKL
-	CDhL/G5eA1bELDCLUWL2/U+MIAlhAXuJ1vlzmUFsFgFVidcfZoPZvAIuEh8mHGCE2KYgMWeS
-	DUiYU8BVovPOdrDrhIBK1nVeYgGZKSGwiF3i6KtGFog5AhLfJh9igeiVldh0gBniG0mJgytu
-	sExgFF7AyLCKUTS1ILmgOCm9yFCvODG3uDQvXS85P3cTIzDQT/971ruD8fYB60OMyUDjJjJL
-	iSbnAyMlryTe0NjMyMLUxNTYyNzSjDRhJXHepIdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4
-	pRoYXc7Y7RVZmPnz0rp+g0NsXrrZxr9qBKeYXCjL22gfL6Yn5LnxAOMR61y+Wu7YKf2H6s4J
-	380+zdzvyaV59pXzlguxbZe3TIjWWfq/bYtpXVEW+/p80SS/6NZnzqHN5/enJ0/aOm1xlulc
-	Ty6uzibtuLs2hTH2lhrqIfIzEwM7z0+oc57Sr67EUpyRaKjFXFScCADw//zkigIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t9jAV3VW4zBBm9PaVm8PKRpMed8C4tF
-	9ysZi/v3fjJZXN41h81ixvl9TBaLtv1ntjg75xCTA4fHlpU3mTx2zrrL7rHtgKpH35ZVjB6f
-	N8kFsEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXm
-	AF2ipFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcxouHuPuWCHWEXnbbMG
-	xrNCXYwcHBICJhJ/P4Z2MXICmWISF+6tZ+ti5OIQEljEKHF80ilWCKefSeLgjC42kCo2ATOJ
-	g4tWs4PYIgLOEr+b14AVMQvMYpSYff8TI0hCWMBeonX+XGYQm0VAVeL1h9lgNq+Ai8SHCQcY
-	ITYrSMyZZAMS5hRwlei8s50FxBYCKlnXeYllAiPvAkaGVYyiqQXJBcVJ6blGesWJucWleel6
-	yfm5mxjBcfRMegfjqgaLQ4wCHIxKPLydtYzBQqyJZcWVuYcYJTiYlUR4bdcBhXhTEiurUovy
-	44tKc1KLDzEmAx01kVlKNDkfGON5JfGGxibmpsamliYWJmaWpAkrifMebLUOFBJITyxJzU5N
-	LUgtgtnCxMEp1cDIfCdoKUvYCov9Vy3Fu9uXzZl9nufI1O1TVaZVNgVUnUy8vaDn29Rrpy/x
-	/ch6sFCD4/YX+22TFKY5PNHSf7ZM005v2cRptn2Ju3WNbh6qzSnlkUhZ3cvI8tggdaL+oo3z
-	Lk+o2Oimdq78W2uD4uPfz3hkQzImn6leN+1ZheTfNptPTGdnif6UUWIpzkg01GIuKk4EAOyl
-	YVvnAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkTlf7FmOwwYNWG4uXhzQt5pxvYbHo
+	fiVj0bvgKpvF/Xs/mSwu75rDZjHj/D4mi0Xb/jNbnJ1ziMmB02PLyptMHjtn3WX32HZA1aNv
+	yypGj8+b5AJYo7hsUlJzMstSi/TtErgy1q6azlgwh6di3Zu7TA2MfVxdjJwcEgImEgf/LWCC
+	sMUkLtxbz9bFyMUhJLCUUeLSrSZ2mKLOa+sYIRKLGCUedP1ggXD6mSQmLDzABlLFJmAmcXDR
+	arAOEQFnid/Na1hBipgF9jFKXOs9DpYQFvCVOLBlLdAoDg4WAVWJBX/kQMK8Ai4Sayd2s4KE
+	JQQUJOZMsgEJcwq4SnTe2c4CYgsBlazrvAS2V0JgHbvE8wuzGEESLAICEt8mH2KB6JWV2HSA
+	GeJoSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3IVK84Mbe4NC9dLzk/dxMjMOhP/3s2cQfj/QPW
+	hxiTgcZNZJYSTc4HRk1eSbyhsZmRhamJqbGRuaUZacJK4rzpj5KChATSE0tSs1NTC1KL4otK
+	c1KLDzEycXBKNTDquXg/XtktXp82NfzyM+n9bWvuBr6dKfbk4LsZzeyxevdZax5Lbf88X2Jp
+	q5tKlKe3wUH7OQGvp3Jd81tbvlJ6SXmlAwfDnnTBx+7vw+4oTvfofxB502uh/edqq0sflk82
+	8mHmPHVw04f/z95uU3F3bLhR4ex1U9dj/36mghXZl0utw95/nztJiaU4I9FQi7moOBEA/7zM
+	WZACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAV3tW4zBBovfGlu8PKRpMed8C4tF
+	9ysZi94FV9ks7t/7yWRxedccNosZ5/cxWSza9p/Z4uycQ0wOnB5bVt5k8tg56y67x7YDqh59
+	W1YxenzeJBfAGtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+Ti
+	E6DrlpkDdI6SQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMWPtqumMBXN4
+	Kta9ucvUwNjH1cXIySEhYCLReW0dI4QtJnHh3nq2LkYuDiGBRYwSD7p+sEA4/UwSExYeYAOp
+	YhMwkzi4aDU7iC0i4Czxu3kNK0gRs8A+RolrvcfBEsICvhIHtqwFGsvBwSKgKrHgjxxImFfA
+	RWLtxG5WkLCEgILEnEk2IGFOAVeJzjvbWUBsIaCSdZ2XWCYw8i5gZFjFKJpakFxQnJSea6RX
+	nJhbXJqXrpecn7uJERxTz6R3MK5qsDjEKMDBqMTD21nLGCzEmlhWXJl7iFGCg1lJhNd2HVCI
+	NyWxsiq1KD++qDQntfgQYzLQTROZpUST84HxnlcSb2hsYm5qbGppYmFiZkmasJI478FW60Ah
+	gfTEktTs1NSC1CKYLUwcnFINjJKPwhUXdP7/ZyzZrL38r5LHoZdxof++Rq41lQs+cuDVjtxL
+	lxW0/y73tGR8eCNsfuxlxqzNCz6LZwjkyfLv5RdTYEurPMYpX/WCb87eJo1G133G096L7szh
+	XbyXYZvclasHE253bF26Jaw5ZN/GH8VXpef4rts+6Y39QruAdXOXTizfkZr1Tk+JpTgj0VCL
+	uag4EQDFO+IM7QIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,90 +52,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support to the s5p-sss.c crypto driver.
+This patch adds the device tree node for SSS module
+found on Exynos5420 and Exynos5250
 
-Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+TO: <linux-samsung-soc@vger.kernel.org>
 CC: David S. Miller <davem@davemloft.net>
-CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
-TO: <linux-crypto@vger.kernel.org>
-CC: <linux-samsung-soc@vger.kernel.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>
+CC: <linux-crypto@vger.kernel.org>
 ---
 Changes since v6:
 None
-Changes since v5:
-Rewritten the interrupt definition in the documentation
 
- .../devicetree/bindings/crypto/samsung-sss.txt     |   26 ++++++++++++++++++++
- drivers/crypto/s5p-sss.c                           |    8 ++++++
- 2 files changed, 34 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/crypto/samsung-sss.txt
+ arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
+ arch/arm/boot/dts/exynos5420.dtsi |    9 +++++++++
+ 2 files changed, 17 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/crypto/samsung-sss.txt b/Documentation/devicetree/bindings/crypto/samsung-sss.txt
-new file mode 100644
-index 0000000..3876f71
---- /dev/null
-+++ b/Documentation/devicetree/bindings/crypto/samsung-sss.txt
-@@ -0,0 +1,26 @@
-+Samsung SoC SSS (Security SubSystem) module
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index a76a189..13b748f 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -715,4 +715,12 @@
+ 		io-channel-ranges;
+ 		status = "disabled";
+ 	};
 +
-+The SSS module in S5PV210 SoC supports the following:
-+-- Feeder (FeedCtrl)
-+-- Advanced Encryption Standard (AES)
-+-- Data Encryption Standard (DES)/3DES
-+-- Public Key Accelerator (PKA)
-+-- SHA-1/SHA-256/MD5/HMAC (SHA-1/SHA-256/MD5)/PRNG
-+-- PRNG: Pseudo Random Number Generator
-+
-+Required properties:
-+
-+- compatible : Should contain entries for this and backward compatible
-+  SSS versions:
-+  - "samsung,s5pv210-secss" for S5PV210 SoC.
-+- reg : Offset and length of the register set for the module
-+- interrupts : interrupt specifiers of SSS module interrupts, should contain
-+		two entries:
-+		- first : feed control interrupt,
-+		- second : hash interrupt.
-+
-+- clocks : list of clock phandle and specifier pairs for all clocks  listed in
-+		clock-names property.
-+- clock-names : list of device clock input names; should contain one entry
-+		"secss".
-+
-diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
-index 93cddeb..73c8b38 100644
---- a/drivers/crypto/s5p-sss.c
-+++ b/drivers/crypto/s5p-sss.c
-@@ -22,6 +22,7 @@
- #include <linux/scatterlist.h>
- #include <linux/dma-mapping.h>
- #include <linux/io.h>
-+#include <linux/of.h>
- #include <linux/crypto.h>
- #include <linux/interrupt.h>
- 
-@@ -177,6 +178,12 @@ struct s5p_aes_dev {
- 
- static struct s5p_aes_dev *s5p_dev;
- 
-+static const struct of_device_id s5p_sss_dt_match[] = {
-+	{ .compatible = "samsung,s5pv210-secss" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, s5p_sss_dt_match);
-+
- static void s5p_set_dma_indata(struct s5p_aes_dev *dev, struct scatterlist *sg)
- {
- 	SSS_WRITE(dev, FCBRDMAS, sg_dma_address(sg));
-@@ -677,6 +684,7 @@ static struct platform_driver s5p_aes_crypto = {
- 	.driver	= {
- 		.owner	= THIS_MODULE,
- 		.name	= "s5p-secss",
-+		.of_match_table = s5p_sss_dt_match,
- 	},
++	sss@10830000 {
++		compatible = "samsung,exynos4210-secss";
++		reg = <0x10830000 0x10000>;
++		interrupts = <0 112 0>;
++		clocks = <&clock 348>;
++		clock-names = "secss";
++	};
  };
- 
+diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+index 9c834cc..b4ce625 100644
+--- a/arch/arm/boot/dts/exynos5420.dtsi
++++ b/arch/arm/boot/dts/exynos5420.dtsi
+@@ -666,4 +666,13 @@
+ 		clock-names = "watchdog";
+ 		samsung,syscon-phandle = <&pmu_system_controller>;
+         };
++
++	sss@10830000 {
++		compatible = "samsung,exynos4210-secss";
++		reg = <0x10830000 0x10000>;
++		interrupts = <0 112 0>;
++		clocks = <&clock 471>;
++		clock-names = "secss";
++		samsung,power-domain = <&g2d_pd>;
++	};
+ };
 -- 
 1.7.9.5
 
