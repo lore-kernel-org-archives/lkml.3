@@ -1,128 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaBQI4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:56:33 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43818 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaBQI4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:56:31 -0500
+	id S1752515AbaBQI5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:57:01 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50149 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330AbaBQI47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 03:56:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,859,1384329600"; 
+   d="scan'208";a="456745918"
+Date: Mon, 17 Feb 2014 14:24:59 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [Patch v5 1/2] dmaengine: add Qualcomm BAM dma driver
+Message-ID: <20140217085458.GB10628@intel.com>
+References: <1391546556-27702-1-git-send-email-agross@codeaurora.org>
+ <1391546556-27702-2-git-send-email-agross@codeaurora.org>
+ <20140211173048.GP10628@intel.com>
+ <20140211205852.GA10744@qualcomm.com>
 MIME-Version: 1.0
-In-Reply-To: <52FDF5FA.4000909@samsung.com>
-References: <1389095509-14357-6-git-send-email-ch.naveen@samsung.com>
- <1391750695-27447-1-git-send-email-ch.naveen@samsung.com> <52FD552E.8040008@samsung.com>
- <52FDF5FA.4000909@samsung.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Mon, 17 Feb 2014 14:26:10 +0530
-Message-ID: <CAHfPSqAaxuS1S5Buy2FUqvy7_8zGGYp5Dc2mK4bogxe1eH1VJA@mail.gmail.com>
-Subject: Re: [PATCH 6/9 v6] ARM: dts: exynos5250/5420: add dt node for sss module
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Vladimir Zapolskiy <vzapolskiy@gmail.com>, herbert@gondor.apana.org.au,
-        cpgs@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211205852.GA10744@qualcomm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tomasz,
+On Tue, Feb 11, 2014 at 02:58:52PM -0600, Andy Gross wrote:
+> On Tue, Feb 11, 2014 at 11:00:48PM +0530, Vinod Koul wrote:
+> > On Tue, Feb 04, 2014 at 02:42:35PM -0600, Andy Gross wrote:
+> > > Add the DMA engine driver for the QCOM Bus Access Manager (BAM) DMA controller
+> > > found in the MSM 8x74 platforms.
+> > > 
+> 
+> > > +/**
+> > > + * bam_alloc_chan - Allocate channel resources for DMA channel.
+> > > + * @chan: specified channel
+> > > + *
+> > > + * This function allocates the FIFO descriptor memory
+> > > + */
+> > > +static int bam_alloc_chan(struct dma_chan *chan)
+> > > +{
+> > > +	struct bam_chan *bchan = to_bam_chan(chan);
+> > > +	struct bam_device *bdev = bchan->bdev;
+> > > +
+> > > +	/* allocate FIFO descriptor space, but only if necessary */
+> > > +	if (!bchan->fifo_virt) {
+> > > +		bchan->fifo_virt = dma_alloc_writecombine(bdev->dev,
+> > > +					BAM_DESC_FIFO_SIZE, &bchan->fifo_phys,
+> > > +					GFP_KERNEL);
+> > > +
+> > > +		if (!bchan->fifo_virt) {
+> > > +			dev_err(bdev->dev, "Failed to allocate desc fifo\n");
+> > > +			return -ENOMEM;
+> > > +		}
+> > > +	}
+> > > +
+> > > +	return BAM_DESC_FIFO_SIZE;
+> > But you cna have SW descriptors more than HW ones and issue new ones once HW is
+> > done with them. Why tie the limit to what HW supports and not create a better
+> > driver?
+> 
+> Given that the virt-dma only allows me to have one outstanding transaction that
+> consumes the fifo, and that I allocate descriptors from kzalloc, this would be
+> as many as you can get until you go OOM.
+well you can update virt-dma to queue up multiple descriptors to HW is thats
+supported :)
+> 
+> The slave_sg() doesn't pull from a pool of descriptors.  It uses kzalloc.  So
+> what value should I use for return value?  Most drivers use 1.
+Lots do 0 as they dont allocate descriptor here, they allocate when the
+.prep_xxx call gets invoked, which is what I suspect from you case too.
 
-On 14 February 2014 16:24, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi Kukjin,
->
->
-> On 14.02.2014 00:28, Kukjin Kim wrote:
->>
->> On 02/07/14 14:24, Naveen Krishna Chatradhi wrote:
->>>
->>> This patch adds the device tree node for SSS module
->>> found on Exynos5420 and Exynos5250
->>>
->>> Signed-off-by: Naveen Krishna Chatradhi<ch.naveen@samsung.com>
->>> Reviewed-by: Tomasz Figa<t.figa@samsung.com>
->>> TO:<linux-samsung-soc@vger.kernel.org>
->>> CC: Kukjin Kim<kgene.kim@samsung.com>
->>> CC:<linux-crypto@vger.kernel.org>
->>> ---
->>> changes since v5:
->>> 1. Added Reviewed-by: Tomasz Figa<t.figa@samsung.com>
->>>
->>>   arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
->>>   arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
->>>   2 files changed, 18 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
->>> b/arch/arm/boot/dts/exynos5250.dtsi
->>> index b7dec41..46b04e8 100644
->>> --- a/arch/arm/boot/dts/exynos5250.dtsi
->>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
->>> @@ -706,4 +706,12 @@
->>>           io-channel-ranges;
->>>           status = "disabled";
->>>       };
->>> +
->>> +    sss@10830000 {
->>> +        compatible = "samsung,exynos4210-secss";
->>> +        reg =<0x10830000 0x10000>;
->>> +        interrupts =<0 112 0>;
->>> +        clocks =<&clock 348>;
->>> +        clock-names = "secss";
->>> +    };
->>>   };
->>> diff --git a/arch/arm/boot/dts/exynos5420.dtsi
->>> b/arch/arm/boot/dts/exynos5420.dtsi
->>> index 8db792b..b503e96 100644
->>> --- a/arch/arm/boot/dts/exynos5420.dtsi
->>> +++ b/arch/arm/boot/dts/exynos5420.dtsi
->>> @@ -652,4 +652,14 @@
->>>           clocks =<&clock 319>,<&clock 318>;
->>>           clock-names = "tmu_apbif", "tmu_triminfo_apbif";
->>>       };
->>> +
->>> +    sss@10830000 {
->>> +        compatible = "samsung,exynos4210-secss";
->>> +        reg =<0x10830000 0x10000>;
->>> +        interrupts =<0 112 0>;
->>> +        clocks =<&clock 471>;
->>> +        clock-names = "secss";
->>> +        samsung,power-domain =<&g2d_pd>;
->>> +    };
->>> +
->>>   };
->>
->>
->> Applied, thanks.
->>
->> BTW, I think the numbering is strange...maybe I missed something?
->> [PATCH 5/5], [PATCH 5/6 V2], [PATCH 6/8 V3] and this [PATCH 6/9 V6]
->
->
-> I would wait with applying any patches from this series until they are acked
-> by crypto subsystem maintainer and DT bindings by DT maintainers.
->
-> I'd like Naveen to resend this series in separate thread, with proper
-> message threading, so we can make sure that we are not missing anything.
-> Naveen, please also add
-Sure, i will respin the v6 version of this patchset without using the
-In-Reply-To option.
->
-> David S. Miller <davem@davemloft.net>
-I've added David S.Miller for few of the patches, i will cc him for
-all the patches.
->
-> to Cc list, as he is also listed as crypto maintainer in MAINTAINERS file.
->
-> Best regards,
-> Tomasz
-Sure, thanks Tomasz.
-
-
+> 
+> [....]
+> 
+> > > +static void bam_slave_config(struct bam_chan *bchan,
+> > > +		struct dma_slave_config *cfg)
+> > > +{
+> > > +	struct bam_device *bdev = bchan->bdev;
+> > > +	u32 maxburst;
+> > > +
+> > > +	if (bchan->slave.direction == DMA_DEV_TO_MEM)
+> > > +		maxburst = bchan->slave.src_maxburst = cfg->src_maxburst;
+> > > +	else
+> > > +		maxburst = bchan->slave.dst_maxburst = cfg->dst_maxburst;
+> > can you remove usage of slave.direction have save both. I am going to remove
+> > this member...
+> > 
+> 
+> Yes. no problem.
+> 
+> [....]
+> 
+> > > +
+> > > +
+> > > +	/* allocate enough room to accomodate the number of entries */
+> > > +	async_desc = kzalloc(sizeof(*async_desc) +
+> > > +			(sg_len * sizeof(struct bam_desc_hw)), GFP_NOWAIT);
+> > this seems to assume that each sg entry length will not exceed the HW capablity.
+> > Does engine support any length descriptor, if not you may want to split to
+> > multiple.
+> 
+> Isn't this what the dma_set_max_seg_size supposed to fix?  The client is not
+> supposed to send segments larger than the max segment you can take.  If that is
+> true, then I have no issues.
+Thats is true too, but do we want to limit this in driver ? This is more of a SW
+limitation of who breaks up. for some like audio it makese sense but other not
+too sure...
 
 -- 
-Shine bright,
-(: Nav :)
+~Vinod
