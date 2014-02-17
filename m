@@ -1,114 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaBQP3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 10:29:07 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:39805 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751151AbaBQP3E (ORCPT
+	id S1754051AbaBQP3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 10:29:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44582 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035AbaBQP3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 10:29:04 -0500
-Message-ID: <53022AA9.8090606@free-electrons.com>
-Date: Mon, 17 Feb 2014 16:28:41 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 17 Feb 2014 10:29:07 -0500
+Date: Mon, 17 Feb 2014 16:28:59 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
+Subject: Re: x86_pmu_start WARN_ON.
+Message-ID: <20140217152859.GF15586@twins.programming.kicks-ass.net>
+References: <20140130190253.GA11819@redhat.com>
+ <alpine.DEB.2.10.1402101620170.29602@vincent-weaver-1.um.maine.edu>
+ <20140211132956.GY9987@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402121559350.20738@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140205183457.GW8533@titan.lakedaemon.net> <20140217141336.GA2765@localhost> <53021BD2.3090301@free-electrons.com> <20140217152147.GC2765@localhost>
-In-Reply-To: <20140217152147.GC2765@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/02/2014 16:21, Ezequiel Garcia wrote:
-> On Mon, Feb 17, 2014 at 03:25:22PM +0100, Gregory CLEMENT wrote:
->> On 17/02/2014 15:13, Ezequiel Garcia wrote:
->>> On Wed, Feb 05, 2014 at 01:34:57PM -0500, Jason Cooper wrote:
->>>> On Sat, Jan 25, 2014 at 07:19:06PM +0100, Sebastian Hesselbarth wrote:
->>>>> This patch set fixes clk init order that went upside-down with
->>>>> v3.14. I haven't really investigated what caused this, but I assume
->>>>> it is related with DT node reordering by addresses.
->>>>>
->>>>> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
->>>>> registered before core clocks driver. Unfortunately, we cannot
->>>>> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
->>>>> init order for our drivers is always core clocks before clock gating,
->>>>> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
->>>>> init function that will register core clocks before clock gating
->>>>> driver.
->>>>>
->>>>> This patch is based on pre-v3.14-rc1 mainline and should go in as
->>>>> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
->>>>> I suggest Jason picks it up as a topic branch.
->>>>>
->>>>> The patches have been boot tested on Dove and compile-tested only
->>>>> for Kirkwood, Armada 370 and XP.
->>>>>
->>>>> Sebastian Hesselbarth (4):
->>>>>   clk: mvebu: armada-370: maintain clock init order
->>>>>   clk: mvebu: armada-xp: maintain clock init order
->>>>>   clk: mvebu: dove: maintain clock init order
->>>>>   clk: mvebu: kirkwood: maintain clock init order
->>>>>
->>>>>  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
->>>>>  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
->>>>>  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
->>>>>  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
->>>>>  4 files changed, 44 insertions(+), 50 deletions(-)
->>>>
->>>> Whole series applied to mvebu/clk-fixes.
->>>>
->>>
->>> Are we still in time to consider Emilio's oneline proposal?
->>> (Emilio: would you mind preparing a suitable patch against dove,
->>> kirkwood, armada370/xp, so we can see the real thing?).
->>
->> I am still strongly against this proposal because hard-coded the parent
->> clock name in the driver seems very wrong and moreover in some circumstances
->> (if there is no output-name, which is our default case) this proposal
->> just ignored the parent clock given by the device tree and this looked
->> more wrong.
->>
+On Thu, Feb 13, 2014 at 05:13:20PM -0500, Vince Weaver wrote:
+> On Thu, 13 Feb 2014, Vince Weaver wrote:
 > 
-> So you're against the proposal as a permanent fix, *and* against the
-> proposal as a workaround fix?
-
-Yes
-
+> > The plot thickens.  The WARN_ON is not caused by the cycles event that we 
+> > open, but it's caused by the NMI Watchdog cycles event.
 > 
->>>
->>> Sebastian fix works perfect, and it easy to understand. However, it has
->>> quite a large diffstat. When compared to Emilio's oneline proposal, it
->>> seems to me it would be preferable, unless it's broken.
->>>
->>> Workaround or not, the fact is this code will be in v3.14, so maybe we
->>> can spend some time considering a cleaner option.
->>>
-> 
-> Before discussing the solution as compared to your for-v3.15 clock
-> registration order patch, I wanted to trigger some discussion around
-> replacing this big and intrusive workaround with Emilio's oneline fix.
-> 
-> Let's suppose we're considering them as workaround to live just one or
-> two releases. Wouldn't it be better to take the least instrusive?
-> 
+> The WARN_ON_ONCE at line 1076 in perf_event.c is triggering because
+> in x86_pmu_enable() is calling x86_pmu_start() for all of the active x86 
+> events (three plus the NMI watchdog) the NMI watchdog is unexpectedly
+> not having PERF_HES_STOPPED set (it's hw.state is 0).
 
-The better solution is the one which doesn't add another regression and until
-today I though we had an agreement to use the patch set from Sebastian. If
-I remember well Jason had sent a pull request for it.
+Cute, that is indeed unexpected.
 
+> What's the deal with the PERF_HES_STOPPED name?  Is HES an acronym?
+> Or is it just a male event?  
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Hardware Event State
+
+> Also it's not really clear what PERF_HES_ARCH indicates.
+
+I ran out of names it seems; its used in the reschedule case where we
+relocate a stopped event. We save the STOPPED state into ARCH (because
+we're going to destroy the STOPPED state by stopping everybody), so that
+we know not to (re)enable the event when its on its new location.
+
+The comment in x86_pmu_enable() near where we set ARCH was supposed to
+communicate this.
+
+> Things rapidly get complicated beyond that, as the NMI watchdog is a 
+> kernel-created event bound to the CPU, wheras 2 of the events are x86 hw 
+> events with a breakpoint-event groupleader (and the fact one of the events 
+> has precise set).
+
+For this code that _should_ not matter much; they're 3 events and we
+mapped them into hardware counters.
+
+So the precise has to run on cnt0 on Core2, the NMI is simple enough to
+fit (and we prefer) fixed purpose counters. So there _should_ not be a
+reshuffle.
+
+Although I should probably assert these _should_ thingies.
+
+> From the stacktrace it looks like it is the close of a completely 
+> unrelated tracepoint event that triggers this all off, but I'm not
+> sure why a list_del_event() call of the tracepoint name would
+> trigger a schedule_timeout() and an ensuing __perf_event_task_sched_in()
+> which is what eventually triggers the problem.
+
+Enable CONFIG_FRAME_POINTER for better stack traces; I suspect the
+list_del_event() is just random stack garbage. The path that makes sense
+is:
+  wait_rcu()->__wait_for_common()->schedule_timeout()
+
+> Scattering printks around doesn't see to work because a lot of the related 
+> calls are happening in contexts where printks don't really work.
+> 
+> Anyway I just wanted to summarize my findings as I might not have a chance 
+> to look at this again for a while.  For completion I'm including the 
+> backtrace below.
+
+Sure, much appreciated. I'll go read up on the event schedule code, its
+been a while since I stared at that in too much detail.
