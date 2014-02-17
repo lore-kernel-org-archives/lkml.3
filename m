@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaBQQq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 11:46:58 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:48720 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaBQQq4 convert rfc822-to-8bit (ORCPT
+	id S1753483AbaBQQrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 11:47:22 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:35872 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352AbaBQQrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 11:46:56 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH v3] NFSv4.1: new layout stateid can not be overwrite by one out of date
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <1392620881-26561-1-git-send-email-shaobingqing@bwstor.com.cn>
-Date: Mon, 17 Feb 2014 11:46:53 -0500
-Cc: linuxnfs <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DEE24522-5DD2-4C42-9DD9-EC18F0FF05D8@primarydata.com>
-References: <N> <1392620881-26561-1-git-send-email-shaobingqing@bwstor.com.cn>
-To: shaobingqing <shaobingqing@bwstor.com.cn>
-X-Mailer: Apple Mail (2.1827)
+	Mon, 17 Feb 2014 11:47:18 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2 1/5] drivers: of: add initialization code for reserved memory
+To: Tomasz Figa <tomasz.figa@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>
+In-Reply-To: <52FA8245.5050707@gmail.com>
+References: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com>	 < 1391515773-6112-2-git-send-email-m.szyprowski@samsung.com>	 <20140205110538 . 99E47C40A89@trevor.secretlab.ca>	 <52FA0D6E.9090304@samsung.com>	 < 20140211121316.24032C40C4D@trevor.secretlab.ca>	 <52FA33E2.4050004@samsung. com>	 <20140211190104.7E6C5C4140E@trevor.secretlab.ca> <1392148971.3835.15. camel@pasglop> <52FA8245.5050707@gmail.com>
+Date: Mon, 17 Feb 2014 16:47:08 +0000
+Message-Id: <20140217164708.B332BC403B4@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 11 Feb 2014 21:04:21 +0100, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> 
+> 
+> On 11.02.2014 21:02, Benjamin Herrenschmidt wrote:
+> > On Tue, 2014-02-11 at 19:01 +0000, Grant Likely wrote:
+> >
+> >>> except that the former IMHO better suits the definition of memory
+> >>> region, which I see as a single contiguous range of memory and can be
+> >>> simplified to have a single reg entry per region.
+> >>
+> >> My point is rather if multiple reg tuples are found in a reserved memory
+> >> node, the kernel must respect them and reserve the memory. I'm not
+> >> arguing about whether or not that makes for a good binding.
+> >
+> > agreed.
+> 
+> My point is why, if the binding defines that just a single tuple should 
+> be provided.
 
-On Feb 17, 2014, at 2:08, shaobingqing <shaobingqing@bwstor.com.cn> wrote:
+It's irrelevant because it gets processed at a different level. It's
+important that the core early setup code can quickly parse all the
+reserved regions without having any idea what the end-user binding is.
+Multiple reg tuples is just fine in this regard.
 
-> If initiate_file_draining returned NFS4ERR_DELAY, all the lsegs of
-> a file might be released before the retrying cb_layout request arriving
-> at the client. In this situation,the list lo->plh_segs is empty, 
-> layoutget request of the file will use open stateid to obtain a new 
-> layout stateid. And if the retrying cb_layout request arrived at the 
-> client after the layoutget reply, new layout stateid would be overwrite 
-> by one out of date.
+Whether or not multiple tuples makes sense is defined for each
+particular use case by the driver actually using it without impacting
+core initialization code one iota.
 
-I have very serious doubts about adding layout state to represent what the server is _trying_ to do. What if the server decides not to retry the recall? What if it reboots?
-
-Let’s start with looking at the motivations: Have you ever run into the above problem in practice? If so, what was the effect on overall performance?
-
-_________________________________
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
-
+g.
