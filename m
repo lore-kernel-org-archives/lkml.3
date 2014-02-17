@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaBQJTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:19:01 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43446 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaBQJS7 (ORCPT
+	id S1752149AbaBQJUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:20:23 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:60923 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527AbaBQJUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:18:59 -0500
-Date: Mon, 17 Feb 2014 10:18:40 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Alexander Shiyan <shc_work@mail.ru>, Russell King <linux@arm.linux.org.uk>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: imx: remove MACH_MXLADS
-Message-ID: <20140217091840.GO17250@pengutronix.de>
-References: <1392573811.28866.22.camel@x220>
- <1392578464.996901773@f49.i.mail.ru>
- <1392582900.28866.85.camel@x220>
- <1392612187.657010375@f87.i.mail.ru>
- <1392627768.10966.23.camel@x220>
+	Mon, 17 Feb 2014 04:20:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392627768.10966.23.camel@x220>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:06:19 up 176 days, 18:37, 54 users,  load average: 0.16, 0.11,
- 0.09
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <52FEAECA.5080905@wwwdotorg.org>
+References: <cover.1392273722.git.viresh.kumar@linaro.org>
+	<52FE71BD.3020103@wwwdotorg.org>
+	<2869027.iYHxWOSS2C@vostro.rjw.lan>
+	<52FEAECA.5080905@wwwdotorg.org>
+Date: Mon, 17 Feb 2014 14:50:18 +0530
+Message-ID: <CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com>
+Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
+        jinchoi@broadcom.com, Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 10:02:48AM +0100, Paul Bolle wrote:
-> On Mon, 2014-02-17 at 08:43 +0400, Alexander Shiyan wrote:
-> > It seems that even in the current state, Kconfig for i.MX contains an error.
-> > As a start, we should rename ARCH_MX1ADS to MACH_MX1ADS first.
+On 15 February 2014 05:33, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 02/14/2014 03:23 PM, Rafael J. Wysocki wrote:
 
-No. Have a look at arch/arm/tools/mach-types:
+>> Well, it would be good to verify which part, then.
+>
+> Patch 2/7 appears to stop that message from being printed during
+> suspend, and perhaps reduce the number of times it's printed during
+> resume. Patch 7/7 stops the message being printed at all.
+>
+> Looking at patch 7, I wonder if it's simply because tegra_target() was
+> modified never to return -EBUSY, so the bug is still there, but it's
+> just been hidden.
 
-mxlads                  MACH_MXLADS             MXLADS	1851
-mx1ads                  ARCH_MX1ADS             MX1ADS  160
+No, the bug is removed now. Its hidden in current linus/master :)
 
-And what gen-mach-types makes from it:
+>>> Also, I sometimes see the following during resume. I saw it twice with
+>>> Linus's tree, but then I did 10 more reboot+suspend+resume cycles and
+>>> couldn't repro it, and I saw it once with Linus's tree plus this series
+>>> applied, then couldn't reproduce it in 5 more tries.
+>
+> Oops. I screwed up my re-testing (tested on the wrong board, without
+> cpufreq active:-/). The message below is reproducible 100% of the time
+> with or without this series.
 
-#ifdef CONFIG_MACH_MXLADS
-# ifdef machine_arch_type
-#  undef machine_arch_type
-#  define machine_arch_type     __machine_arch_type
-# else
-#  define machine_arch_type     MACH_TYPE_MXLADS
-# endif
-# define machine_is_mxlads()    (machine_arch_type == MACH_TYPE_MXLADS)
-#else
-# define machine_is_mxlads()    (0)
-#endif
+Somehow I missed it. Following will fix it, sending a separate patch for it as
+well:
 
-#ifdef CONFIG_ARCH_MX1ADS
-# ifdef machine_arch_type
-#  undef machine_arch_type
-#  define machine_arch_type     __machine_arch_type
-# else
-#  define machine_arch_type     MACH_TYPE_MX1ADS
-# endif
-# define machine_is_mx1ads()    (machine_arch_type == MACH_TYPE_MX1ADS)
-#else
-# define machine_is_mx1ads()    (0)
-#endif
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 2dfbb7e..48315e0 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1326,8 +1326,7 @@ static int __cpufreq_remove_dev_prepare(struct
+device *dev,
+        up_read(&policy->rwsem);
 
-So machine_is_mx1ads() can only ever evaluate to true when
-CONFIG_ARCH_MX1ADS is set and machine_is_mxlads() can only evaluate to true
-when CONFIG_MACH_MXLADS is set.
-
-Whether to use ARCH or MACH simply depends on what Russell has in the
-machine registry database for a given board.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+        if (cpu != policy->cpu) {
+-               if (!frozen)
+-                       sysfs_remove_link(&dev->kobj, "cpufreq");
++               sysfs_remove_link(&dev->kobj, "cpufreq");
+        } else if (cpus > 1) {
+                new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu);
+                if (new_cpu >= 0) {
