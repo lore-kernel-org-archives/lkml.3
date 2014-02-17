@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaBQFxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 00:53:41 -0500
+	id S1752808AbaBQFxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 00:53:48 -0500
 Received: from mga14.intel.com ([143.182.124.37]:34271 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584AbaBQFxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 00:53:40 -0500
+	id S1752584AbaBQFxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 00:53:44 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,858,1384329600"; 
-   d="scan'208";a="476347888"
+   d="scan'208";a="476347905"
 From: Chuansheng Liu <chuansheng.liu@intel.com>
 To: rjw@rjwysocki.net, gregkh@linuxfoundation.org, len.brown@intel.com,
         pavel@ucw.cz
 Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         chuansheng.liu@intel.com, zhuangzhi.li@intel.com
-Subject: [PATCH v2 3/5] PM / sleep: Asynchronous threads for resume_early
-Date: Mon, 17 Feb 2014 13:42:24 +0800
-Message-Id: <1392615746-4574-4-git-send-email-chuansheng.liu@intel.com>
+Subject: [PATCH v2 4/5] PM / sleep: Asynchronous threads for suspend_noirq
+Date: Mon, 17 Feb 2014 13:42:25 +0800
+Message-Id: <1392615746-4574-5-git-send-email-chuansheng.liu@intel.com>
 X-Mailer: git-send-email 1.9.rc0
 In-Reply-To: <1392615746-4574-1-git-send-email-chuansheng.liu@intel.com>
 References: <y>
@@ -26,116 +26,138 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 In analogy with commits 5af84b82701a and 97df8c12995, using
-asynchronous threads can improve the overall resume_early
+asynchronous threads can improve the overall suspend_noirq
 time significantly.
 
-This patch is for resume_early phase.
+This patch is for suspend_noirq phase.
 
 Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 ---
- drivers/base/power/main.c | 55 +++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 44 insertions(+), 11 deletions(-)
+ drivers/base/power/main.c | 68 +++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 57 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 89172aa..2f2d110 100644
+index 2f2d110..72b4c9c 100644
 --- a/drivers/base/power/main.c
 +++ b/drivers/base/power/main.c
-@@ -595,7 +595,7 @@ static void dpm_resume_noirq(pm_message_t state)
-  *
-  * Runtime PM is disabled for @dev while this function is being executed.
+@@ -990,14 +990,24 @@ static pm_message_t resume_event(pm_message_t sleep_state)
+  * The driver of @dev will not receive interrupts while this function is being
+  * executed.
   */
--static int device_resume_early(struct device *dev, pm_message_t state)
-+static int device_resume_early(struct device *dev, pm_message_t state, bool async)
+-static int device_suspend_noirq(struct device *dev, pm_message_t state)
++static int __device_suspend_noirq(struct device *dev, pm_message_t state, bool async)
  {
  	pm_callback_t callback = NULL;
  	char *info = NULL;
-@@ -607,6 +607,8 @@ static int device_resume_early(struct device *dev, pm_message_t state)
- 	if (dev->power.syscore)
- 		goto Out;
- 
-+	dpm_wait(dev->parent, async);
+-	int error;
++	int error = 0;
 +
- 	if (!dev->power.is_late_suspended)
- 		goto Out;
++	dpm_wait_for_children(dev, async);
++
++	if (async_error)
++		goto Complete;
++
++	if (pm_wakeup_pending()) {
++		async_error = -EBUSY;
++		goto Complete;
++	}
  
-@@ -636,38 +638,69 @@ static int device_resume_early(struct device *dev, pm_message_t state)
- 	TRACE_RESUME(error);
+ 	if (dev->power.syscore)
+-		return 0;
++		goto Complete;
  
- 	pm_runtime_enable(dev);
+ 	if (dev->pm_domain) {
+ 		info = "noirq power domain ";
+@@ -1021,10 +1031,40 @@ static int device_suspend_noirq(struct device *dev, pm_message_t state)
+ 	error = dpm_run_callback(callback, dev, state, info);
+ 	if (!error)
+ 		dev->power.is_noirq_suspended = true;
++	else
++		async_error = error;
+ 
++Complete:
 +	complete_all(&dev->power.completion);
  	return error;
  }
  
-+static void async_resume_early(void *data, async_cookie_t cookie)
++static void async_suspend_noirq(void *data, async_cookie_t cookie)
 +{
 +	struct device *dev = (struct device *)data;
 +	int error;
 +
-+	error = device_resume_early(dev, pm_transition, true);
-+	if (error)
++	error = __device_suspend_noirq(dev, pm_transition, true);
++	if (error) {
++		dpm_save_failed_dev(dev_name(dev));
 +		pm_dev_err(dev, pm_transition, " async", error);
++	}
 +
 +	put_device(dev);
 +}
 +
- /**
-  * dpm_resume_early - Execute "early resume" callbacks for all devices.
-  * @state: PM transition of the system being carried out.
-  */
- static void dpm_resume_early(pm_message_t state)
- {
-+	struct device *dev;
- 	ktime_t starttime = ktime_get();
- 
- 	mutex_lock(&dpm_list_mtx);
--	while (!list_empty(&dpm_late_early_list)) {
--		struct device *dev = to_device(dpm_late_early_list.next);
--		int error;
-+	pm_transition = state;
++static int device_suspend_noirq(struct device *dev)
++{
++	reinit_completion(&dev->power.completion);
 +
-+	/*
-+	 * Advanced the async threads upfront,
-+	 * in case the starting of async threads is
-+	 * delayed by non-async resuming devices.
-+	 */
-+	list_for_each_entry(dev, &dpm_late_early_list, power.entry) {
-+		reinit_completion(&dev->power.completion);
-+		if (is_async(dev)) {
-+			get_device(dev);
-+			async_schedule(async_resume_early, dev);
-+		}
++	if (pm_async_enabled && dev->power.async_suspend) {
++		get_device(dev);
++		async_schedule(async_suspend_noirq, dev);
++		return 0;
 +	}
++	return __device_suspend_noirq(dev, pm_transition, false);
++}
++
+ /**
+  * dpm_suspend_noirq - Execute "noirq suspend" callbacks for all devices.
+  * @state: PM transition of the system being carried out.
+@@ -1040,19 +1080,20 @@ static int dpm_suspend_noirq(pm_message_t state)
+ 	cpuidle_pause();
+ 	suspend_device_irqs();
+ 	mutex_lock(&dpm_list_mtx);
++	pm_transition = state;
++	async_error = 0;
++
+ 	while (!list_empty(&dpm_late_early_list)) {
+ 		struct device *dev = to_device(dpm_late_early_list.prev);
  
-+	while (!list_empty(&dpm_late_early_list)) {
-+		dev = to_device(dpm_late_early_list.next);
  		get_device(dev);
- 		list_move_tail(&dev->power.entry, &dpm_suspended_list);
  		mutex_unlock(&dpm_list_mtx);
  
--		error = device_resume_early(dev, state);
--		if (error) {
--			suspend_stats.failed_resume_early++;
--			dpm_save_failed_step(SUSPEND_RESUME_EARLY);
--			dpm_save_failed_dev(dev_name(dev));
--			pm_dev_err(dev, state, " early", error);
--		}
-+		if (!is_async(dev)) {
-+			int error;
+-		error = device_suspend_noirq(dev, state);
++		error = device_suspend_noirq(dev);
  
-+			error = device_resume_early(dev, state, false);
-+			if (error) {
-+				suspend_stats.failed_resume_early++;
-+				dpm_save_failed_step(SUSPEND_RESUME_EARLY);
-+				dpm_save_failed_dev(dev_name(dev));
-+				pm_dev_err(dev, state, " early", error);
-+			}
-+		}
  		mutex_lock(&dpm_list_mtx);
+ 		if (error) {
+ 			pm_dev_err(dev, state, " noirq", error);
+-			suspend_stats.failed_suspend_noirq++;
+-			dpm_save_failed_step(SUSPEND_SUSPEND_NOIRQ);
+ 			dpm_save_failed_dev(dev_name(dev));
+ 			put_device(dev);
+ 			break;
+@@ -1061,16 +1102,21 @@ static int dpm_suspend_noirq(pm_message_t state)
+ 			list_move(&dev->power.entry, &dpm_noirq_list);
  		put_device(dev);
+ 
+-		if (pm_wakeup_pending()) {
+-			error = -EBUSY;
++		if (async_error)
+ 			break;
+-		}
  	}
  	mutex_unlock(&dpm_list_mtx);
+-	if (error)
 +	async_synchronize_full();
- 	dpm_show_time(starttime, state, "early");
++	if (!error)
++		error = async_error;
++
++	if (error) {
++		suspend_stats.failed_suspend_noirq++;
++		dpm_save_failed_step(SUSPEND_SUSPEND_NOIRQ);
+ 		dpm_resume_noirq(resume_event(state));
+-	else
++	} else {
+ 		dpm_show_time(starttime, state, "noirq");
++	}
+ 	return error;
  }
  
 -- 
