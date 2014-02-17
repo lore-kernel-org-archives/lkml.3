@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaBQWsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:48:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34668 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101AbaBQWs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:48:29 -0500
-Message-ID: <53029167.4060109@zytor.com>
-Date: Mon, 17 Feb 2014 14:47:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753027AbaBQWvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:51:20 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49603 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751178AbaBQWvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 17:51:18 -0500
+X-Sasl-enc: 8/ceItibssPmKEgq3YymcdjLEYiid0+J5Tq8ENAxI+2R 1392677476
+Date: Mon, 17 Feb 2014 19:51:11 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Jan Beulich <JBeulich@suse.com>, Borislav Petkov <bp@alien8.de>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: Issue a warning if number of present CPUs > maxcpus
+ and CONFIG_HOTPLUG=n
+Message-ID: <20140217225111.GA2561@khazad-dum.debian.net>
+References: <20140215150223.63bb52fb@hananiah.suse.cz>
+ <5301D7AA020000780011CBE9@nat28.tlf.novell.com>
+ <20140217110402.7e4fc211@hananiah.suse.cz>
+ <20140217134006.GA14786@khazad-dum.debian.net>
+ <20140217151626.5ff99027@hananiah.suse.cz>
+ <20140217190704.GA24390@khazad-dum.debian.net>
+ <20140217203102.7af3fd28@hananiah.suse.cz>
 MIME-Version: 1.0
-To: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
-In-Reply-To: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140217203102.7af3fd28@hananiah.suse.cz>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 12:41 PM, Waiman Long wrote:
-> v3->v4:
->  - Remove debugging code and fix a configuration error
->  - Simplify the qspinlock structure and streamline the code to make it
->    perform a bit better
->  - Add an x86 version of asm/qspinlock.h for holding x86 specific
->    optimization.
->  - Add an optimized x86 code path for 2 contending tasks to improve
->    low contention performance.
+On Mon, 17 Feb 2014, Petr Tesarik wrote:
+> > I'd rather no warnings were printed at all (user asked for that nr_cpus,
+> > there is no reason to warn him about it),
+> >[...]
 > 
-> v2->v3:
->  - Simplify the code by using numerous mode only without an unfair option.
->  - Use the latest smp_load_acquire()/smp_store_release() barriers.
->  - Move the queue spinlock code to kernel/locking.
->  - Make the use of queue spinlock the default for x86-64 without user
->    configuration.
->  - Additional performance tuning.
+> Agreed. This needs some cleanup.
 > 
-> v1->v2:
->  - Add some more comments to document what the code does.
->  - Add a numerous CPU mode to support >= 16K CPUs
->  - Add a configuration option to allow lock stealing which can further
->    improve performance in many cases.
->  - Enable wakeup of queue head CPU at unlock time for non-numerous
->    CPU mode.
+> This code used to check against NR_CPUS, which is a compile-time
+> constant, so the warning was printed when the user booted a kernel
+> incapable of using all available CPUs in the system. And this was a
+> good thing, because there was no (easy) way to find out this constant
+> from a given kernel binary.
 > 
-> This patch set introduces a queue-based spinlock implementation that
-> can replace the default ticket spinlock without increasing the size
-> of the spinlock data structure. As a result, critical kernel data
-> structures that embed spinlock won't increase in size and breaking
-> data alignments.
-> 
+> I can post a clean-up patch that doesn't issue any warnings for user
+> overrides (but does issue warnings for exceeding hard-coded kernel
+> limits).
 
-This is starting to look good, so I have pulled it into
-tip:x86/spinlocks to start give it some testing mileage.
+That'd be really nice.  Thank you!
 
-	-hpa
+> But I'll do it separately and only after I know if the current patch
+> gets accepted or not. ;-)
 
+:-)
 
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
