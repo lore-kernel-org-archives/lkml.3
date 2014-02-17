@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaBQKIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 05:08:51 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59274 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753308AbaBQKIr (ORCPT
+	id S1753885AbaBQKJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 05:09:46 -0500
+Received: from www84.your-server.de ([213.133.104.84]:39180 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaBQKDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 05:08:47 -0500
-Date: Mon, 17 Feb 2014 10:08:27 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Weng Meiling <wengmeiling.weng@huawei.com>
-Cc: Robert Richter <rric@kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>,
-        "sdu.liu@huawei.com" <sdu.liu@huawei.com>
-Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in
- op_overflow_handler()
-Message-ID: <20140217100827.GA26312@mudshark.cambridge.arm.com>
-References: <52D5EC44.30101@huawei.com>
- <20140115102445.GE20315@rric.localhost>
- <52D73148.4090408@huawei.com>
- <52D7A750.50906@huawei.com>
- <20140116115245.GB8360@rric.localhost>
- <20140116193652.GD22105@mudshark.cambridge.arm.com>
- <52D8A56F.1010507@huawei.com>
- <52F9A82F.3060806@huawei.com>
- <20140211155207.GK8693@mudshark.cambridge.arm.com>
- <52FED3C5.1060703@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FED3C5.1060703@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Feb 2014 05:03:14 -0500
+From: Stefani Seibold <stefani@seibold.net>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v19 06/10] cleanup __vdso_gettimeofday
+Date: Mon, 17 Feb 2014 11:03:40 +0100
+Message-Id: <1392631424-32205-7-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1392631424-32205-1-git-send-email-stefani@seibold.net>
+References: <1392631424-32205-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 02:41:09AM +0000, Weng Meiling wrote:
-> Hi Will,
-> 
->  I test kernel with this patch, the problem has be fixed. When the
->  event's sample_period is small, the cpu will not stall except printing
->  warning "oprofile: ignoring spurious overflow ignoring spurious overflow".
->  This is normal for unregistered event.
-> 
->  So would you please send a formal one? :) Thanks very much!
+This patch do a little cleanup for the __vdso_gettimeofday() function.
 
-It's already in -next.
+It kick out an unneeded ret local variable and makes the code faster if
+only the timezone is needed.
 
-Will
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ arch/x86/vdso/vclock_gettime.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index 743f277..09dae4a 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -259,13 +259,12 @@ int clock_gettime(clockid_t, struct timespec *)
+ 
+ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ {
+-	long ret = VCLOCK_NONE;
+-
+ 	if (likely(tv != NULL)) {
+ 		BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
+ 			     offsetof(struct timespec, tv_nsec) ||
+ 			     sizeof(*tv) != sizeof(struct timespec));
+-		ret = do_realtime((struct timespec *)tv);
++		if (unlikely(do_realtime((struct timespec *)tv) == VCLOCK_NONE))
++			return vdso_fallback_gtod(tv, tz);
+ 		tv->tv_usec /= 1000;
+ 	}
+ 	if (unlikely(tz != NULL)) {
+@@ -274,8 +273,6 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ 		tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
+ 	}
+ 
+-	if (ret == VCLOCK_NONE)
+-		return vdso_fallback_gtod(tv, tz);
+ 	return 0;
+ }
+ int gettimeofday(struct timeval *, struct timezone *)
+-- 
+1.8.5.5
+
