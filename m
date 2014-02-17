@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaBQJtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:49:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:42862 "EHLO mga14.intel.com"
+	id S1753147AbaBQJuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:50:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55620 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaBQJto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:49:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,859,1384329600"; 
-   d="scan'208";a="476434387"
-Date: Mon, 17 Feb 2014 11:57:17 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Takashi Iwai <tiwai@suse.de>,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Revert "ACPI / video: Add HP EliteBook Revolve 810 to
- the blacklist"
-Message-ID: <20140217095717.GN5018@intel.com>
-References: <1392381247-28109-1-git-send-email-mika.westerberg@linux.intel.com>
- <s5hy51dzr9f.wl%tiwai@suse.de>
- <20140214152601.GL5018@intel.com>
- <5716481.SxKZLEy9L1@vostro.rjw.lan>
- <5301A3AE.9030703@intel.com>
+	id S1751341AbaBQJub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 04:50:31 -0500
+Message-ID: <5301DB4B.2030103@zytor.com>
+Date: Mon, 17 Feb 2014 01:50:03 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5301A3AE.9030703@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefani Seibold <stefani@seibold.net>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com, linux-tip-commits@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [tip:x86/vdso] x86, vdso: Instead of dummy functions, include
+ < linux/spinlock_up.h>
+References: <1392587568-7325-10-git-send-email-stefani@seibold.net>	 <tip-bd9ee7fd99f127ee1306289415141d45792c97f3@git.kernel.org>	 <53018ABA.20005@zytor.com> <1392622944.1036.13.camel@wall-e.seibold.net>	 <5301D615.8090907@zytor.com> <1392630366.15660.6.camel@wall-e.seibold.net>
+In-Reply-To: <1392630366.15660.6.camel@wall-e.seibold.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 01:52:46PM +0800, Aaron Lu wrote:
-> On 02/15/2014 06:21 AM, Rafael J. Wysocki wrote:
-> > On Friday, February 14, 2014 05:26:01 PM Mika Westerberg wrote:
-> >> On Fri, Feb 14, 2014 at 03:46:20PM +0100, Takashi Iwai wrote:
-> >>> The acpi_osi blacklist is just a workaround, and if we have better
-> >>> solutions, it should be removed.  That's why I'm asking it.
-> >>>
-> >>> So, after removing acpi_osi blacklist, and keeping your video
-> >>> blacklist patch, the backlight works?
-> >>
-> >> Yes, the backlight works (there is only intel_backlight listed under
-> >> /sys/class/backlight).
-> >>
-> >>> If yes, as mentioned, we should think of rather extending this video
-> >>> blacklist to more EliteBook G1 and ProBook G1 machines, and remove
-> >>> acpi_osi blacklist instead.
-> >>
-> >> Makes sense to me. (Well, I'm fine as long as backlight on my machine works
-> >> ;-))
-> >>
-> >> Aaron, Rafael, any comments on this?
-> > 
-> > I generally agree with Takashi, but I'm not sure what to do for 3.14.
-> 
-> I can re-base the previously sent patch titled:
-> [PATCH] ACPI / video: Add systems that should favor native backlight interface
-> And put Mika's system into the DMI table that will use native backlight
-> interface in video module and remove it from video_detect's DMI table at
-> the same time. Does this sound OK?
+On 02/17/2014 01:46 AM, Stefani Seibold wrote:
+> Am Montag, den 17.02.2014, 01:27 -0800 schrieb H. Peter Anvin:
+>> On 02/16/2014 11:42 PM, Stefani Seibold wrote:
+>>> I think for the first time it will be okay to kick out the
+>>> _ASM_X86_SPINLOCK_H hack and accept the C=1 warnings.
+>>>
+>>> At next step it is necessary to make the whole BUILD_VDSO32 path in
+>>> vclock_gettime.c independent from the kernel headers, only uapi/ should
+>>> be included.
+>>>
+>>> The use of cycle_t must be replaced with u64.
+>>>
+>>> We need a own copy of __native_read_tsc(), __iter_div_u64_rem, smp_rmb()
+>>> and cpu_relax().
+>>
+>> All of which are quite trivial.
+>>
+>>> For the non BUILD_VDSO32 path we must only move the #includes inside
+>>> this #ifndef BUILD_VDSO32
+>>
+>> Sorry, didn't quite follow that.
+>>
+>
+> The solution is quite simple: In case of a 32 bit VDSO for a 64 bit
+> kernel fake a 32 bit kernel configuration. Than everything is fine and
+> all kernel headers will compile without warnings or errors, also make
+> C=1 will give no complains.
+>
+> The arch/x86/vdso/vdso32/vclock_gettime.c will now look like:
+>
+> #define BUILD_VDSO32
+>
+> #ifdef CONFIG_X86_64
+>
+> /*
+>   * in case of a 32 bit VDSO for a 64 bit kernel fake a 32 bit kernel
+>   * configuration
+>   */
+> #undef CONFIG_64BIT
+> #undef CONFIG_X86_64
+> #undef CONFIG_ILLEGAL_POINTER_VALUE
+>
+> #define CONFIG_X86_32 1
+> #define CONFIG_PAGE_OFFSET 0
+> #define CONFIG_ILLEGAL_POINTER_VALUE 0
+>
+> #define BUILD_VDSO32_64
+>
+> #endif
+>
+> #include "../vclock_gettime.c"
+>
+> and the following modifications for arch/x86/include/asm/vgtod.h:
+>
+> #ifdef BUILD_VDSO32_64
+> typedef u64 gtod_long_t;
+> #else
+> typedef unsigned long gtod_long_t;
+> #endif
+>
+> I tested it and i see no side effects. What do you think?
+>
 
-You also need to remove it from the acpi_osi blacklist.
+Clever.  It is still a hack of course, and it would be better to getting 
+to the point where we don't include random kernel headers but only uapi 
+headers plus special headers sanitized specifically for the vdso, but 
+the above looks like a good intermediate hack.
 
-Anyway, that sounds good to me. Not sure if that's suitable for 3.14,
-though.
+	-hpa
+
+
