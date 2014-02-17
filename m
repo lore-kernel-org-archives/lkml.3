@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644AbaBQIer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:34:47 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53242 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaBQIel convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Mon, 17 Feb 2014 03:34:41 -0500
-Message-Id: <5301D7AA020000780011CBE9@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 17 Feb 2014 08:34:34 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Petr Tesarik" <ptesarik@suse.cz>
-Cc: "Borislav Petkov" <bp@alien8.de>, <x86@kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Ingo Molnar" <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: Issue a warning if number of present CPUs >
- maxcpus and CONFIG_HOTPLUG=n
-References: <20140215150223.63bb52fb@hananiah.suse.cz>
-In-Reply-To: <20140215150223.63bb52fb@hananiah.suse.cz>
+	id S1752067AbaBQIh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:37:26 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:61261 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751973AbaBQIhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 03:37:25 -0500
+Message-ID: <1392626238.10966.7.camel@x220>
+Subject: Re: [PATCH] arm: sti: Remove SOC_STIH415 and SOC_STIH416
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Richard Weinberger <richard@nod.at>, kernel@stlinux.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 17 Feb 2014 09:37:18 +0100
+In-Reply-To: <5301C0D2.8040408@st.com>
+References: <1392577524.28866.32.camel@x220> <5301C0D2.8040408@st.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Feb 2014 08:37:24.0984 (UTC) FILETIME=[7B9D9F80:01CF2BBB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 15.02.14 at 15:02, Petr Tesarik <ptesarik@suse.cz> wrote:
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1226,9 +1226,6 @@ __init void prefill_possible_map(void)
->  #ifdef CONFIG_HOTPLUG_CPU
->  		if (setup_max_cpus)
->  			possible += disabled_cpus;
-> -#else
-> -		if (possible > i)
-> -			possible = i;
->  #endif
->  	} else
->  		possible = setup_possible_cpus;
+Hi Maxime,
 
-In between here total_cpus is being set, which now will get a
-larger value if !HOTPLUG_CPU. Did you check that this has no
-unintended side effect? And even if you did, it would still feel
-more safe if you moved that line down after the capping point
-below.
+On Mon, 2014-02-17 at 08:57 +0100, Maxime Coquelin wrote:
+> On 02/16/2014 08:05 PM, Paul Bolle wrote:
+> > The Kconfig symbols SOC_STIH415 and SOC_STIH416 were added in v3.11.
+> > They have never been used. They default to "y" but nothing cares. They
+> > can safely be removed.
+> 
+> This is going to be used by the reset controller series from Srinivas:
+> http://marc.info/?l=linux-arm-kernel&m=139143833415806&w=2
 
-Similarly (but perhaps less important, albeit possibly slightly
-confusing) the NR_CPUS related warning could now get issued
-along with the warning below (when possible > nr_cpu_ids > i).
-Hence that may better be moved down too (or then in effect
-the if() block you modify below would get moved up). I realize
-that two warning instead of just one would also be possible
-without any change, so you're not really introducing some
-entirely new inconsistency here...
+That links to a patch containing this chunk:
+    @@ -28,6 +29,7 @@ if ARCH_STI
+     config SOC_STIH415
+ 	bool "STiH415 STMicroelectronics Consumer Electronics family"
+ 	default y
+    +	select STIH415_RESET
+ 	help
+ 	  This enables support for STMicroelectronics Digital Consumer
+ 	  Electronics family StiH415 parts, primarily targeted at set-top-box
+    @@ -37,6 +39,7 @@ config SOC_STIH415
+     config SOC_STIH416
+ 	bool "STiH416 STMicroelectronics Consumer Electronics family"
+ 	default y
+    +	select STIH416_RESET
+ 	help
+ 	  This enables support for STMicroelectronics Digital Consumer
+ 	  Electronics family StiH416 parts, primarily targeted at set-top-box
 
-Jan
+Those select statements do not use SOC_STIH415 or SOC_STIH416.
 
-> @@ -1246,7 +1243,7 @@ __init void prefill_possible_map(void)
->  	if (!setup_max_cpus)
->  #endif
->  	if (possible > i) {
-> -		pr_warn("%d Processors exceeds max_cpus limit of %u\n",
-> +		pr_warn("%d Processors exceeds maxcpus limit of %u\n",
->  			possible, setup_max_cpus);
->  		possible = i;
->  	}
-> -- 
-> 1.8.4.5
+If SOC_STIH415 or SOC_STIH416 are going to be used in the future they
+can be readded in the series that also adds users for them.
 
 
+Paul Bolle
 
