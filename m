@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaBQIwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:52:46 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:52965 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbaBQIwo (ORCPT
+	id S1752134AbaBQIxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:53:24 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:62566 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaBQIxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:52:44 -0500
-Date: Mon, 17 Feb 2014 12:52:41 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Vagin <avagin@gmail.com>, Aditya Kali <adityakali@google.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [CRIU] [PATCH 1/3] prctl: reduce permissions to change
- boundaries of data, brk and stack
-Message-ID: <20140217085241.GR13358@moon>
-References: <1392387209-330-1-git-send-email-avagin@openvz.org>
- <1392387209-330-2-git-send-email-avagin@openvz.org>
- <874n41znl5.fsf@xmission.com>
- <20140214174314.GA5518@gmail.com>
- <20140214180129.GK13358@moon>
- <8761ohqzc6.fsf@xmission.com>
- <52FE72C1.9090100@parallels.com>
- <87txc1pibc.fsf@xmission.com>
- <5301C984.40904@parallels.com>
+	Mon, 17 Feb 2014 03:53:22 -0500
+Message-ID: <5301CDD8.5020808@huawei.com>
+Date: Mon, 17 Feb 2014 16:52:40 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5301C984.40904@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Yijing Wang <wangyijing@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH part1 v6 0/7] Introduce PCIe Device Serial Number capability
+ support
+References: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 12:34:12PM +0400, Pavel Emelyanov wrote:
-...
-> Maybe we can make prlctl() do lite-execve()? It will open the executable, read the
-> required amount of headers and just put data red from there onto mm-struct? This 
-> should be MUCH better, that full execve() with loading all binary data plus strace
-> and flushing old mm-s.
+Hi Bjorn,
+   Sorry to bother you, any comment about this series?
 
-Well, this would be good, except I don't know how would we deal with executables
-which are running but deleted, where would we fetch these headers from? (Note the
-program can map new executable region, jump there and unmap own text section).
+Thanks!
+Yijing.
+
+On 2014/2/12 10:52, Yijing Wang wrote:
+> v5->v6: Add is_frozen flag to protect pci bus from double frozen.
+> 
+> This series is based on Bjorn's pci-next branch.
+> Currently, more and more PCIe devices support PCIe DSN(Device Serial Number)
+> capability, we can use this cap to identify device. In some platform,
+> when we hotplug PCIe device, no interrupts will be received in system.
+> So we can not identify the device whether is changed during suspend.
+> PCIe DSN can help to identify this. 
+> 
+> Legacy PCI device can achieve it by PCI Vital Product Data capability.
+> We can use its SN keyword to report the unique number.
+> But in my platform, PCI devices which support VPD SN cap report the
+> meaningless same string "0123456789". 
+> Rework PCI VPD code to support device identification is not an easy work.
+> Plan to do it in part2.
+> 
+> Yijing Wang (7):
+>   PCI: rework pci_find_next_ext_capability()
+>   PCI: introduce pci_bus_find_ext_capability()
+>   PCI: Add support for Device Serial Number capability
+>   PCI: Introduce pci_serial_number_changed()
+>   PCI: Add pci_dummy_ops to isolate pci device temporarily
+>   PCI: Check pci device serial number when scan device
+>   PCI: pciehp: Don't enable/disable slot on resume unless status
+>     changed
+> 
+>  drivers/pci/hotplug/pciehp_core.c |   10 ++-
+>  drivers/pci/pci.c                 |  169 +++++++++++++++++++++++++++++++++++--
+>  drivers/pci/pci.h                 |    2 +-
+>  drivers/pci/probe.c               |   15 +++-
+>  include/linux/pci.h               |   10 ++-
+>  5 files changed, 192 insertions(+), 14 deletions(-)
+> 
+> 
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
+
