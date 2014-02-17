@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaBQSSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:18:37 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:33940 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166AbaBQSSf (ORCPT
+	id S1754198AbaBQSTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:19:12 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:40608 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753308AbaBQSTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:18:35 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of: Turn of_match_node into a static inline when CONFIG_OF isn't set
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>
-In-Reply-To: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
-References: <1392122211-11422-1-git-send-email-laurent.pinchart@ ideasonboard.com>
-Date: Mon, 17 Feb 2014 18:18:29 +0000
-Message-Id: <20140217181829.B5F80C40372@trevor.secretlab.ca>
+	Mon, 17 Feb 2014 13:19:10 -0500
+Date: Mon, 17 Feb 2014 15:19:03 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Emilio =?utf-8?B?TMOzcGV6?= <emilio@elopez.com.ar>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+Message-ID: <20140217181902.GG2765@localhost>
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140205183457.GW8533@titan.lakedaemon.net>
+ <20140217141336.GA2765@localhost>
+ <53021BD2.3090301@free-electrons.com>
+ <20140217152147.GC2765@localhost>
+ <53022AA9.8090606@free-electrons.com>
+ <20140217154421.GD2765@localhost>
+ <530231C5.8090905@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <530231C5.8090905@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014 13:36:51 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
-> when CONFIG_OF is disabled of_match_node is defined as a macro that
-> evaluates to NULL. This breaks compilation of drivers that dereference
-> the function's return value directly. Fix it by turning the macro into a
-> static inline function that returns NULL.
-
-Is it not more problematic that code is dereferencing the return value
-directly *without* checking to see if it is NULL first? I suppose it
-will cause a runtime oops on all platforms except no-mmu, but still.
-Compile time catches are better.
-
-g.
-
+On Mon, Feb 17, 2014 at 04:59:01PM +0100, Gregory CLEMENT wrote:
+[..]
+> > 
+> > Right. If you think it adds a regression, then that's a perfectly valid reasons
+> > for nacking.
+> > 
+> > However, I'd like to double-check we have such a regression. I guess you're
+> > talking about the "tclk" name being hardcoded. IMHO, it's hardcoded in the
+> > driver in the first place:
+> > 
+> > void __init mvebu_coreclk_setup(struct device_node *np,
+> > 				const struct coreclk_soc_desc *desc)
+> > {
+> > 	const char *tclk_name = "tclk";
+> > [..] 
 > 
-> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> ---
->  include/linux/of.h | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
 > 
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 70c64ba..719e69f 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -560,7 +560,13 @@ static inline const char *of_prop_next_string(struct property *prop,
->  }
->  
->  #define of_match_ptr(_ptr)	NULL
-> -#define of_match_node(_matches, _node)	NULL
-> +
-> +static inline const struct of_device_id *of_match_node(
-> +	const struct of_device_id *matches, const struct device_node *node)
-> +{
-> +	return NULL;
-> +}
-> +
->  #endif /* CONFIG_OF */
->  
->  #if defined(CONFIG_OF) && defined(CONFIG_NUMA)
-> -- 
-> Regards,
-> 
-> Laurent Pinchart
+> Here it is just about giving a name to a clock. As in the device tree
+> we only refer to the clock by index, the name don't matter.
 > 
 
+Unless I'm really confused about what's the problem here, the *name* is
+*all* that matters.
+
+We're having a clock *registration* order issue (which is different from clock
+enable). Let me try to explain the issue, in case it's still not clear.
+
+I'll stick to the current specific problem but it can apply to any other
+pair of parent/child.
+
+Some of the mvebu clocks are registered as part of the "core" clock
+group, modeled by the "marvell,armada-370-core-clock" compatible node.
+
+Another group of mvebu clocks are registered as part of the "gating"
+clock group, modeled by the "marvell,armada-370-gating-clock" compatible
+node.
+
+By default, all the gating clocks are child of the first registered core
+clock. This clock is named "tclk" by default, and this name can be overloaded
+in the devicetree.
+
+So far, so good, right?
+
+The issue we're trying to fix, arises from the mvebu_clk_gating_setup()
+trying to get the name of this "tclk", as a registered clock.
+
+In other words, the current code needs the tclk to be registered, for it
+will ask his name like this:
+
+	const char *default_parent = NULL;
+
+	clk = of_clk_get(np, 0);
+	if (!IS_ERR(clk)) {
+		default_parent = __clk_get_name(clk);
+		clk_put(clk);
+	}
+
+Once it gets the name, all goes smoothly. Notice how the clock is obtained
+for the sole purpose of getting the name of it, which shows clearly it's the
+*name* that matters.
+
+The ordering issue happens when the gating clock group is probed, before
+the core clock group. In that case, it's not possible to get the
+"&coreclk 0" (which is wrongly assumed to be registered), and so it's
+not possible to get the name.
+
+So the root of the problem is that snippet above, which adds a
+completely unneeded registration order requirement. Instead, we should
+be looking for the names: we can hardcode the name or fetch it from the
+devicetree (Emilio has posted patches for both).
+
+I really don't see why we're not fixing this, instead of adding yet
+another layer of complexity to the problem.
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
