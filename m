@@ -1,88 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaBQOQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 09:16:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41573 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851AbaBQOQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 09:16:32 -0500
-Date: Mon, 17 Feb 2014 15:16:26 +0100
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Jan Beulich <JBeulich@suse.com>, Borislav Petkov <bp@alien8.de>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: Issue a warning if number of present CPUs >
- maxcpus and CONFIG_HOTPLUG=n
-Message-ID: <20140217151626.5ff99027@hananiah.suse.cz>
-In-Reply-To: <20140217134006.GA14786@khazad-dum.debian.net>
-References: <20140215150223.63bb52fb@hananiah.suse.cz>
-	<5301D7AA020000780011CBE9@nat28.tlf.novell.com>
-	<20140217110402.7e4fc211@hananiah.suse.cz>
-	<20140217134006.GA14786@khazad-dum.debian.net>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752847AbaBQOZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 09:25:54 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39302 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751973AbaBQOZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 09:25:53 -0500
+Message-ID: <53021BD2.3090301@free-electrons.com>
+Date: Mon, 17 Feb 2014 15:25:22 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140205183457.GW8533@titan.lakedaemon.net> <20140217141336.GA2765@localhost>
+In-Reply-To: <20140217141336.GA2765@localhost>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014 10:40:07 -0300
-Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-
-> On Mon, 17 Feb 2014, Petr Tesarik wrote:
-> > Well, if the user passes both nr_cpus and maxcpus parameters to the
-> > kernel, I think it's fair to issue two warnings. But if everyone agrees
-> > that only the maxcpus warning should be printed in that case, I can
-> > send a version 2 of my patch.
+On 17/02/2014 15:13, Ezequiel Garcia wrote:
+> On Wed, Feb 05, 2014 at 01:34:57PM -0500, Jason Cooper wrote:
+>> On Sat, Jan 25, 2014 at 07:19:06PM +0100, Sebastian Hesselbarth wrote:
+>>> This patch set fixes clk init order that went upside-down with
+>>> v3.14. I haven't really investigated what caused this, but I assume
+>>> it is related with DT node reordering by addresses.
+>>>
+>>> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
+>>> registered before core clocks driver. Unfortunately, we cannot
+>>> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
+>>> init order for our drivers is always core clocks before clock gating,
+>>> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
+>>> init function that will register core clocks before clock gating
+>>> driver.
+>>>
+>>> This patch is based on pre-v3.14-rc1 mainline and should go in as
+>>> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
+>>> I suggest Jason picks it up as a topic branch.
+>>>
+>>> The patches have been boot tested on Dove and compile-tested only
+>>> for Kirkwood, Armada 370 and XP.
+>>>
+>>> Sebastian Hesselbarth (4):
+>>>   clk: mvebu: armada-370: maintain clock init order
+>>>   clk: mvebu: armada-xp: maintain clock init order
+>>>   clk: mvebu: dove: maintain clock init order
+>>>   clk: mvebu: kirkwood: maintain clock init order
+>>>
+>>>  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
+>>>  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
+>>>  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
+>>>  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
+>>>  4 files changed, 44 insertions(+), 50 deletions(-)
+>>
+>> Whole series applied to mvebu/clk-fixes.
+>>
 > 
-> Please remember that the market is full of motherboards with the extremely
-> annoying behaviour of declaring ACPI objects for CPU cores that will never
-> be available.  This includes a large number of workstation and server boards
-> at the very least, from at least one rather large vendor.
+> Are we still in time to consider Emilio's oneline proposal?
+> (Emilio: would you mind preparing a suitable patch against dove,
+> kirkwood, armada370/xp, so we can see the real thing?).
+
+I am still strongly against this proposal because hard-coded the parent
+clock name in the driver seems very wrong and moreover in some circumstances
+(if there is no output-name, which is our default case) this proposal
+just ignored the parent clock given by the device tree and this looked
+more wrong.
+
 > 
-> As far as I know, we still don't have a way to realiably detect this and get
-> rid of the ghost processors which will *NEVER* become online.  Setting
-> maxcpus or nr_cpus manually is the current way to avoid wasting runtime
-> resources because of phantom cores that will never become reality.
+> Sebastian fix works perfect, and it easy to understand. However, it has
+> quite a large diffstat. When compared to Emilio's oneline proposal, it
+> seems to me it would be preferable, unless it's broken.
 > 
-> So, when you fix the bug that always supress the warnings, you will at the
-> same time cause a regression on those boxes, which will now print undesired
-> warnings.  If the user has manually set nr_cpus or maxcpus, maybe it would
-> be best to not print any warnings or alternatively to downgrade them to
-> debug level?
+> Workaround or not, the fact is this code will be in v3.14, so maybe we
+> can spend some time considering a cleaner option.
+> 
+> Or is this just rubbish?
+> 
 
-While I appreciate your concerns, I fail to see how they are related.
 
-First, please keep in mind that my patch does not alter the (more
-common) case with CONFIG_HOTPLUG_CPU=y in any way. For the (presumably
-less common) !HOTPLUG_CPU case, it adds a warning that is always issued
-in the HOTPLUG_CPU case.
-
-Second, regarding your use case, I don't think it changes anything. So,
-let's say you have a board with 16 CPUs and a MADT that describes 1024
-CPUs. You know that there can (physically) be at most 48 CPUs, so you
-boot with nr_cpus=48:
-
-  num_processors = 16  /* online CPUs at boot */
-  disabled_cpus = 992  /* 1008 - 16 */
-
-This results in:
-
-  total_cpus = 1008   /* this is purely informative, it is *NOT* used
-                         to size anything */
-  possible = 48       /* clamped to nr_cpu_ids */
-
-A warning message (with or without my patch):
-  1024 Processors exceeds NR_CPUS limit of 48
-
-Informative message:
-  Allowing 16 CPUs, 32 hotplug CPUs
-
-No other warning (with or without my patch).
-
-Petr Tesarik
-SUSE L3 Team 1
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
