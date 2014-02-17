@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaBQIpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:45:52 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:44833 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043AbaBQIkm (ORCPT
+	id S1752342AbaBQItE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:49:04 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52239 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaBQItC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:40:42 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-c0-5301cb0886d4
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3 05/13] mfd: sec: Use consistent S2MPS11 RTC alarm interrupt
- indexes
-Date: Mon, 17 Feb 2014 09:40:19 +0100
-Message-id: <1392626427-4518-6-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1392626427-4518-1-git-send-email-k.kozlowski@samsung.com>
-References: <1392626427-4518-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4FV2O04zBBuuv61tsnLGe1eL1C0OL
-	s01v2C3ufz3KaHF51xw2ixnn9zFZrD1yl93idDerxcUVX5gs1s94zWIxZ/o7JgdujzvX9rB5
-	zDsZ6NG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZL/t+sBVs4qu437KZtYHxOXcXIyeHhICJ
-	xMSG7SwQtpjEhXvr2UBsIYGljBJzZyVA2H1MEq2fzUFsNgFjic3LlwDVcHGICGxmlFj8/Sor
-	iMMsMJNJ4s/NB0wgVcICERKdv2awgtgsAqoSrx4cZwexeQXcJNZ/uwDUzQG0TUFiziQbkDCn
-	gLvE076prCBhIaCS/RvDJjDyLmBkWMUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kREmpfdzAu
-	PWZ1iFGAg1GJh9egmjFYiDWxrLgy9xCjBAezkgiv7TqgEG9KYmVValF+fFFpTmrxIUYmDk6p
-	BkbbrGzV41eKvgufd9+44P9vl+681SYcjmunaGcebMkUt5y27s9Dl0qDbvZ1Rh7/30mJfzny
-	95BSXcq1evWjLow7tzonzOQ9Fqo5y0DDSuRT36qlfw9F7BPKtKxa1LNx3b0mW0H/zoSEqL9P
-	10VZ7s//5hH+yzTiSFjb5pXvj3uJO69Ztf9IvY0SS3FGoqEWc1FxIgAPyOj9EwIAAA==
+	Mon, 17 Feb 2014 03:49:02 -0500
+Message-ID: <5301CBAE.3000102@linux.vnet.ibm.com>
+Date: Mon, 17 Feb 2014 14:13:26 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pierre-list@ossman.eu
+Subject: Re: [PATCH 2/2] cpufreq: don't call cpufreq_update_policy() on CPU
+ addition
+References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org> <8f2fc4d6240b567fdb69a0b47f073d174b7ef9b2.1392375504.git.viresh.kumar@linaro.org>
+In-Reply-To: <8f2fc4d6240b567fdb69a0b47f073d174b7ef9b2.1392375504.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021708-2000-0000-0000-00000FC2DA9A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The S2MPS11 RTC has two alarms: alarm0 and alarm1 (corresponding
-interrupts are named similarly). Use consistent names for interrupts to
-limit possible errors.
+On 02/14/2014 04:30 PM, Viresh Kumar wrote:
+> cpufreq_update_policy() is called from two places currently. From a workqueue
+> handled queued from cpufreq_bp_resume() for boot CPU and from
+> cpufreq_cpu_callback() whenever a CPU is added.
+> 
+> The first one makes sure that boot CPU is running on the frequency present in
+> policy->cpu. But we don't really need a call from cpufreq_cpu_callback(),
+> because we always call cpufreq_driver->init() (which will set policy->cur
+> correctly) whenever first CPU of any policy is added back. And so every policy
+> structure is guaranteed to have the right frequency in policy->cur.
+>
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/sec-irq.c           |    8 ++++----
- include/linux/mfd/samsung/irq.h |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+This wording is slightly inaccurate. ->init() may or may not set policy->cur
+(for example, powernowk8 driver doesn't set it in the init routine)..
+But we set it for sure in __cpufreq_add_dev():
 
-diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index 4de494f51d40..e403c293b437 100644
---- a/drivers/mfd/sec-irq.c
-+++ b/drivers/mfd/sec-irq.c
-@@ -59,13 +59,13 @@ static const struct regmap_irq s2mps11_irqs[] = {
- 		.reg_offset = 1,
- 		.mask = S2MPS11_IRQ_RTC60S_MASK,
- 	},
--	[S2MPS11_IRQ_RTCA1] = {
-+	[S2MPS11_IRQ_RTCA0] = {
- 		.reg_offset = 1,
--		.mask = S2MPS11_IRQ_RTCA1_MASK,
-+		.mask = S2MPS11_IRQ_RTCA0_MASK,
- 	},
--	[S2MPS11_IRQ_RTCA2] = {
-+	[S2MPS11_IRQ_RTCA1] = {
- 		.reg_offset = 1,
--		.mask = S2MPS11_IRQ_RTCA2_MASK,
-+		.mask = S2MPS11_IRQ_RTCA1_MASK,
- 	},
- 	[S2MPS11_IRQ_SMPL] = {
- 		.reg_offset = 1,
-diff --git a/include/linux/mfd/samsung/irq.h b/include/linux/mfd/samsung/irq.h
-index d43b4f9e7fb2..abe1a6aae3b7 100644
---- a/include/linux/mfd/samsung/irq.h
-+++ b/include/linux/mfd/samsung/irq.h
-@@ -24,8 +24,8 @@ enum s2mps11_irq {
- 	S2MPS11_IRQ_MRB,
+1117         if (cpufreq_driver->get) {
+1118                 policy->cur = cpufreq_driver->get(policy->cpu);
+1119                 if (!policy->cur) {
+1120                         pr_err("%s: ->get() failed\n", __func__);
+1121                         goto err_get_freq;
+1122                 }
+1123         }
+
  
- 	S2MPS11_IRQ_RTC60S,
-+	S2MPS11_IRQ_RTCA0,
- 	S2MPS11_IRQ_RTCA1,
--	S2MPS11_IRQ_RTCA2,
- 	S2MPS11_IRQ_SMPL,
- 	S2MPS11_IRQ_RTC1S,
- 	S2MPS11_IRQ_WTSR,
-@@ -47,7 +47,7 @@ enum s2mps11_irq {
- 
- #define S2MPS11_IRQ_RTC60S_MASK		(1 << 0)
- #define S2MPS11_IRQ_RTCA1_MASK		(1 << 1)
--#define S2MPS11_IRQ_RTCA2_MASK		(1 << 2)
-+#define S2MPS11_IRQ_RTCA0_MASK		(1 << 2)
- #define S2MPS11_IRQ_SMPL_MASK		(1 << 3)
- #define S2MPS11_IRQ_RTC1S_MASK		(1 << 4)
- #define S2MPS11_IRQ_WTSR_MASK		(1 << 5)
--- 
-1.7.9.5
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+The reasoning and the code looks good to me.
+
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+Regards,
+Srivatsa S. Bhat
+
+> ---
+>  drivers/cpufreq/cpufreq.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 383362b..b6eb4ed 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -2194,7 +2194,6 @@ static int cpufreq_cpu_callback(struct notifier_block *nfb,
+>  		switch (action & ~CPU_TASKS_FROZEN) {
+>  		case CPU_ONLINE:
+>  			__cpufreq_add_dev(dev, NULL, frozen);
+> -			cpufreq_update_policy(cpu);
+>  			break;
+> 
+>  		case CPU_DOWN_PREPARE:
+> 
 
