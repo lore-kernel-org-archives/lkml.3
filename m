@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaBQPz0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 10:55:26 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34576 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbaBQPzY (ORCPT
+	id S1753365AbaBQPzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 10:55:42 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:49188 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaBQPzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 10:55:24 -0500
-Date: Mon, 17 Feb 2014 15:54:51 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
-Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
- device probe
-Message-ID: <20140217155451.34b2c749@alan.etchedpixels.co.uk>
-In-Reply-To: <20140217153518.30891455@alan.etchedpixels.co.uk>
-References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
-	<1390208555-27770-3-git-send-email-tushar.behera@linaro.org>
-	<20140120100415.GX15937@n2100.arm.linux.org.uk>
-	<20140213181216.GB24155@kroah.com>
-	<20140213181559.GB30257@n2100.arm.linux.org.uk>
-	<20140213182701.GA32578@kroah.com>
-	<20140213184249.GC30257@n2100.arm.linux.org.uk>
-	<20140213232606.GA27372@kroah.com>
-	<20140214000717.GG30257@n2100.arm.linux.org.uk>
-	<20140214001436.GA16287@kroah.com>
-	<20140214003834.GH30257@n2100.arm.linux.org.uk>
-	<20140217153518.30891455@alan.etchedpixels.co.uk>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 17 Feb 2014 10:55:40 -0500
+Subject: [PATCH 0/6] dma-buf synchronization patches
+To: linux-kernel@vger.kernel.org
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: linux-arch@vger.kernel.org, ccross@google.com,
+        linaro-mm-sig@lists.linaro.org, robdclark@gmail.com,
+        dri-devel@lists.freedesktop.org, daniel@ffwll.ch,
+        sumit.semwal@linaro.org, linux-media@vger.kernel.org
+Date: Mon, 17 Feb 2014 16:55:34 +0100
+Message-ID: <20140217155056.20337.25254.stgit@patser>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And an even simpler broad brush approach will also work I think (untested)
+The following series implements fence and converts dma-buf and
+android sync to use it. Patch 6 and 7 add support for polling
+to dma-buf, blocking until all fences are signaled.
 
-The "zero crap" approach....
+I've dropped the extra patch to copy an export from the core,
+and instead use the public version of it. I've had to fix
+some fallout from the rebase, hopefully everything's clean now,
+and ready for -next.
+---
+Maarten Lankhorst (6):
+      fence: dma-buf cross-device synchronization (v17)
+      seqno-fence: Hardware dma-buf implementation of fencing (v4)
+      dma-buf: use reservation objects
+      android: convert sync to fence api, v3
+      reservation: add support for fences to enable cross-device synchronisation
+      dma-buf: add poll support, v2
 
-commit c5cd0be0576ba9059799ef5383402ff6ffc212a3
-Author: Alan <gnomes@lxorguk.ukuu.org.uk>
-Date:   Mon Feb 17 15:52:21 2014 +0000
+ Documentation/DocBook/device-drivers.tmpl      |    3 
+ drivers/base/Kconfig                           |    9 
+ drivers/base/Makefile                          |    2 
+ drivers/base/dma-buf.c                         |  123 +++
+ drivers/base/fence.c                           |  465 +++++++++++++
+ drivers/gpu/drm/drm_prime.c                    |    8 
+ drivers/gpu/drm/exynos/exynos_drm_dmabuf.c     |    2 
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c         |    2 
+ drivers/gpu/drm/nouveau/nouveau_drm.c          |    1 
+ drivers/gpu/drm/nouveau/nouveau_gem.h          |    1 
+ drivers/gpu/drm/nouveau/nouveau_prime.c        |    7 
+ drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c      |    2 
+ drivers/gpu/drm/radeon/radeon_drv.c            |    2 
+ drivers/gpu/drm/radeon/radeon_prime.c          |    8 
+ drivers/gpu/drm/ttm/ttm_object.c               |    2 
+ drivers/media/v4l2-core/videobuf2-dma-contig.c |    2 
+ drivers/staging/android/Kconfig                |    1 
+ drivers/staging/android/Makefile               |    2 
+ drivers/staging/android/sw_sync.c              |    4 
+ drivers/staging/android/sync.c                 |  892 ++++++++----------------
+ drivers/staging/android/sync.h                 |   80 +-
+ drivers/staging/android/sync_debug.c           |  245 +++++++
+ drivers/staging/android/trace/sync.h           |   12 
+ include/drm/drmP.h                             |    2 
+ include/linux/dma-buf.h                        |   21 -
+ include/linux/fence.h                          |  329 +++++++++
+ include/linux/reservation.h                    |   18 
+ include/linux/seqno-fence.h                    |  109 +++
+ include/trace/events/fence.h                   |  125 +++
+ 29 files changed, 1822 insertions(+), 657 deletions(-)
+ create mode 100644 drivers/base/fence.c
+ create mode 100644 drivers/staging/android/sync_debug.c
+ create mode 100644 include/linux/fence.h
+ create mode 100644 include/linux/seqno-fence.h
+ create mode 100644 include/trace/events/fence.h
 
-    tty: Allow serial port allocations to be fully dynamic
-    
-    This switch allows platforms to make their serial port allocations entirely
-    dynamic as is needed on some non-x86 platforms which have overlapping static
-    minor numbers between some of their devices.
-    
-    Default to the old static allocations for maximum compatibility with ancient
-    userspace.
-    
-    Signed-off-by: Alan Cox <alan@linux.intel.com>
-
-diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
-index 65cd80b..670c076 100644
---- a/drivers/tty/Kconfig
-+++ b/drivers/tty/Kconfig
-@@ -166,6 +166,16 @@ config LEGACY_PTY_COUNT
- 	  When not in use, each legacy PTY occupies 12 bytes on 32-bit
- 	  architectures and 24 bytes on 64-bit architectures.
- 
-+config TTY_SERIAL_LEGACY
-+	bool "Allocate legacy fixed minor numbers for serial ports"
-+	default y
-+	---help---
-+	  Modern linux dynamically allocates device numbers. Some very old
-+	  Linux distributions only support static device numbering.
-+	  Selecting this option will enable support for very old
-+	  userspace but on some non PC architectures may prevent you building
-+	  a single kernel for multiple machines.
-+
- config BFIN_JTAG_COMM
- 	tristate "Blackfin JTAG Communication"
- 	depends on BLACKFIN
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index ece2049..b78afc1 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2315,8 +2315,10 @@ int uart_register_driver(struct uart_driver *drv)
- 
- 	normal->driver_name	= drv->driver_name;
- 	normal->name		= drv->dev_name;
-+#ifdef CONFIG_TTY_SERIAL_LEGACY
- 	normal->major		= drv->major;
- 	normal->minor_start	= drv->minor;
-+#endif	
- 	normal->type		= TTY_DRIVER_TYPE_SERIAL;
- 	normal->subtype		= SERIAL_TYPE_NORMAL;
- 	normal->init_termios	= tty_std_termios;
+-- 
+Signature
