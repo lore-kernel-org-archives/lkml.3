@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619AbaBQPHC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 10:07:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39361 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752056AbaBQPG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 10:06:59 -0500
-Message-ID: <53022580.9010805@redhat.com>
-Date: Mon, 17 Feb 2014 10:06:40 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>, akpm@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Carsten Otte <cotte@de.ibm.com>, Jared Hulbert <jaredeh@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH akpm] mm: include VM_MIXEDMAP flag in the VM_SPECIAL list
- to avoid m(un)locking
-References: <1392562785-15790-1-git-send-email-dborkman@redhat.com>
-In-Reply-To: <1392562785-15790-1-git-send-email-dborkman@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753222AbaBQPMr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 10:12:47 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34515 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaBQPMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 10:12:46 -0500
+Date: Mon, 17 Feb 2014 15:12:22 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH V2] serial/uart: Add tunable RX interrupt trigger I/F of
+ FIFO buffers
+Message-ID: <20140217151222.3488abb6@alan.etchedpixels.co.uk>
+In-Reply-To: <20140217044812.4868.28106.stgit@yunodevel>
+References: <20140217044812.4868.28106.stgit@yunodevel>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2014 09:59 AM, Daniel Borkmann wrote:
-> From: Vlastimil Babka <vbabka@suse.cz>
-
-> This patch fixes the issue by adding VM_MIXEDMAP flag to VM_SPECIAL,
-> a list of flags that make vma's non-mlockable and non-mergeable.
-> The reasoning is that VM_MIXEDMAP vma's are similar to VM_PFNMAP,
-> which is already on the VM_SPECIAL list, and both are intended
-> for non-LRU pages where mlocking makes no sense anyway. Related
-> Lkml discussion can be found in [2].
+> According to HW specification of serial UART devices, RX interrupt trigger
+> can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
+> in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
+> the trigger to only 8bytes.
 > 
->  [1] tools/testing/selftests/net/psock_tpacket
->  [2] https://lkml.org/lkml/2014/1/10/427
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Reported-by: Daniel Borkmann <dborkman@redhat.com>
-> Tested-by: Daniel Borkmann <dborkman@redhat.com>
-> Cc: Thomas Hellstrom <thellstrom@vmware.com>
-> Cc: John David Anglin <dave.anglin@bell.net>
-> Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Carsten Otte <cotte@de.ibm.com>
-> Cc: Jared Hulbert <jaredeh@gmail.com>
-> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: <stable@vger.kernel.org> [3.11.x+]
+> This patch makes a 16550A device change RX interrupt trigger from userland.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+We probably need to be much smarter about how we set this as lots of non
+16550A type devices have a tunable trigger. 
 
--- 
-All rights reversed
+We tune it dynamically based upon baud rate for many platforms, and we
+turn it on and off according to low latency settings. In other words we
+can't just have an ioctl poking values about in parallel and without any
+locking.
+
+For the API IMHO this really belongs in sysfs IMHO. That does mean we need
+to turn the existing sysfs API read/write by adding a few set methods not
+just get ones in drivers/tty/serial/ but it would be a lot cleaner and
+the uart_set_info path does the correct stopping and restarting as well
+as locking for the fifo size change.
+
+Alan
