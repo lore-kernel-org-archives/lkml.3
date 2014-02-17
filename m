@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbaBQBRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 20:17:09 -0500
-Received: from gate.crashing.org ([63.228.1.57]:57673 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327AbaBQBRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 20:17:07 -0500
-Message-ID: <1392599810.24061.20.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	id S1753780AbaBQBUI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 20:20:08 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:40118 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716AbaBQBUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 20:20:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxxPSdEkmvAP0fJ_3XN2udz=wCi+Yfeg9Kf-TpL349Srg@mail.gmail.com>
+References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
+ <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+ <CF26B239.2E7B4%dbanerje@akamai.com> <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
+ <CF26BC6D.2E80E%dbanerje@akamai.com> <CA+55aFyywOm7pWrX4=04LTEJ6xYK4xDTxGRqes-MOT212PnWPw@mail.gmail.com>
+ <CAPXgP12ZUMqgAx6jJK1q7GkQ5r21zNLhLCCH-rN83vzgOsZFYQ@mail.gmail.com> <CA+55aFxxPSdEkmvAP0fJ_3XN2udz=wCi+Yfeg9Kf-TpL349Srg@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 17 Feb 2014 02:19:43 +0100
+Message-ID: <CAPXgP13oJt5CT=YswPNNM8m9fNOeLLkAmqJF_gVtcg_i=Rk6FA@mail.gmail.com>
+Subject: Re: [PATCH] printk: Fix discarding of records
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Mon, 17 Feb 2014 12:16:50 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3-0ubuntu3~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: "Banerjee, Debabrata" <dbanerje@akamai.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        "dbavatar@gmail.com" <dbavatar@gmail.com>,
+        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Mon, Feb 17, 2014 at 1:57 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Feb 16, 2014 at 4:50 PM, Kay Sievers <kay@vrfy.org> wrote:
+>>
+>> That should avoid the overflow, yes. I expect it will not print the
+>> first line with a prefix, which we probably should.?
+>
+> Well, it's not printing out the prefix, but it's also not printing out
+> the whole first part of the line, so quite frankly, I think that's
+> actually "more correct".
+>
+> After all, it has already skipped the beginning of the line.
+> Prepending the prefix, then skipping part of the line, and then
+> printing the last part, that sounds truly insane, no?
 
-Here are some more powerpc fixes for 3.14
+Yeah, it depends on the idea of what a "line" is; being it a single
+printk() call or a reconstructed continuation line, which happens when
+printk calls could not be merged for some reason into a single record.
 
-The main one is a nasty issue with the NUMA balancing support
-which requires a small generic change and the addition of a new
-accessor to set _PAGE_NUMA. Both have been reviewed and acked by
-Mel and Rik.
+But sure, your patch, it sounds fine to just skip the prefix.
 
-The changelog should have plenty of details but basically,
-without this fix, we get random user segfaults and/or
-corruptions due to missing TLB/hash flushes. Aneesh series
-of 3 patches fixes it.
+The syslog() dump interface never made any promises, and it is not
+used that much anymore today (even dmesg switched away from it since
+quite a while).
 
-We have some vDSO vs. perf fixes from Anton, some small EEH
-fixes from Gavin, a ppc32 regression vs. the stack overflow
-detector, and a fix for the way we handle PCIe host bridge
-speed settings on pseries (which is needed for proper
-operations of AMD graphics cards on Power8).
+For the dumpers, who might use that interface to "page" through the
+data, not printing the prefix sounds actually like the better option
+looking at the stream of pages they ask for.
 
-Cheers,
-Ben.
-
-The following changes since commit cd15b048445d0a54f7147c35a86c5a16ef231554:
-
-  powerpc/powernv: Add iommu DMA bypass support for IODA2 (2014-02-11 16:07:37 +1100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to 66f9af83e56bfa12964d251df9d60fb571579913:
-
-  powerpc/eeh: Disable EEH on reboot (2014-02-17 11:19:39 +1100)
-
-----------------------------------------------------------------
-Aneesh Kumar K.V (3):
-      powerpc/mm: Add new "set" flag argument to pte/pmd update function
-      mm: Dirty accountable change only apply to non prot numa case
-      mm: Use ptep/pmdp_set_numa() for updating _PAGE_NUMA bit
-
-Anton Blanchard (2):
-      powerpc: Link VDSOs at 0x0
-      powerpc: Use unstripped VDSO image for more accurate profiling data
-
-Gavin Shan (3):
-      powerpc/powernv: Rework EEH reset
-      powerpc/eeh: Cleanup on eeh_subsystem_enabled
-      powerpc/eeh: Disable EEH on reboot
-
-Kevin Hao (1):
-      powerpc: Set the correct ksp_limit on ppc32 when switching to irq stack
-
-Kleber Sacilotto de Souza (2):
-      powerpc/pseries: Fix regression on PCI link speed
-      powerpc/pseries: Add Gen3 definitions for PCIE link speed
-
- arch/powerpc/include/asm/eeh.h               | 21 +++++++++++++--
- arch/powerpc/include/asm/hugetlb.h           |  2 +-
- arch/powerpc/include/asm/pgtable-ppc64.h     | 26 +++++++++++--------
- arch/powerpc/include/asm/pgtable.h           | 22 ++++++++++++++++
- arch/powerpc/include/asm/vdso.h              |  6 ++---
- arch/powerpc/kernel/eeh.c                    | 32 ++++++++++++++++++-----
- arch/powerpc/kernel/misc_32.S                |  5 +++-
- arch/powerpc/kernel/vdso32/vdso32_wrapper.S  |  2 +-
- arch/powerpc/kernel/vdso64/vdso64_wrapper.S  |  2 +-
- arch/powerpc/mm/pgtable_64.c                 | 12 +++++----
- arch/powerpc/mm/subpage-prot.c               |  2 +-
- arch/powerpc/platforms/powernv/eeh-ioda.c    | 32 +++++------------------
- arch/powerpc/platforms/powernv/eeh-powernv.c |  2 +-
- arch/powerpc/platforms/pseries/eeh_pseries.c |  2 +-
- arch/powerpc/platforms/pseries/pci.c         | 22 +++++++++++-----
- include/asm-generic/pgtable.h                | 39 ++++++++++++++++++++++++++++
- mm/huge_memory.c                             |  9 ++-----
- mm/mprotect.c                                | 25 ++++++------------
- 18 files changed, 172 insertions(+), 91 deletions(-)
-
-
+Kay
