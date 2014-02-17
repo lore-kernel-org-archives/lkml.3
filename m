@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaBQQAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 11:00:21 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:50032 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaBQQAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 11:00:17 -0500
-Content-transfer-encoding: 7BIT
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Burton <paul.burton@imgtec.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: [PATCH 2/2] cpuidle/arm64: remove redundant cpuidle_idle_call()
-Date: Mon, 17 Feb 2014 10:59:30 -0500
-Message-id: <1392652770-19397-3-git-send-email-nicolas.pitre@linaro.org>
-X-Mailer: git-send-email 1.8.4.108.g55ea5f6
-In-reply-to: <1392652770-19397-1-git-send-email-nicolas.pitre@linaro.org>
-References: <1392652770-19397-1-git-send-email-nicolas.pitre@linaro.org>
+	id S1752214AbaBQQII (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 11:08:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:61711 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005AbaBQQIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 11:08:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,861,1384329600"; 
+   d="scan'208";a="476575555"
+Date: Mon, 17 Feb 2014 08:07:34 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 07/11] x86: perf: intel_pt: Intel PT PMU driver
+Message-ID: <20140217160734.GU12219@tassilo.jf.intel.com>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1391683834-29868-8-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140217144436.GS27965@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140217144436.GS27965@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core idle loop now takes care of it.
+> So MAX_ORDER is 11, which gives us (11+12) 23bit or 8M max allocations, right?
+> 
+> Given this TOPA stuff is completely fucked in the first release, that's
+> about all we can get it, right?
+> 
+> Now given you said 100s MB/s data rate for this itrace stuff, we're at
+> ~0.1s traces. And that's in the very best case where we can actually get
+> 8M.
+> 
+> Is that a workable amount
 
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/arm64/kernel/process.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+The PMI handler switches to a new buffer to allow longer traces
+in memory.  It just costs one PMI.
 
-diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-index 1c0a9be2ff..9cce0098f4 100644
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -33,7 +33,6 @@
- #include <linux/kallsyms.h>
- #include <linux/init.h>
- #include <linux/cpu.h>
--#include <linux/cpuidle.h>
- #include <linux/elfcore.h>
- #include <linux/pm.h>
- #include <linux/tick.h>
-@@ -94,10 +93,8 @@ void arch_cpu_idle(void)
- 	 * This should do all the clock switching and wait for interrupt
- 	 * tricks
- 	 */
--	if (cpuidle_idle_call()) {
--		cpu_do_idle();
--		local_irq_enable();
--	}
-+	cpu_do_idle();
-+	local_irq_enable();
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
+-Andi
+
 -- 
-1.8.4.108.g55ea5f6
-
+ak@linux.intel.com -- Speaking for myself only
