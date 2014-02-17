@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaBQNkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:40:12 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42188 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752395AbaBQNkK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 08:40:10 -0500
-X-Sasl-enc: zNwaQwbjk7aipH1p0FXLb/mO8zv8s9JyYXrkn+71X6tw 1392644408
-Date: Mon, 17 Feb 2014 10:40:07 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Jan Beulich <JBeulich@suse.com>, Borislav Petkov <bp@alien8.de>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: Issue a warning if number of present CPUs > maxcpus
- and CONFIG_HOTPLUG=n
-Message-ID: <20140217134006.GA14786@khazad-dum.debian.net>
-References: <20140215150223.63bb52fb@hananiah.suse.cz>
- <5301D7AA020000780011CBE9@nat28.tlf.novell.com>
- <20140217110402.7e4fc211@hananiah.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140217110402.7e4fc211@hananiah.suse.cz>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751962AbaBQN5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 08:57:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2299 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750851AbaBQN5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 08:57:32 -0500
+Date: Mon, 17 Feb 2014 08:56:22 -0500
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mtosatti@redhat.com,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+Message-ID: <20140217085622.39b39cac@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
+References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
+	<1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
+	<alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
+	<20140214225810.57e854cb@redhat.com>
+	<alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014, Petr Tesarik wrote:
-> Well, if the user passes both nr_cpus and maxcpus parameters to the
-> kernel, I think it's fair to issue two warnings. But if everyone agrees
-> that only the maxcpus warning should be printed in that case, I can
-> send a version 2 of my patch.
+On Sat, 15 Feb 2014 02:06:38 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-Please remember that the market is full of motherboards with the extremely
-annoying behaviour of declaring ACPI objects for CPU cores that will never
-be available.  This includes a large number of workstation and server boards
-at the very least, from at least one rather large vendor.
+> On Fri, 14 Feb 2014, Luiz Capitulino wrote:
+> 
+> > > Again, I think this syntax is horrendous and doesn't couple well with the 
+> > > other hugepage-related kernel command line options.  We already have 
+> > > hugepages= and hugepagesz= which you can interleave on the command line to 
+> > > get 100 2M hugepages and 10 1GB hugepages, for example.
+> > > 
+> > > This patchset is simply introducing another variable to the matter: the 
+> > > node that the hugepages should be allocated on.  So just introduce a 
+> > > hugepagesnode= parameter to couple with the others so you can do
+> > > 
+> > > 	hugepagesz=<size> hugepagesnode=<nid> hugepages=<#>
+> > 
+> > That was my first try but it turned out really bad. First, for every node
+> > you specify you need three options.
+> 
+> Just like you need two options today to specify a number of hugepages of a 
+> particular non-default size.  You only need to use hugepagesz= or 
+> hugepagenode= if you want a non-default size or a specify a particular 
+> node.
+> 
+> > So, if you want to setup memory for
+> > three nodes you'll need to specify nine options.
+> 
+> And you currently need six if you want to specify three different hugepage 
+> sizes (?).  But who really specifies three different hugepage sizes on the 
+> command line that are needed to be reserved at boot?
 
-As far as I know, we still don't have a way to realiably detect this and get
-rid of the ghost processors which will *NEVER* become online.  Setting
-maxcpus or nr_cpus manually is the current way to avoid wasting runtime
-resources because of phantom cores that will never become reality.
+hugepages= and hugepages_node= are similar, but have different semantics.
 
-So, when you fix the bug that always supress the warnings, you will at the
-same time cause a regression on those boxes, which will now print undesired
-warnings.  If the user has manually set nr_cpus or maxcpus, maybe it would
-be best to not print any warnings or alternatively to downgrade them to
-debug level?
+hugepagesz= and hugepages= create a pool of huge pages of the specified size.
+This means that the number of times you specify those options are limited by
+the number of different huge pages sizes an arch supports. For x86_64 for
+example, this limit is two so one would not specify those options more than
+two times. And this doesn't count default_hugepagesz=, which allows you to
+drop one hugepagesz= option.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+hugepages_node= allows you to allocate huge pages per node, so the number of
+times you can specify this option is limited by the number of nodes. Also,
+hugepages_node= create the pools, if necessary (at least one will be). For
+this reason I think it makes a lot of sense to have different options.
+
+> If that's really the usecase, it seems like you want the old 
+> CONFIG_PAGE_SHIFT patch.
+> 
+> > And it gets worse, because
+> > hugepagesz= and hugepages= have strict ordering (which is a mistake, IMHO) so
+> > you have to specify them in the right order otherwise things don't work as
+> > expected and you have no idea why (have been there myself).
+> > 
+> 
+> How is that difficult?  hugepages= is the "noun", hugepagesz= is the 
+> "adjective".  hugepages=100 hugepagesz=1G hugepages=4 makes perfect sense 
+> to me, and I actually don't allocate hugepages on the command line, nor 
+> have I looked at Documentation/kernel-parameters.txt to check if I'm 
+> constructing it correctly.  It just makes sense and once you learn it it's 
+> just natural.
+> 
+> > IMO, hugepages_node=<nid>:<nr_pages>:<size>,... is good enough. It's concise,
+> > and don't depend on any other option to function. Also, there are lots of other
+> > kernel command-line options that require you to specify multiple fields, so
+> > it's not like hugepages_node= is totally different in that regard.
+> > 
+> 
+> I doubt Andrew is going to want a completely different format for hugepage 
+> allocations that want to specify a node and have to deal with people who 
+> say hugepages_node=2:1:1G and constantly have to lookup if it's 2 
+> hugepages on node 1 or 1 hugepage on node 2.
+
+Andrew?
