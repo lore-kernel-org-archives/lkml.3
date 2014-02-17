@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaBQJpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:45:44 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:29241 "EHLO
+	id S1753193AbaBQJqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:46:09 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:29405 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910AbaBQJp0 (ORCPT
+	with ESMTP id S1752288AbaBQJqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:45:26 -0500
-X-AuditID: cbfee691-b7efc6d0000039d3-85-5301da2eadfe
+	Mon, 17 Feb 2014 04:46:04 -0500
+X-AuditID: cbfee690-b7f266d00000287c-32-5301da5b797f
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
         herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, davem@davemloft.net
-Subject: [PATCH 8/9 v7] crypto:s5p-sss: Use clk_prepare/clk_unprepare
-Date: Mon, 17 Feb 2014 15:14:34 +0530
-Message-id: <1392630275-8667-9-git-send-email-ch.naveen@samsung.com>
+        cpgs@samsung.com, davem@davemloft.net,
+        Naveen Krishna Ch <ch.naveen@samsung.com>
+Subject: [PATCH 9/9 v7] crypto:s5p-sss: Look for the next request in the queue
+Date: Mon, 17 Feb 2014 15:15:32 +0530
+Message-id: <1392630332-8782-1-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1392630275-8667-1-git-send-email-ch.naveen@samsung.com>
-References: <1392630275-8667-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsWyRsSkWlfvFmOwwb1dhhYvD2lazDnfwmLR
-	/UrG4v69n0wWl3fNYbOYcX4fk8Wibf+ZLc7OOcTkwOGxZeVNJo+ds+6ye2w7oOrRt2UVo8fn
-	TXIBrFFcNimpOZllqUX6dglcGe93GxY85a7YeWgKewPjG84uRk4OCQETiTkvnzFC2GISF+6t
-	Z+ti5OIQEljKKHHj1ldmmKJDfy6xQCQWMUqcbeuDcvqZJFoP7QJrZxMwkzi4aDU7iC0i4Czx
-	u3kNK0gRs8AsRonZ9z+BFQkLuEpcPnyCqYuRg4NFQFVixyYLkDCvgIvE+V1NLCBhCQEFiTmT
-	bEDCnEDVnXe2s4DYQkAl6zohjpAQWMQu8XHVKTaQBIuAgMS3yYegemUlNh2AOlpS4uCKGywT
-	GIUXMDKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAgM9NP/nk3cwXj/gPUhxmSgcROZpUST
-	84GRklcSb2hsZmRhamJqbGRuaUaasJI4b/qjpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFIN
-	jG5XArcLhtzM35d8ebJoilDJ64zkF3/+5M4+NveW52uvqxGt9vsbCy7zsW4/IrdLyMCwh+Pd
-	ncpvP6/FVQQVfEsBpoywCzJ7ZIKXNzu9Pf9lX+HyLexbk/XrpEqvLeZy38N6LIbv/yq92Ebu
-	1Fc7UtdqazdzGWuVndqzXUpn3zypKksDl+NuSizFGYmGWsxFxYkAiNeCmooCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t9jAV29W4zBBsv/alq8PKRpMed8C4tF
-	9ysZi/v3fjJZXN41h81ixvl9TBaLtv1ntjg75xCTA4fHlpU3mTx2zrrL7rHtgKpH35ZVjB6f
-	N8kFsEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXm
-	AF2ipFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcx4v9uw4Cl3xc5DU9gb
-	GN9wdjFyckgImEgc+nOJBcIWk7hwbz1bFyMXh5DAIkaJs219LBBOP5NE66FdjCBVbAJmEgcX
-	rWYHsUUEnCV+N69hBSliFpjFKDH7/iewImEBV4nLh08wdTFycLAIqErs2GQBEuYVcJE4v6uJ
-	BSQsIaAgMWeSDUiYE6i68852sCOEgErWdV5imcDIu4CRYRWjaGpBckFxUnquoV5xYm5xaV66
-	XnJ+7iZGcBw9k9rBuLLB4hCjAAejEg+vQTVjsBBrYllxZe4hRgkOZiURXtt1QCHelMTKqtSi
-	/Pii0pzU4kOMyUA3TWSWEk3OB8Z4Xkm8obGJuamxqaWJhYmZJWnCSuK8B1qtA4UE0hNLUrNT
-	UwtSi2C2MHFwSjUwSs6aLuBx9uSbrN8Tnqm7L/96vXf65exlRY3H5dbvXPuLUelQ3GJP/4cq
-	X1Q1jLkPaTUFvZ3F5Dy3jiWj0q1zq/L1zZFt2dHz/n7+6zrl2frKNg0/m5hnJxbpr+SPvuby
-	mv2h4uHtnir3T2/nY/kYlxvBHeYndNrswZ3Nl9/uW9FUaPzGgkXiuRJLcUaioRZzUXEiAJP8
-	a3nnAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsWyRsSkRjf6FmOwwfJNQhZ3nx9mtHh5SNNi
+	zvkWFovuVzIW9+/9ZLK4vGsOm8WM8/uYLBZt+89scXbOISYHTo8tK28yeeycdZfdY9sBVY++
+	LasYPT5vkgtgjeKySUnNySxLLdK3S+DKmP7/J3PBEZGKK53/2BsYPwl0MXJySAiYSDw538QM
+	YYtJXLi3nq2LkYtDSGApo8Si9qtsMEUHX99jgUgsYpT4uWkvlNPPJPF+7TZ2kCo2ATOJg4tW
+	g9kiAs4Sv5vXsIIUMQscZZTYc+412ChhAT+Jk/1zwGwWAVWJqSdOMXYxcnDwCrhIzP7mAGJK
+	CChIzJlkA9IqIdDPLrFsyzlGiHIBiW+TD7FA1MhKbDoAdbWkxMEVN1gmMAouYGRYxSiaWpBc
+	UJyUXmSiV5yYW1yal66XnJ+7iREYxKf/PZuwg/HeAetDjMlA4yYyS4km5wOjIK8k3tDYzMjC
+	1MTU2Mjc0ow0YSVxXrVHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGDmTDX+tZ3o2zf2p
+	xFa/Tp7K5rsVs0+tPJnf5cye+p83/tLq2d+4OQ/v5vjG6+L+3GN/aOTyQiG5sE5Vj+ZlXme3
+	MbtHcrj5vTl7Iy773EMJ9aAXj5/YzZbQzY6WvHG1MjG2xuBc++PSJ8vvbMsP/frU6uWPHqVm
+	BqW9ezYtyo0TDeTcvSPFWYmlOCPRUIu5qDgRAMpcfU54AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t9jAd3oW4zBBt3vuSzuPj/MaPHykKbF
+	nPMtLBbdr2Qs7t/7yWRxedccNosZ5/cxWSza9p/Z4uycQ0wOnB5bVt5k8tg56y67x7YDqh59
+	W1YxenzeJBfAGtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+Ti
+	E6DrlpkDdI6SQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMWP6/5/MBUdE
+	Kq50/mNvYPwk0MXIySEhYCJx8PU9FghbTOLCvfVsXYxcHEICixglfm7aywLh9DNJvF+7jR2k
+	ik3ATOLgotVgtoiAs8Tv5jWsIEXMAkcZJface80GkhAW8JM42T8HzGYRUJWYeuIUYxcjBwev
+	gIvE7G8OIKaEgILEnEk2Exi5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjpFn0jsY
+	VzVYHGIU4GBU4uHtrGUMFmJNLCuuzD3EKMHBrCTCa7sOKMSbklhZlVqUH19UmpNafIgxGWj3
+	RGYp0eR8YPzmlcQbGpuYmxqbWppYmJhZkiasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVANj
+	db79U4Zdhb1GclWbAsRqqpc4/ms+N6eVudHL/5mabqlB3IrwgE07bPdYX8uo3n6/o1jqpH7M
+	acPJB7xdetb4XziaoO84tzXz5YMm87hVa847nZgVue2q6sHQDpYp2+9tLlj5enre3tL+Sj1b
+	nj2b847veN9owH1jxdEv7zVfZwY3PanhutihxFKckWioxVxUnAgAk91jZ9UCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,11 +48,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds use of clk_prepare/clk_unprepare as
-required by generic clock framework.
+From: Naveen Krishna Ch <ch.naveen@samsung.com>
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Currently, the driver enqueues a request only if the busy bit is
+false. And every request initiates a dequeue. If 2 requests arrive
+simultaneously, only one of them will be dequeued.
+
+To avoid this senario, we will enqueue the next request irrespective
+of the system condition (that is what queue is here for). Also
+schedule at a tasklet immediatly after the current request is done.
+The tasklet will dequeue the next request in the queue, giving
+continuous loop. tasklet will exit if there are no requests in the
+queue.
+
+Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
 CC: David S. Miller <davem@davemloft.net>
 CC: Herbert Xu <herbert@gondor.apana.org.au>
 CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
@@ -64,44 +71,67 @@ CC: <linux-samsung-soc@vger.kernel.org>
 Changes since v6:
 None
 
- drivers/crypto/s5p-sss.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/crypto/s5p-sss.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
-index 7da1da4..429b4c1 100644
+index 429b4c1..61a80c1 100644
 --- a/drivers/crypto/s5p-sss.c
 +++ b/drivers/crypto/s5p-sss.c
-@@ -648,7 +648,11 @@ static int s5p_aes_probe(struct platform_device *pdev)
- 		return -ENOENT;
+@@ -330,8 +330,12 @@ static void s5p_aes_tx(struct s5p_aes_dev *dev)
+ 		}
+ 
+ 		s5p_set_dma_outdata(dev, dev->sg_dst);
+-	} else
++	} else {
+ 		s5p_aes_complete(dev, err);
++
++		dev->busy = true;
++		tasklet_schedule(&dev->tasklet);
++	}
+ }
+ 
+ static void s5p_aes_rx(struct s5p_aes_dev *dev)
+@@ -469,10 +473,13 @@ static void s5p_tasklet_cb(unsigned long data)
+ 	spin_lock_irqsave(&dev->lock, flags);
+ 	backlog   = crypto_get_backlog(&dev->queue);
+ 	async_req = crypto_dequeue_request(&dev->queue);
+-	spin_unlock_irqrestore(&dev->lock, flags);
+ 
+-	if (!async_req)
++	if (!async_req) {
++		dev->busy = false;
++		spin_unlock_irqrestore(&dev->lock, flags);
+ 		return;
++	}
++	spin_unlock_irqrestore(&dev->lock, flags);
+ 
+ 	if (backlog)
+ 		backlog->complete(backlog, -EINPROGRESS);
+@@ -491,14 +498,13 @@ static int s5p_aes_handle_req(struct s5p_aes_dev *dev,
+ 	int err;
+ 
+ 	spin_lock_irqsave(&dev->lock, flags);
++	err = ablkcipher_enqueue_request(&dev->queue, req);
+ 	if (dev->busy) {
+-		err = -EAGAIN;
+ 		spin_unlock_irqrestore(&dev->lock, flags);
+ 		goto exit;
+ 	}
+ 	dev->busy = true;
+ 
+-	err = ablkcipher_enqueue_request(&dev->queue, req);
+ 	spin_unlock_irqrestore(&dev->lock, flags);
+ 
+ 	tasklet_schedule(&dev->tasklet);
+@@ -688,6 +694,7 @@ static int s5p_aes_probe(struct platform_device *pdev)
+ 		}
  	}
  
--	clk_enable(pdata->clk);
-+	err = clk_prepare_enable(pdata->clk);
-+	if (err < 0) {
-+		dev_err(dev, "Enabling SSS clk failed, err %d\n", err);
-+		return err;
-+	}
- 
- 	spin_lock_init(&pdata->lock);
- 	pdata->ioaddr = devm_ioremap(dev, res->start,
-@@ -711,7 +715,7 @@ static int s5p_aes_probe(struct platform_device *pdev)
- 	tasklet_kill(&pdata->tasklet);
- 
-  err_irq:
--	clk_disable(pdata->clk);
-+	clk_disable_unprepare(pdata->clk);
- 
- 	s5p_dev = NULL;
- 
-@@ -731,7 +735,7 @@ static int s5p_aes_remove(struct platform_device *pdev)
- 
- 	tasklet_kill(&pdata->tasklet);
- 
--	clk_disable(pdata->clk);
-+	clk_disable_unprepare(pdata->clk);
- 
- 	s5p_dev = NULL;
- 
++	pdata->busy = false;
+ 	pdata->variant = variant;
+ 	pdata->dev = dev;
+ 	platform_set_drvdata(pdev, pdata);
 -- 
 1.7.9.5
 
