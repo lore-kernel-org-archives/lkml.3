@@ -1,96 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaBQJpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:45:05 -0500
-Received: from www84.your-server.de ([213.133.104.84]:38075 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572AbaBQJpC (ORCPT
+	id S1752901AbaBQJpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:45:22 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:29185 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572AbaBQJpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:45:02 -0500
-Message-ID: <1392630366.15660.6.camel@wall-e.seibold.net>
-Subject: Re: [tip:x86/vdso] x86, vdso: Instead of dummy functions, include <
- linux/spinlock_up.h>
-From: Stefani Seibold <stefani@seibold.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com, linux-tip-commits@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 17 Feb 2014 10:46:06 +0100
-In-Reply-To: <5301D615.8090907@zytor.com>
-References: <1392587568-7325-10-git-send-email-stefani@seibold.net>
-	 <tip-bd9ee7fd99f127ee1306289415141d45792c97f3@git.kernel.org>
-	 <53018ABA.20005@zytor.com> <1392622944.1036.13.camel@wall-e.seibold.net>
-	 <5301D615.8090907@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Mon, 17 Feb 2014 04:45:08 -0500
+X-AuditID: cbfee690-b7f266d00000287c-b6-5301da224a5e
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, davem@davemloft.net
+Subject: [PATCH 0/9 v7] crypto:s5p-sss: Add DT and Exynos support
+Date: Mon, 17 Feb 2014 15:14:26 +0530
+Message-id: <1392630275-8667-1-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsWyRsSkSlfpFmOwwZcbphYvD2lazDnfwmLR
+	/UrG4v69n0wWl3fNYbOYcX4fk8Wibf+ZLc7OOcTkwOGxZeVNJo+ds+6ye2w7oOrRt2UVo8fn
+	TXIBrFFcNimpOZllqUX6dglcGXNvfGQvaBOsWL3zB2MD42TeLkZODgkBE4nNDzewQ9hiEhfu
+	rWfrYuTiEBJYyijxfW8PC0zRkYVnGCESixglDnRdZoZw+pkk7uyCqGITMJM4uGg12CgRAWeJ
+	381rWEGKmAVmMUrMvv+JESQhLOAo0Tp7KzOIzSKgKvGxcRlYM6+Ai8T3SxuYuhg5gNYpSMyZ
+	ZAOxuZ1dYvZpS4hyAYlvkw+xQJTISmw6wAxRIilxcMUNlgmMggsYGVYxiqYWJBcUJ6UXmegV
+	J+YWl+al6yXn525iBIbu6X/PJuxgvHfA+hBjMtC4icxSosn5wNDPK4k3NDYzsjA1MTU2Mrc0
+	I01YSZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQZGx2u8l96UK09PusQy9e3xbTyz
+	LaIVox+FPd/mYDN/jtmvA/mMj/4zdVolF0+dNXXRaUuDooecdd982NvPHn6t0zxXIlK6o2FC
+	dSSXZYI9q+VT8Q3MCRbP73+8yMvVHhTwsKFfTU7oinPdbq4PiiXyyt2dgdrPr8W5/2ZnuMQ8
+	59aHySwNx/8psRRnJBpqMRcVJwIAk8CEmHMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t9jAV2lW4zBBvu26li8PKRpMed8C4tF
+	9ysZi/v3fjJZXN41h81ixvl9TBaLtv1ntjg75xCTA4fHlpU3mTx2zrrL7rHtgKpH35ZVjB6f
+	N8kFsEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXm
+	AF2ipFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcyYe+Mje0GbYMXqnT8Y
+	Gxgn83YxcnJICJhIHFl4hhHCFpO4cG89WxcjF4eQwCJGiQNdl5khnH4miTu7elhAqtgEzCQO
+	LlrNDmKLCDhL/G5ewwpSxCwwi1Fi9v1PYKOEBRwlWmdvZQaxWQRUJT42LgNr5hVwkfh+aQNT
+	FyMH0DoFiTmTbCYwci9gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERwbz6R3MK5qsDjE
+	KMDBqMTD21nLGCzEmlhWXJl7iFGCg1lJhNd2HVCINyWxsiq1KD++qDQntfgQYzLQ8onMUqLJ
+	+cC4zSuJNzQ2MTc1NrU0sTAxsyRNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGRm9fEfWJ
+	1l3X/wRdapgQfevjbncR/ZlvBNd8cLsrbNwTGJa/pcNvXwBvldnzt/uX3P1hl6/3Nq/k48r/
+	nGUzWOV0D9neZtZW5bgc7c2yM0D40xz+e8f36zosO+iTvddewuDkRj+mTz0l1rvkLOfHM+8p
+	W8WfoHNVvlC1VOOHqMiymhvCVQv+KbEUZyQaajEXFScCAKoqiE7RAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 17.02.2014, 01:27 -0800 schrieb H. Peter Anvin:
-> On 02/16/2014 11:42 PM, Stefani Seibold wrote:
-> > I think for the first time it will be okay to kick out the
-> > _ASM_X86_SPINLOCK_H hack and accept the C=1 warnings.
-> >
-> > At next step it is necessary to make the whole BUILD_VDSO32 path in
-> > vclock_gettime.c independent from the kernel headers, only uapi/ should
-> > be included.
-> >
-> > The use of cycle_t must be replaced with u64.
-> >
-> > We need a own copy of __native_read_tsc(), __iter_div_u64_rem, smp_rmb()
-> > and cpu_relax().
-> 
-> All of which are quite trivial.
-> 
-> > For the non BUILD_VDSO32 path we must only move the #includes inside
-> > this #ifndef BUILD_VDSO32
-> 
-> Sorry, didn't quite follow that.
-> 
+SSS module on Exynos4210, Exynos5250 and Exynos5420 SoCs has added
+features to the one on S5PV210. However with minor changes the s5p-sss.c
+driver can be reused to support SSS modules on Exynos4 and 5 SoCs.
 
-The solution is quite simple: In case of a 32 bit VDSO for a 64 bit
-kernel fake a 32 bit kernel configuration. Than everything is fine and
-all kernel headers will compile without warnings or errors, also make
-C=1 will give no complains.
+This patch set
+1. Adds device tree support to the s5p-sss.c driver and Documentation
+2. Adds code to support SSS module on Exynos4 and 5 SoCs
+3. Adds device tree node to Exynos5250 and Exynos5420
+4. Adds variant struct to handle the differences in SSS modules
+5. Adds clk_prepare/clk_unprepare clocks to the s5p-sss.c driver
 
-The arch/x86/vdso/vdso32/vclock_gettime.c will now look like:
+Note: Compatible "exynos4210-secss" should work for Exynos4412 and
+      Exynos5260 (Exynos5260, for which ARCH code is under review)
+I couldn't test on Exynos4412 and Exynos4210 boards, Should be able to
+test with addition of DT node and clocks support.
 
-#define BUILD_VDSO32
+Naveen Krishna Ch (7): [crypto-2.6.git]
+  crypto:s5p-sss: Use platform_get_irq() instead of _byname()
+  crypto:s5p-sss: Kconfig: Let Exynos SoCs select SSS driver
+  crypto:s5p-sss: Look for the next request in the queue
+  crypto:s5p-sss: Add device tree support
+  crypto:s5p-sss: Add support for SSS module on Exynos
+  crypto:s5p-sss: validate iv before memcpy
+  crypto:s5p-sss: Use clk_prepare/clk_unprepare
 
-#ifdef CONFIG_X86_64
+Naveen Krishna Chatradhi (1): [samsung-clk.git]
+  clk: samsung exynos5250/5420: Add gate clock for SSS module
 
-/*
- * in case of a 32 bit VDSO for a 64 bit kernel fake a 32 bit kernel
- * configuration
- */
-#undef CONFIG_64BIT
-#undef CONFIG_X86_64
-#undef CONFIG_ILLEGAL_POINTER_VALUE
+Naveen Krishna Chatradhi (1): [linuxsamsung.git]
+  ARM: dts: exynos5250/5420: add dt node for sss module
 
-#define CONFIG_X86_32 1
-#define CONFIG_PAGE_OFFSET 0
-#define CONFIG_ILLEGAL_POINTER_VALUE 0
+ .../devicetree/bindings/clock/exynos5250-clock.txt |    1 +
+ .../devicetree/bindings/crypto/samsung-sss.txt     |   35 +++++
+ arch/arm/boot/dts/exynos5250.dtsi                  |    8 ++
+ arch/arm/boot/dts/exynos5420.dtsi                  |    9 ++
+ drivers/clk/samsung/clk-exynos5250.c               |    1 +
+ drivers/clk/samsung/clk-exynos5420.c               |    4 +
+ drivers/crypto/Kconfig                             |    6 +-
+ drivers/crypto/s5p-sss.c                           |  145 +++++++++++++++-----
+ include/dt-bindings/clock/exynos5250.h             |    1 +
+ 9 files changed, 174 insertions(+), 36 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/crypto/samsung-sss.txt
 
-#define BUILD_VDSO32_64
-
-#endif
-
-#include "../vclock_gettime.c"
-
-and the following modifications for arch/x86/include/asm/vgtod.h:
-
-#ifdef BUILD_VDSO32_64
-typedef u64 gtod_long_t;
-#else
-typedef unsigned long gtod_long_t;
-#endif
-
-I tested it and i see no side effects. What do you think?
-
-- Stefani
-
+-- 
+1.7.9.5
 
