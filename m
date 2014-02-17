@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbaBQPtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 10:49:18 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:50134 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaBQPtQ (ORCPT
+	id S1752373AbaBQPy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 10:54:29 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:60177 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaBQPy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 10:49:16 -0500
-Message-ID: <53022F86.2080204@gmail.com>
-Date: Mon, 17 Feb 2014 16:49:26 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, konrad.wilk@oracle.com
-Subject: Re: [PATCH] sched/deadline: Test for CPU's presence explicitly
-References: <1392646353-1874-1-git-send-email-boris.ostrovsky@oracle.com> <20140217145027.GU27965@twins.programming.kicks-ass.net>
-In-Reply-To: <20140217145027.GU27965@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Feb 2014 10:54:27 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, keescook@chromium.org,
+        devicetree@vger.kernel.org, Laura Abbott <lauraa@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20140212182000.GJ5554@obsidianresearch.com>
+References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org> < 201402121251.06280.arnd@arndb.de> <20140212174554.GM27395@titan.lakedaemon. net> <20140212182000.GJ5554@obsidianresearch.com>
+Date: Mon, 17 Feb 2014 15:54:19 +0000
+Message-Id: <20140217155419.682F7C401D4@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 03:50 PM, Peter Zijlstra wrote:
-> On Mon, Feb 17, 2014 at 09:12:33AM -0500, Boris Ostrovsky wrote:
->> A hot-removed CPU may have ID that is numerically larger than the number of
->> existing CPUs in the system (e.g. we can unplug CPU 4 from a system that
->> has CPUs 0, 1 and 4).
->>
->> Thus the WARN_ONs should check whether the CPU in question is currently
->> present, not whether its ID value is less than num_present_cpus().
->>
->> Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+On Wed, 12 Feb 2014 11:20:00 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+> On Wed, Feb 12, 2014 at 12:45:54PM -0500, Jason Cooper wrote:
 > 
-> Thanks!, please also always CC the author of the code in question.
->
+> > The bootloader would then load this file into ram, and pass the
+> > address/size to the kernel either via dt, or commandline.  kaslr (run in
+> > the decompressor) would consume some of this randomness, and then
+> > random.c would consume the rest in a non-crediting initialization.
+> 
+> Sure is a neat idea, but I think in general it would probably be smart
+> to include the entire FDT blob in the early random pool, that way you
+> get MACs and other machine unique data too.
 
-Thanks!
+I applied a patch that did exactly that (109b623629), and then reverted
+it (b920ecc82) shortly thereafter because add_device_randomness() is
+a rather slow function and FDTs can get large. I'd like to see someone
+do a reasonable analysis on the cost of using an FDT for randomness
+before I reapply a patch doing something similar. An awful lot of the
+FDT data is not very random, but there are certainly portions of it that
+are appropriate for the random pool.
 
-- Juri
-
->> ---
->>  kernel/sched/cpudeadline.c | 6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
->> index 045fc74..5b8838b 100644
->> --- a/kernel/sched/cpudeadline.c
->> +++ b/kernel/sched/cpudeadline.c
->> @@ -70,7 +70,7 @@ static void cpudl_heapify(struct cpudl *cp, int idx)
->>  
->>  static void cpudl_change_key(struct cpudl *cp, int idx, u64 new_dl)
->>  {
->> -	WARN_ON(idx > num_present_cpus() || idx == IDX_INVALID);
->> +	WARN_ON(!cpu_present(idx) || idx == IDX_INVALID);
->>  
->>  	if (dl_time_before(new_dl, cp->elements[idx].dl)) {
->>  		cp->elements[idx].dl = new_dl;
->> @@ -117,7 +117,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
->>  	}
->>  
->>  out:
->> -	WARN_ON(best_cpu > num_present_cpus() && best_cpu != -1);
->> +	WARN_ON(!cpu_present(best_cpu) && best_cpu != -1);
->>  
->>  	return best_cpu;
->>  }
->> @@ -137,7 +137,7 @@ void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid)
->>  	int old_idx, new_cpu;
->>  	unsigned long flags;
->>  
->> -	WARN_ON(cpu > num_present_cpus());
->> +	WARN_ON(!cpu_present(cpu));
->>  
->>  	raw_spin_lock_irqsave(&cp->lock, flags);
->>  	old_idx = cp->cpu_to_idx[cpu];
->> -- 
->> 1.8.1.4
->>
+g.
