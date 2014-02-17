@@ -1,69 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaBQWvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:51:20 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49603 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751178AbaBQWvS (ORCPT
+	id S1753508AbaBQWwh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:52:37 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:38581 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbaBQWwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:51:18 -0500
-X-Sasl-enc: 8/ceItibssPmKEgq3YymcdjLEYiid0+J5Tq8ENAxI+2R 1392677476
-Date: Mon, 17 Feb 2014 19:51:11 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Jan Beulich <JBeulich@suse.com>, Borislav Petkov <bp@alien8.de>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: Issue a warning if number of present CPUs > maxcpus
- and CONFIG_HOTPLUG=n
-Message-ID: <20140217225111.GA2561@khazad-dum.debian.net>
-References: <20140215150223.63bb52fb@hananiah.suse.cz>
- <5301D7AA020000780011CBE9@nat28.tlf.novell.com>
- <20140217110402.7e4fc211@hananiah.suse.cz>
- <20140217134006.GA14786@khazad-dum.debian.net>
- <20140217151626.5ff99027@hananiah.suse.cz>
- <20140217190704.GA24390@khazad-dum.debian.net>
- <20140217203102.7af3fd28@hananiah.suse.cz>
+	Mon, 17 Feb 2014 17:52:36 -0500
+Date: Mon, 17 Feb 2014 14:52:28 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/6] documentation: Document call_rcu()
+ safety mechanisms and limitations
+Message-ID: <20140217225228.GL4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140217212625.GA4083@linux.vnet.ibm.com>
+ <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140217213918.GA7941@thin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140217203102.7af3fd28@hananiah.suse.cz>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <20140217213918.GA7941@thin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021722-0928-0000-0000-000006849601
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014, Petr Tesarik wrote:
-> > I'd rather no warnings were printed at all (user asked for that nr_cpus,
-> > there is no reason to warn him about it),
-> >[...]
+On Mon, Feb 17, 2014 at 01:39:30PM -0800, Josh Triplett wrote:
+> On Mon, Feb 17, 2014 at 01:26:48PM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > The call_rcu() family of primitives will take action to accelerate
+> > grace periods when the number of callbacks pending on a given CPU
+> > becomes excessive.  Although this safety mechanism can be useful,
+> > it is no substitute for users of call_rcu() having rate-limit controls
+> > in place.  This commit adds this nuance to the documentation.
+> > 
+> > Reported-by: "Michael S. Tsirkin" <mst@redhat.com>
+> > Reported-by: Gleb Natapov <gleb@redhat.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> Agreed. This needs some cleanup.
+> Grammatical nit below; otherwise:
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 > 
-> This code used to check against NR_CPUS, which is a compile-time
-> constant, so the warning was printed when the user booted a kernel
-> incapable of using all available CPUs in the system. And this was a
-> good thing, because there was no (easy) way to find out this constant
-> from a given kernel binary.
+> >  Documentation/RCU/checklist.txt | 19 ++++++++++++++-----
+> >  1 file changed, 14 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
+> > index 91266193b8f4..5733e31836b5 100644
+> > --- a/Documentation/RCU/checklist.txt
+> > +++ b/Documentation/RCU/checklist.txt
+> > @@ -256,10 +256,11 @@ over a rather long period of time, but improvements are always welcome!
+> >  		variations on this theme.
+> >  
+> >  	b.	Limiting update rate.  For example, if updates occur only
+> > -		once per hour, then no explicit rate limiting is required,
+> > -		unless your system is already badly broken.  The dcache
+> > -		subsystem takes this approach -- updates are guarded
+> > -		by a global lock, limiting their rate.
+> > +		once per hour, then no explicit rate limiting is
+> > +		required, unless your system is already badly broken.
+> > +		Older versions of the dcache subsystem takes this
+> > +		approach -- updates were guarded by a global lock,
+> > +		limiting their rate.
 > 
-> I can post a clean-up patch that doesn't issue any warnings for user
-> overrides (but does issue warnings for exceeding hard-coded kernel
-> limits).
+> s/takes/take/ to match the change from the singular "The dcache
+> subsystem" to the plural "Older versions of the dcache subsystem"
+> 
+> (You might also change " -- updates are guarded by" to ", guarding
+> updates with".)
 
-That'd be really nice.  Thank you!
+Took both suggested changes and applied your Reviewed-by.  Thank you!
 
-> But I'll do it separately and only after I know if the current patch
-> gets accepted or not. ;-)
+							Thanx, Paul
 
-:-)
+> >  	c.	Trusted update -- if updates can only be done manually by
+> >  		superuser or some other trusted user, then it might not
+> > @@ -268,7 +269,8 @@ over a rather long period of time, but improvements are always welcome!
+> >  		the machine.
+> >  
+> >  	d.	Use call_rcu_bh() rather than call_rcu(), in order to take
+> > -		advantage of call_rcu_bh()'s faster grace periods.
+> > +		advantage of call_rcu_bh()'s faster grace periods.  (This
+> > +		is only a partial solution, though.)
+> >  
+> >  	e.	Periodically invoke synchronize_rcu(), permitting a limited
+> >  		number of updates per grace period.
+> > @@ -276,6 +278,13 @@ over a rather long period of time, but improvements are always welcome!
+> >  	The same cautions apply to call_rcu_bh(), call_rcu_sched(),
+> >  	call_srcu(), and kfree_rcu().
+> >  
+> > +	Note that although these primitives do take action to avoid memory
+> > +	exhaustion when any given CPU has too many callbacks, a determined
+> > +	user could still exhaust memory.  This is especially the case
+> > +	if a system with a large number of CPUs has been configured to
+> > +	offload all of its RCU callbacks onto a single CPU, or if the
+> > +	system has relatively little free memory.
+> > +
+> >  9.	All RCU list-traversal primitives, which include
+> >  	rcu_dereference(), list_for_each_entry_rcu(), and
+> >  	list_for_each_safe_rcu(), must be either within an RCU read-side
+> > -- 
+> > 1.8.1.5
+> > 
+> 
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
