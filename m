@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaBQNKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:10:23 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:39638 "EHLO mail.mev.co.uk"
+	id S1753055AbaBQNOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 08:14:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:22975 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108AbaBQNKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 08:10:22 -0500
-Message-ID: <53020A12.1090607@mev.co.uk>
-Date: Mon, 17 Feb 2014 13:09:38 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@yahoo.com>, gregkh@linuxfoundation.org
-CC: hsweeten@visionengravers.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: kcomedilib: replace deprecated simple_strtoul()
- with kstrtouint()
-References: <1392436780-31184-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1392436780-31184-1-git-send-email-chase.southwood@yahoo.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752070AbaBQNOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 08:14:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,860,1384329600"; 
+   d="scan'208";a="482904385"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 00/11] mei fixes and cleanups
+Date: Mon, 17 Feb 2014 15:12:41 +0200
+Message-Id: <1392642772-8829-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-02-15 03:59, Chase Southwood wrote:
-> Since simple_strtoul() has been deprecated, replace it with kstrtouint().
-> Also, since return code checking for this new function is enforced, add a
-> check to ensure that the conversion has succeeded.
->
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
->   drivers/staging/comedi/kcomedilib/kcomedilib_main.c | 3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/staging/comedi/kcomedilib/kcomedilib_main.c b/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
-> index 7dc5a18..8923e65 100644
-> --- a/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
-> +++ b/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
-> @@ -41,7 +41,8 @@ struct comedi_device *comedi_open(const char *filename)
->   	if (strncmp(filename, "/dev/comedi", 11) != 0)
->   		return NULL;
->
-> -	minor = simple_strtoul(filename + 11, NULL, 0);
-> +	if (kstrtouint(filename + 11, 0, &minor))
-> +		return NULL;
->
->   	if (minor >= COMEDI_NUM_BOARD_MINORS)
->   		return NULL;
->
 
-Looks good!
+Alexander Usyskin (4):
+  mei: hbm: revamp client connect and disconnection status
+  mei: fix potential read outside of array bounds
+  mei: use helper function to find me client by id
+  mei: make return values consistent across the driver
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Tomas Winkler (7):
+  mei: add mei_hbuf_acquire wrapper
+  mei: revamp writing slot counting
+  mei: Remove all bus devices from the mei_dev list when stopping the
+    MEI
+  mei: wd and amthif use mei_cl_ api for dis/connection
+  mei: don't of list_for_each_entry_safe when not deleting
+  mei: wd: simplify wd_send command
+  mei: wd: fix stop completion failure
+
+ drivers/misc/mei/amthif.c    |  63 +++++-------
+ drivers/misc/mei/bus.c       |  20 +++-
+ drivers/misc/mei/client.c    | 222 +++++++++++++++++++++++--------------------
+ drivers/misc/mei/client.h    |   4 +-
+ drivers/misc/mei/hbm.c       | 209 ++++++++++++++++++++--------------------
+ drivers/misc/mei/hw-me.c     |  12 ++-
+ drivers/misc/mei/hw-txe.c    |  38 ++++----
+ drivers/misc/mei/hw-txe.h    |   1 +
+ drivers/misc/mei/hw.h        |  16 ++--
+ drivers/misc/mei/init.c      |   2 +
+ drivers/misc/mei/interrupt.c | 113 ++++++++++------------
+ drivers/misc/mei/main.c      |   4 +-
+ drivers/misc/mei/mei_dev.h   |   9 +-
+ drivers/misc/mei/nfc.c       |  14 +--
+ drivers/misc/mei/wd.c        | 135 ++++++++++++++------------
+ 15 files changed, 441 insertions(+), 421 deletions(-)
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+1.8.5.3
+
