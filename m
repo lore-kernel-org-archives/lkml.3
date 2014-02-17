@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241AbaBQWSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:18:40 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35249 "EHLO
+	id S1754838AbaBQWUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:20:20 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:35224 "EHLO
 	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978AbaBQWNV (ORCPT
+	with ESMTP id S1753883AbaBQWNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:13:21 -0500
+	Mon, 17 Feb 2014 17:13:20 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,456 +16,150 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 22/55] rcutorture: Abstract torture_shuffle()
-Date: Mon, 17 Feb 2014 14:12:26 -0800
-Message-Id: <1392675179-11560-22-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 49/55] locktorture: Add vestigial locktorture configuration
+Date: Mon, 17 Feb 2014 14:12:53 -0800
+Message-Id: <1392675179-11560-49-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
  <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021722-8236-0000-0000-0000074F3844
+x-cbid: 14021722-8236-0000-0000-0000074F3850
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The torture_shuffle() function forces each CPU in turn to go idle
-periodically in order to check for problems interacting with per-CPU
-variables and with dyntick-idle mode.  Because this sort of debugging
-is not specific to RCU, this commit abstracts that functionality.
-This in turn requires abstracting some additional infrastructure.
+This commit adds a trivial set of configuration files for lock
+torturing.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/torture.h |   5 ++
- kernel/rcu/rcutorture.c | 124 +++++----------------------------------
- kernel/torture.c        | 151 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 171 insertions(+), 109 deletions(-)
+ tools/testing/selftests/rcutorture/bin/kvm.sh      |  2 +-
+ .../selftests/rcutorture/configs/lock/BUSTED       |  6 +++
+ .../selftests/rcutorture/configs/lock/BUSTED.boot  |  1 +
+ .../selftests/rcutorture/configs/lock/CFLIST       |  1 +
+ .../selftests/rcutorture/configs/lock/CFcommon     |  2 +
+ .../selftests/rcutorture/configs/lock/LOCK01       |  6 +++
+ .../rcutorture/configs/lock/ver_functions.sh       | 43 ++++++++++++++++++++++
+ 7 files changed, 60 insertions(+), 1 deletion(-)
+ create mode 100644 tools/testing/selftests/rcutorture/configs/lock/BUSTED
+ create mode 100644 tools/testing/selftests/rcutorture/configs/lock/BUSTED.boot
+ create mode 100644 tools/testing/selftests/rcutorture/configs/lock/CFLIST
+ create mode 100644 tools/testing/selftests/rcutorture/configs/lock/CFcommon
+ create mode 100644 tools/testing/selftests/rcutorture/configs/lock/LOCK01
+ create mode 100644 tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh
 
-diff --git a/include/linux/torture.h b/include/linux/torture.h
-index 9b6a4834de8f..712a355cd817 100644
---- a/include/linux/torture.h
-+++ b/include/linux/torture.h
-@@ -69,6 +69,11 @@ struct torture_random_state {
- #define DEFINE_TORTURE_RANDOM(name) struct torture_random_state name = { 0, 0 }
- unsigned long torture_random(struct torture_random_state *trsp);
- 
-+/* Task shuffler, which causes CPUs to occasionally go idle. */
-+void torture_shuffle_task_register(struct task_struct *tp);
-+int torture_shuffle_init(long shuffint);
-+void torture_shuffle_cleanup(void);
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+index c24092ce981c..8d3a6e916811 100644
+--- a/tools/testing/selftests/rcutorture/bin/kvm.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+@@ -159,7 +159,7 @@ do
+ 		shift
+ 		;;
+ 	--torture)
+-		checkarg --torture "(suite name)" "$#" "$2" '^rcu$' '^--'
++		checkarg --torture "(suite name)" "$#" "$2" '^\(lock\|rcu\)$' '^--'
+ 		TORTURE_SUITE=$2
+ 		shift
+ 		;;
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/BUSTED b/tools/testing/selftests/rcutorture/configs/lock/BUSTED
+new file mode 100644
+index 000000000000..1d1da1477fc3
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/lock/BUSTED
+@@ -0,0 +1,6 @@
++CONFIG_SMP=y
++CONFIG_NR_CPUS=4
++CONFIG_HOTPLUG_CPU=y
++CONFIG_PREEMPT_NONE=n
++CONFIG_PREEMPT_VOLUNTARY=n
++CONFIG_PREEMPT=y
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/BUSTED.boot b/tools/testing/selftests/rcutorture/configs/lock/BUSTED.boot
+new file mode 100644
+index 000000000000..6386c15e9770
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/lock/BUSTED.boot
+@@ -0,0 +1 @@
++locktorture.torture_type=lock_busted
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/CFLIST b/tools/testing/selftests/rcutorture/configs/lock/CFLIST
+new file mode 100644
+index 000000000000..a061b22d1892
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/lock/CFLIST
+@@ -0,0 +1 @@
++LOCK01
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/CFcommon b/tools/testing/selftests/rcutorture/configs/lock/CFcommon
+new file mode 100644
+index 000000000000..e372dc269254
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/lock/CFcommon
+@@ -0,0 +1,2 @@
++CONFIG_LOCK_TORTURE_TEST=y
++CONFIG_PRINTK_TIME=y
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/LOCK01 b/tools/testing/selftests/rcutorture/configs/lock/LOCK01
+new file mode 100644
+index 000000000000..a9625e3d6cd9
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/lock/LOCK01
+@@ -0,0 +1,6 @@
++CONFIG_SMP=y
++CONFIG_NR_CPUS=8
++CONFIG_HOTPLUG_CPU=y
++CONFIG_PREEMPT_NONE=n
++CONFIG_PREEMPT_VOLUNTARY=n
++CONFIG_PREEMPT=y
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh b/tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh
+new file mode 100644
+index 000000000000..9746ea1cd6c7
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh
+@@ -0,0 +1,43 @@
++#!/bin/bash
++#
++# Kernel-version-dependent shell functions for the rest of the scripts.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 2 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, you can access it online at
++# http://www.gnu.org/licenses/gpl-2.0.html.
++#
++# Copyright (C) IBM Corporation, 2014
++#
++# Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 +
- /* Shutdown task absorption, for when the tasks cannot safely be killed. */
- void torture_shutdown_absorb(const char *title);
- 
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 49cdeeaaa54b..7b56da0b8cfe 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -105,7 +105,6 @@ static struct task_struct *writer_task;
- static struct task_struct **fakewriter_tasks;
- static struct task_struct **reader_tasks;
- static struct task_struct *stats_task;
--static struct task_struct *shuffler_task;
- static struct task_struct *stutter_task;
- static struct task_struct *fqs_task;
- static struct task_struct *boost_tasks[NR_CPUS];
-@@ -160,7 +159,6 @@ static int max_online;
- static long n_barrier_attempts;
- static long n_barrier_successes;
- static struct list_head rcu_torture_removed;
--static cpumask_var_t shuffle_tmp_mask;
- 
- static int stutter_pause_test;
- 
-@@ -1079,90 +1077,6 @@ rcu_torture_stats(void *arg)
- 	return 0;
- }
- 
--static int rcu_idle_cpu;	/* Force all torture tasks off this CPU */
--
--/* Shuffle tasks such that we allow @rcu_idle_cpu to become idle. A special case
-- * is when @rcu_idle_cpu = -1, when we allow the tasks to run on all CPUs.
-- */
--static void rcu_torture_shuffle_tasks(void)
--{
--	int i;
--
--	cpumask_setall(shuffle_tmp_mask);
--	get_online_cpus();
--
--	/* No point in shuffling if there is only one online CPU (ex: UP) */
--	if (num_online_cpus() == 1) {
--		put_online_cpus();
--		return;
--	}
--
--	if (rcu_idle_cpu != -1)
--		cpumask_clear_cpu(rcu_idle_cpu, shuffle_tmp_mask);
--
--	set_cpus_allowed_ptr(current, shuffle_tmp_mask);
--
--	if (reader_tasks) {
--		for (i = 0; i < nrealreaders; i++)
--			if (reader_tasks[i])
--				set_cpus_allowed_ptr(reader_tasks[i],
--						     shuffle_tmp_mask);
--	}
--	if (fakewriter_tasks) {
--		for (i = 0; i < nfakewriters; i++)
--			if (fakewriter_tasks[i])
--				set_cpus_allowed_ptr(fakewriter_tasks[i],
--						     shuffle_tmp_mask);
--	}
--	if (writer_task)
--		set_cpus_allowed_ptr(writer_task, shuffle_tmp_mask);
--	if (stats_task)
--		set_cpus_allowed_ptr(stats_task, shuffle_tmp_mask);
--	if (stutter_task)
--		set_cpus_allowed_ptr(stutter_task, shuffle_tmp_mask);
--	if (fqs_task)
--		set_cpus_allowed_ptr(fqs_task, shuffle_tmp_mask);
--	if (shutdown_task)
--		set_cpus_allowed_ptr(shutdown_task, shuffle_tmp_mask);
--#ifdef CONFIG_HOTPLUG_CPU
--	if (onoff_task)
--		set_cpus_allowed_ptr(onoff_task, shuffle_tmp_mask);
--#endif /* #ifdef CONFIG_HOTPLUG_CPU */
--	if (stall_task)
--		set_cpus_allowed_ptr(stall_task, shuffle_tmp_mask);
--	if (barrier_cbs_tasks)
--		for (i = 0; i < n_barrier_cbs; i++)
--			if (barrier_cbs_tasks[i])
--				set_cpus_allowed_ptr(barrier_cbs_tasks[i],
--						     shuffle_tmp_mask);
--	if (barrier_task)
--		set_cpus_allowed_ptr(barrier_task, shuffle_tmp_mask);
--
--	if (rcu_idle_cpu == -1)
--		rcu_idle_cpu = num_online_cpus() - 1;
--	else
--		rcu_idle_cpu--;
--
--	put_online_cpus();
--}
--
--/* Shuffle tasks across CPUs, with the intent of allowing each CPU in the
-- * system to become idle at a time and cut off its timer ticks. This is meant
-- * to test the support for such tickless idle CPU in RCU.
-- */
--static int
--rcu_torture_shuffle(void *arg)
--{
--	VERBOSE_TOROUT_STRING("rcu_torture_shuffle task started");
--	do {
--		schedule_timeout_interruptible(shuffle_interval * HZ);
--		rcu_torture_shuffle_tasks();
--		torture_shutdown_absorb("rcu_torture_shuffle");
--	} while (!kthread_should_stop());
--	VERBOSE_TOROUT_STRING("rcu_torture_shuffle task stopping");
--	return 0;
--}
--
- /* Cause the rcutorture test to "stutter", starting and stopping all
-  * threads periodically.
-  */
-@@ -1396,6 +1310,7 @@ rcu_torture_onoff_init(void)
- 		onoff_task = NULL;
- 		return ret;
- 	}
-+	torture_shuffle_task_register(onoff_task);
- 	return 0;
- }
- 
-@@ -1467,6 +1382,7 @@ static int __init rcu_torture_stall_init(void)
- 		stall_task = NULL;
- 		return ret;
- 	}
-+	torture_shuffle_task_register(stall_task);
- 	return 0;
- }
- 
-@@ -1593,6 +1509,7 @@ static int rcu_torture_barrier_init(void)
- 			barrier_cbs_tasks[i] = NULL;
- 			return ret;
- 		}
-+		torture_shuffle_task_register(barrier_cbs_tasks[i]);
- 	}
- 	barrier_task = kthread_run(rcu_torture_barrier, NULL,
- 				   "rcu_torture_barrier");
-@@ -1601,6 +1518,7 @@ static int rcu_torture_barrier_init(void)
- 		VERBOSE_TOROUT_ERRSTRING("Failed to create rcu_torture_barrier");
- 		barrier_task = NULL;
- 	}
-+	torture_shuffle_task_register(barrier_task);
- 	return 0;
- }
- 
-@@ -1673,6 +1591,8 @@ rcu_torture_cleanup(void)
- 	fullstop = FULLSTOP_RMMOD;
- 	mutex_unlock(&fullstop_mutex);
- 	unregister_reboot_notifier(&rcutorture_shutdown_nb);
-+
-+	torture_shuffle_cleanup(); /* Must be first task cleaned up. */
- 	rcu_torture_barrier_cleanup();
- 	rcu_torture_stall_cleanup();
- 	if (stutter_task) {
-@@ -1680,12 +1600,6 @@ rcu_torture_cleanup(void)
- 		kthread_stop(stutter_task);
- 	}
- 	stutter_task = NULL;
--	if (shuffler_task) {
--		VERBOSE_TOROUT_STRING("Stopping rcu_torture_shuffle task");
--		kthread_stop(shuffler_task);
--		free_cpumask_var(shuffle_tmp_mask);
--	}
--	shuffler_task = NULL;
- 
- 	if (writer_task) {
- 		VERBOSE_TOROUT_STRING("Stopping rcu_torture_writer task");
-@@ -1903,6 +1817,7 @@ rcu_torture_init(void)
- 		writer_task = NULL;
- 		goto unwind;
- 	}
-+	torture_shuffle_task_register(writer_task);
- 	wake_up_process(writer_task);
- 	fakewriter_tasks = kzalloc(nfakewriters * sizeof(fakewriter_tasks[0]),
- 				   GFP_KERNEL);
-@@ -1921,6 +1836,7 @@ rcu_torture_init(void)
- 			fakewriter_tasks[i] = NULL;
- 			goto unwind;
- 		}
-+		torture_shuffle_task_register(fakewriter_tasks[i]);
- 	}
- 	reader_tasks = kzalloc(nrealreaders * sizeof(reader_tasks[0]),
- 			       GFP_KERNEL);
-@@ -1939,6 +1855,7 @@ rcu_torture_init(void)
- 			reader_tasks[i] = NULL;
- 			goto unwind;
- 		}
-+		torture_shuffle_task_register(reader_tasks[i]);
- 	}
- 	if (stat_interval > 0) {
- 		VERBOSE_TOROUT_STRING("Creating rcu_torture_stats task");
-@@ -1950,26 +1867,12 @@ rcu_torture_init(void)
- 			stats_task = NULL;
- 			goto unwind;
- 		}
-+		torture_shuffle_task_register(stats_task);
- 	}
- 	if (test_no_idle_hz) {
--		rcu_idle_cpu = num_online_cpus() - 1;
--
--		if (!alloc_cpumask_var(&shuffle_tmp_mask, GFP_KERNEL)) {
--			firsterr = -ENOMEM;
--			VERBOSE_TOROUT_ERRSTRING("Failed to alloc mask");
-+		firsterr = torture_shuffle_init(shuffle_interval * HZ);
-+		if (firsterr)
- 			goto unwind;
--		}
--
--		/* Create the shuffler thread */
--		shuffler_task = kthread_run(rcu_torture_shuffle, NULL,
--					  "rcu_torture_shuffle");
--		if (IS_ERR(shuffler_task)) {
--			free_cpumask_var(shuffle_tmp_mask);
--			firsterr = PTR_ERR(shuffler_task);
--			VERBOSE_TOROUT_ERRSTRING("Failed to create shuffler");
--			shuffler_task = NULL;
--			goto unwind;
--		}
- 	}
- 	if (stutter < 0)
- 		stutter = 0;
-@@ -1983,6 +1886,7 @@ rcu_torture_init(void)
- 			stutter_task = NULL;
- 			goto unwind;
- 		}
-+		torture_shuffle_task_register(stutter_task);
- 	}
- 	if (fqs_duration < 0)
- 		fqs_duration = 0;
-@@ -1996,6 +1900,7 @@ rcu_torture_init(void)
- 			fqs_task = NULL;
- 			goto unwind;
- 		}
-+		torture_shuffle_task_register(fqs_task);
- 	}
- 	if (test_boost_interval < 1)
- 		test_boost_interval = 1;
-@@ -2026,6 +1931,7 @@ rcu_torture_init(void)
- 			shutdown_task = NULL;
- 			goto unwind;
- 		}
-+		torture_shuffle_task_register(shutdown_task);
- 		wake_up_process(shutdown_task);
- 	}
- 	i = rcu_torture_onoff_init();
-diff --git a/kernel/torture.c b/kernel/torture.c
-index f05042036ae8..26058f20ee83 100644
---- a/kernel/torture.c
-+++ b/kernel/torture.c
-@@ -76,6 +76,157 @@ torture_random(struct torture_random_state *trsp)
- EXPORT_SYMBOL_GPL(torture_random);
- 
- /*
-+ * Variables for shuffling.  The idea is to ensure that each CPU stays
-+ * idle for an extended period to test interactions with dyntick idle,
-+ * as well as interactions with any per-CPU varibles.
-+ */
-+struct shuffle_task {
-+	struct list_head st_l;
-+	struct task_struct *st_t;
-+};
-+
-+static long shuffle_interval;	/* In jiffies. */
-+static struct task_struct *shuffler_task;
-+static cpumask_var_t shuffle_tmp_mask;
-+static int shuffle_idle_cpu;	/* Force all torture tasks off this CPU */
-+static struct list_head shuffle_task_list = LIST_HEAD_INIT(shuffle_task_list);
-+static DEFINE_MUTEX(shuffle_task_mutex);
-+
-+/*
-+ * Register a task to be shuffled.  If there is no memory, just splat
-+ * and don't bother registering.
-+ */
-+void torture_shuffle_task_register(struct task_struct *tp)
-+{
-+	struct shuffle_task *stp;
-+
-+	if (WARN_ON_ONCE(tp == NULL))
-+		return;
-+	stp = kmalloc(sizeof(*stp), GFP_KERNEL);
-+	if (WARN_ON_ONCE(stp == NULL))
-+		return;
-+	stp->st_t = tp;
-+	mutex_lock(&shuffle_task_mutex);
-+	list_add(&stp->st_l, &shuffle_task_list);
-+	mutex_unlock(&shuffle_task_mutex);
-+}
-+EXPORT_SYMBOL_GPL(torture_shuffle_task_register);
-+
-+/*
-+ * Unregister all tasks, for example, at the end of the torture run.
-+ */
-+static void torture_shuffle_task_unregister_all(void)
-+{
-+	struct shuffle_task *stp;
-+	struct shuffle_task *p;
-+
-+	mutex_lock(&shuffle_task_mutex);
-+	list_for_each_entry_safe(stp, p, &shuffle_task_list, st_l) {
-+		list_del(&stp->st_l);
-+		kfree(stp);
-+	}
-+	mutex_unlock(&shuffle_task_mutex);
++# locktorture_param_onoff bootparam-string config-file
++#
++# Adds onoff locktorture module parameters to kernels having it.
++locktorture_param_onoff () {
++	if ! bootparam_hotplug_cpu "$1" && configfrag_hotplug_cpu "$2"
++	then
++		echo CPU-hotplug kernel, adding locktorture onoff. 1>&2
++		echo locktorture.onoff_interval=3 locktorture.onoff_holdoff=30
++	fi
 +}
 +
-+/* Shuffle tasks such that we allow shuffle_idle_cpu to become idle.
-+ * A special case is when shuffle_idle_cpu = -1, in which case we allow
-+ * the tasks to run on all CPUs.
-+ */
-+static void torture_shuffle_tasks(void)
-+{
-+	struct shuffle_task *stp;
-+
-+	cpumask_setall(shuffle_tmp_mask);
-+	get_online_cpus();
-+
-+	/* No point in shuffling if there is only one online CPU (ex: UP) */
-+	if (num_online_cpus() == 1) {
-+		put_online_cpus();
-+		return;
-+	}
-+
-+	/* Advance to the next CPU.  Upon overflow, don't idle any CPUs. */
-+	shuffle_idle_cpu = cpumask_next(shuffle_idle_cpu, shuffle_tmp_mask);
-+	if (shuffle_idle_cpu >= nr_cpu_ids)
-+		shuffle_idle_cpu = -1;
-+	if (shuffle_idle_cpu != -1) {
-+		cpumask_clear_cpu(shuffle_idle_cpu, shuffle_tmp_mask);
-+		if (cpumask_empty(shuffle_tmp_mask)) {
-+			put_online_cpus();
-+			return;
-+		}
-+	}
-+
-+	mutex_lock(&shuffle_task_mutex);
-+	list_for_each_entry(stp, &shuffle_task_list, st_l)
-+		set_cpus_allowed_ptr(stp->st_t, shuffle_tmp_mask);
-+	mutex_unlock(&shuffle_task_mutex);
-+
-+	put_online_cpus();
++# per_version_boot_params bootparam-string config-file seconds
++#
++# Adds per-version torture-module parameters to kernels supporting them.
++per_version_boot_params () {
++	echo $1 `locktorture_param_onoff "$1" "$2"` \
++		locktorture.stat_interval=15 \
++		locktorture.shutdown_secs=$3 \
++		locktorture.locktorture_runnable=1 \
++		locktorture.verbose=1
 +}
-+
-+/* Shuffle tasks across CPUs, with the intent of allowing each CPU in the
-+ * system to become idle at a time and cut off its timer ticks. This is meant
-+ * to test the support for such tickless idle CPU in RCU.
-+ */
-+static int torture_shuffle(void *arg)
-+{
-+	VERBOSE_TOROUT_STRING("torture_shuffle task started");
-+	do {
-+		schedule_timeout_interruptible(shuffle_interval);
-+		torture_shuffle_tasks();
-+		torture_shutdown_absorb("torture_shuffle");
-+	} while (!torture_must_stop());
-+	VERBOSE_TOROUT_STRING("torture_shuffle task stopping");
-+	return 0;
-+}
-+
-+/*
-+ * Start the shuffler, with shuffint in jiffies.
-+ */
-+int torture_shuffle_init(long shuffint)
-+{
-+	int ret;
-+
-+	shuffle_interval = shuffint;
-+
-+	shuffle_idle_cpu = -1;
-+
-+	if (!alloc_cpumask_var(&shuffle_tmp_mask, GFP_KERNEL)) {
-+		VERBOSE_TOROUT_ERRSTRING("Failed to alloc mask");
-+		return -ENOMEM;
-+	}
-+
-+	/* Create the shuffler thread */
-+	shuffler_task = kthread_run(torture_shuffle, NULL, "torture_shuffle");
-+	if (IS_ERR(shuffler_task)) {
-+		ret = PTR_ERR(shuffler_task);
-+		free_cpumask_var(shuffle_tmp_mask);
-+		VERBOSE_TOROUT_ERRSTRING("Failed to create shuffler");
-+		shuffler_task = NULL;
-+		return ret;
-+	}
-+	torture_shuffle_task_register(shuffler_task);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(torture_shuffle_init);
-+
-+/*
-+ * Stop the shuffling.
-+ */
-+void torture_shuffle_cleanup(void)
-+{
-+	torture_shuffle_task_unregister_all();
-+	if (shuffler_task) {
-+		VERBOSE_TOROUT_STRING("Stopping torture_shuffle task");
-+		kthread_stop(shuffler_task);
-+		free_cpumask_var(shuffle_tmp_mask);
-+	}
-+	shuffler_task = NULL;
-+}
-+EXPORT_SYMBOL_GPL(torture_shuffle_cleanup);
-+
-+/*
-  * Absorb kthreads into a kernel function that won't return, so that
-  * they won't ever access module text or data again.
-  */
 -- 
 1.8.1.5
 
