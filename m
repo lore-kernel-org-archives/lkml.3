@@ -1,85 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125AbaBQXj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 18:39:28 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59639 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaBQXj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 18:39:27 -0500
-Date: Tue, 18 Feb 2014 08:39:11 +0900
-From: Mark Brown <broonie@kernel.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Message-ID: <20140217233911.GB2669@sirena.org.uk>
-References: <201402131031.s1DAVWrJ023725@swsrvapps-01.diasemi.com>
- <20140214093435.GI3403@lee--X1>
- <6ED8E3B22081A4459DAC7699F3695FB78F97CB13@SW-EX-MBX02.diasemi.com>
- <20140214145643.GA4451@sirena.org.uk>
- <6ED8E3B22081A4459DAC7699F3695FB78F97D757@SW-EX-MBX02.diasemi.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qcHopEYAB45HaUaB"
-Content-Disposition: inline
-In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB78F97D757@SW-EX-MBX02.diasemi.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.99.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC V1] mfd: da9063: Add support for production silicon variant
- code
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1753686AbaBQXmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 18:42:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40616 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005AbaBQXmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 18:42:36 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <CA+55aFx2jxE8sTZEmNnMg6ktDuU_0xPiEw3=qH0=+xat8p8cAA@mail.gmail.com>
+References: <20140207180216.GP4250@linux.vnet.ibm.com>
+	 <1391992071.18779.99.camel@triegel.csb>
+	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	 <1392183564.18779.2187.camel@triegel.csb>
+	 <20140212180739.GB4250@linux.vnet.ibm.com>
+	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	 <20140213002355.GI4250@linux.vnet.ibm.com>
+	 <1392321837.18779.3249.camel@triegel.csb>
+	 <20140214020144.GO4250@linux.vnet.ibm.com>
+	 <1392352981.18779.3800.camel@triegel.csb>
+	 <20140214172920.GQ4250@linux.vnet.ibm.com>
+	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	 <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	 <1392486310.18779.6447.camel@triegel.csb>
+	 <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	 <1392666947.18779.6838.camel@triegel.csb>
+	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	 <1392672063.18779.6940.camel@triegel.csb>
+	 <CA+55aFyay_ck4eb6HEWvD4bTS=3OYY7wX1MVNKAcpUYN0ssWhA@mai! l.gmail.com>
+	 <1392675939.18779.7063.camel@triegel.csb>
+	 <CA+55aFx2jxE8sTZEmNnMg6ktDuU_0xPiEw3=qH0=+xat8p8cAA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Feb 2014 00:41:58 +0100
+Message-ID: <1392680518.18779.7213.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-02-17 at 14:47 -0800, Linus Torvalds wrote:
+> On Mon, Feb 17, 2014 at 2:25 PM, Torvald Riegel <triegel@redhat.com> wrote:
+> > On Mon, 2014-02-17 at 14:02 -0800, Linus Torvalds wrote:
+> >>
+> >> The argument was that an lvalue doesn't actually "access" the memory
+> >> (an rvalue does), so this:
+> >>
+> >>    volatile int *p = ...;
+> >>
+> >>    *p;
+> >>
+> >> doesn't need to generate a load from memory, because "*p" is still an
+> >> lvalue (since you could assign things to it).
+> >>
+> >> This isn't an issue in C, because in C, expression statements are
+> >> always rvalues, but C++ changed that.
+> >
+> > Huhh.  I can see the problems that this creates in terms of C/C++
+> > compatibility.
+> 
+> That's not the biggest problem.
+> 
+> The biggest problem is that you have compiler writers that don't care
+> about sane *use* of the features they write a compiler for, they just
+> care about the standard.
+> 
+> So they don't care about C vs C++ compatibility. Even more
+> importantly, they don't care about the *user* that uses only C++ and
+> the fact that their reading of the standard results in *meaningless*
+> behavior. They point to the standard and say "that's what the standard
+> says, suck it", and silently generate code (or in this case, avoid
+> generating code) that makes no sense.
 
---qcHopEYAB45HaUaB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There's an underlying problem here that's independent from the actual
+instance that you're worried about here: "no sense" is a ultimately a
+matter of taste/objectives/priorities as long as the respective
+specification is logically consistent.
 
-On Sun, Feb 16, 2014 at 12:18:43PM +0000, Opensource [Steve Twiss] wrote:
+If you want to be independent of your sanity being different from other
+people's sanity (e.g., compiler writers), you need to make sure that the
+specification is precise and says what you want.  IOW, think about the
+specification being the program, and the people being computers; you
+better want a well-defined program in this case.
 
-> Some registers in the new variant make backwards compatibility easy,
-> however attempting to combine the two register maps in other components
-> makes the driver a mess.=20
+> So it's not about C++ being incompatible with C, it's about C++ having
+> insane and bad semantics unless you just admit that "oh, ok, I need to
+> not just read the standard, I also need to use my brain, and admit
+> that a C++ statement expression needs to act as if it is an "access"
+> wrt volatile variables".
 
-OK, that makes sense - if the changes really are substantial then
-dropping the old revisions can be reasonable.
+1) I agree that (IMO) a good standard strives for being easy to
+understand.
 
-> I realise that the Linux community will have different aims however and=
-=20
-> I would like to support those as much as I can.
+2) In practice, there is a trade-off between "Easy to understand" and
+actually producing a specification.  A standard is not a tutorial.  And
+that's for good reason, because (a) there might be more than one way to
+teach something and that should be allowed and (b) that the standard
+should carry the full precision but still be compact enough to be
+manageable.
 
-It's not just the community here - it's just a general thing with users,
-the same issues face people using out of tree drivers (though
-communication with the developers is often weaker there).
+3) Implementations can try to be nice to users by helping them avoiding
+error-prone corner cases or such.  A warning for common problems is such
+a case.  But an implementation has to draw a line somewhere, demarcating
+cases where it fully exploits what the standard says (eg, to allow
+optimizations) from cases where it is more conservative and does what
+the standard allows but in a potentially more intuitive way.  That's
+especially the case if it's being asked to produce high-performance
+code.
 
---qcHopEYAB45HaUaB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+4) There will be arguments for where the line actually is, simply
+because different users will have different goals.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+5) The way to reduce 4) is to either make the standard more specific, or
+to provide better user documentation.  If the standard has strict
+requirements, then there will be less misunderstanding.
 
-iQIcBAEBAgAGBQJTAp2cAAoJELSic+t+oim9LZIP/2U3mYYkC/7+BmKq6l2QfWfs
-kDWJ3+abdyD44Dat/DWdL+cS0SFK1cmP/EDqL0GYKCwM9sPl6UzEWZpdvzVV7FQ/
-Qtwnplkv3HOVga9L4M/h3rX73iLwF1wyvAKT+9HN8Q972k+na5kZjcMxE2VqCqiV
-lOskmdpa/MuUMpHnLlfO8tutY9RXeCgh2UeCPgOLl4mW4nKh4b1+SLe2GK7ejMwK
-Q8zxFMmfRA6YRalE6sEiAtg+4LCO/8bkQoy2dFAcK/wK+Ui/JMvCyVz9YhutwSKv
-rTZWTx0ROYBG6+9MVgXI+ASXJYDiFI4tnVvHr6kC2bvUHZ0bq3kiUScseP6kkffs
-uynib0+D9/axIwFQ7wg4eEO02vtJiEvD/Km1zHHFnVuBS9nYUjAjyjzAOTJgjOiC
-anOFgGsCRhVvLPCBq8Okux+I0Ig7qvT3cLTJcxHUzG6fZYnUWYXjz8S/fqrwMYCb
-dHXR2qmWU6Zvggj/DtN3V/3Km9SblZPs9JT1w0WOeS2eBtolyb9W2k/PDIx86b7k
-0+5UCx1zPx4jTIZazZSIlyV7QlAuEFg+CUKbm4cixFUTQDula52MrdQJn8Moo40P
-X/B28b0VpequyzmprGkfMyaJc4y+6BAJCbGQemOuSZnIXT1bRUzwfcSefziDW031
-rSxDQPwd8DHqSRcGke2w
-=VFdC
------END PGP SIGNATURE-----
+6) To achieve 5), one way is to get involved in the standards process.
 
---qcHopEYAB45HaUaB--
+
