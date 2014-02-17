@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599AbaBQUYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 15:24:10 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:36114 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541AbaBQUYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 15:24:05 -0500
+	id S1754617AbaBQUYR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 15:24:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8311 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754541AbaBQUYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 15:24:15 -0500
+Subject: [PATCH 4/4] kvm/vfio: Support for DMA coherent IOMMUs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: alex.williamson@redhat.com, kvm@vger.kernel.org
+Cc: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 17 Feb 2014 13:24:12 -0700
+Message-ID: <20140217202412.22775.77911.stgit@bling.home>
+In-Reply-To: <20140217201324.22775.31904.stgit@bling.home>
+References: <20140217201324.22775.31904.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <20140217194955.GA30908@node.dhcp.inet.fi>
-References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
-	<20140217194955.GA30908@node.dhcp.inet.fi>
-Date: Mon, 17 Feb 2014 12:24:04 -0800
-X-Google-Sender-Auth: _7PwvCjTPyh4RTgO0CE51UiJrWM
-Message-ID: <CA+55aFwSDxzvR=zWn=OtNmg5cYKaj8DzFTm+16xiHLKKR0xhWQ@mail.gmail.com>
-Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if they
- are in page cache
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 11:49 AM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
->
-> But it could be safer to keep locking in place and reduce lookup cost by
-> exposing something like ->fault_iter_init() and ->fault_iter_next(). It
-> will still return one page a time, but it will keep radix-tree context
-> around for cheaper next-page lookup.
+VFIO now has support for using the IOMMU_CACHE flag and a mechanism
+for an external user to test the current operating mode of the IOMMU.
+Add support for this to the kvm-vfio pseudo device so that we only
+register noncoherent DMA when necessary.
 
-I really would prefer for the loop to be much smaller than that, and
-not contain indirect calls to helpers that pretty much guarantee that
-you can't generate nice code.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+---
+ virt/kvm/vfio.c |   27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
-Plus I'd rather not have the mm layer know too much about the radix
-tree iterations anyway, and try to use the existing page array
-functions we already have (ie "find_get_pages()").
+diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+index b4f9507..ba1a93f 100644
+--- a/virt/kvm/vfio.c
++++ b/virt/kvm/vfio.c
+@@ -59,6 +59,22 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
+ 	symbol_put(vfio_group_put_external_user);
+ }
+ 
++static bool kvm_vfio_group_is_coherent(struct vfio_group *vfio_group)
++{
++	long (*fn)(struct vfio_group *, unsigned long);
++	long ret;
++
++	fn = symbol_get(vfio_external_check_extension);
++	if (!fn)
++		return false;
++
++	ret = fn(vfio_group, VFIO_DMA_CC_IOMMU);
++
++	symbol_put(vfio_external_check_extension);
++
++	return ret > 0;
++}
++
+ /*
+  * Groups can use the same or different IOMMU domains.  If the same then
+  * adding a new group may change the coherency of groups we've previously
+@@ -75,13 +91,10 @@ static void kvm_vfio_update_coherency(struct kvm_device *dev)
+ 	mutex_lock(&kv->lock);
+ 
+ 	list_for_each_entry(kvg, &kv->group_list, node) {
+-		/*
+-		 * TODO: We need an interface to check the coherency of
+-		 * the IOMMU domain this group is using.  For now, assume
+-		 * it's always noncoherent.
+-		 */
+-		noncoherent = true;
+-		break;
++		if (!kvm_vfio_group_is_coherent(kvg->vfio_group)) {
++			noncoherent = true;
++			break;
++		}
+ 	}
+ 
+ 	if (noncoherent != kv->noncoherent) {
 
-So I'd really prefer if we can do this with tight loops over explicit
-pages, rather than some loop over an iterator.
-
-              Linus
