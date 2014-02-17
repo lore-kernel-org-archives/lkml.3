@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878AbaBQWXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:23:09 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44708 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaBQWNS (ORCPT
+	id S1754864AbaBQWXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:23:07 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:35201 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811AbaBQWNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Feb 2014 17:13:18 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,166 +16,342 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 24/55] rcutorture: Abstract torture-test initialization
-Date: Mon, 17 Feb 2014 14:12:28 -0800
-Message-Id: <1392675179-11560-24-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 30/55] rcutorture: Abstract stutter_wait()
+Date: Mon, 17 Feb 2014 14:12:34 -0800
+Message-Id: <1392675179-11560-30-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
  <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021722-0928-0000-0000-000006C34F02
+x-cbid: 14021722-8236-0000-0000-0000074F3828
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit creates torture_init_begin() and torture_init_end() functions
-to abstract locking and allow the torture_type and verbose variables
-in kernel/torture.o to become static.  With a bit more abstraction,
-fullstop_mutex will also become static.
+Because stuttering the test load (stopping and restarting it) is useful
+for non-RCU testing, this commit moves the load-stuttering functionality
+to kernel/torture.c.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/torture.h |  9 +++++----
- kernel/rcu/rcutorture.c | 19 ++++++++-----------
- kernel/torture.c        | 27 +++++++++++++++++++++++++++
- 3 files changed, 40 insertions(+), 15 deletions(-)
+ include/linux/torture.h |  7 +++-
+ kernel/rcu/rcutorture.c | 69 +++++++--------------------------------
+ kernel/torture.c        | 87 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 104 insertions(+), 59 deletions(-)
 
 diff --git a/include/linux/torture.h b/include/linux/torture.h
-index 553c90111585..394638724605 100644
+index 1e2e7cd528c0..791934fa32b9 100644
 --- a/include/linux/torture.h
 +++ b/include/linux/torture.h
-@@ -49,10 +49,6 @@ extern int fullstop;
- /* Protect fullstop transitions and spawning of kthreads.  */
- extern struct mutex fullstop_mutex;
- 
--/* Common module parameters. */
--extern char *torture_type;
--extern bool verbose;
--
- #define TORTURE_FLAG "-torture:"
- #define TOROUT_STRING(s) \
- 	pr_alert("%s" TORTURE_FLAG s "\n", torture_type)
-@@ -89,4 +85,9 @@ void torture_shuffle_cleanup(void);
+@@ -75,8 +75,13 @@ int torture_shuffle_init(long shuffint);
  /* Shutdown task absorption, for when the tasks cannot safely be killed. */
  void torture_shutdown_absorb(const char *title);
  
-+/* Initialization and cleanup. */
++/* Task stuttering, which forces load/no-load transitions. */
++void stutter_wait(const char *title);
++int torture_stutter_init(int s);
++void torture_stutter_cleanup(void);
 +
-+void torture_init_begin(char *ttype, bool v);
-+void torture_init_end(void);
-+
- #endif /* __LINUX_TORTURE_H */
+ /* Initialization and cleanup. */
+-void torture_init_begin(char *ttype, bool v);
++void torture_init_begin(char *ttype, bool v, int *runnable);
+ void torture_init_end(void);
+ bool torture_cleanup(void);
+ bool torture_must_stop(void);
 diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 001e5a42a4b2..0609256df6af 100644
+index 87bd690c5958..506f1c09ed90 100644
 --- a/kernel/rcu/rcutorture.c
 +++ b/kernel/rcu/rcutorture.c
-@@ -90,15 +90,12 @@ torture_parm(int, test_boost_interval, 7,
- 	     "Interval between boost tests, seconds.");
- torture_parm(bool, test_no_idle_hz, true,
- 	     "Test support for tickless idle CPUs");
-+torture_parm(bool, verbose, true,
-+	     "Enable verbose debugging printk()s");
+@@ -102,7 +102,6 @@ static struct task_struct *writer_task;
+ static struct task_struct **fakewriter_tasks;
+ static struct task_struct **reader_tasks;
+ static struct task_struct *stats_task;
+-static struct task_struct *stutter_task;
+ static struct task_struct *fqs_task;
+ static struct task_struct *boost_tasks[NR_CPUS];
+ static struct task_struct *shutdown_task;
+@@ -144,8 +143,6 @@ static long n_barrier_attempts;
+ static long n_barrier_successes;
+ static struct list_head rcu_torture_removed;
  
--char *torture_type = "rcu";
--EXPORT_SYMBOL_GPL(torture_type);
-+static char *torture_type = "rcu";
- module_param(torture_type, charp, 0444);
- MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, ...)");
--bool verbose;
--EXPORT_SYMBOL_GPL(verbose);
--module_param(verbose, bool, 0444);
--MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
+-static int stutter_pause_test;
+-
+ #if defined(MODULE) || defined(CONFIG_RCU_TORTURE_TEST_RUNNABLE)
+ #define RCUTORTURE_RUNNABLE_INIT 1
+ #else
+@@ -221,18 +218,6 @@ rcu_torture_free(struct rcu_torture *p)
+ 	spin_unlock_bh(&rcu_torture_lock);
+ }
  
- static int nrealreaders;
- static struct task_struct *writer_task;
-@@ -1424,8 +1421,8 @@ rcu_torture_cleanup(void)
+-static void
+-rcu_stutter_wait(const char *title)
+-{
+-	while (stutter_pause_test || !rcutorture_runnable) {
+-		if (rcutorture_runnable)
+-			schedule_timeout_interruptible(1);
+-		else
+-			schedule_timeout_interruptible(round_jiffies_relative(HZ));
+-		torture_shutdown_absorb(title);
+-	}
+-}
+-
+ /*
+  * Operations vector for selecting different types of tests.
+  */
+@@ -570,7 +555,7 @@ static int rcu_torture_boost(void *arg)
+ 		oldstarttime = boost_starttime;
+ 		while (ULONG_CMP_LT(jiffies, oldstarttime)) {
+ 			schedule_timeout_interruptible(oldstarttime - jiffies);
+-			rcu_stutter_wait("rcu_torture_boost");
++			stutter_wait("rcu_torture_boost");
+ 			if (torture_must_stop())
+ 				goto checkwait;
+ 		}
+@@ -592,7 +577,7 @@ static int rcu_torture_boost(void *arg)
+ 				call_rcu_time = jiffies;
+ 			}
+ 			cond_resched();
+-			rcu_stutter_wait("rcu_torture_boost");
++			stutter_wait("rcu_torture_boost");
+ 			if (torture_must_stop())
+ 				goto checkwait;
+ 		}
+@@ -617,7 +602,7 @@ static int rcu_torture_boost(void *arg)
+ 		}
+ 
+ 		/* Go do the stutter. */
+-checkwait:	rcu_stutter_wait("rcu_torture_boost");
++checkwait:	stutter_wait("rcu_torture_boost");
+ 	} while (!torture_must_stop());
+ 
+ 	/* Clean up and exit. */
+@@ -655,7 +640,7 @@ rcu_torture_fqs(void *arg)
+ 			udelay(fqs_holdoff);
+ 			fqs_burst_remaining -= fqs_holdoff;
+ 		}
+-		rcu_stutter_wait("rcu_torture_fqs");
++		stutter_wait("rcu_torture_fqs");
+ 	} while (!torture_must_stop());
+ 	VERBOSE_TOROUT_STRING("rcu_torture_fqs task stopping");
+ 	torture_shutdown_absorb("rcu_torture_fqs");
+@@ -727,7 +712,7 @@ rcu_torture_writer(void *arg)
+ 			}
+ 		}
+ 		rcutorture_record_progress(++rcu_torture_current_version);
+-		rcu_stutter_wait("rcu_torture_writer");
++		stutter_wait("rcu_torture_writer");
+ 	} while (!torture_must_stop());
+ 	VERBOSE_TOROUT_STRING("rcu_torture_writer task stopping");
+ 	torture_shutdown_absorb("rcu_torture_writer");
+@@ -764,7 +749,7 @@ rcu_torture_fakewriter(void *arg)
+ 		} else {
+ 			cur_ops->exp_sync();
+ 		}
+-		rcu_stutter_wait("rcu_torture_fakewriter");
++		stutter_wait("rcu_torture_fakewriter");
+ 	} while (!torture_must_stop());
+ 
+ 	VERBOSE_TOROUT_STRING("rcu_torture_fakewriter task stopping");
+@@ -909,7 +894,7 @@ rcu_torture_reader(void *arg)
+ 		preempt_enable();
+ 		cur_ops->readunlock(idx);
+ 		schedule();
+-		rcu_stutter_wait("rcu_torture_reader");
++		stutter_wait("rcu_torture_reader");
+ 	} while (!torture_must_stop());
+ 	VERBOSE_TOROUT_STRING("rcu_torture_reader task stopping");
+ 	torture_shutdown_absorb("rcu_torture_reader");
+@@ -1033,25 +1018,6 @@ rcu_torture_stats(void *arg)
+ 	return 0;
+ }
+ 
+-/* Cause the rcutorture test to "stutter", starting and stopping all
+- * threads periodically.
+- */
+-static int
+-rcu_torture_stutter(void *arg)
+-{
+-	VERBOSE_TOROUT_STRING("rcu_torture_stutter task started");
+-	do {
+-		schedule_timeout_interruptible(stutter * HZ);
+-		stutter_pause_test = 1;
+-		if (!kthread_should_stop())
+-			schedule_timeout_interruptible(stutter * HZ);
+-		stutter_pause_test = 0;
+-		torture_shutdown_absorb("rcu_torture_stutter");
+-	} while (!kthread_should_stop());
+-	VERBOSE_TOROUT_STRING("rcu_torture_stutter task stopping");
+-	return 0;
+-}
+-
+ static inline void
+ rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, const char *tag)
  {
- 	int i;
+@@ -1402,11 +1368,7 @@ rcu_torture_cleanup(void)
  
--	mutex_lock(&fullstop_mutex);
- 	rcutorture_record_test_transition();
-+	mutex_lock(&fullstop_mutex);
- 	if (fullstop == FULLSTOP_SHUTDOWN) {
- 		pr_warn(/* but going down anyway, so... */
- 		       "Concurrent 'rmmod rcutorture' and shutdown illegal!\n");
-@@ -1588,7 +1585,7 @@ rcu_torture_init(void)
+ 	rcu_torture_barrier_cleanup();
+ 	rcu_torture_stall_cleanup();
+-	if (stutter_task) {
+-		VERBOSE_TOROUT_STRING("Stopping rcu_torture_stutter task");
+-		kthread_stop(stutter_task);
+-	}
+-	stutter_task = NULL;
++	torture_stutter_cleanup();
+ 
+ 	if (writer_task) {
+ 		VERBOSE_TOROUT_STRING("Stopping rcu_torture_writer task");
+@@ -1547,7 +1509,7 @@ rcu_torture_init(void)
  		&rcu_ops, &rcu_bh_ops, &srcu_ops, &sched_ops,
  	};
  
--	mutex_lock(&fullstop_mutex);
-+	torture_init_begin(torture_type, verbose);
+-	torture_init_begin(torture_type, verbose);
++	torture_init_begin(torture_type, verbose, &rcutorture_runnable);
  
  	/* Process args and tell the world that the torturer is on the job. */
  	for (i = 0; i < ARRAY_SIZE(torture_ops); i++) {
-@@ -1603,7 +1600,7 @@ rcu_torture_init(void)
- 		for (i = 0; i < ARRAY_SIZE(torture_ops); i++)
- 			pr_alert(" %s", torture_ops[i]->name);
- 		pr_alert("\n");
--		mutex_unlock(&fullstop_mutex);
-+		torture_init_end();
- 		return -EINVAL;
+@@ -1681,21 +1643,14 @@ rcu_torture_init(void)
+ 	if (stutter < 0)
+ 		stutter = 0;
+ 	if (stutter) {
+-		/* Create the stutter thread */
+-		stutter_task = kthread_run(rcu_torture_stutter, NULL,
+-					  "rcu_torture_stutter");
+-		if (IS_ERR(stutter_task)) {
+-			firsterr = PTR_ERR(stutter_task);
+-			VERBOSE_TOROUT_ERRSTRING("Failed to create stutter");
+-			stutter_task = NULL;
++		firsterr = torture_stutter_init(stutter * HZ);
++		if (firsterr)
+ 			goto unwind;
+-		}
+-		torture_shuffle_task_register(stutter_task);
  	}
- 	if (cur_ops->fqs == NULL && fqs_duration != 0) {
-@@ -1799,11 +1796,11 @@ rcu_torture_init(void)
- 	if (object_debug)
- 		rcu_test_debug_objects();
- 	rcutorture_record_test_transition();
--	mutex_unlock(&fullstop_mutex);
-+	torture_init_end();
- 	return 0;
- 
- unwind:
--	mutex_unlock(&fullstop_mutex);
-+	torture_init_end();
- 	rcu_torture_cleanup();
- 	return firsterr;
- }
+ 	if (fqs_duration < 0)
+ 		fqs_duration = 0;
+ 	if (fqs_duration) {
+-		/* Create the stutter thread */
++		/* Create the fqs thread */
+ 		fqs_task = kthread_run(rcu_torture_fqs, NULL,
+ 				       "rcu_torture_fqs");
+ 		if (IS_ERR(fqs_task)) {
 diff --git a/kernel/torture.c b/kernel/torture.c
-index a7ec8a7d561e..828d0b1a49b8 100644
+index d51de3029a5c..317b49d8ff79 100644
 --- a/kernel/torture.c
 +++ b/kernel/torture.c
-@@ -49,6 +49,9 @@
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Paul E. McKenney <paulmck@us.ibm.com>");
+@@ -58,6 +58,7 @@ static bool verbose;
+ #define FULLSTOP_RMMOD    2	/* Normal rmmod of torture. */
+ static int fullstop = FULLSTOP_RMMOD;
+ static DEFINE_MUTEX(fullstop_mutex);
++static int *torture_runnable;
  
-+static char *torture_type;
-+static bool verbose;
+ #ifdef CONFIG_HOTPLUG_CPU
+ 
+@@ -453,16 +454,100 @@ static struct notifier_block torture_shutdown_nb = {
+ };
+ 
+ /*
++ * Variables for stuttering, which means to periodically pause and
++ * restart testing in order to catch bugs that appear when load is
++ * suddenly applied to or removed from the system.
++ */
++static struct task_struct *stutter_task;
++static int stutter_pause_test;
++static int stutter;
 +
- int fullstop = FULLSTOP_RMMOD;
- EXPORT_SYMBOL_GPL(fullstop);
- DEFINE_MUTEX(fullstop_mutex);
-@@ -426,3 +429,27 @@ void torture_shutdown_absorb(const char *title)
- 	}
++/*
++ * Block until the stutter interval ends.  This must be called periodically
++ * by all running kthreads that need to be subject to stuttering.
++ */
++void stutter_wait(const char *title)
++{
++	while (ACCESS_ONCE(stutter_pause_test) ||
++	       (torture_runnable && !ACCESS_ONCE(*torture_runnable))) {
++		if (!torture_runnable || ACCESS_ONCE(*torture_runnable))
++			schedule_timeout_interruptible(1);
++		else
++			schedule_timeout_interruptible(round_jiffies_relative(HZ));
++		torture_shutdown_absorb(title);
++	}
++}
++EXPORT_SYMBOL_GPL(stutter_wait);
++
++/*
++ * Cause the torture test to "stutter", starting and stopping all
++ * threads periodically.
++ */
++static int torture_stutter(void *arg)
++{
++	VERBOSE_TOROUT_STRING("torture_stutter task started");
++	do {
++		if (!torture_must_stop()) {
++			schedule_timeout_interruptible(stutter * HZ);
++			ACCESS_ONCE(stutter_pause_test) = 1;
++		}
++		if (!torture_must_stop())
++			schedule_timeout_interruptible(stutter * HZ);
++		ACCESS_ONCE(stutter_pause_test) = 0;
++		torture_shutdown_absorb("torture_stutter");
++	} while (!torture_must_stop());
++	VERBOSE_TOROUT_STRING("torture_stutter task stopping");
++	return 0;
++}
++
++/*
++ * Initialize and kick off the torture_stutter kthread.
++ */
++int torture_stutter_init(int s)
++{
++	int ret;
++
++	stutter = s;
++	stutter_task = kthread_run(torture_stutter, NULL, "torture_stutter");
++	if (IS_ERR(stutter_task)) {
++		ret = PTR_ERR(stutter_task);
++		VERBOSE_TOROUT_ERRSTRING("Failed to create stutter");
++		stutter_task = NULL;
++		return ret;
++	}
++	torture_shuffle_task_register(stutter_task);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(torture_stutter_init);
++
++/*
++ * Cleanup after the torture_stutter kthread.
++ */
++void torture_stutter_cleanup(void)
++{
++	if (!stutter_task)
++		return;
++	VERBOSE_TOROUT_STRING("Stopping torture_stutter task");
++	kthread_stop(stutter_task);
++	stutter_task = NULL;
++}
++EXPORT_SYMBOL_GPL(torture_stutter_cleanup);
++
++/*
+  * Initialize torture module.  Please note that this is -not- invoked via
+  * the usual module_init() mechanism, but rather by an explicit call from
+  * the client torture module.  This call must be paired with a later
+  * torture_init_end().
++ *
++ * The runnable parameter points to a flag that controls whether or not
++ * the test is currently runnable.  If there is no such flag, pass in NULL.
+  */
+-void __init torture_init_begin(char *ttype, bool v)
++void __init torture_init_begin(char *ttype, bool v, int *runnable)
+ {
+ 	mutex_lock(&fullstop_mutex);
+ 	torture_type = ttype;
+ 	verbose = v;
++	torture_runnable = runnable;
+ 	fullstop = FULLSTOP_DONTSTOP;
+ 
  }
- EXPORT_SYMBOL_GPL(torture_shutdown_absorb);
-+
-+/*
-+ * Initialize torture module.  Please note that this is -not- invoked via
-+ * the usual module_init() mechanism, but rather by an explicit call from
-+ * the client torture module.  This call must be paired with a later
-+ * torture_init_end().
-+ */
-+void __init torture_init_begin(char *ttype, bool v)
-+{
-+	mutex_lock(&fullstop_mutex);
-+	torture_type = ttype;
-+	verbose = v;
-+
-+}
-+EXPORT_SYMBOL_GPL(torture_init_begin);
-+
-+/*
-+ * Tell the torture module that initialization is complete.
-+ */
-+void __init torture_init_end(void)
-+{
-+	mutex_unlock(&fullstop_mutex);
-+}
-+EXPORT_SYMBOL_GPL(torture_init_end);
 -- 
 1.8.1.5
 
