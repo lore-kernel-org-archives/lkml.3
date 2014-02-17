@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaBQSqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:46:20 -0500
-Received: from imap.thunk.org ([74.207.234.97]:59097 "EHLO imap.thunk.org"
+	id S1754101AbaBQSuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:50:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60649 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753548AbaBQSqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:46:18 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [REGRESSION v3.14-rc2] NULL dereference in icmp6_send()
-Date: Mon, 17 Feb 2014 13:46:13 -0500
-Message-ID: <nsxzjlp4lxm.fsf@closure.thunk.org>
+	id S1752815AbaBQSug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 13:50:36 -0500
+Message-ID: <53025956.40505@zytor.com>
+Date: Mon, 17 Feb 2014 10:47:50 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@mit.edu
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Thomas Renninger <trenn@suse.de>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Conrad Kostecki <ck@conrad-kostecki.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, devel@acpica.org
+Subject: Re: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
+References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <3121313.GKMnFpiL5h@skinner> <09d1230f-a261-4858-a390-72df138aaa34@email.android.com> <1678556.oPQNyVF84j@skinner>
+In-Reply-To: <1678556.oPQNyVF84j@skinner>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/17/2014 10:23 AM, Thomas Renninger wrote:
+> 
+> Easiest I can think of instead of trying to modify RSDP or similar, is
+> to still pass the tables via unzipped, glued cpio which the kernel
+> can access early. The same way it is done for current ACPI table overriding
+> and early microcode passing.
+> 
 
-I was sitting in the Admiral's Club of Boston Logan airport, having
-connected to the free airport wifi, although I had not yet logged into
-the captive portal, when I received the following BUG.   I've also seen
-this once before when connected to my home network (running the CeroWRT
-stable snapshot, versoin 3.7.5-2), although I wasn't able to get a
-screen shot that time:
+We shouldn't *need* an RSDP and RSDT/XSDT, though, since all they are
+are pointers to the actual tables.  Rather than hacking around it we
+should probably just fix the fundamental problem.
 
-https://plus.google.com/photos/+TheodoreTso/albums/5981437894092747105/5981437896646076466
+	-hpa
 
-The transcribed stack dump is:
-
-icmp6_send
-ip6_expire_frag_queue
-ip6_frag_expire
-call_timer_fn
-run_timer_softirq
-irq_exit
-...
-
-I was running v3.13 and v3.13-rcX previously without seeing this, so I
-suspect this is a regression.
-
-Cheers,
-
-                                                - Ted
