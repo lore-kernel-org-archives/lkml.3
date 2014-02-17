@@ -1,90 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867AbaBQKlE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 05:41:04 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:52602 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997AbaBQKlC (ORCPT
+	id S1751997AbaBQKw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 05:52:29 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:38225 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751254AbaBQKw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 05:41:02 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-48-5301e73b44aa
-Message-id: <1392633657.11078.4.camel@AMDC1943>
-Subject: Re: [PATCH v3 14/15] charger: max14577: Configure battery-dependent
- settings from DTS
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Jenny Tc <jenny.tc@intel.com>
-Date: Mon, 17 Feb 2014 11:40:57 +0100
-In-reply-to: <20140217100735.GA20218@lee--X1>
-References: <1392627950-26927-1-git-send-email-k.kozlowski@samsung.com>
- <1392627950-26927-15-git-send-email-k.kozlowski@samsung.com>
- <20140217100735.GA20218@lee--X1>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t/xK7rWzxmDDbp+illsnLGe1WLqwyds
-	Fte/PGe1mPTkPbPFxJWTmS3Wfu1htzjb9Ibd4v7Xo4wWmx5fY7W4vGsOm8XaI3fZLW43rmCz
-	ON3NarF+xmsWBz6PnbPusntsXqHlsXjPSyaPTas62TzuXNvD5jHvZKDH5iX1Hn1bVjF6fN4k
-	F8AZxWWTkpqTWZZapG+XwJXR9ayVuWANd8WOGdfYGxifcHQxcnJICJhI7OxdyQJhi0lcuLee
-	rYuRi0NIYCmjxImzR9ghnM+MEjtWrgKr4hXQlzi/fRobiC0skCDx5+IvMJtNwFhi8/IlQDYH
-	h4iAisS5N+YgvcwCk1gk3s6dD1bDIqAq0dK+mhXE5hTQlXjc9gJqwUpGiXV96xhBEswC6hKT
-	5i1ihjhJSWJ3eyc7RFxeYvOat8wQRwhK/Jh8j2UCo8AsJC2zkJTNQlK2gJF5FaNoamlyQXFS
-	eq6hXnFibnFpXrpecn7uJkZIPH3Zwbj4mNUhRgEORiUeXoNqxmAh1sSy4srcQ4wSHMxKIrx/
-	HwKFeFMSK6tSi/Lji0pzUosPMTJxcEo1MM5cmazCvqPq5N1Dao1aa+e6aXk0HGO0udKyfesi
-	66c5vLdXsqnEGIQlbjsw0d4moFkkIOTYviPFBmWNXPLzfr5e8TVKS/jp/P35YhunTPwoOdsx
-	x6zhkmTZ0U95RybLlZbMYp2/+MT/Sz3ZjwtXGW/g5+fXmrbloIzc8fAbrfWqK7bcviwwlV2J
-	pTgj0VCLuag4EQCMJqa3hQIAAA==
+	Mon, 17 Feb 2014 05:52:27 -0500
+Date: Mon, 17 Feb 2014 11:52:14 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH 3/3] ARM: at91: dt: sam9rl: Device Tree for the
+ at91sam9rlek
+Message-ID: <20140217104030.GB21303@piout.net>
+References: <1392426860-19589-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1392426860-19589-4-git-send-email-alexandre.belloni@free-electrons.com>
+ <5301E4E1.60408@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5301E4E1.60408@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-17 at 10:07 +0000, Lee Jones wrote:
-> > diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-> > index a8cd7de3526a..fc69d7beb1aa 100644
-> > --- a/include/linux/mfd/max14577-private.h
-> > +++ b/include/linux/mfd/max14577-private.h
-> > @@ -269,6 +269,20 @@ enum maxim_muic_charger_type {
-> >  #define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
-> >  #define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
-> >  
-> > +/* MAX14577 charger End-Of-Charge current limits
-> > + * (as in MAXIM_CHGCTRL5 register), uA
+On 17/02/2014 at 11:30:57 +0100, Nicolas Ferre wrote :
+> On 15/02/2014 02:14, Alexandre Belloni :
+> > Add a device tree for the at91sam9rl-ek. For now it supports:
+> >  - MMC
+> >  - dbgu
+> >  - usart1
+> >  - watchdog
+> >  - nand
+> >  - leds
+> >  - buttons
+> > 
+> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > ---
+> >  arch/arm/boot/dts/Makefile         |   2 +
+> >  arch/arm/boot/dts/at91sam9rlek.dts | 151 +++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 153 insertions(+)
+> >  create mode 100644 arch/arm/boot/dts/at91sam9rlek.dts
+> > 
+> > diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> > index d57c1a65b24f..bb28e65d17ee 100644
+> > --- a/arch/arm/boot/dts/Makefile
+> > +++ b/arch/arm/boot/dts/Makefile
+> > @@ -28,6 +28,8 @@ dtb-$(CONFIG_ARCH_AT91) += at91sam9m10g45ek.dtb
+> >  dtb-$(CONFIG_ARCH_AT91) += pm9g45.dtb
+> >  # sam9n12
+> >  dtb-$(CONFIG_ARCH_AT91) += at91sam9n12ek.dtb
+> > +# sam9rl
+> > +dtb-$(CONFIG_ARCH_AT91) += at91sam9rlek.dtb
+> >  # sam9x5
+> >  dtb-$(CONFIG_ARCH_AT91) += at91-ariag25.dtb
+> >  dtb-$(CONFIG_ARCH_AT91) += at91sam9g15ek.dtb
+> > diff --git a/arch/arm/boot/dts/at91sam9rlek.dts b/arch/arm/boot/dts/at91sam9rlek.dts
+> > new file mode 100644
+> > index 000000000000..5ec9589613a1
+> > --- /dev/null
+> > +++ b/arch/arm/boot/dts/at91sam9rlek.dts
+> > @@ -0,0 +1,151 @@
+> > +/*
+> > + * at91sam9rlek.dts - Device Tree file for Atmel at91sam9rl reference board
+> > + *
+> > + *  Copyright (C) 2014  Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > + *
+> > + * Licensed under GPLv2 only
 > > + */
-> > +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN		50000U
-> > +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP		10000U
-> > +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX		200000U
+> > +/dts-v1/;
+> > +#include "at91sam9rl.dtsi"
 > > +
-> > +/* MAX14577/MAX77836 Battery Constant Voltage
-> > + * (as in MAXIM_CHGCTRL3 register), uV
-> > + */
+> > +/ {
+> > +	model = "Atmel at91sam9rlek";
+> > +	compatible = "atmel,at91sam9rlek", "atmel,at91sam9rl", "atmel,at91sam9";
+> > +
+> > +	chosen {
+> > +		bootargs = "console=ttyS0,115200 rootfstype=ubifs root=ubi0:rootfs ubi.mtd=7 rw";
 > 
-> These are not proper multi-line comments.
+> Isn't it ubi.mtd=5 according to the NAND layer below?
 > 
-> Documentation/CodingSytle:
+
+Sure, I forgot to change it after updating the nand layout.
+
+> > +	};
+> > +
+> > +	memory {
+> > +		reg = <0x20000000 0x4000000>;
+> > +	};
+> > +
+> > +	clocks {
+> > +		#address-cells = <1>;
+> > +		#size-cells = <1>;
+> > +		ranges;
+> > +
+> > +		main_clock: clock@0 {
+> > +			compatible = "atmel,osc", "fixed-clock";
+> > +			clock-frequency = <12000000>;
+> > +		};
+> > +	};
+> > +
+> > +	ahb {
+> > +		apb {
+> > +			mmc0: mmc@fffa4000 {
 > 
->  The preferred style for long (multi-line) comments is:
->  
->          /*
->           * This is the preferred style for multi-line
->           * comments in the Linux kernel source code.
->           * Please use it consistently.
->           *
->           * Description:  A column of asterisks on the left side,
->           * with beginning and ending almost-blank lines.
->           */
+> Use address ascending order, even for the board, please.
+> 
 
-Sure. Sorry for bugging with such trivial mistakes.
+Sure.
 
-Best regards,
-Krzysztof
+> > +				pinctrl-0 = <
+> > +					&pinctrl_board_mmc0
+> > +					&pinctrl_mmc0_clk
+> > +					&pinctrl_mmc0_slot0_cmd_dat0
+> > +					&pinctrl_mmc0_slot0_dat1_3>;
+> > +				status = "okay";
+> > +				slot@0 {
+> > +					reg = <0>;
+> > +					bus-width = <4>;
+> > +					cd-gpios = <&pioA 15 GPIO_ACTIVE_HIGH>;
+> > +				};
+> > +			};
+> > +
+> > +			dbgu: serial@fffff200 {
+> > +				status = "okay";
+> > +			};
+> > +
+> > +			usart0: serial@fffb0000 {
+> > +				pinctrl-0 = <
+> > +					&pinctrl_usart0
+> > +					&pinctrl_usart0_rts
+> > +					&pinctrl_usart0_cts>;
+> > +				status = "okay";
+> > +			};
+> > +
+> > +			pinctrl@fffff400 {
+> > +				mmc0 {
+> > +					pinctrl_board_mmc0: mmc0-board {
+> > +						atmel,pins =
+> > +							<AT91_PIOA 15 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
+> > +					};
+> > +				};
+> > +			};
+> > +
+> > +			watchdog@fffffd40 {
+> > +				status = "okay";
+> > +			};
+> > +		};
+> > +
+> > +		nand0: nand@40000000 {
+> > +			nand-bus-width = <8>;
+> > +			nand-ecc-mode = "soft";
+> > +			nand-on-flash-bbt = <1>;
+> > +			status = "okay";
+> > +
+> > +			at91bootstrap@0 {
+> > +				label = "at91bootstrap";
+> > +				reg = <0x0 0x40000>;
+> > +			};
+> > +
+> > +			bootloader@40000 {
+> > +				label = "bootloader";
+> > +				reg = <0x40000 0x80000>;
+> > +			};
+> > +
+> > +			bootloaderenv@c0000 {
+> > +				label = "bootloader env";
+> > +				reg = <0xc0000 0xc0000>;
+> > +			};
+> > +
+> > +			dtb@180000 {
+> > +				label = "device tree";
+> > +				reg = <0x180000 0x80000>;
+> > +			};
+> > +
+> > +			kernel@200000 {
+> > +				label = "kernel";
+> > +				reg = <0x200000 0x600000>;
+> > +			};
+> > +
+> > +			rootfs@800000 {
+> > +				label = "rootfs";
+> > +				reg = <0x800000 0x0f800000>;
+> > +			};
+> > +		};
+> > +	};
+> > +
+> > +	leds {
+> > +		compatible = "gpio-leds";
+> > +
+> > +		ds1 {
+> > +			label = "ds1";
+> > +			gpios = <&pioD 15 GPIO_ACTIVE_LOW>;
+> > +		};
+> > +
+> > +		ds2 {
+> > +			label = "ds2";
+> > +			gpios = <&pioD 16 GPIO_ACTIVE_LOW>;
+> > +		};
+> > +
+> > +		ds3 {
+> > +			label = "ds3";
+> > +			gpios = <&pioD 14 GPIO_ACTIVE_HIGH>;
+> > +			linux,default-trigger = "heartbeat";
+> > +		};
+> > +	};
+> > +
+> > +	gpio_keys {
+> > +		compatible = "gpio-keys";
+> > +
+> > +		right_click {
+> > +			label = "right_click";
+> > +			gpios = <&pioB 0 GPIO_ACTIVE_LOW>;
+> > +			linux,code = <273>;
+> > +			gpio-key,wakeup;
+> > +		};
+> > +
+> > +		left_click {
+> > +			label = "left_click";
+> > +			gpios = <&pioB 1 GPIO_ACTIVE_LOW>;
+> > +			linux,code = <272>;
+> > +			gpio-key,wakeup;
+> > +		};
+> > +	};
+> > +};
+> > 
+> 
+> Otherwise, seems okay:
+> 
+> when corrected, you can add my:
+> 
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
 
+Will do.
+
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
