@@ -1,215 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011AbaBQSOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:14:50 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:43349 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020AbaBQSOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:14:46 -0500
-X-IronPort-AV: E=Sophos;i="4.95,862,1384272000"; 
-   d="scan'208";a="9545762"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] workqueue: kick worker to die directly in idle timeout handler
-Date: Tue, 18 Feb 2014 00:24:03 +0800
-Message-Id: <1392654243-2829-4-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1392654243-2829-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1392472948-2486-1-git-send-email-laijs@cn.fujitsu.com>
- <1392654243-2829-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/18 00:22:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/18 00:22:15,
-	Serialize complete at 2014/02/18 00:22:15
+	id S1754079AbaBQSPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:15:01 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:54187 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025AbaBQSO5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 13:14:57 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Rob Herring <robherring2@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+In-Reply-To: <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
+Date: Mon, 17 Feb 2014 18:14:51 +0000
+Message-Id: <20140217181451.7EB7FC4044D@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-since original destroy_worker() does not do the full-destruction,
-its main work just deprives the worker-duty from worker-thread and kick
-it to die, so we rename it to kick_worker_to_die().
+On Tue, 11 Feb 2014 07:56:33 -0600, Rob Herring <robherring2@gmail.com> wrote:
+> On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> > From: Philipp Zabel <philipp.zabel@gmail.com>
+> >
+> > This patch moves the parsing helpers used to parse connected graphs
+> > in the device tree, like the video interface bindings documented in
+> > Documentation/devicetree/bindings/media/video-interfaces.txt, from
+> > drivers/media/v4l2-core to drivers/of.
+> 
+> This is the opposite direction things have been moving...
+> 
+> > This allows to reuse the same parser code from outside the V4L2 framework,
+> > most importantly from display drivers. There have been patches that duplicate
+> > the code (and I am going to send one of my own), such as
+> > http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
+> > and others that parse the same binding in a different way:
+> > https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
+> >
+> > I think that all common video interface parsing helpers should be moved to a
+> > single place, outside of the specific subsystems, so that it can be reused
+> > by all drivers.
+> 
+> Perhaps that should be done rather than moving to drivers/of now and
+> then again to somewhere else.
 
-And since kick_worker_to_die() don't need manager_mutex and sleeping,
-so we move maybe_destroy_worker() out from manager and kick worker to die
-directly in idle timeout handler. And we remove %POOL_MANAGE_WORKERS which
-help us remove a branch in worker_thread().
+This is just parsing helpers though, isn't it? I have no problem pulling
+helper functions into drivers/of if they are usable by multiple
+subsystems. I don't really understand the model being used though. I
+would appreciate a description of the usage model for these functions
+for poor folks like me who can't keep track of what is going on in
+subsystems.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   85 ++++++++--------------------------------------------
- 1 files changed, 13 insertions(+), 72 deletions(-)
+g.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 6634326..1a672c5 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -68,7 +68,6 @@ enum {
- 	 * manager_mutex to avoid changing binding state while
- 	 * create_worker() is in progress.
- 	 */
--	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
- 	POOL_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
- 	POOL_FREEZING		= 1 << 3,	/* freeze in progress */
- 
-@@ -756,13 +755,6 @@ static bool need_to_create_worker(struct worker_pool *pool)
- 	return need_more_worker(pool) && !may_start_working(pool);
- }
- 
--/* Do I need to be the manager? */
--static bool need_to_manage_workers(struct worker_pool *pool)
--{
--	return need_to_create_worker(pool) ||
--		(pool->flags & POOL_MANAGE_WORKERS);
--}
--
- /* Do we have too many workers and should some go away? */
- static bool too_many_workers(struct worker_pool *pool)
- {
-@@ -1698,7 +1690,7 @@ static struct worker *alloc_worker(void)
-  *
-  * Create a new worker which is bound to @pool.  The returned worker
-  * can be started by calling start_worker() or destroyed using
-- * destroy_worker().
-+ * kick_worker_to_die().
-  *
-  * CONTEXT:
-  * Might sleep.  Does GFP_KERNEL allocations.
-@@ -1826,19 +1818,19 @@ static int create_and_start_worker(struct worker_pool *pool)
- }
- 
- /**
-- * destroy_worker - destroy a workqueue worker
-- * @worker: worker to be destroyed
-+ * kick_worker_to_die - kick a workqueue worker to die
-+ * @worker: worker to die
-  *
-- * Destroy @worker and adjust @pool stats accordingly.
-+ * Kick @worker to die and adjust @pool stats accordingly.
-+ * The @worker will be dying in the flight.
-  *
-  * CONTEXT:
-- * spin_lock_irq(pool->lock) which is released and regrabbed.
-+ * spin_lock_irq(pool->lock).
-  */
--static void destroy_worker(struct worker *worker)
-+static void kick_worker_to_die(struct worker *worker)
- {
- 	struct worker_pool *pool = worker->pool;
- 
--	lockdep_assert_held(&pool->manager_mutex);
- 	lockdep_assert_held(&pool->lock);
- 
- 	/* sanity check frenzy */
-@@ -1861,8 +1853,7 @@ static void idle_worker_timeout(unsigned long __pool)
- 	struct worker_pool *pool = (void *)__pool;
- 
- 	spin_lock_irq(&pool->lock);
--
--	if (too_many_workers(pool)) {
-+	while (too_many_workers(pool)) {
- 		struct worker *worker;
- 		unsigned long expires;
- 
-@@ -1870,15 +1861,13 @@ static void idle_worker_timeout(unsigned long __pool)
- 		worker = list_entry(pool->idle_list.prev, struct worker, entry);
- 		expires = worker->last_active + IDLE_WORKER_TIMEOUT;
- 
--		if (time_before(jiffies, expires))
-+		if (time_before(jiffies, expires)) {
- 			mod_timer(&pool->idle_timer, expires);
--		else {
--			/* it's been idle for too long, wake up manager */
--			pool->flags |= POOL_MANAGE_WORKERS;
--			wake_up_worker(pool);
-+			break;
- 		}
--	}
- 
-+		kick_worker_to_die(worker);
-+	}
- 	spin_unlock_irq(&pool->lock);
- }
- 
-@@ -1989,44 +1978,6 @@ restart:
- }
- 
- /**
-- * maybe_destroy_worker - destroy workers which have been idle for a while
-- * @pool: pool to destroy workers for
-- *
-- * Destroy @pool workers which have been idle for longer than
-- * IDLE_WORKER_TIMEOUT.
-- *
-- * LOCKING:
-- * spin_lock_irq(pool->lock) which may be released and regrabbed
-- * multiple times.  Called only from manager.
-- *
-- * Return:
-- * %false if no action was taken and pool->lock stayed locked, %true
-- * otherwise.
-- */
--static bool maybe_destroy_workers(struct worker_pool *pool)
--{
--	bool ret = false;
--
--	while (too_many_workers(pool)) {
--		struct worker *worker;
--		unsigned long expires;
--
--		worker = list_entry(pool->idle_list.prev, struct worker, entry);
--		expires = worker->last_active + IDLE_WORKER_TIMEOUT;
--
--		if (time_before(jiffies, expires)) {
--			mod_timer(&pool->idle_timer, expires);
--			break;
--		}
--
--		destroy_worker(worker);
--		ret = true;
--	}
--
--	return ret;
--}
--
--/**
-  * manage_workers - manage worker pool
-  * @worker: self
-  *
-@@ -2089,13 +2040,6 @@ static bool manage_workers(struct worker *worker)
- 		ret = true;
- 	}
- 
--	pool->flags &= ~POOL_MANAGE_WORKERS;
--
--	/*
--	 * Destroy and then create so that may_start_working() is true
--	 * on return.
--	 */
--	ret |= maybe_destroy_workers(pool);
- 	ret |= maybe_create_worker(pool);
- 
- 	mutex_unlock(&pool->manager_mutex);
-@@ -2342,9 +2286,6 @@ recheck:
- 
- 	worker_set_flags(worker, WORKER_PREP, false);
- sleep:
--	if (unlikely(need_to_manage_workers(pool)) && manage_workers(worker))
--		goto recheck;
--
- 	/*
- 	 * pool->lock is held and there's no work to process and no need to
- 	 * manage, sleep.  Workers are woken up only while holding
-@@ -3577,7 +3518,7 @@ static void put_unbound_pool(struct worker_pool *pool)
- 
- 	spin_lock_irq(&pool->lock);
- 	while ((worker = first_worker(pool)))
--		destroy_worker(worker);
-+		kick_worker_to_die(worker);
- 	WARN_ON(pool->nr_workers || pool->nr_idle);
- 	spin_unlock_irq(&pool->lock);
- 
--- 
-1.7.7.6
+> 
+> > I moved v4l2_of_get_next_endpoint, v4l2_of_get_remote_port,
+> > and v4l2_of_get_remote_port_parent. They are renamed to
+> > of_graph_get_next_endpoint, of_graph_get_remote_port, and
+> > of_graph_get_remote_port_parent, respectively.
+> >
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > ---
+> >  drivers/media/Kconfig             |   1 +
+> >  drivers/media/v4l2-core/v4l2-of.c | 117 ---------------------------------
+> >  drivers/of/Kconfig                |   3 +
+> >  drivers/of/Makefile               |   1 +
+> >  drivers/of/of_graph.c             | 133 ++++++++++++++++++++++++++++++++++++++
+> >  include/linux/of_graph.h          |  23 +++++++
+> >  include/media/v4l2-of.h           |  16 ++---
+> >  7 files changed, 167 insertions(+), 127 deletions(-)
+> >  create mode 100644 drivers/of/of_graph.c
+> >  create mode 100644 include/linux/of_graph.h
+> 
+> [snip]
+> 
+> > diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
+> > index 541cea4..404a493 100644
+> > --- a/include/media/v4l2-of.h
+> > +++ b/include/media/v4l2-of.h
+> > @@ -17,6 +17,7 @@
+> >  #include <linux/list.h>
+> >  #include <linux/types.h>
+> >  #include <linux/errno.h>
+> > +#include <linux/of_graph.h>
+> >
+> >  #include <media/v4l2-mediabus.h>
+> >
+> > @@ -72,11 +73,6 @@ struct v4l2_of_endpoint {
+> >  #ifdef CONFIG_OF
+> >  int v4l2_of_parse_endpoint(const struct device_node *node,
+> >                            struct v4l2_of_endpoint *endpoint);
+> > -struct device_node *v4l2_of_get_next_endpoint(const struct device_node *parent,
+> > -                                       struct device_node *previous);
+> > -struct device_node *v4l2_of_get_remote_port_parent(
+> > -                                       const struct device_node *node);
+> > -struct device_node *v4l2_of_get_remote_port(const struct device_node *node);
+> >  #else /* CONFIG_OF */
+> >
+> >  static inline int v4l2_of_parse_endpoint(const struct device_node *node,
+> > @@ -85,25 +81,25 @@ static inline int v4l2_of_parse_endpoint(const struct device_node *node,
+> >         return -ENOSYS;
+> >  }
+> >
+> > +#endif /* CONFIG_OF */
+> > +
+> >  static inline struct device_node *v4l2_of_get_next_endpoint(
+> >                                         const struct device_node *parent,
+> >                                         struct device_node *previous)
+> >  {
+> > -       return NULL;
+> > +       return of_graph_get_next_endpoint(parent, previous);
+> 
+> Won't this break for !OF?
+> 
+> Rob
 
