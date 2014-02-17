@@ -1,135 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaBQWO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:14:29 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44751 "EHLO
+	id S1754164AbaBQWRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:17:05 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:45181 "EHLO
 	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102AbaBQWNW (ORCPT
+	with ESMTP id S1754481AbaBQWO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:13:22 -0500
+	Mon, 17 Feb 2014 17:14:29 -0500
+Date: Mon, 17 Feb 2014 14:14:23 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 41/55] rcutorture: Abstract kvm-recheck.sh
-Date: Mon, 17 Feb 2014 14:12:45 -0800
-Message-Id: <1392675179-11560-41-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140217221231.GA8419@linux.vnet.ibm.com>
- <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+To: Richard Biener <richard.guenther@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Torvald Riegel <triegel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140217221423.GK4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140207180216.GP4250@linux.vnet.ibm.com>
+ <1391992071.18779.99.camel@triegel.csb>
+ <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+ <20140211155941.GU4250@linux.vnet.ibm.com>
+ <1392185194.18779.2239.camel@triegel.csb>
+ <20140212091907.GA3545@laptop.programming.kicks-ass.net>
+ <20140212174209.GA4250@linux.vnet.ibm.com>
+ <20140212181205.GD27965@twins.programming.kicks-ass.net>
+ <20140217181815.GA1934@linux.vnet.ibm.com>
+ <99178341-b6c8-4546-957c-2ea4031b4fe0@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <99178341-b6c8-4546-957c-2ea4031b4fe0@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021722-0928-0000-0000-000006C34F23
+x-cbid: 14021722-0928-0000-0000-000006C3512F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Mon, Feb 17, 2014 at 09:39:54PM +0100, Richard Biener wrote:
+> On February 17, 2014 7:18:15 PM GMT+01:00, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> >On Wed, Feb 12, 2014 at 07:12:05PM +0100, Peter Zijlstra wrote:
+> >> On Wed, Feb 12, 2014 at 09:42:09AM -0800, Paul E. McKenney wrote:
+> >> > You need volatile semantics to force the compiler to ignore any
+> >proofs
+> >> > it might otherwise attempt to construct.  Hence all the
+> >ACCESS_ONCE()
+> >> > calls in my email to Torvald.  (Hopefully I translated your example
+> >> > reasonably.)
+> >> 
+> >> My brain gave out for today; but it did appear to have the right
+> >> structure.
+> >
+> >I can relate.  ;-)
+> >
+> >> I would prefer it C11 would not require the volatile casts. It should
+> >> simply _never_ speculate with atomic writes, volatile or not.
+> >
+> >I agree with not needing volatiles to prevent speculated writes. 
+> >However,
+> >they will sometimes be needed to prevent excessive load/store
+> >combining.
+> >The compiler doesn't have the runtime feedback mechanisms that the
+> >hardware has, and thus will need help from the developer from time
+> >to time.
+> >
+> >Or maybe the Linux kernel simply waits to transition to C11 relaxed
+> >atomics
+> >until the compiler has learned to be sufficiently conservative in its
+> >load-store combining decisions.
+> 
+> Sounds backwards. Currently the compiler does nothing to the atomics. I'm sure we'll eventually add something. But if testing coverage is zero outside then surely things get worse, not better with time.
 
-This commit creates a plug-in to allow kvm-recheck.sh to process
-non-rcutorture console output.
+Perhaps we solve this chicken-and-egg problem by creating a test suite?
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- .../selftests/rcutorture/bin/kvm-recheck-rcu.sh    | 51 ++++++++++++++++++++++
- .../selftests/rcutorture/bin/kvm-recheck.sh        | 20 +--------
- 2 files changed, 52 insertions(+), 19 deletions(-)
- create mode 100755 tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-new file mode 100755
-index 000000000000..d75b1dc5ae53
---- /dev/null
-+++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
-@@ -0,0 +1,51 @@
-+#!/bin/bash
-+#
-+# Analyze a given results directory for rcutorture progress.
-+#
-+# Usage: sh kvm-recheck-rcu.sh resdir
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License as published by
-+# the Free Software Foundation; either version 2 of the License, or
-+# (at your option) any later version.
-+#
-+# This program is distributed in the hope that it will be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, you can access it online at
-+# http://www.gnu.org/licenses/gpl-2.0.html.
-+#
-+# Copyright (C) IBM Corporation, 2014
-+#
-+# Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-+
-+i="$1"
-+if test -d $i
-+then
-+	:
-+else
-+	echo Unreadable results directory: $i
-+	exit 1
-+fi
-+
-+configfile=`echo $i | sed -e 's/^.*\///'`
-+ngps=`grep ver: $i/console.log 2> /dev/null | tail -1 | sed -e 's/^.* ver: //' -e 's/ .*$//'`
-+if test -z "$ngps"
-+then
-+	echo $configfile
-+else
-+	title="$configfile ------- $ngps grace periods"
-+	dur=`sed -e 's/^.* rcutorture.shutdown_secs=//' -e 's/ .*$//' < $i/qemu-cmd 2> /dev/null`
-+	if test -z "$dur"
-+	then
-+		:
-+	else
-+		ngpsps=`awk -v ngps=$ngps -v dur=$dur '
-+			BEGIN { print ngps / dur }' < /dev/null`
-+		title="$title ($ngpsps per second)"
-+	fi
-+	echo $title
-+fi
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-index 89b5dbac5327..31c87063231d 100755
---- a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-@@ -37,25 +37,7 @@ do
- 			resdir=`echo $i | sed -e 's,/$,,' -e 's,/[^/]*$,,'`
- 			head -1 $resdir/log
- 		fi
--		configfile=`echo $i | sed -e 's/^.*\///'`
--		ngps=`grep ver: $i/console.log 2> /dev/null | tail -1 | sed -e 's/^.* ver: //' -e 's/ .*$//'`
--		if test -z "$ngps"
--		then
--			echo $configfile
--		else
--			title="$configfile ------- $ngps grace periods"
--			dur=`sed -e 's/^.* rcutorture.shutdown_secs=//' -e 's/ .*$//' < $i/qemu-cmd 2> /dev/null`
--			if test -z "$dur"
--			then
--				:
--			else
--				ngpsps=$((ngps / dur))
--				ngpsps=`awk -v ngps=$ngps -v dur=$dur '
--					BEGIN { print ngps / dur }' < /dev/null`
--				title="$title ($ngpsps per second)"
--			fi
--			echo $title
--		fi
-+		kvm-recheck-rcu.sh $i
- 		configcheck.sh $i/.config $i/ConfigFragment
- 		parse-build.sh $i/Make.out $configfile
- 		parse-rcutorture.sh $i/console.log $configfile
--- 
-1.8.1.5
+							Thanx, Paul
 
