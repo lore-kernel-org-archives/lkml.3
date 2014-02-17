@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaBQHnC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 02:43:02 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:60924 "EHLO extserv.mm-sol.com"
+	id S1751480AbaBQHxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 02:53:47 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50104 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011AbaBQHnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 02:43:00 -0500
-Message-ID: <1392622898.17130.8.camel@iivanov-dev>
-Subject: Re: [PATCH v2] spi: core: Validate lenght of the transfers in
- message
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Gerhard Sittig <gsi@denx.de>
-Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 17 Feb 2014 09:41:38 +0200
-In-Reply-To: <20140216142512.GR4524@book.gsilab.sittig.org>
-References: <1392444566-23605-1-git-send-email-iivanov@mm-sol.com>
-	 <20140216142512.GR4524@book.gsilab.sittig.org>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1750939AbaBQHxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 02:53:46 -0500
+From: Mugunthan V N <mugunthanvnm@ti.com>
+To: <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <nm@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>
+Subject: [PATCH 1/1] ARM: OMAP: Kill warning in CPUIDLE code with !CONFIG_SMP
+Date: Mon, 17 Feb 2014 13:22:55 +0530
+Message-ID: <1392623575-4884-1-git-send-email-mugunthanvnm@ti.com>
+X-Mailer: git-send-email 1.9.0.rc3.21.g475c52b
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Hi, 
+for non SMP build, NR_CPUS is 1 and hence the code complains with below
+warnings.
 
-On Sun, 2014-02-16 at 15:25 +0100, Gerhard Sittig wrote: 
-> On Sat, Feb 15, 2014 at 08:09 +0200, Ivan T. Ivanov wrote:
-> > 
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > SPI transfer lenght should be a power-of-two multiple
-> > of eight bits.
-> 
-> Please re-check for "lenght" typos in subjects and commit logs
-> (code comments appear to be correct already).
+arch/arm/mach-omap2/cpuidle44xx.c:207:8: warning: array subscript is above array bounds [-Warray-bounds]
+arch/arm/mach-omap2/cpuidle44xx.c:212:11: warning: array subscript is above array bounds [-Warray-bounds]
 
-Thanks, will correct them.
+Kill it by making array size fixed.
 
-> 
-> 
-> The commit message still confuses me.  You don't check that the
-> length of an SPI transfer has a power-of-two length in bytes.
-> 
-> Instead what the check implements is IIUC
-> - pad "odd" bits-per-word settings before the check to full 1/2/4
->   byte length specs (this is the power-of-two thing)
-> - the total length of the SPI transfer cannot be empty (which I'd
->   consider an optimization, not a violation, and may need a
->   separate discussion)
+Acked-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+---
+This patch is created on top of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git master
 
-I am not sure that I understand this one. I will say "the total
-length of the SPI transfer _should not_ be empty". There is no
-check for this currently.
+---
+ arch/arm/mach-omap2/cpuidle44xx.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-> - the total length of the SPI transfer must be such that each
->   "word" must be provided within a full 1/2/4 byte entity, with
->   padding bits if the bits-per-word is "odd"
-> 
-> Is this a misunderstanding on my side?  A terminology thing?  To
-> me, the "SPI transfer" is the total payload and may have any
-> arbitrary length.  What you check for is a constraint on the
-> transfer's length derived from or based on the "word length"
-> ('word' in SPI context).
-> 
-> So the code may be appropriate, yet the description may need an
-> update, to not have the next person ask the same questions again.
-> 
-
-I just forgot to update commit message. Will try to be more
-careful next time.
-
-Regards,
-Ivan
-
-> 
-> virtually yours
-> Gerhard Sittig
-
+diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
+index 4c158c8..01fc710 100644
+--- a/arch/arm/mach-omap2/cpuidle44xx.c
++++ b/arch/arm/mach-omap2/cpuidle44xx.c
+@@ -23,6 +23,8 @@
+ #include "prm.h"
+ #include "clockdomain.h"
+ 
++#define MAX_CPUS	2
++
+ /* Machine specific information */
+ struct idle_statedata {
+ 	u32 cpu_state;
+@@ -48,11 +50,11 @@ static struct idle_statedata omap4_idle_data[] = {
+ 	},
+ };
+ 
+-static struct powerdomain *mpu_pd, *cpu_pd[NR_CPUS];
+-static struct clockdomain *cpu_clkdm[NR_CPUS];
++static struct powerdomain *mpu_pd, *cpu_pd[MAX_CPUS];
++static struct clockdomain *cpu_clkdm[MAX_CPUS];
+ 
+ static atomic_t abort_barrier;
+-static bool cpu_done[NR_CPUS];
++static bool cpu_done[MAX_CPUS];
+ static struct idle_statedata *state_ptr = &omap4_idle_data[0];
+ 
+ /* Private functions */
+-- 
+1.9.0.rc3.21.g475c52b
 
