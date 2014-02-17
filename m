@@ -1,212 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaBQUsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 15:48:11 -0500
-Received: from nm40.bullet.mail.ne1.yahoo.com ([98.138.229.33]:42423 "EHLO
-	nm40.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751100AbaBQUsI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 15:48:08 -0500
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 332526.99317.bm@omp1012.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=xQJcRVRUB4p+g0cG1R25FElAQ9YDANutZVj6CdJUP8dcs2O7h1kAmyMvqz8AGgwk/Jvf6xX2YwOsibG5ZOgAbbMT0sgm3AsYCFvmLkZu2oaTJKCeDUWR1OIrOPTmZGQ3UaNcz70MJ6Ob7e18BuxjM355Ri8+oJLPtnIzyU/eNvw=;
-X-YMail-OSG: wjjcfb4VM1mBCYGir0oQBrbk5F9ZIkjao_AOodM_.FH22WY
- FAVWRVmRIR4vcC8nR8WJtfCi49Wgjuzua61ZuvyP0Tv9unmYjy1geZ3zeWsf
- atqBiJQ.e8p9JCXN4W8oBn.DYzfCpuKbFUgvFTv1noOxen9DSc5fuQIcIZEn
- vuAf0HjhfeApEOHOCYI0nI1a3.vTPcQRf6DR8b48XkjKvhidUkNt_2VbcNUL
- ggfZPBeWhJpctSLjKHf748QXooqp.4YfacLfmFYGtZUBkFqXtbTbLLIXx4OH
- B_JwfhUbM1Tk37BL6OnauB9sCFyBiRRuLU8ksOgJzrZ6M7h6uBWxgWa31qbe
- pZ.mg3XAFyjadZMmlpi5RihONzqvRSaQtgEQWFCzO3ZiHFKDRSVRW4MU0s.H
- pDyXGK_qcyaDek3m8UzL1i6YkIAPcTgg4yNTDAXlQCyOPcQj6a6SMFVY7Evu
- 4h6Kzme9.kxBt7ruMycSbUrSRyAojitm6BYDx8DdYmXpvex0GYnQ3NS8sDOb
- 2pK2zysdRvlbgcWtS_toa1l4IA.vYAyzMJtT_
-X-Rocket-MIMEInfo: 002.001,Pk9uIE1vbmRheSwgRmVicnVhcnkgMTcsIDIwMTQgNzoxNiBBTSwgSWFuIEFiYm90dCA8YWJib3R0aUBtZXYuY28udWs.IHdyb3RlOgoKPj5PbiAyMDE0LTAyLTE2IDA4OjQwLCBDaGFzZSBTb3V0aHdvb2Qgd3JvdGU6Cj4.IFRoaXMgcGF0Y2ggZm9yIGh3ZHJ2X2FwY2kwMzUgcmVtb3ZlcyBzb21lIHVubmVlZGVkIGJyYWNlcywgYW5kIG1vdmVzIHNvbWUKPj4gaW1wcm9wZXJseSBwbGFjZWQgYnJhY2VzIHRvIHRoZSBjb3JyZWN0IHBvc2l0aW9uLCBhcyBmb3VuZCBieSBjaGVja3BhdGNoLgo.PiBJdCBhbHNvIHIBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.177.636
-References: <1392540006-25972-1-git-send-email-chase.southwood@yahoo.com> <53020B92.6060805@mev.co.uk>
-Message-ID: <1392669907.92125.YahooMailNeo@web164001.mail.gq1.yahoo.com>
-Date: Mon, 17 Feb 2014 12:45:07 -0800 (PST)
-From: Chase Southwood <chase.southwood@yahoo.com>
-Reply-To: Chase Southwood <chase.southwood@yahoo.com>
-Subject: Re: [PATCH 1/4] Staging: comedi: addi-data: fix brace-related coding style issues in hwdrv_apci035.c
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <53020B92.6060805@mev.co.uk>
+	id S1752095AbaBQUsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 15:48:55 -0500
+Received: from smtp-3.sys.kth.se ([130.237.48.192]:43451 "EHLO
+	smtp-3.sys.kth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaBQUsx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 15:48:53 -0500
+X-KTH-Auth: tommie [89.100.2.51]
+X-KTH-mail-from: tommie@gannert.se
+Message-ID: <5302750C.6080407@gannert.se>
+Date: Mon, 17 Feb 2014 20:46:04 +0000
+From: Tommie Gannert <tommie@gannert.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Samuel Ortiz <samuel@sortiz.org>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] irtty-sir.c: Do not set_termios() on irtty_close()
+References: <52FC87B6.4070001@gannert.se>
+In-Reply-To: <52FC87B6.4070001@gannert.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Monday, February 17, 2014 7:16 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
+From: Tommie Gannert <tommie@gannert.se>
 
->>On 2014-02-16 08:40, Chase Southwood wrote:
->> This patch for hwdrv_apci035 removes some unneeded braces, and moves some
->> improperly placed braces to the correct position, as found by checkpatch.
->> It also removes a commented out if-statement that I found whilst cleaning
->> braces that is identical to another un-commented if-statement directly
->> above it, so it is just added clutter and so we can delete it to clean up
->> further.
->>
->> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
->> ---
->> So I decided to venture into addi-data today and found that most of the
->> files in there are very messy from a style standpoint.  This is the first
->> (of probably a few) patchsets to try and clean those files up a bit.  I
->> hope that this will be helpful!
->
->Quite a few have been cleaned up extensively by Hartley, but they needed 
->more extensive changes than clean-ups due to them trying to handle 
->things differently to the normal comedi way of doing things.
+Issuing set_termios() from irtty_close() causes kernel Oops for
+unplugged usb-serial devices.
 
-Oh, I see.  Makes perfect sense.  Well like I said, if cleaning them up a bit will help make reworking them any easier or seems like useful work, I'd be happy to continue making them a little easier on the eyes!
+Since no other tty_ldisc calls set_termios() on close and no tty driver
+seem to check if tty->device_data is NULL or not on entry to set_termios(),
+the only solution I can come up with is to remove the irtty_stop_receiver()
+call, which only updates termios.
 
->>
->>   .../comedi/drivers/addi-data/hwdrv_apci035.c       | 49 ++++++++++------------
->>   1 file changed, 22 insertions(+), 27 deletions(-)
->>
->> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
->> index 1128c22..584a1d5 100644
->> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
->> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
->> @@ -177,11 +177,11 @@ static int i_APCI035_ConfigTimerWatchdog(struct comedi_device *dev,
->>       devpriv->tsk_Current = current;
->>       devpriv->b_TimerSelectMode = data[0];
->>       i_WatchdogNbr = data[1];
->> -    if (data[0] == 0) {
->> +    if (data[0] == 0)
->>           ui_Mode = 2;
->> -    } else {
->> +    else
->>           ui_Mode = 0;
->> -    }
->> +
->>   /* ui_Command = inl(devpriv->iobase+((i_WatchdogNbr-1)*32)+12); */
->>       ui_Command = 0;
->>   /* ui_Command = ui_Command & 0xFFFFF9FEUL; */
->> @@ -366,8 +366,7 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
->>               devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 12);
->>       }
->>
->> -    if (data[0] == 0)    /* Stop The Watchdog */
->> -    {
->> +    if (data[0] == 0) {
->>           /* Stop The Watchdog */
->>           ui_Command = 0;
->>   /*
->> @@ -377,15 +376,15 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
->>           outl(ui_Command,
->>               devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 12);
->>       }            /*   if (data[1]==0) */
->> -    if (data[0] == 3)    /* stop all Watchdogs */
->> -    {
->> +    if (data[0] == 3) {
->> +        /* stop all Watchdogs */
->>           ui_Command = 0;
->>           for (i_Count = 1; i_Count <= 4; i_Count++) {
->> -            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
->> +            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
->>                   ui_Command = 0x2UL;
->> -            } else {
->> +            else
->>                   ui_Command = 0x10UL;
->> -            }
->> +
->>               i_WatchdogNbr = i_Count;
->>               outl(ui_Command,
->>                   devpriv->iobase + ((i_WatchdogNbr - 1) * 32) +
->> @@ -393,30 +392,29 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
->>           }
->>
->>       }
->> -    if (data[0] == 4)    /* start all Watchdogs */
->> -    {
->> +    if (data[0] == 4) {
->> +        /* start all Watchdogs */
->>           ui_Command = 0;
->>           for (i_Count = 1; i_Count <= 4; i_Count++) {
->> -            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
->> +            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
->>                   ui_Command = 0x1UL;
->> -            } else {
->> +            else
->>                   ui_Command = 0x8UL;
->> -            }
->> +
->>               i_WatchdogNbr = i_Count;
->>               outl(ui_Command,
->>                   devpriv->iobase + ((i_WatchdogNbr - 1) * 32) +
->>                   0);
->>           }
->>       }
->> -    if (data[0] == 5)    /* trigger all Watchdogs */
->> -    {
->> +    if (data[0] == 5) {
->> +        /* trigger all Watchdogs */
->>           ui_Command = 0;
->>           for (i_Count = 1; i_Count <= 4; i_Count++) {
->> -            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
->> +            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
->>                   ui_Command = 0x4UL;
->> -            } else {
->> +            else
->>                   ui_Command = 0x20UL;
->> -            }
->>
->>               i_WatchdogNbr = i_Count;
->>               outl(ui_Command,
->> @@ -488,11 +486,9 @@ static int i_APCI035_ReadTimerWatchdog(struct comedi_device *dev,
->>       /* Get the overflow status */
->>       /***************************/
->>       data[3] = ((ui_Status >> 0) & 1);
->> -    if (devpriv->b_TimerSelectMode == ADDIDATA_TIMER) {
->> +    if (devpriv->b_TimerSelectMode == ADDIDATA_TIMER)
->>           data[4] = inl(devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 0);
->>
->> -    }            /*   if  (devpriv->b_TimerSelectMode==ADDIDATA_TIMER) */
->> -
->>       return insn->n;
->>   }
->>
->> @@ -655,8 +651,8 @@ static void v_APCI035_Interrupt(int irq, void *d)
->>       ui_StatusRegister2 =
->>           inl(devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 20);
->>
->> -    if ((((ui_StatusRegister1) & 0x8) == 0x8))    /* Test if warning relay interrupt */
->> -    {
->> +    /* Test if warning relay interrupt */
->> +    if ((((ui_StatusRegister1) & 0x8) == 0x8)) {
->>       /**********************************/
->>           /* Disable the temperature warning */
->>       /**********************************/
->> @@ -675,9 +671,8 @@ static void v_APCI035_Interrupt(int irq, void *d)
->>       }            /* if (((ui_StatusRegister1 & 0x8) == 0x8)) */
->>
->>       else {
->> -        if ((ui_StatusRegister2 & 0x1) == 0x1) {
->> +        if ((ui_StatusRegister2 & 0x1) == 0x1)
->>               send_sig(SIGIO, devpriv->tsk_Current, 0);    /*  send signal to the sample */
->> -        }
->>       }            /* else if (((ui_StatusRegister1 & 0x8) == 0x8)) */
->>
->>       return;
->>
->
->Looks good.
->
->Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
->
->-- 
->-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
->-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
->
+Signed-off-by: Tommie Gannert <tommie@gannert.se>
 
-Thanks,
-Chase
+---
+v2: Resend due to mail format issues. More Thunderbird settings applied.
 
+I know very little of this code, and I'm not sure this is a good solution,
+so here's some background:
+
+I have a gadget using IrLAP over RS-232, and it's connected to a
+USB-RS232 converter. I have udev rules to start/stop irattach on USB
+connect/disconnect, but I see an oops if I simply disconnect the device
+while irattach is still running:
+
+Crash log:
+
+[  631.791294] BUG: unable to handle kernel NULL pointer dereference at 0000000000000024
+[  631.791390] IP: [<ffffffffa0c07e42>] ftdi_set_termios+0x42/0x670 [ftdi_sio]
+...
+[  631.793963]  [<ffffffffa0b7fba3>] serial_set_termios+0x43/0x90 [usbserial]
+[  631.794031]  [<ffffffffa0c013ec>] irtty_close+0x10c/0x190 [irtty_sir]
+[  631.794096]  [<ffffffff81356e88>] tty_ldisc_close.isra.1+0x38/0x50
+[  631.794157]  [<ffffffff81356eb8>] tty_ldisc_kill+0x18/0x90
+[  631.794209]  [<ffffffff81357894>] tty_ldisc_release+0x34/0x90
+[  631.794266]  [<ffffffff8134fe00>] tty_release+0x470/0x600
+
+There is a comment in irtty_close() speculating about potential problems
+with usb-serial. I'm not sure if that comment belongs to sirdev_put_instance() or
+the irtty_stop_receiver() call. I would guess both, so I let it be.
+
+The effect of this is that /dev/ttyUSB* is still in use, and thus leaking
+at least dev nodes. This is a minimal patch that solves that oops.
+--- linux-3.12/drivers/net/irda/irtty-sir.c.orig	2014-02-12 21:36:46.132496089 +0000
++++ linux-3.12/drivers/net/irda/irtty-sir.c	2014-02-12 21:57:21.635843884 +0000
+@@ -521,7 +521,6 @@ static void irtty_close(struct tty_struc
+ 	sirdev_put_instance(priv->dev);
+ 
+ 	/* Stop tty */
+-	irtty_stop_receiver(tty, TRUE);
+ 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+ 	if (tty->ops->stop)
+ 		tty->ops->stop(tty);
