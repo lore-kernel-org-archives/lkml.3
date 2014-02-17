@@ -1,280 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaBQV2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:28:11 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38775 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbaBQV1D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:27:03 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 6/6] documentation: Fix some inconsistencies in RTFP.txt
-Date: Mon, 17 Feb 2014 13:26:53 -0800
-Message-Id: <1392672413-5114-6-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021721-1344-0000-0000-000005D57B4A
+	id S1753112AbaBQVbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:31:07 -0500
+Received: from ring0.de ([5.45.105.125]:47168 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330AbaBQVbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 16:31:05 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@debian.org>, Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Subject: [PATCHv2] ARM: OMAP2+: Add support for thumb mode on DT booted N900
+Date: Mon, 17 Feb 2014 22:30:58 +0100
+Message-Id: <1392672658-13866-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391603582-11371-1-git-send-email-sre@debian.org>
+References: <1391603582-11371-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Without enabling the workaround for ARM errata 430973 thumb
+compiled userland crashes randomly on the Nokia N900.
 
-Some of the early history leaves out some citations and vice versa.  This
-commit fixes these up.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
 ---
- Documentation/RCU/RTFP.txt | 149 +++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 125 insertions(+), 24 deletions(-)
+Hi,
 
-diff --git a/Documentation/RCU/RTFP.txt b/Documentation/RCU/RTFP.txt
-index 273e654d7d08..2f0fcb2112d2 100644
---- a/Documentation/RCU/RTFP.txt
-+++ b/Documentation/RCU/RTFP.txt
-@@ -31,6 +31,14 @@ has lapsed, so this approach may be used in non-GPL software, if desired.
- (In contrast, implementation of RCU is permitted only in software licensed
- under either GPL or LGPL.  Sorry!!!)
+This is PATCHv2 for the thumb errata workaround for N900 DT
+boot, which should go into 3.14-rc.
+
+Changes since PATCHv1:
+ * Add Reviewed-By: Pavel Machek
+ * Add more verbose warning about the errata as suggested by Pavel
+
+I did not increase the verbose level, since the next higher verbose
+level is pr_err and the message is not an error.
+
+I think it would make sense to update the Kconfig entry for the errata to
+enable the workaround by default for the Nokia N900. That should be done in
+its own patch, though.
+
+Apart from that it would be nice if errata workaround could be enabled
+via DeviceTree instead of kernel configuration. This will require some
+discussion though, so I think we should start with this patch for now.
+
+-- Sebastian
+---
+ arch/arm/mach-omap2/pdata-quirks.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-omap2/pdata-quirks.c b/arch/arm/mach-omap2/pdata-quirks.c
+index 3d5b24d..0cc710d 100644
+--- a/arch/arm/mach-omap2/pdata-quirks.c
++++ b/arch/arm/mach-omap2/pdata-quirks.c
+@@ -22,6 +22,8 @@
+ #include "common-board-devices.h"
+ #include "dss-common.h"
+ #include "control.h"
++#include "omap-secure.h"
++#include "soc.h"
  
-+In 1987, Rashid et al. described lazy TLB-flush [RichardRashid87a].
-+At first glance, this has nothing to do with RCU, but nevertheless
-+this paper helped inspire the update-side batching used in the later
-+RCU implementation in DYNIX/ptx.  In 1988, Barbara Liskov published
-+a description of Argus that noted that use of out-of-date values can
-+be tolerated in some situations.  Thus, this paper provides some early
-+theoretical justification for use of stale data.
+ struct pdata_init {
+ 	const char *compatible;
+@@ -169,6 +171,22 @@ static void __init am3517_evm_legacy_init(void)
+ 	omap_ctrl_writel(v, AM35XX_CONTROL_IP_SW_RESET);
+ 	omap_ctrl_readl(AM35XX_CONTROL_IP_SW_RESET); /* OCP barrier */
+ }
 +
- In 1990, Pugh [Pugh90] noted that explicitly tracking which threads
- were reading a given data structure permitted deferred free to operate
- in the presence of non-terminating threads.  However, this explicit
-@@ -41,11 +49,11 @@ providing a fine-grained locking design, however, it would be interesting
- to see how much of the performance advantage reported in 1990 remains
- today.
- 
--At about this same time, Adams [Adams91] described ``chaotic relaxation'',
--where the normal barriers between successive iterations of convergent
--numerical algorithms are relaxed, so that iteration $n$ might use
--data from iteration $n-1$ or even $n-2$.  This introduces error,
--which typically slows convergence and thus increases the number of
-+At about this same time, Andrews [Andrews91textbook] described ``chaotic
-+relaxation'', where the normal barriers between successive iterations
-+of convergent numerical algorithms are relaxed, so that iteration $n$
-+might use data from iteration $n-1$ or even $n-2$.  This introduces
-+error, which typically slows convergence and thus increases the number of
- iterations required.  However, this increase is sometimes more than made
- up for by a reduction in the number of expensive barrier operations,
- which are otherwise required to synchronize the threads at the end
-@@ -55,7 +63,8 @@ is thus inapplicable to most data structures in operating-system kernels.
- 
- In 1992, Henry (now Alexia) Massalin completed a dissertation advising
- parallel programmers to defer processing when feasible to simplify
--synchronization.  RCU makes extremely heavy use of this advice.
-+synchronization [HMassalinPhD].  RCU makes extremely heavy use of
-+this advice.
- 
- In 1993, Jacobson [Jacobson93] verbally described what is perhaps the
- simplest deferred-free technique: simply waiting a fixed amount of time
-@@ -90,27 +99,29 @@ mechanism, which is quite similar to RCU [Gamsa99].  These operating
- systems made pervasive use of RCU in place of "existence locks", which
- greatly simplifies locking hierarchies and helps avoid deadlocks.
- 
--2001 saw the first RCU presentation involving Linux [McKenney01a]
--at OLS.  The resulting abundance of RCU patches was presented the
--following year [McKenney02a], and use of RCU in dcache was first
--described that same year [Linder02a].
-+The year 2000 saw an email exchange that would likely have
-+led to yet another independent invention of something like RCU
-+[RustyRussell2000a,RustyRussell2000b].  Instead, 2001 saw the first
-+RCU presentation involving Linux [McKenney01a] at OLS.  The resulting
-+abundance of RCU patches was presented the following year [McKenney02a],
-+and use of RCU in dcache was first described that same year [Linder02a].
- 
- Also in 2002, Michael [Michael02b,Michael02a] presented "hazard-pointer"
- techniques that defer the destruction of data structures to simplify
- non-blocking synchronization (wait-free synchronization, lock-free
- synchronization, and obstruction-free synchronization are all examples of
--non-blocking synchronization).  In particular, this technique eliminates
--locking, reduces contention, reduces memory latency for readers, and
--parallelizes pipeline stalls and memory latency for writers.  However,
--these techniques still impose significant read-side overhead in the
--form of memory barriers.  Researchers at Sun worked along similar lines
--in the same timeframe [HerlihyLM02].  These techniques can be thought
--of as inside-out reference counts, where the count is represented by the
--number of hazard pointers referencing a given data structure rather than
--the more conventional counter field within the data structure itself.
--The key advantage of inside-out reference counts is that they can be
--stored in immortal variables, thus allowing races between access and
--deletion to be avoided.
-+non-blocking synchronization).  The corresponding journal article appeared
-+in 2004 [MagedMichael04a].  This technique eliminates locking, reduces
-+contention, reduces memory latency for readers, and parallelizes pipeline
-+stalls and memory latency for writers.  However, these techniques still
-+impose significant read-side overhead in the form of memory barriers.
-+Researchers at Sun worked along similar lines in the same timeframe
-+[HerlihyLM02].  These techniques can be thought of as inside-out reference
-+counts, where the count is represented by the number of hazard pointers
-+referencing a given data structure rather than the more conventional
-+counter field within the data structure itself.  The key advantage
-+of inside-out reference counts is that they can be stored in immortal
-+variables, thus allowing races between access and deletion to be avoided.
- 
- By the same token, RCU can be thought of as a "bulk reference count",
- where some form of reference counter covers all reference by a given CPU
-@@ -123,8 +134,10 @@ can be thought of in other terms as well.
- 
- In 2003, the K42 group described how RCU could be used to create
- hot-pluggable implementations of operating-system functions [Appavoo03a].
--Later that year saw a paper describing an RCU implementation of System
--V IPC [Arcangeli03], and an introduction to RCU in Linux Journal
-+Later that year saw a paper describing an RCU implementation
-+of System V IPC [Arcangeli03] (following up on a suggestion by
-+Hugh Dickins [Dickins02a] and an implementation by Mingming Cao
-+[MingmingCao2002IPCRCU]), and an introduction to RCU in Linux Journal
- [McKenney03a].
- 
- 2004 has seen a Linux-Journal article on use of RCU in dcache
-@@ -383,6 +396,21 @@ for Programming Languages and Operating Systems}"
- }
- }
- 
-+@phdthesis{HMassalinPhD
-+,author="H. Massalin"
-+,title="Synthesis: An Efficient Implementation of Fundamental Operating
-+System Services"
-+,school="Columbia University"
-+,address="New York, NY"
-+,year="1992"
-+,annotation={
-+	Mondo optimizing compiler.
-+	Wait-free stuff.
-+	Good advice: defer work to avoid synchronization.  See page 90
-+		(PDF page 106), Section 5.4, fourth bullet point.
-+}
-+}
++static void __init nokia_n900_legacy_init(void)
++{
++	hsmmc2_internal_input_clk();
 +
- @unpublished{Jacobson93
- ,author="Van Jacobson"
- ,title="Avoid Read-Side Locking Via Delayed Free"
-@@ -671,6 +699,20 @@ Orran Krieger and Rusty Russell and Dipankar Sarma and Maneesh Soni"
- [Viewed October 18, 2004]"
- }
++	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
++		if (IS_ENABLED(CONFIG_ARM_ERRATA_430973)) {
++			pr_info("RX-51: Enabling ARM errata 430973 workaround\n");
++			/* set IBE to 1 */
++			rx51_secure_update_aux_cr(BIT(6), 0);
++		} else {
++			pr_warning("RX-51: Not enabling ARM errata 430973 workaround\n");
++			pr_warning("Thumb binaries may crash randomly without this workaround\n");
++		}
++	}
++}
+ #endif /* CONFIG_ARCH_OMAP3 */
  
-+@conference{Michael02b
-+,author="Maged M. Michael"
-+,title="High Performance Dynamic Lock-Free Hash Tables and List-Based Sets"
-+,Year="2002"
-+,Month="August"
-+,booktitle="{Proceedings of the 14\textsuperscript{th} Annual ACM
-+Symposium on Parallel
-+Algorithms and Architecture}"
-+,pages="73-82"
-+,annotation={
-+Like the title says...
-+}
-+}
-+
- @Conference{Linder02a
- ,Author="Hanna Linder and Dipankar Sarma and Maneesh Soni"
- ,Title="Scalability of the Directory Entry Cache"
-@@ -727,6 +769,24 @@ Andrea Arcangeli and Andi Kleen and Orran Krieger and Rusty Russell"
- }
- }
- 
-+@conference{Michael02a
-+,author="Maged M. Michael"
-+,title="Safe Memory Reclamation for Dynamic Lock-Free Objects Using Atomic
-+Reads and Writes"
-+,Year="2002"
-+,Month="August"
-+,booktitle="{Proceedings of the 21\textsuperscript{st} Annual ACM
-+Symposium on Principles of Distributed Computing}"
-+,pages="21-30"
-+,annotation={
-+	Each thread keeps an array of pointers to items that it is
-+	currently referencing.	Sort of an inside-out garbage collection
-+	mechanism, but one that requires the accessing code to explicitly
-+	state its needs.  Also requires read-side memory barriers on
-+	most architectures.
-+}
-+}
-+
- @unpublished{Dickins02a
- ,author="Hugh Dickins"
- ,title="Use RCU for System-V IPC"
-@@ -735,6 +795,17 @@ Andrea Arcangeli and Andi Kleen and Orran Krieger and Rusty Russell"
- ,note="private communication"
- }
- 
-+@InProceedings{HerlihyLM02
-+,author={Maurice Herlihy and Victor Luchangco and Mark Moir}
-+,title="The Repeat Offender Problem: A Mechanism for Supporting Dynamic-Sized,
-+Lock-Free Data Structures"
-+,booktitle={Proceedings of 16\textsuperscript{th} International
-+Symposium on Distributed Computing}
-+,year=2002
-+,month="October"
-+,pages="339-353"
-+}
-+
- @unpublished{Sarma02b
- ,Author="Dipankar Sarma"
- ,Title="Some dcache\_rcu benchmark numbers"
-@@ -749,6 +820,19 @@ Andrea Arcangeli and Andi Kleen and Orran Krieger and Rusty Russell"
- }
- }
- 
-+@unpublished{MingmingCao2002IPCRCU
-+,Author="Mingming Cao"
-+,Title="[PATCH]updated ipc lock patch"
-+,month="October"
-+,year="2002"
-+,note="Available:
-+\url{https://lkml.org/lkml/2002/10/24/262}
-+[Viewed February 15, 2014]"
-+,annotation={
-+	Mingming Cao's patch to introduce RCU to SysV IPC.
-+}
-+}
-+
- @unpublished{LinusTorvalds2003a
- ,Author="Linus Torvalds"
- ,Title="Re: {[PATCH]} small fixes in brlock.h"
-@@ -982,6 +1066,23 @@ Realtime Applications"
- }
- }
- 
-+@article{MagedMichael04a
-+,author="Maged M. Michael"
-+,title="Hazard Pointers: Safe Memory Reclamation for Lock-Free Objects"
-+,Year="2004"
-+,Month="June"
-+,journal="IEEE Transactions on Parallel and Distributed Systems"
-+,volume="15"
-+,number="6"
-+,pages="491-504"
-+,url="Available:
-+\url{http://www.research.ibm.com/people/m/michael/ieeetpds-2004.pdf}
-+[Viewed March 1, 2005]"
-+,annotation={
-+	New canonical hazard-pointer citation.
-+}
-+}
-+
- @phdthesis{PaulEdwardMcKenneyPhD
- ,author="Paul E. McKenney"
- ,title="Exploiting Deferred Destruction:
+ #ifdef CONFIG_ARCH_OMAP4
+@@ -259,7 +277,7 @@ struct of_dev_auxdata omap_auxdata_lookup[] __initdata = {
+ static struct pdata_init pdata_quirks[] __initdata = {
+ #ifdef CONFIG_ARCH_OMAP3
+ 	{ "compulab,omap3-sbc-t3730", omap3_sbc_t3730_legacy_init, },
+-	{ "nokia,omap3-n900", hsmmc2_internal_input_clk, },
++	{ "nokia,omap3-n900", nokia_n900_legacy_init, },
+ 	{ "nokia,omap3-n9", hsmmc2_internal_input_clk, },
+ 	{ "nokia,omap3-n950", hsmmc2_internal_input_clk, },
+ 	{ "isee,omap3-igep0020", omap3_igep0020_legacy_init, },
 -- 
-1.8.1.5
+1.8.5.3
 
