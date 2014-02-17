@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbaBQEGy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 23:06:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53059 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105AbaBQEGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 23:06:52 -0500
-Message-ID: <53018ABA.20005@zytor.com>
-Date: Sun, 16 Feb 2014 20:06:18 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751149AbaBQEin (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 23:38:43 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:37104 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaBQEil (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 23:38:41 -0500
+Date: Sun, 16 Feb 2014 20:38:37 -0800
+From: John de la Garza <john@jjdev.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arm: removed compiler warning
+Message-ID: <20140217043834.GA7563@vega.jjdev.com>
 MIME-Version: 1.0
-To: mingo@kernel.org, linux-kernel@vger.kernel.org, stefani@seibold.net,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/vdso] x86, vdso: Instead of dummy functions, include
- < linux/spinlock_up.h>
-References: <1392587568-7325-10-git-send-email-stefani@seibold.net> <tip-bd9ee7fd99f127ee1306289415141d45792c97f3@git.kernel.org>
-In-Reply-To: <tip-bd9ee7fd99f127ee1306289415141d45792c97f3@git.kernel.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2014 07:51 PM, tip-bot for H. Peter Anvin wrote:
-> Commit-ID:  bd9ee7fd99f127ee1306289415141d45792c97f3
-> Gitweb:     http://git.kernel.org/tip/bd9ee7fd99f127ee1306289415141d45792c97f3
-> Author:     H. Peter Anvin <hpa@linux.intel.com>
-> AuthorDate: Sun, 16 Feb 2014 19:47:01 -0800
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Sun, 16 Feb 2014 19:47:01 -0800
-> 
-> x86, vdso: Instead of dummy functions, include <linux/spinlock_up.h>
-> 
-> The list of dummy functions is insufficient.  However, instead of
-> having a full list of dummy functions we can include
-> <linux/spinlock_up.h> which contains the (trivial) implementations
-> that we use on uniprocessor.
-> 
-> There aren't supposed to be any spinlocks at all in the VDSO, of
-> course.
-> 
+Removed this compiler warning for arch/arm/boot/compressed/atags_to_fdt.c.
+The warning was: 'memsize' may be used uninitialized in this function.
 
-That didn't work either.  I thought I was clever, but it didn't work at
-all.  Multiple build failures across numerous configurations.  This is
-turning into a total headache.
+Signed-off-by: John de la Garza <john@jjdev.com>
+---
+ arch/arm/boot/compressed/atags_to_fdt.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-The "right" way to fix this is presumably to refactor a bunch of header
-files so that the vdso code doesn't have to include a bunch of kernel
-internal headers, but that is a lot of work.
-
-	-hpa
-
+diff --git a/arch/arm/boot/compressed/atags_to_fdt.c b/arch/arm/boot/compressed/atags_to_fdt.c
+index d1153c8..75b64da 100644
+--- a/arch/arm/boot/compressed/atags_to_fdt.c
++++ b/arch/arm/boot/compressed/atags_to_fdt.c
+@@ -110,7 +110,8 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
+ 	 * address and size for each bank */
+ 	uint32_t mem_reg_property[2 * 2 * NR_BANKS];
+ 	int memcount = 0;
+-	int ret, memsize;
++	int memsize = 0;
++	int ret;
+ 
+ 	/* make sure we've got an aligned pointer */
+ 	if ((u32)atag_list & 0x3)
+-- 
+1.7.10.4
 
