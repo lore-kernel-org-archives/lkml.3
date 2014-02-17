@@ -1,306 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaBQWK2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:10:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137AbaBQWK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 17:10:26 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <CA+55aFw5v8Zc818YoxazFhP0btN1faofNbED=qrpi3VrtRA39w@mail.gmail.com>
-References: <20140207180216.GP4250@linux.vnet.ibm.com>
-	 <1391992071.18779.99.camel@triegel.csb>
-	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	 <1392183564.18779.2187.camel@triegel.csb>
-	 <20140212180739.GB4250@linux.vnet.ibm.com>
-	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	 <20140213002355.GI4250@linux.vnet.ibm.com>
-	 <1392321837.18779.3249.camel@triegel.csb>
-	 <20140214020144.GO4250@linux.vnet.ibm.com>
-	 <1392352981.18779.3800.camel@triegel.csb>
-	 <20140214172920.GQ4250@linux.vnet.ibm.com>
-	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	 <1392485428.18779.6387.camel@triegel.csb>
-	 <CA+55aFw5v8Zc818YoxazFhP0btN1faofNbED=qrpi3VrtRA39w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Feb 2014 23:09:46 +0100
-Message-ID: <1392674986.18779.7038.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753136AbaBQWMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:12:40 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41464 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330AbaBQWMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 17:12:38 -0500
+Date: Mon, 17 Feb 2014 14:12:31 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/55] Torture-test changes for 3.15
+Message-ID: <20140217221231.GA8419@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021722-1542-0000-0000-00000652D87E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-15 at 11:15 -0800, Linus Torvalds wrote:
-> On Sat, Feb 15, 2014 at 9:30 AM, Torvald Riegel <triegel@redhat.com> wrote:
-> >
-> > I think the example is easy to misunderstand, because the context isn't
-> > clear.  Therefore, let me first try to clarify the background.
-> >
-> > (1) The abstract machine does not write speculatively.
-> > (2) Emitting a branch instruction and executing a branch at runtime is
-> > not part of the specified behavior of the abstract machine.  Of course,
-> > the abstract machine performs conditional execution, but that just
-> > specifies the output / side effects that it must produce (e.g., volatile
-> > stores) -- not with which hardware instructions it is producing this.
-> > (3) A compiled program must produce the same output as if executed by
-> > the abstract machine.
-> 
-> Ok, I'm fine with that.
-> 
-> > Thus, we need to be careful what "speculative store" is meant to refer
-> > to.  A few examples:
-> >
-> > if (atomic_load(&x, mo_relaxed) == 1)
-> >   atomic_store(&y, 3, mo_relaxed));
-> 
-> No, please don't use this idiotic example. It is wrong.
+Hello!
 
-It won't be useful in practice in a lot of cases, but that doesn't mean
-it's wrong.  It's clearly not illegal code.  It also serves a purpose: a
-simple example to reason about a few aspects of the memory model.
+This series contains rcutorture changes, including adding a simple
+locktorture.  Creating this locktorture while sharing the rcutorture
+infrastructure was the main point of this patch, but this effort
+uncovered a number of shortcomings in rcutorture, which this series
+also fixes.
 
-> The fact is, if a compiler generates anything but the obvious sequence
-> (read/cmp/branch/store - where branch/store might obviously be done
-> with some other machine conditional like a predicate), the compiler is
-> wrong.
+1-6.	Usability improvements in rcutorture scripting.
 
-Why?  I've reasoned why (1) to (3) above allow in certain cases (i.e.,
-the first load always returning 1) for the branch (or other machine
-conditional) to not be emitted.  So please either poke holes into this
-reasoning, or clarify that you don't in fact, contrary to what you wrote
-above, agree with (1) to (3).
+7-13.	Enable concurrent rcutorture runs on systems with sufficient
+	numbers of CPUs.
 
-> Anybody who argues anything else is wrong, or confused, or confusing.
+14.	Print the results directory at the end of the test.
 
-I appreciate your opinion, and maybe I'm just one of the three things
-above (my vote is on "confusing").  But without you saying why doesn't
-help me see what's the misunderstanding here.
+15,17-25,27-28,30,32,37-41,46-48.
+	Abstract facilities from rcutorture module and scripting for later
+	use by locktorture.
 
-> Instead, argue about *other* sequences where the compiler can do something.
+16.	Don't create a results directory for dryruns.
 
-I'd prefer if we could clarify the misunderstanding for the simple case
-first that doesn't involve stronger ordering requirements in the form of
-non-relaxed MOs.
+26.	Print date and time of each phase of torturing.
 
-> For example, this sequence:
-> 
->    atomic_store(&x, a, mo_relaxed);
->    b = atomic_load(&x, mo_relaxed);
-> 
-> can validly be transformed to
-> 
->    atomic_store(&x, a, mo_relaxed);
->    b = (typeof(x)) a;
-> 
-> and I think everybody agrees about that. In fact, that optimization
-> can be done even for mo_strict.
+29.	Issue a diagnostic if something does a system shutdown while
+	rcutorture is running.
 
-Yes.
+31.	Apply ACCESS_ONCE() to racy fullstop accesses.
 
-> But even that "obvious" optimization has subtle cases. What if the
-> store is relaxed, but the load is strict? You can't do the
-> optimization without a lot of though, because dropping the strict load
-> would drop an ordering point. So even the "store followed by exact
-> same load" case has subtle issues.
+33.	Clean up rcu_torture_init() error handling.
 
-Yes if a compiler wants to optimize that, it has to give it more
-thought.  My gut feeling is that either the store should get the
-stronger ordering, or the accesses should be merged.  But I'd have to
-think more about that one (which I can do on request).
+34.	Announce kthread creation.
 
-> With similar caveats, it is perfectly valid to merge two consecutive
-> loads, and to merge two consecutive stores.
-> 
-> Now that means that the sequence
-> 
->     atomic_store(&x, 1, mo_relaxed);
->     if (atomic_load(&x, mo_relaxed) == 1)
->         atomic_store(&y, 3, mo_relaxed);
-> 
-> can first be optimized to
-> 
->     atomic_store(&x, 1, mo_relaxed);
->     if (1 == 1)
->         atomic_store(&y, 3, mo_relaxed);
-> 
-> and then you get the end result that you wanted in the first place
-> (including the ability to re-order the two stores due to the relaxed
-> ordering, assuming they can be proven to not alias - and please don't
-> use the idiotic type-based aliasing rules).
-> 
-> Bringing up your first example is pure and utter confusion.
+35.	Clean up a number of rcutorture shutdown races, unifying the
+	required shutdown actions into a new torture_kthread_stopping()
+	function.
 
-Sorry if it was confusing.  But then maybe we need to talk about it
-more, because it shouldn't be confusing if we agree on what the memory
-model allows and what not.  I had originally picked the example because
-it was related to the example Paul/Peter brought up.
+36.	Add a missing return statement in rcu_torture_barrier_init().
 
-> Don't do
-> it. Instead, show what are obvious and valid transformations, and then
-> you can bring up these kinds of combinations as "look, this is
-> obviously also correct".
+42.	Create a minimal locktorture module.
 
-I have my doubts whether the best way to reason about the memory model
-is by thinking about specific compiler transformations.  YMMV,
-obviously.
+43-44.	Add an on-purpose buggy RCU implementation to rcutorture to help
+	test the tests.
 
-The -- kind of vague -- reason is that the allowed transformations will
-be more complicated to reason about than the allowed output of a
-concurrent program when understanding the memory model (ie, ordering and
-interleaving of memory accesses, etc.).  However, I can see that when
-trying to optimize with a hardware memory model in mind, this might look
-appealing.
+45.	Create a file for Kconfig parameters that are commmon across all
+	rcutorture tests.
 
-What the compiler will do is exploiting knowledge about all possible
-executions.  For example, if it knows that x is always 1, it will do the
-transform.  The user would need to consider that case anyway, but he/she
-can do without thinking about all potentially allowed compiler
-optimizations.
+49.	Add beginning set of config files for locktorture.
 
-> Now, the reason I want to make it clear that the code example you
-> point to is a crap example is that because it doesn't talk about the
-> *real* issue, it also misses a lot of really important details.
-> 
-> For example, when you say "if the compiler can prove that the
-> conditional is always true" then YOU ARE TOTALLY WRONG.
+50.	Avoid SEGV when cleanup-hooks function pointer is NULL.
 
-What are you trying to say?  That a compiler can't prove that this is
-the case in any program?  Or that it won't be likely it can?  Or what
-else?
+51.	Add locktorture plugin for kvm_recheck.sh.
 
-> So why do I say you are wrong, after I just gave you an example of how
-> it happens? Because my example went back to the *real* issue, and
-> there are actual real semantically meaningful details with doing
-> things like load merging.
-> 
-> To give an example, let's rewrite things a bit more to use an extra variable:
-> 
->     atomic_store(&x, 1, mo_relaxed);
->     a = atomic_load(&1, mo_relaxed);
->     if (a == 1)
->         atomic_store(&y, 3, mo_relaxed);
-> 
-> which looks exactly the same.
+52.	Rename TREE_RCU-Kconfig.txt to avoid confusing scripts that
+	look for Kconfig files, courtesy of Paul Bolle.
 
-I'm confused.  Is this a new example?
+53.	Retain output from kvm-test-1-run.sh script.
 
-Or is it supposed to be a compiler's rewrite of the following?
+54.	Add an on-purpose buggy lock implementation to locktorture to
+	help test the tests.
 
-    atomic_store(&x, 1, mo_relaxed);
-    if (atomic_load(&x, mo_relaxed) == 1)
-       atomic_store(&y, 3, mo_relaxed);
+55.	Save kvm.sh progress messages to log so that they can be used
+	for later timing analysis.
 
-If that's supposed to be the case this is the same.
+							Thanx, Paul
 
-If it is supposed to be a rewrite of the original example with *just*
-two stores, this is obviously an incorrect transformation (unless it can
-be proven that no other thread writes to x).  The compiler can't make
-stuff conditional that wasn't conditional before.  That would change the
-allowed behavior of the abstract machine.
+------------------------------------------------------------------------
 
-> If you now say "if you can prove the
-> conditional is always true, you can make the store unconditional", YOU
-> ARE WRONG.
-> 
-> Why?
-> 
-> This sequence:
-> 
->     atomic_store(&x, 1, mo_relaxed);
->     a = atomic_load(&x, mo_relaxed);
->     atomic_store(&y, 3, mo_relaxed);
-> 
-> is actually - and very seriously - buggy.
-> 
-> Why? Because you have effectively split the atomic_load into two loads
-> - one for the value of 'a', and one for your 'proof' that the store is
-> unconditional.
-
-I can't follow that, because it isn't clear to me which code sequences
-are meant to belong together, and which transformations the compiler is
-supposed to make.  If you would clarify that, then I can reply to this
-part.
-
-> Maybe you go "Nobody sane would do that", and you'd be right. But
-> compilers aren't "sane" (and compiler _writers_ I have some serious
-> doubts about), and how you describe the problem really does affect the
-> solution.
-
-To me, that sounds like a strong argument for a strong and precise
-specification, and formal methods.  If we have that, stuff can be
-resolved without having to rely on "sane" people, as long as they can
-follow logic.  Because this removes the problem from "hopefully all of
-us want the same" (which is sometimes called "sane", from both sides of
-a disagreement) to "just stick to the specification".
-
-> My description ("you can combine two subsequent atomic accesses, if
-> you are careful about still having the same ordering points") doesn't
-> have the confusion.
-
-I'd much rather take the memory model's specification.  One example is
-that it separates safety/correctness guarantees from liveness/progress
-guarantees.  "the same ordering points" can be understood as not being
-able to merge subsequent loads to the same memory location.  Both
-progress guarantees and correctness guarantees can affect this, but they
-have different consequences.  For example, if it may be perfectly fine
-to assume that two subsequent loads to the same memory location may
-always execute atomically (and thus join them), you don't want to do
-this to all such loads in a spin-wait loop (or you'll likely prevent
-forward progress).
-
-In the end, we need to define "are careful about" and similar clauses.
-Eventually, after defining everything, we'll end up with a memory model
-that is specified in as much detail as C11's is.
-
-> It makes it clear that no, you can't speculate
-> writes, but yes, obviously you can combine certain things (think
-> "write buffers" and "memory caches"), and that may make you able to
-> remove the conditional. Which is very different from speculating
-> writes.
-
-It's equally fine to reason about executions and allowed interleavings
-on the level of the source program (ie, the memory model and abstract
-machine).  For example, combining certain things is essentially assuming
-the atomic execution of those things; it will be clear from the program,
-without thinking write buffers and caches, whether that's possible or
-not in the source program.  If it is, the compiler can do it too.  The
-compiler must not loose anything (eg, memory orders) when doing that; if
-it wants to remove memory orders, it must show that this doesn't result
-in executions not possible before.  Also, it must not prevent executions
-that ensure forward progress (e.g., a spin-wait loop should better not
-be atomic wrt. everything else, or you'll block forever).
-
-> But my description also makes it clear that the transformation above
-> was buggy, but that rewriting it as
-> 
->     a = 1;
->     atomic_store(&y, 3, mo_relaxed);
->     atomic_store(&x, a, mo_relaxed);
-> 
-> is fine (doing the re-ordering here just to make a point).
-
-Oh, so you were assuming that a is actually used afterwards?
-
-> So I suspect we actually agree, I just think that the "example" that
-> has been floating around, and the explanation for it, has been
-> actively bad and misleading.
-
-I do hope we agree.  I'm still confused why you think the branch needs
-to be emitted in the first example I brought up, but other than that, we
-seem to be on the same page.  I'm hopeful we can clarify the other
-points if we keep talking about different examples.
-
+ a/kernel/rcu/torture.c                                                          | 2148 ------
+ a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh                      |  203 
+ a/tools/testing/selftests/rcutorture/configs/BUSTED                             |    7 
+ a/tools/testing/selftests/rcutorture/configs/BUSTED.boot                        |    1 
+ a/tools/testing/selftests/rcutorture/configs/CFLIST                             |   13 
+ a/tools/testing/selftests/rcutorture/configs/CFcommon                           |    2 
+ a/tools/testing/selftests/rcutorture/configs/SRCU-N                             |    7 
+ a/tools/testing/selftests/rcutorture/configs/SRCU-N.boot                        |    1 
+ a/tools/testing/selftests/rcutorture/configs/SRCU-P                             |    7 
+ a/tools/testing/selftests/rcutorture/configs/SRCU-P.boot                        |    1 
+ a/tools/testing/selftests/rcutorture/configs/TINY01                             |   12 
+ a/tools/testing/selftests/rcutorture/configs/TINY02                             |   12 
+ a/tools/testing/selftests/rcutorture/configs/TREE01                             |   22 
+ a/tools/testing/selftests/rcutorture/configs/TREE01.boot                        |    1 
+ a/tools/testing/selftests/rcutorture/configs/TREE02                             |   25 
+ a/tools/testing/selftests/rcutorture/configs/TREE03                             |   22 
+ a/tools/testing/selftests/rcutorture/configs/TREE04                             |   24 
+ a/tools/testing/selftests/rcutorture/configs/TREE04.boot                        |    1 
+ a/tools/testing/selftests/rcutorture/configs/TREE05                             |   24 
+ a/tools/testing/selftests/rcutorture/configs/TREE05.boot                        |    1 
+ a/tools/testing/selftests/rcutorture/configs/TREE06                             |   25 
+ a/tools/testing/selftests/rcutorture/configs/TREE07                             |   23 
+ a/tools/testing/selftests/rcutorture/configs/TREE08                             |   25 
+ a/tools/testing/selftests/rcutorture/configs/TREE08-T                           |   25 
+ a/tools/testing/selftests/rcutorture/configs/TREE09                             |   20 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/CFLIST                        |   14 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/N1-S-T-NH-SD-SMP-HP           |   18 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/N2-2-t-nh-sd-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/N3-3-T-nh-SD-SMP-hp           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/N4-A-t-NH-sd-SMP-HP           |   18 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/N5-U-T-NH-sd-SMP-hp           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/NT1-nh                        |   23 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/NT3-NH                        |   20 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/P1-S-T-NH-SD-SMP-HP           |   19 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/P2-2-t-nh-sd-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/P3-3-T-nh-SD-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/P4-A-t-NH-sd-SMP-HP           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/P5-U-T-NH-sd-SMP-hp           |   28 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/PT1-nh                        |   23 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/PT2-NH                        |   22 
+ a/tools/testing/selftests/rcutorture/configs/v0.0/ver_functions.sh              |   33 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/CFLIST                       |   17 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/N1-S-T-NH-SD-SMP-HP          |   19 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/N2-2-t-nh-sd-SMP-hp          |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/N3-3-T-nh-SD-SMP-hp          |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/N4-A-t-NH-sd-SMP-HP          |   18 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/N5-U-T-NH-sd-SMP-hp          |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/N6---t-nh-SD-smp-hp          |   19 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/N7-4-T-NH-SD-SMP-HP          |   26 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/N8-2-T-NH-SD-SMP-HP          |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/NT1-nh                       |   23 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/NT3-NH                       |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P1-S-T-NH-SD-SMP-HP          |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P2-2-t-nh-sd-SMP-hp          |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P3-3-T-nh-SD-SMP-hp          |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P4-A-t-NH-sd-SMP-HP          |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P5-U-T-NH-sd-SMP-hp          |   28 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P6---t-nh-SD-smp-hp          |   18 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P7-4-T-NH-SD-SMP-HP          |   30 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P7-4-T-NH-SD-SMP-HP-all      |   30 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P7-4-T-NH-SD-SMP-HP-none     |   30 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/P7-4-T-NH-SD-SMP-hp          |   30 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/PT1-nh                       |   23 
+ a/tools/testing/selftests/rcutorture/configs/v3.12/PT2-NH                       |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/CFLIST                        |   14 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/N1-S-T-NH-SD-SMP-HP           |   19 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/N2-2-t-nh-sd-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/N3-3-T-nh-SD-SMP-hp           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/N4-A-t-NH-sd-SMP-HP           |   18 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/N5-U-T-NH-sd-SMP-hp           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/NT1-nh                        |   23 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/NT3-NH                        |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/P1-S-T-NH-SD-SMP-HP           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/P2-2-t-nh-sd-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/P3-3-T-nh-SD-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/P4-A-t-NH-sd-SMP-HP           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/P5-U-T-NH-sd-SMP-hp           |   28 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/PT1-nh                        |   23 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/PT2-NH                        |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.3/ver_functions.sh              |   44 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/CFLIST                        |   14 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/N1-S-T-NH-SD-SMP-HP           |   19 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/N2-2-t-nh-sd-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/N3-3-T-nh-SD-SMP-hp           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/N4-A-t-NH-sd-SMP-HP           |   18 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/N5-U-T-NH-sd-SMP-hp           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/NT1-nh                        |   23 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/NT3-NH                        |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/P1-S-T-NH-SD-SMP-HP           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/P2-2-t-nh-sd-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/P3-3-T-nh-SD-SMP-hp           |   20 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/P4-A-t-NH-sd-SMP-HP           |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/P5-U-T-NH-sd-SMP-hp           |   28 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/PT1-nh                        |   23 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/PT2-NH                        |   22 
+ a/tools/testing/selftests/rcutorture/configs/v3.5/ver_functions.sh              |   57 
+ a/tools/testing/selftests/rcutorture/configs/ver_functions.sh                   |   57 
+ a/tools/testing/selftests/rcutorture/doc/TREE_RCU-Kconfig.txt                   |   95 
+ b/include/linux/torture.h                                                       |  146 
+ b/kernel/Makefile                                                               |    1 
+ b/kernel/locking/Makefile                                                       |    1 
+ b/kernel/locking/locktorture.c                                                  |  454 +
+ b/kernel/rcu/Makefile                                                           |    2 
+ b/kernel/rcu/rcutorture.c                                                       | 3232 +++++++---
+ b/kernel/torture.c                                                              |  893 ++
+ b/lib/Kconfig.debug                                                             |   25 
+ b/tools/testing/selftests/rcutorture/bin/functions.sh                           |    1 
+ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh                    |   51 
+ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh                     |   51 
+ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh                         |   55 
+ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh                      |   41 
+ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh                      |  205 
+ b/tools/testing/selftests/rcutorture/bin/kvm.sh                                 |  378 -
+ b/tools/testing/selftests/rcutorture/configs/BUSTED                             |    9 
+ b/tools/testing/selftests/rcutorture/configs/BUSTED.boot                        |    1 
+ b/tools/testing/selftests/rcutorture/configs/CFcommon                           |    2 
+ b/tools/testing/selftests/rcutorture/configs/SRCU-N                             |    3 
+ b/tools/testing/selftests/rcutorture/configs/SRCU-P                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TINY01                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TINY02                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE01                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE02                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE03                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE04                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE05                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE06                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE07                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE08                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE08-T                           |    1 
+ b/tools/testing/selftests/rcutorture/configs/TREE09                             |    1 
+ b/tools/testing/selftests/rcutorture/configs/lock/BUSTED                        |    6 
+ b/tools/testing/selftests/rcutorture/configs/lock/BUSTED.boot                   |    1 
+ b/tools/testing/selftests/rcutorture/configs/lock/CFLIST                        |    1 
+ b/tools/testing/selftests/rcutorture/configs/lock/CFcommon                      |    2 
+ b/tools/testing/selftests/rcutorture/configs/lock/LOCK01                        |    6 
+ b/tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh              |   43 
+ b/tools/testing/selftests/rcutorture/configs/rcu/BUSTED                         |    7 
+ b/tools/testing/selftests/rcutorture/configs/rcu/BUSTED.boot                    |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/CFLIST                         |   13 
+ b/tools/testing/selftests/rcutorture/configs/rcu/CFcommon                       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/SRCU-N                         |    7 
+ b/tools/testing/selftests/rcutorture/configs/rcu/SRCU-N.boot                    |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/SRCU-P                         |    7 
+ b/tools/testing/selftests/rcutorture/configs/rcu/SRCU-P.boot                    |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TINY01                         |   12 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TINY02                         |   12 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE01                         |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE01.boot                    |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE02                         |   25 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE03                         |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE04                         |   24 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE04.boot                    |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE05                         |   24 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot                    |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE06                         |   25 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE07                         |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08                         |   25 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08-T                       |   25 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE09                         |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/CFLIST                    |   14 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N1-S-T-NH-SD-SMP-HP       |   18 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N2-2-t-nh-sd-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N3-3-T-nh-SD-SMP-hp       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N4-A-t-NH-sd-SMP-HP       |   18 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N5-U-T-NH-sd-SMP-hp       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT1-nh                    |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT3-NH                    |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP       |   19 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp       |   28 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT1-nh                    |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT2-NH                    |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/ver_functions.sh          |   33 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/CFLIST                   |   17 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N1-S-T-NH-SD-SMP-HP      |   19 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N2-2-t-nh-sd-SMP-hp      |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N3-3-T-nh-SD-SMP-hp      |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N4-A-t-NH-sd-SMP-HP      |   18 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N5-U-T-NH-sd-SMP-hp      |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N6---t-nh-SD-smp-hp      |   19 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N7-4-T-NH-SD-SMP-HP      |   26 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N8-2-T-NH-SD-SMP-HP      |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT1-nh                   |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT3-NH                   |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP      |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp      |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp      |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP      |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp      |   28 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P6---t-nh-SD-smp-hp      |   18 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP      |   30 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all  |   30 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none |   30 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp      |   30 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT1-nh                   |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT2-NH                   |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/CFLIST                    |   14 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N1-S-T-NH-SD-SMP-HP       |   19 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N2-2-t-nh-sd-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N3-3-T-nh-SD-SMP-hp       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N4-A-t-NH-sd-SMP-HP       |   18 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N5-U-T-NH-sd-SMP-hp       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT1-nh                    |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT3-NH                    |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp       |   28 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT1-nh                    |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT2-NH                    |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/ver_functions.sh          |   44 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/CFLIST                    |   14 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N1-S-T-NH-SD-SMP-HP       |   19 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N2-2-t-nh-sd-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N3-3-T-nh-SD-SMP-hp       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N4-A-t-NH-sd-SMP-HP       |   18 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N5-U-T-NH-sd-SMP-hp       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT1-nh                    |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT3-NH                    |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp       |   20 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP       |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp       |   28 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT1-nh                    |   23 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT2-NH                    |   22 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/ver_functions.sh          |   57 
+ b/tools/testing/selftests/rcutorture/configs/rcu/ver_functions.sh               |   57 
+ b/tools/testing/selftests/rcutorture/configs/v0.0/ver_functions.sh              |   22 
+ b/tools/testing/selftests/rcutorture/configs/v3.3/ver_functions.sh              |   25 
+ b/tools/testing/selftests/rcutorture/configs/v3.5/ver_functions.sh              |   23 
+ b/tools/testing/selftests/rcutorture/configs/ver_functions.sh                   |   21 
+ b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt                   |   95 
+ 236 files changed, 6643 insertions(+), 5512 deletions(-)
 
