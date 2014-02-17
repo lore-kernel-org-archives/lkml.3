@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbaBQNRi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:17:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:45352 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367AbaBQNO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753373AbaBQNO6 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 17 Feb 2014 08:14:58 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9253 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753322AbaBQNO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 08:14:56 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,860,1384329600"; 
-   d="scan'208";a="456852912"
+   d="scan'208";a="456852893"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc-next 05/11] mei: wd and amthif use mei_cl_ api for dis/connection
-Date: Mon, 17 Feb 2014 15:13:21 +0200
-Message-Id: <1392642807-8878-6-git-send-email-tomas.winkler@intel.com>
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 03/11] mei: Remove all bus devices from the mei_dev list when stopping the MEI
+Date: Mon, 17 Feb 2014 15:13:19 +0200
+Message-Id: <1392642807-8878-4-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
 References: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
@@ -24,287 +23,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Connect wd and amthif through regular mei_cl_connect API
-as there is no reason to connect in asynchronous mode.
-Also use mei_cl_is_connected in order to protect flows
-instead of depending on wd_pending and amthif_timer
-
-Now we can remove all the special handling in hbm layer
+When stopping the MEI, we should remove and potentially unregister
+all bus devices queued on the mei_dev linked list.
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 ---
- drivers/misc/mei/amthif.c    | 13 +++----
- drivers/misc/mei/hbm.c       | 89 +++++++++++++++-----------------------------
- drivers/misc/mei/interrupt.c |  5 ++-
- drivers/misc/mei/mei_dev.h   |  2 +-
- drivers/misc/mei/wd.c        | 37 ++++++++++++------
- 5 files changed, 66 insertions(+), 80 deletions(-)
+ drivers/misc/mei/bus.c     | 16 ++++++++++++++++
+ drivers/misc/mei/init.c    |  2 ++
+ drivers/misc/mei/mei_dev.h |  1 +
+ drivers/misc/mei/nfc.c     |  8 +-------
+ 4 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index b8dfc61..708bbb6 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -115,14 +115,11 @@ int mei_amthif_host_init(struct mei_device *dev)
- 
- 	cl->state = MEI_FILE_CONNECTING;
- 
--	if (mei_hbm_cl_connect_req(dev, cl)) {
--		dev_dbg(&dev->pdev->dev, "amthif: Failed to connect to ME client\n");
--		cl->state = MEI_FILE_DISCONNECTED;
--		cl->host_client_id = 0;
--	} else {
--		cl->timer_count = MEI_CONNECT_TIMEOUT;
--	}
--	return 0;
-+	ret = mei_cl_connect(cl, NULL);
-+
-+	dev->iamthif_state = MEI_IAMTHIF_IDLE;
-+
-+	return ret;
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index 4bc7d62..cf4cc0b 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -524,6 +524,22 @@ void mei_cl_bus_rx_event(struct mei_cl *cl)
+ 	schedule_work(&device->event_work);
  }
  
- /**
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index d360e9a..46743e2 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -134,30 +134,6 @@ bool mei_hbm_cl_addr_equal(struct mei_cl *cl, void *buf)
- 
- 
- /**
-- * is_treat_specially_client - checks if the message belongs
-- * to the file private data.
-- *
-- * @cl: private data of the file object
-- * @rs: connect response bus message
-- *
-- */
--static bool is_treat_specially_client(struct mei_cl *cl,
--		struct hbm_client_connect_response *rs)
--{
--	if (mei_hbm_cl_addr_equal(cl, rs)) {
--		if (rs->status == MEI_CL_CONN_SUCCESS)
--			cl->state = MEI_FILE_CONNECTED;
--		else
--			cl->state = MEI_FILE_DISCONNECTED;
--		cl->status = mei_cl_conn_status_to_errno(rs->status);
--		cl->timer_count = 0;
--
--		return true;
--	}
--	return false;
--}
--
--/**
-  * mei_hbm_idle - set hbm to idle state
-  *
-  * @dev: the device structure
-@@ -467,22 +443,22 @@ static void mei_hbm_cl_disconnect_res(struct mei_device *dev,
- 		struct hbm_client_connect_response *rs)
++void mei_cl_bus_remove_devices(struct mei_device *dev)
++{
++	struct mei_cl *cl, *next;
++
++	mutex_lock(&dev->device_lock);
++	list_for_each_entry_safe(cl, next, &dev->device_list, device_link) {
++		if (cl->device)
++			mei_cl_remove_device(cl->device);
++
++		list_del(&cl->device_link);
++		mei_cl_unlink(cl);
++		kfree(cl);
++	}
++	mutex_unlock(&dev->device_lock);
++}
++
+ int __init mei_cl_bus_init(void)
  {
- 	struct mei_cl *cl;
--	struct mei_cl_cb *pos = NULL, *next = NULL;
-+	struct mei_cl_cb *cb, *next;
+ 	return bus_register(&mei_cl_bus_type);
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 214dcef..4460975 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -288,6 +288,8 @@ void mei_stop(struct mei_device *dev)
  
- 	dev_dbg(&dev->pdev->dev, "hbm: disconnect response cl:host=%02d me=%02d status=%d\n",
- 			rs->me_addr, rs->host_addr, rs->status);
+ 	mei_nfc_host_exit(dev);
  
--	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
--		cl = pos->cl;
-+	list_for_each_entry_safe(cb, next, &dev->ctrl_rd_list.list, list) {
-+		cl = cb->cl;
- 
--		if (!cl) {
--			list_del(&pos->list);
-+		/* this should not happen */
-+		if (WARN_ON(!cl)) {
-+			list_del(&cb->list);
- 			return;
- 		}
- 
--		dev_dbg(&dev->pdev->dev, "list_for_each_entry_safe in ctrl_rd_list.\n");
- 		if (mei_hbm_cl_addr_equal(cl, rs)) {
--			list_del(&pos->list);
-+			list_del(&cb->list);
- 			if (rs->status == MEI_CL_DISCONN_SUCCESS)
- 				cl->state = MEI_FILE_DISCONNECTED;
- 
-@@ -523,40 +499,41 @@ static void mei_hbm_cl_connect_res(struct mei_device *dev,
- {
- 
- 	struct mei_cl *cl;
--	struct mei_cl_cb *pos = NULL, *next = NULL;
-+	struct mei_cl_cb *cb, *next;
- 
- 	dev_dbg(&dev->pdev->dev, "hbm: connect response cl:host=%02d me=%02d status=%s\n",
- 			rs->me_addr, rs->host_addr,
- 			mei_cl_conn_status_str(rs->status));
- 
--	/* if WD or iamthif client treat specially */
-+	cl = NULL;
- 
--	if (is_treat_specially_client(&dev->wd_cl, rs)) {
--		dev_dbg(&dev->pdev->dev, "successfully connected to WD client.\n");
--		mei_watchdog_register(dev);
-+	list_for_each_entry_safe(cb, next, &dev->ctrl_rd_list.list, list) {
- 
--		return;
--	}
-+		cl = cb->cl;
-+		/* this should not happen */
-+		if (WARN_ON(!cl)) {
-+			list_del_init(&cb->list);
-+			continue;
-+		}
- 
--	if (is_treat_specially_client(&dev->iamthif_cl, rs)) {
--		dev->iamthif_state = MEI_IAMTHIF_IDLE;
--		return;
--	}
--	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
-+		if (cb->fop_type !=  MEI_FOP_CONNECT)
-+			continue;
- 
--		cl = pos->cl;
--		if (!cl) {
--			list_del(&pos->list);
--			return;
--		}
--		if (pos->fop_type == MEI_FOP_CONNECT) {
--			if (is_treat_specially_client(cl, rs)) {
--				list_del(&pos->list);
--				cl->timer_count = 0;
--				break;
--			}
-+		if (mei_hbm_cl_addr_equal(cl, rs)) {
-+			list_del(&cb->list);
-+			break;
- 		}
- 	}
++	mei_cl_bus_remove_devices(dev);
 +
-+	if (!cl)
-+		return;
-+
-+	cl->timer_count = 0;
-+	if (rs->status == MEI_CL_CONN_SUCCESS)
-+		cl->state = MEI_FILE_CONNECTED;
-+	else
-+		cl->state = MEI_FILE_DISCONNECTED;
-+	cl->status = mei_cl_conn_status_to_errno(rs->status);
- }
+ 	mutex_lock(&dev->device_lock);
  
- 
-@@ -582,10 +559,6 @@ static int mei_hbm_fw_disconnect_req(struct mei_device *dev,
- 					disconnect_req->me_addr);
- 			cl->state = MEI_FILE_DISCONNECTED;
- 			cl->timer_count = 0;
--			if (cl == &dev->wd_cl)
--				dev->wd_pending = false;
--			else if (cl == &dev->iamthif_cl)
--				dev->iamthif_timer = 0;
- 
- 			cb = mei_io_cb_init(cl, NULL);
- 			if (!cb)
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 8fbdb59..7d37d83 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -477,7 +477,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- 		wake_up_interruptible(&dev->wait_stop_wd);
- 	}
- 
--	if (dev->dev_state == MEI_DEV_ENABLED) {
-+	if (mei_cl_is_connected(&dev->wd_cl)) {
- 		if (dev->wd_pending &&
- 		    mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
- 			if (mei_wd_send(dev))
-@@ -595,6 +595,9 @@ void mei_timer(struct work_struct *work)
- 		}
- 	}
- 
-+	if (!mei_cl_is_connected(&dev->iamthif_cl))
-+		goto out;
-+
- 	if (dev->iamthif_stall_timer) {
- 		if (--dev->iamthif_stall_timer == 0) {
- 			dev_err(&dev->pdev->dev, "timer: amthif  hanged.\n");
+ 	mei_wd_stop(dev);
 diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index c59c56b..36640b9 100644
+index 49bf2cf..c59c56b 100644
 --- a/drivers/misc/mei/mei_dev.h
 +++ b/drivers/misc/mei/mei_dev.h
-@@ -543,7 +543,7 @@ int mei_wd_host_init(struct mei_device *dev);
-  *   once we got connection to the WD Client
-  * @dev - mei device
-  */
--void mei_watchdog_register(struct mei_device *dev);
-+int mei_watchdog_register(struct mei_device *dev);
- /*
-  * mei_watchdog_unregister  - Unregistering watchdog interface
-  * @dev - mei device
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index a769fb1..afe976a 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -87,15 +87,20 @@ int mei_wd_host_init(struct mei_device *dev)
+@@ -296,6 +296,7 @@ int __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length);
+ int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length);
+ int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length);
+ void mei_cl_bus_rx_event(struct mei_cl *cl);
++void mei_cl_bus_remove_devices(struct mei_device *dev);
+ int mei_cl_bus_init(void);
+ void mei_cl_bus_exit(void);
  
- 	cl->state = MEI_FILE_CONNECTING;
- 
--	if (mei_hbm_cl_connect_req(dev, cl)) {
--		dev_err(&dev->pdev->dev, "wd: failed to connect to the client\n");
--		cl->state = MEI_FILE_DISCONNECTED;
--		cl->host_client_id = 0;
--		return -EIO;
-+	ret = mei_cl_connect(cl, NULL);
-+
-+	if (ret) {
-+		dev_err(&dev->pdev->dev, "wd: failed to connect = %d\n", ret);
-+		mei_cl_unlink(cl);
-+		return ret;
- 	}
--	cl->timer_count = MEI_CONNECT_TIMEOUT;
- 
--	return 0;
-+	ret = mei_watchdog_register(dev);
-+	if (ret) {
-+		mei_cl_disconnect(cl);
-+		mei_cl_unlink(cl);
-+	}
-+	return ret;
- }
- 
- /**
-@@ -363,17 +368,25 @@ static struct watchdog_device amt_wd_dev = {
- };
- 
- 
--void mei_watchdog_register(struct mei_device *dev)
-+int mei_watchdog_register(struct mei_device *dev)
+diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
+index a58320c..7626dde 100644
+--- a/drivers/misc/mei/nfc.c
++++ b/drivers/misc/mei/nfc.c
+@@ -552,13 +552,7 @@ err:
+ void mei_nfc_host_exit(struct mei_device *dev)
  {
--	if (watchdog_register_device(&amt_wd_dev)) {
--		dev_err(&dev->pdev->dev,
--			"wd: unable to register watchdog device.\n");
--		return;
-+
-+	int ret;
-+
-+	/* unlock to perserve correct locking order */
-+	mutex_unlock(&dev->device_lock);
-+	ret = watchdog_register_device(&amt_wd_dev);
-+	mutex_lock(&dev->device_lock);
-+	if (ret) {
-+		dev_err(&dev->pdev->dev, "wd: unable to register watchdog device = %d.\n",
-+			ret);
-+		return ret;
- 	}
+ 	struct mei_nfc_dev *ndev = &nfc_dev;
+-
+ 	cancel_work_sync(&ndev->init_work);
++}
  
- 	dev_dbg(&dev->pdev->dev,
- 		"wd: successfully register watchdog interface.\n");
- 	watchdog_set_drvdata(&amt_wd_dev, dev);
-+	return 0;
- }
+-	mutex_lock(&dev->device_lock);
+-	if (ndev->cl && ndev->cl->device)
+-		mei_cl_remove_device(ndev->cl->device);
  
- void mei_watchdog_unregister(struct mei_device *dev)
+-	mei_nfc_free(ndev);
+-	mutex_unlock(&dev->device_lock);
+-}
 -- 
 1.8.5.3
 
