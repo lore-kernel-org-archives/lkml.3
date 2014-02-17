@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917AbaBQWXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:23:15 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35175 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706AbaBQWNS (ORCPT
+	id S1754901AbaBQWXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:23:13 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:51049 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753736AbaBQWNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Feb 2014 17:13:18 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,259 +16,252 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 07/55] rcutorture: Enable concurrent rcutorture runs
-Date: Mon, 17 Feb 2014 14:12:11 -0800
-Message-Id: <1392675179-11560-7-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 20/55] rcutorture: Abstract torture_shutdown_absorb()
+Date: Mon, 17 Feb 2014 14:12:24 -0800
+Message-Id: <1392675179-11560-20-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
  <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021722-8236-0000-0000-0000074F3817
+x-cbid: 14021722-1344-0000-0000-000005D5BE0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The rcutorture tests run by default range from using one CPU to using
-sixteen of them.  Therefore, rcutorture testing could be sped up
-significantly simply by running the kernels in parallel.  Building
-them in parallel is not all that helpful: "make -j" is usually a
-better bet.  So this commit takes a new "--cpus" argument that
-specifies how many CPUs rcutorture is permitted to use for its
-parallel runs.  The default of zero does sequential runs as before.
+Because handling races between rmmod and normal shutdown is not specific
+to rcutorture, this commit renames rcutorture_shutdown_absorb() to
+torture_shutdown_absorb() and pulls it out into then kernel/torture.c
+module.  This implies pulling the fullstop mechanism into kernel/torture.c
+as well.
 
-The bin-packing is minimal, and will be grossly suboptimal for
-some configurations.  However, powers of two work reasonably well.
+The exporting of fullstop and fullstop_mutex is ugly and must die.
+And it does in fact die in later commits that introduce higher-level
+APIs that encapsulate both of these variables.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- .../testing/selftests/rcutorture/bin/functions.sh  |   1 +
- .../selftests/rcutorture/bin/kvm-recheck.sh        |   4 +-
- .../selftests/rcutorture/bin/kvm-test-1-rcu.sh     |   2 +-
- tools/testing/selftests/rcutorture/bin/kvm.sh      | 125 +++++++++++++++++----
- 4 files changed, 108 insertions(+), 24 deletions(-)
+ include/linux/torture.h | 11 +++++++++++
+ kernel/rcu/rcutorture.c | 49 ++++++++++++-------------------------------------
+ kernel/torture.c        | 20 ++++++++++++++++++++
+ 3 files changed, 43 insertions(+), 37 deletions(-)
 
-diff --git a/tools/testing/selftests/rcutorture/bin/functions.sh b/tools/testing/selftests/rcutorture/bin/functions.sh
-index 587561d7c035..9b17e810ddc3 100644
---- a/tools/testing/selftests/rcutorture/bin/functions.sh
-+++ b/tools/testing/selftests/rcutorture/bin/functions.sh
-@@ -96,6 +96,7 @@ identify_qemu () {
- 		echo qemu-system-ppc64
- 	else
- 		echo Cannot figure out what qemu command to use! 1>&2
-+		echo file $1 output: $u
- 		# Usually this will be one of /usr/bin/qemu-system-*
- 		# Use RCU_QEMU_CMD environment variable or appropriate
- 		# argument to top-level script.
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-index eb2850935c26..89b5dbac5327 100755
---- a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-@@ -31,9 +31,9 @@ do
- 	dirs=`find $rd -name Make.defconfig.out -print | sort | sed -e 's,/[^/]*$,,' | sort -u`
- 	for i in $dirs
- 	do
--		if test $firsttime
-+		if test -n "$firsttime"
- 		then
--			firsttime=0
-+			firsttime=""
- 			resdir=`echo $i | sed -e 's,/$,,' -e 's,/[^/]*$,,'`
- 			head -1 $resdir/log
- 		fi
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-index a06a0a6ce5ac..1b9555b2b0d7 100755
---- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-@@ -123,7 +123,7 @@ kstarttime=`awk 'BEGIN { print systime() }' < /dev/null`
- echo ' ---' `date`: Starting kernel
+diff --git a/include/linux/torture.h b/include/linux/torture.h
+index 8a4088f2f87b..c61b4ce18a13 100644
+--- a/include/linux/torture.h
++++ b/include/linux/torture.h
+@@ -41,6 +41,14 @@
+ 	module_param(name, type, 0444); \
+ 	MODULE_PARM_DESC(name, msg);
  
- # Determine the appropriate flavor of qemu command.
--QEMU="`identify_qemu $builddir/vmlinux.o`"
-+QEMU="`identify_qemu $builddir/vmlinux`"
- 
- # Generate -smp qemu argument.
- qemu_args="-nographic $qemu_args"
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-index f2113493bbfc..f74f00628afe 100644
---- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-@@ -30,6 +30,10 @@
- scriptname=$0
- args="$*"
- 
-+T=/tmp/kvm.sh.$$
-+trap 'rm -rf $T' 0
-+mkdir $T
++/* Mediate rmmod and system shutdown.  Concurrent rmmod & shutdown illegal! */
++#define FULLSTOP_DONTSTOP 0	/* Normal operation. */
++#define FULLSTOP_SHUTDOWN 1	/* System shutdown with rcutorture running. */
++#define FULLSTOP_RMMOD    2	/* Normal rmmod of rcutorture. */
++extern int fullstop;
++/* Protect fullstop transitions and spawning of kthreads.  */
++extern struct mutex fullstop_mutex;
 +
- dur=30
- KVM="`pwd`/tools/testing/selftests/rcutorture"; export KVM
- PATH=${KVM}/bin:$PATH; export PATH
-@@ -38,6 +42,7 @@ RCU_INITRD="$KVM/initrd"; export RCU_INITRD
- RCU_KMAKE_ARG=""; export RCU_KMAKE_ARG
- resdir=""
- configs=""
-+cpus=0
- ds=`date +%Y.%m.%d-%H:%M:%S`
- kversion=""
+ #define TORTURE_FLAG "-torture:"
+ #define TOROUT_STRING(s) \
+ 	pr_alert("%s" TORTURE_FLAG s "\n", torture_type)
+@@ -57,4 +65,7 @@ struct torture_random_state {
+ #define DEFINE_TORTURE_RANDOM(name) struct torture_random_state name = { 0, 0 }
+ unsigned long torture_random(struct torture_random_state *trsp);
  
-@@ -49,6 +54,7 @@ usage () {
- 	echo "       --builddir absolute-pathname"
- 	echo "       --buildonly"
- 	echo "       --configs \"config-file list\""
-+	echo "       --cpus N"
- 	echo "       --datestamp string"
- 	echo "       --duration minutes"
- 	echo "       --interactive"
-@@ -85,6 +91,11 @@ do
- 		configs="$2"
- 		shift
- 		;;
-+	--cpus)
-+		checkarg --cpus "(number)" "$#" "$2" '^[0-9]*$' '^--'
-+		cpus=$2
-+		shift
-+		;;
- 	--datestamp)
- 		checkarg --datestamp "(relative pathname)" "$#" "$2" '^[^/]*$' '^--'
- 		ds=$2
-@@ -168,6 +179,7 @@ else
- 	fi
- fi
- mkdir $resdir/$ds
-+echo Results directory: $resdir/$ds
- touch $resdir/$ds/log
- echo $scriptname $args
- echo $scriptname $args >> $resdir/$ds/log
-@@ -178,33 +190,104 @@ then
- 	git status >> $resdir/$ds/testid.txt
- 	git rev-parse HEAD >> $resdir/$ds/testid.txt
- fi
--builddir=$KVM/b1
--if ! test -e $builddir
--then
--	mkdir $builddir || :
--fi
++/* Shutdown task absorption, for when the tasks cannot safely be killed. */
++void torture_shutdown_absorb(const char *title);
++
+ #endif /* __LINUX_TORTURE_H */
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 2bb3dcb67221..3687619b243a 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -199,17 +199,6 @@ static atomic_t barrier_cbs_invoked;	/* Barrier callbacks invoked. */
+ static wait_queue_head_t *barrier_cbs_wq; /* Coordinate barrier testing. */
+ static DECLARE_WAIT_QUEUE_HEAD(barrier_wq);
  
-+touch $T/cfgcpu
- for CF in $configs
- do
--	# Running TREE01 multiple times creates TREE01, TREE01.2, TREE01.3, ...
--	rd=$resdir/$ds/$CF
--	if test -d "${rd}"
-+	if test -f "$CONFIGFRAG/$kversion/$CF"
- 	then
--		n="`ls -d "${rd}"* | grep '\.[0-9]\+$' |
--			sed -e 's/^.*\.\([0-9]\+\)/\1/' |
--			sort -k1n | tail -1`"
--		if test -z "$n"
--		then
--			rd="${rd}.2"
--		else
--			n="`expr $n + 1`"
--			rd="${rd}.${n}"
--		fi
-+		echo $CF `configNR_CPUS.sh $CONFIGFRAG/$kversion/$CF` >> $T/cfgcpu
-+	else
-+		echo "The --configs file $CF does not exist, terminating."
-+		exit 1
- 	fi
--	mkdir "${rd}"
--	echo Results directory: $rd
--	kvm-test-1-rcu.sh $CONFIGFRAG/$kversion/$CF $builddir $rd $dur "$RCU_QEMU_ARG" "$RCU_BOOTARGS"
- done
-+sort -k2nr $T/cfgcpu > $T/cfgcpu.sort
+-/* Mediate rmmod and system shutdown.  Concurrent rmmod & shutdown illegal! */
+-
+-#define FULLSTOP_DONTSTOP 0	/* Normal operation. */
+-#define FULLSTOP_SHUTDOWN 1	/* System shutdown with rcutorture running. */
+-#define FULLSTOP_RMMOD    2	/* Normal rmmod of rcutorture. */
+-static int fullstop = FULLSTOP_RMMOD;
+-/*
+- * Protect fullstop transitions and spawning of kthreads.
+- */
+-static DEFINE_MUTEX(fullstop_mutex);
+-
+ /* Forward reference. */
+ static void rcu_torture_cleanup(void);
+ 
+@@ -231,20 +220,6 @@ rcutorture_shutdown_notify(struct notifier_block *unused1,
+ }
+ 
+ /*
+- * Absorb kthreads into a kernel function that won't return, so that
+- * they won't ever access module text or data again.
+- */
+-static void rcutorture_shutdown_absorb(const char *title)
+-{
+-	if (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
+-		pr_notice(
+-		       "rcutorture thread %s parking due to system shutdown\n",
+-		       title);
+-		schedule_timeout_uninterruptible(MAX_SCHEDULE_TIMEOUT);
+-	}
+-}
+-
+-/*
+  * Allocate an element from the rcu_tortures pool.
+  */
+ static struct rcu_torture *
+@@ -285,7 +260,7 @@ rcu_stutter_wait(const char *title)
+ 			schedule_timeout_interruptible(1);
+ 		else
+ 			schedule_timeout_interruptible(round_jiffies_relative(HZ));
+-		rcutorture_shutdown_absorb(title);
++		torture_shutdown_absorb(title);
+ 	}
+ }
+ 
+@@ -680,7 +655,7 @@ checkwait:	rcu_stutter_wait("rcu_torture_boost");
+ 
+ 	/* Clean up and exit. */
+ 	VERBOSE_TOROUT_STRING("rcu_torture_boost task stopping");
+-	rcutorture_shutdown_absorb("rcu_torture_boost");
++	torture_shutdown_absorb("rcu_torture_boost");
+ 	while (!kthread_should_stop() || rbi.inflight)
+ 		schedule_timeout_uninterruptible(1);
+ 	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
+@@ -716,7 +691,7 @@ rcu_torture_fqs(void *arg)
+ 		rcu_stutter_wait("rcu_torture_fqs");
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+ 	VERBOSE_TOROUT_STRING("rcu_torture_fqs task stopping");
+-	rcutorture_shutdown_absorb("rcu_torture_fqs");
++	torture_shutdown_absorb("rcu_torture_fqs");
+ 	while (!kthread_should_stop())
+ 		schedule_timeout_uninterruptible(1);
+ 	return 0;
+@@ -788,7 +763,7 @@ rcu_torture_writer(void *arg)
+ 		rcu_stutter_wait("rcu_torture_writer");
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+ 	VERBOSE_TOROUT_STRING("rcu_torture_writer task stopping");
+-	rcutorture_shutdown_absorb("rcu_torture_writer");
++	torture_shutdown_absorb("rcu_torture_writer");
+ 	while (!kthread_should_stop())
+ 		schedule_timeout_uninterruptible(1);
+ 	return 0;
+@@ -826,7 +801,7 @@ rcu_torture_fakewriter(void *arg)
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+ 
+ 	VERBOSE_TOROUT_STRING("rcu_torture_fakewriter task stopping");
+-	rcutorture_shutdown_absorb("rcu_torture_fakewriter");
++	torture_shutdown_absorb("rcu_torture_fakewriter");
+ 	while (!kthread_should_stop())
+ 		schedule_timeout_uninterruptible(1);
+ 	return 0;
+@@ -970,7 +945,7 @@ rcu_torture_reader(void *arg)
+ 		rcu_stutter_wait("rcu_torture_reader");
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+ 	VERBOSE_TOROUT_STRING("rcu_torture_reader task stopping");
+-	rcutorture_shutdown_absorb("rcu_torture_reader");
++	torture_shutdown_absorb("rcu_torture_reader");
+ 	if (irqreader && cur_ops->irq_capable)
+ 		del_timer_sync(&t);
+ 	while (!kthread_should_stop())
+@@ -1094,7 +1069,7 @@ rcu_torture_stats(void *arg)
+ 	do {
+ 		schedule_timeout_interruptible(stat_interval * HZ);
+ 		rcu_torture_stats_print();
+-		rcutorture_shutdown_absorb("rcu_torture_stats");
++		torture_shutdown_absorb("rcu_torture_stats");
+ 	} while (!kthread_should_stop());
+ 	VERBOSE_TOROUT_STRING("rcu_torture_stats task stopping");
+ 	return 0;
+@@ -1178,7 +1153,7 @@ rcu_torture_shuffle(void *arg)
+ 	do {
+ 		schedule_timeout_interruptible(shuffle_interval * HZ);
+ 		rcu_torture_shuffle_tasks();
+-		rcutorture_shutdown_absorb("rcu_torture_shuffle");
++		torture_shutdown_absorb("rcu_torture_shuffle");
+ 	} while (!kthread_should_stop());
+ 	VERBOSE_TOROUT_STRING("rcu_torture_shuffle task stopping");
+ 	return 0;
+@@ -1197,7 +1172,7 @@ rcu_torture_stutter(void *arg)
+ 		if (!kthread_should_stop())
+ 			schedule_timeout_interruptible(stutter * HZ);
+ 		stutter_pause_test = 0;
+-		rcutorture_shutdown_absorb("rcu_torture_stutter");
++		torture_shutdown_absorb("rcu_torture_stutter");
+ 	} while (!kthread_should_stop());
+ 	VERBOSE_TOROUT_STRING("rcu_torture_stutter task stopping");
+ 	return 0;
+@@ -1469,7 +1444,7 @@ static int rcu_torture_stall(void *args)
+ 		rcu_read_unlock();
+ 		pr_alert("rcu_torture_stall end.\n");
+ 	}
+-	rcutorture_shutdown_absorb("rcu_torture_stall");
++	torture_shutdown_absorb("rcu_torture_stall");
+ 	while (!kthread_should_stop())
+ 		schedule_timeout_interruptible(10 * HZ);
+ 	return 0;
+@@ -1533,7 +1508,7 @@ static int rcu_torture_barrier_cbs(void *arg)
+ 			wake_up(&barrier_wq);
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+ 	VERBOSE_TOROUT_STRING("rcu_torture_barrier_cbs task stopping");
+-	rcutorture_shutdown_absorb("rcu_torture_barrier_cbs");
++	torture_shutdown_absorb("rcu_torture_barrier_cbs");
+ 	while (!kthread_should_stop())
+ 		schedule_timeout_interruptible(1);
+ 	cur_ops->cb_barrier();
+@@ -1570,7 +1545,7 @@ static int rcu_torture_barrier(void *arg)
+ 		schedule_timeout_interruptible(HZ / 10);
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+ 	VERBOSE_TOROUT_STRING("rcu_torture_barrier task stopping");
+-	rcutorture_shutdown_absorb("rcu_torture_barrier");
++	torture_shutdown_absorb("rcu_torture_barrier");
+ 	while (!kthread_should_stop())
+ 		schedule_timeout_interruptible(1);
+ 	return 0;
+diff --git a/kernel/torture.c b/kernel/torture.c
+index c82c70f7828e..f05042036ae8 100644
+--- a/kernel/torture.c
++++ b/kernel/torture.c
+@@ -49,6 +49,11 @@
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Paul E. McKenney <paulmck@us.ibm.com>");
+ 
++int fullstop = FULLSTOP_RMMOD;
++EXPORT_SYMBOL_GPL(fullstop);
++DEFINE_MUTEX(fullstop_mutex);
++EXPORT_SYMBOL_GPL(fullstop_mutex);
 +
-+awk < $T/cfgcpu.sort \
-+	-v CONFIGDIR="$CONFIGFRAG/$kversion/" \
-+	-v KVM="$KVM" \
-+	-v ncpus=$cpus \
-+	-v rd=$resdir/$ds/ \
-+	-v dur=$dur \
-+	-v RCU_QEMU_ARG=$RCU_QEMU_ARG \
-+	-v RCU_BOOTARGS=$RCU_BOOTARGS \
-+'BEGIN {
-+	i = 0;
-+}
+ #define TORTURE_RANDOM_MULT	39916801  /* prime */
+ #define TORTURE_RANDOM_ADD	479001701 /* prime */
+ #define TORTURE_RANDOM_REFRESH	10000
+@@ -69,3 +74,18 @@ torture_random(struct torture_random_state *trsp)
+ 	return swahw32(trsp->trs_state);
+ }
+ EXPORT_SYMBOL_GPL(torture_random);
 +
++/*
++ * Absorb kthreads into a kernel function that won't return, so that
++ * they won't ever access module text or data again.
++ */
++void torture_shutdown_absorb(const char *title)
 +{
-+	cf[i] = $1;
-+	cpus[i] = $2;
-+	i++;
-+}
-+
-+function dump(first, pastlast)
-+{
-+	print "echo ----start batch----"
-+	jn=1
-+	for (j = first; j < pastlast; j++) {
-+		builddir=KVM "/b" jn
-+		print "echo ", cf[j], cpus[j] ": Starting build."
-+		print "rm -f " builddir ".*"
-+		print "touch " builddir ".wait"
-+		print "mkdir " builddir " || :"
-+		if (cfrep[cf[j]] == "") {
-+			cfr[j] = cf[j];
-+			cfrep[cf[j]] = 1;
-+		} else {
-+			cfrep[cf[j]]++;
-+			cfr[j] = cf[j] "." cfrep[cf[j]];
-+		}
-+		print "mkdir " rd cfr[j] " || :";
-+		print "kvm-test-1-rcu.sh " CONFIGDIR cf[j], builddir, rd cfr[j], dur " \"" RCU_QEMU_ARG "\" \"" RCU_BOOTARGS "\" > " builddir ".out 2>&1 &"
-+		print "echo ", cf[j], cpus[j] ": Waiting for build to complete."
-+		print "while test -f " builddir ".wait"
-+		print "do"
-+		print "\tsleep 1"
-+		print "done"
-+		print "echo ", cf[j], cpus[j] ": Build complete."
-+		jn++;
-+	}
-+	k = first
-+	for (j = 1; j < jn; j++) {
-+		builddir=KVM "/b" j
-+		print "rm -f " builddir ".ready"
-+		print "echo ----", cf[k], cpus[k] ": Starting kernel"
-+		k++;
-+	}
-+	print "wait"
-+	print "echo ---- All kernel runs complete"
-+	k = first
-+	for (j = 1; j < jn; j++) {
-+		builddir=KVM "/b" j
-+		print "echo ----", cf[k], cpus[k] ": Build/run results:"
-+		print "cat " builddir ".out"
-+		k++;
++	while (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
++		pr_notice(
++		       "torture thread %s parking due to system shutdown\n",
++		       title);
++		schedule_timeout_uninterruptible(MAX_SCHEDULE_TIMEOUT);
 +	}
 +}
-+
-+END {
-+	njobs = i;
-+	nc = ncpus;
-+	first = 0;
-+	for (i = 0; i < njobs; i++) {
-+		if (ncpus == 0) {
-+			dump(i, i + 1);
-+			first = i;
-+		} else if (nc < cpus[i] && i != 0) {
-+			dump(first, i);
-+			first = i;
-+			nc = ncpus;
-+		}
-+		nc -= cpus[i];
-+	}
-+	if (ncpus != 0)
-+		dump(first, i);
-+}' > $T/script
-+
-+sh $T/script
-+
- # Tracing: trace_event=rcu:rcu_grace_period,rcu:rcu_future_grace_period,rcu:rcu_grace_period_init,rcu:rcu_nocb_wake,rcu:rcu_preempt_task,rcu:rcu_unlock_preempted_task,rcu:rcu_quiescent_state_report,rcu:rcu_fqs,rcu:rcu_callback,rcu:rcu_kfree_callback,rcu:rcu_batch_start,rcu:rcu_invoke_callback,rcu:rcu_invoke_kfree_callback,rcu:rcu_batch_end,rcu:rcu_torture_read,rcu:rcu_barrier
- 
- echo " --- `date` Test summary:"
++EXPORT_SYMBOL_GPL(torture_shutdown_absorb);
 -- 
 1.8.1.5
 
