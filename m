@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaBQJqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:46:09 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:29405 "EHLO
+	id S1753134AbaBQJpl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:45:41 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:29241 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbaBQJqE (ORCPT
+	with ESMTP id S1752905AbaBQJpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:46:04 -0500
-X-AuditID: cbfee690-b7f266d00000287c-32-5301da5b797f
+	Mon, 17 Feb 2014 04:45:25 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-1b-5301da2a68ed
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
         herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
         cpgs@samsung.com, davem@davemloft.net,
-        Naveen Krishna Ch <ch.naveen@samsung.com>
-Subject: [PATCH 9/9 v7] crypto:s5p-sss: Look for the next request in the queue
-Date: Mon, 17 Feb 2014 15:15:32 +0530
-Message-id: <1392630332-8782-1-git-send-email-ch.naveen@samsung.com>
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 5/9 v7] clk: samsung exynos5250/5420: Add gate clock for SSS
+ module
+Date: Mon, 17 Feb 2014 15:14:31 +0530
+Message-id: <1392630275-8667-6-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsWyRsSkRjf6FmOwwfJNQhZ3nx9mtHh5SNNi
-	zvkWFovuVzIW9+/9ZLK4vGsOm8WM8/uYLBZt+89scXbOISYHTo8tK28yeeycdZfdY9sBVY++
-	LasYPT5vkgtgjeKySUnNySxLLdK3S+DKmP7/J3PBEZGKK53/2BsYPwl0MXJySAiYSDw538QM
-	YYtJXLi3nq2LkYtDSGApo8Si9qtsMEUHX99jgUgsYpT4uWkvlNPPJPF+7TZ2kCo2ATOJg4tW
-	g9kiAs4Sv5vXsIIUMQscZZTYc+412ChhAT+Jk/1zwGwWAVWJqSdOMXYxcnDwCrhIzP7mAGJK
-	CChIzJlkA9IqIdDPLrFsyzlGiHIBiW+TD7FA1MhKbDoAdbWkxMEVN1gmMAouYGRYxSiaWpBc
-	UJyUXmSiV5yYW1yal66XnJ+7iREYxKf/PZuwg/HeAetDjMlA4yYyS4km5wOjIK8k3tDYzMjC
-	1MTU2Mjc0ow0YSVxXrVHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGDmTDX+tZ3o2zf2p
-	xFa/Tp7K5rsVs0+tPJnf5cye+p83/tLq2d+4OQ/v5vjG6+L+3GN/aOTyQiG5sE5Vj+ZlXme3
-	MbtHcrj5vTl7Iy773EMJ9aAXj5/YzZbQzY6WvHG1MjG2xuBc++PSJ8vvbMsP/frU6uWPHqVm
-	BqW9ezYtyo0TDeTcvSPFWYmlOCPRUIu5qDgRAMpcfU54AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t9jAd3oW4zBBt3vuSzuPj/MaPHykKbF
-	nPMtLBbdr2Qs7t/7yWRxedccNosZ5/cxWSza9p/Z4uycQ0wOnB5bVt5k8tg56y67x7YDqh59
+In-reply-to: <1392630275-8667-1-git-send-email-ch.naveen@samsung.com>
+References: <1392630275-8667-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkWlfrFmOwwcSDChYvD2lazDnfwmLR
+	/UrGonfBVTaL+/d+Mllc3jWHzWLG+X1MFou2/We2ODvnEJMDp8eWlTeZPHbOusvuse2Aqkff
+	llWMHp83yQWwRnHZpKTmZJalFunbJXBlPPuwhq3gkHjF6u+yDYzXhbsYOTkkBEwk3p7azgph
+	i0lcuLeerYuRi0NIYCmjxLn5e9hgin49P80IkVjEKNH/byc7hNPPJLFz23SwdjYBM4mDi1az
+	g9giAs4Sv5vXsIIUMQvsY5S41nscLCEsECqx5HgL2FgWAVWJAx/+M4HYvAIuEnd3vGHuYuQA
+	WqcgMWeSDUiYU8BVovPOdhYQWwioZF3nJRaQmRICq9gl9uzayg4xR0Di2+RDLBC9shKbDjBD
+	XC0pcXDFDZYJjMILGBlWMYqmFiQXFCelFxnrFSfmFpfmpesl5+duYgQG/el/z/p3MN49YH2I
+	MRlo3ERmKdHkfGDU5JXEGxqbGVmYmpgaG5lbmpEmrCTOe/9hUpCQQHpiSWp2ampBalF8UWlO
+	avEhRiYOTqkGRqeVMXNPT3GUtdEM5P7PpXHovvPpWIb1ShPv9LJy72b4zXT/0/zAG5z91uX5
+	r+6rHZFa1nPpz30+0Utf6x6q3q56e1LxmSfr3rxNz9ttWu4fz/136/J94xMnS46wex3ynf1E
+	cjOrSWBv/jMXFw9j26xb5+QvuuZmm8Q0X+aIOHfoRrulodSML0osxRmJhlrMRcWJAMLFgm2Q	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAV2tW4zBBlM+Sli8PKRpMed8C4tF
+	9ysZi94FV9ks7t/7yWRxedccNosZ5/cxWSza9p/Z4uycQ0wOnB5bVt5k8tg56y67x7YDqh59
 	W1YxenzeJBfAGtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+Ti
-	E6DrlpkDdI6SQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMWP6/5/MBUdE
-	Kq50/mNvYPwk0MXIySEhYCJx8PU9FghbTOLCvfVsXYxcHEICixglfm7aywLh9DNJvF+7jR2k
-	ik3ATOLgotVgtoiAs8Tv5jWsIEXMAkcZJface80GkhAW8JM42T8HzGYRUJWYeuIUYxcjBwev
-	gIvE7G8OIKaEgILEnEk2Exi5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjpFn0jsY
-	VzVYHGIU4GBU4uHtrGUMFmJNLCuuzD3EKMHBrCTCa7sOKMSbklhZlVqUH19UmpNafIgxGWj3
-	RGYp0eR8YPzmlcQbGpuYmxqbWppYmJhZkiasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVANj
-	db79U4Zdhb1GclWbAsRqqpc4/ms+N6eVudHL/5mabqlB3IrwgE07bPdYX8uo3n6/o1jqpH7M
-	acPJB7xdetb4XziaoO84tzXz5YMm87hVa847nZgVue2q6sHQDpYp2+9tLlj5enre3tL+Sj1b
-	nj2b847veN9owH1jxdEv7zVfZwY3PanhutihxFKckWioxVxUnAgAk91jZ9UCAAA=
+	E6DrlpkDdI6SQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePZhzVsBYfE
+	K1Z/l21gvC7cxcjJISFgIvHr+WlGCFtM4sK99WxdjFwcQgKLGCX6/+1kh3D6mSR2bpvOClLF
+	JmAmcXDRanYQW0TAWeJ38xpWkCJmgX2MEtd6j4MlhAVCJZYcb2EDsVkEVCUOfPjPBGLzCrhI
+	3N3xhrmLkQNonYLEnEk2IGFOAVeJzjvbWUBsIaCSdZ2XWCYw8i5gZFjFKJpakFxQnJSea6hX
+	nJhbXJqXrpecn7uJERxTz6R2MK5ssDjEKMDBqMTDa1DNGCzEmlhWXJl7iFGCg1lJhNd2HVCI
+	NyWxsiq1KD++qDQntfgQYzLQUROZpUST84HxnlcSb2hsYm5qbGppYmFiZkmasJI474FW60Ah
+	gfTEktTs1NSC1CKYLUwcnFINjH6dOxh2vJq+7pr05yn3b5sw7TDkT+1IvmVwSv72/WnKXi7l
+	vQcWHC89/8fsbHFNLsuG20c1TianW7W7HJyjdXH1nF3urKVnRDIfLY7K2zNFnaMpOLU+44z3
+	yYOJYn99BXiL6qZJN+xYk9pl+MnNr+vet53ObprXV+YuVWTSNVyhcOzKrcClwUosxRmJhlrM
+	RcWJAHeTexvtAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,90 +52,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naveen Krishna Ch <ch.naveen@samsung.com>
+This patch adds gating clock for SSS(Security SubSystem)
+module on Exynos5250/5420.
 
-Currently, the driver enqueues a request only if the busy bit is
-false. And every request initiates a dequeue. If 2 requests arrive
-simultaneously, only one of them will be dequeued.
-
-To avoid this senario, we will enqueue the next request irrespective
-of the system condition (that is what queue is here for). Also
-schedule at a tasklet immediatly after the current request is done.
-The tasklet will dequeue the next request in the queue, giving
-continuous loop. tasklet will exit if there are no requests in the
-queue.
-
-Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+TO: <linux-samsung-soc@vger.kernel.org>
+TO: Tomasz Figa <t.figa@samsung.com>
 CC: David S. Miller <davem@davemloft.net>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
-TO: <linux-crypto@vger.kernel.org>
-CC: <linux-samsung-soc@vger.kernel.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>
+CC: <linux-crypto@vger.kernel.org>
 ---
-Changes since v6:
+changes since v6:
 None
+changes since v5:
+1. Added Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
- drivers/crypto/s5p-sss.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ .../devicetree/bindings/clock/exynos5250-clock.txt |    1 +
+ drivers/clk/samsung/clk-exynos5250.c               |    1 +
+ drivers/clk/samsung/clk-exynos5420.c               |    4 ++++
+ include/dt-bindings/clock/exynos5250.h             |    1 +
+ 4 files changed, 7 insertions(+)
 
-diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
-index 429b4c1..61a80c1 100644
---- a/drivers/crypto/s5p-sss.c
-+++ b/drivers/crypto/s5p-sss.c
-@@ -330,8 +330,12 @@ static void s5p_aes_tx(struct s5p_aes_dev *dev)
- 		}
+diff --git a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
+index 72ce617..87f1539 100644
+--- a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
++++ b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
+@@ -162,6 +162,7 @@ clock which they consume.
+   g2d			345
+   mdma0			346
+   smmu_mdma0		347
++  sss			348
  
- 		s5p_set_dma_outdata(dev, dev->sg_dst);
--	} else
-+	} else {
- 		s5p_aes_complete(dev, err);
+ 
+    [Clock Muxes]
+diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
+index e7ee442..d1d16cf 100644
+--- a/drivers/clk/samsung/clk-exynos5250.c
++++ b/drivers/clk/samsung/clk-exynos5250.c
+@@ -428,6 +428,7 @@ static struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
+ 	 * CMU_ACP
+ 	 */
+ 	GATE(CLK_MDMA0, "mdma0", "div_aclk266", GATE_IP_ACP, 1, 0, 0),
++	GATE(CLK_SSS, "sss", "div_aclk266", GATE_IP_ACP, 2, 0, 0),
+ 	GATE(CLK_G2D, "g2d", "div_aclk200", GATE_IP_ACP, 3, 0, 0),
+ 	GATE(CLK_SMMU_MDMA0, "smmu_mdma0", "div_aclk266", GATE_IP_ACP, 5, 0, 0),
+ 
+diff --git a/drivers/clk/samsung/clk-exynos5420.c b/drivers/clk/samsung/clk-exynos5420.c
+index 60b2681..35311e1 100644
+--- a/drivers/clk/samsung/clk-exynos5420.c
++++ b/drivers/clk/samsung/clk-exynos5420.c
+@@ -27,6 +27,7 @@
+ #define DIV_CPU1		0x504
+ #define GATE_BUS_CPU		0x700
+ #define GATE_SCLK_CPU		0x800
++#define GATE_IP_G2D		0x8800
+ #define CPLL_LOCK		0x10020
+ #define DPLL_LOCK		0x10030
+ #define EPLL_LOCK		0x10040
+@@ -743,6 +744,9 @@ static struct samsung_gate_clock exynos5420_gate_clks[] __initdata = {
+ 		0),
+ 	GATE(CLK_SMMU_MIXER, "smmu_mixer", "aclk200_disp1", GATE_IP_DISP1, 9, 0,
+ 		0),
 +
-+		dev->busy = true;
-+		tasklet_schedule(&dev->tasklet);
-+	}
- }
++	/* SSS */
++	GATE(CLK_SSS, "sss", "aclk266_g2d", GATE_IP_G2D, 2, 0, 0),
+ };
  
- static void s5p_aes_rx(struct s5p_aes_dev *dev)
-@@ -469,10 +473,13 @@ static void s5p_tasklet_cb(unsigned long data)
- 	spin_lock_irqsave(&dev->lock, flags);
- 	backlog   = crypto_get_backlog(&dev->queue);
- 	async_req = crypto_dequeue_request(&dev->queue);
--	spin_unlock_irqrestore(&dev->lock, flags);
+ static struct samsung_pll_clock exynos5420_plls[nr_plls] __initdata = {
+diff --git a/include/dt-bindings/clock/exynos5250.h b/include/dt-bindings/clock/exynos5250.h
+index 922f2dc..f9b452b 100644
+--- a/include/dt-bindings/clock/exynos5250.h
++++ b/include/dt-bindings/clock/exynos5250.h
+@@ -150,6 +150,7 @@
+ #define CLK_G2D			345
+ #define CLK_MDMA0		346
+ #define CLK_SMMU_MDMA0		347
++#define CLK_SSS			348
  
--	if (!async_req)
-+	if (!async_req) {
-+		dev->busy = false;
-+		spin_unlock_irqrestore(&dev->lock, flags);
- 		return;
-+	}
-+	spin_unlock_irqrestore(&dev->lock, flags);
- 
- 	if (backlog)
- 		backlog->complete(backlog, -EINPROGRESS);
-@@ -491,14 +498,13 @@ static int s5p_aes_handle_req(struct s5p_aes_dev *dev,
- 	int err;
- 
- 	spin_lock_irqsave(&dev->lock, flags);
-+	err = ablkcipher_enqueue_request(&dev->queue, req);
- 	if (dev->busy) {
--		err = -EAGAIN;
- 		spin_unlock_irqrestore(&dev->lock, flags);
- 		goto exit;
- 	}
- 	dev->busy = true;
- 
--	err = ablkcipher_enqueue_request(&dev->queue, req);
- 	spin_unlock_irqrestore(&dev->lock, flags);
- 
- 	tasklet_schedule(&dev->tasklet);
-@@ -688,6 +694,7 @@ static int s5p_aes_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	pdata->busy = false;
- 	pdata->variant = variant;
- 	pdata->dev = dev;
- 	platform_set_drvdata(pdev, pdata);
+ /* mux clocks */
+ #define CLK_MOUT_HDMI		1024
 -- 
 1.7.9.5
 
