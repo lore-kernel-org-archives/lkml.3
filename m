@@ -1,117 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037AbaBQVqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:46:01 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:36319 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585AbaBQVp4 (ORCPT
+	id S1753508AbaBQVqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:46:52 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:34209 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaBQVqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:45:56 -0500
-Date: Mon, 17 Feb 2014 13:45:53 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-bcache@vger.kernel.org
-Subject: Re: New bcache compiler warning (was: Re: bcache: Minor fixes from
- kbuild robot)
-Message-ID: <20140217214553.GB11655@kmo>
-References: <CAMuHMdUYZLv4X3VBEOgcf+Dr22Pi1xWx-6oMPX7usBk6HJHTMw@mail.gmail.com>
- <530279EC.5010605@infradead.org>
- <CAMuHMdUnCdEoyD+seYXJD+e4bED9=ceUCC7NYsoRa1_vc3g4Hw@mail.gmail.com>
+	Mon, 17 Feb 2014 16:46:50 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 17 Feb 2014 13:46:06 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
+ barriers() for some control dependencies
+Message-ID: <20140217214606.GC7941@thin>
+References: <20140217212625.GA4083@linux.vnet.ibm.com>
+ <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMuHMdUnCdEoyD+seYXJD+e4bED9=ceUCC7NYsoRa1_vc3g4Hw@mail.gmail.com>
+In-Reply-To: <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 10:11:51PM +0100, Geert Uytterhoeven wrote:
-> On Mon, Feb 17, 2014 at 10:06 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> > On 02/17/2014 01:00 PM, Geert Uytterhoeven wrote:
-> >> On Fri, Feb 14, 2014 at 8:04 PM, Linux Kernel Mailing List
-> >> <linux-kernel@vger.kernel.org> wrote:
-> >>>    bcache: Minor fixes from kbuild robot
-> >>
-> >>> diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
-> >>> index 4f6b594..3f74b4b 100644
-> >>> --- a/drivers/md/bcache/bset.c
-> >>> +++ b/drivers/md/bcache/bset.c
-> >>> @@ -23,7 +23,7 @@ void bch_dump_bset(struct btree_keys *b, struct bset *i, unsigned set)
-> >>>         for (k = i->start; k < bset_bkey_last(i); k = next) {
-> >>>                 next = bkey_next(k);
-> >>>
-> >>> -               printk(KERN_ERR "block %u key %zi/%u: ", set,
-> >>> +               printk(KERN_ERR "block %u key %li/%u: ", set,
-> >>>                        (uint64_t *) k - i->d, i->keys);
-> >>>
-> >>>                 if (b->ops->key_dump)
-> >>
-> >> On 32-bit (m68k):
-> >> drivers/md/bcache/bset.c: In function ‘bch_dump_bset’:
-> >> drivers/md/bcache/bset.c:27: warning: format ‘%li’ expects type ‘long
-> >> int’, but argument 3 has type ‘int’
-> >>
-> >> What are you trying to print here? It looks a bit strange to me.
-> >> Technically, the difference between two pointers is of type ptrdiff_.
-> >> The kernel had
-> >>
-> >> typedef __kernel_ptrdiff_t      ptrdiff_t;
-> >>
-> >> and
-> >>
-> >> #if __BITS_PER_LONG != 64
-> >> typedef unsigned int    __kernel_size_t;
-> >> typedef int             __kernel_ssize_t;
-> >> typedef int             __kernel_ptrdiff_t;
-> >> #else
-> >> typedef __kernel_ulong_t __kernel_size_t;
-> >> typedef __kernel_long_t __kernel_ssize_t;
-> >> typedef __kernel_long_t __kernel_ptrdiff_t;
-> >> #endif
-> >>
-> >> So I'd expect "%zi" to be the right way, and a quick test compile on
-> >> 32-bit (m68k)
-> >> and 64-bit (amd64) comfirms that. What was wrong with it?
-> >
-> > The kernel supports 't' (%t) for ptrdiff_t (same as glibc),
-> > so %ti should work (or %tu).
+On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> Yes, that compiles without warnings, too.
+> Current compilers can "speculate" stores in the case where both legs
+> of the "if" statement start with identical stores.  Because the stores
+> are identical, the compiler knows that the store will unconditionally
+> execute regardless of the "if" condition, and so the compiler is within
+> its rights to hoist the store to precede the condition.  Such hoisting
+> destroys the control-dependency ordering.  This ordering can be restored
+> by placing a barrier() at the beginning of each leg of the "if" statement.
+> This commit adds this requirement to the control-dependencies section.
 > 
-> And after more decyphering, "(uint64_t *) k - i->d" seems to be positive,
-> so "%tu" should be OK.
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-*swears* Actually, I'm just going to cast this to unsigned (that's definitely
-safe here):
+This is starting to become a rather unreasonable level of fighting the
+compiler.  ("Threads cannot be implemented as a library" indeed.)  This
+doesn't seem like a reasonable thing to require users to do.  Is there
+really no other way to cope with this particular bit of "help" from the
+compiler?
 
-
-commit 70bc49d421c793f73a772ae1f50622a39c6136d9
-Author: Kent Overstreet <kmo@daterainc.com>
-Date:   Mon Feb 17 13:44:06 2014 -0800
-
-    bcache: Fix another compiler warning on m68k
-    
-    Use a bigger hammer this time
-    
-    Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-
-diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
-index 3f74b4b074..5454164153 100644
---- a/drivers/md/bcache/bset.c
-+++ b/drivers/md/bcache/bset.c
-@@ -23,8 +23,8 @@ void bch_dump_bset(struct btree_keys *b, struct bset *i, unsigned set)
- 	for (k = i->start; k < bset_bkey_last(i); k = next) {
- 		next = bkey_next(k);
- 
--		printk(KERN_ERR "block %u key %li/%u: ", set,
--		       (uint64_t *) k - i->d, i->keys);
-+		printk(KERN_ERR "block %u key %u/%u: ", set,
-+		       (unsigned) ((u64 *) k - i->d), i->keys);
- 
- 		if (b->ops->key_dump)
- 			b->ops->key_dump(b, k);
-
+>  Documentation/memory-barriers.txt | 26 +++++++++++++++++++-------
+>  1 file changed, 19 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> index f2668c19807e..adfaca831a90 100644
+> --- a/Documentation/memory-barriers.txt
+> +++ b/Documentation/memory-barriers.txt
+> @@ -608,26 +608,30 @@ as follows:
+>  	b = p;  /* BUG: Compiler can reorder!!! */
+>  	do_something();
+>  
+> -The solution is again ACCESS_ONCE(), which preserves the ordering between
+> -the load from variable 'a' and the store to variable 'b':
+> +The solution is again ACCESS_ONCE() and barrier(), which preserves the
+> +ordering between the load from variable 'a' and the store to variable 'b':
+>  
+>  	q = ACCESS_ONCE(a);
+>  	if (q) {
+> +		barrier();
+>  		ACCESS_ONCE(b) = p;
+>  		do_something();
+>  	} else {
+> +		barrier();
+>  		ACCESS_ONCE(b) = p;
+>  		do_something_else();
+>  	}
+>  
+> -You could also use barrier() to prevent the compiler from moving
+> -the stores to variable 'b', but barrier() would not prevent the
+> -compiler from proving to itself that a==1 always, so ACCESS_ONCE()
+> -is also needed.
+> +The initial ACCESS_ONCE() is required to prevent the compiler from
+> +proving the value of 'a', and the pair of barrier() invocations are
+> +required to prevent the compiler from pulling the two identical stores
+> +to 'b' out from the legs of the "if" statement.
+>  
+>  It is important to note that control dependencies absolutely require a
+>  a conditional.  For example, the following "optimized" version of
+> -the above example breaks ordering:
+> +the above example breaks ordering, which is why the barrier() invocations
+> +are absolutely required if you have identical stores in both legs of
+> +the "if" statement:
+>  
+>  	q = ACCESS_ONCE(a);
+>  	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
+> @@ -643,9 +647,11 @@ It is of course legal for the prior load to be part of the conditional,
+>  for example, as follows:
+>  
+>  	if (ACCESS_ONCE(a) > 0) {
+> +		barrier();
+>  		ACCESS_ONCE(b) = q / 2;
+>  		do_something();
+>  	} else {
+> +		barrier();
+>  		ACCESS_ONCE(b) = q / 3;
+>  		do_something_else();
+>  	}
+> @@ -659,9 +665,11 @@ the needed conditional.  For example:
+>  
+>  	q = ACCESS_ONCE(a);
+>  	if (q % MAX) {
+> +		barrier();
+>  		ACCESS_ONCE(b) = p;
+>  		do_something();
+>  	} else {
+> +		barrier();
+>  		ACCESS_ONCE(b) = p;
+>  		do_something_else();
+>  	}
+> @@ -723,6 +731,10 @@ In summary:
+>        use smb_rmb(), smp_wmb(), or, in the case of prior stores and
+>        later loads, smp_mb().
+>  
+> +  (*) If both legs of the "if" statement begin with identical stores
+> +      to the same variable, a barrier() statement is required at the
+> +      beginning of each leg of the "if" statement.
+> +
+>    (*) Control dependencies require at least one run-time conditional
+>        between the prior load and the subsequent store, and this
+>        conditional must involve the prior load.  If the compiler
+> -- 
+> 1.8.1.5
+> 
