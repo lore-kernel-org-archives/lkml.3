@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaBQE5S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 23:57:18 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:40062 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaBQE5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 23:57:16 -0500
-X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Feb 2014 23:57:16 EST
-X-AuditID: 85900ec0-d452db9000001514-00-530196aa7552
-Message-ID: <530196A9.5060304@hitachi.com>
-Date: Mon, 17 Feb 2014 13:57:13 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH -tip RESEND 2/2] ftrace: Introduce nr_saved_cmdlines
- I/F
-References: <20140213012852.15283.50473.stgit@yunodevel> <20140213012858.15283.93302.stgit@yunodevel> <878utez4a1.fsf@sejong.aot.lge.com>
-In-Reply-To: <878utez4a1.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S1751122AbaBQFAd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 00:00:33 -0500
+Received: from mga01.intel.com ([192.55.52.88]:48065 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876AbaBQFAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 00:00:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,858,1384329600"; 
+   d="scan'208";a="476331699"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC Patch v1 0/6] Miscellaneous improvements for ACPI
+Date: Mon, 17 Feb 2014 13:01:05 +0800
+Message-Id: <1392613271-10912-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
+Hi,
+	This is a miscellaneous patch set to improve ACPI code. due to
+resource limitation, I can't find hardware to test all patches.
+So appreciate any help to these patches.
 
-(2014/02/14 13:50), Namhyung Kim wrote:
-> Hi Yoshihiro,
-> 
-> On Thu, 13 Feb 2014 10:28:58 +0900, Yoshihiro YUNOMAE wrote:
->> Introduce nr_saved_cmdlines I/F for changing the number of pid-comm list.
->> saved_cmdlines can store 128 command names using SAVED_CMDLINES now, but
->> 'no-existing processes' names are often lost in saved_cmdlines when we
->> read trace data. So, by introducing nr_saved_cmdlines I/F, the rule storing
->> 128 command names is changed to the command numbers defined users.
->>
->> When we write a value to nr_saved_cmdlines, the number of the value will
->> be stored in pid-comm list:
->>
->> 	# echo 1024 > /sys/kernel/debug/tracing/nr_saved_cmdlines
->>
->> Here, 1024 command names are stored. The default number is 128 and the maximum
->> number is PID_MAX_DEFAULT (=32768 if CONFIG_BASE_SMALL is not set). So, if we
->> want to avoid to lose command names, we need to set 32768 to nr_saved_cmdlines.
->>
->> We can read the maximum number of the list:
->>
->> 	# cat /sys/kernel/debug/tracing/nr_saved_cmdlines
->> 	128
-> 
-> [SNIP]
->> @@ -3685,7 +3760,8 @@ static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
->>   
->>   	(*pos)++;
->>   
->> -	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
->> +	for (; ptr < &savedcmd->map_cmdline_to_pid[savedcmd->cmdline_num];
->> +	     ptr++) {
->>   		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
->>   			continue;
->>   
->> @@ -3700,7 +3776,7 @@ static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
->>   	void *v;
->>   	loff_t l = 0;
->>   
->> -	v = &map_cmdline_to_pid[0];
->> +	v = &savedcmd->map_cmdline_to_pid[0];
->>   	while (l <= *pos) {
->>   		v = saved_cmdlines_next(m, v, &l);
->>   		if (!v)
-> 
-> Are you accessing the savecmd without trace_cmdline_lock?
+Thanks!
+Gerry
 
-It does not need to get trace_cmdline_lock here.
-The elements of map_pid_to_cmdline[] and saved_cmdlines[] are protected
-by trace_cmdline_lock in trace_find_cmdline(), but on the other hand
-map_cmdline_to_pid[] are not protected. There are no problems in
-particular. This is because map_cmdline_to_pid[] always refers to a
-valid process name or "<...>".
+Jiang Liu (6):
+  acpi_pad: simplify notify handler by using acpi_drv_ops->notify
+  ACPI: rename acpi_evaluate_hotplug_ost to acpi_evaluate_ost for reuse
+  acpi_pad: use acpi_evaluate_pad() to replace open-coded version
+  xen, acpi_pad: use acpi_evaluate_pad() to replace open-coded version
+  acpi_processor: use acpi_evaluate_pad() to replace open-coded version
+  ACPI: use device name LNXSYBUS.xx for ACPI \_SB and \_TZ objects
 
-Note that we can always get process names by setting nr_saved_cmdlines
-to maximum number if we want to avoid to get "<...>".
-
-Thank you,
-Yoshihiro YUNOMAE
+ drivers/acpi/acpi_pad.c          |   49 ++++++++------------------------------
+ drivers/acpi/processor_perflib.c |   14 +++--------
+ drivers/acpi/scan.c              |   20 ++++++++++++++--
+ drivers/acpi/utils.c             |   14 ++++-------
+ drivers/xen/xen-acpi-pad.c       |   26 ++++++--------------
+ include/acpi/acpi_bus.h          |   10 +++++++-
+ 6 files changed, 51 insertions(+), 82 deletions(-)
 
 -- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
-
+1.7.10.4
 
