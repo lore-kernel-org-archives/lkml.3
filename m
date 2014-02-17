@@ -1,128 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaBQSPB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:15:01 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:54187 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025AbaBQSO5 (ORCPT
+	id S1754111AbaBQSPR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:15:17 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37420 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753308AbaBQSPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:14:57 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
-To: Rob Herring <robherring2@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
+	Mon, 17 Feb 2014 13:15:13 -0500
+Date: Mon, 17 Feb 2014 18:12:10 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-In-Reply-To: <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
-Date: Mon, 17 Feb 2014 18:14:51 +0000
-Message-Id: <20140217181451.7EB7FC4044D@trevor.secretlab.ca>
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH v3 1/6] arm64: Add ftrace support
+Message-ID: <20140217181209.GF26590@mudshark.cambridge.arm.com>
+References: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org>
+ <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
+ <1391768336-5642-2-git-send-email-takahiro.akashi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391768336-5642-2-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014 07:56:33 -0600, Rob Herring <robherring2@gmail.com> wrote:
-> On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> > From: Philipp Zabel <philipp.zabel@gmail.com>
-> >
-> > This patch moves the parsing helpers used to parse connected graphs
-> > in the device tree, like the video interface bindings documented in
-> > Documentation/devicetree/bindings/media/video-interfaces.txt, from
-> > drivers/media/v4l2-core to drivers/of.
+On Fri, Feb 07, 2014 at 10:18:51AM +0000, AKASHI Takahiro wrote:
+> This patch implements arm64 specific part to support function tracers,
+> such as function (CONFIG_FUNCTION_TRACER), function_graph
+> (CONFIG_FUNCTION_GRAPH_TRACER) and function profiler
+> (CONFIG_FUNCTION_PROFILER).
 > 
-> This is the opposite direction things have been moving...
+> With 'function' tracer, all the functions in the kernel are traced with
+> timestamps in ${sysfs}/tracing/trace. If function_graph tracer is
+> specified, call graph is generated.
 > 
-> > This allows to reuse the same parser code from outside the V4L2 framework,
-> > most importantly from display drivers. There have been patches that duplicate
-> > the code (and I am going to send one of my own), such as
-> > http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
-> > and others that parse the same binding in a different way:
-> > https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
-> >
-> > I think that all common video interface parsing helpers should be moved to a
-> > single place, outside of the specific subsystems, so that it can be reused
-> > by all drivers.
+> The kernel must be compiled with -pg option so that _mcount() is inserted
+> at the beginning of functions. This function is called on every function's
+> entry as long as tracing is enabled.
+> In addition, function_graph tracer also needs to be able to probe function's
+> exit. ftrace_graph_caller() & return_to_handler do this by faking link
+> register's value to intercept function's return path.
 > 
-> Perhaps that should be done rather than moving to drivers/of now and
-> then again to somewhere else.
+> More details on architecture specific requirements are described in
+> Documentation/trace/ftrace-design.txt.
 
-This is just parsing helpers though, isn't it? I have no problem pulling
-helper functions into drivers/of if they are usable by multiple
-subsystems. I don't really understand the model being used though. I
-would appreciate a description of the usage model for these functions
-for poor folks like me who can't keep track of what is going on in
-subsystems.
+[...]
 
-g.
+> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+> new file mode 100644
+> index 0000000..0d5dfdb
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/ftrace.h
+> @@ -0,0 +1,23 @@
+> +/*
+> + * arch/arm64/include/asm/ftrace.h
+> + *
+> + * Copyright (C) 2013 Linaro Limited
+> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#ifndef __ASM_FTRACE_H
+> +#define __ASM_FTRACE_H
+> +
+> +#ifdef CONFIG_FUNCTION_TRACER
+> +#define MCOUNT_ADDR            ((unsigned long)_mcount)
+> +#define MCOUNT_INSN_SIZE       4 /* sizeof mcount call */
 
-> 
-> > I moved v4l2_of_get_next_endpoint, v4l2_of_get_remote_port,
-> > and v4l2_of_get_remote_port_parent. They are renamed to
-> > of_graph_get_next_endpoint, of_graph_get_remote_port, and
-> > of_graph_get_remote_port_parent, respectively.
-> >
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > ---
-> >  drivers/media/Kconfig             |   1 +
-> >  drivers/media/v4l2-core/v4l2-of.c | 117 ---------------------------------
-> >  drivers/of/Kconfig                |   3 +
-> >  drivers/of/Makefile               |   1 +
-> >  drivers/of/of_graph.c             | 133 ++++++++++++++++++++++++++++++++++++++
-> >  include/linux/of_graph.h          |  23 +++++++
-> >  include/media/v4l2-of.h           |  16 ++---
-> >  7 files changed, 167 insertions(+), 127 deletions(-)
-> >  create mode 100644 drivers/of/of_graph.c
-> >  create mode 100644 include/linux/of_graph.h
-> 
-> [snip]
-> 
-> > diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
-> > index 541cea4..404a493 100644
-> > --- a/include/media/v4l2-of.h
-> > +++ b/include/media/v4l2-of.h
-> > @@ -17,6 +17,7 @@
-> >  #include <linux/list.h>
-> >  #include <linux/types.h>
-> >  #include <linux/errno.h>
-> > +#include <linux/of_graph.h>
-> >
-> >  #include <media/v4l2-mediabus.h>
-> >
-> > @@ -72,11 +73,6 @@ struct v4l2_of_endpoint {
-> >  #ifdef CONFIG_OF
-> >  int v4l2_of_parse_endpoint(const struct device_node *node,
-> >                            struct v4l2_of_endpoint *endpoint);
-> > -struct device_node *v4l2_of_get_next_endpoint(const struct device_node *parent,
-> > -                                       struct device_node *previous);
-> > -struct device_node *v4l2_of_get_remote_port_parent(
-> > -                                       const struct device_node *node);
-> > -struct device_node *v4l2_of_get_remote_port(const struct device_node *node);
-> >  #else /* CONFIG_OF */
-> >
-> >  static inline int v4l2_of_parse_endpoint(const struct device_node *node,
-> > @@ -85,25 +81,25 @@ static inline int v4l2_of_parse_endpoint(const struct device_node *node,
-> >         return -ENOSYS;
-> >  }
-> >
-> > +#endif /* CONFIG_OF */
-> > +
-> >  static inline struct device_node *v4l2_of_get_next_endpoint(
-> >                                         const struct device_node *parent,
-> >                                         struct device_node *previous)
-> >  {
-> > -       return NULL;
-> > +       return of_graph_get_next_endpoint(parent, previous);
-> 
-> Won't this break for !OF?
-> 
-> Rob
+You can use AARCH64_INSN_SIZE here.
 
+> +#include <linux/linkage.h>
+> +#include <asm/ftrace.h>
+> +
+> +/*
+> + * Gcc with -pg will put the following code in the beginning of each function:
+> + *      mov x0, x30
+> + *      bl _mcount
+> + *     [function's body ...]
+> + * "bl _mcount" may be replaced to "bl ftrace_caller" or NOP if dynamic
+> + * ftrace is enabled.
+> + *
+> + * Please note that x0 as an argument will not be used here because we can
+> + * get lr(x30) of insturmented function at any time by winding up call stack
+
+instrumented
+
+> + * as long as the kernel is compiled without -fomit-frame-pointer.
+> + * (or CONFIG_FRAME_POINTER, this is forced on arm64)
+> + *
+> + * stack layout after mcount_enter:
+> + *
+> + *   0 ---------------------------------------- sp of _mcount()
+> + *      x29: fp of instrumented function       fp is not winded
+> + *     --------------------
+> + *      x30: lr of _mcount() (= instrumented function's pc)
+> + * +16 ---------------------------------------- sp of instrumented function
+> + *
+> + *     ....
+> + *
+> + * +xx ---------------------------------------- fp of instrumented function
+> + *      x29: fp of parent
+> + *     --------------------
+> + *      x30: lr of insturmented function (= parent's pc)
+> + *     --------------------
+> + *      xxx
+> + */
+> +
+> +       .macro mcount_enter
+> +       stp     x29, x30, [sp, #-48]!
+> +       .endm
+
+Can you elaborate in your comment about where this 48 comes from please? I
+can't join it up with your ascii art.
+
+Will
