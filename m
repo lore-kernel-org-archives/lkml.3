@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaBQIxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:53:24 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:62566 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074AbaBQIxW (ORCPT
+	id S1752209AbaBQIyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:54:46 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:65349 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaBQIyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:53:22 -0500
-Message-ID: <5301CDD8.5020808@huawei.com>
-Date: Mon, 17 Feb 2014 16:52:40 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 17 Feb 2014 03:54:44 -0500
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Yijing Wang <wangyijing@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH part1 v6 0/7] Introduce PCIe Device Serial Number capability
- support
-References: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+In-Reply-To: <5301CBAE.3000102@linux.vnet.ibm.com>
+References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org>
+	<8f2fc4d6240b567fdb69a0b47f073d174b7ef9b2.1392375504.git.viresh.kumar@linaro.org>
+	<5301CBAE.3000102@linux.vnet.ibm.com>
+Date: Mon, 17 Feb 2014 14:24:43 +0530
+Message-ID: <CAKohpom1DUOMBt6iAVcoQ5+DAXUgjSPGWaqpp6Jm=Vo+YExCFA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: don't call cpufreq_update_policy() on CPU addition
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pierre Ossman <pierre-list@ossman.eu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-   Sorry to bother you, any comment about this series?
+On 17 February 2014 14:13, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 02/14/2014 04:30 PM, Viresh Kumar wrote:
+>> cpufreq_update_policy() is called from two places currently. From a workqueue
+>> handled queued from cpufreq_bp_resume() for boot CPU and from
+>> cpufreq_cpu_callback() whenever a CPU is added.
+>>
+>> The first one makes sure that boot CPU is running on the frequency present in
+>> policy->cpu. But we don't really need a call from cpufreq_cpu_callback(),
+>> because we always call cpufreq_driver->init() (which will set policy->cur
+>> correctly) whenever first CPU of any policy is added back. And so every policy
+>> structure is guaranteed to have the right frequency in policy->cur.
+>>
+>
+> This wording is slightly inaccurate. ->init() may or may not set policy->cur
+> (for example, powernowk8 driver doesn't set it in the init routine)..
 
-Thanks!
-Yijing.
+Its not the wording that is wrong but this particular driver then :)
+This is what Documentation/cpu-drivers.txt says:
 
-On 2014/2/12 10:52, Yijing Wang wrote:
-> v5->v6: Add is_frozen flag to protect pci bus from double frozen.
-> 
-> This series is based on Bjorn's pci-next branch.
-> Currently, more and more PCIe devices support PCIe DSN(Device Serial Number)
-> capability, we can use this cap to identify device. In some platform,
-> when we hotplug PCIe device, no interrupts will be received in system.
-> So we can not identify the device whether is changed during suspend.
-> PCIe DSN can help to identify this. 
-> 
-> Legacy PCI device can achieve it by PCI Vital Product Data capability.
-> We can use its SN keyword to report the unique number.
-> But in my platform, PCI devices which support VPD SN cap report the
-> meaningless same string "0123456789". 
-> Rework PCI VPD code to support device identification is not an easy work.
-> Plan to do it in part2.
-> 
-> Yijing Wang (7):
->   PCI: rework pci_find_next_ext_capability()
->   PCI: introduce pci_bus_find_ext_capability()
->   PCI: Add support for Device Serial Number capability
->   PCI: Introduce pci_serial_number_changed()
->   PCI: Add pci_dummy_ops to isolate pci device temporarily
->   PCI: Check pci device serial number when scan device
->   PCI: pciehp: Don't enable/disable slot on resume unless status
->     changed
-> 
->  drivers/pci/hotplug/pciehp_core.c |   10 ++-
->  drivers/pci/pci.c                 |  169 +++++++++++++++++++++++++++++++++++--
->  drivers/pci/pci.h                 |    2 +-
->  drivers/pci/probe.c               |   15 +++-
->  include/linux/pci.h               |   10 ++-
->  5 files changed, 192 insertions(+), 14 deletions(-)
-> 
-> 
-> 
-> .
-> 
+1.2 Per-CPU Initialization
+Then, the driver must fill in the following values:
 
+policy->cur The current operating frequency of
+this CPU (if appropriate)
 
--- 
-Thanks!
-Yijing
+And so it is supposed to do it.
 
+> But we set it for sure in __cpufreq_add_dev():
+>
+> 1117         if (cpufreq_driver->get) {
+> 1118                 policy->cur = cpufreq_driver->get(policy->cpu);
+> 1119                 if (!policy->cur) {
+> 1120                         pr_err("%s: ->get() failed\n", __func__);
+> 1121                         goto err_get_freq;
+> 1122                 }
+> 1123         }
+
+Its just about removing that from drivers and doing it once in core :)
+
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>
+> The reasoning and the code looks good to me.
+>
+> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+Thanks.
