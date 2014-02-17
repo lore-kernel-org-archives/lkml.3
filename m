@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaBQIh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:37:26 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:61261 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751973AbaBQIhZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:37:25 -0500
-Message-ID: <1392626238.10966.7.camel@x220>
-Subject: Re: [PATCH] arm: sti: Remove SOC_STIH415 and SOC_STIH416
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Richard Weinberger <richard@nod.at>, kernel@stlinux.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 17 Feb 2014 09:37:18 +0100
-In-Reply-To: <5301C0D2.8040408@st.com>
-References: <1392577524.28866.32.camel@x220> <5301C0D2.8040408@st.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Feb 2014 08:37:24.0984 (UTC) FILETIME=[7B9D9F80:01CF2BBB]
-X-RcptDomain: vger.kernel.org
+	id S1752118AbaBQIiC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:38:02 -0500
+Received: from mga01.intel.com ([192.55.52.88]:9293 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930AbaBQIiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 03:38:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,859,1384329600"; 
+   d="scan'208";a="482798569"
+Date: Mon, 17 Feb 2014 14:05:33 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Siva Yerramreddy <siva.krishna.kumar.reddy.yerramreddy@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
+        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH dmaengine-fixes 1/1] dmaengine: read completed cookie
+ before used cookie
+Message-ID: <20140217083533.GW10628@intel.com>
+References: <d0106d723f7455208f83e50522007fee7887e67e.1392419479.git.siva.krishna.kumar.reddy.yerramreddy@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d0106d723f7455208f83e50522007fee7887e67e.1392419479.git.siva.krishna.kumar.reddy.yerramreddy@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
-
-On Mon, 2014-02-17 at 08:57 +0100, Maxime Coquelin wrote:
-> On 02/16/2014 08:05 PM, Paul Bolle wrote:
-> > The Kconfig symbols SOC_STIH415 and SOC_STIH416 were added in v3.11.
-> > They have never been used. They default to "y" but nothing cares. They
-> > can safely be removed.
+On Fri, Feb 14, 2014 at 03:32:57PM -0800, Siva Yerramreddy wrote:
+> When running dmatest with my yet-to-be submitted driver for the Intel MIC DMA
+> engine, dmatest detected "dma0chan3-copy5: result #8096161:completion busy
+> status with src_off=0x0 dst_off=0x0 len=0x40 (0)". This is caused by reading
+> the used cookie before the completed cookie in dma_cookie_status(),  if a DMA
+> request is submitted in between the two reads, and completes,  the completed
+> cookie will be newer than the used cookie value read previously.  Reversing
+> the order of reads ensures that the completed cookie is for a DMA request
+> older than the used cookie.
 > 
-> This is going to be used by the reset controller series from Srinivas:
-> http://marc.info/?l=linux-arm-kernel&m=139143833415806&w=2
+> Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+> Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
+> Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
+> Signed-off-by: Siva Yerramreddy <siva.krishna.kumar.reddy.yerramreddy@intel.com>
+> ---
+>  drivers/dma/dmaengine.h | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/dmaengine.h b/drivers/dma/dmaengine.h
+> index 17f983a..4c96892 100644
+> --- a/drivers/dma/dmaengine.h
+> +++ b/drivers/dma/dmaengine.h
+> @@ -7,6 +7,7 @@
+>  
+>  #include <linux/bug.h>
+>  #include <linux/dmaengine.h>
+> +#include <asm/barrier.h>
+>  
+>  /**
+>   * dma_cookie_init - initialize the cookies for a DMA channel
+> @@ -69,8 +70,13 @@ static inline enum dma_status dma_cookie_status(struct dma_chan *chan,
+>  {
+>  	dma_cookie_t used, complete;
+>  
+> -	used = chan->cookie;
+>  	complete = chan->completed_cookie;
+> +	/*
+> +	 * If this order is not maintained, used can end up being older than
+> +	 * complete
+> +	 */
+> +	smp_rmb();
+> +	used = chan->cookie;
+>  	barrier();
+>  	if (state) {
+>  		state->last = complete;
+The idea is right to grab the channle cookie after completed. But I dont see why
+you need another barrier in between these two?
 
-That links to a patch containing this chunk:
-    @@ -28,6 +29,7 @@ if ARCH_STI
-     config SOC_STIH415
- 	bool "STiH415 STMicroelectronics Consumer Electronics family"
- 	default y
-    +	select STIH415_RESET
- 	help
- 	  This enables support for STMicroelectronics Digital Consumer
- 	  Electronics family StiH415 parts, primarily targeted at set-top-box
-    @@ -37,6 +39,7 @@ config SOC_STIH415
-     config SOC_STIH416
- 	bool "STiH416 STMicroelectronics Consumer Electronics family"
- 	default y
-    +	select STIH416_RESET
- 	help
- 	  This enables support for STMicroelectronics Digital Consumer
- 	  Electronics family StiH416 parts, primarily targeted at set-top-box
+Dan,
 
-Those select statements do not use SOC_STIH415 or SOC_STIH416.
+This really is intresting case where the request completed raced with status.
+I am sure for us slow slave users we may not see such issues :D but for these
+and other memcpy cases do we really need to bother checking the status properly
+and getting right data or delayed reporting is fine?
 
-If SOC_STIH415 or SOC_STIH416 are going to be used in the future they
-can be readded in the series that also adds users for them.
-
-
-Paul Bolle
-
+-- 
+~Vinod
