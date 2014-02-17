@@ -1,124 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594AbaBQNPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:15:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:45352 "EHLO mga02.intel.com"
+	id S1753832AbaBQNQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 08:16:13 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:39657 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418AbaBQNPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 08:15:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,860,1384329600"; 
-   d="scan'208";a="456852953"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 11/11] mei: wd: fix stop completion failure
-Date: Mon, 17 Feb 2014 15:13:27 +0200
-Message-Id: <1392642807-8878-12-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
-References: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
+	id S1753798AbaBQNQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 08:16:07 -0500
+Message-ID: <53020B92.6060805@mev.co.uk>
+Date: Mon, 17 Feb 2014 13:16:02 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Chase Southwood <chase.southwood@yahoo.com>, gregkh@linuxfoundation.org
+CC: hsweeten@visionengravers.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] Staging: comedi: addi-data: fix brace-related coding
+ style issues in hwdrv_apci035.c
+References: <1392540006-25972-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1392540006-25972-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While running Documentation/watchdog/src/watchdog-simple.c
-and quiting by Ctrl-C, fallowing error is displayed:
-mei_me 0000:00:16.0: wd: stop failed to complete ret=-512.
+On 2014-02-16 08:40, Chase Southwood wrote:
+> This patch for hwdrv_apci035 removes some unneeded braces, and moves some
+> improperly placed braces to the correct position, as found by checkpatch.
+> It also removes a commented out if-statement that I found whilst cleaning
+> braces that is identical to another un-commented if-statement directly
+> above it, so it is just added clutter and so we can delete it to clean up
+> further.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+> So I decided to venture into addi-data today and found that most of the
+> files in there are very messy from a style standpoint.  This is the first
+> (of probably a few) patchsets to try and clean those files up a bit.  I
+> hope that this will be helpful!
 
-The whatchdog core framework is not able to propagate
--ESYSRESTART or -EINTR. Also There is no much sense in
-restarting the close system call so instead of using
-wait_event_interruptible_timeout we can use wait_event_timeout
-with reasonable 10 msecs timeout.
+Quite a few have been cleaned up extensively by Hartley, but they needed 
+more extensive changes than clean-ups due to them trying to handle 
+things differently to the normal comedi way of doing things.
 
-Reported-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/interrupt.c |  2 +-
- drivers/misc/mei/wd.c        | 32 +++++++++++++++++---------------
- 2 files changed, 18 insertions(+), 16 deletions(-)
+>
+>   .../comedi/drivers/addi-data/hwdrv_apci035.c       | 49 ++++++++++------------
+>   1 file changed, 22 insertions(+), 27 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+> index 1128c22..584a1d5 100644
+> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+> @@ -177,11 +177,11 @@ static int i_APCI035_ConfigTimerWatchdog(struct comedi_device *dev,
+>   	devpriv->tsk_Current = current;
+>   	devpriv->b_TimerSelectMode = data[0];
+>   	i_WatchdogNbr = data[1];
+> -	if (data[0] == 0) {
+> +	if (data[0] == 0)
+>   		ui_Mode = 2;
+> -	} else {
+> +	else
+>   		ui_Mode = 0;
+> -	}
+> +
+>   /* ui_Command = inl(devpriv->iobase+((i_WatchdogNbr-1)*32)+12); */
+>   	ui_Command = 0;
+>   /* ui_Command = ui_Command & 0xFFFFF9FEUL; */
+> @@ -366,8 +366,7 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
+>   			devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 12);
+>   	}
+>
+> -	if (data[0] == 0)	/* Stop The Watchdog */
+> -	{
+> +	if (data[0] == 0) {
+>   		/* Stop The Watchdog */
+>   		ui_Command = 0;
+>   /*
+> @@ -377,15 +376,15 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
+>   		outl(ui_Command,
+>   			devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 12);
+>   	}			/*   if (data[1]==0) */
+> -	if (data[0] == 3)	/* stop all Watchdogs */
+> -	{
+> +	if (data[0] == 3) {
+> +		/* stop all Watchdogs */
+>   		ui_Command = 0;
+>   		for (i_Count = 1; i_Count <= 4; i_Count++) {
+> -			if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+> +			if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
+>   				ui_Command = 0x2UL;
+> -			} else {
+> +			else
+>   				ui_Command = 0x10UL;
+> -			}
+> +
+>   			i_WatchdogNbr = i_Count;
+>   			outl(ui_Command,
+>   				devpriv->iobase + ((i_WatchdogNbr - 1) * 32) +
+> @@ -393,30 +392,29 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
+>   		}
+>
+>   	}
+> -	if (data[0] == 4)	/* start all Watchdogs */
+> -	{
+> +	if (data[0] == 4) {
+> +		/* start all Watchdogs */
+>   		ui_Command = 0;
+>   		for (i_Count = 1; i_Count <= 4; i_Count++) {
+> -			if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+> +			if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
+>   				ui_Command = 0x1UL;
+> -			} else {
+> +			else
+>   				ui_Command = 0x8UL;
+> -			}
+> +
+>   			i_WatchdogNbr = i_Count;
+>   			outl(ui_Command,
+>   				devpriv->iobase + ((i_WatchdogNbr - 1) * 32) +
+>   				0);
+>   		}
+>   	}
+> -	if (data[0] == 5)	/* trigger all Watchdogs */
+> -	{
+> +	if (data[0] == 5) {
+> +		/* trigger all Watchdogs */
+>   		ui_Command = 0;
+>   		for (i_Count = 1; i_Count <= 4; i_Count++) {
+> -			if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+> +			if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
+>   				ui_Command = 0x4UL;
+> -			} else {
+> +			else
+>   				ui_Command = 0x20UL;
+> -			}
+>
+>   			i_WatchdogNbr = i_Count;
+>   			outl(ui_Command,
+> @@ -488,11 +486,9 @@ static int i_APCI035_ReadTimerWatchdog(struct comedi_device *dev,
+>   	/* Get the overflow status */
+>   	/***************************/
+>   	data[3] = ((ui_Status >> 0) & 1);
+> -	if (devpriv->b_TimerSelectMode == ADDIDATA_TIMER) {
+> +	if (devpriv->b_TimerSelectMode == ADDIDATA_TIMER)
+>   		data[4] = inl(devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 0);
+>
+> -	}			/*   if  (devpriv->b_TimerSelectMode==ADDIDATA_TIMER) */
+> -
+>   	return insn->n;
+>   }
+>
+> @@ -655,8 +651,8 @@ static void v_APCI035_Interrupt(int irq, void *d)
+>   	ui_StatusRegister2 =
+>   		inl(devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 20);
+>
+> -	if ((((ui_StatusRegister1) & 0x8) == 0x8))	/* Test if warning relay interrupt */
+> -	{
+> +	/* Test if warning relay interrupt */
+> +	if ((((ui_StatusRegister1) & 0x8) == 0x8)) {
+>   	/**********************************/
+>   		/* Disable the temperature warning */
+>   	/**********************************/
+> @@ -675,9 +671,8 @@ static void v_APCI035_Interrupt(int irq, void *d)
+>   	}			/* if (((ui_StatusRegister1 & 0x8) == 0x8)) */
+>
+>   	else {
+> -		if ((ui_StatusRegister2 & 0x1) == 0x1) {
+> +		if ((ui_StatusRegister2 & 0x1) == 0x1)
+>   			send_sig(SIGIO, devpriv->tsk_Current, 0);	/*  send signal to the sample */
+> -		}
+>   	}			/* else if (((ui_StatusRegister1 & 0x8) == 0x8)) */
+>
+>   	return;
+>
 
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 834220a..5aab335 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -474,7 +474,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- 
- 	if (dev->wd_state == MEI_WD_STOPPING) {
- 		dev->wd_state = MEI_WD_IDLE;
--		wake_up_interruptible(&dev->wait_stop_wd);
-+		wake_up(&dev->wait_stop_wd);
- 	}
- 
- 	if (mei_cl_is_connected(&dev->wd_cl)) {
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index 13bb7a9..e084adf 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -155,9 +155,11 @@ int mei_wd_send(struct mei_device *dev)
-  * @dev: the device structure
-  * @preserve: indicate if to keep the timeout value
-  *
-- * returns 0 if success,
-- *	-EIO when message send fails
-+ * returns 0 if success
-+ * on error:
-+ *	-EIO    when message send fails
-  *	-EINVAL when invalid message is to be sent
-+ *	-ETIME  on message timeout
-  */
- int mei_wd_stop(struct mei_device *dev)
- {
-@@ -173,12 +175,12 @@ int mei_wd_stop(struct mei_device *dev)
- 
- 	ret = mei_cl_flow_ctrl_creds(&dev->wd_cl);
- 	if (ret < 0)
--		goto out;
-+		goto err;
- 
- 	if (ret && mei_hbuf_acquire(dev)) {
- 		ret = mei_wd_send(dev);
- 		if (ret)
--			goto out;
-+			goto err;
- 		dev->wd_pending = false;
- 	} else {
- 		dev->wd_pending = true;
-@@ -186,21 +188,21 @@ int mei_wd_stop(struct mei_device *dev)
- 
- 	mutex_unlock(&dev->device_lock);
- 
--	ret = wait_event_interruptible_timeout(dev->wait_stop_wd,
--					dev->wd_state == MEI_WD_IDLE,
--					msecs_to_jiffies(MEI_WD_STOP_TIMEOUT));
-+	ret = wait_event_timeout(dev->wait_stop_wd,
-+				dev->wd_state == MEI_WD_IDLE,
-+				msecs_to_jiffies(MEI_WD_STOP_TIMEOUT));
- 	mutex_lock(&dev->device_lock);
--	if (dev->wd_state == MEI_WD_IDLE) {
--		dev_dbg(&dev->pdev->dev, "wd: stop completed ret=%d.\n", ret);
--		ret = 0;
--	} else {
--		if (!ret)
--			ret = -ETIME;
-+	if (dev->wd_state != MEI_WD_IDLE) {
-+		/* timeout */
-+		ret = -ETIME;
- 		dev_warn(&dev->pdev->dev,
- 			"wd: stop failed to complete ret=%d.\n", ret);
-+		goto err;
- 	}
--
--out:
-+	dev_dbg(&dev->pdev->dev, "wd: stop completed after %u msec\n",
-+			MEI_WD_STOP_TIMEOUT - jiffies_to_msecs(ret));
-+	return 0;
-+err:
- 	return ret;
- }
- 
+Looks good.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+
 -- 
-1.8.5.3
-
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
