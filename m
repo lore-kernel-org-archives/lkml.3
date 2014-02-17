@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaBQGE5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 01:04:57 -0500
-Received: from nm41.bullet.mail.bf1.yahoo.com ([216.109.114.57]:45968 "EHLO
-	nm41.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751896AbaBQGE4 (ORCPT
+	id S1752365AbaBQGI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 01:08:56 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:61994 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaBQGIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 01:04:56 -0500
-X-Greylist: delayed 418 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Feb 2014 01:04:55 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s1024; d=yahoo.com.au;
-	b=SGrQ0BzuL0ZmKlpgj9XsAO2OnXRpQrutbrvsOaVJ+rP+oYRGGEMpzg2D1SyIIQrYVGk9+8J3Zp6ZIRDjBDnBznlpobanPYbiWEqXl3ArPhW4NT3S4zmkxRJaEpUbzq2SlWs38ll5EgL/B+B/LtrVxadE0mQdJbzlOsFmFJTXsdo=;
-X-Yahoo-Newman-Id: 952189.46447.bm@smtp208.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: EvbRogoVM1k29C8xXMV2A4wAeeGPRRa9EHbFLxZorok5zr_
- MZdmLXCVjV97td8pgNeSYpVXTPs38pYUSfKryP9SHbv4WjRtvUf9qqCfW9MS
- Kr5lskvntnrxh87b9tZwMzV9fUvAgLmZV8VJKV91PIwRC_tJ2M2p.Zyssg3V
- eBEBshjEvaeAyOZWCqwayHVQ5U0xVFkc47kqnY77GJ3NLMuMpDvd94ss0BxC
- KKi4TNrNub64LTfcKOapyWReiuob6cZPgv2HLap7cupSLN28kuo8VMYWDyKL
- B3kxHp8p6hICKljsqNtbJOV_PHoQ2V0tgVRyuUJbiJQdQsDIMIzt35juDyAq
- Xdu5SB5UajQRM1fhm0eabt6sB9YZIdR0CM58_lI.cKyLIHE11JbcSZs7nZZL
- HIt0zUvdozyMiEP_ctZIWSsQdugiknVlkJDq.TxeXTmC_NBJEuiTec2O6eE2
- ywN0EnlRYraoxgdD0Cef5Px_93MDv4iVZegM0gX.qr.CNZ7Cjy_hIDozK0Y8
- xl4dmZw.FWl8bazaG6wUEXRAT4vNwemBsktiX07i.j4pbHBi5oCyN
-X-Yahoo-SMTP: HRQj2fWswBBC5fErUYxVDeLCn8s-
-X-Rocket-Received: from desktop-fedora.coffee.gen.nz (slapdau@121.74.111.210 with plain [63.250.193.228])
-        by smtp208.mail.bf1.yahoo.com with SMTP; 16 Feb 2014 21:57:56 -0800 PST
-Message-ID: <5301A4DC.4020208@yahoo.com.au>
-Date: Mon, 17 Feb 2014 18:57:48 +1300
-From: Craig McGeachie <slapdau@yahoo.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 17 Feb 2014 01:08:54 -0500
 MIME-Version: 1.0
-To: Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org
-CC: gregkh@linuxfoundation.org, s-anna@ti.com, tony@atomide.com,
-        omar.ramirez@copitl.com, loic.pallardy@st.com, lftan.linux@gmail.com,
-        courtney.cavin@sonymobile.com, rafael.j.wysocki@intel.com,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Subject: Re: [PATCHv3] Generic Mailbox API
-References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
-In-Reply-To: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52FE71BD.3020103@wwwdotorg.org>
+References: <cover.1392273722.git.viresh.kumar@linaro.org>
+	<52FE71BD.3020103@wwwdotorg.org>
+Date: Mon, 17 Feb 2014 11:38:53 +0530
+Message-ID: <CAKohpo=7Kbvh5UN9iZ6V3e=1ZY6y5_grQjxj6raEL_djHnMZrQ@mail.gmail.com>
+Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
+        jinchoi@broadcom.com, Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/02/14 07:22, Jassi Brar wrote:
-> Hello,
+On 15 February 2014 01:12, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 02/12/2014 11:50 PM, Viresh Kumar wrote:
+>> This patchset creates/calls cpufreq suspend/resume callbacks from dpm_{suspend|resume}()
+>> for handling suspend/resume of cpufreq governors and core.
 >
->    Here is what the generic mailbox api looks like after modifications
-> to make it work with 5 different platforms.
->   Major feedback from Suman Anna(TI), LeyFoon Tan(Intel),
-> Craig McGeachie(Broadcom) and Loic Pallardy(ST).
+> Are these patches for 3.14 or 3.15?
+
+3.15
+
+> I ask because I just tested Linus's master from a few days back (some
+> point after v3.14-rc2; commit 9398a10cd964 Merge tag
+> 'regulator-v3.14-rc2'), and I see a lot of the following messages during
+> suspend and/or resume (about 2-7 times, perhaps more of them from the
+> resume path, but it's hard to tell):
 >
-> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
->
+> cpufreq: __cpufreq_driver_target: Failed to change cpu frequency: -16
 
-Important point of clarification.  I don't work for Broadcom.  I have no 
-current or past affiliation with Broadcom.  I was fairly certain that 
-I'd given no indication that I did.  I'm just some guy who purchased a 
-single board computer based on one of their products.  I do work for an 
-IT company, but that isn't relevant to what I do after hours on my own time.
+That's because you return -EBUSY from your tegra_cpu_init() once
+suspend/resume has started. Probably the print message is new here,
+and so you are able to see it failing.. Nothing else should have changed
+otherwise.
 
-Cheers,
-Craig.
+> This series does appear to solve those, so I think at least part of it
+> needs to be applied for 3.14.
 
+Because we disallow calls to __cpufreq_driver_target() after suspend/
+resume have started.
+
+> Also, I sometimes see the following during resume. I saw it twice with
+> Linus's tree, but then I did 10 more reboot+suspend+resume cycles and
+> couldn't repro it, and I saw it once with Linus's tree plus this series
+> applied, then couldn't reproduce it in 5 more tries.
+
+> Do you have any idea what the problem might be, and how to solve it?
+
+Not yet, will check..
