@@ -1,147 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaBPXrd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 18:47:33 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:46489
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S1753807AbaBPXsA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 18:48:00 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:38460
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753132AbaBPXrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 18:47:31 -0500
+	id S1753563AbaBPXrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 18:47:32 -0500
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         jasowang@redhat.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/3] Drivers: net: hyperv: Get rid of the rndis_filter_packet structure
-Date: Sun, 16 Feb 2014 16:38:43 -0800
-Message-Id: <1392597525-13346-1-git-send-email-kys@microsoft.com>
+Subject: [PATCH 3/3] Drivers: net: hyperv: Cleanup the netvsc receive callback functio
+Date: Sun, 16 Feb 2014 16:38:45 -0800
+Message-Id: <1392597525-13346-3-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1392597483-13307-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1392597525-13346-1-git-send-email-kys@microsoft.com>
 References: <1392597483-13307-1-git-send-email-kys@microsoft.com>
+ <1392597525-13346-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This structure is redundant; get rid of it make the code little more efficient -
-get rid of the unnecessary indirection.
+Get rid of the buffer allocation in the receive path for normal packets.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/net/hyperv/hyperv_net.h   |    6 -----
- drivers/net/hyperv/netvsc_drv.c   |    2 +-
- drivers/net/hyperv/rndis_filter.c |   41 ++----------------------------------
- 3 files changed, 4 insertions(+), 45 deletions(-)
+ drivers/net/hyperv/hyperv_net.h |    2 ++
+ drivers/net/hyperv/netvsc.c     |   33 ++++++++++-----------------------
+ 2 files changed, 12 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 7b594ce..7645ba3 100644
+index 7645ba3..01a16ea 100644
 --- a/drivers/net/hyperv/hyperv_net.h
 +++ b/drivers/net/hyperv/hyperv_net.h
-@@ -846,12 +846,6 @@ struct rndis_message {
+@@ -506,6 +506,8 @@ struct netvsc_device {
+ 
+ 	/* Holds rndis device info */
+ 	void *extension;
++	/* The recive buffer for this device */
++	unsigned char cb_buffer[NETVSC_PACKET_SIZE];
  };
  
+ /* NdisInitialize message */
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 7fa2bba..9a0e9c6 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -795,22 +795,16 @@ static void netvsc_channel_cb(void *context)
+ 	struct netvsc_device *net_device;
+ 	u32 bytes_recvd;
+ 	u64 request_id;
+-	unsigned char *packet;
+ 	struct vmpacket_descriptor *desc;
+ 	unsigned char *buffer;
+ 	int bufferlen = NETVSC_PACKET_SIZE;
+ 	struct net_device *ndev;
  
--struct rndis_filter_packet {
--	void *completion_ctx;
--	void (*completion)(void *context);
--	struct rndis_message msg;
--};
+-	packet = kzalloc(NETVSC_PACKET_SIZE * sizeof(unsigned char),
+-			 GFP_ATOMIC);
+-	if (!packet)
+-		return;
+-	buffer = packet;
 -
- /* Handy macros */
+ 	net_device = get_inbound_net_device(device);
+ 	if (!net_device)
+-		goto out;
++		return;
+ 	ndev = net_device->ndev;
++	buffer = net_device->cb_buffer;
  
- /* get the size of an RNDIS message. Pass in the message type, */
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 18916f7..4950a79 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -155,7 +155,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	/* Allocate a netvsc packet based on # of frags. */
- 	packet = kzalloc(sizeof(struct hv_netvsc_packet) +
- 			 (num_pages * sizeof(struct hv_page_buffer)) +
--			 sizeof(struct rndis_filter_packet) +
-+			 sizeof(struct rndis_message) +
- 			 NDIS_VLAN_PPI_SIZE, GFP_ATOMIC);
- 	if (!packet) {
- 		/* out of memory, drop packet */
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 1084e5d..f0cc8ef 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -58,9 +58,6 @@ struct rndis_request {
- 	u8 request_ext[RNDIS_EXT_LEN];
- };
+ 	do {
+ 		ret = vmbus_recvpacket_raw(device->channel, buffer, bufferlen,
+@@ -838,23 +832,16 @@ static void netvsc_channel_cb(void *context)
+ 					break;
+ 				}
  
--static void rndis_filter_send_completion(void *ctx);
+-				/* reset */
+-				if (bufferlen > NETVSC_PACKET_SIZE) {
+-					kfree(buffer);
+-					buffer = packet;
+-					bufferlen = NETVSC_PACKET_SIZE;
+-				}
+ 			} else {
+-				/* reset */
+-				if (bufferlen > NETVSC_PACKET_SIZE) {
+-					kfree(buffer);
+-					buffer = packet;
+-					bufferlen = NETVSC_PACKET_SIZE;
+-				}
 -
--
- static struct rndis_device *get_rndis_device(void)
- {
- 	struct rndis_device *device;
-@@ -277,7 +274,7 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 				"rndis response buffer overflow "
- 				"detected (size %u max %zu)\n",
- 				resp->msg_len,
--				sizeof(struct rndis_filter_packet));
-+				sizeof(struct rndis_message));
++				/*
++				 * We are done for this pass.
++				 */
+ 				break;
+ 			}
++
+ 		} else if (ret == -ENOBUFS) {
++			if (bufferlen > NETVSC_PACKET_SIZE)
++				kfree(buffer);
+ 			/* Handle large packet */
+ 			buffer = kmalloc(bytes_recvd, GFP_ATOMIC);
+ 			if (buffer == NULL) {
+@@ -869,8 +856,8 @@ static void netvsc_channel_cb(void *context)
+ 		}
+ 	} while (1);
  
- 			if (resp->ndis_msg_type ==
- 			    RNDIS_MSG_RESET_C) {
-@@ -898,17 +895,14 @@ int rndis_filter_close(struct hv_device *dev)
- int rndis_filter_send(struct hv_device *dev,
- 			     struct hv_netvsc_packet *pkt)
- {
--	int ret;
--	struct rndis_filter_packet *filter_pkt;
- 	struct rndis_message *rndis_msg;
- 	struct rndis_packet *rndis_pkt;
- 	u32 rndis_msg_size;
- 	bool isvlan = pkt->vlan_tci & VLAN_TAG_PRESENT;
- 
- 	/* Add the rndis header */
--	filter_pkt = (struct rndis_filter_packet *)pkt->extension;
-+	rndis_msg = (struct rndis_message *)pkt->extension;
- 
--	rndis_msg = &filter_pkt->msg;
- 	rndis_msg_size = RNDIS_MESSAGE_SIZE(struct rndis_packet);
- 	if (isvlan)
- 		rndis_msg_size += NDIS_VLAN_PPI_SIZE;
-@@ -961,34 +955,5 @@ int rndis_filter_send(struct hv_device *dev,
- 		pkt->page_buf[1].len = rndis_msg_size - pkt->page_buf[0].len;
- 	}
- 
--	/* Save the packet send completion and context */
--	filter_pkt->completion = pkt->completion.send.send_completion;
--	filter_pkt->completion_ctx =
--				pkt->completion.send.send_completion_ctx;
--
--	/* Use ours */
--	pkt->completion.send.send_completion = rndis_filter_send_completion;
--	pkt->completion.send.send_completion_ctx = filter_pkt;
--
--	ret = netvsc_send(dev, pkt);
--	if (ret != 0) {
--		/*
--		 * Reset the completion to originals to allow retries from
--		 * above
--		 */
--		pkt->completion.send.send_completion =
--				filter_pkt->completion;
--		pkt->completion.send.send_completion_ctx =
--				filter_pkt->completion_ctx;
--	}
--
--	return ret;
--}
--
--static void rndis_filter_send_completion(void *ctx)
--{
--	struct rndis_filter_packet *filter_pkt = ctx;
--
--	/* Pass it back to the original handler */
--	filter_pkt->completion(filter_pkt->completion_ctx);
-+	return netvsc_send(dev, pkt);
+-out:
+-	kfree(buffer);
++	if (bufferlen > NETVSC_PACKET_SIZE)
++		kfree(buffer);
+ 	return;
  }
+ 
 -- 
 1.7.4.1
 
