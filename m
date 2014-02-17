@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaBQIWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:22:31 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:39438 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaBQIW3 (ORCPT
+	id S1751836AbaBQIYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:24:53 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:53980 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaBQIYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:22:29 -0500
-Date: Mon, 17 Feb 2014 08:22:22 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger <rogerable@realtek.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
-Subject: Re: [PATCH v4 1/3] mfd: Add realtek USB card reader driver
-Message-ID: <20140217082222.GA17875@lee--X1>
-References: <1392199238-14500-1-git-send-email-rogerable@realtek.com>
- <1392199238-14500-2-git-send-email-rogerable@realtek.com>
- <20140214094427.GA7380@lee--X1>
- <5301A786.8040607@realtek.com>
+	Mon, 17 Feb 2014 03:24:52 -0500
+Message-ID: <5301C605.3030205@linux.vnet.ibm.com>
+Date: Mon, 17 Feb 2014 13:49:17 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5301A786.8040607@realtek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pierre Ossman <pierre-list@ossman.eu>
+Subject: Re: [PATCH 1/2] cpufreq: Return error if ->get() failed in cpufreq_update_policy()
+References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org> <4772234.6D4cUIJHX4@vostro.rjw.lan> <CAKohpo=uPbqMcDEHYEMahRF0rCO8KYscj2nocz81_OTKyU+Tfw@mail.gmail.com>
+In-Reply-To: <CAKohpo=uPbqMcDEHYEMahRF0rCO8KYscj2nocz81_OTKyU+Tfw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021708-2674-0000-0000-00000CBF3452
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>From: Roger Tseng <rogerable@realtek.com>
-> >>
-> >>Realtek USB card reader provides a channel to transfer command or data to flash
-> >>memory cards. This driver exports host instances for mmc and memstick subsystems
-> >>and handles basic works.
-> >>
-> >>Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> >>---
-> >>  drivers/mfd/Kconfig          |  10 +
-> >>  drivers/mfd/Makefile         |   1 +
-> >>  drivers/mfd/rtsx_usb.c       | 760 +++++++++++++++++++++++++++++++++++++++++++
-> >>  include/linux/mfd/rtsx_usb.h | 628 +++++++++++++++++++++++++++++++++++
-> >>  4 files changed, 1399 insertions(+)
-> >>  create mode 100644 drivers/mfd/rtsx_usb.c
-> >>  create mode 100644 include/linux/mfd/rtsx_usb.h
-> >
-> >Applied again, thanks.
-> >
-> Would you also apply patch 2/3 and 3/3 that to make the device fully
-> operational for users? Or should they be applied by maintainers of
-> mmc/memstick subsystems?
+On 02/17/2014 10:44 AM, Viresh Kumar wrote:
+> On 17 February 2014 05:58, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> On Friday, February 14, 2014 04:30:40 PM Viresh Kumar wrote:
 > 
-> Chris, would you give some comment?
+>> Good to know that you chat with each other, but it really is not a useful piece
+>> of information until you say what *exactly* you were talking about.
+> 
+> All that is mentioned in commit logs of both the patches :) .. That's all we
+> discussed.
+> 
+>>>  drivers/cpufreq/cpufreq.c | 7 +++++++
+>>>  1 file changed, 7 insertions(+)
+>>>
+>>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>>> index 08ca8c9..383362b 100644
+>>> --- a/drivers/cpufreq/cpufreq.c
+>>> +++ b/drivers/cpufreq/cpufreq.c
+>>> @@ -2151,6 +2151,13 @@ int cpufreq_update_policy(unsigned int cpu)
+>>>        */
+>>>       if (cpufreq_driver->get) {
+>>>               new_policy.cur = cpufreq_driver->get(cpu);
+>>> +
+>>> +             if (!new_policy.cur) {
+>>> +                     pr_err("%s: ->get() returned 0 KHz\n", __func__);
+>>> +                     ret = -EINVAL;
+>>
+>> That isn't -EINVAL.  It may be -EIO or -ENODEV, but not -EINVAL.  Please.
+> 
+> Hmm.. Correct. I will use EIO then..
+> 
+>>> +                     goto no_policy;
+>>
+>> And is it unsafe to continue here?  Or can we continue regardless of getting 0?
+> 
+> We were supposed to set this frequency as the current frequency in policy->cur,
+> what else can we do now in this function when we aren't able to read current
+> freq? And so I thought that's all we can do here.
+> 
 
-I can apply them, but I need the other Maintainer Acks.
+Quick question: Looking at cpufreq_update_policy() and cpufreq_out_of_sync(),
+I understand that if the cpufreq subsystem's notion of the current frequency
+does not match with the actual frequency of the CPU, it tries to adjust and
+notify everyone that the current frequency is so-and-so, as read from the
+hardware. Instead, why can't we simply set the frequency to the value that
+we _want_ it to be at? I mean, if cpufreq subsystem thinks it is X KHz and
+the actual frequency is Y KHz, we can as well fix the anomaly by setting the
+frequency immediately to X KHz right?
 
-If they are build orthogonal i.e. there are no build dependencies
-between them, it's probably better that they go into their associated
-trees separately.
+The reason I ask this is that, if we follow this approach, then we can avoid
+ambiguities in dealing with the out-of-sync situation. That is, it becomes
+very straightforward to decide _what_ to do, when we detect scenarios where
+the frequency goes out of sync.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thoughts?
+
+Regards,
+Srivatsa S. Bhat
+
+>>> +             }
+>>> +
+>>>               if (!policy->cur) {
+>>>                       pr_debug("Driver did not initialize current freq");
+>>>                       policy->cur = new_policy.cur;
+>>>
+
+
