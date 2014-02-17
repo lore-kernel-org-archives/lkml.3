@@ -1,110 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716AbaBQBoS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 20:44:18 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:58811 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477AbaBQBoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 20:44:16 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
+	id S1753872AbaBQBof (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 20:44:35 -0500
+Received: from mga11.intel.com ([192.55.52.93]:35869 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753869AbaBQBod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 20:44:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,857,1384329600"; 
+   d="scan'208";a="476277940"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
-Date: Mon, 17 Feb 2014 02:45:22 +0100
-Message-ID: <35710038.vGLtzuIoLe@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CANqRtoROALpUqi8rKWRpQk7LGc0BqU14AKg-2MgYBMNoEFGA4Q@mail.gmail.com>
-References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1790131.DSZsj6HrSK@avalon> <CANqRtoROALpUqi8rKWRpQk7LGc0BqU14AKg-2MgYBMNoEFGA4Q@mail.gmail.com>
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+Subject: RE: [PATCH 0/5] Enabling the asynchronous threads for other phases
+Thread-Topic: [PATCH 0/5] Enabling the asynchronous threads for other phases
+Thread-Index: AQHPK26CZz6OAwG6HkWM9bZGnTNqJJq4qvoA
+Date: Mon, 17 Feb 2014 01:44:28 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01C21FC2@SHSMSX101.ccr.corp.intel.com>
+References: <1390207479-26064-1-git-send-email-chuansheng.liu@intel.com>
+ <2360514.bLFmJYMItS@vostro.rjw.lan>
+ <27240C0AC20F114CBF8149A2696CBE4A01C1AF9E@SHSMSX101.ccr.corp.intel.com>
+ <9364493.5ysfSuJl7g@vostro.rjw.lan>
+In-Reply-To: <9364493.5ysfSuJl7g@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1H1idjV014007
 
-Hi Magnus,
+Hello Rafael,
 
-On Saturday 15 February 2014 02:22:00 Magnus Damm wrote:
-> On Sat, Feb 15, 2014 at 1:12 AM, Laurent Pinchart wrote:
-> > On Saturday 15 February 2014 01:01:30 Magnus Damm wrote:
-> >> On Sat, Feb 15, 2014 at 12:53 AM, Laurent Pinchart wrote:
-> >> > On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
-> >> >> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
-> >> >> > +Channels Optional Properties:
-> >> >> > +
-> >> >> > +  - clock-source-rating: rating of the timer as a clock source
-> >> >> > device.
-> >> >> > +  - clock-event-rating: rating of the timer as a clock event
-> >> >> > device.
-> >> >> 
-> >> >> This feels like a leak of Linux internals. Why do you need this?
-> >> > 
-> >> > You're right, it is. The clock source and clock event ratings are
-> >> > currently configured through platform data, I'll need to find a way to
-> >> > compute them in the driver instead.
-> >> 
-> >> That would be very good!
-> > 
-> > Any pointer would be appreciated :-) How did you compute the various
-> > ratings used in platform data all over the place ?
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> Sent: Monday, February 17, 2014 7:41 AM
+> To: Liu, Chuansheng
+> Cc: gregkh@linuxfoundation.org; pavel@ucw.cz; Brown, Len;
+> linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi
+> Subject: Re: [PATCH 0/5] Enabling the asynchronous threads for other phases
 > 
-> Historically we used the rating to select between CMT and TMU. For
-> clock sources I suppose you also have the jiffy rating to consider.
-> And for the SMP parts we have ARM IP for TWD and arch timers that have
-> their ratings too. So you need to check all the timers on a particular
-> system and consider what you want to have operating by default. The
-> ARM IP timers should be preferred if available. For clock sources the
-> rule is probably the higher resolution the better.
+> On Monday, February 10, 2014 08:36:57 AM Liu, Chuansheng wrote:
+> > Hello Rafael,
+> >
+> > > -----Original Message-----
+> > > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > > Sent: Thursday, February 06, 2014 5:53 AM
+> > > To: Liu, Chuansheng
+> > > Cc: gregkh@linuxfoundation.org; pavel@ucw.cz; Brown, Len;
+> > > linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi
+> > > Subject: Re: [PATCH 0/5] Enabling the asynchronous threads for other
+> phases
+> > >
+> > > On Monday, January 20, 2014 04:44:34 PM Liu, Chuansheng wrote:
+> > > > Hello,
+> > > >
+> > > > This patch series are for enabling the asynchronous threads for the
+> phases
+> > > > resume_noirq, resume_early, suspend_noirq and suspend_late.
+> > > >
+> > > > Just like commit 5af84b82701a and 97df8c12995, with async threads it
+> will
+> > > > reduce the system suspending and resuming time significantly.
+> > > >
+> > > > With these patches, in my test platform, it saved 80% time in
+> resume_noirq
+> > > > phase.
+> > > >
+> > > > Has done the suspend-resume stress test for a long time, please help to
+> > > > review.
+> > > >
+> > > > Best Regards,
+> > > >
+> > > > [PATCH 1/5] PM: Adding two flags for async suspend_noirq and
+> > > > [PATCH 2/5] PM: Enabling the asynchronous threads for resume_noirq
+> > > > [PATCH 3/5] PM: Enabling the asyncronous threads for resume_early
+> > > > [PATCH 4/5] PM: Enabling the asyncronous threads for suspend_noirq
+> > > > [PATCH 5/5] PM: Enabling the asyncronous threads for suspend_late
+> > >
+> > > I've applied this to the bleeding-edge branch of the linux-pm.git tree, with
+> > > minor changes related to coding style, white space etc.
+> > Thanks your help.
 > 
-> >> > There's still one piece of Linux-specific data I need though, as I need
-> >> > to specify for each channel whether to use it as a clock source device,
-> >> > a clock event device, both of them or none. That's configuration
-> >> > information that needs to be provided somehow.
-> >> 
-> >> I think you can decide clock source or clock event assignment based on
-> >> number of channels available. If you have only a single channel then both
-> >> clock event and clock source need to be supported. Otherwise use one
-> >> channel for clock source and the rest for clock events.
-> > 
-> > That won't match the current situation. Look at CMT0 in r8a7790 for
-> > instance. There's two hardware channels available, and we only use the
-> > first one, for clock events only.
+> Unfortunately, I've just realized that your patches don't add any mechanism
+> ensuring that parent devices' .suspend_noirq() will be called *after* the
+> .suspend_noirq() of all their children.  Of course, analogously for
+> .suspend_late() and for the resume part (where children have to wait for
+> their parents).
 > 
-> You are correct. The reason for that is that the CMT driver today is
-> optimized for combined clock event and clock source operation.
-> 
-> Historically the hardware it initially was written for (sh-mobile on
-> the SH arch) only had a single timer channel so combined operation was
-> required for tickless to work. But since you're asking how to allocate
-> channels then I propose checking numbers of channels available and go
-> from there. With that the r8a7790 support can only get better. =)
-> 
-> >> This is probably out of scope for this DT conversion, but it would be
-> >> neat if you somehow could specify the CPU affinity for a channel to tie a
-> >> clock event to an individual CPU core. This would make a a per-cpu timer
-> >> unless I'm mistaken. But that's more of a software policy than anything
-> >> else.
-> > 
-> > Yes, that's a configuration that needs to be specified somewhere. I don't
-> > know where though.
-> 
-> As long as you have per-channel interrupts described in DT you can
-> probably handle this in a generic way in the driver.
+> In the original async suspend/resume code that is implemented using
+> power.completion and I suppose you can do the same thing here.
 
-But how do we decide whether to use a single timer channel or one channel per 
-CPU ? Will the kernel use one clock event device per CPU automatically ? I 
-have to confess I have no idea how this works.
+I think "parent devices suspend after their children" is not related directly
+with using async or not;
+In the original code, even without asyncing, the suspend/resume has the waiting
+action, but there no waiting action for suspend_noirq and other phases.
 
--- 
-Regards,
+If you think the parent waiting for children is necessary for suspend_noirq/suspend_late
+/resume_early/resume_noirq, I can cook other series patches.
 
-Laurent Pinchart
+But we can separate them with current asyncing series patches. Agree?
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
