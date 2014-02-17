@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216AbaBQV65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:58:57 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:38034 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbaBQV6y (ORCPT
+	id S1754398AbaBQWDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:03:25 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:38154 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108AbaBQV64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:58:54 -0500
+	Mon, 17 Feb 2014 16:58:56 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 02/14] staging: android: Split uapi out of android_alarm.h
-Date: Mon, 17 Feb 2014 13:58:30 -0800
-Message-Id: <1392674322-9036-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 04/14] staging: android: split uapi out of sync.h and sw_sync.h
+Date: Mon, 17 Feb 2014 13:58:32 -0800
+Message-Id: <1392674322-9036-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
 References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
@@ -24,87 +24,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@android.com>
 
-Move the userspace interface of android_alarm.h to
-drivers/staging/android/uapi/android_alarm.h
+Move the userspace interfaces of sync.h and sw_sync.h to
+drivers/staging/android/uapi/
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Colin Cross <ccross@android.com>
 Cc: Android Kernel Team <kernel-team@android.com>
 Signed-off-by: Colin Cross <ccross@android.com>
-[jstultz: minor commit msg tweak]
+[jstultz: Fixed up some conflicts from upstream spelling fixes]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/android_alarm.h      | 44 +-------------------
- drivers/staging/android/uapi/android_alarm.h | 62 ++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+), 42 deletions(-)
- create mode 100644 drivers/staging/android/uapi/android_alarm.h
+ drivers/staging/android/sw_sync.h      | 20 +------
+ drivers/staging/android/sync.h         | 86 +-----------------------------
+ drivers/staging/android/uapi/sw_sync.h | 32 +++++++++++
+ drivers/staging/android/uapi/sync.h    | 97 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 133 insertions(+), 102 deletions(-)
+ create mode 100644 drivers/staging/android/uapi/sw_sync.h
+ create mode 100644 drivers/staging/android/uapi/sync.h
 
-diff --git a/drivers/staging/android/android_alarm.h b/drivers/staging/android/android_alarm.h
-index 4fd32f3..495b20c 100644
---- a/drivers/staging/android/android_alarm.h
-+++ b/drivers/staging/android/android_alarm.h
-@@ -16,50 +16,10 @@
- #ifndef _LINUX_ANDROID_ALARM_H
- #define _LINUX_ANDROID_ALARM_H
+diff --git a/drivers/staging/android/sw_sync.h b/drivers/staging/android/sw_sync.h
+index 5aaf71d..1a50669 100644
+--- a/drivers/staging/android/sw_sync.h
++++ b/drivers/staging/android/sw_sync.h
+@@ -18,10 +18,9 @@
+ #define _LINUX_SW_SYNC_H
  
--#include <linux/ioctl.h>
--#include <linux/time.h>
- #include <linux/compat.h>
-+#include <linux/ioctl.h>
+ #include <linux/types.h>
+-
+-#ifdef __KERNEL__
+-
++#include <linux/kconfig.h>
+ #include "sync.h"
++#include "uapi/sw_sync.h"
  
--enum android_alarm_type {
--	/* return code bit numbers or set alarm arg */
--	ANDROID_ALARM_RTC_WAKEUP,
--	ANDROID_ALARM_RTC,
--	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
--	ANDROID_ALARM_ELAPSED_REALTIME,
--	ANDROID_ALARM_SYSTEMTIME,
+ struct sw_sync_timeline {
+ 	struct	sync_timeline	obj;
+@@ -57,19 +56,4 @@ static inline struct sync_pt *sw_sync_pt_create(struct sw_sync_timeline *obj,
+ }
+ #endif /* IS_ENABLED(CONFIG_SW_SYNC) */
+ 
+-#endif /* __KERNEL __ */
 -
--	ANDROID_ALARM_TYPE_COUNT,
--
--	/* return code bit numbers */
--	/* ANDROID_ALARM_TIME_CHANGE = 16 */
+-struct sw_sync_create_fence_data {
+-	__u32	value;
+-	char	name[32];
+-	__s32	fence; /* fd of new fence */
 -};
 -
--enum android_alarm_return_flags {
--	ANDROID_ALARM_RTC_WAKEUP_MASK = 1U << ANDROID_ALARM_RTC_WAKEUP,
--	ANDROID_ALARM_RTC_MASK = 1U << ANDROID_ALARM_RTC,
--	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK =
--				1U << ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
--	ANDROID_ALARM_ELAPSED_REALTIME_MASK =
--				1U << ANDROID_ALARM_ELAPSED_REALTIME,
--	ANDROID_ALARM_SYSTEMTIME_MASK = 1U << ANDROID_ALARM_SYSTEMTIME,
--	ANDROID_ALARM_TIME_CHANGE_MASK = 1U << 16
+-#define SW_SYNC_IOC_MAGIC	'W'
+-
+-#define SW_SYNC_IOC_CREATE_FENCE	_IOWR(SW_SYNC_IOC_MAGIC, 0,\
+-		struct sw_sync_create_fence_data)
+-#define SW_SYNC_IOC_INC			_IOW(SW_SYNC_IOC_MAGIC, 1, __u32)
+-
+-
+ #endif /* _LINUX_SW_SYNC_H */
+diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
+index 6ee8d69..eaf57ccc 100644
+--- a/drivers/staging/android/sync.h
++++ b/drivers/staging/android/sync.h
+@@ -14,14 +14,14 @@
+ #define _LINUX_SYNC_H
+ 
+ #include <linux/types.h>
+-#ifdef __KERNEL__
+-
+ #include <linux/kref.h>
+ #include <linux/ktime.h>
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ #include <linux/wait.h>
+ 
++#include "uapi/sync.h"
++
+ struct sync_timeline;
+ struct sync_pt;
+ struct sync_fence;
+@@ -341,86 +341,4 @@ int sync_fence_cancel_async(struct sync_fence *fence,
+  */
+ int sync_fence_wait(struct sync_fence *fence, long timeout);
+ 
+-#endif /* __KERNEL__ */
+-
+-/**
+- * struct sync_merge_data - data passed to merge ioctl
+- * @fd2:	file descriptor of second fence
+- * @name:	name of new fence
+- * @fence:	returns the fd of the new fence to userspace
+- */
+-struct sync_merge_data {
+-	__s32	fd2; /* fd of second fence */
+-	char	name[32]; /* name of new fence */
+-	__s32	fence; /* fd on newly created fence */
 -};
 -
--/* Disable alarm */
--#define ANDROID_ALARM_CLEAR(type)           _IO('a', 0 | ((type) << 4))
+-/**
+- * struct sync_pt_info - detailed sync_pt information
+- * @len:		length of sync_pt_info including any driver_data
+- * @obj_name:		name of parent sync_timeline
+- * @driver_name:	name of driver implementing the parent
+- * @status:		status of the sync_pt 0:active 1:signaled <0:error
+- * @timestamp_ns:	timestamp of status change in nanoseconds
+- * @driver_data:	any driver dependent data
+- */
+-struct sync_pt_info {
+-	__u32	len;
+-	char	obj_name[32];
+-	char	driver_name[32];
+-	__s32	status;
+-	__u64	timestamp_ns;
 -
--/* Ack last alarm and wait for next */
--#define ANDROID_ALARM_WAIT                  _IO('a', 1)
+-	__u8	driver_data[0];
+-};
 -
--#define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
--/* Set alarm */
--#define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
--#define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
--#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
--#define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
--#define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
--#define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
+-/**
+- * struct sync_fence_info_data - data returned from fence info ioctl
+- * @len:	ioctl caller writes the size of the buffer its passing in.
+- *		ioctl returns length of sync_fence_data returned to userspace
+- *		including pt_info.
+- * @name:	name of fence
+- * @status:	status of fence. 1: signaled 0:active <0:error
+- * @pt_info:	a sync_pt_info struct for every sync_pt in the fence
+- */
+-struct sync_fence_info_data {
+-	__u32	len;
+-	char	name[32];
+-	__s32	status;
 -
-+#include "uapi/android_alarm.h"
- 
- #ifdef CONFIG_COMPAT
- #define ANDROID_ALARM_SET_COMPAT(type)		ALARM_IOW(2, type, \
-diff --git a/drivers/staging/android/uapi/android_alarm.h b/drivers/staging/android/uapi/android_alarm.h
+-	__u8	pt_info[0];
+-};
+-
+-#define SYNC_IOC_MAGIC		'>'
+-
+-/**
+- * DOC: SYNC_IOC_WAIT - wait for a fence to signal
+- *
+- * pass timeout in milliseconds.  Waits indefinitely timeout < 0.
+- */
+-#define SYNC_IOC_WAIT		_IOW(SYNC_IOC_MAGIC, 0, __s32)
+-
+-/**
+- * DOC: SYNC_IOC_MERGE - merge two fences
+- *
+- * Takes a struct sync_merge_data.  Creates a new fence containing copies of
+- * the sync_pts in both the calling fd and sync_merge_data.fd2.  Returns the
+- * new fence's fd in sync_merge_data.fence
+- */
+-#define SYNC_IOC_MERGE		_IOWR(SYNC_IOC_MAGIC, 1, struct sync_merge_data)
+-
+-/**
+- * DOC: SYNC_IOC_FENCE_INFO - get detailed information on a fence
+- *
+- * Takes a struct sync_fence_info_data with extra space allocated for pt_info.
+- * Caller should write the size of the buffer into len.  On return, len is
+- * updated to reflect the total size of the sync_fence_info_data including
+- * pt_info.
+- *
+- * pt_info is a buffer containing sync_pt_infos for every sync_pt in the fence.
+- * To iterate over the sync_pt_infos, use the sync_pt_info.len field.
+- */
+-#define SYNC_IOC_FENCE_INFO	_IOWR(SYNC_IOC_MAGIC, 2,\
+-	struct sync_fence_info_data)
+-
+ #endif /* _LINUX_SYNC_H */
+diff --git a/drivers/staging/android/uapi/sw_sync.h b/drivers/staging/android/uapi/sw_sync.h
 new file mode 100644
-index 0000000..aa013f6
+index 0000000..9b5d486
 --- /dev/null
-+++ b/drivers/staging/android/uapi/android_alarm.h
-@@ -0,0 +1,62 @@
-+/* drivers/staging/android/uapi/android_alarm.h
-+ *
-+ * Copyright (C) 2006-2007 Google, Inc.
++++ b/drivers/staging/android/uapi/sw_sync.h
+@@ -0,0 +1,32 @@
++/*
++ * Copyright (C) 2012 Google, Inc.
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -117,53 +207,127 @@ index 0000000..aa013f6
 + *
 + */
 +
-+#ifndef _UAPI_LINUX_ANDROID_ALARM_H
-+#define _UAPI_LINUX_ANDROID_ALARM_H
++#ifndef _UAPI_LINUX_SW_SYNC_H
++#define _UAPI_LINUX_SW_SYNC_H
++
++#include <linux/types.h>
++
++struct sw_sync_create_fence_data {
++	__u32	value;
++	char	name[32];
++	__s32	fence; /* fd of new fence */
++};
++
++#define SW_SYNC_IOC_MAGIC	'W'
++
++#define SW_SYNC_IOC_CREATE_FENCE	_IOWR(SW_SYNC_IOC_MAGIC, 0,\
++		struct sw_sync_create_fence_data)
++#define SW_SYNC_IOC_INC			_IOW(SW_SYNC_IOC_MAGIC, 1, __u32)
++
++#endif /* _UAPI_LINUX_SW_SYNC_H */
+diff --git a/drivers/staging/android/uapi/sync.h b/drivers/staging/android/uapi/sync.h
+new file mode 100644
+index 0000000..e964c75
+--- /dev/null
++++ b/drivers/staging/android/uapi/sync.h
+@@ -0,0 +1,97 @@
++/*
++ * Copyright (C) 2012 Google, Inc.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _UAPI_LINUX_SYNC_H
++#define _UAPI_LINUX_SYNC_H
 +
 +#include <linux/ioctl.h>
-+#include <linux/time.h>
++#include <linux/types.h>
 +
-+enum android_alarm_type {
-+	/* return code bit numbers or set alarm arg */
-+	ANDROID_ALARM_RTC_WAKEUP,
-+	ANDROID_ALARM_RTC,
-+	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
-+	ANDROID_ALARM_ELAPSED_REALTIME,
-+	ANDROID_ALARM_SYSTEMTIME,
-+
-+	ANDROID_ALARM_TYPE_COUNT,
-+
-+	/* return code bit numbers */
-+	/* ANDROID_ALARM_TIME_CHANGE = 16 */
++/**
++ * struct sync_merge_data - data passed to merge ioctl
++ * @fd2:	file descriptor of second fence
++ * @name:	name of new fence
++ * @fence:	returns the fd of the new fence to userspace
++ */
++struct sync_merge_data {
++	__s32	fd2; /* fd of second fence */
++	char	name[32]; /* name of new fence */
++	__s32	fence; /* fd on newly created fence */
 +};
 +
-+enum android_alarm_return_flags {
-+	ANDROID_ALARM_RTC_WAKEUP_MASK = 1U << ANDROID_ALARM_RTC_WAKEUP,
-+	ANDROID_ALARM_RTC_MASK = 1U << ANDROID_ALARM_RTC,
-+	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK =
-+				1U << ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
-+	ANDROID_ALARM_ELAPSED_REALTIME_MASK =
-+				1U << ANDROID_ALARM_ELAPSED_REALTIME,
-+	ANDROID_ALARM_SYSTEMTIME_MASK = 1U << ANDROID_ALARM_SYSTEMTIME,
-+	ANDROID_ALARM_TIME_CHANGE_MASK = 1U << 16
++/**
++ * struct sync_pt_info - detailed sync_pt information
++ * @len:		length of sync_pt_info including any driver_data
++ * @obj_name:		name of parent sync_timeline
++ * @driver_name:	name of driver implementing the parent
++ * @status:		status of the sync_pt 0:active 1:signaled <0:error
++ * @timestamp_ns:	timestamp of status change in nanoseconds
++ * @driver_data:	any driver dependent data
++ */
++struct sync_pt_info {
++	__u32	len;
++	char	obj_name[32];
++	char	driver_name[32];
++	__s32	status;
++	__u64	timestamp_ns;
++
++	__u8	driver_data[0];
 +};
 +
-+/* Disable alarm */
-+#define ANDROID_ALARM_CLEAR(type)           _IO('a', 0 | ((type) << 4))
++/**
++ * struct sync_fence_info_data - data returned from fence info ioctl
++ * @len:	ioctl caller writes the size of the buffer its passing in.
++ *		ioctl returns length of sync_fence_data returned to userspace
++ *		including pt_info.
++ * @name:	name of fence
++ * @status:	status of fence. 1: signaled 0:active <0:error
++ * @pt_info:	a sync_pt_info struct for every sync_pt in the fence
++ */
++struct sync_fence_info_data {
++	__u32	len;
++	char	name[32];
++	__s32	status;
 +
-+/* Ack last alarm and wait for next */
-+#define ANDROID_ALARM_WAIT                  _IO('a', 1)
++	__u8	pt_info[0];
++};
 +
-+#define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
-+/* Set alarm */
-+#define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
-+#define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
-+#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
-+#define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
-+#define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
-+#define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
++#define SYNC_IOC_MAGIC		'>'
 +
-+#endif
++/**
++ * DOC: SYNC_IOC_WAIT - wait for a fence to signal
++ *
++ * pass timeout in milliseconds.  Waits indefinitely timeout < 0.
++ */
++#define SYNC_IOC_WAIT		_IOW(SYNC_IOC_MAGIC, 0, __s32)
++
++/**
++ * DOC: SYNC_IOC_MERGE - merge two fences
++ *
++ * Takes a struct sync_merge_data.  Creates a new fence containing copies of
++ * the sync_pts in both the calling fd and sync_merge_data.fd2.  Returns the
++ * new fence's fd in sync_merge_data.fence
++ */
++#define SYNC_IOC_MERGE		_IOWR(SYNC_IOC_MAGIC, 1, struct sync_merge_data)
++
++/**
++ * DOC: SYNC_IOC_FENCE_INFO - get detailed information on a fence
++ *
++ * Takes a struct sync_fence_info_data with extra space allocated for pt_info.
++ * Caller should write the size of the buffer into len.  On return, len is
++ * updated to reflect the total size of the sync_fence_info_data including
++ * pt_info.
++ *
++ * pt_info is a buffer containing sync_pt_infos for every sync_pt in the fence.
++ * To iterate over the sync_pt_infos, use the sync_pt_info.len field.
++ */
++#define SYNC_IOC_FENCE_INFO	_IOWR(SYNC_IOC_MAGIC, 2,\
++	struct sync_fence_info_data)
++
++#endif /* _UAPI_LINUX_SYNC_H */
 -- 
 1.8.3.2
 
