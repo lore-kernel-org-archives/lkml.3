@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591AbaBQWOh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:14:37 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35271 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988AbaBQWNW (ORCPT
+	id S1754574AbaBQWOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:14:36 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55016 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054AbaBQWNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Feb 2014 17:13:22 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,48 +16,259 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 40/55] rcutorture: Remove redundant module-alias directives
-Date: Mon, 17 Feb 2014 14:12:44 -0800
-Message-Id: <1392675179-11560-40-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 32/55] rcutorture: Abstract torture_shutdown()
+Date: Mon, 17 Feb 2014 14:12:36 -0800
+Message-Id: <1392675179-11560-32-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
  <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021722-8236-0000-0000-0000074F3869
+x-cbid: 14021722-3532-0000-0000-000005BEDCEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Because rcutorture.c has its old name back, there is no longer any need
-for the MODULE_ALIAS() and MODULE_PARAM_PREFIX definitions.  This commit
-therefore removes them.
+Because auto-shutdown of torture testing is not specific to RCU,
+this commit moves the auto-shutdown function to kernel/torture.c.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcu/rcutorture.c | 6 ------
- 1 file changed, 6 deletions(-)
+ include/linux/torture.h |  4 ++-
+ kernel/rcu/rcutorture.c | 63 +++----------------------------------
+ kernel/torture.c        | 84 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 92 insertions(+), 59 deletions(-)
 
+diff --git a/include/linux/torture.h b/include/linux/torture.h
+index 791934fa32b9..513b85f98585 100644
+--- a/include/linux/torture.h
++++ b/include/linux/torture.h
+@@ -72,8 +72,10 @@ unsigned long torture_random(struct torture_random_state *trsp);
+ void torture_shuffle_task_register(struct task_struct *tp);
+ int torture_shuffle_init(long shuffint);
+ 
+-/* Shutdown task absorption, for when the tasks cannot safely be killed. */
++/* Test auto-shutdown handling. */
+ void torture_shutdown_absorb(const char *title);
++int torture_shutdown_init(int ssecs, void (*cleanup)(void));
++void torture_shutdown_cleanup(void);
+ 
+ /* Task stuttering, which forces load/no-load transitions. */
+ void stutter_wait(const char *title);
 diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 390189ecda05..81b8cc795a07 100644
+index 506f1c09ed90..9f42d320531d 100644
 --- a/kernel/rcu/rcutorture.c
 +++ b/kernel/rcu/rcutorture.c
-@@ -53,12 +53,6 @@
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Paul E. McKenney <paulmck@us.ibm.com> and Josh Triplett <josh@freedesktop.org>");
+@@ -104,7 +104,6 @@ static struct task_struct **reader_tasks;
+ static struct task_struct *stats_task;
+ static struct task_struct *fqs_task;
+ static struct task_struct *boost_tasks[NR_CPUS];
+-static struct task_struct *shutdown_task;
+ static struct task_struct *stall_task;
+ static struct task_struct **barrier_cbs_tasks;
+ static struct task_struct *barrier_task;
+@@ -172,7 +171,6 @@ static u64 notrace rcu_trace_clock_local(void)
+ }
+ #endif /* #else #ifdef CONFIG_RCU_TRACE */
  
--MODULE_ALIAS("rcutorture");
--#ifdef MODULE_PARAM_PREFIX
--#undef MODULE_PARAM_PREFIX
--#endif
--#define MODULE_PARAM_PREFIX "rcutorture."
+-static unsigned long shutdown_time;	/* jiffies to system shutdown. */
+ static unsigned long boost_starttime;	/* jiffies of next boost test start. */
+ DEFINE_MUTEX(boost_mutex);		/* protect setting boost_starttime */
+ 					/*  and boost task create/destroy. */
+@@ -182,9 +180,6 @@ static atomic_t barrier_cbs_invoked;	/* Barrier callbacks invoked. */
+ static wait_queue_head_t *barrier_cbs_wq; /* Coordinate barrier testing. */
+ static DECLARE_WAIT_QUEUE_HEAD(barrier_wq);
+ 
+-/* Forward reference. */
+-static void rcu_torture_cleanup(void);
 -
- torture_parm(int, fqs_duration, 0, "Duration of fqs bursts (us), 0 to disable");
- torture_parm(int, fqs_holdoff, 0, "Holdoff time within fqs bursts (us)");
- torture_parm(int, fqs_stutter, 3, "Wait time between fqs bursts (s)");
+ /*
+  * Allocate an element from the rcu_tortures pool.
+  */
+@@ -1086,42 +1081,6 @@ static int rcutorture_booster_init(int cpu)
+ }
+ 
+ /*
+- * Cause the rcutorture test to shutdown the system after the test has
+- * run for the time specified by the shutdown_secs module parameter.
+- */
+-static int
+-rcu_torture_shutdown(void *arg)
+-{
+-	long delta;
+-	unsigned long jiffies_snap;
+-
+-	VERBOSE_TOROUT_STRING("rcu_torture_shutdown task started");
+-	jiffies_snap = ACCESS_ONCE(jiffies);
+-	while (ULONG_CMP_LT(jiffies_snap, shutdown_time) &&
+-	       !kthread_should_stop()) {
+-		delta = shutdown_time - jiffies_snap;
+-		if (verbose)
+-			pr_alert("%s" TORTURE_FLAG
+-				 "rcu_torture_shutdown task: %lu jiffies remaining\n",
+-				 torture_type, delta);
+-		schedule_timeout_interruptible(delta);
+-		jiffies_snap = ACCESS_ONCE(jiffies);
+-	}
+-	if (kthread_should_stop()) {
+-		VERBOSE_TOROUT_STRING("rcu_torture_shutdown task stopping");
+-		return 0;
+-	}
+-
+-	/* OK, shut down the system. */
+-
+-	VERBOSE_TOROUT_STRING("rcu_torture_shutdown task shutting down system");
+-	shutdown_task = NULL;	/* Avoid self-kill deadlock. */
+-	rcu_torture_cleanup();	/* Get the success/failure message. */
+-	kernel_power_off();	/* Shut down the system. */
+-	return 0;
+-}
+-
+-/*
+  * CPU-stall kthread.  It waits as specified by stall_cpu_holdoff, then
+  * induces a CPU stall for the time specified by stall_cpu.
+  */
+@@ -1420,11 +1379,7 @@ rcu_torture_cleanup(void)
+ 		for_each_possible_cpu(i)
+ 			rcutorture_booster_cleanup(i);
+ 	}
+-	if (shutdown_task != NULL) {
+-		VERBOSE_TOROUT_STRING("Stopping rcu_torture_shutdown task");
+-		kthread_stop(shutdown_task);
+-	}
+-	shutdown_task = NULL;
++	torture_shutdown_cleanup();
+ 
+ 	/* Wait for all RCU callbacks to fire.  */
+ 
+@@ -1680,18 +1635,10 @@ rcu_torture_init(void)
+ 			}
+ 		}
+ 	}
+-	if (shutdown_secs > 0) {
+-		shutdown_time = jiffies + shutdown_secs * HZ;
+-		shutdown_task = kthread_create(rcu_torture_shutdown, NULL,
+-					       "rcu_torture_shutdown");
+-		if (IS_ERR(shutdown_task)) {
+-			firsterr = PTR_ERR(shutdown_task);
+-			VERBOSE_TOROUT_ERRSTRING("Failed to create shutdown");
+-			shutdown_task = NULL;
+-			goto unwind;
+-		}
+-		torture_shuffle_task_register(shutdown_task);
+-		wake_up_process(shutdown_task);
++	i = torture_shutdown_init(shutdown_secs, rcu_torture_cleanup);
++	if (i != 0) {
++		firsterr = i;
++		goto unwind;
+ 	}
+ 	i = torture_onoff_init(onoff_holdoff * HZ, onoff_interval * HZ);
+ 	if (i != 0) {
+diff --git a/kernel/torture.c b/kernel/torture.c
+index 82a8735472f0..217baffcaa66 100644
+--- a/kernel/torture.c
++++ b/kernel/torture.c
+@@ -419,6 +419,15 @@ static void torture_shuffle_cleanup(void)
+ EXPORT_SYMBOL_GPL(torture_shuffle_cleanup);
+ 
+ /*
++ * Variables for auto-shutdown.  This allows "lights out" torture runs
++ * to be fully scripted.
++ */
++static int shutdown_secs;		/* desired test duration in seconds. */
++static struct task_struct *shutdown_task;
++static unsigned long shutdown_time;	/* jiffies to system shutdown. */
++static void (*torture_shutdown_hook)(void);
++
++/*
+  * Absorb kthreads into a kernel function that won't return, so that
+  * they won't ever access module text or data again.
+  */
+@@ -433,6 +442,81 @@ void torture_shutdown_absorb(const char *title)
+ EXPORT_SYMBOL_GPL(torture_shutdown_absorb);
+ 
+ /*
++ * Cause the torture test to shutdown the system after the test has
++ * run for the time specified by the shutdown_secs parameter.
++ */
++static int torture_shutdown(void *arg)
++{
++	long delta;
++	unsigned long jiffies_snap;
++
++	VERBOSE_TOROUT_STRING("torture_shutdown task started");
++	jiffies_snap = jiffies;
++	while (ULONG_CMP_LT(jiffies_snap, shutdown_time) &&
++	       !torture_must_stop()) {
++		delta = shutdown_time - jiffies_snap;
++		if (verbose)
++			pr_alert("%s" TORTURE_FLAG
++				 "torture_shutdown task: %lu jiffies remaining\n",
++				 torture_type, delta);
++		schedule_timeout_interruptible(delta);
++		jiffies_snap = jiffies;
++	}
++	if (torture_must_stop()) {
++		VERBOSE_TOROUT_STRING("torture_shutdown task stopping");
++		return 0;
++	}
++
++	/* OK, shut down the system. */
++
++	VERBOSE_TOROUT_STRING("torture_shutdown task shutting down system");
++	shutdown_task = NULL;	/* Avoid self-kill deadlock. */
++	torture_shutdown_hook();/* Shut down the enclosing torture test. */
++	kernel_power_off();	/* Shut down the system. */
++	return 0;
++}
++
++/*
++ * Start up the shutdown task.
++ */
++int torture_shutdown_init(int ssecs, void (*cleanup)(void))
++{
++	int ret;
++
++	shutdown_secs = ssecs;
++	torture_shutdown_hook = cleanup;
++	if (shutdown_secs > 0) {
++		shutdown_time = jiffies + shutdown_secs * HZ;
++		shutdown_task = kthread_create(torture_shutdown, NULL,
++					       "torture_shutdown");
++		if (IS_ERR(shutdown_task)) {
++			ret = PTR_ERR(shutdown_task);
++			VERBOSE_TOROUT_ERRSTRING("Failed to create shutdown");
++			shutdown_task = NULL;
++			return ret;
++		}
++		torture_shuffle_task_register(shutdown_task);
++		wake_up_process(shutdown_task);
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(torture_shutdown_init);
++
++/*
++ * Shut down the shutdown task.  Say what???  Heh!  This can happen if
++ * the torture module gets an rmmod before the shutdown time arrives.  ;-)
++ */
++void torture_shutdown_cleanup(void)
++{
++	if (shutdown_task != NULL) {
++		VERBOSE_TOROUT_STRING("Stopping torture_shutdown task");
++		kthread_stop(shutdown_task);
++	}
++	shutdown_task = NULL;
++}
++EXPORT_SYMBOL_GPL(torture_shutdown_cleanup);
++
++/*
+  * Detect and respond to a system shutdown.
+  */
+ static int torture_shutdown_notify(struct notifier_block *unused1,
 -- 
 1.8.1.5
 
