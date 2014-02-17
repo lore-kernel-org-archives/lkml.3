@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaBQSSX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:18:23 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:50009 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997AbaBQSSV (ORCPT
+	id S1754187AbaBQSSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:18:37 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:33940 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166AbaBQSSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:18:21 -0500
-Date: Mon, 17 Feb 2014 10:18:15 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Torvald Riegel <triegel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140217181815.GA1934@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140207165028.GO4250@linux.vnet.ibm.com>
- <20140207165548.GR5976@mudshark.cambridge.arm.com>
- <20140207180216.GP4250@linux.vnet.ibm.com>
- <1391992071.18779.99.camel@triegel.csb>
- <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
- <20140211155941.GU4250@linux.vnet.ibm.com>
- <1392185194.18779.2239.camel@triegel.csb>
- <20140212091907.GA3545@laptop.programming.kicks-ass.net>
- <20140212174209.GA4250@linux.vnet.ibm.com>
- <20140212181205.GD27965@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212181205.GD27965@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021718-8236-0000-0000-0000074C4164
+	Mon, 17 Feb 2014 13:18:35 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when CONFIG_OF isn't set
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>
+In-Reply-To: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ ideasonboard.com>
+Date: Mon, 17 Feb 2014 18:18:29 +0000
+Message-Id: <20140217181829.B5F80C40372@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 07:12:05PM +0100, Peter Zijlstra wrote:
-> On Wed, Feb 12, 2014 at 09:42:09AM -0800, Paul E. McKenney wrote:
-> > You need volatile semantics to force the compiler to ignore any proofs
-> > it might otherwise attempt to construct.  Hence all the ACCESS_ONCE()
-> > calls in my email to Torvald.  (Hopefully I translated your example
-> > reasonably.)
+On Tue, 11 Feb 2014 13:36:51 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> when CONFIG_OF is disabled of_match_node is defined as a macro that
+> evaluates to NULL. This breaks compilation of drivers that dereference
+> the function's return value directly. Fix it by turning the macro into a
+> static inline function that returns NULL.
+
+Is it not more problematic that code is dereferencing the return value
+directly *without* checking to see if it is NULL first? I suppose it
+will cause a runtime oops on all platforms except no-mmu, but still.
+Compile time catches are better.
+
+g.
+
 > 
-> My brain gave out for today; but it did appear to have the right
-> structure.
-
-I can relate.  ;-)
-
-> I would prefer it C11 would not require the volatile casts. It should
-> simply _never_ speculate with atomic writes, volatile or not.
-
-I agree with not needing volatiles to prevent speculated writes.  However,
-they will sometimes be needed to prevent excessive load/store combining.
-The compiler doesn't have the runtime feedback mechanisms that the
-hardware has, and thus will need help from the developer from time
-to time.
-
-Or maybe the Linux kernel simply waits to transition to C11 relaxed atomics
-until the compiler has learned to be sufficiently conservative in its
-load-store combining decisions.
-
-							Thanx, Paul
+> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> ---
+>  include/linux/of.h | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 70c64ba..719e69f 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -560,7 +560,13 @@ static inline const char *of_prop_next_string(struct property *prop,
+>  }
+>  
+>  #define of_match_ptr(_ptr)	NULL
+> -#define of_match_node(_matches, _node)	NULL
+> +
+> +static inline const struct of_device_id *of_match_node(
+> +	const struct of_device_id *matches, const struct device_node *node)
+> +{
+> +	return NULL;
+> +}
+> +
+>  #endif /* CONFIG_OF */
+>  
+>  #if defined(CONFIG_OF) && defined(CONFIG_NUMA)
+> -- 
+> Regards,
+> 
+> Laurent Pinchart
+> 
 
