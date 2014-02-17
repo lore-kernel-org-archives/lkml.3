@@ -1,184 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543AbaBQUmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 15:42:51 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:10913 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086AbaBQUmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 15:42:07 -0500
-From: Waiman Long <Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v4 2/3] qspinlock, x86: Enable x86-64 to use queue spinlock
-Date: Mon, 17 Feb 2014 15:41:23 -0500
-Message-Id: <1392669684-4807-3-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
+	id S1751615AbaBQUsL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 15:48:11 -0500
+Received: from nm40.bullet.mail.ne1.yahoo.com ([98.138.229.33]:42423 "EHLO
+	nm40.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751100AbaBQUsI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 15:48:08 -0500
+X-Yahoo-Newman-Property: ymail-4
+X-Yahoo-Newman-Id: 332526.99317.bm@omp1012.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=xQJcRVRUB4p+g0cG1R25FElAQ9YDANutZVj6CdJUP8dcs2O7h1kAmyMvqz8AGgwk/Jvf6xX2YwOsibG5ZOgAbbMT0sgm3AsYCFvmLkZu2oaTJKCeDUWR1OIrOPTmZGQ3UaNcz70MJ6Ob7e18BuxjM355Ri8+oJLPtnIzyU/eNvw=;
+X-YMail-OSG: wjjcfb4VM1mBCYGir0oQBrbk5F9ZIkjao_AOodM_.FH22WY
+ FAVWRVmRIR4vcC8nR8WJtfCi49Wgjuzua61ZuvyP0Tv9unmYjy1geZ3zeWsf
+ atqBiJQ.e8p9JCXN4W8oBn.DYzfCpuKbFUgvFTv1noOxen9DSc5fuQIcIZEn
+ vuAf0HjhfeApEOHOCYI0nI1a3.vTPcQRf6DR8b48XkjKvhidUkNt_2VbcNUL
+ ggfZPBeWhJpctSLjKHf748QXooqp.4YfacLfmFYGtZUBkFqXtbTbLLIXx4OH
+ B_JwfhUbM1Tk37BL6OnauB9sCFyBiRRuLU8ksOgJzrZ6M7h6uBWxgWa31qbe
+ pZ.mg3XAFyjadZMmlpi5RihONzqvRSaQtgEQWFCzO3ZiHFKDRSVRW4MU0s.H
+ pDyXGK_qcyaDek3m8UzL1i6YkIAPcTgg4yNTDAXlQCyOPcQj6a6SMFVY7Evu
+ 4h6Kzme9.kxBt7ruMycSbUrSRyAojitm6BYDx8DdYmXpvex0GYnQ3NS8sDOb
+ 2pK2zysdRvlbgcWtS_toa1l4IA.vYAyzMJtT_
+X-Rocket-MIMEInfo: 002.001,Pk9uIE1vbmRheSwgRmVicnVhcnkgMTcsIDIwMTQgNzoxNiBBTSwgSWFuIEFiYm90dCA8YWJib3R0aUBtZXYuY28udWs.IHdyb3RlOgoKPj5PbiAyMDE0LTAyLTE2IDA4OjQwLCBDaGFzZSBTb3V0aHdvb2Qgd3JvdGU6Cj4.IFRoaXMgcGF0Y2ggZm9yIGh3ZHJ2X2FwY2kwMzUgcmVtb3ZlcyBzb21lIHVubmVlZGVkIGJyYWNlcywgYW5kIG1vdmVzIHNvbWUKPj4gaW1wcm9wZXJseSBwbGFjZWQgYnJhY2VzIHRvIHRoZSBjb3JyZWN0IHBvc2l0aW9uLCBhcyBmb3VuZCBieSBjaGVja3BhdGNoLgo.PiBJdCBhbHNvIHIBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.177.636
+References: <1392540006-25972-1-git-send-email-chase.southwood@yahoo.com> <53020B92.6060805@mev.co.uk>
+Message-ID: <1392669907.92125.YahooMailNeo@web164001.mail.gq1.yahoo.com>
+Date: Mon, 17 Feb 2014 12:45:07 -0800 (PST)
+From: Chase Southwood <chase.southwood@yahoo.com>
+Reply-To: Chase Southwood <chase.southwood@yahoo.com>
+Subject: Re: [PATCH 1/4] Staging: comedi: addi-data: fix brace-related coding style issues in hwdrv_apci035.c
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Cc: "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53020B92.6060805@mev.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the necessary changes at the x86 architecture
-specific layer to enable the use of queue spinlock for x86-64. As
-x86-32 machines are typically not multi-socket. The benefit of queue
-spinlock may not be apparent. So queue spinlock is not enabled.
+>On Monday, February 17, 2014 7:16 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
 
-Currently, there is some incompatibilities between the para-virtualized
-spinlock code (which hard-codes the use of ticket spinlock) and the
-queue spinlock. Therefore, the use of queue spinlock is disabled when
-the para-virtualized spinlock is enabled.
+>>On 2014-02-16 08:40, Chase Southwood wrote:
+>> This patch for hwdrv_apci035 removes some unneeded braces, and moves some
+>> improperly placed braces to the correct position, as found by checkpatch.
+>> It also removes a commented out if-statement that I found whilst cleaning
+>> braces that is identical to another un-commented if-statement directly
+>> above it, so it is just added clutter and so we can delete it to clean up
+>> further.
+>>
+>> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+>> ---
+>> So I decided to venture into addi-data today and found that most of the
+>> files in there are very messy from a style standpoint.  This is the first
+>> (of probably a few) patchsets to try and clean those files up a bit.  I
+>> hope that this will be helpful!
+>
+>Quite a few have been cleaned up extensively by Hartley, but they needed 
+>more extensive changes than clean-ups due to them trying to handle 
+>things differently to the normal comedi way of doing things.
 
-The arch/x86/include/asm/qspinlock.h header file includes some x86
-specific optimization which will make the queue spinlock code perform
-better than the generic implementation.
+Oh, I see.  Makes perfect sense.  Well like I said, if cleaning them up a bit will help make reworking them any easier or seems like useful work, I'd be happy to continue making them a little easier on the eyes!
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- arch/x86/Kconfig                      |    1 +
- arch/x86/include/asm/qspinlock.h      |   55 +++++++++++++++++++++++++++++++++
- arch/x86/include/asm/spinlock.h       |    5 +++
- arch/x86/include/asm/spinlock_types.h |    4 ++
- 4 files changed, 65 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/include/asm/qspinlock.h
+>>
+>>   .../comedi/drivers/addi-data/hwdrv_apci035.c       | 49 ++++++++++------------
+>>   1 file changed, 22 insertions(+), 27 deletions(-)
+>>
+>> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+>> index 1128c22..584a1d5 100644
+>> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+>> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+>> @@ -177,11 +177,11 @@ static int i_APCI035_ConfigTimerWatchdog(struct comedi_device *dev,
+>>       devpriv->tsk_Current = current;
+>>       devpriv->b_TimerSelectMode = data[0];
+>>       i_WatchdogNbr = data[1];
+>> -    if (data[0] == 0) {
+>> +    if (data[0] == 0)
+>>           ui_Mode = 2;
+>> -    } else {
+>> +    else
+>>           ui_Mode = 0;
+>> -    }
+>> +
+>>   /* ui_Command = inl(devpriv->iobase+((i_WatchdogNbr-1)*32)+12); */
+>>       ui_Command = 0;
+>>   /* ui_Command = ui_Command & 0xFFFFF9FEUL; */
+>> @@ -366,8 +366,7 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
+>>               devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 12);
+>>       }
+>>
+>> -    if (data[0] == 0)    /* Stop The Watchdog */
+>> -    {
+>> +    if (data[0] == 0) {
+>>           /* Stop The Watchdog */
+>>           ui_Command = 0;
+>>   /*
+>> @@ -377,15 +376,15 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
+>>           outl(ui_Command,
+>>               devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 12);
+>>       }            /*   if (data[1]==0) */
+>> -    if (data[0] == 3)    /* stop all Watchdogs */
+>> -    {
+>> +    if (data[0] == 3) {
+>> +        /* stop all Watchdogs */
+>>           ui_Command = 0;
+>>           for (i_Count = 1; i_Count <= 4; i_Count++) {
+>> -            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+>> +            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
+>>                   ui_Command = 0x2UL;
+>> -            } else {
+>> +            else
+>>                   ui_Command = 0x10UL;
+>> -            }
+>> +
+>>               i_WatchdogNbr = i_Count;
+>>               outl(ui_Command,
+>>                   devpriv->iobase + ((i_WatchdogNbr - 1) * 32) +
+>> @@ -393,30 +392,29 @@ static int i_APCI035_StartStopWriteTimerWatchdog(struct comedi_device *dev,
+>>           }
+>>
+>>       }
+>> -    if (data[0] == 4)    /* start all Watchdogs */
+>> -    {
+>> +    if (data[0] == 4) {
+>> +        /* start all Watchdogs */
+>>           ui_Command = 0;
+>>           for (i_Count = 1; i_Count <= 4; i_Count++) {
+>> -            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+>> +            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
+>>                   ui_Command = 0x1UL;
+>> -            } else {
+>> +            else
+>>                   ui_Command = 0x8UL;
+>> -            }
+>> +
+>>               i_WatchdogNbr = i_Count;
+>>               outl(ui_Command,
+>>                   devpriv->iobase + ((i_WatchdogNbr - 1) * 32) +
+>>                   0);
+>>           }
+>>       }
+>> -    if (data[0] == 5)    /* trigger all Watchdogs */
+>> -    {
+>> +    if (data[0] == 5) {
+>> +        /* trigger all Watchdogs */
+>>           ui_Command = 0;
+>>           for (i_Count = 1; i_Count <= 4; i_Count++) {
+>> -            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+>> +            if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG)
+>>                   ui_Command = 0x4UL;
+>> -            } else {
+>> +            else
+>>                   ui_Command = 0x20UL;
+>> -            }
+>>
+>>               i_WatchdogNbr = i_Count;
+>>               outl(ui_Command,
+>> @@ -488,11 +486,9 @@ static int i_APCI035_ReadTimerWatchdog(struct comedi_device *dev,
+>>       /* Get the overflow status */
+>>       /***************************/
+>>       data[3] = ((ui_Status >> 0) & 1);
+>> -    if (devpriv->b_TimerSelectMode == ADDIDATA_TIMER) {
+>> +    if (devpriv->b_TimerSelectMode == ADDIDATA_TIMER)
+>>           data[4] = inl(devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 0);
+>>
+>> -    }            /*   if  (devpriv->b_TimerSelectMode==ADDIDATA_TIMER) */
+>> -
+>>       return insn->n;
+>>   }
+>>
+>> @@ -655,8 +651,8 @@ static void v_APCI035_Interrupt(int irq, void *d)
+>>       ui_StatusRegister2 =
+>>           inl(devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 20);
+>>
+>> -    if ((((ui_StatusRegister1) & 0x8) == 0x8))    /* Test if warning relay interrupt */
+>> -    {
+>> +    /* Test if warning relay interrupt */
+>> +    if ((((ui_StatusRegister1) & 0x8) == 0x8)) {
+>>       /**********************************/
+>>           /* Disable the temperature warning */
+>>       /**********************************/
+>> @@ -675,9 +671,8 @@ static void v_APCI035_Interrupt(int irq, void *d)
+>>       }            /* if (((ui_StatusRegister1 & 0x8) == 0x8)) */
+>>
+>>       else {
+>> -        if ((ui_StatusRegister2 & 0x1) == 0x1) {
+>> +        if ((ui_StatusRegister2 & 0x1) == 0x1)
+>>               send_sig(SIGIO, devpriv->tsk_Current, 0);    /*  send signal to the sample */
+>> -        }
+>>       }            /* else if (((ui_StatusRegister1 & 0x8) == 0x8)) */
+>>
+>>       return;
+>>
+>
+>Looks good.
+>
+>Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+>
+>-- 
+>-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+>-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+>
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 1b4ff87..5bf70ab 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -17,6 +17,7 @@ config X86_64
- 	depends on 64BIT
- 	select X86_DEV_DMA_OPS
- 	select ARCH_USE_CMPXCHG_LOCKREF
-+	select ARCH_USE_QUEUE_SPINLOCK
- 
- ### Arch settings
- config X86
-diff --git a/arch/x86/include/asm/qspinlock.h b/arch/x86/include/asm/qspinlock.h
-new file mode 100644
-index 0000000..7316ec4
---- /dev/null
-+++ b/arch/x86/include/asm/qspinlock.h
-@@ -0,0 +1,55 @@
-+#ifndef _ASM_X86_QSPINLOCK_H
-+#define _ASM_X86_QSPINLOCK_H
-+
-+#include <asm-generic/qspinlock_types.h>
-+
-+#if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
-+
-+/*
-+ * Queue spinlock union structure to be used within this header file only
-+ */
-+union qspinlock_x86 {
-+	struct qspinlock slock;
-+	u8		 lock;	/* Lock bit	*/
-+};
-+
-+#define queue_spin_trylock_unfair queue_spin_trylock_unfair
-+/**
-+ * queue_spin_trylock_unfair - try to acquire the lock ignoring the qcode
-+ * @lock: Pointer to queue spinlock structure
-+ * Return: 1 if lock acquired, 0 if failed
-+ */
-+static __always_inline int queue_spin_trylock_unfair(struct qspinlock *lock)
-+{
-+	union qspinlock_x86 *qlock = (union qspinlock_x86 *)lock;
-+
-+	if (!ACCESS_ONCE(qlock->lock) &&
-+	   (cmpxchg(&qlock->lock, 0, _QSPINLOCK_LOCKED) == 0))
-+		return 1;
-+	return 0;
-+}
-+
-+#define	queue_spin_unlock queue_spin_unlock
-+/**
-+ * queue_spin_unlock - release a queue spinlock
-+ * @lock : Pointer to queue spinlock structure
-+ *
-+ * No special memory barrier other than a compiler one is needed for the
-+ * x86 architecture. A compiler barrier is added at the end to make sure
-+ * that the clearing the lock bit is done ASAP without artificial delay
-+ * due to compiler optimization.
-+ */
-+static inline void queue_spin_unlock(struct qspinlock *lock)
-+{
-+	union qspinlock_x86 *qlock = (union qspinlock_x86 *)lock;
-+
-+	barrier();
-+	ACCESS_ONCE(qlock->lock) = 0;
-+	barrier();
-+}
-+
-+#endif /* !CONFIG_X86_OOSTORE && !CONFIG_X86_PPRO_FENCE */
-+
-+#include <asm-generic/qspinlock.h>
-+
-+#endif /* _ASM_X86_QSPINLOCK_H */
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index bf156de..6e6de1f 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -43,6 +43,10 @@
- extern struct static_key paravirt_ticketlocks_enabled;
- static __always_inline bool static_key_false(struct static_key *key);
- 
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+#include <asm/qspinlock.h>
-+#else
-+
- #ifdef CONFIG_PARAVIRT_SPINLOCKS
- 
- static inline void __ticket_enter_slowpath(arch_spinlock_t *lock)
-@@ -181,6 +185,7 @@ static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
- {
- 	arch_spin_lock(lock);
- }
-+#endif /* CONFIG_QUEUE_SPINLOCK */
- 
- static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
- {
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index 4f1bea1..98da00b 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -11,6 +11,9 @@
- #define TICKET_SLOWPATH_FLAG	((__ticket_t)0)
- #endif
- 
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+#include <asm-generic/qspinlock_types.h>
-+#else
- #if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
- typedef u8  __ticket_t;
- typedef u16 __ticketpair_t;
-@@ -33,6 +36,7 @@ typedef struct arch_spinlock {
- } arch_spinlock_t;
- 
- #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
-+#endif /* CONFIG_QUEUE_SPINLOCK */
- 
- #include <asm/rwlock.h>
- 
--- 
-1.7.1
+Thanks,
+Chase
 
