@@ -1,107 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaBQKDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 05:03:19 -0500
-Received: from www84.your-server.de ([213.133.104.84]:39172 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999AbaBQKDM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 05:03:12 -0500
-From: Stefani Seibold <stefani@seibold.net>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v19 02/10] Add new func _install_special_mapping() to mmap.c
-Date: Mon, 17 Feb 2014 11:03:36 +0100
-Message-Id: <1392631424-32205-3-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1392631424-32205-1-git-send-email-stefani@seibold.net>
-References: <1392631424-32205-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	id S1753365AbaBQKDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 05:03:47 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:59770 "EHLO kolab.o2s.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752051AbaBQKDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 05:03:44 -0500
+Subject: [PATCH v7 0/8] ARM: sunxi: Add driver for SD/MMC hosts found on
+ allwinner sunxi SOCs 
+To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
+Date: Mon, 17 Feb 2014 11:02:08 +0100
+Message-ID: <20140217095907.15040.81893.stgit@pagira.o2s.ch>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The _install_special_mapping() is the new base function for
-install_special_mapping(). This function will return a pointer of the
-created VMA or a error code in an ERR_PTR()
+Hello
+The following patchset adds support for the SD/MMC host found in the Allwinner SoCs.
+It contains all the necessary modifications for clock environment and also the device
+tree script modification which add it to all the boards using it.
+The clock environment function needed for phase offset configuration has
+been proposed and implemented by Emilio.
+A lot of work and cleanup has been done by Hans de Goede. Special thanks to him!
+This patchset is the 4th attempt to send this driver upstream.
 
-This new function will be needed by the for the vdso 32 bit support to map the
-additonal vvar and hpet pages into the 32 bit address space. This will be done
-with io_remap_pfn_range() and remap_pfn_range, which requieres a vm_area_struct.
+Changes since v1:
+-Using mmc_of_parse instead of diy dt parsing
+-Adding nodes for all mmc controller to the dtsi files,
+ including sofar unused controllers
+-Using generic GPIO slot library for WP/CD
+-Adding additional MMC device nodes into DTSI files
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Changes since v2:
+-Add missing Signed-off-by tags
+-Stop using __raw_readl / __raw_writel so that barriers are properly used
+-Adding missing new lines
+-Adding missing patch for automatic reparenting of clocks
+
+Changes since v3:
+-Move clk_enable / disable into host_init / exit (Hans)
+-Fix hang on boot caused by irq storm (Hans)
+
+Changes since v4:
+-moving sunxi-mci.{c/h} to sunxi-mmc.{c/h}
+-removing camel cases from the defines in  sunxi-mmc.h
+-moving defines out of the struct definition
+ since this is bad coding style
+-adding documentation for the device tree binding
+
+Changes since v5:
+-adding host initialization for when the sdio irq is enabled
+ (just to make sure having a defined state at all time)
+-add mmc support fixup: set pullup on cd pins
+-fixup: Don't set MMC_CAP_NEEDS_POLL /  MMC_CAP_4_BIT_DATA
+
+Changes since v6:
+-fixing copyright info in sunxi-mmc.*
+-s/__SUNXI_MCI_H__/__SUNXI_MMC_H__/g
+-s/SDXC_RESPONSE_/SDXC_RESP_/g
+-s/define/definitions <- Comment from Priit Laes
+
 ---
- include/linux/mm.h |  3 +++
- mm/mmap.c          | 20 ++++++++++++++++----
- 2 files changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f28f46e..55342aa 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1740,6 +1740,9 @@ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
- extern struct file *get_mm_exe_file(struct mm_struct *mm);
- 
- extern int may_expand_vm(struct mm_struct *mm, unsigned long npages);
-+extern struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
-+				   unsigned long addr, unsigned long len,
-+				   unsigned long flags, struct page **pages);
- extern int install_special_mapping(struct mm_struct *mm,
- 				   unsigned long addr, unsigned long len,
- 				   unsigned long flags, struct page **pages);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 20ff0c3..81ba54f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2918,7 +2918,7 @@ static const struct vm_operations_struct special_mapping_vmops = {
-  * The array pointer and the pages it points to are assumed to stay alive
-  * for as long as this mapping might exist.
-  */
--int install_special_mapping(struct mm_struct *mm,
-+struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
- 			    unsigned long addr, unsigned long len,
- 			    unsigned long vm_flags, struct page **pages)
- {
-@@ -2927,7 +2927,7 @@ int install_special_mapping(struct mm_struct *mm,
- 
- 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
- 	if (unlikely(vma == NULL))
--		return -ENOMEM;
-+		return ERR_PTR(-ENOMEM);
- 
- 	INIT_LIST_HEAD(&vma->anon_vma_chain);
- 	vma->vm_mm = mm;
-@@ -2948,11 +2948,23 @@ int install_special_mapping(struct mm_struct *mm,
- 
- 	perf_event_mmap(vma);
- 
--	return 0;
-+	return vma;
- 
- out:
- 	kmem_cache_free(vm_area_cachep, vma);
--	return ret;
-+	return ERR_PTR(ret);
-+}
-+
-+int install_special_mapping(struct mm_struct *mm,
-+			    unsigned long addr, unsigned long len,
-+			    unsigned long vm_flags, struct page **pages)
-+{
-+	struct vm_area_struct *vma = _install_special_mapping(mm,
-+			    addr, len, vm_flags, pages);
-+
-+	if (IS_ERR(vma))
-+		return PTR_ERR(vma);
-+	return 0;
- }
- 
- static DEFINE_MUTEX(mm_all_locks_mutex);
+David Lanzendörfer (5):
+      ARM: sunxi: Add driver for SD/MMC hosts found on Allwinner sunxi SoCs
+      ARM: dts: sun7i: Add support for mmc
+      ARM: dts: sun4i: Add support for mmc
+      ARM: dts: sun5i: Add support for mmc
+      ARM: sunxi: Add documentation for driver for SD/MMC hosts found on Allwinner sunxi SoCs
+
+Emilio López (2):
+      clk: sunxi: factors: automatic reparenting support
+      clk: sunxi: Implement MMC phase control
+
+Hans de Goede (1):
+      ARM: sunxi: clk: export clk_sunxi_mmc_phase_control
+
+
+ .../devicetree/bindings/mmc/sunxi-mmc.txt          |   32 +
+ arch/arm/boot/dts/sun4i-a10-a1000.dts              |    8 
+ arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |    8 
+ arch/arm/boot/dts/sun4i-a10.dtsi                   |   54 +
+ arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts   |   30 +
+ arch/arm/boot/dts/sun5i-a10s.dtsi                  |   44 +
+ arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts    |   15 
+ arch/arm/boot/dts/sun5i-a13-olinuxino.dts          |   15 
+ arch/arm/boot/dts/sun5i-a13.dtsi                   |   37 +
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |    8 
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |    8 
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts    |   23 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |   61 +
+ drivers/clk/sunxi/clk-factors.c                    |   36 +
+ drivers/clk/sunxi/clk-sunxi.c                      |   35 +
+ drivers/mmc/host/Kconfig                           |    7 
+ drivers/mmc/host/Makefile                          |    2 
+ drivers/mmc/host/sunxi-mmc.c                       |  876 ++++++++++++++++++++
+ drivers/mmc/host/sunxi-mmc.h                       |  239 +++++
+ include/linux/clk/sunxi.h                          |   22 +
+ 20 files changed, 1560 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
+ create mode 100644 drivers/mmc/host/sunxi-mmc.c
+ create mode 100644 drivers/mmc/host/sunxi-mmc.h
+ create mode 100644 include/linux/clk/sunxi.h
+
 -- 
-1.8.5.5
-
+Signature
