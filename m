@@ -1,124 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaBQJhs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:37:48 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:36883 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270AbaBQJhq (ORCPT
+	id S1752092AbaBQJmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:42:10 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:41669 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764AbaBQJmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:37:46 -0500
-Date: Mon, 17 Feb 2014 10:37:38 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
-        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] sched/core: Create new task with twice disabled
- preemption
-Message-ID: <20140217103738.7369d84b@mschwide>
-In-Reply-To: <20140214105255.GA10596@arm.com>
-References: <1392306716.5384.3.camel@tkhai>
-	<20140213160013.GE6835@laptop.programming.kicks-ass.net>
-	<52FD01A6.8060404@yandex.ru>
-	<20140214105255.GA10596@arm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021709-1948-0000-0000-000007D4F785
+	Mon, 17 Feb 2014 04:42:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <5301D7CD.5000405@metafoo.de>
+References: <1392465619-27614-1-git-send-email-sthokal@xilinx.com>
+	<1392465619-27614-2-git-send-email-sthokal@xilinx.com>
+	<20140217084316.GY10628@intel.com>
+	<CA+mB=1K4_RpgfpWCfLy=PYOCzPThNf0Z6oSEK5Vrjh=W_YabhQ@mail.gmail.com>
+	<5301D7CD.5000405@metafoo.de>
+Date: Mon, 17 Feb 2014 15:12:05 +0530
+X-Google-Sender-Auth: AUKkuKIxy3j5alLkjmKAFDyO9Cg
+Message-ID: <CA+mB=1LjuVKYWZCaje14UtHRZ4UoLWEhYV05XyjUMgM=uKH2_A@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] dma: Support multiple interleaved frames with
+ non-contiguous memory
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Srikanth Thokala <sthokal@xilinx.com>, Vinod Koul <vinod.koul@intel.com>,
+        dan.j.williams@intel.com, michal.simek@xilinx.com,
+        Grant Likely <grant.likely@linaro.org>, robh+dt@kernel.org,
+        Levente Kurusa <levex@linux.com>, andriy.shevchenko@linux.jf.intel.com,
+        dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Feb 2014 10:52:55 +0000
-Catalin Marinas <catalin.marinas@arm.com> wrote:
-
-> On Thu, Feb 13, 2014 at 09:32:22PM +0400, Kirill Tkhai wrote:
-> > On 13.02.2014 20:00, Peter Zijlstra wrote:
-> > > On Thu, Feb 13, 2014 at 07:51:56PM +0400, Kirill Tkhai wrote:
-> > >> For archs without __ARCH_WANT_UNLOCKED_CTXSW set this means
-> > >> that all newly created tasks execute finish_arch_post_lock_switch()
-> > >> and post_schedule() with preemption enabled.
-> > > 
-> > > That's IA64 and MIPS; do they have a 'good' reason to use this?
-> > 
-> > It seems my description misleads reader, I'm sorry if so.
-> > 
-> > I mean all architectures *except* IA64 and MIPS. All, which
-> > has no __ARCH_WANT_UNLOCKED_CTXSW defined.
-> > 
-> > IA64 and MIPS already have preempt_enable() in schedule_tail():
-> > 
-> > #ifdef __ARCH_WANT_UNLOCKED_CTXSW
-> >         /* In this case, finish_task_switch does not reenable preemption */
-> >         preempt_enable();
-> > #endif
-> > 
-> > Their initial preemption is not decremented in finish_lock_switch().
-> > 
-> > So, we speak about x86, ARM64 etc.
-> > 
-> > Look at ARM64's finish_arch_post_lock_switch(). It looks a task
-> > must to not be preempted between switch_mm() and this function.
-> > But in case of new task this is possible.
-> 
-> We had a thread about this at the end of last year:
-> 
-> https://lkml.org/lkml/2013/11/15/82
-> 
-> There is indeed a problem on arm64, something like this (and I think
-> s390 also needs a fix):
-> 
-> 1. switch_mm() via check_and_switch_context() defers the actual mm
->    switch by setting TIF_SWITCH_MM
-> 2. the context switch is considered 'done' by the kernel before
->    finish_arch_post_lock_switch() and therefore we can be preempted to a
->    new thread before finish_arch_post_lock_switch()
-> 3. The new thread has the same mm as the preempted thread but we
->    actually missed the mm switching in finish_arch_post_lock_switch()
->    because TIF_SWITCH_MM is per thread rather than mm
+On Mon, Feb 17, 2014 at 3:05 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> On 02/17/2014 10:29 AM, Srikanth Thokala wrote:
+>>
+>> On Mon, Feb 17, 2014 at 2:13 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+>>>
+>>> On Sat, Feb 15, 2014 at 05:30:17PM +0530, Srikanth Thokala wrote:
+>>>>
+>>>> The current implementation of interleaved DMA API support multiple
+>>>> frames only when the memory is contiguous by incrementing src_start/
+>>>> dst_start members of interleaved template.
+>>>>
+>>>> But, when the memory is non-contiguous it will restrict slave device
+>>>> to not submit multiple frames in a batch.  This patch handles this
+>>>> issue by allowing the slave device to send array of interleaved dma
+>>>> templates each having a different memory location.
+>>>
+>>> This seems to be missing the numbers of templates you are sending,
+>>> wouldnt this
+>>> require sending ARRAY_SiZE too?
+>>>
+>>> And why send double pointer?
+>>
+>>
+>> Array size is not required, when we pass the double pointer.  The last
+>> element would be
+>> pointed to NULL and we could get the number of templates from this
+>> condition.
+>> Here is an example snippet,
+>>
+>> In slave device driver,
+>>
+>>          struct dma_interleaved_template **xts;
+>>
+>>          xts = kcalloc(frm_cnt+1, sizeof(struct
+>> dma_interleaved_template *), GFP_KERNEL);
+>>          /* Error check for xts */
+>>          for (i = 0; i < frm_cnt; i++) {
+>>                  xts[i] = kmalloc(sizeof(struct
+>> dma_interleaved_template), GFP_KERNEL);
+>>                  /* Error check for xts[i] */
+>>          }
+>>          xts[i] = NULL;
+>>
+>> In DMA engine driver,  we could get the number of frames by,
+>>
+>>          for (; xts[frmno] != NULL; frmno++);
+>>
+>> I felt this way is simpler than adding an extra argument to the API.
+>> Please let me know
+>> your opinion and suggest me a better way.
 >
-> > This is the problem I tried to solve. I don't know arm64, and I can't
-> > say how it is serious.
-> 
-> Have you managed to reproduce this? I don't say it doesn't exist, but I
-> want to make sure that any patch actually fixes it.
-> 
-> So we have more solutions, one of the first two suitable for stable:
-> 
-> 1. Propagate the TIF_SWITCH_MM to the next thread (suggested by Martin)
+>
+> I think Vinod's suggestion of passing in an array of interleaved_templates
+> and the size of the array is better than what you are currently doing.
 
-This is what I put in place for s390 but with the name TIF_TLB_WAIT instead
-of TIF_SWITCH_MM. I took the liberty to add the code to the features branch
-of the linux-s390 tree including the common code change that is necessary:
+Ok, Lars.  I will update with this in my v4. Thanks.
 
-https://git.kernel.org/cgit/linux/kernel/git/s390/linux.git/commit/?h=features&id=09ddfb4d5602095aad04eada8bc8df59e873a6ef
-https://git.kernel.org/cgit/linux/kernel/git/s390/linux.git/commit/?h=features&id=525d65f8f66ac29136ba6d2336f5a73b038701e2
+>
+> Btw. you also need to update the current implementations and users of the
+> API accordingly.
 
-These patches will be included in a please-pull request with the next merge
-window.
+Yes, I have updated them in this patch.
 
-> 2. Get rid of TIF_SWITCH_MM and use mm_cpumask for tracking (I already
->    have the patch, it just needs a lot more testing)
-> 3. Re-write the ASID allocation algorithm to no longer require IPIs and
->    therefore drop finish_arch_post_lock_switch() (this can be done, so
->    pretty intrusive for stable)
-> 4. Replace finish_arch_post_lock_switch() with finish_mm_switch() as per
->    Martin's patch and I think this would guarantee a call always, we can
->    move the mm switching from switch_mm() to finish_mm_switch() and no
->    need for flags to mark deferred mm switching
-> 
-> For arm64, we'll most likely go with 2 for stable and move to 3 shortly
-> after, no need for other deferred mm switching.
-> 
+Thanks
+Srikanth
 
 
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+>
+>
+>>
+>>>
+>>> --
+>>> ~Vinod
+>>>
+>>>>
+>>>> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+>>>> ---
+>>>>   Documentation/dmaengine.txt              |    2 +-
+>>>>   drivers/dma/imx-dma.c                    |    3 ++-
+>>>>   drivers/dma/sirf-dma.c                   |    3 ++-
+>>>>   drivers/media/platform/m2m-deinterlace.c |    2 +-
+>>>>   include/linux/dmaengine.h                |    6 +++---
+>>>>   5 files changed, 9 insertions(+), 7 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
+>>>> index 879b6e3..c642614 100644
+>>>> --- a/Documentation/dmaengine.txt
+>>>> +++ b/Documentation/dmaengine.txt
+>>>> @@ -94,7 +94,7 @@ The slave DMA usage consists of following steps:
+>>>>                size_t period_len, enum dma_data_direction direction);
+>>>>
+>>>>        struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+>>>> -             struct dma_chan *chan, struct dma_interleaved_template
+>>>> *xt,
+>>>> +             struct dma_chan *chan, struct dma_interleaved_template
+>>>> **xts,
+>>>>                unsigned long flags);
+>>>>
+>>>>      The peripheral driver is expected to have mapped the scatterlist
+>>>> for
+>>>> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+>>>> index 6f9ac20..e2c52ce 100644
+>>>> --- a/drivers/dma/imx-dma.c
+>>>> +++ b/drivers/dma/imx-dma.c
+>>>> @@ -954,12 +954,13 @@ static struct dma_async_tx_descriptor
+>>>> *imxdma_prep_dma_memcpy(
+>>>>   }
+>>>>
+>>>>   static struct dma_async_tx_descriptor *imxdma_prep_dma_interleaved(
+>>>> -     struct dma_chan *chan, struct dma_interleaved_template *xt,
+>>>> +     struct dma_chan *chan, struct dma_interleaved_template **xts,
+>>>>        unsigned long flags)
+>>>>   {
+>>>>        struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+>>>>        struct imxdma_engine *imxdma = imxdmac->imxdma;
+>>>>        struct imxdma_desc *desc;
+>>>> +     struct dma_interleaved_template *xt = *xts;
+>>>>
+>>>>        dev_dbg(imxdma->dev, "%s channel: %d src_start=0x%llx
+>>>> dst_start=0x%llx\n"
+>>>>                "   src_sgl=%s dst_sgl=%s numf=%zu frame_size=%zu\n",
+>>>> __func__,
+>>>> diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+>>>> index d4d3a31..b6a150b 100644
+>>>> --- a/drivers/dma/sirf-dma.c
+>>>> +++ b/drivers/dma/sirf-dma.c
+>>>> @@ -509,12 +509,13 @@ sirfsoc_dma_tx_status(struct dma_chan *chan,
+>>>> dma_cookie_t cookie,
+>>>>   }
+>>>>
+>>>>   static struct dma_async_tx_descriptor *sirfsoc_dma_prep_interleaved(
+>>>> -     struct dma_chan *chan, struct dma_interleaved_template *xt,
+>>>> +     struct dma_chan *chan, struct dma_interleaved_template **xts,
+>>>>        unsigned long flags)
+>>>>   {
+>>>>        struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
+>>>>        struct sirfsoc_dma_chan *schan =
+>>>> dma_chan_to_sirfsoc_dma_chan(chan);
+>>>>        struct sirfsoc_dma_desc *sdesc = NULL;
+>>>> +     struct dma_interleaved_template *xt = *xts;
+>>>>        unsigned long iflags;
+>>>>        int ret;
+>>>>
+>>>> diff --git a/drivers/media/platform/m2m-deinterlace.c
+>>>> b/drivers/media/platform/m2m-deinterlace.c
+>>>> index 6bb86b5..468110a 100644
+>>>> --- a/drivers/media/platform/m2m-deinterlace.c
+>>>> +++ b/drivers/media/platform/m2m-deinterlace.c
+>>>> @@ -343,7 +343,7 @@ static void deinterlace_issue_dma(struct
+>>>> deinterlace_ctx *ctx, int op,
+>>>>        ctx->xt->dst_sgl = true;
+>>>>        flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
+>>>>
+>>>> -     tx = dmadev->device_prep_interleaved_dma(chan, ctx->xt, flags);
+>>>> +     tx = dmadev->device_prep_interleaved_dma(chan, &ctx->xt, flags);
+>>>>        if (tx == NULL) {
+>>>>                v4l2_warn(&pcdev->v4l2_dev, "DMA interleaved prep
+>>>> error\n");
+>>>>                return;
+>>>> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+>>>> index c5c92d5..2f77a9a 100644
+>>>> --- a/include/linux/dmaengine.h
+>>>> +++ b/include/linux/dmaengine.h
+>>>> @@ -675,7 +675,7 @@ struct dma_device {
+>>>>                size_t period_len, enum dma_transfer_direction direction,
+>>>>                unsigned long flags, void *context);
+>>>>        struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+>>>> -             struct dma_chan *chan, struct dma_interleaved_template
+>>>> *xt,
+>>>> +             struct dma_chan *chan, struct dma_interleaved_template
+>>>> **xts,
+>>>>                unsigned long flags);
+>>>>        int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd
+>>>> cmd,
+>>>>                unsigned long arg);
+>>>> @@ -752,10 +752,10 @@ static inline struct dma_async_tx_descriptor
+>>>> *dmaengine_prep_dma_cyclic(
+>>>>   }
+>>>>
+>>>>   static inline struct dma_async_tx_descriptor
+>>>> *dmaengine_prep_interleaved_dma(
+>>>> -             struct dma_chan *chan, struct dma_interleaved_template
+>>>> *xt,
+>>>> +             struct dma_chan *chan, struct dma_interleaved_template
+>>>> **xts,
+>>>>                unsigned long flags)
+>>>>   {
+>>>> -     return chan->device->device_prep_interleaved_dma(chan, xt, flags);
+>>>> +     return chan->device->device_prep_interleaved_dma(chan, xts,
+>>>> flags);
+>>>>   }
+>>>>
+>>>>   static inline int dma_get_slave_caps(struct dma_chan *chan, struct
+>>>> dma_slave_caps *caps)
+>>>> --
+>>>> 1.7.9.5
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>>
+>>> --
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
