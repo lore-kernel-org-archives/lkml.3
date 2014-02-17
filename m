@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaBQJF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 04:05:28 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49376 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976AbaBQJF0 (ORCPT
+	id S1752667AbaBQJGT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 04:06:19 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:34205 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189AbaBQJGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 04:05:26 -0500
-Message-ID: <5301CF89.5070803@linux.vnet.ibm.com>
-Date: Mon, 17 Feb 2014 14:29:53 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pierre Ossman <pierre-list@ossman.eu>
-Subject: Re: [PATCH 2/2] cpufreq: don't call cpufreq_update_policy() on CPU
- addition
-References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org> <8f2fc4d6240b567fdb69a0b47f073d174b7ef9b2.1392375504.git.viresh.kumar@linaro.org> <5301CBAE.3000102@linux.vnet.ibm.com> <CAKohpom1DUOMBt6iAVcoQ5+DAXUgjSPGWaqpp6Jm=Vo+YExCFA@mail.gmail.com>
-In-Reply-To: <CAKohpom1DUOMBt6iAVcoQ5+DAXUgjSPGWaqpp6Jm=Vo+YExCFA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021709-2000-0000-0000-00000FC2E801
+	Mon, 17 Feb 2014 04:06:09 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-69-5301d0fe649d
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v3 01/15] extcon: max14577: Change extcon name instead of
+ static name according to device type
+Date: Mon, 17 Feb 2014 10:05:36 +0100
+Message-id: <1392627950-26927-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1392627950-26927-1-git-send-email-k.kozlowski@samsung.com>
+References: <1392627950-26927-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t/xa7r/LjAGG/SdNLPYOGM9q8XUh0/Y
+	LK5/ec5qMenJe2aLiSsnM1u8fmFocbbpDbvF/a9HGS02Pb7GanF51xw2i7VH7rJb3G5cwWZx
+	upvVYv2M1ywOfB47Z91l99i8Qstj06pONo871/awecw7GeixeUm9R9+WVYwenzfJBXBEcdmk
+	pOZklqUW6dslcGX8W3uFpeAwb8X3FzeYGhi3cXcxcnBICJhITNgg2cXICWSKSVy4t56ti5GL
+	Q0hgKaPE0da77BBOH5PE5q77zCBVbALGEpuXLwGrEhFoYZJ4v34/I4jDLHCISWLBjRtgVcIC
+	BRIL1lxgB7FZBFQlVp5rBLN5BdwlVp95yw6xWkFiziQbkDCngIfEzaW3wEqEgEqePNrBMoGR
+	dwEjwypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkID9soNx8TGrQ4wCHIxKPLwG1YzBQqyJ
+	ZcWVuYcYJTiYlUR4bdcBhXhTEiurUovy44tKc1KLDzEycXBKNTBOs+/5dDeFneV23JMD4pME
+	/vcUti1ZPDmmoH7RUX8uq/9184JiRIo/z7vC/ripk2nN9+CZ0+5eFTjc1anRLOC5z6x3z7Et
+	Gp7HBUyXmpZuvMwaYxwhwyIQ8XuhHetioc1cqT8vVS/dEhN3q6DG9sGK6urnp1uKdp7hPTHt
+	Y86H1PCMRokX798psRRnJBpqMRcVJwIAknhxNjYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 02:24 PM, Viresh Kumar wrote:
-> On 17 February 2014 14:13, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> On 02/14/2014 04:30 PM, Viresh Kumar wrote:
->>> cpufreq_update_policy() is called from two places currently. From a workqueue
->>> handled queued from cpufreq_bp_resume() for boot CPU and from
->>> cpufreq_cpu_callback() whenever a CPU is added.
->>>
->>> The first one makes sure that boot CPU is running on the frequency present in
->>> policy->cpu. But we don't really need a call from cpufreq_cpu_callback(),
->>> because we always call cpufreq_driver->init() (which will set policy->cur
->>> correctly) whenever first CPU of any policy is added back. And so every policy
->>> structure is guaranteed to have the right frequency in policy->cur.
->>>
->>
->> This wording is slightly inaccurate. ->init() may or may not set policy->cur
->> (for example, powernowk8 driver doesn't set it in the init routine)..
-> 
-> Its not the wording that is wrong but this particular driver then :)
-> This is what Documentation/cpu-drivers.txt says:
-> 
-> 1.2 Per-CPU Initialization
-> Then, the driver must fill in the following values:
-> 
-> policy->cur The current operating frequency of
-> this CPU (if appropriate)
-> 
-> And so it is supposed to do it.
->
+From: Chanwoo Choi <cw00.choi@samsung.com>
 
-Ah, I see.
+This patch use device name to make sysfs path according to device type:
+
+max14577-muic
+- /sys/class/extcon/max14577-muic/
+max77836-muic
+- /sys/class/extcon/max77836-muic/
+
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ drivers/extcon/extcon-max14577.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index 3846941801b8..59f084fee4f3 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -24,7 +24,6 @@
+ #include <linux/mfd/max14577-private.h>
+ #include <linux/extcon.h>
  
->> But we set it for sure in __cpufreq_add_dev():
->>
->> 1117         if (cpufreq_driver->get) {
->> 1118                 policy->cur = cpufreq_driver->get(policy->cpu);
->> 1119                 if (!policy->cur) {
->> 1120                         pr_err("%s: ->get() failed\n", __func__);
->> 1121                         goto err_get_freq;
->> 1122                 }
->> 1123         }
-> 
-> Its just about removing that from drivers and doing it once in core :)
->
-
-Ok..
-
-Regards,
-Srivatsa S. Bhat
+-#define	DEV_NAME			"max14577-muic"
+ #define	DELAY_MS_DEFAULT		17000		/* unit: millisecond */
+ 
+ enum max14577_muic_adc_debounce_time {
+@@ -673,7 +672,8 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
+ 		return -ENOMEM;
+ 	}
+-	info->edev->name = DEV_NAME;
++
++	info->edev->name = dev_name(&pdev->dev);
+ 	info->edev->supported_cable = max14577_extcon_cable;
+ 	ret = extcon_dev_register(info->edev);
+ 	if (ret) {
+@@ -737,7 +737,7 @@ static int max14577_muic_remove(struct platform_device *pdev)
+ 
+ static struct platform_driver max14577_muic_driver = {
+ 	.driver		= {
+-		.name	= DEV_NAME,
++		.name	= "max14577-muic",
+ 		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= max14577_muic_probe,
+-- 
+1.7.9.5
 
