@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaBQTnx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 14:43:53 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46517 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695AbaBQTnv (ORCPT
+	id S1754189AbaBQTta (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 14:49:30 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:36212 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238AbaBQTt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 14:43:51 -0500
-Date: Mon, 17 Feb 2014 22:43:40 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Lars Ellenberg <drbd-dev@lists.linbit.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        drbd-user@lists.linbit.com
-Subject: Re: [DRBD-user] [patch -resend] drbd: fix resync_dump_detail() output
-Message-ID: <20140217194340.GF26776@mwanda>
-References: <20120608123128.GA18293@elgon.mountain>
- <20120608185008.GC8030@soda.linbit>
+	Mon, 17 Feb 2014 14:49:28 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when CONFIG_OF isn't set
+Date: Mon, 17 Feb 2014 20:50:34 +0100
+Message-ID: <1740750.ctOzzXhXsT@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140217181829.B5F80C40372@trevor.secretlab.ca>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com> <20140217181829.B5F80C40372@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120608185008.GC8030@soda.linbit>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 08:50:08PM +0200, Lars Ellenberg wrote:
-> On Fri, Jun 08, 2012 at 03:31:28PM +0300, Dan Carpenter wrote:
-> > The tests here aren't correct.  It should be doing a shift before doing
-> > the bitwise AND.  (bme->flags & BME_NO_WRITES) is always false and
-> > (bme->flags & BME_LOCKED) checks for BME_NO_WRITES instead of checking
-> > for locked.
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Hi Grant,
+
+On Monday 17 February 2014 18:18:29 Grant Likely wrote:
+> On Tue, 11 Feb 2014 13:36:51 +0100, Laurent Pinchart wrote:
+> > when CONFIG_OF is disabled of_match_node is defined as a macro that
+> > evaluates to NULL. This breaks compilation of drivers that dereference
+> > the function's return value directly. Fix it by turning the macro into a
+> > static inline function that returns NULL.
 > 
-> Ack.
-> 
+> Is it not more problematic that code is dereferencing the return value
+> directly *without* checking to see if it is NULL first? I suppose it
+> will cause a runtime oops on all platforms except no-mmu, but still.
+> Compile time catches are better.
+
+There should be no risk of oops if the of_match_ptr() call is guarded by a 
+compiler (as opposed to preprocessor) IS_ENABLED(CONFIG_OF) check. Now, if the 
+check is missing, we'll oops at runtime, but the problem already exists before 
+this patch.
+
+Anyway I've decided to drop this patch and use an intermediate variable.
+
+> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 > > ---
-> > I sent this to the drbd-user list in March, but never recieved a
-> > response.
-> 
-> Sorry, seems to have been lost :-(
-> 
-
-Still lost in 2014.  :P  Who is supposed to take this patch?  I assume
-it's someone on the drbd list?
-
-regards,
-dan carpenter
-
-> 	Lars
-> 
-> > diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
-> > index 2959cdf..ffe1ee4 100644
-> > --- a/drivers/block/drbd/drbd_proc.c
-> > +++ b/drivers/block/drbd/drbd_proc.c
-> > @@ -187,8 +187,10 @@ static void resync_dump_detail(struct seq_file *seq, struct lc_element *e)
-> >  	struct bm_extent *bme = lc_entry(e, struct bm_extent, lce);
-> >  
-> >  	seq_printf(seq, "%5d %s %s\n", bme->rs_left,
-> > -		   bme->flags & BME_NO_WRITES ? "NO_WRITES" : "---------",
-> > -		   bme->flags & BME_LOCKED ? "LOCKED" : "------"
-> > +		   test_bit(BME_NO_WRITES, &bme->flags) ?
-> > +			"NO_WRITES" : "---------",
-> > +		   test_bit(BME_LOCKED, &bme->flags) ?
-> > +			"LOCKED" : "------"
-> >  		   );
+> > 
+> >  include/linux/of.h | 8 +++++++-
+> >  1 file changed, 7 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/include/linux/of.h b/include/linux/of.h
+> > index 70c64ba..719e69f 100644
+> > --- a/include/linux/of.h
+> > +++ b/include/linux/of.h
+> > @@ -560,7 +560,13 @@ static inline const char *of_prop_next_string(struct
+> > property *prop,> 
 > >  }
-> 
-> -- 
-> : Lars Ellenberg
-> : LINBIT | Your Way to High Availability
-> : DRBD/HA support and consulting http://www.linbit.com
+> >  
+> >  #define of_match_ptr(_ptr)	NULL
+> > 
+> > -#define of_match_node(_matches, _node)	NULL
+> > +
+> > +static inline const struct of_device_id *of_match_node(
+> > +	const struct of_device_id *matches, const struct device_node *node)
+> > +{
+> > +	return NULL;
+> > +}
+> > +
+> > 
+> >  #endif /* CONFIG_OF */
+> >  
+> >  #if defined(CONFIG_OF) && defined(CONFIG_NUMA)
+
+-- 
+Regards,
+
+Laurent Pinchart
+
