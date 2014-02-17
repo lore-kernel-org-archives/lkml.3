@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885AbaBQRyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 12:54:12 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58811 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaBQRyL (ORCPT
+	id S1754021AbaBQRym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 12:54:42 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:35384 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679AbaBQRyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 12:54:11 -0500
-Date: Mon, 17 Feb 2014 17:54:07 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
-        Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140217175407.GE18016@ZenIV.linux.org.uk>
-References: <20140215142700.GA15540@redhat.com>
- <20140215152251.GY18016@ZenIV.linux.org.uk>
- <20140215153631.GZ18016@ZenIV.linux.org.uk>
- <20140215155838.GA18016@ZenIV.linux.org.uk>
- <20140215174345.GA24799@redhat.com>
- <20140215180520.GC18016@ZenIV.linux.org.uk>
- <20140215184531.GA27314@redhat.com>
- <20140217165735.GA29173@redhat.com>
- <20140217174059.GD18016@ZenIV.linux.org.uk>
- <20140217174648.GA6176@redhat.com>
+	Mon, 17 Feb 2014 12:54:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140217174648.GA6176@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hk3cxzce0.wl%tiwai@suse.de>
+References: <CAAJw_ZvX2AfS8COiNdN9gi_1xJ4L_vL=ROCzcLL3u0h51kuX3Q@mail.gmail.com>
+	<52FCFD92.7040109@hurleysoftware.com>
+	<s5hiosi3osp.wl%tiwai@suse.de>
+	<CAAJw_ZsoO=kd6cVM3HYrkim5K0RKrnDXYGgodNNQmHVYs19a8A@mail.gmail.com>
+	<s5hha8123vu.wl%tiwai@suse.de>
+	<CAAJw_ZtviRCtaC4-3_ubkYuEt+LYstwbi6qus-5GOoOLYhfecw@mail.gmail.com>
+	<s5hk3cxzce0.wl%tiwai@suse.de>
+Date: Tue, 18 Feb 2014 01:54:40 +0800
+Message-ID: <CAAJw_ZtK+jTOhCPZKhCu_f2nHwUahE8jcR8G4+FbocEc66Ei4g@mail.gmail.com>
+Subject: Re: Lenovo X240 (haswell) suspend-to-ram hangs on 3-14.0-rc2
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        lkml <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 06:46:48PM +0100, Oleg Nesterov wrote:
-> > pulling the logics *out* of kernel/signal.c and into arch/*.
-> 
-> Not really, I think.
+On Sat, Feb 15, 2014 at 4:07 AM, Takashi Iwai <tiwai@suse.de> wrote:
 
-How so?  You propose to make all architectures call do_coredump()
-themselves, instead of having it done centrally.  It's more boilerplate
-for all of them to get wrong.  And IME any boilerplate in that are
-*will* be gotten wrong - I've gone through signal handling on all
-architectures more than a few times and every time it caught a pile
-of bugs...
+>> # bad
+>> CONFIG_SND_HDA_CODEC_HDMI =y
+>> CONFIG_SND_HDA_INTEL=y
+>> CONFIG_SND_HDA_INPUT_BEEP=y
+ CONFIG_SND_HDA_GENERIC=m
+>
+> It might be the remaining bugs of modularization in 3.14-rc2.
+> A few patches are found in for-linus branch of sound git tree, which
+> are included in Today's pull request.  Could you give it a try?
+
+Pulled, but still the same. Modularized works fine -- even the modules
+remains, s2r works. But setting to "Yes" ... won't suspend. I don't
+kow how to capture those errors above the screens :(
+
+Any suggestion on how to debug this? bisect? Ted, does your T540p work
+with CONFIG_SND_HDA_INTEL=y instead of "m" ?
+
+Thanks,
+Jeff
