@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600AbaBQAN7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 19:13:59 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53611 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751752AbaBQAN5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 19:13:57 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pierre-list@ossman.eu
-Subject: Re: [PATCH 1/2] cpufreq: Return error if ->get() failed in cpufreq_update_policy()
-Date: Mon, 17 Feb 2014 01:28:43 +0100
-Message-ID: <4772234.6D4cUIJHX4@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org>
-References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org>
+	id S1753570AbaBQATq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 19:19:46 -0500
+Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:55348 "EHLO
+	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751622AbaBQATp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 19:19:45 -0500
+From: "Banerjee, Debabrata" <dbanerje@akamai.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        "dbavatar@gmail.com" <dbavatar@gmail.com>,
+        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
+Date: Sun, 16 Feb 2014 19:19:41 -0500
+Subject: Re: [PATCH] printk: Fix discarding of records
+Thread-Topic: [PATCH] printk: Fix discarding of records
+Thread-Index: Ac8rdfR5i1XleUpcSTeOStTazDXN/A==
+Message-ID: <CF26BC6D.2E80E%dbanerje@akamai.com>
+References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
+ <CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+ <CF26B239.2E7B4%dbanerje@akamai.com>
+ <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
+In-Reply-To: <CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.9.131030
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 14, 2014 04:30:40 PM Viresh Kumar wrote:
-> cpufreq_update_policy() calls cpufreq_driver->get() to get current frequency of
-> a CPU and it is not supposed to fail or return zero. Return error in case that
-> happens.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> Pierre,
-> 
-> I don't think this will fix the issue you were facing but might supress it :)..
-> And so you need to understand what causes your ->get() to return zero.
-> 
-> @Rafael: I got to these patches while looking at code recently after Pierre
-> complained about. Came to this conclusion after having discussions with Srivatsa
-> over IRC..
+On 2/16/14, 6:59 PM, "Linus Torvalds" <torvalds@linux-foundation.org>
+wrote:
 
-Good to know that you chat with each other, but it really is not a useful piece
-of information until you say what *exactly* you were talking about.
+>On Sun, Feb 16, 2014 at 3:23 PM, Banerjee, Debabrata
+><dbanerje@akamai.com> wrote:
+>>
+>> The explanation is: the loops look identical but they are not. When a
+>> record is printed first, its size can expand due to adding the prefix
+>>and
+>> timestamp. The second loop is calculating len with the first line
+>>printed
+>> possibly changing every iteration.
+>
+>That still makes zero sense.
+>
+>The size should damn well not change, because we *should* be calling
+>it with the exact same flags. If the size changes, something is wrong.
 
->  drivers/cpufreq/cpufreq.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 08ca8c9..383362b 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -2151,6 +2151,13 @@ int cpufreq_update_policy(unsigned int cpu)
->  	 */
->  	if (cpufreq_driver->get) {
->  		new_policy.cur = cpufreq_driver->get(cpu);
-> +
-> +		if (!new_policy.cur) {
-> +			pr_err("%s: ->get() returned 0 KHz\n", __func__);
-> +			ret = -EINVAL;
+The problem is that it starts discarding records from the top of the list,
+and the size of the first line is based on the previous line. When we
+discard the *first* line off the list, then the size of the next line can
+change since it is the new first line. My v1 patch was flawed because it
+didn't consider just the first line.
 
-That isn't -EINVAL.  It may be -EIO or -ENODEV, but not -EINVAL.  Please.
+>So my suspicion is that the *real* bug is that
+>
+>    prev = 0;
+>
+>before that *third* loop, because it means that the first time through
+>that loop (when we did *not* reset "seq/idx" to the beginning, we use
+>the wrong "prev" value.
 
-> +			goto no_policy;
+No that can't be right, the prev value after every loop is the msg->flags
+from the *last* line in the list, which has no relation to the *first*, so
+reusing it for the top of the next loop is nonsense. seq is not reset
+because the second loop seeks to the seq where the third loop starts
+printing.
 
-And is it unsafe to continue here?  Or can we continue regardless of getting 0?
+I think I really fixed it properly with my v2 patch, please take a look.
 
-> +		}
-> +
->  		if (!policy->cur) {
->  			pr_debug("Driver did not initialize current freq");
->  			policy->cur = new_policy.cur;
-> 
+-Debabrata
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
