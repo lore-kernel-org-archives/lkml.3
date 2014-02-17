@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaBQXFV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 18:05:21 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51128 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282AbaBQXFT (ORCPT
+	id S1753855AbaBQXNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 18:13:07 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:61969 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843AbaBQXND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 18:05:19 -0500
-Date: Mon, 17 Feb 2014 15:05:11 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH tip/core/rcu 09/12] fs: Substitute rcu_access_pointer()
- for rcu_dereference_raw()
-Message-ID: <20140217230511.GP4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140217213533.GA5387@linux.vnet.ibm.com>
- <1392672959-6386-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672959-6386-9-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217220014.GH7941@thin>
+	Mon, 17 Feb 2014 18:13:03 -0500
+Date: Mon, 17 Feb 2014 23:12:54 +0000
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: Torvald Riegel <triegel@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+In-Reply-To: <1392666096.18779.6810.camel@triegel.csb>
+Message-ID: <Pine.LNX.4.64.1402172311000.2486@digraph.polyomino.org.uk>
+References: <1392183564.18779.2187.camel@triegel.csb> 
+ <20140212180739.GB4250@linux.vnet.ibm.com> 
+ <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com> 
+ <20140213002355.GI4250@linux.vnet.ibm.com>  <1392321837.18779.3249.camel@triegel.csb>
+  <20140214020144.GO4250@linux.vnet.ibm.com>  <1392352981.18779.3800.camel@triegel.csb>
+  <20140214172920.GQ4250@linux.vnet.ibm.com> 
+ <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com> 
+ <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com> 
+ <20140215020815.GS4250@linux.vnet.ibm.com> 
+ <CA+55aFyQTE-CzOoNn=KfDgt9bTLrUxBCXzhQ2T9kNoTy+bRQrQ@mail.gmail.com> 
+ <1392487627.18779.6535.camel@triegel.csb>  <Pine.LNX.4.64.1402171856400.29680@digraph.polyomino.org.uk>
+ <1392666096.18779.6810.camel@triegel.csb>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140217220014.GH7941@thin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021723-9332-0000-0000-000003231700
+Content-Type: text/plain; charset="US-ASCII"
+X-OriginalArrivalTime: 17 Feb 2014 23:12:58.0134 (UTC) FILETIME=[CBD02B60:01CF2C35]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 02:00:15PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 01:35:56PM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Mon, 17 Feb 2014, Torvald Riegel wrote:
+
+> On Mon, 2014-02-17 at 18:59 +0000, Joseph S. Myers wrote:
+> > On Sat, 15 Feb 2014, Torvald Riegel wrote:
 > > 
-> > (Trivial patch.)
+> > > glibc is a counterexample that comes to mind, although it's a smaller
+> > > code base.  (It's currently not using C11 atomics, but transitioning
+> > > there makes sense, and some thing I want to get to eventually.)
 > > 
-> > If the code is looking at the RCU-protected pointer itself, but not
-> > dereferencing it, the rcu_dereference() functions can be downgraded to
-> > rcu_access_pointer().  This commit makes this downgrade in __alloc_fd(),
-> > which simply compares the RCU-protected pointer against NULL with no
-> > dereferencing.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> > Cc: linux-fsdevel@vger.kernel.org
+> > glibc is using C11 atomics (GCC builtins rather than _Atomic / 
+> > <stdatomic.h>, but using __atomic_* with explicitly specified memory model 
+> > rather than the older __sync_*) on AArch64, plus in certain cases on ARM 
+> > and MIPS.
 > 
-> I'm beginning to wonder if this common pattern ought to have an
-> rcu_pointer_is_null(), which would not return the pointer, only the
-> boolean.
+> I think the major steps remaining is moving the other architectures
+> over, and rechecking concurrent code (e.g., for the code that I have
 
-Or perhaps an rcu_compare_pointer() to also handle the various cases like:
+I don't think we'll be ready to require GCC >= 4.7 to build glibc for 
+another year or two, although probably we could move the requirement up 
+from 4.4 to 4.6.  (And some platforms only had the C11 atomics optimized 
+later than 4.7.)
 
-	if (rcu_dereference_raw(foop) == barp) ...
-
-I added the problem to the RCU cleanup list on the OPW site, and
-your solution or my elaboration of it might be the right thing to do.
-(Inspected all 1300 uses of members of the rcu_dereference() family of
-functions last week, and was feeling a bit buggy-eyed at the end...)
-
-							Thanx, Paul
-
-> Regardless, for this patch:
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> >  fs/file.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/fs/file.c b/fs/file.c
-> > index db25c2bdfe46..18f7d27855c4 100644
-> > --- a/fs/file.c
-> > +++ b/fs/file.c
-> > @@ -497,7 +497,7 @@ repeat:
-> >  	error = fd;
-> >  #if 1
-> >  	/* Sanity check */
-> > -	if (rcu_dereference_raw(fdt->fd[fd]) != NULL) {
-> > +	if (rcu_access_pointer(fdt->fd[fd]) != NULL) {
-> >  		printk(KERN_WARNING "alloc_fd: slot %d not NULL!\n", fd);
-> >  		rcu_assign_pointer(fdt->fd[fd], NULL);
-> >  	}
-> > -- 
-> > 1.8.1.5
-> > 
-> 
-
+-- 
+Joseph S. Myers
+joseph@codesourcery.com
