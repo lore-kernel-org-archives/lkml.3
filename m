@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaBQNDV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 08:03:21 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:55342 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752059AbaBQNDU (ORCPT
+	id S1753216AbaBQNGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 08:06:42 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:49541 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076AbaBQNGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 08:03:20 -0500
-Message-ID: <1392642197.13000.20.camel@x220>
-Subject: Re: [PATCH] xen: remove XEN_PRIVILEGED_GUEST
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Weinberger <richard@nod.at>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Ingo Molnar <mingo@redhat.com>, xen-devel@lists.xenproject.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 17 Feb 2014 14:03:17 +0100
-In-Reply-To: <201402171223.s1HCNG0S023567@userz7022.oracle.com>
-References: <201402171223.s1HCNG0S023567@userz7022.oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Feb 2014 13:03:18.0306 (UTC) FILETIME=[A0896020:01CF2BE0]
-X-RcptDomain: vger.kernel.org
+	Mon, 17 Feb 2014 08:06:41 -0500
+MIME-Version: 1.0
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Mon, 17 Feb 2014 18:36:18 +0530
+Message-ID: <CAO_48GGdNgSAyw2d9OdvbuK8DATPYYtJvuFwnDJmPTqX7XNvow@mail.gmail.com>
+Subject: [GIT PULL]: dma-buf updates for 3.14
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
+        linux-media@vger.kernel.org
+Cc: akpm@linux-foundation.org, Daniel Vetter <daniel@ffwll.ch>,
+        Arnd Bergmann <arnd@arndb.de>, Dave Airlie <airlied@linux.ie>,
+        Tom Gall <tom.gall@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-17 at 07:23 -0500, Konrad Rzeszutek Wilk wrote:
-> On Feb 16, 2014 3:07 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Please look in the grub git tree. They have fixed their code to not do
-> this anymore. This should be reflected in the patch description.
+Hi Linus,
 
-Thanks, I didn't know that. That turned out to be grub commit
-ec824e0f2a399ce2ab3a2e3353d372a236595059 ("Implement grub_file tool and
-use it to implement generating of config"), see
-http://git.savannah.gnu.org/cgit/grub.git/commit/util/grub.d/20_linux_xen.in?id=ec824e0f2a399ce2ab3a2e3353d372a236595059
+Here's another tiny pull request for dma-buf framework updates; just
+some debugfs output updates. (There's another patch related to
+dma-buf, but it'll get upstreamed via Greg-kh's pull request).
 
-> Lastly please check which distro has this new grub version so that we
-> know which distros won't be affected.
+Could you please pull?
 
-No distro should be affected. See, the test that grub2 used to do was
-(edited for clarity):
-    grep -qx "CONFIG_XEN_DOM0=y" "${config}" || grep -qx "CONFIG_XEN_PRIVILEGED_GUEST=y" "${config}"
+The following changes since commit 45f7fdc2ffb9d5af4dab593843e89da70d1259e3:
 
-But the Kconfig entry for XEN_PRIVILEGED_GUEST reads:
-    config XEN_PRIVILEGED_GUEST
-            def_bool XEN_DOM0
+  Merge branch 'merge' of
+git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2014-02-11
+22:28:47 -0800)
 
-Ie, XEN_PRIVILEGED_GUEST is equal to XEN_DOM0 by definition, so the
-second part of that test is superfluous. (We discussed this last year.
-If lkml.org weren't down I'd provide a link.) Or am I misreading this
-Kconfig entry?
-
-I hope to send a v2, with an updated commit explanation, in a few days.
+are available in the git repository at:
 
 
-Paul Bolle
+  git://git.kernel.org/pub/scm/linux/kernel/git/sumits/dma-buf.git
+tags/dma-buf-for-3.14
 
+for you to fetch changes up to c0b00a525c127d0055c1df6283300e17f601a1a1:
+
+  dma-buf: update debugfs output (2014-02-13 10:08:52 +0530)
+
+----------------------------------------------------------------
+Small dma-buf pull request for 3.14
+
+----------------------------------------------------------------
+Sumit Semwal (1):
+      dma-buf: update debugfs output
+
+ drivers/base/dma-buf.c  | 25 ++++++++++++-------------
+ include/linux/dma-buf.h |  2 +-
+ 2 files changed, 13 insertions(+), 14 deletions(-)
