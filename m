@@ -1,61 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaBQB6L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 20:58:11 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:52872 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721AbaBQB6H (ORCPT
+	id S1754147AbaBQB7d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 20:59:33 -0500
+Received: from [60.250.210.242] ([60.250.210.242]:35090 "EHLO
+	rtits2.realtek.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327AbaBQB7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 20:58:07 -0500
-From: Alex Shi <alex.shi@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
-Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
-        linux@arm.linux.org.uk, tony.luck@intel.com, fenghua.yu@intel.com,
-        james.hogan@imgtec.com, alex.shi@linaro.org, jason.low2@hp.com,
-        viresh.kumar@linaro.org, hanjun.guo@linaro.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
-        wangyun@linux.vnet.ibm.com
-Subject: [PATCH v2 11/11] sched: clean up task_hot function
-Date: Mon, 17 Feb 2014 09:55:17 +0800
-Message-Id: <1392602117-20773-12-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1392602117-20773-1-git-send-email-alex.shi@linaro.org>
-References: <1392602117-20773-1-git-send-email-alex.shi@linaro.org>
+	Sun, 16 Feb 2014 20:59:30 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1H1vwGp003853, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <chris@printf.net>, <sameo@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
+        <ulf.hansson@linaro.org>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
+        Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH RESEND 2/3] mmc: rtsx: modify phase searching method for tuning
+Date: Mon, 17 Feb 2014 10:00:56 +0800
+Message-ID: <ff6b8cd6f2efe7e8002e03c4136875ea92d446ca.1392602322.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1392602322.git.micky_ching@realsil.com.cn>
+References: <cover.1392602322.git.micky_ching@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_hot doesn't need the 'sched_domain' parameter, so remove it.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
+The new phase searching method is more concise and easier to
+understand.
+
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
- kernel/sched/fair.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/rtsx_pci_sdmmc.c |  112 +++++++++++--------------------------
+ include/linux/mfd/rtsx_pci.h      |    2 +-
+ 2 files changed, 33 insertions(+), 81 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1b008ac..e81a790 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5003,7 +5003,7 @@ static void move_task(struct task_struct *p, struct lb_env *env)
-  * Is this task likely cache-hot:
-  */
- static int
--task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
-+task_hot(struct task_struct *p, u64 now)
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index c9a7328..7da270b 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -31,16 +31,6 @@
+ #include <linux/mfd/rtsx_pci.h>
+ #include <asm/unaligned.h>
+ 
+-/* SD Tuning Data Structure
+- * Record continuous timing phase path
+- */
+-struct timing_phase_path {
+-	int start;
+-	int end;
+-	int mid;
+-	int len;
+-};
+-
+ struct realtek_pci_sdmmc {
+ 	struct platform_device	*pdev;
+ 	struct rtsx_pcr		*pcr;
+@@ -511,85 +501,47 @@ static int sd_change_phase(struct realtek_pci_sdmmc *host,
+ 	return 0;
+ }
+ 
+-static u8 sd_search_final_phase(struct realtek_pci_sdmmc *host, u32 phase_map)
++static inline u32 test_phase_bit(u32 phase_map, unsigned int bit)
  {
- 	s64 delta;
+-	struct timing_phase_path path[MAX_PHASE + 1];
+-	int i, j, cont_path_cnt;
+-	int new_block, max_len, final_path_idx;
+-	u8 final_phase = 0xFF;
++	bit %= RTSX_PHASE_MAX;
++	return phase_map & (1 << bit);
++}
  
-@@ -5164,7 +5164,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	 * 2) task is cache cold, or
- 	 * 3) too many balance attempts have failed.
- 	 */
--	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
-+	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq));
- 	if (!tsk_cache_hot)
- 		tsk_cache_hot = migrate_degrades_locality(p, env);
+-	/* Parse phase_map, take it as a bit-ring */
+-	cont_path_cnt = 0;
+-	new_block = 1;
+-	j = 0;
+-	for (i = 0; i < MAX_PHASE + 1; i++) {
+-		if (phase_map & (1 << i)) {
+-			if (new_block) {
+-				new_block = 0;
+-				j = cont_path_cnt++;
+-				path[j].start = i;
+-				path[j].end = i;
+-			} else {
+-				path[j].end = i;
+-			}
+-		} else {
+-			new_block = 1;
+-			if (cont_path_cnt) {
+-				/* Calculate path length and middle point */
+-				int idx = cont_path_cnt - 1;
+-				path[idx].len =
+-					path[idx].end - path[idx].start + 1;
+-				path[idx].mid =
+-					path[idx].start + path[idx].len / 2;
+-			}
+-		}
+-	}
++static int sd_get_phase_len(u32 phase_map, unsigned int start_bit)
++{
++	int i;
  
+-	if (cont_path_cnt == 0) {
+-		dev_dbg(sdmmc_dev(host), "No continuous phase path\n");
+-		goto finish;
+-	} else {
+-		/* Calculate last continuous path length and middle point */
+-		int idx = cont_path_cnt - 1;
+-		path[idx].len = path[idx].end - path[idx].start + 1;
+-		path[idx].mid = path[idx].start + path[idx].len / 2;
++	for (i = 0; i < RTSX_PHASE_MAX; i++) {
++		if (test_phase_bit(phase_map, start_bit + i) == 0)
++			return i;
+ 	}
++	return RTSX_PHASE_MAX;
++}
++
++static u8 sd_search_final_phase(struct realtek_pci_sdmmc *host, u32 phase_map)
++{
++	int start = 0, len = 0;
++	int start_final = 0, len_final = 0;
++	u8 final_phase = 0xFF;
+ 
+-	/* Connect the first and last continuous paths if they are adjacent */
+-	if (!path[0].start && (path[cont_path_cnt - 1].end == MAX_PHASE)) {
+-		/* Using negative index */
+-		path[0].start = path[cont_path_cnt - 1].start - MAX_PHASE - 1;
+-		path[0].len += path[cont_path_cnt - 1].len;
+-		path[0].mid = path[0].start + path[0].len / 2;
+-		/* Convert negative middle point index to positive one */
+-		if (path[0].mid < 0)
+-			path[0].mid += MAX_PHASE + 1;
+-		cont_path_cnt--;
++	if (phase_map == 0) {
++		dev_err(sdmmc_dev(host), "phase error: [map:%x]\n", phase_map);
++		return final_phase;
+ 	}
+ 
+-	/* Choose the longest continuous phase path */
+-	max_len = 0;
+-	final_phase = 0;
+-	final_path_idx = 0;
+-	for (i = 0; i < cont_path_cnt; i++) {
+-		if (path[i].len > max_len) {
+-			max_len = path[i].len;
+-			final_phase = (u8)path[i].mid;
+-			final_path_idx = i;
++	while (start < RTSX_PHASE_MAX) {
++		len = sd_get_phase_len(phase_map, start);
++		if (len_final < len) {
++			start_final = start;
++			len_final = len;
+ 		}
+-
+-		dev_dbg(sdmmc_dev(host), "path[%d].start = %d\n",
+-				i, path[i].start);
+-		dev_dbg(sdmmc_dev(host), "path[%d].end = %d\n",
+-				i, path[i].end);
+-		dev_dbg(sdmmc_dev(host), "path[%d].len = %d\n",
+-				i, path[i].len);
+-		dev_dbg(sdmmc_dev(host), "path[%d].mid = %d\n",
+-				i, path[i].mid);
++		start += len ? len : 1;
+ 	}
+ 
+-finish:
+-	dev_dbg(sdmmc_dev(host), "Final chosen phase: %d\n", final_phase);
++	final_phase = (start_final + len_final / 2) % RTSX_PHASE_MAX;
++	dev_dbg(sdmmc_dev(host), "phase: [map:%x] [maxlen:%d] [final:%d]\n",
++		phase_map, len_final, final_phase);
++
+ 	return final_phase;
+ }
+ 
+@@ -635,7 +587,7 @@ static int sd_tuning_phase(struct realtek_pci_sdmmc *host,
+ 	int err, i;
+ 	u32 raw_phase_map = 0;
+ 
+-	for (i = MAX_PHASE; i >= 0; i--) {
++	for (i = 0; i < RTSX_PHASE_MAX; i++) {
+ 		err = sd_tuning_rx_cmd(host, opcode, (u8)i);
+ 		if (err == 0)
+ 			raw_phase_map |= 1 << i;
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 0ce7721..a383597 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -144,7 +144,7 @@
+ #define HOST_TO_DEVICE		0
+ #define DEVICE_TO_HOST		1
+ 
+-#define MAX_PHASE		31
++#define RTSX_PHASE_MAX		32
+ #define RX_TUNING_CNT		3
+ 
+ /* SG descriptor */
 -- 
-1.8.1.2
+1.7.9.5
 
