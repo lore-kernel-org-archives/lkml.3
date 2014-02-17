@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037AbaBQV6x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:58:53 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:64749 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaBQV6v (ORCPT
+	id S1753690AbaBQV7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:59:09 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:44399 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469AbaBQV7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:58:51 -0500
+	Mon, 17 Feb 2014 16:59:02 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCH 00/14][RFC] Android updates for staging-next
-Date: Mon, 17 Feb 2014 13:58:28 -0800
-Message-Id: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
+Cc: Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 08/14] staging: ion: Store a copy of the client name on client creation
+Date: Mon, 17 Feb 2014 13:58:36 -0800
+Message-Id: <1392674322-9036-9-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
+References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I recently went through the Android AOSP common tree and
-cherry-picked out a number of changes that haven't yet
-been submitted upstream.
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
 
-I wanted to send them out for comment and potential
-merging for 3.15 via staging-next.
-
-Few minor notes:
-* The first patch in the series (binder: Fix death notifications)
-  could potentially be merged in 3.14 as a fix.
-
-* The binder ABI change patch had a large number of checkpatch
-  warnings for columns over 80 chars. I've fixed most of them,
-  but the remaining are all strings, which I don't have a good
-  sense of how to best address (splitting the string also give
-  warnings).
-
-* The only other unaddressed checkpatch issue is:
-  WARNING: __packed is preferred over __attribute__((packed))
-  But I'm hesitant to change that as this is a uapi .h file and
-  I'm not sure if __packed is defined in userspace.
-
-* The last patch isn't yet submitted to AOSP, but it seemed obvious
-  enough and if there's no objections I'll submit it shortly.
-
-Comments, thoughts, suggestions?
-
-thanks
--john
+Currently, we copy the pointer passed in to ion_client_create without
+making a copy of the string itself. This approach is problematic since
+it relies on the client keeping the name string in working order.
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Colin Cross <ccross@android.com>
-Cc: Arve Hjønnevåg <arve@android.com>
 Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+[jstultz: Minor commit subject tweaks]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/ion/ion.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-Arve Hjønnevåg (2):
-  staging: binder: Fix death notifications
-  staging: binder: Support concurrent 32 bit and 64 bit processes.
-
-Colin Cross (5):
-  staging: android: Split uapi out of android_alarm.h
-  staging: android: Split uapi out of ashmem.h
-  staging: android: split uapi out of sync.h and sw_sync.h
-  staging: android: Split uapi out of binder.h
-  staging: ion: Move shrinker out of heaps
-
-John Stultz (1):
-  staging: binder: Improve Kconfig entry for ANDROID_BINDER_IPC_32BIT
-
-Laura Abbott (1):
-  staging: ion: Fix debugfs handling of multiple kernel clients
-
-Mitchel Humpherys (4):
-  staging: ion: Create separate heap and client debugfs directories
-  staging: ion: Store a copy of the client name on client creation
-  staging: ion: Make sure all clients are exposed in debugfs
-  staging: ion: Add private buffer flag to skip page pooling on free
-
-Serban Constantinescu (1):
-  staging: binder: Fix ABI for 64bit Android
-
- drivers/staging/android/Kconfig               |  13 +
- drivers/staging/android/android_alarm.h       |  44 +---
- drivers/staging/android/ashmem.h              |  30 +--
- drivers/staging/android/binder.c              | 271 +++++++++++---------
- drivers/staging/android/binder.h              | 308 +---------------------
- drivers/staging/android/binder_trace.h        |  14 +-
- drivers/staging/android/ion/ion.c             | 121 +++++++--
- drivers/staging/android/ion/ion_heap.c        |  65 ++++-
- drivers/staging/android/ion/ion_page_pool.c   |   8 +-
- drivers/staging/android/ion/ion_priv.h        |  63 ++++-
- drivers/staging/android/ion/ion_system_heap.c |  84 ++----
- drivers/staging/android/sw_sync.h             |  20 +-
- drivers/staging/android/sync.h                |  86 +------
- drivers/staging/android/uapi/android_alarm.h  |  62 +++++
- drivers/staging/android/uapi/ashmem.h         |  47 ++++
- drivers/staging/android/uapi/binder.h         | 351 ++++++++++++++++++++++++++
- drivers/staging/android/uapi/sw_sync.h        |  32 +++
- drivers/staging/android/uapi/sync.h           |  97 +++++++
- 18 files changed, 1014 insertions(+), 702 deletions(-)
- create mode 100644 drivers/staging/android/uapi/android_alarm.h
- create mode 100644 drivers/staging/android/uapi/ashmem.h
- create mode 100644 drivers/staging/android/uapi/binder.h
- create mode 100644 drivers/staging/android/uapi/sw_sync.h
- create mode 100644 drivers/staging/android/uapi/sync.h
-
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 4869420..eac4bce 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -735,19 +735,18 @@ struct ion_client *ion_client_create(struct ion_device *dev,
+ 	task_unlock(current->group_leader);
+ 
+ 	client = kzalloc(sizeof(struct ion_client), GFP_KERNEL);
+-	if (!client) {
+-		if (task)
+-			put_task_struct(current->group_leader);
+-		return ERR_PTR(-ENOMEM);
+-	}
++	if (!client)
++		goto err_put_task_struct;
+ 
+ 	client->dev = dev;
+ 	client->handles = RB_ROOT;
+ 	idr_init(&client->idr);
+ 	mutex_init(&client->lock);
+-	client->name = name;
+ 	client->task = task;
+ 	client->pid = pid;
++	client->name = kstrdup(name, GFP_KERNEL);
++	if (!client->name)
++		goto err_free_client;
+ 
+ 	down_write(&dev->lock);
+ 	p = &dev->clients.rb_node;
+@@ -776,6 +775,13 @@ struct ion_client *ion_client_create(struct ion_device *dev,
+ 	up_write(&dev->lock);
+ 
+ 	return client;
++
++err_free_client:
++	kfree(client);
++err_put_task_struct:
++	if (task)
++		put_task_struct(current->group_leader);
++	return ERR_PTR(-ENOMEM);
+ }
+ EXPORT_SYMBOL(ion_client_create);
+ 
+@@ -800,6 +806,7 @@ void ion_client_destroy(struct ion_client *client)
+ 	debugfs_remove_recursive(client->debug_root);
+ 	up_write(&dev->lock);
+ 
++	kfree(client->name);
+ 	kfree(client);
+ }
+ EXPORT_SYMBOL(ion_client_destroy);
 -- 
 1.8.3.2
 
