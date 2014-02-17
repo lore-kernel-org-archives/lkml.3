@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaBQE4X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 23:56:23 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:54689 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099AbaBQE4W (ORCPT
+	id S1752051AbaBQE5S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 23:57:18 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40062 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaBQE5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 23:56:22 -0500
-X-Original-SENDERIP: 10.177.220.194
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 17 Feb 2014 13:56:38 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 0/4] add compressing abstraction and multi stream
- support
-Message-ID: <20140217045638.GA27743@bbox>
-References: <1392233976-26473-1-git-send-email-sergey.senozhatsky@gmail.com>
+	Sun, 16 Feb 2014 23:57:16 -0500
+X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Feb 2014 23:57:16 EST
+X-AuditID: 85900ec0-d452db9000001514-00-530196aa7552
+Message-ID: <530196A9.5060304@hitachi.com>
+Date: Mon, 17 Feb 2014 13:57:13 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392233976-26473-1-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [PATCH -tip RESEND 2/2] ftrace: Introduce nr_saved_cmdlines
+ I/F
+References: <20140213012852.15283.50473.stgit@yunodevel> <20140213012858.15283.93302.stgit@yunodevel> <878utez4a1.fsf@sejong.aot.lge.com>
+In-Reply-To: <878utez4a1.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sergey,
+Hi Namhyung,
 
-I don't have a time to look at it now
-Sorry for that. I will hold the time soonish.
+(2014/02/14 13:50), Namhyung Kim wrote:
+> Hi Yoshihiro,
+> 
+> On Thu, 13 Feb 2014 10:28:58 +0900, Yoshihiro YUNOMAE wrote:
+>> Introduce nr_saved_cmdlines I/F for changing the number of pid-comm list.
+>> saved_cmdlines can store 128 command names using SAVED_CMDLINES now, but
+>> 'no-existing processes' names are often lost in saved_cmdlines when we
+>> read trace data. So, by introducing nr_saved_cmdlines I/F, the rule storing
+>> 128 command names is changed to the command numbers defined users.
+>>
+>> When we write a value to nr_saved_cmdlines, the number of the value will
+>> be stored in pid-comm list:
+>>
+>> 	# echo 1024 > /sys/kernel/debug/tracing/nr_saved_cmdlines
+>>
+>> Here, 1024 command names are stored. The default number is 128 and the maximum
+>> number is PID_MAX_DEFAULT (=32768 if CONFIG_BASE_SMALL is not set). So, if we
+>> want to avoid to lose command names, we need to set 32768 to nr_saved_cmdlines.
+>>
+>> We can read the maximum number of the list:
+>>
+>> 	# cat /sys/kernel/debug/tracing/nr_saved_cmdlines
+>> 	128
+> 
+> [SNIP]
+>> @@ -3685,7 +3760,8 @@ static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
+>>   
+>>   	(*pos)++;
+>>   
+>> -	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
+>> +	for (; ptr < &savedcmd->map_cmdline_to_pid[savedcmd->cmdline_num];
+>> +	     ptr++) {
+>>   		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
+>>   			continue;
+>>   
+>> @@ -3700,7 +3776,7 @@ static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
+>>   	void *v;
+>>   	loff_t l = 0;
+>>   
+>> -	v = &map_cmdline_to_pid[0];
+>> +	v = &savedcmd->map_cmdline_to_pid[0];
+>>   	while (l <= *pos) {
+>>   		v = saved_cmdlines_next(m, v, &l);
+>>   		if (!v)
+> 
+> Are you accessing the savecmd without trace_cmdline_lock?
 
-Thanks.
+It does not need to get trace_cmdline_lock here.
+The elements of map_pid_to_cmdline[] and saved_cmdlines[] are protected
+by trace_cmdline_lock in trace_find_cmdline(), but on the other hand
+map_cmdline_to_pid[] are not protected. There are no problems in
+particular. This is because map_cmdline_to_pid[] always refers to a
+valid process name or "<...>".
 
-On Wed, Feb 12, 2014 at 10:39:31PM +0300, Sergey Senozhatsky wrote:
-> This patchset introduces zcomp compression backend abstraction
-> adding ability to support compression algorithms other than LZO;
-> support for multi compression streams, making parallel compressions
-> possible.
-> 
-> Diff from v3:
-> -- renamed compression backend and working memory structs as requested
->    by Minchan Kim; fixed several issues noted by Minchan Kim.
-> 
-> Sergey Senozhatsky (4):
->   zram: introduce compressing backend abstraction
->   zram: use zcomp compressing backends
->   zram: support multi compressing buffers
->   zram: document max_comp_streams
-> 
->  Documentation/ABI/testing/sysfs-block-zram |   9 +-
->  Documentation/blockdev/zram.txt            |  21 +++-
->  drivers/block/zram/Makefile                |   2 +-
->  drivers/block/zram/zcomp.c                 | 156 +++++++++++++++++++++++++++++
->  drivers/block/zram/zcomp.h                 |  58 +++++++++++
->  drivers/block/zram/zcomp_lzo.c             |  33 ++++++
->  drivers/block/zram/zram_drv.c              | 102 ++++++++++++-------
->  drivers/block/zram/zram_drv.h              |  10 +-
->  8 files changed, 345 insertions(+), 46 deletions(-)
->  create mode 100644 drivers/block/zram/zcomp.c
->  create mode 100644 drivers/block/zram/zcomp.h
->  create mode 100644 drivers/block/zram/zcomp_lzo.c
-> 
-> -- 
-> 1.9.0.rc3.256.g4af3ebd
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Note that we can always get process names by setting nr_saved_cmdlines
+to maximum number if we want to avoid to get "<...>".
+
+Thank you,
+Yoshihiro YUNOMAE
 
 -- 
-Kind regards,
-Minchan Kim
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
