@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaBQGM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 01:12:26 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:35588 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaBQGMZ (ORCPT
+	id S1752492AbaBQGOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 01:14:54 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44500 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896AbaBQGOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 01:12:25 -0500
+	Mon, 17 Feb 2014 01:14:53 -0500
+X-AuditID: 9c93016f-b7c65ae000004a2a-b8-5301a8db6c31
+Date: Mon, 17 Feb 2014 15:15:02 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] slab: makes clear_obj_pfmemalloc() just return store
+ masked value
+Message-ID: <20140217061502.GB3468@lge.com>
+References: <1392361043-22420-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1392361043-22420-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <alpine.DEB.2.10.1402141225460.12887@nuc>
+ <alpine.DEB.2.02.1402141516540.13935@chino.kir.corp.google.com>
+ <alpine.DEB.2.10.1402141824300.5204@nuc>
 MIME-Version: 1.0
-In-Reply-To: <5301A64F.2090205@yahoo.com.au>
-References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
-	<5301A64F.2090205@yahoo.com.au>
-Date: Mon, 17 Feb 2014 11:42:24 +0530
-Message-ID: <CABb+yY3mPpL_Ku=WheOGoJt_k9No_-adbxmkPJ6oiQUOFM73wg@mail.gmail.com>
-Subject: Re: [PATCHv3] Generic Mailbox API
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Craig McGeachie <slapdau@yahoo.com.au>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Suman Anna <s-anna@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
-	<omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>, courtney.cavin@sonymobile.com,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1402141824300.5204@nuc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 11:33 AM, Craig McGeachie <slapdau@yahoo.com.au> wrote:
-> On 16/02/14 07:22, Jassi Brar wrote:
->>
->> Hello,
->>
->>    Here is what the generic mailbox api looks like after modifications
->> to make it work with 5 different platforms.
->>   Major feedback from Suman Anna(TI), LeyFoon Tan(Intel),
->> Craig McGeachie(Broadcom) and Loic Pallardy(ST).
->>
->> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
->>
->
-> Um, sorry for not having included this in the previous email.  I've just
-> looked over the patch set and I don't believe it contains anything that I
-> did, so I don't think my name is appropriate here at all.
->
-I did not assign you copyright/ownership of any code. The patches say
-who did what.
-I just mentioned on the record that I got very useful feedback from
-these guys to improve the api. I do not 'accuse' you of writing any
-code ;)  but I am thankful that you in a way tested the api by writing
-a driver for it.
+On Fri, Feb 14, 2014 at 06:26:15PM -0600, Christoph Lameter wrote:
+> On Fri, 14 Feb 2014, David Rientjes wrote:
+> 
+> > Yeah, you don't need it, but don't you think it makes the code more
+> > readable?  Otherwise this is going to be just doing
+> >
+> > 	return (unsigned long)objp & ~SLAB_OBJ_PFMEMALLOC;
+> >
+> > and you gotta figure out the function type to understand it's returned as
+> 
+> Isnt there something like PTR_ALIGN() for this case that would make it
+> more readable?
 
-Thanks,
-Jassi
+I can't find what you want.
+I agree with David's opinion and want to keep patch as is.
+
+Thanks.
