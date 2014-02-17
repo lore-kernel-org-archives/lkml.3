@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaBQK2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 05:28:16 -0500
-Received: from cassarossa.samfundet.no ([193.35.52.29]:57743 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652AbaBQK2P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 05:28:15 -0500
-Date: Mon, 17 Feb 2014 11:28:12 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, hskinnemoen@gmail.com
-Subject: [GIT PULL] AVR32 fixes for 3.14
-Message-ID: <20140217102812.GA3214@samfundet.no>
+	id S1752908AbaBQK3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 05:29:46 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:54222 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751591AbaBQK3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 05:29:45 -0500
+X-IronPort-AV: E=Sophos;i="4.95,859,1384300800"; 
+   d="scan'208";a="103127274"
+Message-ID: <5301E496.40802@citrix.com>
+Date: Mon, 17 Feb 2014 10:29:42 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: <netdev@vger.kernel.org>, Wei Liu <wei.liu2@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>, <kvm@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, <linux-kernel@vger.kernel.org>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [RFC v2 3/4] xen-netback: use a random MAC address
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com> <1392433180-16052-4-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1392433180-16052-4-git-send-email-mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On 15/02/14 02:59, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> 
+> The purpose of using a static MAC address of FE:FF:FF:FF:FF:FF
+> was to prevent our backend interfaces from being used by the
+> bridge and nominating our interface as a root bridge. This was
+> possible given that the bridge code will use the lowest MAC
+> address for a port once a new interface gets added to the bridge.
+> The bridge code has a generic feature now to allow interfaces
+> to opt out from root bridge nominations, use that instead.
+[...]
+> --- a/drivers/net/xen-netback/interface.c
+> +++ b/drivers/net/xen-netback/interface.c
+> @@ -42,6 +42,8 @@
+>  #define XENVIF_QUEUE_LENGTH 32
+>  #define XENVIF_NAPI_WEIGHT  64
+>  
+> +static const u8 xen_oui[3] = { 0x00, 0x16, 0x3e };
 
-please pull
+You shouldn't use a vendor prefix with a random MAC address.  You should
+set the locally administered bit and clear the multicast/unicast bit and
+randomize the remaining 46 bits.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/egtvedt/linux-avr32.git for-linus
+(If existing VIF scripts are doing something similar, they also need to
+be fixed.)
 
-to receive the following AVR32 fixes for 3.14
-
-Chen Gang (3):
-      avr32: Makefile: add '-D__linux__' flag for gcc-4.4.7 use
-      avr32: add generic ioremap_wc() definition in io.h
-      avr32: add generic vga.h to Kbuild
-
-Paul Gortmaker (1):
-      avr32: fix missing module.h causing build failure in mimc200/fram.c
-
- arch/avr32/Makefile              | 2 +-
- arch/avr32/boards/mimc200/fram.c | 1 +
- arch/avr32/include/asm/Kbuild    | 1 +
- arch/avr32/include/asm/io.h      | 2 ++
- 4 files changed, 5 insertions(+), 1 deletion(-)
--- 
-mvh
-Hans-Christian Egtvedt
+David
