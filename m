@@ -1,76 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047AbaBQSXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:23:30 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33771 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752436AbaBQSX0 (ORCPT
+	id S1754167AbaBQSYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:24:19 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:46869 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbaBQSYR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:23:26 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19w/NnXVPj3SD5eQVV5ur6M+R6BPVAjXlo=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 7AD2C52A7A4
-Date: Mon, 17 Feb 2014 13:23:12 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        devicetree@vger.kernel.org, Laura Abbott <lauraa@codeaurora.org>,
-        keescook@chromium.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>
-Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
-Message-ID: <20140217182312.GV7862@titan.lakedaemon.net>
-References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
- <201402121251.06280.arnd@arndb.de>
- <20140217155419.682F7C401D4@trevor.secretlab.ca>
- <1418981.0py7JxXCp8@wuerfel>
+	Mon, 17 Feb 2014 13:24:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418981.0py7JxXCp8@wuerfel>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <530248B1.2090405@vodafone.de>
+References: <20140217155056.20337.25254.stgit@patser>
+	<20140217155556.20337.37589.stgit@patser>
+	<53023F3E.3080107@vodafone.de>
+	<CAF6AEGtHSg=qESbGE8LZsQPrRfHnrSQOjpEAVKeZ5o9k07ZNcA@mail.gmail.com>
+	<530248B1.2090405@vodafone.de>
+Date: Mon, 17 Feb 2014 13:24:17 -0500
+Message-ID: <CAF6AEGtk1dGdFg2wk-ofRQmaxEnnEOQBOg=JNaPRVapQqsML+w@mail.gmail.com>
+Subject: Re: [PATCH 2/6] seqno-fence: Hardware dma-buf implementation of
+ fencing (v4)
+From: Rob Clark <robdclark@gmail.com>
+To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Colin Cross <ccross@google.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 05:13:07PM +0100, Arnd Bergmann wrote:
-> On Monday 17 February 2014 15:54:19 Grant Likely wrote:
-> > On Wed, 12 Feb 2014 11:20:00 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
-> > > On Wed, Feb 12, 2014 at 12:45:54PM -0500, Jason Cooper wrote:
-> > > 
-> > > > The bootloader would then load this file into ram, and pass the
-> > > > address/size to the kernel either via dt, or commandline.  kaslr (run in
-> > > > the decompressor) would consume some of this randomness, and then
-> > > > random.c would consume the rest in a non-crediting initialization.
-> > > 
-> > > Sure is a neat idea, but I think in general it would probably be smart
-> > > to include the entire FDT blob in the early random pool, that way you
-> > > get MACs and other machine unique data too.
-> > 
-> > I applied a patch that did exactly that (109b623629), and then reverted
-> > it (b920ecc82) shortly thereafter because add_device_randomness() is
-> > a rather slow function and FDTs can get large. I'd like to see someone
-> > do a reasonable analysis on the cost of using an FDT for randomness
-> > before I reapply a patch doing something similar. An awful lot of the
-> > FDT data is not very random, but there are certainly portions of it that
-> > are appropriate for the random pool.
-> 
-> Could we use a faster hash function that scans the entire device tree and
-> then just feed the output of that into add_device_randomness? We probably
-> can't expect that there is a lot of entropy in the DT blob, so the
-> result wouldn't be all that different in terms of quality of the random
-> seed.
+On Mon, Feb 17, 2014 at 12:36 PM, Christian König
+<deathsimple@vodafone.de> wrote:
+> Am 17.02.2014 18:27, schrieb Rob Clark:
+>
+>> On Mon, Feb 17, 2014 at 11:56 AM, Christian König
+>> <deathsimple@vodafone.de> wrote:
+>>>
+>>> Am 17.02.2014 16:56, schrieb Maarten Lankhorst:
+>>>
+>>>> This type of fence can be used with hardware synchronization for simple
+>>>> hardware that can block execution until the condition
+>>>> (dma_buf[offset] - value) >= 0 has been met.
+>>>
+>>>
+>>> Can't we make that just "dma_buf[offset] != 0" instead? As far as I know
+>>> this way it would match the definition M$ uses in their WDDM
+>>> specification
+>>> and so make it much more likely that hardware supports it.
+>>
+>> well 'buf[offset] >= value' at least means the same slot can be used
+>> for multiple operations (with increasing values of 'value').. not sure
+>> if that is something people care about.
+>>
+>>> =value seems to be possible with adreno and radeon.  I'm not really sure
+>>> about others (although I presume it as least supported for nv desktop
+>>> stuff).  For hw that cannot do >=value, we can either have a different fence
+>>> implementation which uses the !=0 approach.  Or change seqno-fence
+>>> implementation later if needed.  But if someone has hw that can do !=0 but
+>>> not >=value, speak up now ;-)
+>
+>
+> Here! Radeon can only do >=value on the DMA and 3D engine, but not with UVD
+> or VCE. And for the 3D engine it means draining the pipe, which isn't really
+> a good idea.
 
-I think it would be easier to identify the few attributes that differ
-from board to board (mac address, serial number, etc), and differ from
-boot to boot (random-seed, timestamp) and just extract and feed those
-in.
+hmm, ok.. forgot you have a few extra rings compared to me.  Is UVD
+re-ordering from decode-order to display-order for you in hw?  If not,
+I guess you need sw intervention anyways when a frame is done for
+frame re-ordering, so maybe hw->hw sync doesn't really matter as much
+as compared to gpu/3d->display.  For dma<->3d interactions, seems like
+you would care more about hw<->hw sync, but I guess you aren't likely
+to use GPU A to do a resolve blit for GPU B..
 
-We already have the fdt parsing code in the decompressor...
+For 3D ring, I assume you probably want a CP_WAIT_FOR_IDLE before a
+CP_MEM_WRITE to update fence value in memory (for the one signalling
+the fence).  But why would you need that before a CP_WAIT_REG_MEM (for
+the one waiting for the fence)?  I don't exactly have documentation
+for adreno version of CP_WAIT_REG_{MEM,EQ,GTE}..  but PFP and ME
+appear to be same instruction set as r600, so I'm pretty sure they
+should have similar capabilities.. CP_WAIT_REG_MEM appears to be same
+but with 32bit gpu addresses vs 64b.
 
-thx,
+BR,
+-R
 
-Jason.
+> Christian.
+>
+>
+>>
+>>> Apart from that I still don't like the idea of leaking a drivers IRQ
+>>> context
+>>> outside of the driver, but without a proper GPU scheduler there probably
+>>> isn't much alternative.
+>>
+>> I guess it will be not uncommon scenario for gpu device to just need
+>> to kick display device to write a few registers for a page flip..
+>> probably best not to schedule a worker just for this (unless the
+>> signalled device otherwise needs to).  I think it is better in this
+>> case to give the signalee some rope to hang themselves, and make it
+>> the responsibility of the callback to kick things off to a worker if
+>> needed.
+>>
+>> BR,
+>> -R
+>>
+>>> Christian.
+>>>
+>>>> A software fallback still has to be provided in case the fence is used
+>>>> with a device that doesn't support this mechanism. It is useful to
+>>>> expose
+>>>> this for graphics cards that have an op to support this.
+>>>>
+>>>> Some cards like i915 can export those, but don't have an option to wait,
+>>>> so they need the software fallback.
+>>>>
+>>>> I extended the original patch by Rob Clark.
+>>>>
+>>>> v1: Original
+>>>> v2: Renamed from bikeshed to seqno, moved into dma-fence.c since
+>>>>       not much was left of the file. Lots of documentation added.
+>>>> v3: Use fence_ops instead of custom callbacks. Moved to own file
+>>>>       to avoid circular dependency between dma-buf.h and fence.h
+>>>> v4: Add spinlock pointer to seqno_fence_init
+>>>>
+>>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>>>> ---
+>>>>    Documentation/DocBook/device-drivers.tmpl |    1
+>>>>    drivers/base/fence.c                      |   50 +++++++++++++
+>>>>    include/linux/seqno-fence.h               |  109
+>>>> +++++++++++++++++++++++++++++
+>>>>    3 files changed, 160 insertions(+)
+>>>>    create mode 100644 include/linux/seqno-fence.h
+>>>>
+>>>> diff --git a/Documentation/DocBook/device-drivers.tmpl
+>>>> b/Documentation/DocBook/device-drivers.tmpl
+>>>> index 7a0c9ddb4818..8c85c20942c2 100644
+>>>> --- a/Documentation/DocBook/device-drivers.tmpl
+>>>> +++ b/Documentation/DocBook/device-drivers.tmpl
+>>>> @@ -131,6 +131,7 @@ X!Edrivers/base/interface.c
+>>>>    !Edrivers/base/dma-buf.c
+>>>>    !Edrivers/base/fence.c
+>>>>    !Iinclude/linux/fence.h
+>>>> +!Iinclude/linux/seqno-fence.h
+>>>>    !Edrivers/base/reservation.c
+>>>>    !Iinclude/linux/reservation.h
+>>>>    !Edrivers/base/dma-coherent.c
+>>>> diff --git a/drivers/base/fence.c b/drivers/base/fence.c
+>>>> index 12df2bf62034..cd0937127a89 100644
+>>>> --- a/drivers/base/fence.c
+>>>> +++ b/drivers/base/fence.c
+>>>> @@ -25,6 +25,7 @@
+>>>>    #include <linux/export.h>
+>>>>    #include <linux/atomic.h>
+>>>>    #include <linux/fence.h>
+>>>> +#include <linux/seqno-fence.h>
+>>>>      #define CREATE_TRACE_POINTS
+>>>>    #include <trace/events/fence.h>
+>>>> @@ -413,3 +414,52 @@ __fence_init(struct fence *fence, const struct
+>>>> fence_ops *ops,
+>>>>          trace_fence_init(fence);
+>>>>    }
+>>>>    EXPORT_SYMBOL(__fence_init);
+>>>> +
+>>>> +static const char *seqno_fence_get_driver_name(struct fence *fence) {
+>>>> +       struct seqno_fence *seqno_fence = to_seqno_fence(fence);
+>>>> +       return seqno_fence->ops->get_driver_name(fence);
+>>>> +}
+>>>> +
+>>>> +static const char *seqno_fence_get_timeline_name(struct fence *fence) {
+>>>> +       struct seqno_fence *seqno_fence = to_seqno_fence(fence);
+>>>> +       return seqno_fence->ops->get_timeline_name(fence);
+>>>> +}
+>>>> +
+>>>> +static bool seqno_enable_signaling(struct fence *fence)
+>>>> +{
+>>>> +       struct seqno_fence *seqno_fence = to_seqno_fence(fence);
+>>>> +       return seqno_fence->ops->enable_signaling(fence);
+>>>> +}
+>>>> +
+>>>> +static bool seqno_signaled(struct fence *fence)
+>>>> +{
+>>>> +       struct seqno_fence *seqno_fence = to_seqno_fence(fence);
+>>>> +       return seqno_fence->ops->signaled &&
+>>>> seqno_fence->ops->signaled(fence);
+>>>> +}
+>>>> +
+>>>> +static void seqno_release(struct fence *fence)
+>>>> +{
+>>>> +       struct seqno_fence *f = to_seqno_fence(fence);
+>>>> +
+>>>> +       dma_buf_put(f->sync_buf);
+>>>> +       if (f->ops->release)
+>>>> +               f->ops->release(fence);
+>>>> +       else
+>>>> +               kfree(f);
+>>>> +}
+>>>> +
+>>>> +static long seqno_wait(struct fence *fence, bool intr, signed long
+>>>> timeout)
+>>>> +{
+>>>> +       struct seqno_fence *f = to_seqno_fence(fence);
+>>>> +       return f->ops->wait(fence, intr, timeout);
+>>>> +}
+>>>> +
+>>>> +const struct fence_ops seqno_fence_ops = {
+>>>> +       .get_driver_name = seqno_fence_get_driver_name,
+>>>> +       .get_timeline_name = seqno_fence_get_timeline_name,
+>>>> +       .enable_signaling = seqno_enable_signaling,
+>>>> +       .signaled = seqno_signaled,
+>>>> +       .wait = seqno_wait,
+>>>> +       .release = seqno_release,
+>>>> +};
+>>>> +EXPORT_SYMBOL(seqno_fence_ops);
+>>>> diff --git a/include/linux/seqno-fence.h b/include/linux/seqno-fence.h
+>>>> new file mode 100644
+>>>> index 000000000000..952f7909128c
+>>>> --- /dev/null
+>>>> +++ b/include/linux/seqno-fence.h
+>>>> @@ -0,0 +1,109 @@
+>>>> +/*
+>>>> + * seqno-fence, using a dma-buf to synchronize fencing
+>>>> + *
+>>>> + * Copyright (C) 2012 Texas Instruments
+>>>> + * Copyright (C) 2012 Canonical Ltd
+>>>> + * Authors:
+>>>> + * Rob Clark <robdclark@gmail.com>
+>>>> + *   Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>>>> + *
+>>>> + * This program is free software; you can redistribute it and/or modify
+>>>> it
+>>>> + * under the terms of the GNU General Public License version 2 as
+>>>> published by
+>>>> + * the Free Software Foundation.
+>>>> + *
+>>>> + * This program is distributed in the hope that it will be useful, but
+>>>> WITHOUT
+>>>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+>>>> or
+>>>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+>>>> License
+>>>> for
+>>>> + * more details.
+>>>> + *
+>>>> + * You should have received a copy of the GNU General Public License
+>>>> along with
+>>>> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+>>>> + */
+>>>> +
+>>>> +#ifndef __LINUX_SEQNO_FENCE_H
+>>>> +#define __LINUX_SEQNO_FENCE_H
+>>>> +
+>>>> +#include <linux/fence.h>
+>>>> +#include <linux/dma-buf.h>
+>>>> +
+>>>> +struct seqno_fence {
+>>>> +       struct fence base;
+>>>> +
+>>>> +       const struct fence_ops *ops;
+>>>> +       struct dma_buf *sync_buf;
+>>>> +       uint32_t seqno_ofs;
+>>>> +};
+>>>> +
+>>>> +extern const struct fence_ops seqno_fence_ops;
+>>>> +
+>>>> +/**
+>>>> + * to_seqno_fence - cast a fence to a seqno_fence
+>>>> + * @fence: fence to cast to a seqno_fence
+>>>> + *
+>>>> + * Returns NULL if the fence is not a seqno_fence,
+>>>> + * or the seqno_fence otherwise.
+>>>> + */
+>>>> +static inline struct seqno_fence *
+>>>> +to_seqno_fence(struct fence *fence)
+>>>> +{
+>>>> +       if (fence->ops != &seqno_fence_ops)
+>>>> +               return NULL;
+>>>> +       return container_of(fence, struct seqno_fence, base);
+>>>> +}
+>>>> +
+>>>> +/**
+>>>> + * seqno_fence_init - initialize a seqno fence
+>>>> + * @fence: seqno_fence to initialize
+>>>> + * @lock: pointer to spinlock to use for fence
+>>>> + * @sync_buf: buffer containing the memory location to signal on
+>>>> + * @context: the execution context this fence is a part of
+>>>> + * @seqno_ofs: the offset within @sync_buf
+>>>> + * @seqno: the sequence # to signal on
+>>>> + * @ops: the fence_ops for operations on this seqno fence
+>>>> + *
+>>>> + * This function initializes a struct seqno_fence with passed
+>>>> parameters,
+>>>> + * and takes a reference on sync_buf which is released on fence
+>>>> destruction.
+>>>> + *
+>>>> + * A seqno_fence is a dma_fence which can complete in software when
+>>>> + * enable_signaling is called, but it also completes when
+>>>> + * (s32)((sync_buf)[seqno_ofs] - seqno) >= 0 is true
+>>>> + *
+>>>> + * The seqno_fence will take a refcount on the sync_buf until it's
+>>>> + * destroyed, but actual lifetime of sync_buf may be longer if one of
+>>>> the
+>>>> + * callers take a reference to it.
+>>>> + *
+>>>> + * Certain hardware have instructions to insert this type of wait
+>>>> condition
+>>>> + * in the command stream, so no intervention from software would be
+>>>> needed.
+>>>> + * This type of fence can be destroyed before completed, however a
+>>>> reference
+>>>> + * on the sync_buf dma-buf can be taken. It is encouraged to re-use the
+>>>> same
+>>>> + * dma-buf for sync_buf, since mapping or unmapping the sync_buf to the
+>>>> + * device's vm can be expensive.
+>>>> + *
+>>>> + * It is recommended for creators of seqno_fence to call fence_signal
+>>>> + * before destruction. This will prevent possible issues from
+>>>> wraparound
+>>>> at
+>>>> + * time of issue vs time of check, since users can check
+>>>> fence_is_signaled
+>>>> + * before submitting instructions for the hardware to wait on the
+>>>> fence.
+>>>> + * However, when ops.enable_signaling is not called, it doesn't have to
+>>>> be
+>>>> + * done as soon as possible, just before there's any real danger of
+>>>> seqno
+>>>> + * wraparound.
+>>>> + */
+>>>> +static inline void
+>>>> +seqno_fence_init(struct seqno_fence *fence, spinlock_t *lock,
+>>>> +                struct dma_buf *sync_buf,  uint32_t context, uint32_t
+>>>> seqno_ofs,
+>>>> +                uint32_t seqno, const struct fence_ops *ops)
+>>>> +{
+>>>> +       BUG_ON(!fence || !sync_buf || !ops);
+>>>> +       BUG_ON(!ops->wait || !ops->enable_signaling ||
+>>>> !ops->get_driver_name || !ops->get_timeline_name);
+>>>> +
+>>>> +       /*
+>>>> +        * ops is used in __fence_init for get_driver_name, so needs to
+>>>> be
+>>>> +        * initialized first
+>>>> +        */
+>>>> +       fence->ops = ops;
+>>>> +       __fence_init(&fence->base, &seqno_fence_ops, lock, context,
+>>>> seqno);
+>>>> +       get_dma_buf(sync_buf);
+>>>> +       fence->sync_buf = sync_buf;
+>>>> +       fence->seqno_ofs = seqno_ofs;
+>>>> +}
+>>>> +
+>>>> +#endif /* __LINUX_SEQNO_FENCE_H */
+>>>>
+>>>> _______________________________________________
+>>>> dri-devel mailing list
+>>>> dri-devel@lists.freedesktop.org
+>>>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>>>
+>>>
+>>> _______________________________________________
+>>> dri-devel mailing list
+>>> dri-devel@lists.freedesktop.org
+>>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
+>
