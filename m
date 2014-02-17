@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaBQSQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:16:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40081 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130AbaBQSQ3 (ORCPT
+	id S1754160AbaBQSSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:18:23 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:50009 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbaBQSSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:16:29 -0500
-Date: Mon, 17 Feb 2014 10:18:54 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stanislav Meduna <stano@meduna.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        hjk@hansjkoch.de
-Subject: Re: UIO and memory from dma_alloc_coherent - UIO_MEM_PHYS?
-Message-ID: <20140217181854.GA7119@kroah.com>
-References: <53024FAD.2000709@meduna.org>
+	Mon, 17 Feb 2014 13:18:21 -0500
+Date: Mon, 17 Feb 2014 10:18:15 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Torvald Riegel <triegel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140217181815.GA1934@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140207165028.GO4250@linux.vnet.ibm.com>
+ <20140207165548.GR5976@mudshark.cambridge.arm.com>
+ <20140207180216.GP4250@linux.vnet.ibm.com>
+ <1391992071.18779.99.camel@triegel.csb>
+ <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+ <20140211155941.GU4250@linux.vnet.ibm.com>
+ <1392185194.18779.2239.camel@triegel.csb>
+ <20140212091907.GA3545@laptop.programming.kicks-ass.net>
+ <20140212174209.GA4250@linux.vnet.ibm.com>
+ <20140212181205.GD27965@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53024FAD.2000709@meduna.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140212181205.GD27965@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021718-8236-0000-0000-0000074C4164
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 07:06:37PM +0100, Stanislav Meduna wrote:
-> Hi,
+On Wed, Feb 12, 2014 at 07:12:05PM +0100, Peter Zijlstra wrote:
+> On Wed, Feb 12, 2014 at 09:42:09AM -0800, Paul E. McKenney wrote:
+> > You need volatile semantics to force the compiler to ignore any proofs
+> > it might otherwise attempt to construct.  Hence all the ACCESS_ONCE()
+> > calls in my email to Torvald.  (Hopefully I translated your example
+> > reasonably.)
 > 
-> what is the correct way for a UIO driver to pass a memory allocated
-> using dma_alloc_coherent to userspace? I have googled for examples
-> but I was not able to find a definitive answer.
-> 
-> My device needs two 128 kB chunks of DMA-able memory. First I tried
-> 
->   pdev->tx_vaddr = dma_zalloc_coherent(&dev->dev, pdev->dma_len,
->                      &pdev->tx_paddr, GFP_KERNEL | GFP_DMA);
-> 
->   info->mem[2].name = "txdma";
->   info->mem[2].addr = (phys_addr_t) pdev->tx_vaddr;
->   info->mem[2].size = pdev->dma_len;
->   info->mem[2].memtype = UIO_MEM_LOGICAL;
-> 
-> This seemed to work at the first try, but tends to panic in various
-> ways when unmapping. It probably only maps the first page or something
-> like that and accessing past some limit overwrites something.
+> My brain gave out for today; but it did appear to have the right
+> structure.
 
-Have you tried the uio_dmem_genirq.c driver?  Or are you writing a new
-one?
+I can relate.  ;-)
 
-> If I change this to
-> 
->   info->mem[2].addr = (phys_addr_t) pdev->tx_paddr;
->   info->mem[2].memtype = UIO_MEM_PHYS;
-> 
-> it seems to work at least on x86 with < 4GB memory. The uio_pruss.c
-> (or uio_dmem_genirq.c in newer kernels) do this as well.
-> 
-> I have a bad feeling here - if I am allocating something that
-> is a virtual memory in the kernel, I don't expect to pretend I am
-> accessing something else. The UIO howto explicitely states
-> that UIO_MEM_PHYS is meant for a "physical memory on your card".
-> 
-> Is this really a recommended way of doing this and is it portable
-> to other architectures?
-> 
-> I am using 3.4 kernel with realtime patches.
+> I would prefer it C11 would not require the volatile casts. It should
+> simply _never_ speculate with atomic writes, volatile or not.
 
-The uio_dmem_genirq.c driver showed up in 3.8, so it might be good for
-you to update your kernel if you want to do DMA memory with a UIO
-driver, as lots of other things in this area was fixed to accomplish
-this.
+I agree with not needing volatiles to prevent speculated writes.  However,
+they will sometimes be needed to prevent excessive load/store combining.
+The compiler doesn't have the runtime feedback mechanisms that the
+hardware has, and thus will need help from the developer from time
+to time.
 
-Hope this helps,
+Or maybe the Linux kernel simply waits to transition to C11 relaxed atomics
+until the compiler has learned to be sufficiently conservative in its
+load-store combining decisions.
 
-greg k-h
+							Thanx, Paul
+
