@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932AbaBQHLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 02:11:52 -0500
-Received: from ozlabs.org ([203.10.76.45]:59383 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896AbaBQHLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 02:11:51 -0500
-Message-ID: <1392621108.8740.5.camel@concordia>
-Subject: Re: [PATCH v2 10/11] powerpc/perf: add kconfig option for
- hypervisor provided counters
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Scott Wood <scottwood@freescale.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tang Yuantian <yuantian.tang@freescale.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Priyanka Jain <Priyanka.Jain@freescale.com>,
-        Lijun Pan <Lijun.Pan@freescale.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Anton Blanchard <anton@samba.org>
-Date: Mon, 17 Feb 2014 18:11:48 +1100
-In-Reply-To: <20140215002505.GA2991@negative>
-References: <1392415338-16288-1-git-send-email-cody@linux.vnet.ibm.com>
-	 <1392415338-16288-11-git-send-email-cody@linux.vnet.ibm.com>
-	 <1392417133.6733.624.camel@snotra.buserror.net>
-	 <20140215002505.GA2991@negative>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751137AbaBQHN7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 02:13:59 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:49957 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaBQHN6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 02:13:58 -0500
+X-AuditID: 9c93017d-b7c89ae000006ae1-13-5301b6b4a11f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip RESEND 2/2] ftrace: Introduce nr_saved_cmdlines I/F
+References: <20140213012852.15283.50473.stgit@yunodevel>
+	<20140213012858.15283.93302.stgit@yunodevel>
+	<878utez4a1.fsf@sejong.aot.lge.com> <530196A9.5060304@hitachi.com>
+Date: Mon, 17 Feb 2014 16:13:55 +0900
+In-Reply-To: <530196A9.5060304@hitachi.com> (Yoshihiro YUNOMAE's message of
+	"Mon, 17 Feb 2014 13:57:13 +0900")
+Message-ID: <87mwhqxlcc.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-14 at 16:25 -0800, Cody P Schafer wrote:
-> On Fri, Feb 14, 2014 at 04:32:13PM -0600, Scott Wood wrote:
-> > On Fri, 2014-02-14 at 14:02 -0800, Cody P Schafer wrote:
-> > > diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-> > > index 434fda3..dcc67cd 100644
-> > > --- a/arch/powerpc/platforms/Kconfig.cputype
-> > > +++ b/arch/powerpc/platforms/Kconfig.cputype
-> > > @@ -364,6 +364,12 @@ config PPC_PERF_CTRS
-> > >         help
-> > >           This enables the powerpc-specific perf_event back-end.
-> > >  
-> > > +config HV_PERF_CTRS
-> > > +       def_bool y
-> > > +       depends on PERF_EVENTS && PPC_HAVE_PMU_SUPPORT
-> > > +       help
-> > > +         Enable access to perf counters provided by the hypervisor
-> > 
-> > Please don't add default-y stuff that is platform-specific, and
-> > definitely point out that platform dependency in the config description
-> > -- I have to look elsewhere in the patchset to determine that this is
-> > for "Power Hypervisor".  PPC_HAVE_PMU_SUPPORT is enabled by all 6xx
-> > builds, even for hardware like e300 that doesn't have PMU at all (it has
-> > the FSL embedded perfmon instead), much less this hv interface.
-> > 
-> > And yes, PPC_PERF_CTRS has the same problem and should be fixed. :-)
-> 
-> Yep, I just based this one on what PPC_PERF_CTRS was doing.
-> 
-> How about the following:
-> 
-> +config HV_PERF_CTRS
-> +       bool "Perf Hypervisor supplied counters"
+Hi Yoshihiro,
 
-"Support for Hypervisor supplied PMU events (24x7 & GPCI)" ?
+On Mon, 17 Feb 2014 13:57:13 +0900, Yoshihiro YUNOMAE wrote:
+> Hi Namhyung,
+>
+> (2014/02/14 13:50), Namhyung Kim wrote:
+>> Hi Yoshihiro,
+>> 
+>> On Thu, 13 Feb 2014 10:28:58 +0900, Yoshihiro YUNOMAE wrote:
+>>> Introduce nr_saved_cmdlines I/F for changing the number of pid-comm list.
+>>> saved_cmdlines can store 128 command names using SAVED_CMDLINES now, but
+>>> 'no-existing processes' names are often lost in saved_cmdlines when we
+>>> read trace data. So, by introducing nr_saved_cmdlines I/F, the rule storing
+>>> 128 command names is changed to the command numbers defined users.
+>>>
+>>> When we write a value to nr_saved_cmdlines, the number of the value will
+>>> be stored in pid-comm list:
+>>>
+>>> 	# echo 1024 > /sys/kernel/debug/tracing/nr_saved_cmdlines
+>>>
+>>> Here, 1024 command names are stored. The default number is 128 and the maximum
+>>> number is PID_MAX_DEFAULT (=32768 if CONFIG_BASE_SMALL is not set). So, if we
+>>> want to avoid to lose command names, we need to set 32768 to nr_saved_cmdlines.
+>>>
+>>> We can read the maximum number of the list:
+>>>
+>>> 	# cat /sys/kernel/debug/tracing/nr_saved_cmdlines
+>>> 	128
+>> 
+>> [SNIP]
+>>> @@ -3685,7 +3760,8 @@ static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
+>>>   
+>>>   	(*pos)++;
+>>>   
+>>> -	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
+>>> +	for (; ptr < &savedcmd->map_cmdline_to_pid[savedcmd->cmdline_num];
+>>> +	     ptr++) {
+>>>   		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
+>>>   			continue;
+>>>   
+>>> @@ -3700,7 +3776,7 @@ static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
+>>>   	void *v;
+>>>   	loff_t l = 0;
+>>>   
+>>> -	v = &map_cmdline_to_pid[0];
+>>> +	v = &savedcmd->map_cmdline_to_pid[0];
+>>>   	while (l <= *pos) {
+>>>   		v = saved_cmdlines_next(m, v, &l);
+>>>   		if (!v)
+>> 
+>> Are you accessing the savecmd without trace_cmdline_lock?
+>
+> It does not need to get trace_cmdline_lock here.
+> The elements of map_pid_to_cmdline[] and saved_cmdlines[] are protected
+> by trace_cmdline_lock in trace_find_cmdline(), but on the other hand
+> map_cmdline_to_pid[] are not protected. There are no problems in
+> particular. This is because map_cmdline_to_pid[] always refers to a
+> valid process name or "<...>".
 
-> +       default y
-> +       depends on PERF_EVENTS && PPC_HAVE_PMU_SUPPORT && PPC_PSERIES
+I don't get it.  What does protect the savedcmd from being changed
+during reading "saved_cmdlines" file with changing "nr_saved_cmdlines"?
 
-I think you just want:
-
-	depends on PERF_EVENTS && PPC_PSERIES
-
-
-Because you're adding two completely new PMUs, they're not a "struct power_pmu"
-backend for the existing powerpc PMU implementation.
-
-cheers
-
-
-
+Thanks,
+Namhyung
