@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbaBQVlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 16:41:37 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:33238 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317AbaBQVlL (ORCPT
+	id S1754139AbaBQVmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 16:42:35 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:36838 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154AbaBQVme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:41:11 -0500
-X-Originating-IP: 50.43.14.201
-Date: Mon, 17 Feb 2014 13:40:56 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 2/6] Documentation/memory-barriers.txt:
- ACCESS_ONCE() provides cache coherence
-Message-ID: <20140217214056.GB7941@thin>
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672413-5114-2-git-send-email-paulmck@linux.vnet.ibm.com>
+	Mon, 17 Feb 2014 16:42:34 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
+Date: Mon, 17 Feb 2014 22:43:41 +0100
+Message-ID: <3240866.imZR2oMAtf@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CANqRtoRVCK0jgadwvreMRt1HVVyUmb-CLt5mFEGmvju_VFFbPQ@mail.gmail.com>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <35710038.vGLtzuIoLe@avalon> <CANqRtoRVCK0jgadwvreMRt1HVVyUmb-CLt5mFEGmvju_VFFbPQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392672413-5114-2-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 01:26:49PM -0800, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> The ACCESS_ONCE() primitive provides cache coherence, but the
-> documentation does not clearly state this.  This commit therefore upgrades
-> the documentation.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Hi Magnus,
 
-Punctuation nit below; otherwise:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  Documentation/memory-barriers.txt | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
+On Monday 17 February 2014 10:48:55 Magnus Damm wrote:
+> On Mon, Feb 17, 2014 at 10:45 AM, Laurent Pinchart wrote:
+> > On Saturday 15 February 2014 02:22:00 Magnus Damm wrote:
+> >> On Sat, Feb 15, 2014 at 1:12 AM, Laurent Pinchart wrote:
+> >> > On Saturday 15 February 2014 01:01:30 Magnus Damm wrote:
+> >> >> On Sat, Feb 15, 2014 at 12:53 AM, Laurent Pinchart wrote:
+> >> >> > On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
+> >> >> >> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
+> >> >> >> > +Channels Optional Properties:
+> >> >> >> > +
+> >> >> >> > +  - clock-source-rating: rating of the timer as a clock source
+> >> >> >> > device.
+> >> >> >> > +  - clock-event-rating: rating of the timer as a clock event
+> >> >> >> > device.
+> >> >> >> 
+> >> >> >> This feels like a leak of Linux internals. Why do you need this?
+> >> >> > 
+> >> >> > You're right, it is. The clock source and clock event ratings are
+> >> >> > currently configured through platform data, I'll need to find a way
+> >> >> > to compute them in the driver instead.
+> >> >> 
+> >> >> That would be very good!
+> >> > 
+> >> > Any pointer would be appreciated :-) How did you compute the various
+> >> > ratings used in platform data all over the place ?
+> >> 
+> >> Historically we used the rating to select between CMT and TMU. For
+> >> clock sources I suppose you also have the jiffy rating to consider.
+> >> And for the SMP parts we have ARM IP for TWD and arch timers that have
+> >> their ratings too. So you need to check all the timers on a particular
+> >> system and consider what you want to have operating by default. The
+> >> ARM IP timers should be preferred if available. For clock sources the
+> >> rule is probably the higher resolution the better.
+> >> 
+> >> >> > There's still one piece of Linux-specific data I need though, as I
+> >> >> > need to specify for each channel whether to use it as a clock source
+> >> >> > device, a clock event device, both of them or none. That's
+> >> >> > configuration information that needs to be provided somehow.
+> >> >> 
+> >> >> I think you can decide clock source or clock event assignment based on
+> >> >> number of channels available. If you have only a single channel then
+> >> >> both clock event and clock source need to be supported. Otherwise use
+> >> >> one channel for clock source and the rest for clock events.
+> >> > 
+> >> > That won't match the current situation. Look at CMT0 in r8a7790 for
+> >> > instance. There's two hardware channels available, and we only use the
+> >> > first one, for clock events only.
+> >> 
+> >> You are correct. The reason for that is that the CMT driver today is
+> >> optimized for combined clock event and clock source operation.
+> >> 
+> >> Historically the hardware it initially was written for (sh-mobile on
+> >> the SH arch) only had a single timer channel so combined operation was
+> >> required for tickless to work. But since you're asking how to allocate
+> >> channels then I propose checking numbers of channels available and go
+> >> from there. With that the r8a7790 support can only get better. =)
+> >> 
+> >> >> This is probably out of scope for this DT conversion, but it would be
+> >> >> neat if you somehow could specify the CPU affinity for a channel to
+> >> >> tie a clock event to an individual CPU core. This would make a a per-
+> >> >> cpu timer unless I'm mistaken. But that's more of a software policy
+> >> >> than anything else.
+> >> > 
+> >> > Yes, that's a configuration that needs to be specified somewhere. I
+> >> > don't know where though.
+> >> 
+> >> As long as you have per-channel interrupts described in DT you can
+> >> probably handle this in a generic way in the driver.
+> > 
+> > But how do we decide whether to use a single timer channel or one channel
+> > per CPU ? Will the kernel use one clock event device per CPU
+> > automatically ? I have to confess I have no idea how this works.
 > 
-> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> index 102dc19c4119..ad6db1d48f1f 100644
-> --- a/Documentation/memory-barriers.txt
-> +++ b/Documentation/memory-barriers.txt
-> @@ -1249,6 +1249,23 @@ The ACCESS_ONCE() function can prevent any number of optimizations that,
->  while perfectly safe in single-threaded code, can be fatal in concurrent
->  code.  Here are some examples of these sorts of optimizations:
->  
-> + (*) The compiler is within its rights to reorder loads and stores
-> +     to the same variable, and in some cases, the CPU is within its
-> +     rights to reorder loads to the same variable.  This means that
-> +     the following code:
-> +
-> +	a[0] = x;
-> +	a[1] = x;
-> +
-> +     Might result in an older value of x stored in a[1] than in a[0].
-> +     Prevent both the compiler and the CPU from doing this as follows:
-> +
-> +	a[0] = ACCESS_ONCE(x);
-> +	a[1] = ACCESS_ONCE(x);
-> +
-> +     In short, ACCESS_ONCE() provides "cache coherence" for accesses from
-> +     multiple CPUs to a single variable.
-
-You don't need to "quote" the well-established term "cache coherence".
-
->   (*) The compiler is within its rights to merge successive loads from
->       the same variable.  Such merging can cause the compiler to "optimize"
->       the following code:
-> -- 
-> 1.8.1.5
+> I guess that's the tricky bit about timer support, it is a mix of
+> hardware description and software configuration. So it sounds to me
+> that we need some kind of software configuration interface. But it can
+> probably be considered when/if we add such kind of support to the
+> driver. Probably out of scope for now.
 > 
+> Regardless it seems to me that the hardware description in DT doesn't
+> need to care about this.
+
+I'll revisit that later. Per-CPU timers is not a high priority for now, so 
+I'll just return -EAGAIN :-)
+
+Nonetheless, specifying which timer channel to use as a clock source and which 
+channel to use as a clock event device might need to be specified in DT (or 
+somewhere else, but I'm not sure what other options we have here).
+
+-- 
+Regards,
+
+Laurent Pinchart
