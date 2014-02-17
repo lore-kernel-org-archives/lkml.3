@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaBQLoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 06:44:12 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39161 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490AbaBQLoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 06:44:11 -0500
-Message-ID: <5301F603.8010605@hitachi.com>
-Date: Mon, 17 Feb 2014 20:44:03 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752168AbaBQLtk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 06:49:40 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:7034 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552AbaBQLti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 06:49:38 -0500
+X-IronPort-AV: E=Sophos;i="4.95,860,1384300800"; 
+   d="scan'208";a="101394258"
+Message-ID: <5301F74E.3070107@citrix.com>
+Date: Mon, 17 Feb 2014 11:49:34 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip v3 01/11] [BUGFIX] perf-probe: Fix to do exit call
- for symbol maps
-References: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <20140206053204.29635.28334.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <87bny6xjdj.fsf@sejong.aot.lge.com>
-In-Reply-To: <87bny6xjdj.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
+        Jan Beulich <jbeulich@suse.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH v9] xen/grant-table: Avoid m2p_override during mapping
+References: <1392238453-26147-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1402161828380.4307@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1402161828380.4307@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/02/17 16:56), Namhyung Kim wrote:
-> Hi Masami,
-> 
-> On Thu, 06 Feb 2014 05:32:04 +0000, Masami Hiramatsu wrote:
->> Some perf-probe commands do symbol_init() but doesn't
->> do exit call. This fixes that to call symbol_exit()
->> and releases machine if needed.
->> This also merges init_vmlinux() and init_user_exec()
->> because both of them are doing similar things.
->> (init_user_exec() just skips init vmlinux related
->>  symbol maps)
+On 16/02/14 18:36, Stefano Stabellini wrote:
+> On Wed, 12 Feb 2014, Zoltan Kiss wrote:
+>> diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+>> index e0965ab..4eaeb3f 100644
+>> --- a/arch/arm/include/asm/xen/page.h
+>> +++ b/arch/arm/include/asm/xen/page.h
+>> @@ -97,16 +97,15 @@ static inline pte_t *lookup_address(unsigned long address, unsigned int *level)
+>>   	return NULL;
+>>   }
 >>
->> Changes from v2:
->>  - Not to set symbol_conf.try_vmlinux_path in init_symbol_maps()
->>    (Thanks to Namhyung Kim!)
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> 
-> [SNIP]
->> -int show_line_range(struct line_range *lr, const char *module)
->> +static int __show_line_range(struct line_range *lr, const char *module)
->>  {
->>  	int l = 1;
->>  	struct line_node *ln;
->> @@ -573,10 +568,6 @@ int show_line_range(struct line_range *lr, const char *module)
->>  	char *tmp;
->>  
->>  	/* Search a line range */
->> -	ret = init_vmlinux();
->> -	if (ret < 0)
->> -		return ret;
+>> -static inline int m2p_add_override(unsigned long mfn, struct page *page,
+>> -		struct gnttab_map_grant_ref *kmap_op)
+>> -{
+>> -	return 0;
+>> -}
 >> -
->>  	dinfo = open_debuginfo(module);
->>  	if (!dinfo) {
->>  		pr_warning("Failed to open debuginfo file.\n");
->> @@ -646,6 +637,19 @@ end:
->>  	return ret;
->>  }
->>  
->> +int show_line_range(struct line_range *lr, const char *module)
->> +{
->> +	int ret;
+>> -static inline int m2p_remove_override(struct page *page, bool clear_pte)
+>> -{
+>> -	return 0;
+>> -}
+>> +extern int set_foreign_p2m_mapping(struct gnttab_map_grant_ref *map_ops,
+>> +				   struct gnttab_map_grant_ref *kmap_ops,
+>> +				   struct page **pages, unsigned int count,
+>> +				   bool m2p_override);
 >> +
->> +	ret = init_symbol_maps(false);
->> +	if (ret < 0)
->> +		return ret;
->> +	ret = __show_line_range(lr, module);
->> +	exit_symbol_maps();
-> 
-> Wouldn't it be better moving init/exit_symbol_maps() to a common
-> location if they're used by every operations?
+>> +extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref *unmap_ops,
+>> +				     struct gnttab_map_grant_ref *kmap_ops,
+>> +				     struct page **pages, unsigned int count,
+>> +				     bool m2p_override);
+>
+> Much much better.
+> The only comment I have is about this m2p_override boolean parameter.
+> m2p_override is now meaningless in this context, what we really want to
+> let the arch specific implementation know is whether the mapping is a
+> kernel only mapping or a userspace mapping.
+> Testing for kmap_ops != NULL might even be enough, but it would not
+> improve the interface.
+gntdev is the only user of this, the kmap_ops parameter there is:
+use_ptemod ? map->kmap_ops + offset : NULL
+where:
+use_ptemod = !xen_feature(XENFEAT_auto_translated_physmap);
+So I think we can't rely on kmap_ops to decide whether we should 
+m2p_override or not.
 
-Oh, that's a good idea.:)
-Since this just introduces init/exit_symbol_maps() to fix issue
-by replacing old one. I think it's better to be done after this series.
+> Is it possible to realize if the mapping is a userspace mapping by
+> checking for GNTMAP_application_map in map_ops?
+> Otherwise I would keep the boolean and rename it to user_mapping.
+Sounds better, but as far as I see gntdev set that flag in 
+find_grant_ptes, which is called only
 
-Thank you,
+if (use_ptemod) {
+	err = apply_to_page_range(vma->vm_mm, vma->vm_start,
+				  vma->vm_end - vma->vm_start,
+				  find_grant_ptes, map);
 
+So if xen_feature(XENFEAT_auto_translated_physmap), we don't have 
+kmap_ops, and GNTMAP_application_map is not set as well, but I guess we 
+still need m2p_override. Or not? I'm a bit confused, maybe because of 
+Monday ...
 
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Zoli
