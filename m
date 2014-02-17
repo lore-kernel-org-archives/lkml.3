@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaBQIyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 03:54:46 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:65349 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaBQIyo (ORCPT
+	id S1752314AbaBQIzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 03:55:08 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:61654 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaBQIzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 03:54:44 -0500
+	Mon, 17 Feb 2014 03:55:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <5301CBAE.3000102@linux.vnet.ibm.com>
-References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org>
-	<8f2fc4d6240b567fdb69a0b47f073d174b7ef9b2.1392375504.git.viresh.kumar@linaro.org>
-	<5301CBAE.3000102@linux.vnet.ibm.com>
-Date: Mon, 17 Feb 2014 14:24:43 +0530
-Message-ID: <CAKohpom1DUOMBt6iAVcoQ5+DAXUgjSPGWaqpp6Jm=Vo+YExCFA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: don't call cpufreq_update_policy() on CPU addition
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pierre Ossman <pierre-list@ossman.eu>
+In-Reply-To: <20140214205743.GV4451@sirena.org.uk>
+References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
+	<20140212175018.GJ28112@sirena.org.uk>
+	<CAOMwXhNd69KMDcBLjfiw16T3bWWki-Dvxbz+zhgNe6OESnVaSw@mail.gmail.com>
+	<20140214205743.GV4451@sirena.org.uk>
+Date: Mon, 17 Feb 2014 08:55:06 +0000
+X-Google-Sender-Auth: 7rMBx6tqOyG6OMhTX3bOPCYlYi4
+Message-ID: <CAOMwXhObBhWYvuEJVK7rJsb3JgALvNeoeA3xenU4L2BHdTkUVQ@mail.gmail.com>
+Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
+From: Laszlo Papp <lpapp@kde.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 February 2014 14:13, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 02/14/2014 04:30 PM, Viresh Kumar wrote:
->> cpufreq_update_policy() is called from two places currently. From a workqueue
->> handled queued from cpufreq_bp_resume() for boot CPU and from
->> cpufreq_cpu_callback() whenever a CPU is added.
->>
->> The first one makes sure that boot CPU is running on the frequency present in
->> policy->cpu. But we don't really need a call from cpufreq_cpu_callback(),
->> because we always call cpufreq_driver->init() (which will set policy->cur
->> correctly) whenever first CPU of any policy is added back. And so every policy
->> structure is guaranteed to have the right frequency in policy->cur.
->>
+On Fri, Feb 14, 2014 at 8:57 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Feb 14, 2014 at 09:02:20AM +0000, Laszlo Papp wrote:
+>> On Wed, Feb 12, 2014 at 5:50 PM, Mark Brown <broonie@kernel.org> wrote:
+>> > On Wed, Feb 12, 2014 at 04:02:40AM +0000, Laszlo Papp wrote:
 >
-> This wording is slightly inaccurate. ->init() may or may not set policy->cur
-> (for example, powernowk8 driver doesn't set it in the init routine)..
-
-Its not the wording that is wrong but this particular driver then :)
-This is what Documentation/cpu-drivers.txt says:
-
-1.2 Per-CPU Initialization
-Then, the driver must fill in the following values:
-
-policy->cur The current operating frequency of
-this CPU (if appropriate)
-
-And so it is supposed to do it.
-
-> But we set it for sure in __cpufreq_add_dev():
+>> >> +const struct regmap_config max665x_regmap_config = {
+>> >> +     .reg_bits = 5,
+>> >> +};
 >
-> 1117         if (cpufreq_driver->get) {
-> 1118                 policy->cur = cpufreq_driver->get(policy->cpu);
-> 1119                 if (!policy->cur) {
-> 1120                         pr_err("%s: ->get() failed\n", __func__);
-> 1121                         goto err_get_freq;
-> 1122                 }
-> 1123         }
-
-Its just about removing that from drivers and doing it once in core :)
-
->> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> > This would normally be static too, and I'd *really* expect to see a
+>> > val_bits set here.  I'm a bit surprised this works without one.
 >
-> The reasoning and the code looks good to me.
+>> Makes sense, thanks. Shall I also set the .max_register or any other
+>> mandatory variables in here?
 >
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> It's better to set max_register since that makes the debug features of
+> the regmap API more useful but it's not required, only reg_bits and
+> val_bits are absolutely required.  In general the more complete the
+> description of the register map in the driver the better.
 
-Thanks.
+OK, thanks.
