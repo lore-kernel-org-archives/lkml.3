@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180AbaBQRCA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 12:02:00 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40125 "EHLO
+	id S1754186AbaBQRCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 12:02:31 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40089 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753222AbaBQRAQ (ORCPT
+	by vger.kernel.org with ESMTP id S1754046AbaBQRAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 12:00:16 -0500
+	Mon, 17 Feb 2014 12:00:11 -0500
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@kernel.org
 Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
@@ -15,9 +15,9 @@ Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
         haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
         patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
         linux@arm.linux.org.uk
-Subject: [PATCH 11/15] ASoC: omap: rx51: Update locking around use of DAPM pin API
-Date: Mon, 17 Feb 2014 16:51:39 +0000
-Message-Id: <1392655903-24537-12-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 08/15] ASoC: mfld_machine: Update locking around use of DAPM pin API
+Date: Mon, 17 Feb 2014 16:51:36 +0000
+Message-Id: <1392655903-24537-9-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1392655903-24537-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1392655903-24537-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -30,48 +30,92 @@ atomically, update to do so.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- sound/soc/omap/rx51.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+ sound/soc/intel/mfld_machine.c |   43 +++++++++++++++++++++++++++-------------
+ 1 files changed, 29 insertions(+), 14 deletions(-)
 
-diff --git a/sound/soc/omap/rx51.c b/sound/soc/omap/rx51.c
-index 611179c..51f1ae6 100644
---- a/sound/soc/omap/rx51.c
-+++ b/sound/soc/omap/rx51.c
-@@ -74,22 +74,26 @@ static void rx51_ext_control(struct snd_soc_dapm_context *dapm)
+diff --git a/sound/soc/intel/mfld_machine.c b/sound/soc/intel/mfld_machine.c
+index d3d4c32..4b60542 100644
+--- a/sound/soc/intel/mfld_machine.c
++++ b/sound/soc/intel/mfld_machine.c
+@@ -105,15 +105,20 @@ static int headset_set_switch(struct snd_kcontrol *kcontrol,
+ 	if (ucontrol->value.integer.value[0] == hs_switch)
+ 		return 0;
+ 
++	mutex_lock(&codec->dapm.card->dapm_mutex);
++
+ 	if (ucontrol->value.integer.value[0]) {
+ 		pr_debug("hs_set HS path\n");
+-		snd_soc_dapm_enable_pin(&codec->dapm, "Headphones");
+-		snd_soc_dapm_disable_pin(&codec->dapm, "EPOUT");
++		snd_soc_dapm_enable_pin_locked(&codec->dapm, "Headphones");
++		snd_soc_dapm_disable_pin_locked(&codec->dapm, "EPOUT");
+ 	} else {
+ 		pr_debug("hs_set EP path\n");
+-		snd_soc_dapm_disable_pin(&codec->dapm, "Headphones");
+-		snd_soc_dapm_enable_pin(&codec->dapm, "EPOUT");
++		snd_soc_dapm_disable_pin_locked(&codec->dapm, "Headphones");
++		snd_soc_dapm_enable_pin_locked(&codec->dapm, "EPOUT");
+ 	}
++
++	mutex_unlock(&codec->dapm.card->dapm_mutex);
++
+ 	snd_soc_dapm_sync(&codec->dapm);
+ 	hs_switch = ucontrol->value.integer.value[0];
+ 
+@@ -122,19 +127,23 @@ static int headset_set_switch(struct snd_kcontrol *kcontrol,
+ 
+ static void lo_enable_out_pins(struct snd_soc_codec *codec)
+ {
+-	snd_soc_dapm_enable_pin(&codec->dapm, "IHFOUTL");
+-	snd_soc_dapm_enable_pin(&codec->dapm, "IHFOUTR");
+-	snd_soc_dapm_enable_pin(&codec->dapm, "LINEOUTL");
+-	snd_soc_dapm_enable_pin(&codec->dapm, "LINEOUTR");
+-	snd_soc_dapm_enable_pin(&codec->dapm, "VIB1OUT");
+-	snd_soc_dapm_enable_pin(&codec->dapm, "VIB2OUT");
++	mutex_lock(&codec->dapm.card->dapm_mutex);
++
++	snd_soc_dapm_enable_pin_locked(&codec->dapm, "IHFOUTL");
++	snd_soc_dapm_enable_pin_locked(&codec->dapm, "IHFOUTR");
++	snd_soc_dapm_enable_pin_locked(&codec->dapm, "LINEOUTL");
++	snd_soc_dapm_enable_pin_locked(&codec->dapm, "LINEOUTR");
++	snd_soc_dapm_enable_pin_locked(&codec->dapm, "VIB1OUT");
++	snd_soc_dapm_enable_pin_locked(&codec->dapm, "VIB2OUT");
+ 	if (hs_switch) {
+-		snd_soc_dapm_enable_pin(&codec->dapm, "Headphones");
+-		snd_soc_dapm_disable_pin(&codec->dapm, "EPOUT");
++		snd_soc_dapm_enable_pin_locked(&codec->dapm, "Headphones");
++		snd_soc_dapm_disable_pin_locked(&codec->dapm, "EPOUT");
+ 	} else {
+-		snd_soc_dapm_disable_pin(&codec->dapm, "Headphones");
+-		snd_soc_dapm_enable_pin(&codec->dapm, "EPOUT");
++		snd_soc_dapm_disable_pin_locked(&codec->dapm, "Headphones");
++		snd_soc_dapm_enable_pin_locked(&codec->dapm, "EPOUT");
+ 	}
++
++	mutex_unlock(&codec->dapm.card->dapm_mutex);
+ }
+ 
+ static int lo_get_switch(struct snd_kcontrol *kcontrol,
+@@ -156,6 +165,9 @@ static int lo_set_switch(struct snd_kcontrol *kcontrol,
+ 	 * pins and then disable pins not required
+ 	 */
+ 	lo_enable_out_pins(codec);
++
++	mutex_lock(&codec->dapm.card->dapm_mutex);
++
+ 	switch (ucontrol->value.integer.value[0]) {
+ 	case 0:
+ 		pr_debug("set vibra path\n");
+@@ -185,6 +197,9 @@ static int lo_set_switch(struct snd_kcontrol *kcontrol,
+ 		snd_soc_update_bits(codec, SN95031_LOCTL, 0x66, 0x66);
  		break;
  	}
- 
-+	mutex_lock(&dapm->card->dapm_mutex);
 +
- 	if (rx51_spk_func)
--		snd_soc_dapm_enable_pin(dapm, "Ext Spk");
-+		snd_soc_dapm_enable_pin_locked(dapm, "Ext Spk");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "Ext Spk");
-+		snd_soc_dapm_disable_pin_locked(dapm, "Ext Spk");
- 	if (rx51_dmic_func)
--		snd_soc_dapm_enable_pin(dapm, "DMic");
-+		snd_soc_dapm_enable_pin_locked(dapm, "DMic");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "DMic");
-+		snd_soc_dapm_disable_pin_locked(dapm, "DMic");
- 	if (hp)
--		snd_soc_dapm_enable_pin(dapm, "Headphone Jack");
-+		snd_soc_dapm_enable_pin_locked(dapm, "Headphone Jack");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "Headphone Jack");
-+		snd_soc_dapm_disable_pin_locked(dapm, "Headphone Jack");
- 	if (hs)
--		snd_soc_dapm_enable_pin(dapm, "HS Mic");
-+		snd_soc_dapm_enable_pin_locked(dapm, "HS Mic");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "HS Mic");
-+		snd_soc_dapm_disable_pin_locked(dapm, "HS Mic");
++	mutex_unlock(&codec->dapm.card->dapm_mutex);
 +
-+	mutex_unlock(&dapm->card->dapm_mutex);
- 
- 	gpio_set_value(RX51_TVOUT_SEL_GPIO, tvout);
- 
+ 	snd_soc_dapm_sync(&codec->dapm);
+ 	lo_dac = ucontrol->value.integer.value[0];
+ 	return 0;
 -- 
 1.7.2.5
 
