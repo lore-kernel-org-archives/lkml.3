@@ -1,140 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaBQFVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 00:21:19 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:50816 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaBQFVR (ORCPT
+	id S1751206AbaBQF0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 00:26:52 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53678 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaBQF0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 00:21:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <3582112.BRVGbkstFm@vostro.rjw.lan>
-References: <3582112.BRVGbkstFm@vostro.rjw.lan>
-Date: Mon, 17 Feb 2014 10:51:17 +0530
-Message-ID: <CAKohpo=W+5cFRBfdL=dubXn_AJtN3_Ghx0+9AYdMR-CQe+sD8w@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Refactor cpufreq_set_policy()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Feb 2014 00:26:51 -0500
+Message-ID: <1392614801.5565.92.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
+ workqueue
+From: Mike Galbraith <bitbucket@online.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kevin Hilman <khilman@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Date: Mon, 17 Feb 2014 06:26:41 +0100
+In-Reply-To: <20140212182336.GD5496@localhost.localdomain>
+References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
+	 <52F8A51F.4090909@cn.fujitsu.com>
+	 <20140210184729.GL4250@linux.vnet.ibm.com>
+	 <20140212182336.GD5496@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:iRxeAjM5uVXxz+e/QZN80nLDzNPM6oc7xl4V6ytaO3x
+ 6RlhgM1iwIVzM7VPSFcjYQnUKTliTUEfaP5GVfXOKwVMjXq95C
+ LsMIhRYk/sFwx1Wj8diXJVDaOeGSGOZT8paN/i/eMtC8qqVcdE
+ CXoiLGg4TTKGnNcJF5+z3er1mtDSfJJ5L3/ODNd4BOYbJzVWIO
+ 0bGt/Cqx4h83+WIXZZmc5hY0w+oITaGTBJTjpfty3GdgOdk0Q2
+ HX/bBMRzS4qOU/bTKpSA0RMJiNjDAXIWacfrrcVrNb4cp978lh
+ CR5UpIHG2UJiXK9YCN4qIvnQqz+N7Lp08+phyCb5pzu7DKTSeb
+ AFKy5+RvKH7loGNPwZcIxIAZ38W+mtuYFoLXI4S/IVeR6L0rJy
+ wYxtCcDm+35Bw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 February 2014 06:36, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Reduce the rampant usage of goto and the indentation level in
-> cpufreq_set_policy() to improve the readability of that code.
->
-> No functional changes should result from that.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/cpufreq/cpufreq.c |  102 ++++++++++++++++++++--------------------------
->  1 file changed, 45 insertions(+), 57 deletions(-)
->
-> Index: linux-pm/drivers/cpufreq/cpufreq.c
-> ===================================================================
-> --- linux-pm.orig/drivers/cpufreq/cpufreq.c
-> +++ linux-pm/drivers/cpufreq/cpufreq.c
-> @@ -2018,22 +2018,21 @@ EXPORT_SYMBOL(cpufreq_get_policy);
->  static int cpufreq_set_policy(struct cpufreq_policy *policy,
->                                 struct cpufreq_policy *new_policy)
->  {
-> -       int ret = 0, failed = 1;
-> +       struct cpufreq_governor *old_gov;
-> +       int ret;
->
->         pr_debug("setting new policy for CPU %u: %u - %u kHz\n", new_policy->cpu,
->                 new_policy->min, new_policy->max);
->
->         memcpy(&new_policy->cpuinfo, &policy->cpuinfo, sizeof(policy->cpuinfo));
->
-> -       if (new_policy->min > policy->max || new_policy->max < policy->min) {
-> -               ret = -EINVAL;
-> -               goto error_out;
-> -       }
-> +       if (new_policy->min > policy->max || new_policy->max < policy->min)
-> +               return -EINVAL;
->
->         /* verify the cpu speed can be set within this limit */
->         ret = cpufreq_driver->verify(new_policy);
->         if (ret)
-> -               goto error_out;
-> +               return ret;
->
->         /* adjust if necessary - all reasons */
->         blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
-> @@ -2049,7 +2048,7 @@ static int cpufreq_set_policy(struct cpu
->          */
->         ret = cpufreq_driver->verify(new_policy);
->         if (ret)
-> -               goto error_out;
-> +               return ret;
->
->         /* notification of the new policy */
->         blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
-> @@ -2064,58 +2063,47 @@ static int cpufreq_set_policy(struct cpu
->         if (cpufreq_driver->setpolicy) {
->                 policy->policy = new_policy->policy;
->                 pr_debug("setting range\n");
-> -               ret = cpufreq_driver->setpolicy(new_policy);
-> -       } else {
-> -               if (new_policy->governor != policy->governor) {
-> -                       /* save old, working values */
-> -                       struct cpufreq_governor *old_gov = policy->governor;
-> -
-> -                       pr_debug("governor switch\n");
-> -
-> -                       /* end old governor */
-> -                       if (policy->governor) {
-> -                               __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-> -                               up_write(&policy->rwsem);
-> -                               __cpufreq_governor(policy,
-> -                                               CPUFREQ_GOV_POLICY_EXIT);
-> -                               down_write(&policy->rwsem);
-> -                       }
-> -
-> -                       /* start new governor */
-> -                       policy->governor = new_policy->governor;
-> -                       if (!__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_INIT)) {
-> -                               if (!__cpufreq_governor(policy, CPUFREQ_GOV_START)) {
-> -                                       failed = 0;
-> -                               } else {
-> -                                       up_write(&policy->rwsem);
-> -                                       __cpufreq_governor(policy,
-> -                                                       CPUFREQ_GOV_POLICY_EXIT);
-> -                                       down_write(&policy->rwsem);
-> -                               }
-> -                       }
-> -
-> -                       if (failed) {
-> -                               /* new governor failed, so re-start old one */
-> -                               pr_debug("starting governor %s failed\n",
-> -                                                       policy->governor->name);
-> -                               if (old_gov) {
-> -                                       policy->governor = old_gov;
-> -                                       __cpufreq_governor(policy,
-> -                                                       CPUFREQ_GOV_POLICY_INIT);
-> -                                       __cpufreq_governor(policy,
-> -                                                          CPUFREQ_GOV_START);
-> -                               }
-> -                               ret = -EINVAL;
-> -                               goto error_out;
-> -                       }
-> -                       /* might be a policy change, too, so fall through */
-> -               }
-> -               pr_debug("governor: change or update limits\n");
-> -               ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-> +               return cpufreq_driver->setpolicy(new_policy);
->         }
+On Wed, 2014-02-12 at 19:23 +0100, Frederic Weisbecker wrote: 
+> On Mon, Feb 10, 2014 at 10:47:29AM -0800, Paul E. McKenney wrote:
+> > On Mon, Feb 10, 2014 at 06:08:31PM +0800, Lai Jiangshan wrote:
+> > > Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > 
+> > Thank you all, queued for 3.15.
+> > 
+> > We should also have some facility for moving the SRCU workqueues to
+> > housekeeping/timekeeping kthreads in the NO_HZ_FULL case.  Or does
+> > this patch already have that effect?
+> 
+> Kevin Hilman and me plan to try to bring a new Kconfig option that could let
+> us control the unbound workqueues affinity through sysfs.
 
-Maybe a blank line here..
+Handing control to the user seemed like a fine thing, so I started
+making a boot option to enable it.  Forcing WQ_SYSFS on at sysfs
+decision spot doesn't go well, init order matters :)  Post init frobbing
+required if you want to see/frob all unbound.
 
-> +       if (new_policy->governor == policy->governor)
-> +               goto out;
+-Mike
 
-Otherwise: Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
