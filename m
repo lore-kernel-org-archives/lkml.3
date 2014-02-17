@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaBQSTn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:19:43 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:40615 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753308AbaBQSTl (ORCPT
+	id S1754217AbaBQSUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:20:00 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:50350 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308AbaBQST6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:19:41 -0500
-Date: Mon, 17 Feb 2014 15:19:34 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Boris BREZILLON <b.brezillon.dev@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pekon Gupta <pekon@ti.com>, Rob Herring <robh+dt@kernel.org>
-Subject: Re: [RFC PATCH v2 03/14] of: mtd: add documentation for
- nand-ecc-level property
-Message-ID: <20140217181933.GH2765@localhost>
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
- <1391006064-28890-4-git-send-email-b.brezillon.dev@gmail.com>
- <20140129175331.GA27143@localhost>
- <20140205111500.B19FDC40A89@trevor.secretlab.ca>
- <52F23DF4.7010901@gmail.com>
- <20140205141917.GA25091@localhost>
- <CACxGe6vW3m8DA3rGSane6GNmjXHt=pjAPVr25WZyopV9jA-XUw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACxGe6vW3m8DA3rGSane6GNmjXHt=pjAPVr25WZyopV9jA-XUw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Feb 2014 13:19:58 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when CONFIG_OF isn't set
+To: Josh Cartwright <joshc@codeaurora.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>
+In-Reply-To: <20140211164825.GC841@joshc.qualcomm.com>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard .com> <20140211144108.GB841@joshc.qualcomm.com> <1596542.hkJp71u3OJ@avalon> <20140211164825.GC841@joshc.qualcomm.com>
+Date: Mon, 17 Feb 2014 18:19:53 +0000
+Message-Id: <20140217181953.297FBC40372@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:43:51PM +0000, Grant Likely wrote:
-> On Wed, Feb 5, 2014 at 2:19 PM, Ezequiel Garcia
-> <ezequiel.garcia@free-electrons.com> wrote:
-> > Hi Grant, Boris:
-> >
-> > (BTW, dropped Russell, Rob Landley and some unrelated mailing lists from Cc,
-> > and added Thomas, Gregory and Rob Herring).
-> >
-> > On Wed, Feb 05, 2014 at 02:34:44PM +0100, Boris BREZILLON wrote:
-> >> On 05/02/2014 12:15, Grant Likely wrote:
-> >> > On Wed, 29 Jan 2014 14:53:32 -0300, Ezequiel Garcia <ezequiel.garcia@free-electrons.com> wrote:
-> > [..]
-> >> >>
-> >> >> Maybe we can discuss about it now?
-> >> >>
-> >> >>    nand-ecc-strength : integer ECC required strength.
-> >> >>    nand-ecc-size : integer step size associated to the ECC strength.
-> >> > I'm okay with either, but the above binding is indeed more readable.
-> >>
-> >> That's fine by me, if everybody agrees, let's go for the
-> >> nand-ecc-strength/nand-ecc-size couple then.
-> >>
-> >
-> > Great. So, if some DT dictator^C^Cmaintainers can Ack this binding,
-> > I can send a new patchset, with pxa3xx-nand using it...
-> >
-> >> I'll rebase next version of my series on Ezequiel's patch providing
-> >> these OF helpers.
-> >>
-> >
-> > ... and then you can base on it?
-> >
-> > This is the original patchset:
-> >
-> > http://permalink.gmane.org/gmane.linux.drivers.devicetree/58764
-> > http://permalink.gmane.org/gmane.linux.drivers.devicetree/58763
+On Tue, 11 Feb 2014 10:48:26 -0600, Josh Cartwright <joshc@codeaurora.org> wrote:
+> On Tue, Feb 11, 2014 at 03:55:35PM +0100, Laurent Pinchart wrote:
+> > Hi Josh,
+> > 
+> > On Tuesday 11 February 2014 08:41:08 Josh Cartwright wrote:
+> > > On Tue, Feb 11, 2014 at 01:36:51PM +0100, Laurent Pinchart wrote:
+> > > > when CONFIG_OF is disabled of_match_node is defined as a macro that
+> > > > evaluates to NULL. This breaks compilation of drivers that dereference
+> > > > the function's return value directly. Fix it by turning the macro into a
+> > > > static inline function that returns NULL.
+> > > 
+> > > Just this past week I did the same thing, but noticed that it breaks the
+> > > following usecase:
+> > > 
+> > > 	#ifdef CONFIG_OF
+> > > 	static const struct of_device_id foobar_matches[] = {
+> > > 		{ .compatible = "foobar,whatsit", },
+> > > 		{ },
+> > > 	};
+> > > 	#endif
+> > > 
+> > > 	static int probeme(struct platform_device *pdev)
+> > > 	{
+> > > 		struct of_device_id *id;
+> > > 
+> > > 		id = of_match_node(foobar_matches, pdev->dev.of_node);
+> > > 		if (id) {
+> > > 			/* ... */
+> > > 		}
+> > > 		return 0;
+> > > 	}
+> > > 
+> > > When !CONFIG_OF and with your change, this will fail to build due to
+> > > foobar_matches being undefined.
+> > 
+> > Good point. What would you think about
+> > 
+> > #define of_match_node(_matches, _node)  ((const struct of_device_id *)NULL)
 > 
-> I've looked at both. Go ahead and add my a-b line:
+> I've just sent out a patchset that cleans up at least a couple of users
+> that directly do of_match_node(matches, np)->data using
+> of_find_matching_node_and_match.  Not sure if that will fix the usage
+> you have in mind, though.
 > 
-> Acked-by: Grant Likely <grant.likely@linaro.org>
+> I am a bit weary about having an of_match_node() user that both directly
+> dereferences the result (i.e. of_match_node(matches, np)->data) _and_
+> builds when !CONFIG_OF; most likely due to a traumatic childhood event
+> where demons flew out my nose.
 
-Cool. Thanks!
+As is supposed to happen when code dereferrences pointers blindly.
 
-I'll push a patchset now.
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+g.
+
