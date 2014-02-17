@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaBQOqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 09:46:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439AbaBQOqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 09:46:13 -0500
-From: Veaceslav Falico <vfalico@redhat.com>
-To: netdev@vger.kernel.org
-Cc: Rob Landley <rob@landley.net>, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        dingtianhong <dingtianhong@huawei.com>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Cong Wang <amwang@redhat.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Veaceslav Falico <vfalico@redhat.com>
-Subject: [PATCH v4 net-next 0/12] bonding: add an option to rely on unvalidated arp packets
-Date: Mon, 17 Feb 2014 15:41:16 +0100
-Message-Id: <1392648088-21336-1-git-send-email-vfalico@redhat.com>
+	id S1753956AbaBQOqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 09:46:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43524 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537AbaBQOq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 09:46:28 -0500
+Date: Mon, 17 Feb 2014 15:46:17 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 07/11] x86: perf: intel_pt: Intel PT PMU driver
+Message-ID: <20140217144617.GT27965@twins.programming.kicks-ass.net>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1391683834-29868-8-git-send-email-alexander.shishkin@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391683834-29868-8-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Feb 06, 2014 at 12:50:30PM +0200, Alexander Shishkin wrote:
+> Add support for Intel Processor Trace (PT) to kernel's perf/itrace events.
+> PT is an extension of Intel Architecture that collects information about
+> software execuction such as control flow, execution modes and timings and
+> formats it into highly compressed binary packets. Even being compressed,
+> these packets are generated at hundreds of megabytes per second per core,
+> which makes it impractical to decode them on the fly in the kernel. Thus,
+> buffers containing this binary stream are zero-copy mapped to the debug
+> tools in userspace for subsequent decoding and analysis.
+> 
+> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> ---
+>  arch/x86/include/uapi/asm/msr-index.h     |  18 +
+>  arch/x86/kernel/cpu/Makefile              |   1 +
+>  arch/x86/kernel/cpu/intel_pt.h            | 127 ++++
+>  arch/x86/kernel/cpu/perf_event.c          |   4 +
+>  arch/x86/kernel/cpu/perf_event_intel.c    |  10 +
+>  arch/x86/kernel/cpu/perf_event_intel_pt.c | 991 ++++++++++++++++++++++++++++++
+>  6 files changed, 1151 insertions(+)
+>  create mode 100644 arch/x86/kernel/cpu/intel_pt.h
+>  create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
 
-v3 -> v4:
-Per Nikolay's advise, remove the new bond_opts restriction on modes setting
-for arp_validate.
-
-v2 -> v3:
-Per Jay's advise, use the 'filter' keyword instead of 'arp' one, and use
-his text for documentation. Also, rebase on the latest net-next. Sorry for
-the delay, didn't manage to send it before net-next was closed.
-
-v1 -> v2:
-Don't remove the 'all traffic' functionality - rather, add new arp_validate
-options to specify that we want *only* unvalidated arps.
-
-Currently, if arp_validate is off (0), slave_last_rx() returns the
-slave->dev->last_rx, which is always updated on *any* packet received by
-slave, and not only arps. This means that, if the validation of arps is
-off, we're treating *any* incoming packet as a proof of slave being up, and
-not only arps.
-
-This might seem logical at the first glance, however it can cause a lot of
-troubles and false-positives, one example would be:
-
-The arp_ip_target is NOT accessible, however someone in the broadcast domain
-spams with any broadcast traffic. This way bonding will be tricked that the
-slave is still up (as in - can access arp_ip_target), while it's not.
-
-The net_device->last_rx is already used in a lot of drivers (even though the
-comment states to NOT do it :)), and it's also ugly to modify it from bonding.
-
-However, some loadbalance setups might rely on the fact that even non-arp
-traffic is a sign of slave being up - and we definitely can't break anyones
-config - so an extension to arp_validate is needed.
-
-So, to fix this, add an option for the user to specify if he wants to
-filter out non-arp traffic on unvalidated slaves, remove the last_rx from
-bonding, *always* call bond_arp_rcv() in slave's rx_handler (which is
-bond_handle_frame), and if we spot an arp there with this option on - update
-the slave->last_arp_rx - and use it instead of net_device->last_rx. Finally,
-rename last_arp_rx to last_rx to reflect the changes.
-
-Also rename slave->jiffies to ->last_link_up, to reflect better its
-meaning, add the new option's documentation and update the arp_validate one
-to be a bit more descriptive.
-
-CC: Rob Landley <rob@landley.net>
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: dingtianhong <dingtianhong@huawei.com>
-CC: Nikolay Aleksandrov <nikolay@redhat.com>
-CC: Neil Horman <nhorman@tuxdriver.com>
-CC: Cong Wang <amwang@redhat.com>
-CC: linux-doc@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-CC: netdev@vger.kernel.org
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-
----
- Documentation/networking/bonding.txt | 96 +++++++++++++++++++++++++-----------
- drivers/net/bonding/bond_main.c      | 56 +++++++++------------
- drivers/net/bonding/bond_options.c   | 17 ++++---
- drivers/net/bonding/bonding.h        | 26 ++++++----
- include/linux/netdevice.h            |  8 +--
- 5 files changed, 117 insertions(+), 86 deletions(-)
+Andi said that when itrace is enabled the LBR is wrecked; this patch
+seems to fail to deal with that.
