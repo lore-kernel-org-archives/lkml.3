@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901AbaBQWXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:23:13 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51049 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736AbaBQWNS (ORCPT
+	id S1754892AbaBQWXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:23:11 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:35189 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747AbaBQWNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Feb 2014 17:13:18 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,252 +16,158 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 20/55] rcutorture: Abstract torture_shutdown_absorb()
-Date: Mon, 17 Feb 2014 14:12:24 -0800
-Message-Id: <1392675179-11560-20-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 12/55] rcutorture: Add comments, especially on bin packing.
+Date: Mon, 17 Feb 2014 14:12:16 -0800
+Message-Id: <1392675179-11560-12-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
  <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021722-1344-0000-0000-000005D5BE0B
+x-cbid: 14021722-8236-0000-0000-0000074F3806
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Because handling races between rmmod and normal shutdown is not specific
-to rcutorture, this commit renames rcutorture_shutdown_absorb() to
-torture_shutdown_absorb() and pulls it out into then kernel/torture.c
-module.  This implies pulling the fullstop mechanism into kernel/torture.c
-as well.
-
-The exporting of fullstop and fullstop_mutex is ugly and must die.
-And it does in fact die in later commits that introduce higher-level
-APIs that encapsulate both of these variables.
-
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/torture.h | 11 +++++++++++
- kernel/rcu/rcutorture.c | 49 ++++++++++++-------------------------------------
- kernel/torture.c        | 20 ++++++++++++++++++++
- 3 files changed, 43 insertions(+), 37 deletions(-)
+ tools/testing/selftests/rcutorture/bin/kvm.sh | 33 +++++++++++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/torture.h b/include/linux/torture.h
-index 8a4088f2f87b..c61b4ce18a13 100644
---- a/include/linux/torture.h
-+++ b/include/linux/torture.h
-@@ -41,6 +41,14 @@
- 	module_param(name, type, 0444); \
- 	MODULE_PARM_DESC(name, msg);
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+index 18649b87ea6c..7ef3b245c778 100644
+--- a/tools/testing/selftests/rcutorture/bin/kvm.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+@@ -188,6 +188,7 @@ fi
+ mkdir $resdir/$ds
+ if test "$dryrun" = ""
+ then
++	# Be noisy only if running the script.
+ 	echo Results directory: $resdir/$ds
+ 	echo $scriptname $args
+ fi
+@@ -201,6 +202,7 @@ then
+ 	git rev-parse HEAD >> $resdir/$ds/testid.txt
+ fi
  
-+/* Mediate rmmod and system shutdown.  Concurrent rmmod & shutdown illegal! */
-+#define FULLSTOP_DONTSTOP 0	/* Normal operation. */
-+#define FULLSTOP_SHUTDOWN 1	/* System shutdown with rcutorture running. */
-+#define FULLSTOP_RMMOD    2	/* Normal rmmod of rcutorture. */
-+extern int fullstop;
-+/* Protect fullstop transitions and spawning of kthreads.  */
-+extern struct mutex fullstop_mutex;
-+
- #define TORTURE_FLAG "-torture:"
- #define TOROUT_STRING(s) \
- 	pr_alert("%s" TORTURE_FLAG s "\n", torture_type)
-@@ -57,4 +65,7 @@ struct torture_random_state {
- #define DEFINE_TORTURE_RANDOM(name) struct torture_random_state name = { 0, 0 }
- unsigned long torture_random(struct torture_random_state *trsp);
++# Create a file of test-name/#cpus pairs, sorted by decreasing #cpus.
+ touch $T/cfgcpu
+ for CF in $configs
+ do
+@@ -214,12 +216,14 @@ do
+ done
+ sort -k2nr $T/cfgcpu > $T/cfgcpu.sort
  
-+/* Shutdown task absorption, for when the tasks cannot safely be killed. */
-+void torture_shutdown_absorb(const char *title);
-+
- #endif /* __LINUX_TORTURE_H */
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 2bb3dcb67221..3687619b243a 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -199,17 +199,6 @@ static atomic_t barrier_cbs_invoked;	/* Barrier callbacks invoked. */
- static wait_queue_head_t *barrier_cbs_wq; /* Coordinate barrier testing. */
- static DECLARE_WAIT_QUEUE_HEAD(barrier_wq);
- 
--/* Mediate rmmod and system shutdown.  Concurrent rmmod & shutdown illegal! */
--
--#define FULLSTOP_DONTSTOP 0	/* Normal operation. */
--#define FULLSTOP_SHUTDOWN 1	/* System shutdown with rcutorture running. */
--#define FULLSTOP_RMMOD    2	/* Normal rmmod of rcutorture. */
--static int fullstop = FULLSTOP_RMMOD;
--/*
-- * Protect fullstop transitions and spawning of kthreads.
-- */
--static DEFINE_MUTEX(fullstop_mutex);
--
- /* Forward reference. */
- static void rcu_torture_cleanup(void);
- 
-@@ -231,20 +220,6 @@ rcutorture_shutdown_notify(struct notifier_block *unused1,
++# Use a greedy bin-packing algorithm, sorting the list accordingly.
+ awk < $T/cfgcpu.sort > $T/cfgcpu.pack -v ncpus=$cpus '
+ BEGIN {
+ 	njobs = 0;
  }
  
- /*
-- * Absorb kthreads into a kernel function that won't return, so that
-- * they won't ever access module text or data again.
-- */
--static void rcutorture_shutdown_absorb(const char *title)
--{
--	if (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
--		pr_notice(
--		       "rcutorture thread %s parking due to system shutdown\n",
--		       title);
--		schedule_timeout_uninterruptible(MAX_SCHEDULE_TIMEOUT);
--	}
--}
--
--/*
-  * Allocate an element from the rcu_tortures pool.
-  */
- static struct rcu_torture *
-@@ -285,7 +260,7 @@ rcu_stutter_wait(const char *title)
- 			schedule_timeout_interruptible(1);
- 		else
- 			schedule_timeout_interruptible(round_jiffies_relative(HZ));
--		rcutorture_shutdown_absorb(title);
-+		torture_shutdown_absorb(title);
+ {
++	# Read file of tests and corresponding required numbers of CPUs.
+ 	cf[njobs] = $1;
+ 	cpus[njobs] = $2;
+ 	njobs++;
+@@ -229,26 +233,40 @@ END {
+ 	alldone = 0;
+ 	batch = 0;
+ 	nc = -1;
++
++	# Each pass through the following loop creates on test batch
++	# that can be executed concurrently given ncpus.  Note that a
++	# given test that requires more than the available CPUs will run in
++	# their own batch.  Such tests just have to make do with what
++	# is available.
+ 	while (nc != ncpus) {
+ 		batch++;
+ 		nc = ncpus;
++
++		# Each pass through the following loop considers one
++		# test for inclusion in the current batch.
+ 		for (i = 0; i < njobs; i++) {
+ 			if (done[i])
+-				continue;
++				continue; # Already part of a batch.
+ 			if (nc >= cpus[i] || nc == ncpus) {
++
++				# This test fits into the current batch.
+ 				done[i] = batch;
+ 				nc -= cpus[i];
+ 				if (nc <= 0)
+-					break;
++					break; # Too-big test in its own batch.
+ 			}
+ 		}
  	}
++
++	# Dump out the tests in batch order.
+ 	for (b = 1; b <= batch; b++)
+ 		for (i = 0; i < njobs; i++)
+ 			if (done[i] == b)
+ 				print cf[i], cpus[i];
+ }'
+ 
++# Generate a script to execute the tests in appropriate batches.
+ awk < $T/cfgcpu.pack \
+ 	-v CONFIGDIR="$CONFIGFRAG/$kversion/" \
+ 	-v KVM="$KVM" \
+@@ -267,6 +285,7 @@ awk < $T/cfgcpu.pack \
+ 	i++;
  }
  
-@@ -680,7 +655,7 @@ checkwait:	rcu_stutter_wait("rcu_torture_boost");
- 
- 	/* Clean up and exit. */
- 	VERBOSE_TOROUT_STRING("rcu_torture_boost task stopping");
--	rcutorture_shutdown_absorb("rcu_torture_boost");
-+	torture_shutdown_absorb("rcu_torture_boost");
- 	while (!kthread_should_stop() || rbi.inflight)
- 		schedule_timeout_uninterruptible(1);
- 	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
-@@ -716,7 +691,7 @@ rcu_torture_fqs(void *arg)
- 		rcu_stutter_wait("rcu_torture_fqs");
- 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
- 	VERBOSE_TOROUT_STRING("rcu_torture_fqs task stopping");
--	rcutorture_shutdown_absorb("rcu_torture_fqs");
-+	torture_shutdown_absorb("rcu_torture_fqs");
- 	while (!kthread_should_stop())
- 		schedule_timeout_uninterruptible(1);
- 	return 0;
-@@ -788,7 +763,7 @@ rcu_torture_writer(void *arg)
- 		rcu_stutter_wait("rcu_torture_writer");
- 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
- 	VERBOSE_TOROUT_STRING("rcu_torture_writer task stopping");
--	rcutorture_shutdown_absorb("rcu_torture_writer");
-+	torture_shutdown_absorb("rcu_torture_writer");
- 	while (!kthread_should_stop())
- 		schedule_timeout_uninterruptible(1);
- 	return 0;
-@@ -826,7 +801,7 @@ rcu_torture_fakewriter(void *arg)
- 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
- 
- 	VERBOSE_TOROUT_STRING("rcu_torture_fakewriter task stopping");
--	rcutorture_shutdown_absorb("rcu_torture_fakewriter");
-+	torture_shutdown_absorb("rcu_torture_fakewriter");
- 	while (!kthread_should_stop())
- 		schedule_timeout_uninterruptible(1);
- 	return 0;
-@@ -970,7 +945,7 @@ rcu_torture_reader(void *arg)
- 		rcu_stutter_wait("rcu_torture_reader");
- 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
- 	VERBOSE_TOROUT_STRING("rcu_torture_reader task stopping");
--	rcutorture_shutdown_absorb("rcu_torture_reader");
-+	torture_shutdown_absorb("rcu_torture_reader");
- 	if (irqreader && cur_ops->irq_capable)
- 		del_timer_sync(&t);
- 	while (!kthread_should_stop())
-@@ -1094,7 +1069,7 @@ rcu_torture_stats(void *arg)
- 	do {
- 		schedule_timeout_interruptible(stat_interval * HZ);
- 		rcu_torture_stats_print();
--		rcutorture_shutdown_absorb("rcu_torture_stats");
-+		torture_shutdown_absorb("rcu_torture_stats");
- 	} while (!kthread_should_stop());
- 	VERBOSE_TOROUT_STRING("rcu_torture_stats task stopping");
- 	return 0;
-@@ -1178,7 +1153,7 @@ rcu_torture_shuffle(void *arg)
- 	do {
- 		schedule_timeout_interruptible(shuffle_interval * HZ);
- 		rcu_torture_shuffle_tasks();
--		rcutorture_shutdown_absorb("rcu_torture_shuffle");
-+		torture_shutdown_absorb("rcu_torture_shuffle");
- 	} while (!kthread_should_stop());
- 	VERBOSE_TOROUT_STRING("rcu_torture_shuffle task stopping");
- 	return 0;
-@@ -1197,7 +1172,7 @@ rcu_torture_stutter(void *arg)
- 		if (!kthread_should_stop())
- 			schedule_timeout_interruptible(stutter * HZ);
- 		stutter_pause_test = 0;
--		rcutorture_shutdown_absorb("rcu_torture_stutter");
-+		torture_shutdown_absorb("rcu_torture_stutter");
- 	} while (!kthread_should_stop());
- 	VERBOSE_TOROUT_STRING("rcu_torture_stutter task stopping");
- 	return 0;
-@@ -1469,7 +1444,7 @@ static int rcu_torture_stall(void *args)
- 		rcu_read_unlock();
- 		pr_alert("rcu_torture_stall end.\n");
++# Dump out the scripting required to run one test batch.
+ function dump(first, pastlast)
+ {
+ 	print "echo ----start batch----"
+@@ -313,23 +332,31 @@ END {
+ 	njobs = i;
+ 	nc = ncpus;
+ 	first = 0;
++
++	# Each pass through the following loop considers one test.
+ 	for (i = 0; i < njobs; i++) {
+ 		if (ncpus == 0) {
++			# Sequential test specified, each test its own batch.
+ 			dump(i, i + 1);
+ 			first = i;
+ 		} else if (nc < cpus[i] && i != 0) {
++			# Out of CPUs, dump out a batch.
+ 			dump(first, i);
+ 			first = i;
+ 			nc = ncpus;
+ 		}
++		# Account for the CPUs needed by the current test.
+ 		nc -= cpus[i];
  	}
--	rcutorture_shutdown_absorb("rcu_torture_stall");
-+	torture_shutdown_absorb("rcu_torture_stall");
- 	while (!kthread_should_stop())
- 		schedule_timeout_interruptible(10 * HZ);
- 	return 0;
-@@ -1533,7 +1508,7 @@ static int rcu_torture_barrier_cbs(void *arg)
- 			wake_up(&barrier_wq);
- 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
- 	VERBOSE_TOROUT_STRING("rcu_torture_barrier_cbs task stopping");
--	rcutorture_shutdown_absorb("rcu_torture_barrier_cbs");
-+	torture_shutdown_absorb("rcu_torture_barrier_cbs");
- 	while (!kthread_should_stop())
- 		schedule_timeout_interruptible(1);
- 	cur_ops->cb_barrier();
-@@ -1570,7 +1545,7 @@ static int rcu_torture_barrier(void *arg)
- 		schedule_timeout_interruptible(HZ / 10);
- 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
- 	VERBOSE_TOROUT_STRING("rcu_torture_barrier task stopping");
--	rcutorture_shutdown_absorb("rcu_torture_barrier");
-+	torture_shutdown_absorb("rcu_torture_barrier");
- 	while (!kthread_should_stop())
- 		schedule_timeout_interruptible(1);
- 	return 0;
-diff --git a/kernel/torture.c b/kernel/torture.c
-index c82c70f7828e..f05042036ae8 100644
---- a/kernel/torture.c
-+++ b/kernel/torture.c
-@@ -49,6 +49,11 @@
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Paul E. McKenney <paulmck@us.ibm.com>");
++	# Dump the last batch.
+ 	if (ncpus != 0)
+ 		dump(first, i);
+ }' > $T/script
  
-+int fullstop = FULLSTOP_RMMOD;
-+EXPORT_SYMBOL_GPL(fullstop);
-+DEFINE_MUTEX(fullstop_mutex);
-+EXPORT_SYMBOL_GPL(fullstop_mutex);
-+
- #define TORTURE_RANDOM_MULT	39916801  /* prime */
- #define TORTURE_RANDOM_ADD	479001701 /* prime */
- #define TORTURE_RANDOM_REFRESH	10000
-@@ -69,3 +74,18 @@ torture_random(struct torture_random_state *trsp)
- 	return swahw32(trsp->trs_state);
- }
- EXPORT_SYMBOL_GPL(torture_random);
-+
-+/*
-+ * Absorb kthreads into a kernel function that won't return, so that
-+ * they won't ever access module text or data again.
-+ */
-+void torture_shutdown_absorb(const char *title)
-+{
-+	while (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
-+		pr_notice(
-+		       "torture thread %s parking due to system shutdown\n",
-+		       title);
-+		schedule_timeout_uninterruptible(MAX_SCHEDULE_TIMEOUT);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(torture_shutdown_absorb);
+ if test "$dryrun" = script
+ then
++	# Dump out the script, but define the environment variables that
++	# it needs to run standalone.
+ 	echo CONFIGFRAG="$CONFIGFRAG; export CONFIGFRAG"
+ 	echo KVM="$KVM; export KVM"
+ 	echo KVPATH="$KVPATH; export KVPATH"
+@@ -344,10 +371,12 @@ then
+ 	exit 0
+ elif test "$dryrun" = sched
+ then
++	# Extract the test run schedule from the script.
+ 	egrep 'start batch|Starting build\.' $T/script |
+ 		sed -e 's/:.*$//' -e 's/^echo //'
+ 	exit 0
+ else
++	# Not a dryru, so run the script.
+ 	sh $T/script
+ fi
+ 
 -- 
 1.8.1.5
 
