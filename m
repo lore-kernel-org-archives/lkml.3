@@ -1,82 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133AbaBQSgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 13:36:43 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:50288 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894AbaBQSgm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 13:36:42 -0500
-Message-ID: <530256CB.6000603@arm.com>
-Date: Mon, 17 Feb 2014 18:36:59 +0000
-From: Sudeep Holla <Sudeep.Holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: Sudeep.Holla@arm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>
-Subject: Re: [PATCH RFC/RFT v2 3/8] s390: move cacheinfo sysfs to generic
- cacheinfo infrastructure
-References: <1391791763-28518-1-git-send-email-sudeep.holla@arm.com> <1391791763-28518-4-git-send-email-sudeep.holla@arm.com> <20140210113019.GC19013@osiris>
-In-Reply-To: <20140210113019.GC19013@osiris>
-X-OriginalArrivalTime: 17 Feb 2014 18:36:40.0670 (UTC) FILETIME=[32DFE7E0:01CF2C0F]
-X-MC-Unique: 114021718364004701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	id S1754249AbaBQSjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 13:39:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:14980 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175AbaBQSjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 13:39:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,862,1384329600"; 
+   d="scan'208";a="484819471"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 2/2] mm: implement ->fault_nonblock() for page cache
+Date: Mon, 17 Feb 2014 20:38:53 +0200
+Message-Id: <1392662333-25470-3-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.9.0.rc3
+In-Reply-To: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
+filemap_fault_nonblock() is generic implementation of ->fault_nonblock()
+for filesystems who uses page cache.
 
-On 10/02/14 11:30, Heiko Carstens wrote:
-> On Fri, Feb 07, 2014 at 04:49:18PM +0000, Sudeep Holla wrote:
->> From: Sudeep Holla <sudeep.holla@arm.com>
->>
->> This patch removes the redundant sysfs cacheinfo code by making use of
->> the newly introduced generic cacheinfo infrastructure.
->>
->> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> 
-> [...]
-> 
->> -static ssize_t shared_cpu_map_func(struct kobject *kobj, int type, char *buf)
->> -{
->> -	struct cache_index_dir *index;
->> -	int len;
->> +	this_leaf->level = level + 1;
->> +	this_leaf->type = type;
->> +	this_leaf->coherency_line_size = ecag(EXTRACT_LINE_SIZE, level, ti);
->> +	this_leaf->ways_of_associativity = ecag(EXTRACT_ASSOCIATIVITY,
->> +						level, ti);
->> +	this_leaf->size = ecag(EXTRACT_SIZE, level, ti);
->> +	if (private)
->> +		cpumask_set_cpu(cpu, &this_leaf->shared_cpu_map);
->> +	else /* System wide */
->> +		cpumask_copy(&this_leaf->shared_cpu_map, cpu_online_mask);
-> 
-> FWIW, this also seems to be wrong: on s390 we only expose cpu private
-> caches via sysfs. Shared caches are not exposed (and simply saying they are
-> system wide would be wrong).
-> Please have a look at these two commits which should describe why things
-> are as they are on s390:
-> 
-> 881730ad365130f64b5c70c40904b04eb3b79de3
->  "s390/cache: expose cpu cache topology via sysfs"
-> 6668022c7bde3fdc96d3d257294a7216c7a46829
->  "s390/cache: add cpu cache information to /proc/cpuinfo"
-> 
->
+It should be safe to use filemap_fault_nonblock() for ->fault_nonblock()
+if filesystem use filemap_fault() for ->fault().
 
-I need your help to get few things clarified.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ fs/9p/vfs_file.c  |  2 ++
+ fs/btrfs/file.c   |  1 +
+ fs/cifs/file.c    |  1 +
+ fs/ext4/file.c    |  1 +
+ fs/f2fs/file.c    |  1 +
+ fs/fuse/file.c    |  1 +
+ fs/gfs2/file.c    |  1 +
+ fs/nfs/file.c     |  1 +
+ fs/nilfs2/file.c  |  1 +
+ fs/ubifs/file.c   |  1 +
+ fs/xfs/xfs_file.c |  1 +
+ mm/filemap.c      | 35 +++++++++++++++++++++++++++++++++++
+ 12 files changed, 47 insertions(+)
 
-IIUC, I see that shared caches are not exposed via sysfs but there are exposed
-through /proc/cpuinfo, right ? If yes, based on your above statement, shared
-cpus are may not be system-wide, then how can /proc/cpuinfo show shared cache info.
-
-Regards,
-Sudeep
+diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
+index a16b0ff497ca..a7f7e41bec37 100644
+--- a/fs/9p/vfs_file.c
++++ b/fs/9p/vfs_file.c
+@@ -832,6 +832,7 @@ static void v9fs_mmap_vm_close(struct vm_area_struct *vma)
+ 
+ static const struct vm_operations_struct v9fs_file_vm_ops = {
+ 	.fault = filemap_fault,
++	.fault_nonblock = filemap_fault_nonblock,
+ 	.page_mkwrite = v9fs_vm_page_mkwrite,
+ 	.remap_pages = generic_file_remap_pages,
+ };
+@@ -839,6 +840,7 @@ static const struct vm_operations_struct v9fs_file_vm_ops = {
+ static const struct vm_operations_struct v9fs_mmap_file_vm_ops = {
+ 	.close = v9fs_mmap_vm_close,
+ 	.fault = filemap_fault,
++	.fault_nonblock = filemap_fault_nonblock,
+ 	.page_mkwrite = v9fs_vm_page_mkwrite,
+ 	.remap_pages = generic_file_remap_pages,
+ };
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 0165b8672f09..13523a63e1f3 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1993,6 +1993,7 @@ out:
+ 
+ static const struct vm_operations_struct btrfs_file_vm_ops = {
+ 	.fault		= filemap_fault,
++	.fault_nonblock	= filemap_fault_nonblock,
+ 	.page_mkwrite	= btrfs_page_mkwrite,
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 755584684f6c..71aff75e067c 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -3094,6 +3094,7 @@ cifs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 
+ static struct vm_operations_struct cifs_file_vm_ops = {
+ 	.fault = filemap_fault,
++	.fault_nonblock = filemap_fault_nonblock,
+ 	.page_mkwrite = cifs_page_mkwrite,
+ 	.remap_pages = generic_file_remap_pages,
+ };
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 1a5073959f32..182ae5543a1d 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -200,6 +200,7 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ static const struct vm_operations_struct ext4_file_vm_ops = {
+ 	.fault		= filemap_fault,
++	.fault_nonblock	= filemap_fault_nonblock,
+ 	.page_mkwrite   = ext4_page_mkwrite,
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 0dfcef53a6ed..7c48fd2eb99c 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -84,6 +84,7 @@ out:
+ 
+ static const struct vm_operations_struct f2fs_file_vm_ops = {
+ 	.fault		= filemap_fault,
++	.fault_nonblock	= filemap_fault_nonblock,
+ 	.page_mkwrite	= f2fs_vm_page_mkwrite,
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 77bcc303c3ae..e95e52ec7bc2 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1940,6 +1940,7 @@ static int fuse_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ static const struct vm_operations_struct fuse_file_vm_ops = {
+ 	.close		= fuse_vma_close,
+ 	.fault		= filemap_fault,
++	.fault_nonblock	= filemap_fault_nonblock,
+ 	.page_mkwrite	= fuse_page_mkwrite,
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index efc078f0ee4e..7c4b2f096ac8 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -494,6 +494,7 @@ out:
+ 
+ static const struct vm_operations_struct gfs2_vm_ops = {
+ 	.fault = filemap_fault,
++	.fault_nonblock = filemap_fault_nonblock,
+ 	.page_mkwrite = gfs2_page_mkwrite,
+ 	.remap_pages = generic_file_remap_pages,
+ };
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 5bb790a69c71..8fbe80168d1f 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -617,6 +617,7 @@ out:
+ 
+ static const struct vm_operations_struct nfs_file_vm_ops = {
+ 	.fault = filemap_fault,
++	.fault_nonblock = filemap_fault_nonblock,
+ 	.page_mkwrite = nfs_vm_page_mkwrite,
+ 	.remap_pages = generic_file_remap_pages,
+ };
+diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
+index 08fdb77852ac..adc4aa07d7d8 100644
+--- a/fs/nilfs2/file.c
++++ b/fs/nilfs2/file.c
+@@ -134,6 +134,7 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 
+ static const struct vm_operations_struct nilfs_file_vm_ops = {
+ 	.fault		= filemap_fault,
++	.fault_nonblock	= filemap_fault_nonblock,
+ 	.page_mkwrite	= nilfs_page_mkwrite,
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 123c79b7261e..f27c4c401a3f 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1538,6 +1538,7 @@ out_unlock:
+ 
+ static const struct vm_operations_struct ubifs_file_vm_ops = {
+ 	.fault        = filemap_fault,
++	.fault_nonblock = filemap_fault_nonblock,
+ 	.page_mkwrite = ubifs_vm_page_mkwrite,
+ 	.remap_pages = generic_file_remap_pages,
+ };
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index 64b48eade91d..bc619150c960 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -1465,6 +1465,7 @@ const struct file_operations xfs_dir_file_operations = {
+ 
+ static const struct vm_operations_struct xfs_file_vm_ops = {
+ 	.fault		= filemap_fault,
++	.fault_nonblock	= filemap_fault_nonblock,
+ 	.page_mkwrite	= xfs_vm_page_mkwrite,
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 7a13f6ac5421..7b7c9c600544 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1726,6 +1726,40 @@ page_not_uptodate:
+ }
+ EXPORT_SYMBOL(filemap_fault);
+ 
++void filemap_fault_nonblock(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	struct file *file = vma->vm_file;
++	struct address_space *mapping = file->f_mapping;
++	pgoff_t size;
++	struct page *page;
++
++	page = find_get_page(mapping, vmf->pgoff);
++	if (!page)
++		return;
++	if (PageReadahead(page) || PageHWPoison(page))
++		goto put;
++	if (!trylock_page(page))
++		goto put;
++	/* Truncated? */
++	if (unlikely(page->mapping != mapping))
++		goto unlock;
++	if (unlikely(!PageUptodate(page)))
++		goto unlock;
++	size = (i_size_read(mapping->host) + PAGE_CACHE_SIZE - 1)
++		>> PAGE_CACHE_SHIFT;
++	if (unlikely(page->index >= size))
++		goto unlock;
++	if (file->f_ra.mmap_miss > 0)
++		file->f_ra.mmap_miss--;
++	vmf->page = page;
++	return;
++unlock:
++	unlock_page(page);
++put:
++	put_page(page);
++}
++EXPORT_SYMBOL(filemap_fault_nonblock);
++
+ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct page *page = vmf->page;
+@@ -1755,6 +1789,7 @@ EXPORT_SYMBOL(filemap_page_mkwrite);
+ 
+ const struct vm_operations_struct generic_file_vm_ops = {
+ 	.fault		= filemap_fault,
++	.fault_nonblock	= filemap_fault_nonblock,
+ 	.page_mkwrite	= filemap_page_mkwrite,
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+-- 
+1.9.0.rc3
 
