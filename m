@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907AbaBQCPD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Feb 2014 21:15:03 -0500
-Received: from ozlabs.org ([203.10.76.45]:57949 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753744AbaBQCPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Feb 2014 21:15:01 -0500
-Date: Mon, 17 Feb 2014 13:14:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: linux-next: manual merge of the libata tree with Linus' tree
-Message-Id: <20140217131452.90bef35b57b5cc29e83a0353@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Feb_2014_13_14_52_+1100_iKl4DBO=5hdr+jTj"
+	id S1753570AbaBQCUe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Feb 2014 21:20:34 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:12088 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752322AbaBQCUc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Feb 2014 21:20:32 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18vBolpioqzKefSfuo98lDMB3f2Fl1m38U=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 2A90D529816
+Date: Sun, 16 Feb 2014 21:20:22 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nadav Haklai <nadavh@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 0/6] Marvell Armada 375 and 38x clocks drivers
+Message-ID: <20140217022022.GF7862@titan.lakedaemon.net>
+References: <1392053569-28037-1-git-send-email-gregory.clement@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392053569-28037-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Feb_2014_13_14_52_+1100_iKl4DBO=5hdr+jTj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Feb 10, 2014 at 06:32:43PM +0100, Gregory CLEMENT wrote:
+> Hi Mike,
+> 
+> Here are patches that add the clocks drivers for two new Marvell ARM
+> SOCs that belong to the mach-mvebu family: the Armada 375 and the
+> Armada 380/385. They are based on Cortex-A9 CPU cores, and share a
+> number of peripherals with their predecessors in the mach-mvebu
+> family.
+> 
+> The drivers added are similar to the one already used for the other
+> SoCs of this family, as usual only the data are different the logic
+> remains the same ans allow us to use the common part.
+> 
+> The core support (arch/arm/mach-mvebu) for these SOCs have just been
+> posted, and we're aiming at having this merged for 3.15 if possible.
+> 
+> Thanks,
+> 
+> Gregory
+> 
+> Gregory CLEMENT (4):
+>   clk: mvebu: add clock support for Armada 375
+>   dt: Update binding information for mvebu core clocks with Armada 375
+>   dt: Update binding information for mvebu gating clocks with Armada 375
+>   clk: mvebu: add clock support for Armada 380/385
+> 
+> Thomas Petazzoni (2):
+>   dt: Update binding information for mvebu core clocks with Armada
+>     380/385
+>   dt: Update binding information for mvebu gating clocks with Armada
+>     380/385
+> 
+>  .../devicetree/bindings/clock/mvebu-core-clock.txt |  14 ++
+>  .../bindings/clock/mvebu-gated-clock.txt           |  65 +++++++-
+>  drivers/clk/mvebu/Kconfig                          |   8 +
+>  drivers/clk/mvebu/Makefile                         |   2 +
+>  drivers/clk/mvebu/armada-375.c                     | 184 +++++++++++++++++++++
+>  drivers/clk/mvebu/armada-38x.c                     | 167 +++++++++++++++++++
+>  6 files changed, 436 insertions(+), 4 deletions(-)
+>  create mode 100644 drivers/clk/mvebu/armada-375.c
+>  create mode 100644 drivers/clk/mvebu/armada-38x.c
 
-Hi Tejun,
+Hey guys,
 
-Today's linux-next merge of the libata tree got a conflict in
-drivers/ata/sata_mv.c between commit 90aa2997029f ("ata: sata_mv: Fix
-probe failures with optional phys") from Linus' tree and commit
-8ad116e649b2 ("ata: sata_mv: Cleanup only the initialized ports") from
-the libata tree.
+I've tentatively applied this series to mvebu/clk-3xx.  I can't build
+test it until I pull in the core support.  So I'll keep it separate from
+the regular clock driver changes just in case.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+thx,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/ata/sata_mv.c
-index 52b8181ddafd,9c1a11de3044..000000000000
---- a/drivers/ata/sata_mv.c
-+++ b/drivers/ata/sata_mv.c
-@@@ -4131,9 -4129,11 +4130,12 @@@ static int mv_platform_probe(struct pla
-  		if (IS_ERR(hpriv->port_phys[port])) {
-  			rc =3D PTR_ERR(hpriv->port_phys[port]);
-  			hpriv->port_phys[port] =3D NULL;
- -			if ((rc !=3D -EPROBE_DEFER) && (rc !=3D -ENODEV))
- -				dev_warn(&pdev->dev, "error getting phy");
- +			if (rc !=3D -EPROBE_DEFER)
- +				dev_warn(&pdev->dev, "error getting phy %d",
- +					rc);
-+=20
-+ 			/* Cleanup only the initialized ports */
-+ 			hpriv->n_ports =3D port;
-  			goto err;
-  		} else
-  			phy_power_on(hpriv->port_phys[port]);
-
---Signature=_Mon__17_Feb_2014_13_14_52_+1100_iKl4DBO=5hdr+jTj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTAXChAAoJEMDTa8Ir7ZwVdXgP/R8VCAENaQ5j6fyfj1YuiUTo
-2SVcczjXAoiLF7EwQmSbx09R4gCs8Gis9gxeLl7g/X4R4eHtkWJNpvW4PpVuhLlK
-zcReExGHaCXv3bysnFH3VyKsqVDUVdG/Htspy4/UC2GxgnPGBU+NpNuCjRYAkJBV
-AY4WUBmPebORQtUtSc3TZF1ch5Yez2cg/BG+LJ5zfyqTlxrgRMkuBy6mkmlxL28C
-4oYBX590ofGknOjiVn0cB0w4hQIvjxiv8fS6E+LB4mxcpC91SBHltHSkpNpObgA1
-2K/ATCLo3BUD7I2ueNTJ+6l/md2FrTRwlHOh5WHSYjpwh7qkAAo7CUf89owEK14U
-WYRWyhuqft0yrAolBABUHmu1W7tKqwhWo7Fg5FdEaaq5l87UPTvXEY2IqN1tYdgq
-POuBnqakmNqVU9Ni+Q/Z4g08KnoVDPhYi61R3t+WMGkGZm7amZjyr6oK5UllP4E8
-XmFywTmZiYI/4FttpiIdUFhEddOHSOKlzyJUdOATeTKPT6gfcDQjaoSQuE8je+00
-6f6WYM7cFoOM/y8SjfRvKso5DbaTSp1pqg7A5gr6VjrzsY57kPxAXcwRxP02AoUg
-siU8XgMP6QvF4d2vhUdH3tmFhKiDy6VTqNbvLzEHwtIJoRVY6jTjetYyc1k4PzEx
-1S8HlbjymiffU9FpISr6
-=T3Tm
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Feb_2014_13_14_52_+1100_iKl4DBO=5hdr+jTj--
+Jason.
