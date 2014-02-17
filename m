@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaBQOZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 09:25:54 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:39302 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751973AbaBQOZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 09:25:53 -0500
-Message-ID: <53021BD2.3090301@free-electrons.com>
-Date: Mon, 17 Feb 2014 15:25:22 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752931AbaBQOcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 09:32:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750838AbaBQOcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 09:32:42 -0500
+Date: Mon, 17 Feb 2014 09:32:36 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sb_edac: degrade log level for "EDAC sbridge: Seeking
+ for: dev 1d.3 PCI ID xxxx"
+Message-ID: <20140217143236.GS15457@redhat.com>
+References: <1392613824-11230-1-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140205183457.GW8533@titan.lakedaemon.net> <20140217141336.GA2765@localhost>
-In-Reply-To: <20140217141336.GA2765@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392613824-11230-1-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/02/2014 15:13, Ezequiel Garcia wrote:
-> On Wed, Feb 05, 2014 at 01:34:57PM -0500, Jason Cooper wrote:
->> On Sat, Jan 25, 2014 at 07:19:06PM +0100, Sebastian Hesselbarth wrote:
->>> This patch set fixes clk init order that went upside-down with
->>> v3.14. I haven't really investigated what caused this, but I assume
->>> it is related with DT node reordering by addresses.
->>>
->>> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
->>> registered before core clocks driver. Unfortunately, we cannot
->>> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
->>> init order for our drivers is always core clocks before clock gating,
->>> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
->>> init function that will register core clocks before clock gating
->>> driver.
->>>
->>> This patch is based on pre-v3.14-rc1 mainline and should go in as
->>> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
->>> I suggest Jason picks it up as a topic branch.
->>>
->>> The patches have been boot tested on Dove and compile-tested only
->>> for Kirkwood, Armada 370 and XP.
->>>
->>> Sebastian Hesselbarth (4):
->>>   clk: mvebu: armada-370: maintain clock init order
->>>   clk: mvebu: armada-xp: maintain clock init order
->>>   clk: mvebu: dove: maintain clock init order
->>>   clk: mvebu: kirkwood: maintain clock init order
->>>
->>>  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
->>>  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
->>>  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
->>>  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
->>>  4 files changed, 44 insertions(+), 50 deletions(-)
->>
->> Whole series applied to mvebu/clk-fixes.
->>
+On Mon, Feb 17, 2014 at 01:10:23PM +0800, Jiang Liu wrote:
+> On a system with four Intel processor, it generates too many messages
+> "EDAC sbridge: Seeking for: dev 1d.3 PCI ID xxxx". And it doesn't
+> give many useful information for normal users, so change log level
+> from INFO to DEBUG.
 > 
-> Are we still in time to consider Emilio's oneline proposal?
-> (Emilio: would you mind preparing a suitable patch against dove,
-> kirkwood, armada370/xp, so we can see the real thing?).
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/edac/sb_edac.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+> index 54e2abe..347c7a1 100644
+> --- a/drivers/edac/sb_edac.c
+> +++ b/drivers/edac/sb_edac.c
+> @@ -1263,7 +1263,7 @@ static int sbridge_get_onedevice(struct pci_dev **prev,
+>  	struct pci_dev *pdev = NULL;
+>  	u8 bus = 0;
+>  
+> -	sbridge_printk(KERN_INFO,
+> +	sbridge_printk(KERN_DEBUG,
+>  		"Seeking for: dev %02x.%d PCI ID %04x:%04x\n",
+>  		dev_descr->dev, dev_descr->func,
+>  		PCI_VENDOR_ID_INTEL, dev_descr->dev_id);
 
-I am still strongly against this proposal because hard-coded the parent
-clock name in the driver seems very wrong and moreover in some circumstances
-(if there is no output-name, which is our default case) this proposal
-just ignored the parent clock given by the device tree and this looked
-more wrong.
-
-> 
-> Sebastian fix works perfect, and it easy to understand. However, it has
-> quite a large diffstat. When compared to Emilio's oneline proposal, it
-> seems to me it would be preferable, unless it's broken.
-> 
-> Workaround or not, the fact is this code will be in v3.14, so maybe we
-> can spend some time considering a cleaner option.
-> 
-> Or is this just rubbish?
-> 
-
+ACK
 
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Aristeu
+
