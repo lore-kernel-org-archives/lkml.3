@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398AbaBQWDZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 17:03:25 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:38154 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108AbaBQV64 (ORCPT
+	id S1754453AbaBQWDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 17:03:44 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40426 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083AbaBQV6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 16:58:56 -0500
+	Mon, 17 Feb 2014 16:58:55 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 04/14] staging: android: split uapi out of sync.h and sw_sync.h
-Date: Mon, 17 Feb 2014 13:58:32 -0800
-Message-Id: <1392674322-9036-5-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 03/14] staging: android: Split uapi out of ashmem.h
+Date: Mon, 17 Feb 2014 13:58:31 -0800
+Message-Id: <1392674322-9036-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
 References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
@@ -24,310 +24,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@android.com>
 
-Move the userspace interfaces of sync.h and sw_sync.h to
-drivers/staging/android/uapi/
+Move the userspace interface of ashmem.h to
+drivers/staging/android/uapi/ashmem.h
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Colin Cross <ccross@android.com>
 Cc: Android Kernel Team <kernel-team@android.com>
 Signed-off-by: Colin Cross <ccross@android.com>
-[jstultz: Fixed up some conflicts from upstream spelling fixes]
+[jstultz: Minor commit message tweak]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/sw_sync.h      | 20 +------
- drivers/staging/android/sync.h         | 86 +-----------------------------
- drivers/staging/android/uapi/sw_sync.h | 32 +++++++++++
- drivers/staging/android/uapi/sync.h    | 97 ++++++++++++++++++++++++++++++++++
- 4 files changed, 133 insertions(+), 102 deletions(-)
- create mode 100644 drivers/staging/android/uapi/sw_sync.h
- create mode 100644 drivers/staging/android/uapi/sync.h
+ drivers/staging/android/ashmem.h      | 30 +---------------------
+ drivers/staging/android/uapi/ashmem.h | 47 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 29 deletions(-)
+ create mode 100644 drivers/staging/android/uapi/ashmem.h
 
-diff --git a/drivers/staging/android/sw_sync.h b/drivers/staging/android/sw_sync.h
-index 5aaf71d..1a50669 100644
---- a/drivers/staging/android/sw_sync.h
-+++ b/drivers/staging/android/sw_sync.h
-@@ -18,10 +18,9 @@
- #define _LINUX_SW_SYNC_H
+diff --git a/drivers/staging/android/ashmem.h b/drivers/staging/android/ashmem.h
+index 8dc0f0d..5abcfd7 100644
+--- a/drivers/staging/android/ashmem.h
++++ b/drivers/staging/android/ashmem.h
+@@ -16,35 +16,7 @@
+ #include <linux/ioctl.h>
+ #include <linux/compat.h>
  
- #include <linux/types.h>
+-#define ASHMEM_NAME_LEN		256
 -
--#ifdef __KERNEL__
+-#define ASHMEM_NAME_DEF		"dev/ashmem"
 -
-+#include <linux/kconfig.h>
- #include "sync.h"
-+#include "uapi/sw_sync.h"
- 
- struct sw_sync_timeline {
- 	struct	sync_timeline	obj;
-@@ -57,19 +56,4 @@ static inline struct sync_pt *sw_sync_pt_create(struct sw_sync_timeline *obj,
- }
- #endif /* IS_ENABLED(CONFIG_SW_SYNC) */
- 
--#endif /* __KERNEL __ */
+-/* Return values from ASHMEM_PIN: Was the mapping purged while unpinned? */
+-#define ASHMEM_NOT_PURGED	0
+-#define ASHMEM_WAS_PURGED	1
 -
--struct sw_sync_create_fence_data {
--	__u32	value;
--	char	name[32];
--	__s32	fence; /* fd of new fence */
+-/* Return values from ASHMEM_GET_PIN_STATUS: Is the mapping pinned? */
+-#define ASHMEM_IS_UNPINNED	0
+-#define ASHMEM_IS_PINNED	1
+-
+-struct ashmem_pin {
+-	__u32 offset;	/* offset into region, in bytes, page-aligned */
+-	__u32 len;	/* length forward from offset, in bytes, page-aligned */
 -};
 -
--#define SW_SYNC_IOC_MAGIC	'W'
+-#define __ASHMEMIOC		0x77
 -
--#define SW_SYNC_IOC_CREATE_FENCE	_IOWR(SW_SYNC_IOC_MAGIC, 0,\
--		struct sw_sync_create_fence_data)
--#define SW_SYNC_IOC_INC			_IOW(SW_SYNC_IOC_MAGIC, 1, __u32)
--
--
- #endif /* _LINUX_SW_SYNC_H */
-diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
-index 6ee8d69..eaf57ccc 100644
---- a/drivers/staging/android/sync.h
-+++ b/drivers/staging/android/sync.h
-@@ -14,14 +14,14 @@
- #define _LINUX_SYNC_H
+-#define ASHMEM_SET_NAME		_IOW(__ASHMEMIOC, 1, char[ASHMEM_NAME_LEN])
+-#define ASHMEM_GET_NAME		_IOR(__ASHMEMIOC, 2, char[ASHMEM_NAME_LEN])
+-#define ASHMEM_SET_SIZE		_IOW(__ASHMEMIOC, 3, size_t)
+-#define ASHMEM_GET_SIZE		_IO(__ASHMEMIOC, 4)
+-#define ASHMEM_SET_PROT_MASK	_IOW(__ASHMEMIOC, 5, unsigned long)
+-#define ASHMEM_GET_PROT_MASK	_IO(__ASHMEMIOC, 6)
+-#define ASHMEM_PIN		_IOW(__ASHMEMIOC, 7, struct ashmem_pin)
+-#define ASHMEM_UNPIN		_IOW(__ASHMEMIOC, 8, struct ashmem_pin)
+-#define ASHMEM_GET_PIN_STATUS	_IO(__ASHMEMIOC, 9)
+-#define ASHMEM_PURGE_ALL_CACHES	_IO(__ASHMEMIOC, 10)
++#include "uapi/ashmem.h"
  
- #include <linux/types.h>
--#ifdef __KERNEL__
--
- #include <linux/kref.h>
- #include <linux/ktime.h>
- #include <linux/list.h>
- #include <linux/spinlock.h>
- #include <linux/wait.h>
- 
-+#include "uapi/sync.h"
-+
- struct sync_timeline;
- struct sync_pt;
- struct sync_fence;
-@@ -341,86 +341,4 @@ int sync_fence_cancel_async(struct sync_fence *fence,
-  */
- int sync_fence_wait(struct sync_fence *fence, long timeout);
- 
--#endif /* __KERNEL__ */
--
--/**
-- * struct sync_merge_data - data passed to merge ioctl
-- * @fd2:	file descriptor of second fence
-- * @name:	name of new fence
-- * @fence:	returns the fd of the new fence to userspace
-- */
--struct sync_merge_data {
--	__s32	fd2; /* fd of second fence */
--	char	name[32]; /* name of new fence */
--	__s32	fence; /* fd on newly created fence */
--};
--
--/**
-- * struct sync_pt_info - detailed sync_pt information
-- * @len:		length of sync_pt_info including any driver_data
-- * @obj_name:		name of parent sync_timeline
-- * @driver_name:	name of driver implementing the parent
-- * @status:		status of the sync_pt 0:active 1:signaled <0:error
-- * @timestamp_ns:	timestamp of status change in nanoseconds
-- * @driver_data:	any driver dependent data
-- */
--struct sync_pt_info {
--	__u32	len;
--	char	obj_name[32];
--	char	driver_name[32];
--	__s32	status;
--	__u64	timestamp_ns;
--
--	__u8	driver_data[0];
--};
--
--/**
-- * struct sync_fence_info_data - data returned from fence info ioctl
-- * @len:	ioctl caller writes the size of the buffer its passing in.
-- *		ioctl returns length of sync_fence_data returned to userspace
-- *		including pt_info.
-- * @name:	name of fence
-- * @status:	status of fence. 1: signaled 0:active <0:error
-- * @pt_info:	a sync_pt_info struct for every sync_pt in the fence
-- */
--struct sync_fence_info_data {
--	__u32	len;
--	char	name[32];
--	__s32	status;
--
--	__u8	pt_info[0];
--};
--
--#define SYNC_IOC_MAGIC		'>'
--
--/**
-- * DOC: SYNC_IOC_WAIT - wait for a fence to signal
-- *
-- * pass timeout in milliseconds.  Waits indefinitely timeout < 0.
-- */
--#define SYNC_IOC_WAIT		_IOW(SYNC_IOC_MAGIC, 0, __s32)
--
--/**
-- * DOC: SYNC_IOC_MERGE - merge two fences
-- *
-- * Takes a struct sync_merge_data.  Creates a new fence containing copies of
-- * the sync_pts in both the calling fd and sync_merge_data.fd2.  Returns the
-- * new fence's fd in sync_merge_data.fence
-- */
--#define SYNC_IOC_MERGE		_IOWR(SYNC_IOC_MAGIC, 1, struct sync_merge_data)
--
--/**
-- * DOC: SYNC_IOC_FENCE_INFO - get detailed information on a fence
-- *
-- * Takes a struct sync_fence_info_data with extra space allocated for pt_info.
-- * Caller should write the size of the buffer into len.  On return, len is
-- * updated to reflect the total size of the sync_fence_info_data including
-- * pt_info.
-- *
-- * pt_info is a buffer containing sync_pt_infos for every sync_pt in the fence.
-- * To iterate over the sync_pt_infos, use the sync_pt_info.len field.
-- */
--#define SYNC_IOC_FENCE_INFO	_IOWR(SYNC_IOC_MAGIC, 2,\
--	struct sync_fence_info_data)
--
- #endif /* _LINUX_SYNC_H */
-diff --git a/drivers/staging/android/uapi/sw_sync.h b/drivers/staging/android/uapi/sw_sync.h
+ /* support of 32bit userspace on 64bit platforms */
+ #ifdef CONFIG_COMPAT
+diff --git a/drivers/staging/android/uapi/ashmem.h b/drivers/staging/android/uapi/ashmem.h
 new file mode 100644
-index 0000000..9b5d486
+index 0000000..ba4743c
 --- /dev/null
-+++ b/drivers/staging/android/uapi/sw_sync.h
-@@ -0,0 +1,32 @@
++++ b/drivers/staging/android/uapi/ashmem.h
+@@ -0,0 +1,47 @@
 +/*
-+ * Copyright (C) 2012 Google, Inc.
++ * drivers/staging/android/uapi/ashmem.h
 + *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
++ * Copyright 2008 Google Inc.
++ * Author: Robert Love
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
++ * This file is dual licensed.  It may be redistributed and/or modified
++ * under the terms of the Apache 2.0 License OR version 2 of the GNU
++ * General Public License.
 + */
 +
-+#ifndef _UAPI_LINUX_SW_SYNC_H
-+#define _UAPI_LINUX_SW_SYNC_H
-+
-+#include <linux/types.h>
-+
-+struct sw_sync_create_fence_data {
-+	__u32	value;
-+	char	name[32];
-+	__s32	fence; /* fd of new fence */
-+};
-+
-+#define SW_SYNC_IOC_MAGIC	'W'
-+
-+#define SW_SYNC_IOC_CREATE_FENCE	_IOWR(SW_SYNC_IOC_MAGIC, 0,\
-+		struct sw_sync_create_fence_data)
-+#define SW_SYNC_IOC_INC			_IOW(SW_SYNC_IOC_MAGIC, 1, __u32)
-+
-+#endif /* _UAPI_LINUX_SW_SYNC_H */
-diff --git a/drivers/staging/android/uapi/sync.h b/drivers/staging/android/uapi/sync.h
-new file mode 100644
-index 0000000..e964c75
---- /dev/null
-+++ b/drivers/staging/android/uapi/sync.h
-@@ -0,0 +1,97 @@
-+/*
-+ * Copyright (C) 2012 Google, Inc.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef _UAPI_LINUX_SYNC_H
-+#define _UAPI_LINUX_SYNC_H
++#ifndef _UAPI_LINUX_ASHMEM_H
++#define _UAPI_LINUX_ASHMEM_H
 +
 +#include <linux/ioctl.h>
-+#include <linux/types.h>
 +
-+/**
-+ * struct sync_merge_data - data passed to merge ioctl
-+ * @fd2:	file descriptor of second fence
-+ * @name:	name of new fence
-+ * @fence:	returns the fd of the new fence to userspace
-+ */
-+struct sync_merge_data {
-+	__s32	fd2; /* fd of second fence */
-+	char	name[32]; /* name of new fence */
-+	__s32	fence; /* fd on newly created fence */
++#define ASHMEM_NAME_LEN		256
++
++#define ASHMEM_NAME_DEF		"dev/ashmem"
++
++/* Return values from ASHMEM_PIN: Was the mapping purged while unpinned? */
++#define ASHMEM_NOT_PURGED	0
++#define ASHMEM_WAS_PURGED	1
++
++/* Return values from ASHMEM_GET_PIN_STATUS: Is the mapping pinned? */
++#define ASHMEM_IS_UNPINNED	0
++#define ASHMEM_IS_PINNED	1
++
++struct ashmem_pin {
++	__u32 offset;	/* offset into region, in bytes, page-aligned */
++	__u32 len;	/* length forward from offset, in bytes, page-aligned */
 +};
 +
-+/**
-+ * struct sync_pt_info - detailed sync_pt information
-+ * @len:		length of sync_pt_info including any driver_data
-+ * @obj_name:		name of parent sync_timeline
-+ * @driver_name:	name of driver implementing the parent
-+ * @status:		status of the sync_pt 0:active 1:signaled <0:error
-+ * @timestamp_ns:	timestamp of status change in nanoseconds
-+ * @driver_data:	any driver dependent data
-+ */
-+struct sync_pt_info {
-+	__u32	len;
-+	char	obj_name[32];
-+	char	driver_name[32];
-+	__s32	status;
-+	__u64	timestamp_ns;
++#define __ASHMEMIOC		0x77
 +
-+	__u8	driver_data[0];
-+};
++#define ASHMEM_SET_NAME		_IOW(__ASHMEMIOC, 1, char[ASHMEM_NAME_LEN])
++#define ASHMEM_GET_NAME		_IOR(__ASHMEMIOC, 2, char[ASHMEM_NAME_LEN])
++#define ASHMEM_SET_SIZE		_IOW(__ASHMEMIOC, 3, size_t)
++#define ASHMEM_GET_SIZE		_IO(__ASHMEMIOC, 4)
++#define ASHMEM_SET_PROT_MASK	_IOW(__ASHMEMIOC, 5, unsigned long)
++#define ASHMEM_GET_PROT_MASK	_IO(__ASHMEMIOC, 6)
++#define ASHMEM_PIN		_IOW(__ASHMEMIOC, 7, struct ashmem_pin)
++#define ASHMEM_UNPIN		_IOW(__ASHMEMIOC, 8, struct ashmem_pin)
++#define ASHMEM_GET_PIN_STATUS	_IO(__ASHMEMIOC, 9)
++#define ASHMEM_PURGE_ALL_CACHES	_IO(__ASHMEMIOC, 10)
 +
-+/**
-+ * struct sync_fence_info_data - data returned from fence info ioctl
-+ * @len:	ioctl caller writes the size of the buffer its passing in.
-+ *		ioctl returns length of sync_fence_data returned to userspace
-+ *		including pt_info.
-+ * @name:	name of fence
-+ * @status:	status of fence. 1: signaled 0:active <0:error
-+ * @pt_info:	a sync_pt_info struct for every sync_pt in the fence
-+ */
-+struct sync_fence_info_data {
-+	__u32	len;
-+	char	name[32];
-+	__s32	status;
-+
-+	__u8	pt_info[0];
-+};
-+
-+#define SYNC_IOC_MAGIC		'>'
-+
-+/**
-+ * DOC: SYNC_IOC_WAIT - wait for a fence to signal
-+ *
-+ * pass timeout in milliseconds.  Waits indefinitely timeout < 0.
-+ */
-+#define SYNC_IOC_WAIT		_IOW(SYNC_IOC_MAGIC, 0, __s32)
-+
-+/**
-+ * DOC: SYNC_IOC_MERGE - merge two fences
-+ *
-+ * Takes a struct sync_merge_data.  Creates a new fence containing copies of
-+ * the sync_pts in both the calling fd and sync_merge_data.fd2.  Returns the
-+ * new fence's fd in sync_merge_data.fence
-+ */
-+#define SYNC_IOC_MERGE		_IOWR(SYNC_IOC_MAGIC, 1, struct sync_merge_data)
-+
-+/**
-+ * DOC: SYNC_IOC_FENCE_INFO - get detailed information on a fence
-+ *
-+ * Takes a struct sync_fence_info_data with extra space allocated for pt_info.
-+ * Caller should write the size of the buffer into len.  On return, len is
-+ * updated to reflect the total size of the sync_fence_info_data including
-+ * pt_info.
-+ *
-+ * pt_info is a buffer containing sync_pt_infos for every sync_pt in the fence.
-+ * To iterate over the sync_pt_infos, use the sync_pt_info.len field.
-+ */
-+#define SYNC_IOC_FENCE_INFO	_IOWR(SYNC_IOC_MAGIC, 2,\
-+	struct sync_fence_info_data)
-+
-+#endif /* _UAPI_LINUX_SYNC_H */
++#endif	/* _UAPI_LINUX_ASHMEM_H */
 -- 
 1.8.3.2
 
