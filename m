@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491AbaBQT3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 14:29:35 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:50768 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903AbaBQT3d (ORCPT
+	id S1754515AbaBQT3l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 14:29:41 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:50467 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324AbaBQT3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 14:29:33 -0500
-Date: Mon, 17 Feb 2014 11:29:28 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [PATCH V2] ONKEY: da9052: Use correct register bit for key status
-Message-ID: <20140217192927.GD19223@core.coreip.homeip.net>
-References: <201402121518.s1CFIkDP009092@swsrvapps-02.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201402121518.s1CFIkDP009092@swsrvapps-02.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Feb 2014 14:29:34 -0500
+Date: Mon, 17 Feb 2014 14:29:32 -0500 (EST)
+Message-Id: <20140217.142932.2241202017756551476.davem@davemloft.net>
+To: tommie@gannert.se
+Cc: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irtty-sir.c: Do not set_termios() on irtty_close()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <52FC87B6.4070001@gannert.se>
+References: <52FC87B6.4070001@gannert.se>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 17 Feb 2014 11:29:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 02:11:34PM +0000, Anthony Olech wrote:
-> The wrong register bit of the DA9052/3 PMIC registers was
-> used to determine the status on the ONKEY.
-> 
-> Also a failure in reading the status register will no longer
-> result in the work queue being rescheduled as that would result
-> in a (potentially) endless retry.
-> 
-> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> Acked-by: David Dajun Chen <david.chen@diasemi.com>
+From: Tommie Gannert <tommie@gannert.se>
+Date: Thu, 13 Feb 2014 08:52:06 +0000
 
-Applied, thank you.
+> --- linux-3.12/drivers/net/irda/irtty-sir.c.orig 2014-02-12
+> --- 21:36:46.132496089 +0000
+> +++ linux-3.12/drivers/net/irda/irtty-sir.c 2014-02-12
+> 21:57:21.635843884 +0000
+> @@ -521,7 +521,6 @@ static void irtty_close(struct tty_struc
+>  	sirdev_put_instance(priv->dev);
+>    	/* Stop tty */
+> -	irtty_stop_receiver(tty, TRUE);
+>  	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+>  	if (tty->ops->stop)
+>  		tty->ops->stop(tty);
 
--- 
-Dmitry
+This patch has been corrupted by your email client.  Please fix this
+up and resubmit, thanks.
