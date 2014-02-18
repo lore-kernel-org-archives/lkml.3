@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaBRXDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:03:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51105 "EHLO
+	id S1754053AbaBRXDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:03:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51438 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbaBRWrC (ORCPT
+	with ESMTP id S1754034AbaBRXDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:02 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nitin A Kamble <nitin.a.kamble@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.12 28/32] genirq: Generic irq chip requires IRQ_DOMAIN
-Date: Tue, 18 Feb 2014 14:47:28 -0800
-Message-Id: <20140218224500.902706074@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
-References: <20140218224500.101465031@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Feb 2014 18:03:47 -0500
+Date: Tue, 18 Feb 2014 15:03:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wang YanQing <udknight@gmail.com>
+Cc: ebiederm@xmission.com, serge.hallyn@canonical.com,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH] kernel/groups.c: remove return value of set_groups
+Message-Id: <20140218150346.ea6fc4fdb99ab24a4d77373f@linux-foundation.org>
+In-Reply-To: <20140216153107.GA3622@udknight>
+References: <20140216153107.GA3622@udknight>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Sun, 16 Feb 2014 23:31:07 +0800 Wang YanQing <udknight@gmail.com> wrote:
 
-------------------
+> After commit 6307f8fee295b364716d28686df6e69c2fee751a
+> ("security: remove dead hook task_setgroups"), set_groups
+> will always return zero, so we could just remove return
+> value of set_groups.
+> 
+> This patch reduce code size, and simplfy code logician
+> to use set_groups, because we don't need to check its
+> return value anymore.
+> 
 
-From: Nitin A Kamble <nitin.a.kamble@intel.com>
+Looks OK.  We should also update the set_groups() description to
+reflect reality.
 
-commit 923fa4ea382f592dee2ba3b205befb90cbddf3af upstream.
-
-The generic_chip.c uses interfaces from irq_domain.c which is
-controlled by the IRQ_DOMAIN config option, but there is no Kconfig
-dependency so the build can fail:
-
-linux/kernel/irq/generic-chip.c:400:11: error:
-'irq_domain_xlate_onetwocell' undeclared here (not in a function)
-
-Select IRQ_DOMAIN when GENERIC_IRQ_CHIP is selected.
-
-Signed-off-by: Nitin A Kamble <nitin.a.kamble@intel.com>
-Link: http://lkml.kernel.org/r/1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/irq/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/kernel/irq/Kconfig
-+++ b/kernel/irq/Kconfig
-@@ -40,6 +40,7 @@ config IRQ_EDGE_EOI_HANDLER
- # Generic configurable interrupt chip implementation
- config GENERIC_IRQ_CHIP
-        bool
-+       select IRQ_DOMAIN
- 
- # Generic irq_domain hw <--> linux irq number translation
- config IRQ_DOMAIN
-
+--- a/kernel/groups.c~kernel-groupsc-remove-return-value-of-set_groups-fix
++++ a/kernel/groups.c
+@@ -157,9 +157,6 @@ int groups_search(const struct group_inf
+  * set_groups - Change a group subscription in a set of credentials
+  * @new: The newly prepared set of credentials to alter
+  * @group_info: The group list to install
+- *
+- * Validate a group subscription and, if valid, insert it into a set
+- * of credentials.
+  */
+ void set_groups(struct cred *new, struct group_info *group_info)
+ {
+_
 
