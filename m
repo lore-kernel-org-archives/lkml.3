@@ -1,97 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079AbaBRNmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 08:42:08 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:61831 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747AbaBRNmD (ORCPT
+	id S1755571AbaBRNt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 08:49:58 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:48399 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535AbaBRNt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 08:42:03 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-2d-530363290fda
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>
-Subject: [PATCH v3 5/6] ARM: init: add support for reserved memory defined by
- device tree
-Date: Tue, 18 Feb 2014 14:38:00 +0100
-Message-id: <1392730681-14695-6-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1392730681-14695-1-git-send-email-m.szyprowski@samsung.com>
-References: <1392730681-14695-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAzWRW0iTYQCG+/7T/o0GP8vqb4HFwgtFTdPgoySlpL5uIpNu1Kilf7p0OjZP
-	y4vGcB5GOtELJXRtOTHNaa3EOSrcGmmGnWZaHrNFoc4DKF20KblJd8/L+8B78dK4yESIaVlh
-	MacslBZIKAHxbtvLxERm4+lxjpFEuNX4hgfXtTocPnC/J6HBZybhUMAOoK+uhoCDvasAjml9
-	PDhQ28KDm+MLGLR5J0horrIQ0ONopaDVPcuDTxadGOyY/IRB03AlCQPN4XB0coOCDc1WAupe
-	unlwa8BGwCVnFQH7WpYJ2O0IgJRDqMfYA5D/byNAy00NAHnq6zA0eH+Wh+75Kklk666l0MzE
-	Cwo9s9xF09teHI2PaEnUG1jCkGErDtU/7wZowxaOnrZdvcxkCJJyuAJZKac8fuaGIO/b5jSl
-	GOaX60drMA1Y5ekBn2aZRHb2VRu+ywfYj3N9lB4IaBHzELA6Yx+5G3QYuzK/SgUtioln9Sv6
-	EIcxZsBuGImghDPNFNvevxYq9jGZrHXRGGKCiWDbF+wgyEIGsWv+3ztz9M7cUba1MSmIfOYi
-	uzkZHTREO0b/vBdvAEIT2NMN9nOKbIXqZq48PlYllatKCnNjs4vkNhD67ZfYDro00AUYGkj2
-	CtePYekiUlqqUstdgKVxSZgwMgNPFwlzpOo7nLLourKkgFO5wGGakBwUDulOp4mYXGkxl89x
-	Ck75v8VovlgDsrKijkSfmpqzXGjrEPEzIyRwWCCTnXydqPqZWu2q9c05Uz5Mfa3R+Mk0Q68X
-	vL2kLa82DXZ99khWHv/hn8toik64dtsSuGXw26VlyannuZhAwmjXWPG6A335/kPdOT/lcc40
-	Aau6Io8L78y3C1xDyWUnKq64xY/OJsXFmCWEKk8aH4UrVdJ/jZifDLMCAAA=
+	Tue, 18 Feb 2014 08:49:56 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1IDnsoB029303, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 03/14] r8152: replace some types from int to bool
+Date: Tue, 18 Feb 2014 21:49:00 +0800
+Message-ID: <1392731351-25502-4-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1392731351-25502-1-git-send-email-hayeswang@realtek.com>
+References: <1392731351-25502-1-git-send-email-hayeswang@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.218]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable reserved memory initialization from device tree.
+Modify the following functions.
+ - r8153_u1u2en
+ - r8153_u2p3en
+ - r8153_power_cut_en
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- arch/arm/Kconfig   |    1 +
- arch/arm/mm/init.c |    3 +++
- 2 files changed, 4 insertions(+)
+ drivers/net/usb/r8152.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index e25419817791..d0262bea8020 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1918,6 +1918,7 @@ config USE_OF
- 	select IRQ_DOMAIN
- 	select OF
- 	select OF_EARLY_FLATTREE
-+	select OF_RESERVED_MEM
- 	help
- 	  Include support for flattened device tree machine descriptions.
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 2d5e761..4888e4f 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -1989,7 +1989,7 @@ static void r8153_hw_phy_cfg(struct r8152 *tp)
+ 	sram_write(tp, SRAM_10M_AMP2, data);
+ }
  
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 804d61566a53..ebafdb479410 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -17,6 +17,7 @@
- #include <linux/nodemask.h>
- #include <linux/initrd.h>
- #include <linux/of_fdt.h>
-+#include <linux/of_reserved_mem.h>
- #include <linux/highmem.h>
- #include <linux/gfp.h>
- #include <linux/memblock.h>
-@@ -323,6 +324,8 @@ void __init arm_memblock_init(struct meminfo *mi,
- 	if (mdesc->reserve)
- 		mdesc->reserve();
+-static void r8153_u1u2en(struct r8152 *tp, int enable)
++static void r8153_u1u2en(struct r8152 *tp, bool enable)
+ {
+ 	u8 u1u2[8];
  
-+	early_init_dt_scan_reserved_mem();
-+
- 	/*
- 	 * reserve memory for DMA contigouos allocations,
- 	 * must come from DMA area inside low memory
+@@ -2001,7 +2001,7 @@ static void r8153_u1u2en(struct r8152 *tp, int enable)
+ 	usb_ocp_write(tp, USB_TOLERANCE, BYTE_EN_SIX_BYTES, sizeof(u1u2), u1u2);
+ }
+ 
+-static void r8153_u2p3en(struct r8152 *tp, int enable)
++static void r8153_u2p3en(struct r8152 *tp, bool enable)
+ {
+ 	u32 ocp_data;
+ 
+@@ -2013,7 +2013,7 @@ static void r8153_u2p3en(struct r8152 *tp, int enable)
+ 	ocp_write_word(tp, MCU_TYPE_USB, USB_U2P3_CTRL, ocp_data);
+ }
+ 
+-static void r8153_power_cut_en(struct r8152 *tp, int enable)
++static void r8153_power_cut_en(struct r8152 *tp, bool enable)
+ {
+ 	u32 ocp_data;
+ 
+@@ -2261,8 +2261,8 @@ static void rtl8152_down(struct r8152 *tp)
+ 
+ static void rtl8153_down(struct r8152 *tp)
+ {
+-	r8153_u1u2en(tp, 0);
+-	r8153_power_cut_en(tp, 0);
++	r8153_u1u2en(tp, false);
++	r8153_power_cut_en(tp, false);
+ 	r8153_disable_aldps(tp);
+ 	r8153_enter_oob(tp);
+ 	r8153_enable_aldps(tp);
+@@ -2455,7 +2455,7 @@ static void r8153_init(struct r8152 *tp)
+ 	u32 ocp_data;
+ 	int i;
+ 
+-	r8153_u1u2en(tp, 0);
++	r8153_u1u2en(tp, false);
+ 
+ 	for (i = 0; i < 500; i++) {
+ 		if (ocp_read_word(tp, MCU_TYPE_PLA, PLA_BOOT_CTRL) &
+@@ -2471,7 +2471,7 @@ static void r8153_init(struct r8152 *tp)
+ 		msleep(20);
+ 	}
+ 
+-	r8153_u2p3en(tp, 0);
++	r8153_u2p3en(tp, false);
+ 
+ 	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_WDT11_CTRL);
+ 	ocp_data &= ~TIMER11_EN;
+@@ -2496,8 +2496,8 @@ static void r8153_init(struct r8152 *tp)
+ 	ocp_data |= SEN_VAL_NORMAL | SEL_RXIDLE;
+ 	ocp_write_word(tp, MCU_TYPE_USB, USB_AFE_CTRL2, ocp_data);
+ 
+-	r8153_power_cut_en(tp, 0);
+-	r8153_u1u2en(tp, 1);
++	r8153_power_cut_en(tp, false);
++	r8153_u1u2en(tp, true);
+ 
+ 	r8153_first_init(tp);
+ 
+@@ -2677,7 +2677,7 @@ static void rtl8152_unload(struct r8152 *tp)
+ 
+ static void rtl8153_unload(struct r8152 *tp)
+ {
+-	r8153_power_cut_en(tp, 1);
++	r8153_power_cut_en(tp, true);
+ }
+ 
+ static int rtl_ops_init(struct r8152 *tp, const struct usb_device_id *id)
 -- 
-1.7.9.5
+1.8.4.2
 
