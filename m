@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505AbaBRWMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:12:24 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:49630 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751587AbaBRWMV (ORCPT
+	id S1752733AbaBRWNC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:13:02 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:50186 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaBRWM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:12:21 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: linux-pm@vger.kernel.org, dirk.j.brandewie@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] intel_pstate updates for v3.14-rcX
-Date: Tue, 18 Feb 2014 23:27:11 +0100
-Message-ID: <2705558.gK5sRhMz43@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5303C2C2.8040605@intel.com>
-References: <1392228067-14817-1-git-send-email-dirk.j.brandewie@intel.com> <5303C2C2.8040605@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 18 Feb 2014 17:12:59 -0500
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
+        chegu_vinod@hp.com, aarcange@redhat.com, akpm@linux-foundation.org
+Subject: [PATCH -mm 2/3] mm,numa: reorganize change_pmd_range
+Date: Tue, 18 Feb 2014 17:12:45 -0500
+Message-Id: <1392761566-24834-3-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392761566-24834-1-git-send-email-riel@redhat.com>
+References: <1392761566-24834-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 18, 2014 12:29:54 PM Dirk Brandewie wrote:
-> Hi Rafael,
+From: Rik van Riel <riel@redhat.com>
 
-Hi,
+Reorganize the order of ifs in change_pmd_range a little, in
+preparation for the next patch.
 
-> On 02/12/2014 10:01 AM, dirk.brandewie@gmail.com wrote:
-> > From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> >
-> > Based on v3.14-rc2
-> >
-> > Patch 1 removes energy reporting the patch from Maurizio Lambardi
-> >   intel_pstate: fix race condition in intel_pstate_init() can be dropped.
-> >
-> 
-> Any reason why patches 2-5 did not make rc3 other than timing?
-> 
-> Patches 2/3 can easily wait for v3.15.x
-> 
-> Patches 4/5 fix bugs that are in the wild.
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Reported-by: Xing Gang <gang.xing@hp.com>
+Tested-by: Chegu Vinod <chegu_vinod@hp.com>
+---
+ mm/mprotect.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-I asked you about them, but you didn't reply:
-
-http://marc.info/?l=linux-pm&m=139225158531023&w=4
-
-Again, do patches [4-5/5] depend on [2-3/5]?
-
-If not, I can queue them up for -rc4.
-
-Thanks,
-Rafael
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 769a67a..6006c05 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -118,6 +118,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 		unsigned long this_pages;
+ 
+ 		next = pmd_addr_end(addr, end);
++		if (!pmd_trans_huge(*pmd) && pmd_none_or_clear_bad(pmd))
++				continue;
+ 		if (pmd_trans_huge(*pmd)) {
+ 			if (next - addr != HPAGE_PMD_SIZE)
+ 				split_huge_page_pmd(vma, addr, pmd);
+@@ -133,10 +135,9 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 					continue;
+ 				}
+ 			}
+-			/* fall through */
++			/* fall through, the trans huge pmd just split */
+ 		}
+-		if (pmd_none_or_clear_bad(pmd))
+-			continue;
++		VM_BUG_ON(pmd_trans_huge(*pmd));
+ 		this_pages = change_pte_range(vma, pmd, addr, next, newprot,
+ 				 dirty_accountable, prot_numa);
+ 		pages += this_pages;
+-- 
+1.8.5.3
 
