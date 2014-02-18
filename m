@@ -1,88 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711AbaBRJad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 04:30:33 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:40742 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656AbaBRJa3 (ORCPT
+	id S1754725AbaBRJcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 04:32:05 -0500
+Received: from mga11.intel.com ([192.55.52.93]:50950 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754472AbaBRJcD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 04:30:29 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of_mdio: fix phy interrupt passing
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-kernel@lists.codethink.co.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-sh@vger.kernel.org, sergei.shtylyov@cogentembedded.com,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-In-Reply-To: <1392654580-3706-1-git-send-email-ben.dooks@codethink.co.uk>
-References: <1392654580-3706-1-git-send-email-ben.dooks@codethink.co.uk>
-Date: Tue, 18 Feb 2014 09:30:24 +0000
-Message-Id: <20140218093024.D0E94C403C8@trevor.secretlab.ca>
+	Tue, 18 Feb 2014 04:32:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,500,1389772800"; 
+   d="scan'208";a="483315846"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: RE: [PATCH v3 0/4] X86/KVM: enable Intel MPX for KVM
+Thread-Topic: [PATCH v3 0/4] X86/KVM: enable Intel MPX for KVM
+Thread-Index: AQHPLIqDEXGTQoHbzECIeeZtPHIgl5q6vFiQ
+Date: Tue, 18 Feb 2014 09:32:00 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC8292335014F733B@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923350149FC1E@SHSMSX101.ccr.corp.intel.com>
+ <52DFB382.5080002@redhat.com> <53032581.7050406@redhat.com>
+In-Reply-To: <53032581.7050406@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014 16:29:40 +0000, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
-> The of_mdiobus_register_phy() is not setting phy->irq this causing
-> some drivers to incorrectly assume that the PHY does not have an
-> IRQ associated with it or install an interrupt handler for the
-> PHY.
+Paolo Bonzini wrote:
+> Il 22/01/2014 13:03, Paolo Bonzini ha scritto:
+>> Il 22/01/2014 06:29, Liu, Jinsong ha scritto:
+>>> These patches are version 3 to enalbe Intel MPX for KVM.
+>>> 
+>>> Version 1:
+>>>   * Add some Intel MPX definiation
+>>>   * Fix a cpuid(0x0d, 0) exposing bug, dynamic per XCR0 features
+>>> enable/disable 
+>>>   * vmx and msr handle for MPX support at KVM
+>>>   * enalbe MPX feature for guest
+>>> 
+>>> Version 2:
+>>>   * remove generic MPX definiation, Qiaowei's patch has add the
+>>> definiation at kernel side 
+>>>   * add MSR_IA32_BNDCFGS to msrs_to_save
+>>> 
+>>> Version 3:
+>>>   * rebase on latest kernel, which include Qiaowei's MPX common
+>>> definiation pulled from HPA's tree
+>> 
+>> I am afraid there is still some work to do on these patches, so they
+>> need to be delayed to 3.15. 
+>> 
+>> Patch 1:
+>>     this seems mostly separate from the rest of the MPX work.  I
+>>     commented on the missing "ULL" suffix, but I would also like to
+>>     understand why you put this patch in this series.
+>> 
+>> Patch 2:
+>>     As remarked in the reply to this patch:
+>>     - the vmx_disable_intercept_for_msr has to be unconditional
+>>     - you need a new kvm_x86_ops member mpx_supported, to disable
+>>     MPX whenever the two VMX controls are not available.
+>> 
+>> Patch 3:
+>>     this patch needs to be rebased.  Apart from that it is fine,
+>>     but please move the VMX bits together with patch 2, and the
+>>     other bits together with patch 4.
+>> 
+>> Patch 4:
+>>     this patch needs to be rebased and to use the new mpx_supported 
+>> member 
+>> 
+>> If you also want to look at nested VMX support for MPX, that would be
+>> nice.  It should not be hard.  Otherwise we can take care of that
+>> later. 
+>> 
+>> Thanks for your work,
+>> 
+>> Paolo
 > 
-> Simplify the code setting irq and set the phy->irq at the same
-> time so that the case if mdio->irq is not NULL is easier to read.
+> Are you going to send v4?
 > 
-> This fixes the issue:
->  net eth0: attached PHY 1 (IRQ -1) to driver Micrel KSZ8041RNLI
-> 
-> to the correct:
->  net eth0: attached PHY 1 (IRQ 416) to driver Micrel KSZ8041RNLI
-> 
-> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> ---
->  drivers/of/of_mdio.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index 875b7b6..7b3e7b0 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-> @@ -44,7 +44,7 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
->  {
->  	struct phy_device *phy;
->  	bool is_c45;
-> -	int rc, prev_irq;
-> +	int rc;
->  	u32 max_speed = 0;
->  
->  	is_c45 = of_device_is_compatible(child,
-> @@ -55,11 +55,11 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
->  		return 1;
->  
->  	if (mdio->irq) {
-> -		prev_irq = mdio->irq[addr];
-> -		mdio->irq[addr] =
-> -			irq_of_parse_and_map(child, 0);
-> -		if (!mdio->irq[addr])
-> -			mdio->irq[addr] = prev_irq;
+> Paolo
 
-I cannot for the life for me remeber why the code was structured that
-way. Your change is better.
+Yes, I just return from long Chinese Spring Festival, I will send V4 later.
 
-> +		rc = irq_of_parse_and_map(child, 0);
-> +		if (rc > 0) {
-> +			mdio->irq[addr] = rc;
-> +			phy->irq = rc;
-> +		}
->  	}
-
-The outer if is merely protecting against no irq array being allocated
-for the bus. Would not the following be better:
-
-	rc = irq_of_parse_and_map(child, 0);
-	if (rc > 0) {
-		phy->irq = rc;
-		if (mdio->irq)
-			mdio->irq[addr] = rc;
-	}
-
-g.
+Thanks,
+Jinsong
