@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaBRXGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:06:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51067 "EHLO
+	id S1754103AbaBRXG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:06:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51059 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234AbaBRWqz (ORCPT
+	with ESMTP id S1753223AbaBRWqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:55 -0500
+	Tue, 18 Feb 2014 17:46:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.12 06/32] NFSv4.1: nfs4_destroy_session must call rpc_destroy_waitqueue
-Date: Tue, 18 Feb 2014 14:47:06 -0800
-Message-Id: <20140218224500.286168167@linuxfoundation.org>
+        Harald Freudenberger <freude@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.12 04/32] crypto: s390 - fix des and des3_ede cbc concurrency issue
+Date: Tue, 18 Feb 2014 14:47:04 -0800
+Message-Id: <20140218224500.225055206@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
 References: <20140218224500.101465031@linuxfoundation.org>
@@ -28,103 +29,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-commit 20b9a9024540a775395d5d1f41eec0ec6ec41f9b upstream.
+commit adc3fcf1552b6e406d172fd9690bbd1395053d13 upstream.
 
-There may still be timers active on the session waitqueues. Make sure
-that we kill them before freeing the memory.
+In s390 des and des3_ede cbc mode the iv value is not protected
+against concurrency access and modifications from another running
+en/decrypt operation which is using the very same tfm struct
+instance. This fix copies the iv to the local stack before
+the crypto operation and stores the value back when done.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c  |    2 +-
- fs/nfs/nfs4session.c |   25 ++++++++++++++++++++-----
- fs/nfs/nfs4session.h |    2 +-
- 3 files changed, 22 insertions(+), 7 deletions(-)
+ arch/s390/crypto/des_s390.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -169,7 +169,7 @@ void nfs41_shutdown_client(struct nfs_cl
- void nfs40_shutdown_client(struct nfs_client *clp)
- {
- 	if (clp->cl_slot_tbl) {
--		nfs4_release_slot_table(clp->cl_slot_tbl);
-+		nfs4_shutdown_slot_table(clp->cl_slot_tbl);
- 		kfree(clp->cl_slot_tbl);
- 	}
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -105,29 +105,35 @@ static int ecb_desall_crypt(struct blkci
  }
---- a/fs/nfs/nfs4session.c
-+++ b/fs/nfs/nfs4session.c
-@@ -231,14 +231,23 @@ out:
+ 
+ static int cbc_desall_crypt(struct blkcipher_desc *desc, long func,
+-			    u8 *iv, struct blkcipher_walk *walk)
++			    struct blkcipher_walk *walk)
+ {
++	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	int ret = blkcipher_walk_virt(desc, walk);
+ 	unsigned int nbytes = walk->nbytes;
++	struct {
++		u8 iv[DES_BLOCK_SIZE];
++		u8 key[DES3_KEY_SIZE];
++	} param;
+ 
+ 	if (!nbytes)
+ 		goto out;
+ 
+-	memcpy(iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.key, ctx->key, DES3_KEY_SIZE);
+ 	do {
+ 		/* only use complete blocks */
+ 		unsigned int n = nbytes & ~(DES_BLOCK_SIZE - 1);
+ 		u8 *out = walk->dst.virt.addr;
+ 		u8 *in = walk->src.virt.addr;
+ 
+-		ret = crypt_s390_kmc(func, iv, out, in, n);
++		ret = crypt_s390_kmc(func, &param, out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
+ 		nbytes &= DES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	} while ((nbytes = walk->nbytes));
+-	memcpy(walk->iv, iv, DES_BLOCK_SIZE);
++	memcpy(walk->iv, param.iv, DES_BLOCK_SIZE);
+ 
+ out:
  	return ret;
- }
- 
-+/*
-+ * nfs4_release_slot_table - release all slot table entries
-+ */
-+static void nfs4_release_slot_table(struct nfs4_slot_table *tbl)
-+{
-+	nfs4_shrink_slot_table(tbl, 0);
-+}
-+
- /**
-- * nfs4_release_slot_table - release resources attached to a slot table
-+ * nfs4_shutdown_slot_table - release resources attached to a slot table
-  * @tbl: slot table to shut down
-  *
-  */
--void nfs4_release_slot_table(struct nfs4_slot_table *tbl)
-+void nfs4_shutdown_slot_table(struct nfs4_slot_table *tbl)
+@@ -179,22 +185,20 @@ static int cbc_des_encrypt(struct blkcip
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
  {
--	nfs4_shrink_slot_table(tbl, 0);
-+	nfs4_release_slot_table(tbl);
-+	rpc_destroy_wait_queue(&tbl->slot_tbl_waitq);
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, &walk);
  }
  
- /**
-@@ -422,7 +431,7 @@ void nfs41_update_target_slotid(struct n
- 	spin_unlock(&tbl->slot_tbl_lock);
- }
- 
--static void nfs4_destroy_session_slot_tables(struct nfs4_session *session)
-+static void nfs4_release_session_slot_tables(struct nfs4_session *session)
+ static int cbc_des_decrypt(struct blkcipher_desc *desc,
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
  {
- 	nfs4_release_slot_table(&session->fc_slot_table);
- 	nfs4_release_slot_table(&session->bc_slot_table);
-@@ -450,7 +459,7 @@ int nfs4_setup_session_slot_tables(struc
- 	if (status && tbl->slots == NULL)
- 		/* Fore and back channel share a connection so get
- 		 * both slot tables or neither */
--		nfs4_destroy_session_slot_tables(ses);
-+		nfs4_release_session_slot_tables(ses);
- 	return status;
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, &walk);
  }
  
-@@ -470,6 +479,12 @@ struct nfs4_session *nfs4_alloc_session(
- 	return session;
- }
- 
-+static void nfs4_destroy_session_slot_tables(struct nfs4_session *session)
-+{
-+	nfs4_shutdown_slot_table(&session->fc_slot_table);
-+	nfs4_shutdown_slot_table(&session->bc_slot_table);
-+}
-+
- void nfs4_destroy_session(struct nfs4_session *session)
+ static struct crypto_alg cbc_des_alg = {
+@@ -327,22 +331,20 @@ static int cbc_des3_encrypt(struct blkci
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
  {
- 	struct rpc_xprt *xprt;
---- a/fs/nfs/nfs4session.h
-+++ b/fs/nfs/nfs4session.h
-@@ -74,7 +74,7 @@ enum nfs4_session_state {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
  
- extern int nfs4_setup_slot_table(struct nfs4_slot_table *tbl,
- 		unsigned int max_reqs, const char *queue);
--extern void nfs4_release_slot_table(struct nfs4_slot_table *tbl);
-+extern void nfs4_shutdown_slot_table(struct nfs4_slot_table *tbl);
- extern struct nfs4_slot *nfs4_alloc_slot(struct nfs4_slot_table *tbl);
- extern void nfs4_free_slot(struct nfs4_slot_table *tbl, struct nfs4_slot *slot);
- extern void nfs4_slot_tbl_drain_complete(struct nfs4_slot_table *tbl);
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, &walk);
+ }
+ 
+ static int cbc_des3_decrypt(struct blkcipher_desc *desc,
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des3_alg = {
 
 
