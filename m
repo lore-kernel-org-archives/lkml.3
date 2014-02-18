@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707AbaBRSCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:02:24 -0500
-Received: from imap.thunk.org ([74.207.234.97]:59636 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754344AbaBRSCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:02:23 -0500
-Date: Tue, 18 Feb 2014 13:02:17 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 fixes for 3.14
-Message-ID: <20140218180217.GA7810@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
-References: <20140218165426.GA1482@thunk.org>
+	id S1754907AbaBRSCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:02:31 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:38953 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344AbaBRSC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 13:02:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218165426.GA1482@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <100D68C7BA14664A8938383216E40DE04062DEA1@FMSMSX114.amr.corp.intel.com>
+References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
+	<53035FE2.4080300@redhat.com>
+	<100D68C7BA14664A8938383216E40DE04062DEA1@FMSMSX114.amr.corp.intel.com>
+Date: Tue, 18 Feb 2014 10:02:26 -0800
+X-Google-Sender-Auth: z_v864ZoM7GgVzBFl_eF_zb50j4
+Message-ID: <CA+55aFzqZ2S==NyWG67hNV1YsY-oXLjLvCR0JeiHGJOfnoGJBg@mail.gmail.com>
+Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if they
+ are in page cache
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andi Kleen <ak@linux.intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whoops, I realized the previous pull request had a few too many
-commits on it.  If you did merge it in, it's not a disaster, since
-they are low-risk cleanups.  But here's the tag moved a few commits
-earlier so we only have the stable-worthy bug fixes.
+On Tue, Feb 18, 2014 at 6:15 AM, Wilcox, Matthew R
+<matthew.r.wilcox@intel.com> wrote:
+> We don't really need to lock all the pages being returned to protect against truncate.  We only need to lock the one at the highest index, and check i_size while that lock is held since truncate_inode_pages_range() will block on any page that is locked.
+>
+> We're still vulnerable to holepunches, but there's no locking currently between holepunches and truncate, so we're no worse off now.
 
-Apologies for any possible confusion.
+It's not "holepunches and truncate", it's "holepunches and page
+mapping", and I do think we currently serialize the two - the whole
+"check page->mapping still being non-NULL" before mapping it while
+having the page locked does that.
 
-						- Ted
+Besides, that per-page locking should serialize against truncate too.
+No, there is no "global" serialization, but there *is* exactly that
+page-level serialization where both truncation and hole punching end
+up making sure that the page no longer exists in the page cache and
+isn't mapped.
 
-The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+I'm just claiming that *because* of the way rmap works for file
+mappings (walking the i_mapped list and page tables), we should
+actually be ok.  The anonymous rmap list is protected by the page
+lock, but the file-backed rmap is protected by the pte lock (well, and
+the "i_mmap_mutex" that in turn protects the i_mmap list etc).
 
-  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
-
-for you to fetch changes up to 92e3b40537707001d17bbad800d150ab04e53bf4:
-
-  jbd2: fix use after free in jbd2_journal_start_reserved() (2014-02-17 20:33:01 -0500)
-
-----------------------------------------------------------------
-Miscellaneous ext4 bug fixes for v3.14
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      jbd2: fix use after free in jbd2_journal_start_reserved()
-
-Eric Whitney (1):
-      ext4: fix xfstest generic/299 block validity failures
-
-Theodore Ts'o (4):
-      ext4: don't try to modify s_flags if the the file system is read-only
-      ext4: fix online resize with very large inode tables
-      ext4: fix online resize with a non-standard blocks per group setting
-      ext4: don't leave i_crtime.tv_sec uninitialized
-
-Zheng Liu (1):
-      ext4: fix error paths in swap_inode_boot_loader()
-
- fs/ext4/ext4.h        |  2 ++
- fs/ext4/extents.c     |  1 +
- fs/ext4/ioctl.c       |  3 ++-
- fs/ext4/resize.c      | 34 +++++++++++++++++++++-------------
- fs/ext4/super.c       | 20 +++++++++++++-------
- fs/jbd2/transaction.c |  6 ++++--
- 6 files changed, 43 insertions(+), 23 deletions(-)
-
+       Linus
