@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaBRUSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:18:14 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:34099 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbaBRUSL (ORCPT
+	id S1752198AbaBRUSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:18:38 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53653 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600AbaBRUSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:18:11 -0500
-Date: Tue, 18 Feb 2014 12:18:07 -0800
-From: Jens Axboe <axboe@kernel.dk>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bio: don't write "bio: create slab" messages to syslog
-Message-ID: <20140218201807.GB25515@kernel.dk>
-References: <alpine.LRH.2.02.1402181307200.30436@file01.intranet.prod.int.rdu2.redhat.com>
+	Tue, 18 Feb 2014 15:18:36 -0500
+Message-ID: <5303C018.1020707@wwwdotorg.org>
+Date: Tue, 18 Feb 2014 13:18:32 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1402181307200.30436@file01.intranet.prod.int.rdu2.redhat.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
+        jinchoi@broadcom.com, Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+References: <cover.1392273722.git.viresh.kumar@linaro.org>	<52FE71BD.3020103@wwwdotorg.org>	<2869027.iYHxWOSS2C@vostro.rjw.lan>	<52FEAECA.5080905@wwwdotorg.org> <CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com>
+In-Reply-To: <CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18 2014, Mikulas Patocka wrote:
-> When using device mapper, there are many "bio: create slab" messages in
-> the log. Device mapper targets have different front_pad, so each time when
-> we load a target that wasn't loaded before, we allocate a slab with the
-> appropriate front_pad and there is associated "bio: create slab" message.
+On 02/17/2014 02:20 AM, Viresh Kumar wrote:
+> On 15 February 2014 05:33, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 02/14/2014 03:23 PM, Rafael J. Wysocki wrote:
 > 
-> This patch removes these messages, there is no need for them.
+>>> Well, it would be good to verify which part, then.
+>>
+>> Patch 2/7 appears to stop that message from being printed during
+>> suspend, and perhaps reduce the number of times it's printed during
+>> resume. Patch 7/7 stops the message being printed at all.
+>>
+>> Looking at patch 7, I wonder if it's simply because tegra_target() was
+>> modified never to return -EBUSY, so the bug is still there, but it's
+>> just been hidden.
+> 
+> No, the bug is removed now. Its hidden in current linus/master :)
 
-Agreed, it's time to kill off that message. Applied, thanks.
+I'm not sure what that means; I still see the message:
 
--- 
-Jens Axboe
+cpufreq: __cpufreq_driver_target: Failed to change cpu frequency: -16
 
+... in Linus's tree (805937cf45f9 "Merge tag 'ext4_for_linus_stable' of
+git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4").
