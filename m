@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaBRWqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:16 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:48881 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400AbaBRWqD (ORCPT
+	id S1754653AbaBRX3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:29:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50825 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696AbaBRWqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:03 -0500
-Date: Tue, 18 Feb 2014 14:46:01 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus <torvalds@linux-foundation.org>, nacc@linux.vnet.ibm.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 ] mm readahead: Fix readahead fail for memoryless cpu
- and limit readahead pages
-In-Reply-To: <20140218143838.aee7a4f0c94ab28b3b04c1e4@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1402181441360.20772@chino.kir.corp.google.com>
-References: <1392708338-19685-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <alpine.DEB.2.02.1402181421590.20772@chino.kir.corp.google.com> <20140218143838.aee7a4f0c94ab28b3b04c1e4@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 18 Feb 2014 17:46:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Meelis Roos <mroos@linux.ee>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.4 04/24] x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
+Date: Tue, 18 Feb 2014 14:46:51 -0800
+Message-Id: <20140218224550.345959365@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
+References: <20140218224550.221535225@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Feb 2014, Andrew Morton wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> > I'm not sure I understand why we want to be independent of PAGE_SIZE since 
-> > we're still relying on PAGE_CACHE_SIZE.  Don't you mean to do
-> > 
-> > #define MAX_READAHEAD	((512*PAGE_SIZE)/PAGE_CACHE_SIZE)
-> 
-> MAX_READAHEAD is in units of "pages".
-> 
-> This:
-> 
-> +#define MAX_READAHEAD   ((512*4096)/PAGE_CACHE_SIZE)
-> 
-> means "two megabytes", and is implemented in a way to ensure that
-> MAX_READAHEAD=2mb on 4k pagesize as well as on 64k pagesize.  Because
-> we don't want variations in PAGE_SIZE to cause alterations in readahead
-> behavior.
-> 
+------------------
 
-Ah, ok, so 2MB is the magic value that we limit readhead to on all 
-architectures.  512 * 4096 is a strange way to write 2MB, but ok :)
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+
+commit 6583327c4dd55acbbf2a6f25e775b28b3abf9a42 upstream.
+
+Commit d61931d89b, "x86: Add optimized popcnt variants" introduced
+compile flag -fcall-saved-rdi for lib/hweight.c. When combined with
+options -fprofile-arcs and -O2, this flag causes gcc to generate
+broken constructor code. As a result, a 64 bit x86 kernel compiled
+with CONFIG_GCOV_PROFILE_ALL=y prints message "gcov: could not create
+file" and runs into sproadic BUGs during boot.
+
+The gcc people indicate that these kinds of problems are endemic when
+using ad hoc calling conventions.  It is therefore best to treat any
+file compiled with ad hoc calling conventions as an isolated
+environment and avoid things like profiling or coverage analysis,
+since those subsystems assume a "normal" calling conventions.
+
+This patch avoids the bug by excluding lib/hweight.o from coverage
+profiling.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/52F3A30C.7050205@linux.vnet.ibm.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ lib/Makefile |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -41,6 +41,7 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock
+ lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
+ 
++GCOV_PROFILE_hweight.o := n
+ CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
+ 
+
+
