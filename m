@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaBRXU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:20:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50963 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040AbaBRWqf (ORCPT
+	id S1753691AbaBRXUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:20:55 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59712 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753131AbaBRXUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lior Amsalem <alior@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.10 06/26] irqchip: armada-370-xp: fix IPI race condition
-Date: Tue, 18 Feb 2014 14:47:02 -0800
-Message-Id: <20140218224530.590215851@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
-References: <20140218224530.398913499@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 18 Feb 2014 18:20:53 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Date: Wed, 19 Feb 2014 00:35:43 +0100
+Message-ID: <1920764.8Poj9R8nZQ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392765307.3488.1.camel@x230.lan>
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com> <1511662.Ly2fOjCGKz@vostro.rjw.lan> <1392765307.3488.1.camel@x230.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, February 18, 2014 11:15:08 PM Matthew Garrett wrote:
+> On Wed, 2014-02-19 at 00:26 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, February 18, 2014 11:28:29 AM Matthew Garrett wrote:
+> > > 
+> > > The ACPI IPMI driver implements IPMI operation region support for the ACPI
+> > > core. Systems that declare ACPI operation regions may reference them at any
+> > > time, including during kernel initialisation. These accesses will fail
+> > > unless the ACPI IPMI driver is present, and undesirable system behaviour
+> > > may result. Set the default to Y in order to encourage distributions and
+> > > users to configure kernels to avoid awkward surprises.
+> > 
+> > Do you have any examples of problems caused by that or is this just theoretical
+> > at the moment?
+> 
+> For example, if you load the ACPI power meter driver before you've
+> installed the ACPI IPMI driver you'll typically get failures (most
+> vendors implement it via IPMI).
 
-------------------
+Well, any specific machine from any specific vendor?
 
-From: Lior Amsalem <alior@marvell.com>
-
-commit a6f089e95b1e08cdea9633d50ad20aa5d44ba64d upstream.
-
-In the Armada 370/XP driver, when we receive an IRQ 0, we read the
-list of doorbells that caused the interrupt from register
-ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS. This gives the list of IPIs that
-were generated. However, instead of acknowledging only the IPIs that
-were generated, we acknowledge *all* the IPIs, by writing
-~IPI_DOORBELL_MASK in the ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS register.
-
-This creates a race condition: if a new IPI that isn't part of the
-ones read into the temporary "ipimask" variable is fired before we
-acknowledge all IPIs, then we will simply loose it. This is causing
-scheduling hangs on SMP intensive workloads.
-
-It is important to mention that this ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS
-register has the following behavior: "A CPU write of 0 clears the bits
-in this field. A CPU write of 1 has no effect". This is what allows us
-to simply write ~ipimask to acknoledge the handled IPIs.
-
-Notice that the same problem is present in the MSI implementation, but
-it will be fixed as a separate patch, so that this IPI fix can be
-pushed to older stable versions as appropriate (all the way to 3.8),
-while the MSI code only appeared in 3.13.
-
-Signed-off-by: Lior Amsalem <alior@marvell.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: 344e873e5657e8dc0 'arm: mvebu: Add IPI support via doorbells'
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/irqchip/irq-armada-370-xp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -229,7 +229,7 @@ armada_370_xp_handle_irq(struct pt_regs
- 						ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS)
- 				& IPI_DOORBELL_MASK;
- 
--			writel(~IPI_DOORBELL_MASK, per_cpu_int_base +
-+			writel(~ipimask, per_cpu_int_base +
- 				ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS);
- 
- 			/* Handle all pending doorbells */
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
