@@ -1,133 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaBRUzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:55:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592AbaBRUzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:55:21 -0500
-Message-ID: <1392756919.2165.34.camel@flatline.rdu.redhat.com>
-Subject: Re: [PATCH] audit: add arch field to seccomp event log
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Steve Grubb <sgrubb@redhat.com>
-Date: Tue, 18 Feb 2014 15:55:19 -0500
-In-Reply-To: <20140218205044.GL16640@madcap2.tricolour.ca>
-References: <4bc8c03bda84e004c331546e228b334811b03254.1392409147.git.rgb@redhat.com>
-	 <1392410961.2760.17.camel@localhost>
-	 <20140214205057.GF18807@madcap2.tricolour.ca>
-	 <20140214205218.GG18807@madcap2.tricolour.ca>
-	 <1392412322.2760.21.camel@localhost>
-	 <20140218205044.GL16640@madcap2.tricolour.ca>
-Content-Type: text/plain; charset="UTF-8"
+	id S1752266AbaBRU4j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:56:39 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:35801 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaBRU4i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 15:56:38 -0500
+Date: Tue, 18 Feb 2014 15:56:32 -0500 (EST)
+Message-Id: <20140218.155632.1364973664624371603.davem@davemloft.net>
+To: amirv@mellanox.com
+Cc: agordeev@redhat.com, linux-kernel@vger.kernel.org,
+        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: ixgbevf: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140218120136.GA8770@mtl-eit-vdi-22.mtl.labs.mlnx>
+References: <cover.1392717502.git.agordeev@redhat.com>
+	<9ee830cfd4b417f230f77dd37256ca8e4396ecbe.1392717503.git.agordeev@redhat.com>
+	<20140218120136.GA8770@mtl-eit-vdi-22.mtl.labs.mlnx>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 18 Feb 2014 12:56:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-18 at 15:50 -0500, Richard Guy Briggs wrote:
-> On 14/02/14, Eric Paris wrote:
-> > On Fri, 2014-02-14 at 15:52 -0500, Richard Guy Briggs wrote:
-> > > On 14/02/14, Richard Guy Briggs wrote:
-> > > > On 14/02/14, Eric Paris wrote:
-> > > > > On Fri, 2014-02-14 at 15:23 -0500, Richard Guy Briggs wrote:
-> > > > > > The AUDIT_SECCOMP record looks something like this:
-> > > > > > 
-> > > > > > type=SECCOMP msg=audit(1373478171.953:32775): auid=4325 uid=4325 gid=4325 ses=1 subj=unconfined_u:unconfined_r:unconfined_t:s0 pid=12381 comm="test" sig=31 syscall=231 compat=0 ip=0x39ea8bca89 code=0x0
-> > > > > > 
-> > > > > > In order to determine what syscall 231 maps to, we need to have the arch= field right before it.
-> > > > > > 
-> > > > > > To see the event, compile this test.c program:
-> > > > > > 
-> > > > > > =====
-> > > > > > int main(void)
-> > > > > > {
-> > > > > >         return seccomp_load(seccomp_init(SCMP_ACT_KILL));
-> > > > > > }
-> > > > > > =====
-> > > > > > 
-> > > > > > gcc -g test.c -o test -lseccomp
-> > > > > > 
-> > > > > > After running the program, find the record by:  ausearch --start recent -m SECCOMP -i
-> > > > > > ---
-> > > > > >  kernel/auditsc.c |    1 +
-> > > > > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > > > > 
-> > > > > > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> > > > > > index 6874c1f..c464d44 100644
-> > > > > > --- a/kernel/auditsc.c
-> > > > > > +++ b/kernel/auditsc.c
-> > > > > > @@ -2412,6 +2412,7 @@ void __audit_seccomp(unsigned long syscall, long signr, int code)
-> > > > > >  		return;
-> > > > > >  	audit_log_task(ab);
-> > > > > >  	audit_log_format(ab, " sig=%ld", signr);
-> > > > > > +	audit_log_format(ab, " arch=%x", current->audit_context->arch);
-> > > > > 
-> > > > > 
-> > > > > What happens if the task does not have current->audit_context allocated?
-> > > > > Seems possible if signr is non-zero...
-> > > > 
-> > > > I had assumed that since we got this far, that there was an audit
-> > > > context.  This was my first patch:
-> > > 
-> > > Sorry, pulled the trigger too fast:
-> > > 
-> > > ---
-> > >  kernel/auditsc.c |    6 ++++++
-> > >  1 files changed, 6 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> > > index 6874c1f..3023d03 100644
-> > > --- a/kernel/auditsc.c
-> > > +++ b/kernel/auditsc.c
-> > > @@ -2406,12 +2406,18 @@ void audit_core_dumps(long signr)
-> > >  void __audit_seccomp(unsigned long syscall, long signr, int code)
-> > >  {
-> > >         struct audit_buffer *ab;
-> > > +       struct audit_context *context audit_get_context(current, 0, 0);
-> > 
-> > missing '='   but this isn't what audit_get_context() does...   it's
-> > crappy naming...    I'd think a combo of audit_dummy_context() and
-> > current->audit_context would be most appropriate.
-> 
-> Ok.  I think I finally understand audit_dummy_context().  Thanks for the
-> hint.  However, it appears it is not useful in this sitation, since if
-> there is an audit_context, even a dummy context, it appears arch is
-> filled in.
+From: Amir Vadai <amirv@mellanox.com>
+Date: Tue, 18 Feb 2014 14:01:38 +0200
 
-get a good commit message and feel free to add my Acked-by.
-
--Eric
+> On 18/02/14 11:11 +0100, Alexander Gordeev wrote:
+>> As result of deprecation of MSI-X/MSI enablement functions
+>> pci_enable_msix() and pci_enable_msi_block() all drivers
+>> using these two interfaces need to be updated to use the
+>> new pci_enable_msi_range() and pci_enable_msix_range()
+>> interfaces.
+>> 
+>> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+>> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+>> Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+>> Cc: Bruce Allan <bruce.w.allan@intel.com>
+>> Cc: e1000-devel@lists.sourceforge.net
+>> Cc: netdev@vger.kernel.org
+>> Cc: linux-pci@vger.kernel.org
+>> ---
 > 
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> @@ -2406,12 +2406,18 @@ void audit_core_dumps(long signr)
->  void __audit_seccomp(unsigned long syscall, long signr, int code)
->  {
->  	struct audit_buffer *ab;
-> +	struct audit_context *context = current->audit_context;
->  
->  	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
->  	if (unlikely(!ab))
->  		return;
->  	audit_log_task(ab);
->  	audit_log_format(ab, " sig=%ld", signr);
-> +	audit_log_format(ab, " arch=");
-> +	if (context)
-> +		audit_log_format(ab, "%x", context->arch);
-> +	else
-> +		audit_log_format(ab, "(null)");
->  	audit_log_format(ab, " syscall=%ld", syscall);
->  	audit_log_format(ab, " compat=%d", is_compat_task());
->  	audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> Acked-By: Amir Vadai <amirv@mellanox.com>
 
-
+Since you obviously didn't intend to ACK this, I removed this ACK when
+I committed the series.
