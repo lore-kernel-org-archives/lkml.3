@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220AbaBRXTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:19:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50974 "EHLO
+	id S1753649AbaBRXTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:19:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50978 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987AbaBRWqh (ORCPT
+	with ESMTP id S1753072AbaBRWqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Feb 2014 17:46:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kyle McMartin <kyle@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Mark Salter <msalter@redhat.com>,
         Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.10 08/26] arm64: vdso: prevent ld from aligning PT_LOAD segments to 64k
-Date: Tue, 18 Feb 2014 14:47:04 -0800
-Message-Id: <20140218224530.645503171@linuxfoundation.org>
+Subject: [PATCH 3.10 09/26] arm64: Invalidate the TLB when replacing pmd entries during boot
+Date: Tue, 18 Feb 2014 14:47:05 -0800
+Message-Id: <20140218224530.673384045@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
 References: <20140218224530.398913499@linuxfoundation.org>
@@ -29,41 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 40507403485fcb56b83d6ddfc954e9b08305054c upstream.
+commit a55f9929a9b257f84b6cc7b2397379cabd744a22 upstream.
 
-Whilst the text segment for our VDSO is marked as PT_LOAD in the ELF
-headers, it is mapped by the kernel and not actually subject to
-demand-paging. ld doesn't realise this, and emits a p_align field of 64k
-(the maximum supported page size), which conflicts with the load address
-picked by the kernel on 4k systems, which will be 4k aligned. This
-causes GDB to fail with "Failed to read a valid object file image from
-memory" when attempting to load the VDSO.
+With the 64K page size configuration, __create_page_tables in head.S
+maps enough memory to get started but using 64K pages rather than 512M
+sections with a single pgd/pud/pmd entry pointing to a pte table.
+create_mapping() may override the pgd/pud/pmd table entry with a block
+(section) one if the RAM size is more than 512MB and aligned correctly.
+For the end of this block to be accessible, the old TLB entry must be
+invalidated.
 
-This patch passes the -n option to ld, which prevents it from aligning
-PT_LOAD segments to the maximum page size.
-
-Reported-by: Kyle McMartin <kyle@redhat.com>
-Acked-by: Kyle McMartin <kyle@redhat.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reported-by: Mark Salter <msalter@redhat.com>
+Tested-by: Mark Salter <msalter@redhat.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/vdso/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/mm/mmu.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/arch/arm64/kernel/vdso/Makefile
-+++ b/arch/arm64/kernel/vdso/Makefile
-@@ -48,7 +48,7 @@ $(obj-vdso): %.o: %.S
- 
- # Actual build commands
- quiet_cmd_vdsold = VDSOL $@
--      cmd_vdsold = $(CC) $(c_flags) -Wl,-T $^ -o $@
-+      cmd_vdsold = $(CC) $(c_flags) -Wl,-n -Wl,-T $^ -o $@
- quiet_cmd_vdsoas = VDSOA $@
-       cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
- 
+--- a/arch/arm64/mm/mmu.c
++++ b/arch/arm64/mm/mmu.c
+@@ -203,10 +203,18 @@ static void __init alloc_init_pmd(pud_t
+ 	do {
+ 		next = pmd_addr_end(addr, end);
+ 		/* try section mapping first */
+-		if (((addr | next | phys) & ~SECTION_MASK) == 0)
++		if (((addr | next | phys) & ~SECTION_MASK) == 0) {
++			pmd_t old_pmd =*pmd;
+ 			set_pmd(pmd, __pmd(phys | prot_sect_kernel));
+-		else
++			/*
++			 * Check for previous table entries created during
++			 * boot (__create_page_tables) and flush them.
++			 */
++			if (!pmd_none(old_pmd))
++				flush_tlb_all();
++		} else {
+ 			alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys));
++		}
+ 		phys += next - addr;
+ 	} while (pmd++, addr = next, addr != end);
+ }
 
 
