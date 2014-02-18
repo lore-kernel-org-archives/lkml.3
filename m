@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261AbaBRQPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:15:34 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43894 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610AbaBRQPa (ORCPT
+	id S1756325AbaBRQP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:15:57 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:57286 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972AbaBRQPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:15:30 -0500
-Date: Tue, 18 Feb 2014 10:13:03 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] usb: chipidea: msm: Add device tree binding
- information
-Message-ID: <20140218161303.GD31116@joshc.qualcomm.com>
-References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
- <1392729681-21022-2-git-send-email-iivanov@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392729681-21022-2-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 18 Feb 2014 11:15:55 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2] of_mdio: fix phy interrupt passing
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-kernel@lists.codethink.co.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-sh@vger.kernel.org, sergei.shtylyov@cogentembedded.com,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+In-Reply-To: <1392725818-558-1-git-send-email-ben.dooks@codethink.co.uk>
+References: <1392725818-558-1-git-send-email-ben.dooks@codethink.co.uk>
+Date: Tue, 18 Feb 2014 16:15:51 +0000
+Message-Id: <20140218161551.44A52C40517@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 03:21:19PM +0200, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Tue, 18 Feb 2014 12:16:58 +0000, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+> The of_mdiobus_register_phy() is not setting phy->irq thus causing
+> some drivers to incorrectly assume that the PHY does not have an
+> IRQ associated with it. Not only do some drivers report no IRQ
+> they do not install an interrupt handler for the PHY.
 > 
-> Document device tree binding information as required by
-> the Qualcomm USB controller.
+> Simplify the code setting irq and set the phy->irq at the same
+> time so that we cover the following issues, which should cover
+> all the cases the code will find:
 > 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> - Set phy->irq if node has irq property and mdio->irq is NULL
+> - Set phy->irq if node has no irq and mdio->irq is not NULL
+> - Leave phy->irq as PHY_POLL default if none of the above
+> 
+> This fixes the issue:
+>  net eth0: attached PHY 1 (IRQ -1) to driver Micrel KSZ8041RNLI
+> 
+> to the correct:
+>  net eth0: attached PHY 1 (IRQ 416) to driver Micrel KSZ8041RNLI
+> 
+> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+
+Looks okay to me
+
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
+
+> 
 > ---
->  .../devicetree/bindings/usb/msm-hsusb.txt          |   17 +++++++++++++++++
+> Since v1:
+> 	- Updated phy->irq setting code
+> 	- Deal with issue if mdio->irq array NULL
+> 
+> Notes:
+> 
+> It was discussed if this should be two patches, but we end up
+> making enough changes in #2 the same area as #1 means that we
+> basically rewrite #1 in #2. So keep it as 1 patch.
+> ---
+>  drivers/of/of_mdio.c | 16 +++++++++-------
+>  1 file changed, 9 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+> index 875b7b6..46d95fc 100644
+> --- a/drivers/of/of_mdio.c
+> +++ b/drivers/of/of_mdio.c
+> @@ -44,7 +44,7 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
+>  {
+>  	struct phy_device *phy;
+>  	bool is_c45;
+> -	int rc, prev_irq;
+> +	int rc;
+>  	u32 max_speed = 0;
+>  
+>  	is_c45 = of_device_is_compatible(child,
+> @@ -54,12 +54,14 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
+>  	if (!phy || IS_ERR(phy))
+>  		return 1;
+>  
+> -	if (mdio->irq) {
+> -		prev_irq = mdio->irq[addr];
+> -		mdio->irq[addr] =
+> -			irq_of_parse_and_map(child, 0);
+> -		if (!mdio->irq[addr])
+> -			mdio->irq[addr] = prev_irq;
+> +	rc = irq_of_parse_and_map(child, 0);
+> +	if (rc > 0) {
+> +		phy->irq = rc;
+> +		if (mdio->irq)
+> +			mdio->irq[addr] = rc;
+> +	} else {
+> +		if (mdio->irq)
+> +			phy->irq = mdio->irq[addr];
+>  	}
+>  
+>  	/* Associate the OF node with the device structure so it
+> -- 
+> 1.8.5.3
+> 
 
-Is this really the appropriate place to document this?  It seems like
-this binding doc should be merged with the i.MX ci13xxx binding in a
-common ci13xxx doc.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
