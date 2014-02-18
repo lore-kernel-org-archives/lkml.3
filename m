@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaBRKHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:07:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34344 "EHLO mx1.redhat.com"
+	id S1754959AbaBRKHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:07:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7863 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765AbaBRKGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:06:50 -0500
+	id S1754757AbaBRKGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:06:49 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>, Casey Leedom <leedom@chelsio.com>,
         netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH net-next 09/35] cxgb4vf: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 18 Feb 2014 11:08:01 +0100
-Message-Id: <fe62af829f2021225aaaf8ef2bf43e1bfa143585.1392717503.git.agordeev@redhat.com>
+Subject: [PATCH net-next 08/35] cxgb4vf: Remove superfluous call to pci_disable_msix()
+Date: Tue, 18 Feb 2014 11:08:00 +0100
+Message-Id: <88e8e62d2dd643c9237c9cdb86fe19444f3651b8.1392717503.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
 References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+There is no need to call pci_disable_msix() in case
+the previous call to pci_enable_msix() failed
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 Cc: Casey Leedom <leedom@chelsio.com>
 Cc: netdev@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- .../net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c    |   34 +++++++++----------
- 1 files changed, 16 insertions(+), 18 deletions(-)
+ .../net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c    |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c b/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
-index 509fed9..1d0fe9b 100644
+index 0899c09..509fed9 100644
 --- a/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
 +++ b/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
-@@ -2444,7 +2444,7 @@ static void reduce_ethqs(struct adapter *adapter, int n)
-  */
- static int enable_msix(struct adapter *adapter)
- {
--	int i, err, want, need;
-+	int i, want, need, nqsets;
- 	struct msix_entry entries[MSIX_ENTRIES];
- 	struct sge *s = &adapter->sge;
- 
-@@ -2460,25 +2460,23 @@ static int enable_msix(struct adapter *adapter)
- 	 */
- 	want = s->max_ethqsets + MSIX_EXTRAS;
- 	need = adapter->params.nports + MSIX_EXTRAS;
--	while ((err = pci_enable_msix(adapter->pdev, entries, want)) >= need)
--		want = err;
- 
--	if (err == 0) {
--		int nqsets = want - MSIX_EXTRAS;
--		if (nqsets < s->max_ethqsets) {
--			dev_warn(adapter->pdev_dev, "only enough MSI-X vectors"
--				 " for %d Queue Sets\n", nqsets);
--			s->max_ethqsets = nqsets;
--			if (nqsets < s->ethqsets)
--				reduce_ethqs(adapter, nqsets);
--		}
--		for (i = 0; i < want; ++i)
--			adapter->msix_info[i].vec = entries[i].vector;
--	} else if (err > 0) {
--		dev_info(adapter->pdev_dev, "only %d MSI-X vectors left,"
--			 " not using MSI-X\n", err);
-+	want = pci_enable_msix_range(adapter->pdev, entries, need, want);
-+	if (want < 0)
-+		return want;
-+
-+	nqsets = want - MSIX_EXTRAS;
-+	if (nqsets < s->max_ethqsets) {
-+		dev_warn(adapter->pdev_dev, "only enough MSI-X vectors"
-+			 " for %d Queue Sets\n", nqsets);
-+		s->max_ethqsets = nqsets;
-+		if (nqsets < s->ethqsets)
-+			reduce_ethqs(adapter, nqsets);
+@@ -2475,7 +2475,6 @@ static int enable_msix(struct adapter *adapter)
+ 		for (i = 0; i < want; ++i)
+ 			adapter->msix_info[i].vec = entries[i].vector;
+ 	} else if (err > 0) {
+-		pci_disable_msix(adapter->pdev);
+ 		dev_info(adapter->pdev_dev, "only %d MSI-X vectors left,"
+ 			 " not using MSI-X\n", err);
  	}
--	return err;
-+	for (i = 0; i < want; ++i)
-+		adapter->msix_info[i].vec = entries[i].vector;
-+
-+	return 0;
- }
- 
- static const struct net_device_ops cxgb4vf_netdev_ops	= {
 -- 
 1.7.7.6
 
