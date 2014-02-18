@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166AbaBRPfG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:35:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50541 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756275AbaBRPa6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 10:30:58 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
-        lgirdwood@gmail.com, lars@metafoo.de, peter.ujfalusi@ti.com,
-        jarkko.nikula@bitmer.com, eric.y.miao@gmail.com,
-        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux@arm.linux.org.uk
-Subject: [PATCH 09/17 v2] ASoC: wm8996: Update locking around use of DAPM pin API
-Date: Tue, 18 Feb 2014 15:22:20 +0000
-Message-Id: <1392736948-26623-10-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S1756682AbaBRPft (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:35:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54756 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756212AbaBRPfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 10:35:47 -0500
+From: Mateusz Guzik <mguzik@redhat.com>
+To: linux-aio@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] aio: simplify exit_aio
+Date: Tue, 18 Feb 2014 16:35:39 +0100
+Message-Id: <1392737739-21685-1-git-send-email-mguzik@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pin updates in this driver look like they are intended to be done
-atomically, update to do so.
+Since there are no other callers which can manipulate ioctx_table at
+this stage it is not necessary to reload table pointer each time nor
+to traverse it under rcu_read_lock
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+While here convert the loop to more readable for () and fix the
+comment (aio_free_ring -> kill_ioctx).
+
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
 ---
- sound/soc/codecs/wm8996.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ fs/aio.c | 33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8996.c b/sound/soc/codecs/wm8996.c
-index 1a7655b..d565d0a 100644
---- a/sound/soc/codecs/wm8996.c
-+++ b/sound/soc/codecs/wm8996.c
-@@ -2251,6 +2251,7 @@ int wm8996_detect(struct snd_soc_codec *codec, struct snd_soc_jack *jack,
- 		  wm8996_polarity_fn polarity_cb)
+diff --git a/fs/aio.c b/fs/aio.c
+index 062a5f6..0701181 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -766,38 +766,35 @@ void exit_aio(struct mm_struct *mm)
  {
- 	struct wm8996_priv *wm8996 = snd_soc_codec_get_drvdata(codec);
-+	struct snd_soc_dapm_context *dapm = &codec->dapm;
+ 	struct kioctx_table *table;
+ 	struct kioctx *ctx;
+-	unsigned i = 0;
++	unsigned i;
  
- 	wm8996->jack = jack;
- 	wm8996->detecting = true;
-@@ -2267,8 +2268,12 @@ int wm8996_detect(struct snd_soc_codec *codec, struct snd_soc_jack *jack,
- 			    WM8996_MICB2_DISCH, 0);
+-	while (1) {
+-		rcu_read_lock();
+-		table = rcu_dereference(mm->ioctx_table);
+-
+-		do {
+-			if (!table || i >= table->nr) {
+-				rcu_read_unlock();
+-				rcu_assign_pointer(mm->ioctx_table, NULL);
+-				if (table)
+-					kfree(table);
+-				return;
+-			}
++	rcu_read_lock();
++	table = rcu_dereference(mm->ioctx_table);
++	rcu_read_unlock();
  
- 	/* LDO2 powers the microphones, SYSCLK clocks detection */
--	snd_soc_dapm_force_enable_pin(&codec->dapm, "LDO2");
--	snd_soc_dapm_force_enable_pin(&codec->dapm, "SYSCLK");
-+	snd_soc_dapm_mutex_lock(dapm);
+-			ctx = table->table[i++];
+-		} while (!ctx);
++	if (!table)
++		return;
+ 
+-		rcu_read_unlock();
++	for (i = 0; i < table->nr; i++) {
++		ctx = table->table[i];
++		if (!ctx)
++			continue;
+ 
+ 		/*
+ 		 * We don't need to bother with munmap() here -
+ 		 * exit_mmap(mm) is coming and it'll unmap everything.
+-		 * Since aio_free_ring() uses non-zero ->mmap_size
++		 * Since kill_ioctx() uses non-zero ->mmap_size
+ 		 * as indicator that it needs to unmap the area,
+-		 * just set it to 0; aio_free_ring() is the only
++		 * just set it to 0; kill_ioctx() is the only
+ 		 * place that uses ->mmap_size, so it's safe.
+ 		 */
+ 		ctx->mmap_size = 0;
+ 
+ 		kill_ioctx(mm, ctx);
+ 	}
 +
-+	snd_soc_dapm_force_enable_pin_unlocked(dapm, "LDO2");
-+	snd_soc_dapm_force_enable_pin_unlocked(dapm, "SYSCLK");
-+
-+	snd_soc_dapm_mutex_unlock(dapm);
++	rcu_assign_pointer(mm->ioctx_table, NULL);
++	kfree(table);
+ }
  
- 	/* We start off just enabling microphone detection - even a
- 	 * plain headphone will trigger detection.
+ static void put_reqs_available(struct kioctx *ctx, unsigned nr)
 -- 
-1.7.2.5
+1.8.3.1
 
