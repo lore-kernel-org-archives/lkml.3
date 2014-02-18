@@ -1,139 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087AbaBRRoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:44:20 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:55788 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312AbaBRRoR (ORCPT
+	id S1755147AbaBRRov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:44:51 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:37536 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754517AbaBRRot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:44:17 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] Circular locking dependency - DRM/CMA/MM/hotplug/...
-In-Reply-To: <53036D51.2070502@samsung.com>
-Organization: http://mina86.com/
-References: <20140211183543.GK26684@n2100.arm.linux.org.uk> <52FB9602.1000805@samsung.com> <20140212163317.GQ26684@n2100.arm.linux.org.uk> <53036D51.2070502@samsung.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140218:dri-devel@lists.freedesktop.org::4SJ62A6tBJA+yi8d:0000000000000000000000000000001epw
-X-Hashcash: 1:20:140218:linux@arm.linux.org.uk::YM31swOwsyxp8n/x:0000000000000000000000000000000000000003SkH
-X-Hashcash: 1:20:140218:linux-arm-kernel@lists.infradead.org::GXccj6RtY066jT0e:00000000000000000000000004Ctf
-X-Hashcash: 1:20:140218:airlied@linux.ie::8lzezZAZvrFQhCQK:08CDR
-X-Hashcash: 1:20:140218:m.szyprowski@samsung.com::fGkpeKa+ecmMNt3i:00000000000000000000000000000000000009rEM
-X-Hashcash: 1:20:140218:linux-kernel@vger.kernel.org::xgUFyQxdwdLddRVB:000000000000000000000000000000000JoHt
-Date: Tue, 18 Feb 2014 18:44:08 +0100
-Message-ID: <xa1t8ut8wc2f.fsf@mina86.com>
+	Tue, 18 Feb 2014 12:44:49 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+In-Reply-To: <1392740258.18779.7732.camel@triegel.csb>
+References: <1392321837.18779.3249.camel@triegel.csb>
+	<20140214020144.GO4250@linux.vnet.ibm.com>
+	<1392352981.18779.3800.camel@triegel.csb>
+	<20140214172920.GQ4250@linux.vnet.ibm.com>
+	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	<1392486310.18779.6447.camel@triegel.csb>
+	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	<1392666947.18779.6838.camel@triegel.csb>
+	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	<20140218030002.GA15857@linux.vnet.ibm.com>
+	<CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	<1392740258.18779.7732.camel@triegel.csb>
+Date: Tue, 18 Feb 2014 09:44:48 -0800
+X-Google-Sender-Auth: N80HvWSe2TrmpJOzVUZ7SHnEThY
+Message-ID: <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-
-> On 2014-02-12 17:33, Russell King - ARM Linux wrote:
->> What if we did these changes:
+On Tue, Feb 18, 2014 at 8:17 AM, Torvald Riegel <triegel@redhat.com> wrote:
 >>
->> struct page *dma_alloc_from_contiguous(struct device *dev, int count,
->>                                         unsigned int align)
->> {
->> ...
->>          mutex_lock(&cma_mutex);
->> ...
->>          for (;;) {
->>                  pageno =3D bitmap_find_next_zero_area(cma->bitmap, cma-=
->count,
->>                                                      start, count, mask);
->>                  if (pageno >=3D cma->count)
->>                          break;
+>>   "Consume operation: no reads in the current thread dependent on the
+>> value currently loaded can be reordered before this load"
+>
+> I can't remember seeing that language in the standard (ie, C or C++).
+> Where is this from?
+
+That's just for googling for explanations. I do have some old standard
+draft, but that doesn't have any concise definitions anywhere that I
+could find.
+
+>> and it could make a compiler writer say that value speculation is
+>> still valid, if you do it like this (with "ptr" being the atomic
+>> variable):
 >>
->>                  pfn =3D cma->base_pfn + pageno;
->> +               bitmap_set(cma->bitmap, pageno, count);
->> +               mutex_unlock(&cma_mutex);
->>                  ret =3D alloc_contig_range(pfn, pfn + count, MIGRATE_CM=
-A);
->> +               mutex_lock(&cma_mutex);
->>                  if (ret =3D=3D 0) {
->> -                       bitmap_set(cma->bitmap, pageno, count);
->>                          page =3D pfn_to_page(pfn);
->>                          break;
->> -               } else if (ret !=3D -EBUSY) {
->> +		}
->> +		bitmap_clear(cma->bitmap, pageno, count);
->> +		if (ret !=3D -EBUSY) {
->>                          break;
->>                  }
->> ...
->>          mutex_unlock(&cma_mutex);
->>          pr_debug("%s(): returned %p\n", __func__, page);
->>          return page;
->> }
+>>   value = ptr->val;
+>
+> I assume the load from ptr has mo_consume ordering?
 
-Like Marek said, this will fail if two concurrent calls to
-alloc_contig_range are made such that they operate on the same pageblock
-(which is possible as the allocated regions do not need to be pageblock
-aligned).
+Yes.
 
-Another mutex could be added just for this one call, but as I understand
-this would not solve the problem.
+>> into
+>>
+>>   tmp = ptr;
+>>   value = speculated.value;
+>>   if (unlikely(tmp != &speculated))
+>>     value = tmp->value;
+>>
+>> which is still bogus. The load of "ptr" does happen before the load of
+>> "value = speculated->value" in the instruction stream, but it would
+>> still result in the CPU possibly moving the value read before the
+>> pointer read at least on ARM and power.
+>
+> And surprise, in the C/C++ model the load from ptr is sequenced-before
+> the load from speculated, but there's no ordering constraint on the
+> reads-from relation for the value load if you use mo_consume on the ptr
+> load.  Thus, the transformed code has less ordering constraints than the
+> original code, and we arrive at the same outcome.
 
->> bool dma_release_from_contiguous(struct device *dev, struct page *pages,
->>                                   int count)
->> {
->> ...
->> +       free_contig_range(pfn, count);
->>          mutex_lock(&cma_mutex);
->>          bitmap_clear(cma->bitmap, pfn - cma->base_pfn, count);
->> -       free_contig_range(pfn, count);
->>          mutex_unlock(&cma_mutex);
->> ...
->> }
+Ok, good.
 
-This *should* be fine.  Didn't test it.
+> The standard is clear on what's required.  I strongly suggest reading
+> the formalization of the memory model by Batty et al.
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+Can you point to it? Because I can find a draft standard, and it sure
+as hell does *not* contain any clarity of the model. It has a *lot* of
+verbiage, but it's pretty much impossible to actually understand, even
+for somebody who really understands memory ordering.
 
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTA5voAAoJECBgQBJQdR/0IUoP/0QrRz+dF5SPqjnUVIuo0bl9
-97+SmjYHz2E86VgUKB3fXwD+Aj8nNqVLoyjX1BSPgteqhK0ivk187bDtCxEvGdGa
-z7K5KbNdPp5tMTti/YYbouXmRGD+w/5goyvbwoIe0FGbAoaFBrx0znYR3l2m2DpN
-45yS0OdJmzQJMJhv+Nj9dIjxT08HJSlcm/x1gvfdPJxx+CKKZHuT3L93fp9mpUx3
-VSz84AtIO+MHz6Oj/08c56c+1QDRVk3T2CMDzWiWA1Sry1oxebQUTTsR+kJC5tmu
-+PkKMSOZtbx9tQEBVdWQ1g852lLN+yBegZHutaeYAev292XUIxJrZi4v+eghlm1a
-zIJ9pC97tJ8Vuu7UVa0gmCCKGiXNxGe+FdR8oSFhngAbV0WjcWAIEDqzJ5ON0XwZ
-l4hQ2NlyF+obOvq4yEJA9Gajt0uo7iUXLkK0aEWJ3AP75ANFHY3N6YrHlwbzW39y
-pqp+LoIsb90aagtCkGN63OjJJwcE2wl5ldcYwNJN8DoKCFwiXGFHLPomPNNaturF
-9/v5T+2+BfN6QiFamn91hL+j2U4yh3+gSf8qZuwY0cRkMO8f/xILk1imwrW9D0yr
-elDX3JnENq0kCom04pkmQzaJ7s3hQv6oZnWXPLAKCk9BQtfWm4RJL/2uEd/qO+Q9
-USynYOm5rOqkGt6jX8j4
-=mbCW
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+             Linus
