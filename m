@@ -1,97 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147AbaBRRov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:44:51 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:37536 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517AbaBRRot (ORCPT
+	id S1755158AbaBRRpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:45:49 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:39142 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaBRRps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:44:49 -0500
+	Tue, 18 Feb 2014 12:45:48 -0500
+X-IronPort-AV: E=Sophos;i="4.97,502,1389744000"; 
+   d="scan'208";a="101873378"
+Message-ID: <1392745532.23084.65.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next v5 4/9] xen-netback: Change RX path for mapped
+ SKB fragments
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Date: Tue, 18 Feb 2014 17:45:32 +0000
+In-Reply-To: <1390253069-25507-5-git-send-email-zoltan.kiss@citrix.com>
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
+	 <1390253069-25507-5-git-send-email-zoltan.kiss@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-In-Reply-To: <1392740258.18779.7732.camel@triegel.csb>
-References: <1392321837.18779.3249.camel@triegel.csb>
-	<20140214020144.GO4250@linux.vnet.ibm.com>
-	<1392352981.18779.3800.camel@triegel.csb>
-	<20140214172920.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	<1392486310.18779.6447.camel@triegel.csb>
-	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	<1392666947.18779.6838.camel@triegel.csb>
-	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	<20140218030002.GA15857@linux.vnet.ibm.com>
-	<CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
-	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
-	<1392740258.18779.7732.camel@triegel.csb>
-Date: Tue, 18 Feb 2014 09:44:48 -0800
-X-Google-Sender-Auth: N80HvWSe2TrmpJOzVUZ7SHnEThY
-Message-ID: <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 8:17 AM, Torvald Riegel <triegel@redhat.com> wrote:
->>
->>   "Consume operation: no reads in the current thread dependent on the
->> value currently loaded can be reordered before this load"
->
-> I can't remember seeing that language in the standard (ie, C or C++).
-> Where is this from?
+On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
 
-That's just for googling for explanations. I do have some old standard
-draft, but that doesn't have any concise definitions anywhere that I
-could find.
+Re the Subject: change how? Perhaps "handle foreign mapped pages on the
+guest RX path" would be clearer.
 
->> and it could make a compiler writer say that value speculation is
->> still valid, if you do it like this (with "ptr" being the atomic
->> variable):
->>
->>   value = ptr->val;
->
-> I assume the load from ptr has mo_consume ordering?
+> RX path need to know if the SKB fragments are stored on pages from another
+> domain.
 
-Yes.
+Does this not need to be done either before the mapping change or at the
+same time? -- otherwise you have a window of a couple of commits where
+things are broken, breaking bisectability.
 
->> into
->>
->>   tmp = ptr;
->>   value = speculated.value;
->>   if (unlikely(tmp != &speculated))
->>     value = tmp->value;
->>
->> which is still bogus. The load of "ptr" does happen before the load of
->> "value = speculated->value" in the instruction stream, but it would
->> still result in the CPU possibly moving the value read before the
->> pointer read at least on ARM and power.
->
-> And surprise, in the C/C++ model the load from ptr is sequenced-before
-> the load from speculated, but there's no ordering constraint on the
-> reads-from relation for the value load if you use mo_consume on the ptr
-> load.  Thus, the transformed code has less ordering constraints than the
-> original code, and we arrive at the same outcome.
+> 
+> v4:
+> - indentation fixes
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> ---
+>  drivers/net/xen-netback/netback.c |   46 +++++++++++++++++++++++++++++++++----
+>  1 file changed, 41 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index f74fa92..d43444d 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -226,7 +226,9 @@ static struct xenvif_rx_meta *get_next_rx_buffer(struct xenvif *vif,
+>  static void xenvif_gop_frag_copy(struct xenvif *vif, struct sk_buff *skb,
+>  				 struct netrx_pending_operations *npo,
+>  				 struct page *page, unsigned long size,
+> -				 unsigned long offset, int *head)
+> +				 unsigned long offset, int *head,
+> +				 struct xenvif *foreign_vif,
+> +				 grant_ref_t foreign_gref)
+>  {
+>  	struct gnttab_copy *copy_gop;
+>  	struct xenvif_rx_meta *meta;
+> @@ -268,8 +270,15 @@ static void xenvif_gop_frag_copy(struct xenvif *vif, struct sk_buff *skb,
+>  		copy_gop->flags = GNTCOPY_dest_gref;
+>  		copy_gop->len = bytes;
+>  
+> -		copy_gop->source.domid = DOMID_SELF;
+> -		copy_gop->source.u.gmfn = virt_to_mfn(page_address(page));
+> +		if (foreign_vif) {
+> +			copy_gop->source.domid = foreign_vif->domid;
+> +			copy_gop->source.u.ref = foreign_gref;
+> +			copy_gop->flags |= GNTCOPY_source_gref;
+> +		} else {
+> +			copy_gop->source.domid = DOMID_SELF;
+> +			copy_gop->source.u.gmfn =
+> +				virt_to_mfn(page_address(page));
+> +		}
+>  		copy_gop->source.offset = offset;
+>  
+>  		copy_gop->dest.domid = vif->domid;
+> @@ -330,6 +339,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
+>  	int old_meta_prod;
+>  	int gso_type;
+>  	int gso_size;
+> +	struct ubuf_info *ubuf = skb_shinfo(skb)->destructor_arg;
+> +	grant_ref_t foreign_grefs[MAX_SKB_FRAGS];
+> +	struct xenvif *foreign_vif = NULL;
+>  
+>  	old_meta_prod = npo->meta_prod;
+>  
+> @@ -370,6 +382,26 @@ static int xenvif_gop_skb(struct sk_buff *skb,
+>  	npo->copy_off = 0;
+>  	npo->copy_gref = req->gref;
+>  
+> +	if ((skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) &&
+> +		 (ubuf->callback == &xenvif_zerocopy_callback)) {
+> +		u16 pending_idx = ubuf->desc;
+> +		int i = 0;
+> +		struct pending_tx_info *temp =
+> +			container_of(ubuf,
+> +				     struct pending_tx_info,
+> +				     callback_struct);
+> +		foreign_vif =
+> +			container_of(temp - pending_idx,
+> +				     struct xenvif,
+> +				     pending_tx_info[0]);
+> +		do {
+> +			pending_idx = ubuf->desc;
+> +			foreign_grefs[i++] =
+> +				foreign_vif->pending_tx_info[pending_idx].req.gref;
+> +			ubuf = (struct ubuf_info *) ubuf->ctx;
+> +		} while (ubuf);
+> +	}
+> +
+>  	data = skb->data;
+>  	while (data < skb_tail_pointer(skb)) {
+>  		unsigned int offset = offset_in_page(data);
+> @@ -379,7 +411,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
+>  			len = skb_tail_pointer(skb) - data;
+>  
+>  		xenvif_gop_frag_copy(vif, skb, npo,
+> -				     virt_to_page(data), len, offset, &head);
+> +				     virt_to_page(data), len, offset, &head,
+> +				     NULL,
+> +				     0);
+>  		data += len;
+>  	}
+>  
+> @@ -388,7 +422,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
+>  				     skb_frag_page(&skb_shinfo(skb)->frags[i]),
+>  				     skb_frag_size(&skb_shinfo(skb)->frags[i]),
+>  				     skb_shinfo(skb)->frags[i].page_offset,
+> -				     &head);
+> +				     &head,
+> +				     foreign_vif,
+> +				     foreign_grefs[i]);
+>  	}
+>  
+>  	return npo->meta_prod - old_meta_prod;
 
-Ok, good.
 
-> The standard is clear on what's required.  I strongly suggest reading
-> the formalization of the memory model by Batty et al.
-
-Can you point to it? Because I can find a draft standard, and it sure
-as hell does *not* contain any clarity of the model. It has a *lot* of
-verbiage, but it's pretty much impossible to actually understand, even
-for somebody who really understands memory ordering.
-
-             Linus
