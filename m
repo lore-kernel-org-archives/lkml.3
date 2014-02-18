@@ -1,102 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665AbaBRRag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:30:36 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:63866 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaBRRae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:30:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJe_ZhdAVK2Yar9kVmbVQLD_JBm9KFzvfv5S0Ba-AXsPEO9HsA@mail.gmail.com>
-References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
-	<1392488727-17981-1-git-send-email-jaswinder.singh@linaro.org>
-	<20140218005217.GJ1706@sonymobile.com>
-	<CAJe_ZhdAVK2Yar9kVmbVQLD_JBm9KFzvfv5S0Ba-AXsPEO9HsA@mail.gmail.com>
-Date: Tue, 18 Feb 2014 09:30:31 -0800
-Message-ID: <CAJAp7Oi2sa0VeEOVaSi2B1fsxzcnNRohvRf_r2k44XX9+83tgA@mail.gmail.com>
-Subject: Re: [PATCHv3 2/6] mailbox: Introduce a new common API
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Suman Anna <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        Rafael J Wysocki <rafael.j.wysocki@intel.com>,
-        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754715AbaBRRbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:31:24 -0500
+Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:47520
+	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753469AbaBRRbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 12:31:22 -0500
+X-Originating-IP: [81.99.114.138]
+X-Spam: 0
+X-Authority: v=2.1 cv=Qfbov6rv c=1 sm=1 tr=0 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
+ a=rTb9Q+mClrhkGV9Ah9iRIA==:17 a=N1CowNylAAAA:8 a=IkcTkHD0fZMA:10
+ a=o3pxq7NaF3wA:10 a=1XWaLZrsAAAA:8 a=_Cv-zV17sKTOCWXdU-oA:9 a=QEXdDO2ut3YA:10
+ a=UTB_XpHje0EA:10
+Message-ID: <1392744674.15829.31.camel@artifact>
+Subject: Re: pci-3.14 resource alloc
+From: Steven Newbury <steve@snewbury.org.uk>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 18 Feb 2014 17:31:14 +0000
+In-Reply-To: <CAErSpo4CLB7G5DHpdr69t+wZjywuOXKXsvS6W3eTMJgU5Xpycg@mail.gmail.com>
+References: <1390773698.3450.12.camel@artifact>
+	 <CAE9FiQVD=oVHM5WJgSJ5cNpXZ1NYy9E_pcGWfjKnmD9OZoHHsw@mail.gmail.com>
+	 <1391643656.1067.1.camel@artifact>
+	 <CAE9FiQV8jutRhaBicL4kjqVYd07FzHmNoSN3NxdA2TYvOc_KUg@mail.gmail.com>
+	 <z9zi9m.n0zpxd.1hgeaud-qmf@mail.snewbury.org.uk>
+	 <i9nn22.n0zs79.1hgeaud-qmf@mail.snewbury.org.uk>
+	 <1392392764.3520.11.camel@devel-n900>
+	 <CAE9FiQV3H_nxH0gxcM0kW4uLm6b_qmHT9hRQUVY_4xPqjpvMtA@mail.gmail.com>
+	 <1392718107.15829.12.camel@artifact>
+	 <CAErSpo6cnT6JDh0rj_3TCjw8vkLbM0ztzES0Qh1R=wUCp0PfTw@mail.gmail.com>
+	 <CAErSpo4CLB7G5DHpdr69t+wZjywuOXKXsvS6W3eTMJgU5Xpycg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 11:06 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
-> Hi Courtney,
->
-> On 18 February 2014 06:22, Courtney Cavin <courtney.cavin@sonymobile.com> wrote:
->> On Sat, Feb 15, 2014 at 07:25:27PM +0100, Jassi Brar wrote:
-[...]
->>> +struct ipc_client {
->>
->> I'm not so sure about the naming scheme here.  This header is
->> mailbox_client.h, and drivers are expected to go in drivers/mailbox, yet the
->> structs and functions have an ipc_ prefix.  Please standardize this,
->> preferably to mbox_ or mailbox_.
->>
-> Yeah Loic already pointed that out.
-> The term 'mailbox' is specific to what ARM calls the IPC links in
-> their manuals. Perhaps we should rename the directory to drivers/ipc/.
->  'Mailbox' is too symbolic. Though I am OK either way.
+On Tue, 2014-02-18 at 07:37 -0700, Bjorn Helgaas wrote:
+> On Tue, Feb 18, 2014 at 6:59 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > On Tue, Feb 18, 2014 at 3:08 AM, Steven Newbury <steve@snewbury.org.uk> wrote:
+> 
+> >> No, the only unusual option is I use pci=nocrs since the bios is
+> >> completely ignorant of support for 64bit BARs.
+> >
+> > Hi Steven, this is a tangent, but can you collect the complete dmesg
+> > log with "pci=nocrs" and let me know what happens when you *don't* use
+> > "pci=nocrs" (a complete dmesg log there would be useful too, but I
+> > don't know if you can boot without it)?  I think Linux *should* be
+> > able to handle 64bit BARs even if the BIOS doesn't.
+> >
+> > Please post these as a separate thread so we don't muddle this
+> > conversation with Yinghai.
+> 
+> Oh, never mind.  I think I remember now.  I think the problem is not
+> so much that the BIOS doesn't handle 64bit *BARs*, but that your BIOS
+> doesn't report 64bit host bridge *apertures*, and you want to use
+> space above 4G for a graphics card or something.
+> 
+Yes, exactly. I should have stated it better.  I need to push the
+on-board i965 up above 4G to make room for a radeon which is accessed
+through a 32 bit only bridge.  The BIOS doesn't provide any
+functionality like this.  The intel devs seemed a little surprised that
+the i965 actually worked stably in this configuration given known
+errata, but I've actually had no problems with this side of things. 
 
-In this world IPC means "Inter-process communication", so I'm afraid it's taken.
+> That's not really anything we can fix in PCI because PCI doesn't
+> discover those apertures.  Host bridge drivers like the generic ACPI
+> pci_root.c or the native amd_bus.c discover them.  If those drivers
+> don't discover them, PCI can't just make them up.
 
-[...]
->>> +request_token_t ipc_send_message(void *channel, void *mssg);
->>
->> In the case of the blocking use-case, the function's return type is odd.
->> Perhaps, instead of my recommendation above, this could be turned into
->> two separate functions: ipc_send_message() and ipc_send_message_async()?
->>
-> In blocking use case, the call will return success (a valid token).
-> The client sees a valid token and understands that the request was
-> accepted. And because the client asked it to be a blocking call, it
-> also understands the TX is successfully completed.  What's odd here?
->
-
-I've tried to figure out why you return your magic type here, from
-what I can see it's just indicating to the consumer if the tx
-succeeded (and maybe was put on the fifo?). When constructing this
-number you have a comment that says "aid for debugging", which
-indicates that it really doesn't hold any value...
-
-There is already a convention for this in the kernel, return
-descriptive negative numbers on failures; 0 on success.
+32 bit only bridges must be getting pretty rare by now, and I presume
+any new hardware out there with a dockable PCI bus would provide 64 bit
+resource allocation for host bridge apertures when booting to a 64 bit
+OS?  Maybe not?
+> 
+> It might be nice if we had cleaner kernel options to say "assume a
+> host bridge window here" and "put this device here," so you didn't
+> have to use the big hammer of "pci=nocrs".  It's sort of a pain to
+> figure out how to attach info like that to the correct device (there
+> might be several host bridges, so how do you specify which one you
+> care about?), but maybe it could be done.
+> 
+That would be much better, even if it's only some way to say "ignore crs
+for *this* host bridge (and parents)", or "for host bridges to which
+*this* device is attached".
 
 
-How do you plan to support probe deferral here?
-
-What is the plan to support references in Device Tree?
-
-[...]
->> Although I will admit that I didn't go looking at random code on the
->> internet before submitting my series, I did take a look at the previous
->> iterations of this submitted for upstream.
->>
-> But you objections (except cosmetic ones) sound like you are not aware
-> of all use-cases that have been taken care of.
-
-Your argument in the discussion of Courtneys proposal was "I have code
-that depends on my code, let me show it to you first".
-
-So please enlighten us on what use cases it is that you do support;
-that are actually seen in real life.
-
-Regards,
-Bjorn
