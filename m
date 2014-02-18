@@ -1,120 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586AbaBRQ0i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:26:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37207 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752979AbaBRQ0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:26:33 -0500
-Date: Tue, 18 Feb 2014 10:24:16 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Felipe Balbi <balbi@ti.com>, Kevin Hilman <khilman@linaro.org>,
+	id S1756422AbaBRQ0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:26:36 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41631 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003AbaBRQ0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 11:26:32 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-arm-msm@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] usb: phy: msm: fix compilation errors when
- !CONFIG_PM_SLEEP
-Message-ID: <20140218162407.GF9878@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <87lhyemr3y.fsf@linaro.org>
- <1389981531-15539-1-git-send-email-joshc@codeaurora.org>
- <20140117182650.GZ8153@joshc.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l0l+eSofNeLXHSnY"
-Content-Disposition: inline
-In-Reply-To: <20140117182650.GZ8153@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+In-Reply-To: <20140218070624.GP17250@pengutronix.de>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com> < 20140217181451.7EB7FC4044D@trevor.secretlab.ca> <20140218070624.GP17250@ pengutronix.de>
+Date: Tue, 18 Feb 2014 16:26:27 +0000
+Message-Id: <20140218162627.32BA4C40517@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---l0l+eSofNeLXHSnY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 18 Feb 2014 08:06:24 +0100, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> Hi Grant,
+> 
+> On Mon, Feb 17, 2014 at 06:14:51PM +0000, Grant Likely wrote:
+> > On Tue, 11 Feb 2014 07:56:33 -0600, Rob Herring <robherring2@gmail.com> wrote:
+> > > On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> > > > From: Philipp Zabel <philipp.zabel@gmail.com>
+> > > >
+> > > > This patch moves the parsing helpers used to parse connected graphs
+> > > > in the device tree, like the video interface bindings documented in
+> > > > Documentation/devicetree/bindings/media/video-interfaces.txt, from
+> > > > drivers/media/v4l2-core to drivers/of.
+> > > 
+> > > This is the opposite direction things have been moving...
+> > > 
+> > > > This allows to reuse the same parser code from outside the V4L2 framework,
+> > > > most importantly from display drivers. There have been patches that duplicate
+> > > > the code (and I am going to send one of my own), such as
+> > > > http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
+> > > > and others that parse the same binding in a different way:
+> > > > https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
+> > > >
+> > > > I think that all common video interface parsing helpers should be moved to a
+> > > > single place, outside of the specific subsystems, so that it can be reused
+> > > > by all drivers.
+> > > 
+> > > Perhaps that should be done rather than moving to drivers/of now and
+> > > then again to somewhere else.
+> > 
+> > This is just parsing helpers though, isn't it? I have no problem pulling
+> > helper functions into drivers/of if they are usable by multiple
+> > subsystems. I don't really understand the model being used though. I
+> > would appreciate a description of the usage model for these functions
+> > for poor folks like me who can't keep track of what is going on in
+> > subsystems.
+> 
+> You can find it under Documentation/devicetree/bindings/media/video-interfaces.txt
 
-On Fri, Jan 17, 2014 at 12:26:50PM -0600, Josh Cartwright wrote:
-> On Fri, Jan 17, 2014 at 11:58:51AM -0600, Josh Cartwright wrote:
-> > Both the PM_RUNTIME and PM_SLEEP callbacks call into the common
-> > msm_otg_{suspend,resume} routines, however these routines are only being
-> > built when CONFIG_PM_SLEEP.  In addition, msm_otg_{suspend,resume} also
-> > depends on msm_hsusb_config_vddcx(), which is only built when
-> > CONFIG_PM_SLEEP.
-> >=20
-> > Fix the CONFIG_PM_RUNTIME, !CONFIG_PM_SLEEP case by changing the
-> > preprocessor conditional, and moving msm_hsusb_config_vddcx().
-> >=20
-> > While we're here, eliminate the CONFIG_PM conditional for setting
-> > up the dev_pm_ops.
-> >=20
-> > This address the following errors Russell King has hit doing randconfig
-> > builds:
-> >=20
-> > drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_suspend':
-> > drivers/usb/phy/phy-msm-usb.c:1691:2: error: implicit declaration of fu=
-nction 'msm_otg_suspend'
-> > drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_resume':
-> > drivers/usb/phy/phy-msm-usb.c:1699:2: error: implicit declaration of fu=
-nction 'msm_otg_resume'
-> >=20
-> > Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> > ---
-> > v1->v2: Change conditional to simply CONFIG_PM (thanks ccov and khilman=
-!)
-> >=20
-> >  drivers/usb/phy/phy-msm-usb.c | 57 ++++++++++++++++++++---------------=
---------
-> >  1 file changed, 26 insertions(+), 31 deletions(-)
-> >=20
-> > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-us=
-b.c
-> > index 8546c8d..5b169a7 100644
-> > --- a/drivers/usb/phy/phy-msm-usb.c
-> > +++ b/drivers/usb/phy/phy-msm-usb.c
-> [..]
-> > @@ -440,7 +414,32 @@ static int msm_otg_reset(struct usb_phy *phy)
-> >  #define PHY_SUSPEND_TIMEOUT_USEC	(500 * 1000)
-> >  #define PHY_RESUME_TIMEOUT_USEC	(100 * 1000)
-> > =20
-> > -#ifdef CONFIG_PM_SLEEP
-> > +#if CONFIG_PM
->=20
-> *sigh*.  This, of course, should have been #ifdef CONFIG_PM.  Fixed
-> v3 below.
+Okay, I think I'm okay with moving the helpers, but I will make one
+requirement. I would like to have a short binding document describing
+the pattern being used. The document above talks a lot about video
+specific issues, but the helpers appear to be specifically about the
+tree walking properties of the API.
 
-sorry, please git send-email it properly.
-
---=20
-balbi
-
---l0l+eSofNeLXHSnY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTA4kwAAoJEIaOsuA1yqREia4P/jHXuxA4HFToqwpI/6W7kJ2o
-wRWRS5iY3ORtJE/UXFcTi+jRu7X4+g6Q4mO6o7LEZRxcr12lUHWxCc/Hi5lvZ3tW
-L700BfTbHflYZlx3A3bFKvx1by18TeAk0vT6APqQD5gI8Y6qmOFXSiDFj0ciTHmz
-M4RwE6HKJzeZ1FZrr9AskIgXWRM+2JlYVOHgGifP3ZWbKsQPXyV7+oBfek/5D3gQ
-IpjjwOVbv3cbWu7YSV4oCJaTNr3l8NAHF+fLFX1j5iiKmoMVYbQdF5bx1xV4a2Sn
-6sUcBLrFNAK5YxZ2Pvd+FZ4f71OktsbzGZAYKtPr0nTf+7pJ1zsiSZ2Ur1rSW3Je
-Tg0aOqf2UP//sYroVw1+Um9mV0klbsGUvJjYSDCMtPcU6tOQMZskQjArlnLQOzeP
-QYYCr1StWTB5ozLiuj2Qf3UK6d2aHjTwVcg2XSB1cn4I+wCWJHfYyMUEKmKTJ+EW
-9t0nXYKvFm0Em83g3KcvPz382KgtEm46eaJioSQkYqpYhEWiwGwcYgYL4uRBN13R
-a3R46seNmp0pu1t1Ux4LH1vEOpoLvGEnWpJcMfEHn9I+r/il2bvnRNMVSzCNqb5I
-glMdDbXOQAvREHYr13f51PpyPDUQwfKv3WKt98xsitmWXqEJxcFoJhCxxlS5ZNcv
-w68E70QlhsnfDgc8lvUu
-=Hf/d
------END PGP SIGNATURE-----
-
---l0l+eSofNeLXHSnY--
+g.
