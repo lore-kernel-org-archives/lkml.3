@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaBRWtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:49:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51299 "EHLO
+	id S1753859AbaBRWuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:50:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51284 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753637AbaBRWrk (ORCPT
+	with ESMTP id S1753613AbaBRWrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:40 -0500
+	Tue, 18 Feb 2014 17:47:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 3.13 38/40] bcache: fix BUG_ON due to integer overflow with GC_SECTORS_USED
-Date: Tue, 18 Feb 2014 14:47:39 -0800
-Message-Id: <20140218224434.405866285@linuxfoundation.org>
+        Chris Ruehl <chris.ruehl@gtsys.com.hk>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.13 35/40] pinctrl: imx27: fix offset calculation in imx_read_2bit
+Date: Tue, 18 Feb 2014 14:47:36 -0800
+Message-Id: <20140218224434.322406492@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -29,64 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
 
-commit 947174476701fbc84ea8c7ec9664270f9d80b076 upstream.
+commit e3365d0974ed64157f5b5a576c611057dc40a595 upstream.
 
-The BUG_ON at the end of __bch_btree_mark_key can be triggered due to
-an integer overflow error:
+The offset for the 2bit register calculate wrong, this patch
+fixes the problem. The debugfs printout for oconf, iconfa, iconfb
+now shows the real values.
 
-BITMASK(GC_SECTORS_USED, struct bucket, gc_mark, 2, 13);
-...
-SET_GC_SECTORS_USED(g, min_t(unsigned,
-	     GC_SECTORS_USED(g) + KEY_SIZE(k),
-	     (1 << 14) - 1));
-BUG_ON(!GC_SECTORS_USED(g));
-
-In bcache.h, the SECTORS_USED bitfield is defined to be 13 bits wide.
-While the SET_ code tries to ensure that the field doesn't overflow by
-clamping it to (1<<14)-1 == 16383, this is incorrect because 16383
-requires 14 bits.  Therefore, if GC_SECTORS_USED() + KEY_SIZE() =
-8192, the SET_ statement tries to store 8192 into a 13-bit field.  In
-a 13-bit field, 8192 becomes zero, thus triggering the BUG_ON.
-
-Therefore, create a field width constant and a max value constant, and
-use those to create the bitfield and check the inputs to
-SET_GC_SECTORS_USED.  Arguably the BITMASK() template ought to have
-BUG_ON checks for too-large values, but that's a separate patch.
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Reviewed-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/bcache.h |    4 +++-
- drivers/md/bcache/btree.c  |    2 +-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-imx1-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -209,7 +209,9 @@ BITMASK(GC_MARK,	 struct bucket, gc_mark
- #define GC_MARK_RECLAIMABLE	0
- #define GC_MARK_DIRTY		1
- #define GC_MARK_METADATA	2
--BITMASK(GC_SECTORS_USED, struct bucket, gc_mark, 2, 13);
-+#define GC_SECTORS_USED_SIZE	13
-+#define MAX_GC_SECTORS_USED	(~(~0ULL << GC_SECTORS_USED_SIZE))
-+BITMASK(GC_SECTORS_USED, struct bucket, gc_mark, 2, GC_SECTORS_USED_SIZE);
- BITMASK(GC_MOVE, struct bucket, gc_mark, 15, 1);
+--- a/drivers/pinctrl/pinctrl-imx1-core.c
++++ b/drivers/pinctrl/pinctrl-imx1-core.c
+@@ -139,7 +139,7 @@ static int imx1_read_2bit(struct imx1_pi
+ 		u32 reg_offset)
+ {
+ 	void __iomem *reg = imx1_mem(ipctl, pin_id) + reg_offset;
+-	int offset = pin_id % 16;
++	int offset = (pin_id % 16) * 2;
  
- #include "journal.h"
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1163,7 +1163,7 @@ uint8_t __bch_btree_mark_key(struct cach
- 		/* guard against overflow */
- 		SET_GC_SECTORS_USED(g, min_t(unsigned,
- 					     GC_SECTORS_USED(g) + KEY_SIZE(k),
--					     (1 << 14) - 1));
-+					     MAX_GC_SECTORS_USED));
- 
- 		BUG_ON(!GC_SECTORS_USED(g));
- 	}
+ 	/* Use the next register if the pin's port pin number is >=16 */
+ 	if (pin_id % 32 >= 16)
 
 
