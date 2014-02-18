@@ -1,115 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaBRXsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:48:41 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:43205 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675AbaBRXsi (ORCPT
+	id S1752906AbaBRXtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:49:06 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:61670 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675AbaBRXtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:48:38 -0500
+	Tue, 18 Feb 2014 18:49:04 -0500
 MIME-Version: 1.0
-Reply-To: Peter.Sewell@cl.cam.ac.uk
-In-Reply-To: <1392756211.18779.8263.camel@triegel.csb>
-References: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
-	<1392756211.18779.8263.camel@triegel.csb>
-Date: Tue, 18 Feb 2014 23:48:37 +0000
-X-Google-Sender-Auth: MEX1CKhOVKRXaj37FSdjUwmvVb8
-Message-ID: <CAHWkzRTZk-7JtzHDHBQ++cSY83Hmd+P-0KUposaQN7htW1CxUA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "ramana.radhakrishnan" <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+In-Reply-To: <20140217234644.GA5171@rmk-PC.arm.linux.org.uk>
+References: <20140217234644.GA5171@rmk-PC.arm.linux.org.uk>
+Date: Tue, 18 Feb 2014 15:49:03 -0800
+X-Google-Sender-Auth: T4RcDrrCJy4X9sguXHbSi7s1VZM
+Message-ID: <CA+55aFy7ApiQRudxPAd3v5k_apppxRnePHb1HZPH13erqhmX=g@mail.gmail.com>
+Subject: Re: [GIT PULL] ARM fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Russell King <rmk@arm.linux.org.uk>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        linux-mm <linux-mm@kvack.org>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, ARM SoC <arm@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 February 2014 20:43, Torvald Riegel <triegel@redhat.com> wrote:
-> On Tue, 2014-02-18 at 12:12 +0000, Peter Sewell wrote:
->> Several of you have said that the standard and compiler should not
->> permit speculative writes of atomics, or (effectively) that the
->> compiler should preserve dependencies.  In simple examples it's easy
->> to see what that means, but in general it's not so clear what the
->> language should guarantee, because dependencies may go via non-atomic
->> code in other compilation units, and we have to consider the extent to
->> which it's desirable to limit optimisation there.
+On Mon, Feb 17, 2014 at 3:46 PM, Russell King <rmk@arm.linux.org.uk> wrote:
 >
-> [...]
->
->> 2) otherwise, the language definition should prohibit it but the
->>    compiler would have to preserve dependencies even in compilation
->>    units that have no mention of atomics.  It's unclear what the
->>    (runtime and compiler development) cost of that would be in
->>    practice - perhaps Torvald could comment?
->
-> If I'm reading the standard correctly, it requires that data
-> dependencies are preserved through loads and stores, including nonatomic
-> ones.  That sounds convenient because it allows programmers to use
-> temporary storage.
+> One fix touches code outside of arch/arm, which is related to sorting
+> out the DMA masks correctly.  There is a long standing issue with the
+> conversion from PFNs to addresses where people assume that shifting an
+> unsigned long left by PAGE_SHIFT results in a correct address.
 
-The standard only needs this for consume chains, but if one wanted to
-get rid of thin-air values by requiring implementations to respect all
-(reads-from union dependency) cycles, AFAICS we'd need it pretty much
-everywhere.   I don't myself think that's likely to be a realistic
-proposal, but it does keep coming up, and it'd be very interesting to
-know the actual cost on some credible workload.
+You should probably have used PFN_PHYS(), which does this correctly.
+Your explicit u64 isn't exactly wrong, but phys_addr_t is really the
+right type for the result.
 
-> However, what happens if a dependency "arrives" at a store for which the
-> alias set isn't completely known?  Then we either have to add a barrier
-> to enforce the ordering at this point, or we have to assume that all
-> other potentially aliasing memory locations would also have to start
-> carrying dependencies (which might be in other functions in other
-> compilation units).  Neither option is good.  The first might introduce
-> barriers in places in which they might not be required (or the
-> programmer has to use kill_dependency() quite often to avoid all these).
-> The second is bad because points-to analysis is hard, so in practice the
-> points-to set will not be precisely known for a lot of pointers.  So
-> this might not just creep into other functions via calls of
-> [[carries_dependency]] functions, but also through normal loads and
-> stores, likely prohibiting many optimizations.
->
-> Furthermore, the dependency tracking can currently only be
-> "disabled/enabled" on a function granularity (via
-> [[carries_dependency]]).  Thus, if we have big functions, then
-> dependency tracking may slow down a lot of code in the big function.  If
-> we have small functions, there's a lot of attributes to be added.
->
-> If a function may only carry a dependency but doesn't necessarily (eg,
-> depending on input parameters), then the programmer has to make a
-> trade-off whether he/she want's to benefit from mo_consume but slow down
-> other calls due to additional barriers (ie, when this function is called
-> from non-[[carries_dependency]] functions), or vice versa.  (IOW,
-> because of the function granularity, other code's performance is
-> affected.)
->
-> If a compiler wants to implement dependency tracking just for a few
-> constructs (e.g., operators -> + ...) and use barriers otherwise, then
-> this decision must be compatible with how all this is handled in other
-> compilation units.  Thus, compiler optimizations effectively become part
-> of the ABI, which doesn't seem right.
->
-> I hope these examples illustrate my concerns about the implementability
-> in practice of this.  It's also why I've suggested to move from an
-> opt-out approach as in the current standard (ie, with kill_dependency())
-> to an opt-in approach for conservative dependency tracking (e.g., with a
-> preserve_dependencies(exp) call, where exp will not be optimized in a
-> way that removes any dependencies).  This wouldn't help with many
-> optimizations being prevented, but it should at least help programmers
-> contain the problem to smaller regions of code.
->
-> I'm not aware of any implementation that tries to track dependencies, so
-> I can't give any real performance numbers.  This could perhaps be
-> simulated, but I'm not sure whether a realistic case would be made
-> without at least supporting [[carries_dependency]] properly in the
-> compiler, which would be some work.
->
+That said, it's admittedly a disgusting name, and I wonder if we
+should introduce a nicer-named "pfn_to_phys()" that matches the other
+"xyz_to_abc()" functions we have (including "pfn_to_virt()")
+
+Looking at it, the Xen people then do this disgusting thing:
+"__va(PFN_PHYS(pfn))" which is both ugly and pointless (__va() isn't
+going to work for a phys_addr_t anyway). And <linux/mm.h> has this
+gem:
+
+  __va(PFN_PHYS(page_to_pfn(page)));
+
+Ugh. The ugly - it burns. that really should be
+"pfn_to_virt(page_to_pfn())", I think.  Adding a few mailing lists in
+the hope that some sucker^Whumanitarian person would want to take a
+look.
+
+Anyway, I pulled your change to scsi_lib.c, since it's certainly no
+worse than what we used to have, but James and company cc'd too.
+
+          Linus
