@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaBRTac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:30:32 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:36812 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472AbaBRTa3 convert rfc822-to-8bit (ORCPT
+	id S1752676AbaBRTap (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:30:45 -0500
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:41145 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472AbaBRTan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:30:29 -0500
+	Tue, 18 Feb 2014 14:30:43 -0500
+Message-ID: <5303B4C4.2040907@hp.com>
+Date: Tue, 18 Feb 2014 14:30:12 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <20140218190828.GA10376@kroah.com>
-References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
-	<1392674322-9036-13-git-send-email-john.stultz@linaro.org>
-	<20140218190828.GA10376@kroah.com>
-Date: Tue, 18 Feb 2014 11:30:26 -0800
-Message-ID: <CALAqxLWMF0WFAoi-yGtWiKh2Dgw8hpM4NY5F8TQ5Yt3MvHY3kA@mail.gmail.com>
-Subject: Re: [PATCH 12/14] staging: binder: Fix ABI for 64bit Android
-From: John Stultz <john.stultz@linaro.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Colin Cross <ccross@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com> <20140218073111.GW27965@twins.programming.kicks-ass.net>
+In-Reply-To: <20140218073111.GW27965@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 11:08 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Feb 17, 2014 at 01:58:40PM -0800, John Stultz wrote:
->> From: Serban Constantinescu <serban.constantinescu@arm.com>
->>
->> This patch fixes the ABI for 64bit Android userspace.
->> BC_REQUEST_DEATH_NOTIFICATION and BC_CLEAR_DEATH_NOTIFICATION claim
->> to be using struct binder_ptr_cookie, but they are using a 32bit handle
->> and a pointer.
->>
->> On 32bit systems the payload size is the same as the size of struct
->> binder_ptr_cookie, however for 64bit systems this will differ. This
->> patch adds struct binder_handle_cookie that fixes this issue for 64bit
->> Android.
->>
->> Since there are no 64bit users of this interface that we know of this
->> change should not affect any existing systems.
->
-> But you are changing the ioctl structures here, what is that going to
-> cause with old programs?
+On 02/18/2014 02:31 AM, Peter Zijlstra wrote:
+> On Mon, Feb 17, 2014 at 02:47:03PM -0800, H. Peter Anvin wrote:
+>> On 02/17/2014 12:41 PM, Waiman Long wrote:
+>>> v3->v4:
+>>>   - Remove debugging code and fix a configuration error
+>>>   - Simplify the qspinlock structure and streamline the code to make it
+>>>     perform a bit better
+>>>   - Add an x86 version of asm/qspinlock.h for holding x86 specific
+>>>     optimization.
+>>>   - Add an optimized x86 code path for 2 contending tasks to improve
+>>>     low contention performance.
+>>>
+>>> v2->v3:
+>>>   - Simplify the code by using numerous mode only without an unfair option.
+>>>   - Use the latest smp_load_acquire()/smp_store_release() barriers.
+>>>   - Move the queue spinlock code to kernel/locking.
+>>>   - Make the use of queue spinlock the default for x86-64 without user
+>>>     configuration.
+>>>   - Additional performance tuning.
+>>>
+>>> v1->v2:
+>>>   - Add some more comments to document what the code does.
+>>>   - Add a numerous CPU mode to support>= 16K CPUs
+>>>   - Add a configuration option to allow lock stealing which can further
+>>>     improve performance in many cases.
+>>>   - Enable wakeup of queue head CPU at unlock time for non-numerous
+>>>     CPU mode.
+>>>
+>>> This patch set introduces a queue-based spinlock implementation that
+>>> can replace the default ticket spinlock without increasing the size
+>>> of the spinlock data structure. As a result, critical kernel data
+>>> structures that embed spinlock won't increase in size and breaking
+>>> data alignments.
+>>>
+>> This is starting to look good, so I have pulled it into
+>> tip:x86/spinlocks to start give it some testing mileage.
+> It very much needs paravirt muck before we can even consider it.
 
-So I'd be glad for Serban or Arve to clarify, but my understanding
-(and as is described in the commit message) is that the assumption is
-there are no 64bit binder users at this point, and the ioctl structure
-changes are made such that existing 32bit applications are unaffected.
+I will start looking at how to make it work with paravirt. Hopefully, it 
+won't take too long.
 
->> Cc: Colin Cross <ccross@android.com>
->> Cc: Arve Hjønnevåg <arve@android.com>
->> Cc: Serban Constantinescu <serban.constantinescu@arm.com>
->> Cc: Android Kernel Team <kernel-team@android.com>
->
-> I am going to require Acks from someone on the Android team to accept
-> this, or any other 64bit binder patch, given all the back-and-forth that
-> has happened with the different patch sets here over the past year or
-> so.
-
-Certainly reasonable given the earlier back and forth.  For extra
-context, these have been merged into the 3.10 AOSP by Arve:
-https://android-review.googlesource.com/#/c/79228/
-
-thanks
--john
+-Longman
