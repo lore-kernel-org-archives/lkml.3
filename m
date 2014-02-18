@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272AbaBRMyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 07:54:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755084AbaBRMyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 07:54:09 -0500
-Date: Tue, 18 Feb 2014 13:53:35 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, fowles@inreach.com, eranian@google.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 02/21] perf c2c: Dump raw records, decode data_src bits
-Message-ID: <20140218125335.GF4343@krava.brq.redhat.com>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <1392053356-23024-3-git-send-email-dzickus@redhat.com>
+	id S1755313AbaBRMyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 07:54:17 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44363 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084AbaBRMyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 07:54:14 -0500
+Date: Tue, 18 Feb 2014 13:53:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
+Cc: "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Torvald Riegel <triegel@redhat.com>, torvalds@linux-foundation.org,
+        Will Deacon <will.deacon@arm.com>, Ramana.Radhakrishnan@arm.com,
+        dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mingo@kernel.org, gcc@gcc.gnu.org
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140218125357.GC27965@twins.programming.kicks-ass.net>
+References: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392053356-23024-3-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 12:28:57PM -0500, Don Zickus wrote:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Tue, Feb 18, 2014 at 12:12:06PM +0000, Peter Sewell wrote:
+> Several of you have said that the standard and compiler should not
+> permit speculative writes of atomics, or (effectively) that the
+> compiler should preserve dependencies.
+
+The example below only deals with control dependencies; so I'll limit
+myself to that.
+
+> In simple examples it's easy
+> to see what that means, but in general it's not so clear what the
+> language should guarantee, because dependencies may go via non-atomic
+> code in other compilation units, and we have to consider the extent to
+> which it's desirable to limit optimisation there.
 > 
-> From the c2c prototype:
+> For example, suppose we have, in one compilation unit:
 > 
-> [root@sandy ~]# perf c2c -r report | head -7
-> T Status    Pid Tid CPU          Inst Adrs     Virt Data Adrs Phys Data Adrs Cycles Source      Decoded Source                ObJect:Symbol
-> --------------------------------------------------------------------------------------------------------------------------------------------
->   raw input 779 779   7 0xffffffff810865dd 0xffff8803f4d75ec8              0    370 0x68080882 [LOAD,LCL_LLC,MISS,SNP NA]    [kernel.kallsyms]:try_to_wake_up
->   raw input 779 779   7 0xffffffff8107acb3 0xffff8802a5b73158              0    297 0x6a100142 [LOAD,L1,HIT,SNP NONE,LOCKED] [kernel.kallsyms]:up_read
->   raw input 779 779   7       0x3b7e009814     0x7fff87429ea0              0    925 0x68100142 [LOAD,L1,HIT,SNP NONE]        ???:???
->   raw input   0   0   1 0xffffffff8108bf81 0xffff8803eafebf50              0    172 0x68800842 [LOAD,LCL_LLC,HIT,SNP HITM]   [kernel.kallsyms]:update_stats_wait_end
->   raw input 779 779   7       0x3b7e0097cc     0x7fac94b69068              0    228 0x68100242 [LOAD,LFB,HIT,SNP NONE]       ???:???
-> [root@sandy ~]#
+>     void f(int ra, int*rb) {
+>       if (ra==42)
+>         *rb=42;
+>       else
+>         *rb=42;
+>     }
 > 
-> The "Phys Data Adrs" column is not available at this point.
+> and in another compilation unit the bodies of two threads:
+> 
+>     // Thread 0
+>     r1 = x;
+>     f(r1,&r2);
+>     y = r2;
+> 
+>     // Thread 1
+>     r3 = y;
+>     f(r3,&r4);
+>     x = r4;
+> 
+> where accesses to x and y are annotated C11 atomic
+> memory_order_relaxed or Linux ACCESS_ONCE(), accesses to
+> r1,r2,r3,r4,ra,rb are not annotated, and x and y initially hold 0.
 
-SNIP
+So I'm intuitively ok with this, however I would expect something like:
 
-> +		       sample->data_src,
-> +		       data_src,
-> +		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
-> +		       al->sym ? al->sym->name : "???");
-> +}
-> +
-> +static int perf_c2c__process_load_store(struct perf_c2c *c2c,
-> +					struct perf_sample *sample,
-> +					struct addr_location *al)
-> +{
-> +	if (c2c->raw_records)
-> +		perf_sample__fprintf(sample, ' ', "raw input", al, stdout);
-> +
->  	return 0;
->  }
->  
->  static const struct perf_evsel_str_handler handlers[] = {
-> -	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load, },
-> -	{ "cpu/mem-stores/pp",	       perf_c2c__process_store, },
-> +	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load_store, },
-> +	{ "cpu/mem-stores/pp",	       perf_c2c__process_load_store, },
+  void f(_Atomic int ra, _Atomic int *rb);
 
-hm.. so it's only one function for both handlers.. no need
-to use handlers at all then, right?
+To preserve dependencies and not make the conditional go away, simply
+because in that case the:
 
-jirka
+  if (ra == 42)
+
+the 'ra' usage can be seen as an atomic load.
+
+> So as far as we can see, either:
+> 
+> 1) if you can accept the latter behaviour (if the Linux codebase does
+>    not rely on its absence), the language definition should permit it,
+>    and current compiler optimisations can be used,
+
+Currently there's exactly 1 site in the Linux kernel that relies on
+control dependencies as far as I know -- the one I put in. And its
+limited to a single function, so no cross translation unit funnies
+there.
+
+Of course, nobody is going to tell me when or where they'll put in the
+next one; since its now documented as accepted practise.
+
+However, PaulMck and our RCU usage very much do cross all sorts of TU
+boundaries; but those are data dependencies.
+
+~ Peter
