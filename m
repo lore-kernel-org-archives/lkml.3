@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbaBROZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:25:32 -0500
-Received: from mga02.intel.com ([134.134.136.20]:65322 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755084AbaBROZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:25:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="457418389"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 6/6] kbuild: Remove .dot postfixes in kallsyms
-Date: Tue, 18 Feb 2014 15:24:30 +0100
-Message-Id: <1392733470-8228-7-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1392733470-8228-1-git-send-email-andi@firstfloor.org>
-References: <1392733470-8228-1-git-send-email-andi@firstfloor.org>
+	id S1755821AbaBROY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:24:56 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:38051 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755441AbaBROYz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 09:24:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <87zjlpcecu.fsf@redhat.com>
+References: <87zjlpcecu.fsf@redhat.com>
+Date: Tue, 18 Feb 2014 09:24:54 -0500
+X-Google-Sender-Auth: Qt5qh8uaooptKOnBsntzm19UB2Q
+Message-ID: <CA+5PVA6v=r5_qR30_2mRFWsT3kuOcLj900DQ7TwxCfBva2mWig@mail.gmail.com>
+Subject: Re: WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:491
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Madper Xie <cxie@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Mon, Feb 17, 2014 at 10:02 PM, Madper Xie <cxie@redhat.com> wrote:
+> Howdy all,
+>   Meet following warning and call trace:
+>
+> [307001.720980] ------------[ cut here ]------------
+> [307001.720994] WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:491 add_dma_entry+0x127/0x130()
+> [307001.720996] DMA-API: exceeded 7 overlapping mappings of pfn 1932f8
 
-For static and some LTO symbols gcc generates .XXXX postfixes.
-Remove those from the kallsyms, as they are not useful to the user
-and makes it much larger. This also avoids some issues with LTO.
+This should be fixed by this patch:
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- scripts/kallsyms.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+http://marc.info/?l=linux-kernel&m=139233546223338&w=2
 
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 566e53e..94e0502 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -122,7 +122,7 @@ static int read_symbol_tr(const char *sym, unsigned long long addr)
- static int read_symbol(FILE *in, struct sym_entry *s)
- {
- 	char str[500];
--	char *sym, stype;
-+	char *sym, stype, *dot;
- 	int rc;
- 
- 	rc = fscanf(in, "%llx %c %499s\n", &s->addr, &stype, str);
-@@ -138,6 +138,11 @@ static int read_symbol(FILE *in, struct sym_entry *s)
- 		return -1;
- 	}
- 
-+	/* Drop static .XXXX postfixes */
-+	dot = strchr(str, '.');
-+	if (dot)
-+		*dot = 0;
-+
- 	sym = str;
- 	/* skip prefix char */
- 	if (symbol_prefix_char && str[0] == symbol_prefix_char)
--- 
-1.8.5.2
-
+josh
