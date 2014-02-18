@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210AbaBRTIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:08:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48110 "EHLO
+	id S1752044AbaBRTJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:09:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122AbaBRTII (ORCPT
+	with ESMTP id S1751126AbaBRTJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:08:08 -0500
-Date: Tue, 18 Feb 2014 11:09:33 -0800
+	Tue, 18 Feb 2014 14:09:18 -0500
+Date: Tue, 18 Feb 2014 11:10:43 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: John Stultz <john.stultz@linaro.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,7 +16,7 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Android Kernel Team <kernel-team@android.com>
 Subject: Re: [PATCH 13/14] staging: binder: Support concurrent 32 bit and 64
  bit processes.
-Message-ID: <20140218190933.GB10376@kroah.com>
+Message-ID: <20140218191043.GC10376@kroah.com>
 References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
  <1392674322-9036-14-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
@@ -51,13 +51,12 @@ On Mon, Feb 17, 2014 at 01:58:41PM -0800, John Stultz wrote:
 > Various whitespace fixes and longer Kconfig description for checkpatch]
 > Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-Same as the previous patch, I'm not going to take this until the Android
-team says it's ok, and given the borked-ness of the previous patch, I'm
-doubting that's going to happen...
+Ok, I see that Arve has signed off on this, why the Cc: above to confuse
+me?  :)
 
-So consider these 3 patches dropped, feel free to resend them when fixed
-up and acked.
+Anyway, what about the ARM patches that this was based on?  And why the
+previous patch that breaks things on its own?
 
-thanks,
+totally confused...
 
 greg k-h
