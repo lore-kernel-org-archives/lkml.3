@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaBRSwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:52:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41429 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784AbaBRSwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:52:49 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "ck@conrad-kostecki.de" <ck@conrad-kostecki.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: Re: [Devel] ACPI: Also allow ACPI table adding via initrd not only overriding
-Date: Tue, 18 Feb 2014 19:52:46 +0100
-Message-ID: <139301482.3RWgg14omZ@skinner>
-User-Agent: KMail/4.11.4 (Linux/3.11.6-4-desktop; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E37C7D7846@ORSMSX103.amr.corp.intel.com>
-References: <530265A3.3020302@zytor.com> <1392747763-3384-1-git-send-email-trenn@suse.de> <94F2FBAB4432B54E8AACC7DFDE6C92E37C7D7846@ORSMSX103.amr.corp.intel.com>
+	id S1752271AbaBRSw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:52:58 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56723 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222AbaBRSwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 13:52:55 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1392718107.15829.12.camel@artifact>
+References: <1390773698.3450.12.camel@artifact>
+	<CAE9FiQVD=oVHM5WJgSJ5cNpXZ1NYy9E_pcGWfjKnmD9OZoHHsw@mail.gmail.com>
+	<1391643656.1067.1.camel@artifact>
+	<CAE9FiQV8jutRhaBicL4kjqVYd07FzHmNoSN3NxdA2TYvOc_KUg@mail.gmail.com>
+	<z9zi9m.n0zpxd.1hgeaud-qmf@mail.snewbury.org.uk>
+	<i9nn22.n0zs79.1hgeaud-qmf@mail.snewbury.org.uk>
+	<1392392764.3520.11.camel@devel-n900>
+	<CAE9FiQV3H_nxH0gxcM0kW4uLm6b_qmHT9hRQUVY_4xPqjpvMtA@mail.gmail.com>
+	<1392718107.15829.12.camel@artifact>
+Date: Tue, 18 Feb 2014 10:52:54 -0800
+X-Google-Sender-Auth: VEs3YGOPU-_fnad3Qf7KZUL4VBA
+Message-ID: <CAE9FiQXUhvG2Jub3sbBxyCERVbt-L22+O+mcZ_HWEVQ_QaRawA@mail.gmail.com>
+Subject: Re: pci-3.14 resource alloc
+From: Yinghai Lu <yinghai@kernel.org>
+To: Steven Newbury <steve@snewbury.org.uk>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 18, 2014 06:38:45 PM Moore, Robert wrote:
-> acpi_load_table won't work?
+On Tue, Feb 18, 2014 at 2:08 AM, Steven Newbury <steve@snewbury.org.uk> wrote:
+>> >
+>> > There's no pci bridge/bus hotplug though. Docking doesn't reveal the
+>> > pci-e->pci bridge or the (radeon) devices on the other side.
+>>
+>> oh, no. could be other regression in linus tree or pci/next.
+>>
+>
+> Previously I needed the busn work to get it working, this was included
+> in the resource-alloc branch.  It never worked on mainline, the bridge
+> used to show up but never get scanned.  Now it's not showing up at all
+> on hotplug.  It could be a dock driver regression.
 
-I guess not, there is:
-        /* Must acquire the interpreter lock during this operation */
-        status = acpi_ut_acquire_mutex(ACPI_MTX_INTERPRETER);
+I had the busn_res_alloc patches in the branch.
 
-So the interpreter must be running already?
-That would mean the adding can only happen much later.
-This probably would eleminate most use cases for adding arbitrary
-ACPI tables. Most tables (beside DSDT and SSDT) are needed really
-early, otherwise the info could have been added as AML as well.
+There is some changes about acpi dock driver from Rafael in recent
+kernels. Maybe Rafael could suggest which commit could cause problem,
+then you could try revert them on top of branch.
 
-    Thomas 
- 
-> > -----Original Message-----
-> > From: Devel [mailto:devel-bounces@acpica.org] On Behalf Of Thomas
-> > Renninger
-> > Sent: Tuesday, February 18, 2014 10:23 AM
-> > Cc: x86@kernel.org; ck@conrad-kostecki.de; linux-kernel@vger.kernel.org;
-> > mingo@redhat.com; hpa@zytor.com; tglx@linutronix.de; devel@acpica.org
-> > Subject: [Devel] ACPI: Also allow ACPI table adding via initrd not only
-> > overriding
-> > 
-> > The ACPICA patches have to go into separate acpica repository first.
-> > It should also be checked in acpica whether the table signature the OS
-> > likes to add already exists (from BIOS). In this case the table must not
-> > be added.
-> > 
-> > Worked here by trying to override a DSDT and addind a BGRT table.
-> > 
-> >      Thomas
-> > 
-> > _______________________________________________
-> > Devel mailing list
-> > Devel@acpica.org
-> > https://lists.acpica.org/mailman/listinfo/devel
+Thanks
 
+Yinghai
