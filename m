@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361AbaBRPGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:06:38 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:50505 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388AbaBRO4o (ORCPT
+	id S1756033AbaBRO4n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:56:43 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:34299 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388AbaBRO4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:56:44 -0500
+	Tue, 18 Feb 2014 09:56:38 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, DCG_UPD_stlinux_kernel@list.st.com,
         dwmw2@infradead.org, linux-mtd@lists.infradead.org,
         computersforpeace@gmail.com, Angus.Clark@st.com
-Subject: [PATCH 06/35] mtd: st_spi_fsm: Add support for JEDEC ID extraction
-Date: Tue, 18 Feb 2014 14:55:33 +0000
-Message-Id: <1392735362-1245-7-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 04/35] mtd: st_spi_fsm: Supply framework for device requests
+Date: Tue, 18 Feb 2014 14:55:31 +0000
+Message-Id: <1392735362-1245-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
 References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
@@ -22,97 +22,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once we start supporting devices it will be handy go detect them
-dynamically. This will be done using the chip's unique JEDEC ID. This
-patch allows us to extract a device's JEDEC ID using the a predefined
-FSM register write sequence.
+The FSM hardware works by setting a predetermined sequence of register
+writes. Rather than open coding them inside each functional block we're
+going to define them in a series of formatted 'sequence structures'.
+This patch provides the framework which shall be used for every action.
 
 Acked-by Angus Clark <angus.clark@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 55 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 56 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index dba5f10..250162a 100644
+index 40952f9..ac6b782 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -219,6 +219,22 @@ struct stfsm_seq {
- 	uint32_t seq_cfg;
- } __packed __aligned(4);
+@@ -194,6 +194,8 @@
  
-+static struct stfsm_seq stfsm_seq_read_jedec = {
-+	.data_size = TRANSFER_SIZE(8),
-+	.seq_opc[0] = (SEQ_OPC_PADS_1 |
-+		       SEQ_OPC_CYCLES(8) |
-+		       SEQ_OPC_OPCODE(FLASH_CMD_RDID)),
-+	.seq = {
-+		STFSM_INST_CMD1,
-+		STFSM_INST_DATA_READ,
-+		STFSM_INST_STOP,
-+	},
-+	.seq_cfg = (SEQ_CFG_PADS_1 |
-+		    SEQ_CFG_READNOTWRITE |
-+		    SEQ_CFG_CSDEASSERT |
-+		    SEQ_CFG_STARTSEQ),
-+};
+ #define STFSM_FLASH_SAFE_FREQ  10000000UL                         /* 10 MHz */
+ 
++#define STFSM_MAX_WAIT_SEQ_MS  1000     /* FSM execution time */
 +
- static inline int stfsm_is_idle(struct stfsm *fsm)
+ struct stfsm {
+ 	struct device		*dev;
+ 	void __iomem		*base;
+@@ -204,6 +206,24 @@ struct stfsm {
+ 	uint32_t                fifo_dir_delay;
+ };
+ 
++struct stfsm_seq {
++	uint32_t data_size;
++	uint32_t addr1;
++	uint32_t addr2;
++	uint32_t addr_cfg;
++	uint32_t seq_opc[5];
++	uint32_t mode;
++	uint32_t dummy;
++	uint32_t status;
++	uint8_t  seq[16];
++	uint32_t seq_cfg;
++} __packed __aligned(4);
++
++static inline int stfsm_is_idle(struct stfsm *fsm)
++{
++	return readl(fsm->base + SPI_FAST_SEQ_STA) & 0x10;
++}
++
+ static inline uint32_t stfsm_fifo_available(struct stfsm *fsm)
  {
- 	return readl(fsm->base + SPI_FAST_SEQ_STA) & 0x10;
-@@ -307,6 +323,42 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
+ 	return (readl(fsm->base + SPI_FAST_SEQ_STA) >> 5) & 0x7f;
+@@ -225,6 +245,42 @@ static void stfsm_clear_fifo(struct stfsm *fsm)
  	}
  }
  
-+static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
++static inline void stfsm_load_seq(struct stfsm *fsm,
++				  const struct stfsm_seq *seq)
 +{
-+	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
-+	uint32_t tmp[2];
++	void __iomem *dst = fsm->base + SPI_FAST_SEQ_TRANSFER_SIZE;
++	const uint32_t *src = (const uint32_t *)seq;
++	int words = sizeof(*seq) / sizeof(*src);
 +
-+	stfsm_load_seq(fsm, seq);
++	BUG_ON(!stfsm_is_idle(fsm));
 +
-+	stfsm_read_fifo(fsm, tmp, 8);
-+
-+	memcpy(jedec, tmp, 5);
-+
-+	stfsm_wait_seq(fsm);
++	while (words--) {
++		writel(*src, dst);
++		src++;
++		dst += 4;
++	}
 +}
 +
-+static struct flash_info *stfsm_jedec_probe(struct stfsm *fsm)
++static void stfsm_wait_seq(struct stfsm *fsm)
 +{
-+	u16                     ext_jedec;
-+	u32			jedec;
-+	u8			id[5];
++	unsigned long deadline;
++	int timeout = 0;
 +
-+	stfsm_read_jedec(fsm, id);
++	deadline = jiffies + msecs_to_jiffies(STFSM_MAX_WAIT_SEQ_MS);
 +
-+	jedec     = id[0] << 16 | id[1] << 8 | id[2];
-+	/*
-+	 * JEDEC also defines an optional "extended device information"
-+	 * string for after vendor-specific data, after the three bytes
-+	 * we use here. Supporting some chips might require using it.
-+	 */
-+	ext_jedec = id[3] << 8  | id[4];
++	while (!timeout) {
++		if (time_after_eq(jiffies, deadline))
++			timeout = 1;
 +
-+	dev_dbg(fsm->dev, "JEDEC =  0x%08x [%02x %02x %02x %02x %02x]\n",
-+		jedec, id[0], id[1], id[2], id[3], id[4]);
++		if (stfsm_is_idle(fsm))
++			return;
 +
-+	return NULL;
++		cond_resched();
++	}
++
++	dev_err(fsm->dev, "timeout on sequence completion\n");
 +}
 +
  static int stfsm_set_mode(struct stfsm *fsm, uint32_t mode)
  {
  	int ret, timeout = 10;
-@@ -435,6 +487,9 @@ static int stfsm_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	/* Detect SPI FLASH device */
-+	stfsm_jedec_probe(fsm);
-+
- 	platform_set_drvdata(pdev, fsm);
- 
- 	fsm->mtd.dev.parent	= &pdev->dev;
 -- 
 1.8.3.2
 
