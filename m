@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaBRKHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:07:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42623 "EHLO mx1.redhat.com"
+	id S1755097AbaBRKWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:22:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56900 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754695AbaBRKGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:06:39 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH net-next 03/35] tg3: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 18 Feb 2014 11:07:55 +0100
-Message-Id: <0a7f2b8a12cdd300aa3e2ec2649e3e401381181c.1392717502.git.agordeev@redhat.com>
-In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
-References: <cover.1392717502.git.agordeev@redhat.com>
+	id S1754713AbaBRKWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:22:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,501,1389772800"; 
+   d="scan'208";a="476952634"
+From: Chew Chiau Ee <chiau.ee.chew@intel.com>
+To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: [PATCH v2] ACPI / LPSS: Add Intel BayTrail ACPI mode PWM
+Date: Wed, 19 Feb 2014 02:24:29 +0800
+Message-Id: <1392747869-31435-1-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>
-Cc: Michael Chan <mchan@broadcom.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
+Intel BayTrail LPSS consists of two PWM controllers which can
+be enumerated from ACPI namespace. This change will cause
+platform device objects to be created for Intel BayTrail PWM
+controllers which will allow the pwm-lpss driver to bind to them
+and handle those devices.
+
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/acpi/acpi_lpss.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 3167ed6..6e5e7c0 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -11362,12 +11362,10 @@ static bool tg3_enable_msix(struct tg3 *tp)
- 		msix_ent[i].vector = 0;
- 	}
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index 2428857..9e22c13 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -96,6 +96,16 @@ static struct lpss_device_desc lpt_sdio_dev_desc = {
+ 	.ltr_required = true,
+ };
  
--	rc = pci_enable_msix(tp->pdev, msix_ent, tp->irq_cnt);
-+	rc = pci_enable_msix_range(tp->pdev, msix_ent, 1, tp->irq_cnt);
- 	if (rc < 0) {
- 		return false;
--	} else if (rc != 0) {
--		if (pci_enable_msix(tp->pdev, msix_ent, rc))
--			return false;
-+	} else if (rc < tp->irq_cnt) {
- 		netdev_notice(tp->dev, "Requested %d MSI-X vectors, received %d\n",
- 			      tp->irq_cnt, rc);
- 		tp->irq_cnt = rc;
++static struct lpss_shared_clock pwm_clock = {
++	.name = "pwm_clk",
++	.rate = 25000000,
++};
++
++static struct lpss_device_desc byt_pwm_dev_desc = {
++	.clk_required = true,
++	.shared_clock = &pwm_clock,
++};
++
+ static struct lpss_shared_clock uart_clock = {
+ 	.name = "uart_clk",
+ 	.rate = 44236800,
+@@ -151,6 +161,7 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	{ "INT33C7", },
+ 
+ 	/* BayTrail LPSS devices */
++	{ "80860F09", (unsigned long)&byt_pwm_dev_desc },
+ 	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
+ 	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
+ 	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
 -- 
-1.7.7.6
+1.7.4.4
 
