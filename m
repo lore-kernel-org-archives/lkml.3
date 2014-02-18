@@ -1,347 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaBRXEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:04:44 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:35836 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677AbaBRXEi (ORCPT
+	id S1753735AbaBRXFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:05:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51083 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaBRWq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:04:38 -0500
-Date: Tue, 18 Feb 2014 17:02:10 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
+	Tue, 18 Feb 2014 17:46:58 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] drivers: Introduce MEN Chameleon Bus
-Message-ID: <20140218230210.GK31116@joshc.qualcomm.com>
-References: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de>
- <1392737654-22682-2-git-send-email-johannes.thumshirn@men.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392737654-22682-2-git-send-email-johannes.thumshirn@men.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [PATCH 3.12 00/32] 3.12.12-stable review
+Date: Tue, 18 Feb 2014 14:47:00 -0800
+Message-Id: <20140218224500.101465031@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+User-Agent: quilt/0.61-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Johannes,
+This is the start of the stable review cycle for the 3.12.12 release.
+There are 32 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-On Tue, Feb 18, 2014 at 04:34:12PM +0100, Johannes Thumshirn wrote:
-[..]
-> +++ b/drivers/mcb/mcb-core.c
-> @@ -0,0 +1,420 @@
-> +/*
-> + * MEN Chameleon Bus.
-> + *
-> + * Copyright (C) 2013 MEN Mikroelektronik GmbH (www.men.de)
-> + * Author: Johannes Thumshirn <johannes.thumshirn@men.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the Free
-> + * Software Foundation; version 2 of the License.
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/rwsem.h>
-> +#include <linux/idr.h>
-> +#include <linux/mcb.h>
-> +
-> +static DECLARE_RWSEM(mcb_bus_sem);
+Responses should be made by Thu Feb 20 22:44:47 UTC 2014.
+Anything received after that time might be too late.
 
-Why a rwsemaphore and not a simple mutex?  It doesn't appear like you
-attempt to handle any multiple-reader usecases.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.12-rc1.gz
+and the diffstat can be found below.
 
-> +static DEFINE_IDA(mcb_ida);
-> +
-[..]
-> +static void mcb_release_dev(struct device *dev)
-> +{
-> +	struct mcb_device *mdev = to_mcb_device(dev);
-> +
-> +	down_write(&mcb_bus_sem);
-> +	list_del(&mdev->bus_list);
-> +	up_write(&mcb_bus_sem);
+thanks,
 
-Why even maintain your own list of devices?  Doesn't the bus_type
-already do so for you? (And provides conveniences such as
-bus_for_each_dev, etc).
+greg k-h
 
-> +
-> +	mcb_bus_put(mdev->bus);
-> +	kfree(mdev);
-> +}
-> +
-> +/**
-> + * mcb_device_register() - Register a mcb_device
-> + * @bus: The @mcb_bus of the device
-> + * @dev: The @mcb_device
-> + *
-> + * Register a specific @mcb_device at a @mcb_bus and the system itself.
-> + */
-> +int mcb_device_register(struct mcb_bus *bus, struct mcb_device *dev)
-> +{
-> +	int ret;
-> +	int device_id;
-> +
-> +	device_initialize(&dev->dev);
-> +	dev->dev.bus = &mcb_bus_type;
-> +	dev->dev.parent = bus->dev.parent;
-> +	dev->dev.release = mcb_release_dev;
-> +
-> +
+-------------
+Pseudo-Shortlog of commits:
 
-Nit: extraneous line.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.12.12-rc1
 
-> +	device_id = dev->id;
-> +	dev_set_name(&dev->dev, "mcb%d-16z%03d-%d:%d:%d",
-> +		bus->bus_nr, device_id, dev->inst, dev->group, dev->var);
-> +
-> +	down_write(&mcb_bus_sem);
-> +	list_add_tail(&dev->bus_list, &bus->devices);
-> +	up_write(&mcb_bus_sem);
+Dirk Brandewie <dirk.j.brandewie@intel.com>
+    intel_pstate: Take core C0 time into account for core busy calculation
 
-Again, unsure why you maintain your own list :(.
+Stanislaw Gruszka <sgruszka@redhat.com>
+    pinctrl: protect pinctrl_list add
 
-> +
-> +	ret = device_add(&dev->dev);
-> +	if (ret < 0) {
-> +		pr_err("Failed registering device 16z%03d on bus mcb%d (%d)\n",
-> +			device_id, bus->bus_nr, ret);
-> +		goto out;
-> +	}
-> +
-> +	return 0;
-> +
-> +out:
-> +
-> +	return ret;
-> +}
-[..]
-> +/**
-> + * mcb_get_irq() - Get device's IRQ number
-> + * @dev: The @mcb_device the IRQ is for
-> + *
-> + * Get the IRQ number of a given @mcb_device.
-> + */
-> +int mcb_get_irq(struct mcb_device *dev)
-> +{
-> +	struct resource *irq = &dev->irq;
-> +
-> +	return irq ? irq->start : -ENXIO;
+Tony Prisk <linux@prisktech.co.nz>
+    pinctrl: vt8500: Change devicetree data parsing
 
-How could irq ever be NULL?
+Nicolas Ferre <nicolas.ferre@atmel.com>
+    pinctrl: at91: use locked variant of irq_set_handler
 
-> +}
-> +EXPORT_SYMBOL_GPL(mcb_get_irq);
-> +
-> +static int mcb_init(void)
-> +{
-> +	ida_init(&mcb_ida);
+Nitin A Kamble <nitin.a.kamble@intel.com>
+    genirq: Generic irq chip requires IRQ_DOMAIN
 
-This isn't explicitly necessary (DEFINE_IDA statically initializes the
-ida).
+Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+    x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
 
-> +	return bus_register(&mcb_bus_type);
-> +}
-> +
-> +static void mcb_exit(void)
-> +{
-> +	bus_unregister(&mcb_bus_type);
-> +	ida_destroy(&mcb_ida);
+Hans Verkuil <hverkuil@xs4all.nl>
+    Revert "[media] videobuf_vm_{open,close} race fixes"
 
-This is also unnecessary.
+Dave Jones <davej@fedoraproject.org>
+    mxl111sf: Fix compile when CONFIG_DVB_USB_MXL111SF is unset
 
-> +}
-> +
-> +/* mcb must be initialized after PCI but before the chameleon drivers.
-> + * That means we must use some initcall between subsys_initcall and
-> + * device_initcall.
-> + */
-> +fs_initcall(mcb_init);
-> +module_exit(mcb_exit);
-> +
-> +MODULE_DESCRIPTION("MEN Chameleon Bus Driver");
-> +MODULE_AUTHOR("Johannes Thumshirn <johannes.thumshirn@men.de>");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/drivers/mcb/mcb-internal.h b/drivers/mcb/mcb-internal.h
-> new file mode 100644
-> index 0000000..ca253e3
-> --- /dev/null
-> +++ b/drivers/mcb/mcb-internal.h
-> @@ -0,0 +1,118 @@
-> +#ifndef __MCB_INTERNAL
-> +#define __MCB_INTERNAL
-> +
-> +#include <linux/types.h>
-> +
-> +#define PCI_VENDOR_ID_MEN		0x1a88
-> +#define PCI_DEVICE_ID_MEN_CHAMELEON	0x4d45
+Dave Jones <davej@fedoraproject.org>
+    mxl111sf: Fix unintentional garbage stack read
 
-This seems misplaced.  Perhaps it should really be in the PCI carrier
-patch?
+Antti Palosaari <crope@iki.fi>
+    af9035: add ID [2040:f900] Hauppauge WinTV-MiniStick 2
 
-> +#define CHAMELEON_FILENAME_LEN		12
-> +#define CHAMELEONV2_MAGIC		0xabce
-> +
-[..]
-> +int parse_chameleon_cells(struct mcb_bus *bus, phys_addr_t mapbase,
-> +			  void __iomem *base);
+Mel Gorman <mgorman@suse.de>
+    x86: mm: change tlb_flushall_shift for IvyBridge
 
-Nit: it'd be nicer if you consistently used the chameleon_ prefix.  That
-is, rename this chameleon_parse_cells(...).
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    mm: __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
 
-[..]
-> +int parse_chameleon_cells(struct mcb_bus *bus, phys_addr_t mapbase,
-> +			void __iomem *base)
-> +{
-> +	char __iomem *p = base;
-> +	struct chameleon_fpga_header *header;
-> +	uint32_t dtype;
-> +	int num_cells = 0;
-> +	int ret = 0;
-> +	u32 hsize;
-> +
-> +	hsize = sizeof(struct chameleon_fpga_header);
-> +
-> +	header = kzalloc(hsize, GFP_KERNEL);
-> +	if (!header)
-> +		return -ENOMEM;
-> +
-> +	/* Extract header information */
-> +	memcpy_fromio(header, p, hsize);
-> +	/* We only support chameleon v2 at the moment */
-> +	header->magic = le16_to_cpu(header->magic);
-> +	if (header->magic != CHAMELEONV2_MAGIC) {
-> +		pr_err("Unsupported chameleon version 0x%x\n",
-> +				header->magic);
-> +		kfree(header);
-> +		return -ENODEV;
-> +	}
-> +	p += hsize;
-> +
-> +	pr_debug("header->revision = %d\n", header->revision);
-> +	pr_debug("header->model = 0x%x ('%c')\n", header->model,
-> +		header->model);
-> +	pr_debug("header->minor = %d\n", header->minor);
-> +	pr_debug("header->bus_type = 0x%x\n", header->bus_type);
-> +
-> +
-> +	pr_debug("header->magic = 0x%x\n", header->magic);
-> +	pr_debug("header->filename = \"%.*s\"\n", CHAMELEON_FILENAME_LEN,
-> +		header->filename);
-> +
-> +	for_each_chameleon_cell(dtype, p) {
-> +		switch (dtype) {
-> +		case CHAMELEON_DTYPE_GENERAL:
-> +			ret = parse_chameleon_gdd(bus, mapbase, p);
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
 
-Same comment about using chameleon_ prefix.
+Weijie Yang <weijie.yang@samsung.com>
+    mm/swap: fix race on swap_info reuse between swapoff and swapon
 
-> +			if (ret < 0)
-> +				goto out;
-> +			p += sizeof(struct chameleon_gdd);
-> +			break;
-> +		case CHAMELEON_DTYPE_BRIDGE:
-> +			parse_chameleon_bdd(bus, mapbase, p);
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Improve loopback path lookups for AD1983
 
-And this one, too :).
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Add missing mixer widget for AD1983
 
-[..]
-> +++ b/include/linux/mcb.h
-> @@ -0,0 +1,113 @@
-> +/*
-> + * MEN Chameleon Bus.
-> + *
-> + * Copyright (C) 2014 MEN Mikroelektronik GmbH (www.men.de)
-> + * Author: Johannes Thumshirn <johannes.thumshirn@men.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the Free
-> + * Software Foundation; version 2 of the License.
-> + */
-> +#ifndef _LINUX_MCB_H
-> +#define _LINUX_MCB_H
-> +
-> +#include <linux/mod_devicetable.h>
-> +#include <linux/device.h>
-> +#include <linux/irqreturn.h>
-> +
-> +struct mcb_driver;
-> +
-> +/**
-> + * struct mcb_bus - MEN Chameleon Bus
-> + *
-> + * @parent: Pointer to carrier device
-> + * @cores: Number of cores available on this bus
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Fix silent output on Toshiba Satellite L40
 
-Looks like these comments could be updated...
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Fix missing VREF setup for Mac Pro 1,1
 
-> + * @bus_nr: mcb bus number
-> + */
-> +struct mcb_bus {
-> +	struct list_head node;
-> +	struct list_head devices;
-> +	struct list_head children;
-> +	struct device dev;
-> +	int bus_nr;
-> +};
-> +#define to_mcb_bus(b) container_of((b), struct mcb_bus, dev)
-> +
-> +/**
-> + * struct mcb_device - MEN Chameleon Bus device
-> + *
-> + * @bus_list: internal list handling for bus code
-> + * @dev: device in kernel representation
-> + * @bus: mcb bus the device is plugged to
-> + * @subordinate: subordinate MCBus in case of bridge
-> + * @is_added: flag to check if device is added to bus
-> + * @driver: associated mcb_driver
-> + * @id: mcb device id
-> + * @inst: instance in Chameleon table
-> + * @group: group in Chameleon table
-> + * @var: variant in Chameleon table
-> + * @bar: BAR in Chameleon table
-> + * @rev: revision in Chameleon table
-> + * @irq: IRQ resource
-> + * @memory: memory resource
-> + */
-> +struct mcb_device {
-> +	struct list_head bus_list;
-> +	struct device dev;
-> +	struct mcb_bus *bus;
-> +	struct mcb_bus *subordinate;
-> +	bool is_added;
-> +	struct mcb_driver *driver;
-> +	u16 id;
-> +	int inst;
-> +	int group;
-> +	int var;
-> +	int bar;
-> +	int rev;
-> +	struct resource irq;
-> +	struct resource mem;
-> +};
-> +#define to_mcb_device(x) container_of((x), struct mcb_device, dev)
-> +
-> +struct mcb_driver {
+Takashi Iwai <tiwai@suse.de>
+    ALSA: usb-audio: Add missing kconfig dependecy
 
-This could probably use a kerneldoc.
+Vinayak Kale <vkale@apm.com>
+    arm64: add DSB after icache flush in __flush_icache_all()
 
-> +	struct list_head node;
+Nathan Lynch <nathan_lynch@mentor.com>
+    arm64: vdso: fix coarse clock handling
 
-How is this node used?
+Catalin Marinas <catalin.marinas@arm.com>
+    arm64: Invalidate the TLB when replacing pmd entries during boot
 
-> +	struct device_driver driver;
-> +	const struct mcb_device_id *id_table;
-> +	int (*probe)(struct mcb_device *mdev, const struct mcb_device_id *id);
-> +	void (*remove)(struct mcb_device *mdev);
-> +	void (*shutdown)(struct mcb_device *mdev);
-> +};
+Will Deacon <will.deacon@arm.com>
+    arm64: vdso: prevent ld from aligning PT_LOAD segments to 64k
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Nathan Lynch <nathan_lynch@mentor.com>
+    arm64: vdso: update wtm fields for CLOCK_MONOTONIC_COARSE
+
+Lior Amsalem <alior@marvell.com>
+    irqchip: armada-370-xp: fix IPI race condition
+
+Trond Myklebust <trond.myklebust@primarydata.com>
+    NFSv4: Fix memory corruption in nfs4_proc_open_confirm
+
+Trond Myklebust <trond.myklebust@primarydata.com>
+    NFSv4.1: nfs4_destroy_session must call rpc_destroy_waitqueue
+
+Harald Freudenberger <freude@linux.vnet.ibm.com>
+    crypto: s390 - fix des and des3_ede ctr concurrency issue
+
+Harald Freudenberger <freude@linux.vnet.ibm.com>
+    crypto: s390 - fix des and des3_ede cbc concurrency issue
+
+Harald Freudenberger <freude@linux.vnet.ibm.com>
+    crypto: s390 - fix concurrency issue in aes-ctr mode
+
+Josef Bacik <jbacik@fb.com>
+    Btrfs: disable snapshot aware defrag for now
+
+Stephen Smalley <sds@tycho.nsa.gov>
+    SELinux: Fix kernel BUG on empty security contexts.
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                      |  4 +-
+ arch/arm64/include/asm/cacheflush.h           |  1 +
+ arch/arm64/kernel/vdso.c                      |  4 +-
+ arch/arm64/kernel/vdso/Makefile               |  2 +-
+ arch/arm64/kernel/vdso/gettimeofday.S         |  7 +-
+ arch/arm64/mm/mmu.c                           | 12 +++-
+ arch/s390/crypto/aes_s390.c                   | 65 ++++++++++++------
+ arch/s390/crypto/des_s390.c                   | 95 +++++++++++++++++----------
+ arch/x86/kernel/cpu/intel.c                   |  2 +-
+ drivers/cpufreq/intel_pstate.c                | 16 +++--
+ drivers/irqchip/irq-armada-370-xp.c           |  2 +-
+ drivers/media/usb/dvb-usb-v2/af9035.c         |  2 +
+ drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.h |  2 +-
+ drivers/media/usb/dvb-usb-v2/mxl111sf.c       |  2 +-
+ drivers/media/v4l2-core/videobuf-dma-contig.c | 12 ++--
+ drivers/media/v4l2-core/videobuf-dma-sg.c     | 10 ++-
+ drivers/media/v4l2-core/videobuf-vmalloc.c    | 10 ++-
+ drivers/pinctrl/core.c                        |  2 +
+ drivers/pinctrl/pinctrl-at91.c                | 10 +--
+ drivers/pinctrl/vt8500/pinctrl-wmt.c          | 15 ++++-
+ fs/btrfs/inode.c                              |  2 +-
+ fs/buffer.c                                   |  6 +-
+ fs/nfs/nfs4client.c                           |  2 +-
+ fs/nfs/nfs4proc.c                             |  8 +--
+ fs/nfs/nfs4session.c                          | 25 +++++--
+ fs/nfs/nfs4session.h                          |  2 +-
+ include/linux/nfs_xdr.h                       |  2 +
+ kernel/irq/Kconfig                            |  1 +
+ lib/Makefile                                  |  1 +
+ mm/page-writeback.c                           |  5 +-
+ mm/swapfile.c                                 | 11 +++-
+ security/selinux/ss/services.c                |  4 ++
+ sound/pci/hda/patch_analog.c                  | 27 ++++++++
+ sound/pci/hda/patch_realtek.c                 |  9 ++-
+ sound/usb/Kconfig                             |  1 +
+ 35 files changed, 270 insertions(+), 111 deletions(-)
+
+
