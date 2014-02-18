@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaBRUdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:33:15 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47405 "EHLO bear.ext.ti.com"
+	id S1752677AbaBRUdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:33:20 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47415 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006AbaBRUdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:33:07 -0500
+	id S1751006AbaBRUdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 15:33:16 -0500
 From: Nishanth Menon <nm@ti.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Viresh Kumar <viresh.kumar@linaro.org>,
@@ -16,99 +16,271 @@ CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [RFC PATCH 0/6] PM: introduce voltage domain abstraction
-Date: Tue, 18 Feb 2014 14:32:17 -0600
-Message-ID: <1392755543-28335-1-git-send-email-nm@ti.com>
+Subject: [RFC PATCH 2/6] cpufreq: cpufreq-cpu0: use clk rate-change notifiers
+Date: Tue, 18 Feb 2014 14:32:19 -0600
+Message-ID: <1392755543-28335-3-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392755543-28335-1-git-send-email-nm@ti.com>
+References: <1392755543-28335-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Mike Turquette <mturquette@linaro.org>
 
-On many SoCs such as OMAP, hardware blocks are isolated into voltage
-domains allowing for individual tweaks for optimal power-performance
-tradeoffs. Frameworks such as cpufreq, devfreq provide a top level
-control of these hardware blocks. Most SoCs have different knobs to
-fine tune the voltages. They may supply multiple supplies to various
-voltage planes on the same voltage domains.
+Removes directly handling of OPP tables and voltage regulators by
+calling of_clk_cpufreq_notifier_handler, introduced by commit "clk:
+cpufreq helper for voltage scaling".
 
-Regulator framework provides us a with an appropriate representation
-of consumer model, however, we lack the abstraction necessary to
-isolate the necessary sequencing for a specific voltage domain.
+In the future this can help consolidate code found across similar
+CPUfreq drivers.
 
-There has been few attempts previously taken such as [3] [4],
-this series is a further development of of Mike's series[1] where
-cpufreq-cpu0 driver was first targetted with clk notifiers. While I do
-understand the concerns Mike has in [2], this could be a base on which
-further work may be done.
+[nm@ti.com: updates to keep the OPP logic still in cpufreq-cpu0 -
+optimization to generalize that for cpufreq is to be done in a later
+series]
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+---
+ drivers/cpufreq/Kconfig        |    1 +
+ drivers/cpufreq/cpufreq-cpu0.c |  140 ++++++++++++----------------------------
+ 2 files changed, 42 insertions(+), 99 deletions(-)
 
-In a nutshell, this (for cpufreq-cpu0 as an example):
-maintains the legacy definitions used by cpufreq/devfreq such as:
-&cpu0 {
-	cpu0-supply = <&regulator_x>;
-};
-
-on other SoCs where this might turn out to be a more detailed
-implementation,
-&cpu0 {
-	cpu0-voltdm = <&voltdm_x>;
-};
-
-To enure this is split off from clk framework, I chose
-drivers/power/voltdm as the location for the new files, I'd love to
-hear opinions and suggestions on the approach.
-
-The series is based on 3.14-rc3 and is available here:
-https://github.com/nmenon/linux-2.6-playground/commits/push/voltdm-notifier-rfc
-
-A testing branch for Beagle-XM (OMAP3630 as testbed):
-	https://github.com/nmenon/linux-2.6-playground/commits/testing/beagle-xm-voltdm-notifier-rfc
-	Log: http://slexy.org/view/s20TgkN7kf
-
-NOTE: TI platforms potentially need further development, however, this
-forms the basis of the development.
-
-Mike Turquette (2):
-  PM / Voltagedomain: Add generic clk notifier handler for regulator
-    based dynamic voltage scaling
-  cpufreq: cpufreq-cpu0: use clk rate-change notifiers
-
-Nishanth Menon (4):
-  PM / Voltagedomain: introduce voltage domain driver support
-  devicetree: bindings: add documentation for voltagedomain
-  PM / Voltagedomain: introduce basic voltage domain support for OMAP
-  devicetree: bindings: voltagedomain: add bindings for OMAP compatible
-    SoCs
-
- .../bindings/power/voltdm/voltage_domain.txt       |   65 +++
- .../bindings/power/voltdm/voltdm_omap.txt          |   24 +
- drivers/cpufreq/Kconfig                            |    1 +
- drivers/cpufreq/cpufreq-cpu0.c                     |  140 ++----
- drivers/power/Kconfig                              |    1 +
- drivers/power/Makefile                             |    1 +
- drivers/power/voltdm/Kconfig                       |   19 +
- drivers/power/voltdm/Makefile                      |    6 +
- drivers/power/voltdm/core.c                        |  508 ++++++++++++++++++++
- drivers/power/voltdm/voltage_domain_private.h      |   86 ++++
- drivers/power/voltdm/voltdm_omap.c                 |  287 +++++++++++
- include/linux/pm_voltage_domain.h                  |   47 ++
- 12 files changed, 1086 insertions(+), 99 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/voltdm/voltage_domain.txt
- create mode 100644 Documentation/devicetree/bindings/power/voltdm/voltdm_omap.txt
- create mode 100644 drivers/power/voltdm/Kconfig
- create mode 100644 drivers/power/voltdm/Makefile
- create mode 100644 drivers/power/voltdm/core.c
- create mode 100644 drivers/power/voltdm/voltage_domain_private.h
- create mode 100644 drivers/power/voltdm/voltdm_omap.c
- create mode 100644 include/linux/pm_voltage_domain.h
-
-[1] https://lkml.org/lkml/2013/7/7/110 (original RFC)
-[2] http://marc.info/?l=linux-arm-kernel&m=137947787621572&w=2 (runtime pm should enable regulator)
-[3] http://marc.info/?t=136603111700006&r=1&w=2
-[4] http://git.omapzoom.org/?p=kernel/omap.git;a=blob;f=arch/arm/mach-omap2/dvfs.c;hb=p-linux-omap-3.4
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 4b029c0..70b07ab 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -187,6 +187,7 @@ config GENERIC_CPUFREQ_CPU0
+ 	tristate "Generic CPU0 cpufreq driver"
+ 	depends on HAVE_CLK && REGULATOR && OF && THERMAL && CPU_THERMAL
+ 	select PM_OPP
++	select VOLTAGE_DOMAIN
+ 	help
+ 	  This adds a generic cpufreq driver for CPU0 frequency management.
+ 	  It supports both uniprocessor (UP) and symmetric multiprocessor (SMP)
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index 0c12ffc..32719d3 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -21,23 +21,20 @@
+ #include <linux/of.h>
+ #include <linux/pm_opp.h>
+ #include <linux/platform_device.h>
+-#include <linux/regulator/consumer.h>
++#include <linux/pm_voltage_domain.h>
+ #include <linux/slab.h>
+ #include <linux/thermal.h>
+ 
+ static unsigned int transition_latency;
+-static unsigned int voltage_tolerance; /* in percentage */
+ 
+ static struct device *cpu_dev;
+ static struct clk *cpu_clk;
+-static struct regulator *cpu_reg;
+ static struct cpufreq_frequency_table *freq_table;
+ static struct thermal_cooling_device *cdev;
++static struct notifier_block *clk_nb;
+ 
+ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
+ {
+-	struct dev_pm_opp *opp;
+-	unsigned long volt = 0, volt_old = 0, tol = 0;
+ 	unsigned int old_freq, new_freq;
+ 	long freq_Hz, freq_exact;
+ 	int ret;
+@@ -50,50 +47,14 @@ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
+ 	new_freq = freq_Hz / 1000;
+ 	old_freq = clk_get_rate(cpu_clk) / 1000;
+ 
+-	if (!IS_ERR(cpu_reg)) {
+-		rcu_read_lock();
+-		opp = dev_pm_opp_find_freq_ceil(cpu_dev, &freq_Hz);
+-		if (IS_ERR(opp)) {
+-			rcu_read_unlock();
+-			pr_err("failed to find OPP for %ld\n", freq_Hz);
+-			return PTR_ERR(opp);
+-		}
+-		volt = dev_pm_opp_get_voltage(opp);
+-		rcu_read_unlock();
+-		tol = volt * voltage_tolerance / 100;
+-		volt_old = regulator_get_voltage(cpu_reg);
+-	}
+-
+-	pr_debug("%u MHz, %ld mV --> %u MHz, %ld mV\n",
+-		 old_freq / 1000, volt_old ? volt_old / 1000 : -1,
+-		 new_freq / 1000, volt ? volt / 1000 : -1);
+-
+-	/* scaling up?  scale voltage before frequency */
+-	if (!IS_ERR(cpu_reg) && new_freq > old_freq) {
+-		ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
+-		if (ret) {
+-			pr_err("failed to scale voltage up: %d\n", ret);
+-			return ret;
+-		}
+-	}
++	pr_debug("%u MHz --> %u MHz\n", old_freq / 1000, new_freq / 1000);
+ 
+ 	ret = clk_set_rate(cpu_clk, freq_exact);
+ 	if (ret) {
+ 		pr_err("failed to set clock rate: %d\n", ret);
+-		if (!IS_ERR(cpu_reg))
+-			regulator_set_voltage_tol(cpu_reg, volt_old, tol);
+ 		return ret;
+ 	}
+ 
+-	/* scaling down?  scale voltage after frequency */
+-	if (!IS_ERR(cpu_reg) && new_freq < old_freq) {
+-		ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
+-		if (ret) {
+-			pr_err("failed to scale voltage down: %d\n", ret);
+-			clk_set_rate(cpu_clk, old_freq * 1000);
+-		}
+-	}
+-
+ 	return ret;
+ }
+ 
+@@ -117,33 +78,24 @@ static struct cpufreq_driver cpu0_cpufreq_driver = {
+ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np;
++	unsigned int voltage_latency;
+ 	int ret;
+ 
+-	cpu_dev = get_cpu_device(0);
+ 	if (!cpu_dev) {
+-		pr_err("failed to get cpu0 device\n");
+-		return -ENODEV;
+-	}
+-
+-	np = of_node_get(cpu_dev->of_node);
+-	if (!np) {
+-		pr_err("failed to find cpu0 node\n");
+-		return -ENOENT;
+-	}
++		cpu_dev = get_cpu_device(0);
++		if (!cpu_dev) {
++			pr_err("failed to get cpu0 device\n");
++			return -ENODEV;
++		}
+ 
+-	cpu_reg = devm_regulator_get_optional(cpu_dev, "cpu0");
+-	if (IS_ERR(cpu_reg)) {
+-		/*
+-		 * If cpu0 regulator supply node is present, but regulator is
+-		 * not yet registered, we should try defering probe.
+-		 */
+-		if (PTR_ERR(cpu_reg) == -EPROBE_DEFER) {
+-			dev_err(cpu_dev, "cpu0 regulator not ready, retry\n");
+-			ret = -EPROBE_DEFER;
+-			goto out_put_node;
++		np = of_node_get(cpu_dev->of_node);
++		ret = of_init_opp_table(cpu_dev);
++		if (ret) {
++			pr_err("failed to init OPP table: %d\n", ret);
++			return ret;
+ 		}
+-		pr_warn("failed to get cpu0 regulator: %ld\n",
+-			PTR_ERR(cpu_reg));
++	} else {
++		np = of_node_get(cpu_dev->of_node);
+ 	}
+ 
+ 	cpu_clk = devm_clk_get(cpu_dev, NULL);
+@@ -153,11 +105,8 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 		goto out_put_node;
+ 	}
+ 
+-	ret = of_init_opp_table(cpu_dev);
+-	if (ret) {
+-		pr_err("failed to init OPP table: %d\n", ret);
+-		goto out_put_node;
+-	}
++	if (of_property_read_u32(np, "clock-latency", &transition_latency))
++		transition_latency = CPUFREQ_ETERNAL;
+ 
+ 	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
+ 	if (ret) {
+@@ -165,40 +114,30 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 		goto out_put_node;
+ 	}
+ 
+-	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
+-
+-	if (of_property_read_u32(np, "clock-latency", &transition_latency))
+-		transition_latency = CPUFREQ_ETERNAL;
+-
+-	if (!IS_ERR(cpu_reg)) {
+-		struct dev_pm_opp *opp;
+-		unsigned long min_uV, max_uV;
+-		int i;
+-
+-		/*
+-		 * OPP is maintained in order of increasing frequency, and
+-		 * freq_table initialised from OPP is therefore sorted in the
+-		 * same order.
+-		 */
+-		for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
+-			;
+-		rcu_read_lock();
+-		opp = dev_pm_opp_find_freq_exact(cpu_dev,
+-				freq_table[0].frequency * 1000, true);
+-		min_uV = dev_pm_opp_get_voltage(opp);
+-		opp = dev_pm_opp_find_freq_exact(cpu_dev,
+-				freq_table[i-1].frequency * 1000, true);
+-		max_uV = dev_pm_opp_get_voltage(opp);
+-		rcu_read_unlock();
+-		ret = regulator_set_voltage_time(cpu_reg, min_uV, max_uV);
+-		if (ret > 0)
+-			transition_latency += ret * 1000;
++	clk_nb = of_pm_voltdm_notifier_register(cpu_dev, np, cpu_clk, "cpu0",
++					       &voltage_latency);
++
++	if (IS_ERR(clk_nb)) {
++		ret = PTR_ERR(clk_nb);
++		/* defer probe if regulator is not yet registered */
++		if (ret == -EPROBE_DEFER) {
++			dev_err(cpu_dev,
++				"cpu0 clock notifier not ready, retry\n");
++		} else {
++			dev_err(cpu_dev,
++				"Failed to register cpu0 clock notifier: %d\n",
++				ret);
++		}
++		goto out_freq_table_free;
+ 	}
+ 
++	if (voltage_latency > 0)
++		transition_latency += voltage_latency;
++
+ 	ret = cpufreq_register_driver(&cpu0_cpufreq_driver);
+ 	if (ret) {
+ 		pr_err("failed register driver: %d\n", ret);
+-		goto out_free_table;
++		goto out_notifier_unregister;
+ 	}
+ 
+ 	/*
+@@ -215,7 +154,9 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 	of_node_put(np);
+ 	return 0;
+ 
+-out_free_table:
++out_notifier_unregister:
++	of_pm_voltdm_notifier_unregister(clk_nb);
++out_freq_table_free:
+ 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
+ out_put_node:
+ 	of_node_put(np);
+@@ -226,6 +167,7 @@ static int cpu0_cpufreq_remove(struct platform_device *pdev)
+ {
+ 	cpufreq_cooling_unregister(cdev);
+ 	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
++	of_pm_voltdm_notifier_unregister(clk_nb);
+ 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
+ 
+ 	return 0;
 -- 
 1.7.9.5
 
