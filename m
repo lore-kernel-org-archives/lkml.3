@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaBRO2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:28:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38331 "EHLO mga09.intel.com"
+	id S1755974AbaBRO3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:29:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42068 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755750AbaBROZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:25:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="457418384"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
+	id S1755410AbaBRO3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 09:29:37 -0500
+Message-ID: <53036E26.1040701@zytor.com>
+Date: Tue, 18 Feb 2014 06:28:54 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+CC: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/6] kbuild: Don't include const variable in kallsyms with !KALLSYMS_ALL
-Date: Tue, 18 Feb 2014 15:24:27 +0100
-Message-Id: <1392733470-8228-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1392733470-8228-1-git-send-email-andi@firstfloor.org>
-References: <1392733470-8228-1-git-send-email-andi@firstfloor.org>
+Subject: Re: [PATCH 1/6] kbuild: Remove relocations from kallsyms table
+References: <1392733470-8228-1-git-send-email-andi@firstfloor.org> <1392733470-8228-2-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1392733470-8228-2-git-send-email-andi@firstfloor.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 02/18/2014 06:24 AM, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Remove the ELF relocations from the kallsyms_address[] table.
+> Instead we just store offsets to _text and relocate that while
+> accessing the kallsyms table. This is done with a new
+> kallsyms_offsets[] table. With these changes .tmp_kallsyms*.o
+> becomes relocation free.
+> 
+> In theory this would also allow to shrink the kallsyms table
+> on 64bit by using offsets.
+> 
 
-const variables are put into the text segment, so !KALLSYMS_ALL
-includes them into the kallsyms section. Remove them to make
-the kallsyms smaller. This also avoids some problems with LTO.
-The way LTO generates the first pass kallsyms cannot handle
-variables currently, so if we don't filter them out the
-first and second level pass differ too much.
+Why not do that, then?
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- scripts/kallsyms.c | 5 +++++
- 1 file changed, 5 insertions(+)
+	-hpa
 
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index ceef756..d79027e 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -151,6 +151,11 @@ static int read_symbol(FILE *in, struct sym_entry *s)
- 	/* exclude debugging symbols */
- 	else if (stype == 'N')
- 		return -1;
-+	/* Don't include const symbols in the text section
-+	 * unless --all-symbols is specified.
-+	 */
-+	else if (toupper(stype) != 'T' && !all_symbols)
-+		return -1;
- 
- 	/* include the type field in the symbol name, so that it gets
- 	 * compressed together */
--- 
-1.8.5.2
 
