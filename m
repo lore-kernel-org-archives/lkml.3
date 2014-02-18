@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253AbaBRMVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 07:21:09 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:57796 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025AbaBRMVH (ORCPT
+	id S1755292AbaBRMXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 07:23:53 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:33025 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037AbaBRMXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 07:21:07 -0500
-Message-ID: <1392726059.13262.0.camel@phoenix>
-Subject: [PATCH 1/2] regulator: tps65218: Add terminate entry for
- of_device_id table
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Keerthy <j-keerthy@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 18 Feb 2014 20:20:59 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Feb 2014 07:23:52 -0500
+Date: Tue, 18 Feb 2014 07:23:26 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Xufeng Zhang <xufeng.zhang@windriver.com>
+Cc: vyasevich@gmail.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] sctp: Update HEARTBEAT timer immediately after user
+ changed HB.interval
+Message-ID: <20140218122326.GA4590@hmsreliant.think-freely.org>
+References: <1392703010-6128-1-git-send-email-xufeng.zhang@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392703010-6128-1-git-send-email-xufeng.zhang@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes below build error:
-FATAL: drivers/regulator/tps65218-regulator: struct of_device_id is not terminated with a NULL entry!
+On Tue, Feb 18, 2014 at 01:56:50PM +0800, Xufeng Zhang wrote:
+> For an established association, if user has updated the HB.interval
+> parameter by setsockopt(), this new heartbeat interval will not
+> take effect until:
+>   - the expiry of the heartbeat timer and new hearbeat is sent.
+>   - DATA chunk has been sent and the transport resets the timer.
+> This could not meet the requirement of the user who need to
+> get HEARTBEAT sent at the specified time.
+> 
+> Thus, we need to update the heartbeat timer immediately after
+> user has changed HB.interval.
+> 
+> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-Also remove of_match_ptr as this is a DT-only driver.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps65218-regulator.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
-index 958276c..00c0114 100644
---- a/drivers/regulator/tps65218-regulator.c
-+++ b/drivers/regulator/tps65218-regulator.c
-@@ -96,6 +96,7 @@ static const struct of_device_id tps65218_of_match[] = {
- 	TPS65218_OF_MATCH("ti,tps65218-dcdc5", tps65218_pmic_regs[DCDC5]),
- 	TPS65218_OF_MATCH("ti,tps65218-dcdc6", tps65218_pmic_regs[DCDC6]),
- 	TPS65218_OF_MATCH("ti,tps65218-ldo1", tps65218_pmic_regs[LDO1]),
-+	{ }
- };
- MODULE_DEVICE_TABLE(of, tps65218_of_match);
- 
-@@ -242,14 +243,12 @@ static int tps65218_regulator_probe(struct platform_device *pdev)
- 	int id;
- 
- 	match = of_match_device(tps65218_of_match, &pdev->dev);
--	if (match) {
--		template = match->data;
--		id = template->id;
--		init_data = of_get_regulator_init_data(&pdev->dev,
--						      pdev->dev.of_node);
--	} else {
-+	if (!match)
- 		return -ENODEV;
--	}
-+
-+	template = match->data;
-+	id = template->id;
-+	init_data = of_get_regulator_init_data(&pdev->dev, pdev->dev.of_node);
- 
- 	platform_set_drvdata(pdev, tps);
- 
-@@ -290,7 +289,7 @@ static struct platform_driver tps65218_regulator_driver = {
- 	.driver = {
- 		.name = "tps65218-pmic",
- 		.owner = THIS_MODULE,
--		.of_match_table = of_match_ptr(tps65218_of_match),
-+		.of_match_table = tps65218_of_match,
- 	},
- 	.probe = tps65218_regulator_probe,
- 	.remove = tps65218_regulator_remove,
--- 
-1.8.1.2
-
-
-
+> ---
+>  net/sctp/socket.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+> index 9e91d6e..699ae1e 100644
+> --- a/net/sctp/socket.c
+> +++ b/net/sctp/socket.c
+> @@ -2344,6 +2344,11 @@ static int sctp_apply_peer_addr_params(struct sctp_paddrparams *params,
+>  			if (trans) {
+>  				trans->hbinterval =
+>  				    msecs_to_jiffies(params->spp_hbinterval);
+> +
+> +				/* Update the heartbeat timer immediately. */
+> +				if (!mod_timer(&trans->hb_timer,
+> +					    sctp_transport_timeout(trans)))
+> +					sctp_transport_hold(trans);
+>  			} else if (asoc) {
+>  				asoc->hbinterval =
+>  				    msecs_to_jiffies(params->spp_hbinterval);
+> -- 
+> 1.7.0.2
+> 
+> 
