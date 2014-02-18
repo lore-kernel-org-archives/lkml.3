@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbaBRKKu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:10:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35875 "EHLO mx1.redhat.com"
+	id S1755261AbaBRKKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:10:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65518 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755196AbaBRKKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:10:48 -0500
+	id S1755196AbaBRKKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:10:51 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>, Jon Mason <jdmason@kudzu.us>,
         netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH net-next 21/35] s2io: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 18 Feb 2014 11:11:50 +0100
-Message-Id: <0ec6a4ab2cfbebdfaa3eca063bc21e4d87161a6c.1392717503.git.agordeev@redhat.com>
+Subject: [PATCH net-next 22/35] vxge: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 11:11:51 +0100
+Message-Id: <799aa59d70b2e96f094917a8581a331afa068702.1392717503.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
 References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,26 +30,45 @@ Cc: Jon Mason <jdmason@kudzu.us>
 Cc: netdev@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/net/ethernet/neterion/s2io.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/neterion/vxge/vxge-main.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ethernet/neterion/s2io.c b/drivers/net/ethernet/neterion/s2io.c
-index 9eeddbd..56e3a9d 100644
---- a/drivers/net/ethernet/neterion/s2io.c
-+++ b/drivers/net/ethernet/neterion/s2io.c
-@@ -3792,9 +3792,10 @@ static int s2io_enable_msi_x(struct s2io_nic *nic)
- 	writeq(rx_mat, &bar0->rx_mat);
- 	readq(&bar0->rx_mat);
+diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
+index e46e869..c83cedd 100644
+--- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
++++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
+@@ -2349,12 +2349,18 @@ start:
+ 	vdev->vxge_entries[j].entry = VXGE_ALARM_MSIX_ID;
+ 	vdev->vxge_entries[j].in_use = 0;
  
--	ret = pci_enable_msix(nic->pdev, nic->entries, nic->num_entries);
-+	ret = pci_enable_msix_range(nic->pdev, nic->entries,
-+				    nic->num_entries, nic->num_entries);
- 	/* We fail init if error or we get less vectors than min required */
--	if (ret) {
+-	ret = pci_enable_msix(vdev->pdev, vdev->entries, vdev->intr_cnt);
+-	if (ret > 0) {
++	ret = pci_enable_msix_range(vdev->pdev,
++				    vdev->entries, 3, vdev->intr_cnt);
 +	if (ret < 0) {
- 		DBG_PRINT(ERR_DBG, "Enabling MSI-X failed\n");
- 		kfree(nic->entries);
- 		swstats->mem_freed += nic->num_entries *
++		ret = -ENODEV;
++		goto enable_msix_failed;
++	} else if (ret < vdev->intr_cnt) {
++		pci_disable_msix(vdev->pdev);
++
+ 		vxge_debug_init(VXGE_ERR,
+ 			"%s: MSI-X enable failed for %d vectors, ret: %d",
+ 			VXGE_DRIVER_NAME, vdev->intr_cnt, ret);
+-		if ((max_config_vpath != VXGE_USE_DEFAULT) || (ret < 3)) {
++		if (max_config_vpath != VXGE_USE_DEFAULT) {
+ 			ret = -ENODEV;
+ 			goto enable_msix_failed;
+ 		}
+@@ -2368,9 +2374,6 @@ start:
+ 		vxge_close_vpaths(vdev, temp);
+ 		vdev->no_of_vpath = temp;
+ 		goto start;
+-	} else if (ret < 0) {
+-		ret = -ENODEV;
+-		goto enable_msix_failed;
+ 	}
+ 	return 0;
+ 
 -- 
 1.7.7.6
 
