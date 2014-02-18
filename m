@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535AbaBRWza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:55:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51194 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482AbaBRWrV (ORCPT
+	id S1753640AbaBRWzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:55:55 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:37730 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171AbaBRWzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:21 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Tue, 18 Feb 2014 17:55:52 -0500
+X-Greylist: delayed 22724 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Feb 2014 17:55:52 EST
+Date: Tue, 18 Feb 2014 17:55:48 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Derek Basehore <dbasehore@chromium.org>
+Cc: Alexander Viro <viro@zento.linux.org.uk>, Jan Kara <jack@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 24/40] mm: __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
-Date: Tue, 18 Feb 2014 14:47:25 -0800
-Message-Id: <20140218224434.017804798@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
-References: <20140218224433.337299968@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, bleung@chromium.org,
+        sonnyrao@chromium.org, semenzato@chromium.org
+Subject: Re: [PATCH] backing_dev: Fix hung task on sync
+Message-ID: <20140218225548.GI31892@mtj.dyndns.org>
+References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+On Fri, Feb 14, 2014 at 08:12:17PM -0800, Derek Basehore wrote:
+> bdi_wakeup_thread_delayed used the mod_delayed_work function to schedule work
+> to writeback dirty inodes. The problem with this is that it can delay work that
+> is scheduled for immediate execution, such as the work from sync_inodes_sb.
+> This can happen since mod_delayed_work can now steal work from a work_queue.
+> This fixes the problem by using queue_delayed_work instead. This is a
+> regression from the move to the bdi workqueue design.
+> 
+> The reason that this causes a problem is that laptop-mode will change the
+> delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default. In the case
+> that bdi_wakeup_thread_delayed races with sync_inodes_sb, sync will be stopped
+> for 10 minutes and trigger a hung task. Even if dirty_writeback_centisecs is
+> not long enough to cause a hung task, we still don't want to delay sync for
+> that long.
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Oops.
 
-commit 227d53b397a32a7614667b3ecaf1d89902fb6c12 upstream.
+> For the same reason, this also changes bdi_writeback_workfn to immediately
+> queue the work again in the case that the work_list is not empty. The same
+> problem can happen if the sync work is run on the rescue worker.
+> 
+> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+> ---
+>  fs/fs-writeback.c | 5 +++--
+>  mm/backing-dev.c  | 2 +-
+>  2 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index e0259a1..95b7b8c 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -1047,8 +1047,9 @@ void bdi_writeback_workfn(struct work_struct *work)
+>  		trace_writeback_pages_written(pages_written);
+>  	}
+>  
+> -	if (!list_empty(&bdi->work_list) ||
+> -	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
+> +	if (!list_empty(&bdi->work_list))
+> +		mod_delayed_work(bdi_wq, &wb->dwork, 0);
+> +	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
+>  		queue_delayed_work(bdi_wq, &wb->dwork,
+>  			msecs_to_jiffies(dirty_writeback_interval * 10));
 
-To use spin_{un}lock_irq is dangerous if caller disabled interrupt.
-During aio buffer migration, we have a possibility to see the following
-call stack.
+Can you please add some comments explaining why the specific variants
+are being used here?
 
-aio_migratepage  [disable interrupt]
-  migrate_page_copy
-    clear_page_dirty_for_io
-      set_page_dirty
-        __set_page_dirty_buffers
-          __set_page_dirty
-            spin_lock_irq
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index ce682f7..3fde024 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -294,7 +294,7 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+>  	unsigned long timeout;
+>  
+>  	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+> -	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
+> +	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
 
-This mean, current aio migration is a deadlockable.  spin_lock_irqsave
-is a safer alternative and we should use it.
+and here?
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported-by: David Rientjes rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hmmm.... but doesn't this create an opposite problem?  Now a flush
+queued for an earlier time may be overridden by something scheduled
+later, no?
 
----
- fs/buffer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Thanks.
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -654,14 +654,16 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
- static void __set_page_dirty(struct page *page,
- 		struct address_space *mapping, int warn)
- {
--	spin_lock_irq(&mapping->tree_lock);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mapping->tree_lock, flags);
- 	if (page->mapping) {	/* Race with truncate? */
- 		WARN_ON_ONCE(warn && !PageUptodate(page));
- 		account_page_dirtied(page, mapping);
- 		radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 	}
--	spin_unlock_irq(&mapping->tree_lock);
-+	spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
- }
- 
-
-
+-- 
+tejun
