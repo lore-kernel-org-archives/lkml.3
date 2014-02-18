@@ -1,60 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587AbaBRHmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 02:42:45 -0500
-Received: from softlayer.compulab.co.il ([50.23.254.55]:41906 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754009AbaBRHmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 02:42:43 -0500
-Message-ID: <53030EEF.7090708@compulab.co.il>
-Date: Tue, 18 Feb 2014 09:42:39 +0200
-From: Denis Turischev <denis.turischev@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754526AbaBRHpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 02:45:44 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53286 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753958AbaBRHpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 02:45:42 -0500
+Message-ID: <53030F9C.8000605@ti.com>
+Date: Tue, 18 Feb 2014 16:45:32 +0900
+From: Milo Kim <milo.kim@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [RESEND] [PATCH] xhci: Switch Intel Lynx Point ports to EHCI on shutdown.
-References: <52B31EDA.60908@compulab.co.il> <52F0CAB8.20803@compulab.co.il>
-In-Reply-To: <52F0CAB8.20803@compulab.co.il>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lee Jones <lee.jones@linaro.org>
+CC: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Mark Brown <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 01/10] mfd: Add TI LMU driver
+References: <1392359450-6890-1-git-send-email-milo.kim@ti.com> <20140217095734.GD17875@lee--X1>
+In-Reply-To: <20140217095734.GD17875@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: -unknown-@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same issue like with Panther Point chipsets. If the USB ports are
-switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
-which will wake the system. Some BIOS have work around for this, but not all.
-One example is Compulab's mini-desktop, the Intense-PC2.
+Hi Lee,
 
-The bug can be avoided if the USB ports are switched back to EHCI on
-shutdown.
+On 02/17/2014 06:57 PM, Lee Jones wrote:
+>> +static const struct resource lm3633_effect_resources[] = {
+>> +	{
+>> +		.name  = LM3633_EFFECT_BL0_RAMPUP,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(BL0_RAMPUP),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_BL0_RAMPDOWN,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(BL0_RAMPDN),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_BL1_RAMPUP,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(BL1_RAMPUP),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_BL1_RAMPDOWN,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(BL1_RAMPDN),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN_DELAY,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(DELAY),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN_HIGHTIME,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(HIGHTIME),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN_LOWTIME,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(LOWTIME),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN0_RAMPUP,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(PTN0_RAMPUP),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN0_RAMPDOWN,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(PTN0_RAMPDN),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN1_RAMPUP,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(PTN1_RAMPUP),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN1_RAMPDOWN,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(PTN1_RAMPDN),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN_LOWBRT,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(LOWBRT),
+>> +	},
+>> +	{
+>> +		.name  = LM3633_EFFECT_PTN_HIGHBRT,
+>> +		.flags = IORESOURCE_REG,
+>> +		.start = LM3633_EFFECT_REGISTER(HIGHBRT),
+>> +	},
+>> +};
+>
+> Can you define a MACRO to do all of these as one liners?
 
-Signed-off-by: Denis Turischev <denis@compulab.co.il>
----
- drivers/usb/host/xhci-pci.c | 2 ++
- 1 file changed, 2 insertions(+)
+Yes, resource definitions will be replaced by simple macro, 
+LMU_EFFECT_RESOURCE().
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 3c898c1..9233d12 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -134,6 +134,8 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 		 */
- 		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
- 			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-+
-+		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
--- 1.8.1.2
+For example,
 
+#define LMU_EFFECT_RESOURCE(chip, effect)               \
+{                                                       \
+         .name  = chip##_EFFECT_##effect,                \
+         .flags = IORESOURCE_REG,                        \
+         .start = LMU_EFFECT_REGISTER(chip, effect),     \
+}
+
+static const struct resource lm3633_effect_resources[] = {
+         LMU_EFFECT_RESOURCE(LM3633, BL0_RAMPUP),
+         LMU_EFFECT_RESOURCE(LM3633, BL0_RAMPDN),
+         LMU_EFFECT_RESOURCE(LM3633, BL1_RAMPUP),
+         LMU_EFFECT_RESOURCE(LM3633, BL1_RAMPDN),
+         LMU_EFFECT_RESOURCE(LM3633, PTN_DELAY),
+         LMU_EFFECT_RESOURCE(LM3633, PTN_HIGHTIME),
+         LMU_EFFECT_RESOURCE(LM3633, PTN_LOWTIME),
+         LMU_EFFECT_RESOURCE(LM3633, PTN0_RAMPUP),
+         LMU_EFFECT_RESOURCE(LM3633, PTN0_RAMPDN),
+         LMU_EFFECT_RESOURCE(LM3633, PTN1_RAMPUP),
+         LMU_EFFECT_RESOURCE(LM3633, PTN1_RAMPDN),
+         LMU_EFFECT_RESOURCE(LM3633, PTN_LOWBRT),
+         LMU_EFFECT_RESOURCE(LM3633, PTN_HIGHBRT),
+};
+
+static const struct resource lm3697_effect_resources[] = {
+         LMU_EFFECT_RESOURCE(LM3697, BL0_RAMPUP),
+         LMU_EFFECT_RESOURCE(LM3697, BL0_RAMPDN),
+         LMU_EFFECT_RESOURCE(LM3697, BL1_RAMPUP),
+         LMU_EFFECT_RESOURCE(LM3697, BL1_RAMPDN),
+};
+
+and so on.
+
+> <snip>
+>
+>> +static int ti_lmu_parse_dt(struct device *dev, struct ti_lmu *lmu)
+>> +{
+>
+> <snip>
+>
+>> +	pdata->en_gpio = of_get_named_gpio(node, "ti,enable-gpio", 0);
+>
+> There is a global DT property for this already.
+
+I've not found it yet, but I agree it looks like general property.
+So I'll replace "ti,enable-gpio" with "ti,lmu-en-gpio".
+
+>
+>> +static int ti_lmu_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+>> +{
+>
+> <snip>
+>
+>> +	lmu->id = id->driver_data;
+>> +	switch (lmu->id) {
+>> +	case LM3532:
+>> +		lmu_regmap_config.max_register = LM3532_MAX_REGISTERS;
+>> +		break;
+>> +	case LM3631:
+>> +		lmu_regmap_config.max_register = LM3631_MAX_REGISTERS;
+>> +		break;
+>> +	case LM3633:
+>> +		lmu_regmap_config.max_register = LM3633_MAX_REGISTERS;
+>> +		break;
+>> +	case LM3695:
+>> +		lmu_regmap_config.max_register = LM3695_MAX_REGISTERS;
+>> +		break;
+>> +	case LM3697:
+>> +		lmu_regmap_config.max_register = LM3697_MAX_REGISTERS;
+>> +		break;
+>> +	default:
+>> +		break;
+>> +	}
+>
+> As there are so many of these, it might be nicer to pull these out
+> into a seperate function.
+
+Lines of code will be moved to new function, ti_lmu_regmap_init().
+
+Thanks for your review.
+
+Best regards,
+Milo
 
