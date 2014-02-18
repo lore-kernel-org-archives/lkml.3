@@ -1,86 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127AbaBRO6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:58:14 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:39262 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755742AbaBRO6B (ORCPT
+	id S1756144AbaBRO6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:58:35 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:65297 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276AbaBRO6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:58:01 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, DCG_UPD_stlinux_kernel@list.st.com,
-        dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        computersforpeace@gmail.com, Angus.Clark@st.com
-Subject: [PATCH 35/35] ARM: STi: Add support for the FSM Serial Flash Controller
-Date: Tue, 18 Feb 2014 14:56:02 +0000
-Message-Id: <1392735362-1245-36-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
-References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
+	Tue, 18 Feb 2014 09:58:32 -0500
+MIME-Version: 1.0
+Reply-To: u.ahmed1972@gmail.com
+Date: Tue, 18 Feb 2014 14:58:30 +0000
+X-Google-Sender-Auth: rfkqikLDkwv1uFsknD7Asb0OPVo
+Message-ID: <CADotmUsRNJXf9--dzzM4yJNT2ejcb9tN0u7yLaf7Wes3BXK2tg@mail.gmail.com>
+Subject: Good Day My Dear,
+From: "p.private" <p.private13@laposte.net>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we add the necessary device nodes required for successful device
-probing and Pinctrl setup for the FSM.
+Good Day My Dear,
 
-Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/stih416-b2105.dts    | 14 ++++++++++++++
- arch/arm/boot/dts/stih416-pinctrl.dtsi | 12 ++++++++++++
- 2 files changed, 26 insertions(+)
+My name is Mr. Uba Ahmed. I am a banker. It is true that we have not
+met each other before now but I strongly believe that trust brings
+about friendship in every business. I have a deceased customer's
+pending fund which I am his personal financial adviser before his
+accidental death, that being the main reason why I alone  know much
+about the existence of this fund (EURO 15.5 Million Euro) and the secrets
+surrounding this money.But before I disclose the full details to you,
+I will like to know your interest and willingness to assist me by
+reverting back to me in my private e-mail (u.ahmed1972@gmail.com).
 
-diff --git a/arch/arm/boot/dts/stih416-b2105.dts b/arch/arm/boot/dts/stih416-b2105.dts
-index e518eb0..dd7ac88 100644
---- a/arch/arm/boot/dts/stih416-b2105.dts
-+++ b/arch/arm/boot/dts/stih416-b2105.dts
-@@ -33,6 +33,20 @@
- 			status = "okay";
- 		};
- 
-+		/* FSM */
-+		spifsm: spifsm@fe902000{
-+		        compatible         = "st,spi-fsm";
-+		        reg                =  <0xfe902000 0x1000>;
-+		        reg-names          = "spi-fsm";
-+		        pinctrl-0          = <&pinctrl_fsm>;
-+
-+			st,syscfg	   = <&syscfg_rear>;
-+		        st,boot-device-reg = <0x958>;
-+		        st,boot-device-spi = <0x1a>;
-+
-+		        status = "okay";
-+		};
-+
- 		leds {
- 			compatible	= "gpio-leds";
- 			fp_led {
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-index 10bb4df..9a48710 100644
---- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -235,6 +235,18 @@
- 				};
- 			};
- 
-+			fsm {
-+				pinctrl_fsm: fsm {
-+					st,pins {
-+						spi-fsm-clk     = <&PIO12 2     OUT     ALT1>;
-+						spi-fsm-cs      = <&PIO12 3     OUT     ALT1>;
-+						spi-fsm-mosi    = <&PIO12 4     OUT     ALT1>;
-+						spi-fsm-miso    = <&PIO12 5     IN      ALT1>;
-+						spi-fsm-hol     = <&PIO12 6     OUT     ALT1>;
-+						spi-fsm-wp      = <&PIO12 7     OUT     ALT1>;
-+					};
-+				};
-+			};
- 		};
- 
- 		pin-controller-rear {
--- 
-1.8.3.2
-
+Thanks and hope to hearing from you soonest.
+Mr.Uba Ahmed.
