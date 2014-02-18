@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317AbaBRA3d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:29:33 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:40766 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaBRA3c (ORCPT
+	id S1753870AbaBRAdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:33:15 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51385 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394AbaBRAdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:29:32 -0500
+	Mon, 17 Feb 2014 19:33:13 -0500
 X-Originating-IP: 50.43.14.201
-Date: Mon, 17 Feb 2014 16:29:18 -0800
+Date: Mon, 17 Feb 2014 16:32:59 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -17,75 +17,233 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 21/55] rcutorture: Export torture_type and
- verbose module parameters
-Message-ID: <20140218002917.GG19929@thin>
+Subject: Re: [PATCH tip/core/rcu 35/55] rcutorture: Fix rcutorture shutdown
+ races
+Message-ID: <20140218003259.GH19929@thin>
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
  <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392675179-11560-21-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392675179-11560-35-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392675179-11560-21-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1392675179-11560-35-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 02:12:25PM -0800, Paul E. McKenney wrote:
+On Mon, Feb 17, 2014 at 02:12:39PM -0800, Paul E. McKenney wrote:
 > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> The torture_type and verbose module parameters are needed for log messages,
-> so this commit exports them to include/linux/torture.h.
+> Not all of the rcutorture kthreads waited for kthread_should_stop()
+> before returning from their top-level functions, and none of them
+> used torture_shutdown_absorb() properly.  These problems can result in
+> segfaults and hangs at shutdown time, and some recent changes perturbed
+> timing sufficiently to make them much more probable.  This commit
+> therefore creates a torture_kthread_stopping() function that does the
+> proper kthread shutdown dance in one centralized location.
 > 
 > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Assuming this doesn't go away (which I really hope it does), this needs
-to occur *before* the introduction of the macros using these variables.
+One comment below.
 
-- Josh Triplett
-
->  include/linux/torture.h | 4 ++++
->  kernel/rcu/rcutorture.c | 8 ++++++--
->  2 files changed, 10 insertions(+), 2 deletions(-)
+>  include/linux/torture.h |  3 ++-
+>  kernel/rcu/rcutorture.c | 39 +++++++++++----------------------------
+>  kernel/torture.c        | 26 ++++++++++++++++++++++----
+>  3 files changed, 35 insertions(+), 33 deletions(-)
 > 
 > diff --git a/include/linux/torture.h b/include/linux/torture.h
-> index c61b4ce18a13..9b6a4834de8f 100644
+> index 513b85f98585..db9bc7756a32 100644
 > --- a/include/linux/torture.h
 > +++ b/include/linux/torture.h
-> @@ -49,6 +49,10 @@ extern int fullstop;
->  /* Protect fullstop transitions and spawning of kthreads.  */
->  extern struct mutex fullstop_mutex;
->  
-> +/* Common module parameters. */
-> +extern char *torture_type;
-> +extern bool verbose;
-> +
->  #define TORTURE_FLAG "-torture:"
+> @@ -45,7 +45,7 @@
 >  #define TOROUT_STRING(s) \
 >  	pr_alert("%s" TORTURE_FLAG s "\n", torture_type)
+>  #define VERBOSE_TOROUT_STRING(s) \
+> -	do { if (verbose) pr_alert("%s" TORTURE_FLAG s "\n", torture_type); } while (0)
+> +	do { if (verbose) pr_alert("%s" TORTURE_FLAG " %s\n", torture_type, s); } while (0)
+
+This change is completely unrelated to the change described in the
+commit message.  This should not be part of this commit.
+
+>  #define VERBOSE_TOROUT_ERRSTRING(s) \
+>  	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
+>  
+> @@ -88,5 +88,6 @@ void torture_init_end(void);
+>  bool torture_cleanup(void);
+>  bool torture_must_stop(void);
+>  bool torture_must_stop_irq(void);
+> +void torture_kthread_stopping(char *title);
+>  
+>  #endif /* __LINUX_TORTURE_H */
 > diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-> index 3687619b243a..49cdeeaaa54b 100644
+> index aaca2350e0e4..6d12fd18d97f 100644
 > --- a/kernel/rcu/rcutorture.c
 > +++ b/kernel/rcu/rcutorture.c
-> @@ -90,11 +90,15 @@ torture_parm(int, test_boost_interval, 7,
->  	     "Interval between boost tests, seconds.");
->  torture_parm(bool, test_no_idle_hz, true,
->  	     "Test support for tickless idle CPUs");
-> -torture_parm(bool, verbose, false, "Enable verbose debugging printk()s");
+> @@ -601,12 +601,13 @@ checkwait:	stutter_wait("rcu_torture_boost");
+>  	} while (!torture_must_stop());
 >  
-> -static char *torture_type = "rcu";
-> +char *torture_type = "rcu";
-> +EXPORT_SYMBOL_GPL(torture_type);
->  module_param(torture_type, charp, 0444);
->  MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, ...)");
-> +bool verbose;
-> +EXPORT_SYMBOL_GPL(verbose);
-> +module_param(verbose, bool, 0444);
-> +MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
+>  	/* Clean up and exit. */
+> -	VERBOSE_TOROUT_STRING("rcu_torture_boost task stopping");
+> -	torture_shutdown_absorb("rcu_torture_boost");
+> -	while (!kthread_should_stop() || rbi.inflight)
+> +	while (!kthread_should_stop() || rbi.inflight) {
+> +		torture_shutdown_absorb("rcu_torture_boost");
+>  		schedule_timeout_uninterruptible(1);
+> +	}
+>  	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
+>  	destroy_rcu_head_on_stack(&rbi.rcu);
+> +	torture_kthread_stopping("rcu_torture_boost");
+>  	return 0;
+>  }
 >  
->  static int nrealreaders;
->  static struct task_struct *writer_task;
+> @@ -637,10 +638,7 @@ rcu_torture_fqs(void *arg)
+>  		}
+>  		stutter_wait("rcu_torture_fqs");
+>  	} while (!torture_must_stop());
+> -	VERBOSE_TOROUT_STRING("rcu_torture_fqs task stopping");
+> -	torture_shutdown_absorb("rcu_torture_fqs");
+> -	while (!kthread_should_stop())
+> -		schedule_timeout_uninterruptible(1);
+> +	torture_kthread_stopping("rcu_torture_fqs");
+>  	return 0;
+>  }
+>  
+> @@ -709,10 +707,7 @@ rcu_torture_writer(void *arg)
+>  		rcutorture_record_progress(++rcu_torture_current_version);
+>  		stutter_wait("rcu_torture_writer");
+>  	} while (!torture_must_stop());
+> -	VERBOSE_TOROUT_STRING("rcu_torture_writer task stopping");
+> -	torture_shutdown_absorb("rcu_torture_writer");
+> -	while (!kthread_should_stop())
+> -		schedule_timeout_uninterruptible(1);
+> +	torture_kthread_stopping("rcu_torture_writer");
+>  	return 0;
+>  }
+>  
+> @@ -747,10 +742,7 @@ rcu_torture_fakewriter(void *arg)
+>  		stutter_wait("rcu_torture_fakewriter");
+>  	} while (!torture_must_stop());
+>  
+> -	VERBOSE_TOROUT_STRING("rcu_torture_fakewriter task stopping");
+> -	torture_shutdown_absorb("rcu_torture_fakewriter");
+> -	while (!kthread_should_stop())
+> -		schedule_timeout_uninterruptible(1);
+> +	torture_kthread_stopping("rcu_torture_fakewriter");
+>  	return 0;
+>  }
+>  
+> @@ -891,12 +883,9 @@ rcu_torture_reader(void *arg)
+>  		schedule();
+>  		stutter_wait("rcu_torture_reader");
+>  	} while (!torture_must_stop());
+> -	VERBOSE_TOROUT_STRING("rcu_torture_reader task stopping");
+> -	torture_shutdown_absorb("rcu_torture_reader");
+>  	if (irqreader && cur_ops->irq_capable)
+>  		del_timer_sync(&t);
+> -	while (!kthread_should_stop())
+> -		schedule_timeout_uninterruptible(1);
+> +	torture_kthread_stopping("rcu_torture_reader");
+>  	return 0;
+>  }
+>  
+> @@ -1009,7 +998,7 @@ rcu_torture_stats(void *arg)
+>  		rcu_torture_stats_print();
+>  		torture_shutdown_absorb("rcu_torture_stats");
+>  	} while (!torture_must_stop());
+> -	VERBOSE_TOROUT_STRING("rcu_torture_stats task stopping");
+> +	torture_kthread_stopping("rcu_torture_stats");
+>  	return 0;
+>  }
+>  
+> @@ -1170,12 +1159,9 @@ static int rcu_torture_barrier_cbs(void *arg)
+>  		if (atomic_dec_and_test(&barrier_cbs_count))
+>  			wake_up(&barrier_wq);
+>  	} while (!torture_must_stop());
+> -	VERBOSE_TOROUT_STRING("rcu_torture_barrier_cbs task stopping");
+> -	torture_shutdown_absorb("rcu_torture_barrier_cbs");
+> -	while (!kthread_should_stop())
+> -		schedule_timeout_interruptible(1);
+>  	cur_ops->cb_barrier();
+>  	destroy_rcu_head_on_stack(&rcu);
+> +	torture_kthread_stopping("rcu_torture_barrier_cbs");
+>  	return 0;
+>  }
+>  
+> @@ -1206,10 +1192,7 @@ static int rcu_torture_barrier(void *arg)
+>  		n_barrier_successes++;
+>  		schedule_timeout_interruptible(HZ / 10);
+>  	} while (!torture_must_stop());
+> -	VERBOSE_TOROUT_STRING("rcu_torture_barrier task stopping");
+> -	torture_shutdown_absorb("rcu_torture_barrier");
+> -	while (!kthread_should_stop())
+> -		schedule_timeout_interruptible(1);
+> +	torture_kthread_stopping("rcu_torture_barrier");
+>  	return 0;
+>  }
+>  
+> diff --git a/kernel/torture.c b/kernel/torture.c
+> index 12a5807fb4e9..6f1c6600d183 100644
+> --- a/kernel/torture.c
+> +++ b/kernel/torture.c
+> @@ -169,7 +169,7 @@ torture_onoff(void *arg)
+>  		}
+>  		schedule_timeout_interruptible(onoff_interval);
+>  	}
+> -	VERBOSE_TOROUT_STRING("torture_onoff task stopping");
+> +	torture_kthread_stopping("torture_onoff");
+>  	return 0;
+>  }
+>  
+> @@ -370,7 +370,7 @@ static int torture_shuffle(void *arg)
+>  		torture_shuffle_tasks();
+>  		torture_shutdown_absorb("torture_shuffle");
+>  	} while (!torture_must_stop());
+> -	VERBOSE_TOROUT_STRING("torture_shuffle task stopping");
+> +	torture_kthread_stopping("torture_shuffle");
+>  	return 0;
+>  }
+>  
+> @@ -465,7 +465,7 @@ static int torture_shutdown(void *arg)
+>  		jiffies_snap = jiffies;
+>  	}
+>  	if (torture_must_stop()) {
+> -		VERBOSE_TOROUT_STRING("torture_shutdown task stopping");
+> +		torture_kthread_stopping("torture_shutdown");
+>  		return 0;
+>  	}
+>  
+> @@ -583,7 +583,7 @@ static int torture_stutter(void *arg)
+>  		ACCESS_ONCE(stutter_pause_test) = 0;
+>  		torture_shutdown_absorb("torture_stutter");
+>  	} while (!torture_must_stop());
+> -	VERBOSE_TOROUT_STRING("torture_stutter task stopping");
+> +	torture_kthread_stopping("torture_stutter");
+>  	return 0;
+>  }
+>  
+> @@ -696,3 +696,21 @@ bool torture_must_stop_irq(void)
+>  	return ACCESS_ONCE(fullstop) != FULLSTOP_DONTSTOP;
+>  }
+>  EXPORT_SYMBOL_GPL(torture_must_stop_irq);
+> +
+> +/*
+> + * Each kthread must wait for kthread_should_stop() before returning from
+> + * its top-level function, otherwise segfaults ensue.  This function
+> + * prints a "stopping" message and waits for kthread_should_stop(), and
+> + * should be called from all torture kthreads immediately prior to
+> + * returning.
+> + */
+> +void torture_kthread_stopping(char *title)
+> +{
+> +	if (verbose)
+> +		pr_alert("%s" TORTURE_FLAG " %s\n", torture_type, title);
+> +	while (!kthread_should_stop()) {
+> +		torture_shutdown_absorb(title);
+> +		schedule_timeout_uninterruptible(1);
+> +	}
+> +}
+> +EXPORT_SYMBOL_GPL(torture_kthread_stopping);
 > -- 
 > 1.8.1.5
 > 
