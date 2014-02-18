@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967AbaBRKaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:30:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58590 "EHLO mx2.suse.de"
+	id S1754779AbaBRKij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:38:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31698 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754484AbaBRKaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:30:07 -0500
-Date: Tue, 18 Feb 2014 11:30:02 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1402181124390.1192@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754473AbaBRKih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:38:37 -0500
+Message-ID: <53033828.8050505@redhat.com>
+Date: Tue, 18 Feb 2014 11:38:32 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org
+CC: Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] kvm/vfio: Support for DMA coherent IOMMUs
+References: <20140217201324.22775.31904.stgit@bling.home> <20140217202412.22775.77911.stgit@bling.home>
+In-Reply-To: <20140217202412.22775.77911.stgit@bling.home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Il 17/02/2014 21:24, Alex Williamson ha scritto:
+> VFIO now has support for using the IOMMU_CACHE flag and a mechanism
+> for an external user to test the current operating mode of the IOMMU.
+> Add support for this to the kvm-vfio pseudo device so that we only
+> register noncoherent DMA when necessary.
+>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Cc: Gleb Natapov <gleb@kernel.org>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  virt/kvm/vfio.c |   27 ++++++++++++++++++++-------
+>  1 file changed, 20 insertions(+), 7 deletions(-)
+>
+> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+> index b4f9507..ba1a93f 100644
+> --- a/virt/kvm/vfio.c
+> +++ b/virt/kvm/vfio.c
+> @@ -59,6 +59,22 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
+>  	symbol_put(vfio_group_put_external_user);
+>  }
+>
+> +static bool kvm_vfio_group_is_coherent(struct vfio_group *vfio_group)
+> +{
+> +	long (*fn)(struct vfio_group *, unsigned long);
+> +	long ret;
+> +
+> +	fn = symbol_get(vfio_external_check_extension);
+> +	if (!fn)
+> +		return false;
+> +
+> +	ret = fn(vfio_group, VFIO_DMA_CC_IOMMU);
+> +
+> +	symbol_put(vfio_external_check_extension);
+> +
+> +	return ret > 0;
+> +}
+> +
+>  /*
+>   * Groups can use the same or different IOMMU domains.  If the same then
+>   * adding a new group may change the coherency of groups we've previously
+> @@ -75,13 +91,10 @@ static void kvm_vfio_update_coherency(struct kvm_device *dev)
+>  	mutex_lock(&kv->lock);
+>
+>  	list_for_each_entry(kvg, &kv->group_list, node) {
+> -		/*
+> -		 * TODO: We need an interface to check the coherency of
+> -		 * the IOMMU domain this group is using.  For now, assume
+> -		 * it's always noncoherent.
+> -		 */
+> -		noncoherent = true;
+> -		break;
+> +		if (!kvm_vfio_group_is_coherent(kvg->vfio_group)) {
+> +			noncoherent = true;
+> +			break;
+> +		}
+>  	}
+>
+>  	if (noncoherent != kv->noncoherent) {
+>
 
-please pull from
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
-
-to receive:
-
-
-- fixes for several bugs in incorrect allocations of buffers by David  
-  Herrmann and Benjamin Tissoires.
-
-- support for a few new device IDs by Archana Patni, Benjamin Tissoires, 
-  Huei-Horng Yo, Reyad Attiyat and Yufeng Shen
-
-
-Thanks.
-
-
-Archana Patni (1):
-      HID: hid-sensor-hub: quirk for STM Sensor hub
-
-Benjamin Tissoires (2):
-      HID: multitouch: add FocalTech FTxxxx support
-      HID: fix buffer allocations
-
-David Herrmann (2):
-      HID: Bluetooth: hidp: make sure input buffers are big enough
-      HID: hyperv: make sure input buffer is big enough
-
-Huei-Horng Yo (1):
-      HID: apple: add Apple wireless keyboard 2011 JIS model support
-
-Reyad Attiyat (1):
-      HID: microsoft: Add ID's for Surface Type/Touch Cover 2
-
-Yufeng Shen (1):
-      HID: usbhid: quirk for CY-TM75 75 inch Touch Overlay
-
- drivers/hid/hid-apple.c         |    3 +++
- drivers/hid/hid-core.c          |    3 +++
- drivers/hid/hid-hyperv.c        |   11 ++++++++---
- drivers/hid/hid-ids.h           |    8 ++++++++
- drivers/hid/hid-input.c         |    2 +-
- drivers/hid/hid-microsoft.c     |    4 ++++
- drivers/hid/hid-multitouch.c    |    5 +++++
- drivers/hid/hid-sensor-hub.c    |    3 +++
- drivers/hid/i2c-hid/i2c-hid.c   |    2 +-
- drivers/hid/usbhid/hid-quirks.c |    1 +
- net/bluetooth/hidp/core.c       |   16 ++++++++++++++--
- net/bluetooth/hidp/hidp.h       |    4 ++++
- 12 files changed, 55 insertions(+), 7 deletions(-)
-
--- 
-Jiri Kosina
-SUSE Labs
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
