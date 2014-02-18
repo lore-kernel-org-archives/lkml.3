@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531AbaBRPG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:06:56 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52205 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434AbaBRO4n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:56:43 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, DCG_UPD_stlinux_kernel@list.st.com,
-        dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        computersforpeace@gmail.com, Angus.Clark@st.com
-Subject: [PATCH 05/35] mtd: st_spi_fsm: Supply a method to read from the FSM's FIFO
-Date: Tue, 18 Feb 2014 14:55:32 +0000
-Message-Id: <1392735362-1245-6-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
-References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
+	id S1756539AbaBRPHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:07:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18794 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755434AbaBRPHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 10:07:11 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH 0/2] ib: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 16:09:00 +0100
+Message-Id: <cover.1392733151.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When invoked the driver will attempt to read any available data from
-the FSM's data register. Any data collected from this FIFO would have
-originated from the flash chip.
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range() and pci_enable_msix_range()
+interfaces.
 
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+Cc: Roland Dreier <roland@kernel.org>
+Cc: Sean Hefty <sean.hefty@intel.com>
+Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index ac6b782..dba5f10 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -281,6 +281,32 @@ static void stfsm_wait_seq(struct stfsm *fsm)
- 	dev_err(fsm->dev, "timeout on sequence completion\n");
- }
- 
-+static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
-+			    const uint32_t size)
-+{
-+	uint32_t remaining = size >> 2;
-+	uint32_t avail;
-+	uint32_t words;
-+
-+	dev_dbg(fsm->dev, "Reading %d bytes from FIFO\n", size);
-+
-+	BUG_ON((((uint32_t)buf) & 0x3) || (size & 0x3));
-+
-+	while (remaining) {
-+		for (;;) {
-+			avail = stfsm_fifo_available(fsm);
-+			if (avail)
-+				break;
-+			udelay(1);
-+		}
-+		words = min(avail, remaining);
-+		remaining -= words;
-+
-+		readsl(fsm->base + SPI_FAST_SEQ_DATA_REG, buf, words);
-+		buf += words;
-+	}
-+}
-+
- static int stfsm_set_mode(struct stfsm *fsm, uint32_t mode)
- {
- 	int ret, timeout = 10;
+Alexander Gordeev (2):
+  mthca: Use pci_enable_msix_range() instead of pci_enable_msix()
+  qib: Use pci_enable_msix_range() instead of pci_enable_msix()
+
+ drivers/infiniband/hw/mthca/mthca_main.c |    9 ++---
+ drivers/infiniband/hw/qib/qib_pcie.c     |   55 +++++++++++++++--------------
+ 2 files changed, 31 insertions(+), 33 deletions(-)
+
 -- 
-1.8.3.2
+1.7.7.6
 
