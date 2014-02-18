@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850AbaBRMML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 07:12:11 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:45309 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683AbaBRMMH (ORCPT
+	id S1755120AbaBRMOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 07:14:41 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:63396 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876AbaBRMOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 07:12:07 -0500
+	Tue, 18 Feb 2014 07:14:39 -0500
+Date: Tue, 18 Feb 2014 14:14:35 +0200
+From: Amir Vadai <amirv@mellanox.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: ixgbevf: Use pci_enable_msix_range() instead of pci_enable_msix()
+Message-ID: <20140218121433.GB8770@mtl-eit-vdi-22.mtl.labs.mlnx>
+References: <cover.1392717502.git.agordeev@redhat.com>
+ <9ee830cfd4b417f230f77dd37256ca8e4396ecbe.1392717503.git.agordeev@redhat.com>
+ <20140218120136.GA8770@mtl-eit-vdi-22.mtl.labs.mlnx>
 MIME-Version: 1.0
-Reply-To: Peter.Sewell@cl.cam.ac.uk
-Date: Tue, 18 Feb 2014 12:12:06 +0000
-X-Google-Sender-Auth: fEaRQeRDUor0Eviuq1ESMt9y3XA
-Message-ID: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
-To: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>,
-        "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, peterz@infradead.org,
-        Torvald Riegel <triegel@redhat.com>, torvalds@linux-foundation.org,
-        Will Deacon <will.deacon@arm.com>, Ramana.Radhakrishnan@arm.com,
-        dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mingo@kernel.org, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218120136.GA8770@mtl-eit-vdi-22.mtl.labs.mlnx>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several of you have said that the standard and compiler should not
-permit speculative writes of atomics, or (effectively) that the
-compiler should preserve dependencies.  In simple examples it's easy
-to see what that means, but in general it's not so clear what the
-language should guarantee, because dependencies may go via non-atomic
-code in other compilation units, and we have to consider the extent to
-which it's desirable to limit optimisation there.
-
-For example, suppose we have, in one compilation unit:
-
-    void f(int ra, int*rb) {
-      if (ra==42)
-        *rb=42;
-      else
-        *rb=42;
-    }
-
-and in another compilation unit the bodies of two threads:
-
-    // Thread 0
-    r1 = x;
-    f(r1,&r2);
-    y = r2;
-
-    // Thread 1
-    r3 = y;
-    f(r3,&r4);
-    x = r4;
-
-where accesses to x and y are annotated C11 atomic
-memory_order_relaxed or Linux ACCESS_ONCE(), accesses to
-r1,r2,r3,r4,ra,rb are not annotated, and x and y initially hold 0.
-
-(Of course, this is an artificial example, to make the point below as
-simply as possible - in real code the branches of the conditional
-might not be syntactically identical, just equivalent after macro
-expansion and other optimisation.)
-
-In the source program there's a dependency from the read of x to the
-write of y in Thread 0, and from the read of y to the write of x on
-Thread 1.  Dependency-respecting compilation would preserve those and
-the ARM and POWER architectures both respect them, so the reads of x
-and y could not give 42.
-
-But a compiler might well optimise the (non-atomic) body of f() to
-just *rb=42, making the threads effectively
-
-    // Thread 0
-    r1 = x;
-    y = 42;
-
-    // Thread 1
-    r3 = y;
-    x = 42;
-
-(GCC does this at O1, O2, and O3) and the ARM and POWER architectures
-permit those two reads to see 42. That is moreover actually observable
-on current ARM hardware.
-
-So as far as we can see, either:
-
-1) if you can accept the latter behaviour (if the Linux codebase does
-   not rely on its absence), the language definition should permit it,
-   and current compiler optimisations can be used,
-
-or
-
-2) otherwise, the language definition should prohibit it but the
-   compiler would have to preserve dependencies even in compilation
-   units that have no mention of atomics.  It's unclear what the
-   (runtime and compiler development) cost of that would be in
-   practice - perhaps Torvald could comment?
-
-
-For more context, this example is taken from a summary of the thin-air
-problem by Mark Batty and myself,
-<www.cl.cam.ac.uk/~pes20/cpp/notes42.html>, and the problem with
-dependencies via other compilation units was AFAIK first pointed out
-by Hans Boehm.
-
-Peter
+On 18/02/14 14:01 +0200, Amir Vadai wrote:
+> On 18/02/14 11:11 +0100, Alexander Gordeev wrote:
+> > As result of deprecation of MSI-X/MSI enablement functions
+> > pci_enable_msix() and pci_enable_msi_block() all drivers
+> > using these two interfaces need to be updated to use the
+> > new pci_enable_msi_range() and pci_enable_msix_range()
+> > interfaces.
+> > 
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> > Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> > Cc: Bruce Allan <bruce.w.allan@intel.com>
+> > Cc: e1000-devel@lists.sourceforge.net
+> > Cc: netdev@vger.kernel.org
+> > Cc: linux-pci@vger.kernel.org
+> > ---
+> 
+> Acked-By: Amir Vadai <amirv@mellanox.com>
+Oh, I'm still working for Mellanox - just replied to the wrong mail :)
