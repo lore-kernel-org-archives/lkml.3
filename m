@@ -1,118 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaBRE54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 23:57:56 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34272 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165AbaBRE5z (ORCPT
+	id S1751222AbaBRFCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 00:02:00 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40766 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730AbaBRFB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 23:57:55 -0500
-Date: Mon, 17 Feb 2014 20:57:49 -0800
+	Tue, 18 Feb 2014 00:01:58 -0500
+Date: Mon, 17 Feb 2014 21:01:52 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
- barriers() for some control dependencies
-Message-ID: <20140218045749.GE4250@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140218050152.GF4250@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217214606.GC7941@thin>
- <20140217225816.GN4250@linux.vnet.ibm.com>
- <20140218000246.GA19929@thin>
- <20140218001740.GT4250@linux.vnet.ibm.com>
- <20140218004510.GK19929@thin>
- <20140218012137.GA4250@linux.vnet.ibm.com>
- <20140218032955.GA31339@thin>
+References: <1392352981.18779.3800.camel@triegel.csb>
+ <20140214172920.GQ4250@linux.vnet.ibm.com>
+ <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+ <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+ <1392486310.18779.6447.camel@triegel.csb>
+ <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+ <1392666947.18779.6838.camel@triegel.csb>
+ <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+ <20140218030002.GA15857@linux.vnet.ibm.com>
+ <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140218032955.GA31339@thin>
+In-Reply-To: <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021804-1542-0000-0000-000006550DFC
+x-cbid: 14021805-0928-0000-0000-000006C5549D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 07:29:55PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 05:21:37PM -0800, Paul E. McKenney wrote:
-> > On Mon, Feb 17, 2014 at 04:45:11PM -0800, Josh Triplett wrote:
-> > > On Mon, Feb 17, 2014 at 04:17:40PM -0800, Paul E. McKenney wrote:
-> > > > On Mon, Feb 17, 2014 at 04:02:47PM -0800, Josh Triplett wrote:
-> > > > > On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
-> > > > > > On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
-> > > > > > > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
-> > > > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > > > > 
-> > > > > > > > Current compilers can "speculate" stores in the case where both legs
-> > > > > > > > of the "if" statement start with identical stores.  Because the stores
-> > > > > > > > are identical, the compiler knows that the store will unconditionally
-> > > > > > > > execute regardless of the "if" condition, and so the compiler is within
-> > > > > > > > its rights to hoist the store to precede the condition.  Such hoisting
-> > > > > > > > destroys the control-dependency ordering.  This ordering can be restored
-> > > > > > > > by placing a barrier() at the beginning of each leg of the "if" statement.
-> > > > > > > > This commit adds this requirement to the control-dependencies section.
-> > > > > > > > 
-> > > > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > > > 
-> > > > > > > This is starting to become a rather unreasonable level of fighting the
-> > > > > > > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
-> > > > > > > doesn't seem like a reasonable thing to require users to do.  Is there
-> > > > > > > really no other way to cope with this particular bit of "help" from the
-> > > > > > > compiler?
-> > > > > > 
-> > > > > > Well, we could use smp_mb() instead of barrier(), but that was the
-> > > > > > sort of thing that Peter Zijlstra was trying to avoid.
-> > > > > 
-> > > > > Yeah, that's not an improvement.  The goal would be to make the code no
-> > > > > more complex than it already needs to be with ACCESS_ONCE; changing
-> > > > > "barrier()" to something else doesn't help (quite apart from smp_mb()
-> > > > > being suboptimal).
-> > > > > 
-> > > > > > That said, I do sympathize completely with your position here -- it is
-> > > > > > just that it is better to have our compiler-fights documented that
-> > > > > > not, right?
-> > > > > 
-> > > > > Sure, better to document them, but better still to not have them.  Is
-> > > > > there some other way we could avoid this one entirely?
-> > > > 
-> > > > We could try change the standard so as to outlaw pulling common code from
-> > > > both legs of an "if" statement, but that will be a serious uphill battle.
-> > > 
-> > > And insufficient given widespread use of existing compilers.
-> > 
-> > Fair point...
-> > 
-> > > > Or perhaps do something to warn the developer about the possibility of
-> > > > this happening.
-> > > > 
-> > > > Other thoughts?
-> > > 
-> > > Might be worth bringing this up with the GCC folks to find out if
-> > > there's something obvious we're missing.  (For non-obvious values of
-> > > "obvious".)
-> > 
-> > Non-obvious values of "obvious" -- I have no idea what that means, but
-> > it does have a nice counter-intuitive sound to it, doesn't it?  ;-)
+On Mon, Feb 17, 2014 at 07:24:56PM -0800, Linus Torvalds wrote:
+> On Mon, Feb 17, 2014 at 7:00 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > One example that I learned about last week uses the branch-prediction
+> > hardware to validate value speculation.  And no, I am not at all a fan
+> > of value speculation, in case you were curious.
 > 
-> I'm hoping for something that we'll consider obvious in hindsight.
-> 
-> > This conversation has started, albeit with much more noise and smoke
-> > than signal or light.
-> 
-> Whereabouts is that conversation taking place?
+> Heh. See the example I used in my reply to Alec Teal. It basically
+> broke the same dependency the same way.
 
-Here you go: https://lkml.org/lkml/2014/2/6/193
+;-)
 
-Not too bad, only about 80 messages thus far.  Spirited at times, though.  ;-)
+> Yes, value speculation of reads is simply wrong, the same way
+> speculative writes are simply wrong. The dependency chain matters, and
+> is meaningful, and breaking it is actively bad.
+> 
+> As far as I can tell, the intent is that you can't do value
+> speculation (except perhaps for the "relaxed", which quite frankly
+> sounds largely useless). But then I do get very very nervous when
+> people talk about "proving" certain values.
+
+That was certainly my intent, but as you might have notice in the
+discussion earlier in this thread, the intent can get lost pretty
+quickly.  ;-)
+
+The HPC guys appear to be the most interested in breaking dependencies.
+Their software does't rely on dependencies, and from their viewpoint
+anything that has any chance of leaving an FP unit of any type idle is
+a very bad thing.  But there are probably other benchmarks for which
+breaking dependencies gives a few percent performance boost.
 
 							Thanx, Paul
 
