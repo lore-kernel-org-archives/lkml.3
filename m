@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026AbaBRCCA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 21:02:00 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58406 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754AbaBRCB7 (ORCPT
+	id S1753521AbaBRCGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 21:06:45 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:47084 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856AbaBRCGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 21:01:59 -0500
-Date: Tue, 18 Feb 2014 11:01:46 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20140218020146.GD2669@sirena.org.uk>
-References: <1392627817-26957-1-git-send-email-sachin.kamat@linaro.org>
- <1392627817-26957-5-git-send-email-sachin.kamat@linaro.org>
+	Mon, 17 Feb 2014 21:06:43 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KzTpGdFWKkiGyjCs"
-Content-Disposition: inline
-In-Reply-To: <1392627817-26957-5-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.99.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 5/9] regulator: max77693: Add missing of_node_put
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20140217104821.21147.71463.stgit@srivatsabhat.in.ibm.com>
+References: <20140217104821.21147.71463.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 18 Feb 2014 07:36:42 +0530
+Message-ID: <CAKohpomxUzE8RYUn=WHu8vi+ZnoQS5GmsCvjrYzv_bRu40-6eQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq, powernow-k8: Initialize per-cpu data-structures properly
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        stable@vger.kernel.org
+Cc: Pierre Ossman <pierre-list@ossman.eu>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cc'ing stable for getting this in 3.12 and 3.13 as well..
 
---KzTpGdFWKkiGyjCs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Feb 17, 2014 at 02:33:33PM +0530, Sachin Kamat wrote:
-> Add of_node_put to decrement the ref count.
-
-Applied, thanks.
-
---KzTpGdFWKkiGyjCs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTAr8HAAoJELSic+t+oim9N5wP/2iDS6LDWkpzQvpAseI+Jkzc
-TRSq19qSJAgo2qOnWRA+JbJGA8tr9b0rb+oTMkvuMOJ/PNNgcjcPy1tOxi1g/jAF
-s3kuOhM5sSvK/dkM9bhsp68QRdPbOeT6pKxntynhm5n7qprPYSkIJsD8vk8Vb9UW
-gG1EEPsSZnUFu9PEZFCQgpccjbXr4ueHiFB0W+jyXxtyYYSmORF8hQ9f9LWllxwD
-nOBIY0Rgh17AeVqfoQ1HcTrDmu/FEJoBWXMECN1uxJSxwaaZVKsl2598tdTE+nA9
-1bbDaqmFb6JJW/8ecVXgo/zQV/UEJHSpGG5vMEaqdmews0NXjQjo2g6FW627CHqx
-iojjqb0ntcfHjvMI2/v5Oc0hHf4Pqc9DOcMDJkiI7hjzWMgmItqOF2ASIIvKIWNP
-NPM6pL+6OZBEHSzBPm9cY0QUIiCrmN4AlXO97wzcCE4BFlaJ424XDrAuJEHGouM4
-UDR5Kt8EEOQ2pxEtpYfaA7fS8FEjuzMFeM0qJaWbWW4CvCSrTbzEaZL3Y3FWsW+K
-pNbpiRuZBVQHzRRW7l0zvmw30V6r7D9joKm6EXLxA6bz2eePyHH6HMdqWQIc5J5A
-j2XrjYir5QgXWNkpABVfKx44KWZd6vQvicu6zkXP74qHvVqKzkd8OE7228DFQ4IQ
-GWOeHfjXyfAJYNpKQl3/
-=rOwQ
------END PGP SIGNATURE-----
-
---KzTpGdFWKkiGyjCs--
+On 17 February 2014 16:18, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> The powernow-k8 driver maintains a per-cpu data-structure called powernow_data
+> that is used to perform the frequency transitions. It initializes this data-
+> structure only for the policy->cpu. So, accesses to this data-structure by
+> other CPUs results in various problems because they would have been
+> uninitialized.
+>
+> Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get() function,
+> it returns 0 as the KHz value, since its per-cpu memory doesn't point to
+> anything valid. This causes problems during suspend/resume since
+> cpufreq_update_policy() tries to enforce this (0 KHz) as the current frequency
+> of the CPU, and this madness gets propagated to adjust_jiffies() as well.
+> Eventually, lots of things start breaking down, including the r8169 ethernet
+> card, in one particularly interesting case reported by Pierre Ossman.
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=70311
+>
+> Fix this by initializing the per-cpu data-structures of _all_ the CPUs
+> in the policy appropriately.
+>
+> Cc: stable@vger.kernel.org
+> Reported-by: Pierre Ossman <pierre@ossman.eu>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+>
+>  drivers/cpufreq/powernow-k8.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index e10b646..6684e03 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -1076,7 +1076,7 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+>  {
+>         struct powernow_k8_data *data;
+>         struct init_on_cpu init_on_cpu;
+> -       int rc;
+> +       int rc, cpu;
+>
+>         smp_call_function_single(pol->cpu, check_supported_cpu, &rc, 1);
+>         if (rc)
+> @@ -1140,7 +1140,9 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+>         pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
+>                  data->currfid, data->currvid);
+>
+> -       per_cpu(powernow_data, pol->cpu) = data;
+> +       /* Point all the CPUs in this policy to the same data */
+> +       for_each_cpu(cpu, pol->cpus)
+> +               per_cpu(powernow_data, cpu) = data;
+>
+>         return 0;
+>
+> @@ -1155,6 +1157,7 @@ err_out:
+>  static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
+>  {
+>         struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
+> +       int cpu;
+>
+>         if (!data)
+>                 return -EINVAL;
+> @@ -1165,7 +1168,8 @@ static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
+>
+>         kfree(data->powernow_table);
+>         kfree(data);
+> -       per_cpu(powernow_data, pol->cpu) = NULL;
+> +       for_each_cpu(cpu, pol->cpus)
+> +               per_cpu(powernow_data, cpu) = NULL;
+>
+>         return 0;
+>  }
+>
