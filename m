@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134AbaBRKrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:47:17 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:44862 "EHLO
+	id S1755186AbaBRKrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:47:25 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:53518 "EHLO
 	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072AbaBRKrP (ORCPT
+	with ESMTP id S1755163AbaBRKrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:47:15 -0500
+	Tue, 18 Feb 2014 05:47:21 -0500
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: broonie@kernel.org, lgirdwood@gmail.com, sachin.kamat@linaro.org
-Subject: [PATCH 10/15] regulator: da9055: Do not hardcode return value
-Date: Tue, 18 Feb 2014 16:11:06 +0530
-Message-Id: <1392720071-13503-10-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH 12/15] regulator: act8865: Remove redundant error message
+Date: Tue, 18 Feb 2014 16:11:08 +0530
+Message-Id: <1392720071-13503-12-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392720071-13503-1-git-send-email-sachin.kamat@linaro.org>
 References: <1392720071-13503-1-git-send-email-sachin.kamat@linaro.org>
@@ -20,26 +20,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Propagate the error value returned by the function instead.
+kzalloc prints its own OOM message upon failure.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/regulator/da9055-regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/act8865-regulator.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/regulator/da9055-regulator.c b/drivers/regulator/da9055-regulator.c
-index 126e7c6d2c12..9516317e1a9f 100644
---- a/drivers/regulator/da9055-regulator.c
-+++ b/drivers/regulator/da9055-regulator.c
-@@ -567,7 +567,7 @@ static int da9055_regulator_dt_init(struct platform_device *pdev,
- 	of_node_put(nproot);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Error matching regulator: %d\n", ret);
--		return -ENODEV;
-+		return ret;
- 	}
+diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
+index 2d2c3b004ab7..a5ff30c8a1e3 100644
+--- a/drivers/regulator/act8865-regulator.c
++++ b/drivers/regulator/act8865-regulator.c
+@@ -228,11 +228,8 @@ static int act8865_pdata_from_dt(struct device *dev,
+ 	pdata->regulators = devm_kzalloc(dev,
+ 				sizeof(struct act8865_regulator_data) *
+ 				ARRAY_SIZE(act8865_matches), GFP_KERNEL);
+-	if (!pdata->regulators) {
+-		dev_err(dev, "%s: failed to allocate act8865 registor\n",
+-						__func__);
++	if (!pdata->regulators)
+ 		return -ENOMEM;
+-	}
  
- 	config->init_data = da9055_reg_matches[regid].init_data;
+ 	pdata->num_regulators = matched;
+ 	regulator = pdata->regulators;
 -- 
 1.7.9.5
 
