@@ -1,49 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501AbaBRQq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:46:28 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40816 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751328AbaBRQq1 (ORCPT
+	id S1756110AbaBRQrc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:47:32 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34899 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612AbaBRQr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:46:27 -0500
-Date: Tue, 18 Feb 2014 16:46:14 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 03/17] mmc: mmci: Mask IRQs for all variants during
-	runtime suspend
-Message-ID: <20140218164614.GI21483@n2100.arm.linux.org.uk>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org> <1391529538-21685-4-git-send-email-ulf.hansson@linaro.org> <20140218160542.GH21483@n2100.arm.linux.org.uk> <CAPDyKFq3uAoo7p-7hZgBmMJ4jf9A7dC0aUZJYUE0z1Qq5W=0bw@mail.gmail.com>
+	Tue, 18 Feb 2014 11:47:29 -0500
+Date: Tue, 18 Feb 2014 08:47:23 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
+Cc: "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>, peterz@infradead.org,
+        Torvald Riegel <triegel@redhat.com>, torvalds@linux-foundation.org,
+        Will Deacon <will.deacon@arm.com>, Ramana.Radhakrishnan@arm.com,
+        dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mingo@kernel.org, gcc@gcc.gnu.org
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140218164723.GM4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
+ <20140218145645.GK4250@linux.vnet.ibm.com>
+ <CAHWkzRR1YozAuTqSTdyTncyNju6ZqUwYi0h988FBgFLDJAtaEg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDyKFq3uAoo7p-7hZgBmMJ4jf9A7dC0aUZJYUE0z1Qq5W=0bw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAHWkzRR1YozAuTqSTdyTncyNju6ZqUwYi0h988FBgFLDJAtaEg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021816-9332-0000-0000-00000324CFF6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 05:36:52PM +0100, Ulf Hansson wrote:
-> If we add SDIO irq support to mmci in future; parts of that
-> implementation includes a re-route of DAT1 to a GPIO irq when entering
-> runtime suspend state. The mmci HW will in runtime suspend state, not
-> be responsible for handling irqs, which is the same as of today.
+On Tue, Feb 18, 2014 at 03:33:35PM +0000, Peter Sewell wrote:
+> Hi Paul,
+> 
+> On 18 February 2014 14:56, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > On Tue, Feb 18, 2014 at 12:12:06PM +0000, Peter Sewell wrote:
+> >> Several of you have said that the standard and compiler should not
+> >> permit speculative writes of atomics, or (effectively) that the
+> >> compiler should preserve dependencies.  In simple examples it's easy
+> >> to see what that means, but in general it's not so clear what the
+> >> language should guarantee, because dependencies may go via non-atomic
+> >> code in other compilation units, and we have to consider the extent to
+> >> which it's desirable to limit optimisation there.
+> >>
+> >> For example, suppose we have, in one compilation unit:
+> >>
+> >>     void f(int ra, int*rb) {
+> >>       if (ra==42)
+> >>         *rb=42;
+> >>       else
+> >>         *rb=42;
+> >>     }
+> >
+> > Hello, Peter!
+> >
+> > Nice example!
+> >
+> > The relevant portion of Documentation/memory-barriers.txt in my -rcu tree
+> > says the following about the control dependency in the above construct:
+> >
+> > ------------------------------------------------------------------------
+> >
+> >         q = ACCESS_ONCE(a);
+> >         if (q) {
+> >                 barrier();
+> >                 ACCESS_ONCE(b) = p;
+> >                 do_something();
+> >         } else {
+> >                 barrier();
+> >                 ACCESS_ONCE(b) = p;
+> >                 do_something_else();
+> >         }
+> >
+> > The initial ACCESS_ONCE() is required to prevent the compiler from
+> > proving the value of 'a', and the pair of barrier() invocations are
+> > required to prevent the compiler from pulling the two identical stores
+> > to 'b' out from the legs of the "if" statement.
+> 
+> thanks
+> 
+> > ------------------------------------------------------------------------
+> >
+> > So yes, current compilers need significant help if it is necessary to
+> > maintain dependencies in that sort of code.
+> >
+> > Similar examples came up in the data-dependency discussions in the
+> > standards committee, which led to the [[carries_dependency]] attribute for
+> > C11 and C++11.  Of course, current compilers don't have this attribute,
+> > and the current Linux kernel code doesn't have any other marking for
+> > data dependencies passing across function boundaries.  (Maybe some time
+> > as an assist for detecting pointer leaks out of RCU read-side critical
+> > sections, but efforts along those lines are a bit stalled at the moment.)
+> >
+> > More on data dependencies below...
+> >
+> >> and in another compilation unit the bodies of two threads:
+> >>
+> >>     // Thread 0
+> >>     r1 = x;
+> >>     f(r1,&r2);
+> >>     y = r2;
+> >>
+> >>     // Thread 1
+> >>     r3 = y;
+> >>     f(r3,&r4);
+> >>     x = r4;
+> >>
+> >> where accesses to x and y are annotated C11 atomic
+> >> memory_order_relaxed or Linux ACCESS_ONCE(), accesses to
+> >> r1,r2,r3,r4,ra,rb are not annotated, and x and y initially hold 0.
+> >>
+> >> (Of course, this is an artificial example, to make the point below as
+> >> simply as possible - in real code the branches of the conditional
+> >> might not be syntactically identical, just equivalent after macro
+> >> expansion and other optimisation.)
+> >>
+> >> In the source program there's a dependency from the read of x to the
+> >> write of y in Thread 0, and from the read of y to the write of x on
+> >> Thread 1.  Dependency-respecting compilation would preserve those and
+> >> the ARM and POWER architectures both respect them, so the reads of x
+> >> and y could not give 42.
+> >>
+> >> But a compiler might well optimise the (non-atomic) body of f() to
+> >> just *rb=42, making the threads effectively
+> >>
+> >>     // Thread 0
+> >>     r1 = x;
+> >>     y = 42;
+> >>
+> >>     // Thread 1
+> >>     r3 = y;
+> >>     x = 42;
+> >>
+> >> (GCC does this at O1, O2, and O3) and the ARM and POWER architectures
+> >> permit those two reads to see 42. That is moreover actually observable
+> >> on current ARM hardware.
+> >
+> > I do agree that this could happen on current compilers and hardware.
+> >
+> > Agreed, but as Peter Zijlstra noted in this thread, this optimization
+> > is to a control dependency, not a data dependency.
+> 
+> Indeed.  In principle (again as Hans has observed) a compiler might
+> well convert between the two, e.g. if operating on single-bit values,
+> or where value-range analysis has shown that a variable can only
+> contain one of a small set of values.   I don't know whether that
+> happens in practice?  Then there are also cases where a compiler is
+> very likely to remove data/address dependencies, eg if some constant C
+> is #define'd to be 0 then an array access indexed by x * C will have
+> the dependency on x removed.  The runtime and compiler development
+> costs of preventing that are also unclear to me.
+> 
+> Given that, whether it's reasonable to treat control and data
+> dependencies differently seems to be an open question.
 
-Note that the "irq thread" in sdio_irq is scheduled for destruction -
-it's buggy when the system is under high load and a driver claims a
-SDIO irq.  Sched people hate it too...
+Here is another (admittedly fanciful and probably buggy) implementation
+of f() that relies on data dependencies (according to C11 and C++11),
+but which could not be relied on to preserve thosse data dependencies
+given current pre-C11 compilers:
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+	int arr[2] = { 42, 43 };
+	int *bigarr;
+
+	int f(int ra)
+	{
+		return arr[ra != 42];
+	}
+
+	// Thread 0
+	r1 = atomic_load_explicit(&gidx, memory_order_consume);
+	r2 = bigarr[f(r1)];
+
+	// Thread 1
+	r3 = random() % BIGARR_SIZE;
+	bigarr[r3] = some_integer();
+	atomic_store_explicit(&gidx, r3, memory_order_release);
+
+	// Mainprogram
+	bigarr = kmalloc(BIGARR_SIZE * sizeof(*bigarr), ...);
+	// Note: bigarr currently contains pre-initialization garbage
+	// Spawn threads 1 and 2
+
+Many compilers would be happy to convert f() into something like the
+following:
+
+	int f(int ra)
+	{
+		if (ra == 42)
+			return arr[0];
+		else
+			return arr[1];
+	}
+
+And many would argue that this is a perfectly reasonable conversion.
+
+However, this breaks the data dependency, and allows Thread 0's load
+from bigarr[] to be speculated, so that r2 might end up containing
+pre-initialization garbage.  This is why the consume.2014.02.16c.pdf
+document advises against attempting to carry dependencies through
+relational operators and booleans (&& and ||) when using current compilers
+(hmmm...  I need to make that advice more strongly stated).  And again,
+this is one of the reasons for the [[carries_dependency]] attribute in
+C11 -- to signal the compiler to be careful in a given function.
+
+Again, this example is fanciful.  It is intended to illustrate a data
+dependency that could be broken given current compilers and hardware.
+It is -not- intended as an example of good code for the Linux kernel,
+much the opposite, in fact.
+
+That said, I would very much welcome a more realistic example.
+
+> >> So as far as we can see, either:
+> >>
+> >> 1) if you can accept the latter behaviour (if the Linux codebase does
+> >>    not rely on its absence), the language definition should permit it,
+> >>    and current compiler optimisations can be used,
+> >>
+> >> or
+> >>
+> >> 2) otherwise, the language definition should prohibit it but the
+> >>    compiler would have to preserve dependencies even in compilation
+> >>    units that have no mention of atomics.  It's unclear what the
+> >>    (runtime and compiler development) cost of that would be in
+> >>    practice - perhaps Torvald could comment?
+> >
+> > For current compilers, we have to rely on coding conventions within
+> > the Linux kernel in combination with non-standard extentions to gcc
+> > and specified compiler flags to disable undesirable behavior.  I have a
+> > start on specifying this in a document I am preparing for the standards
+> > committee, a very early draft of which may be found here:
+> >
+> > http://www2.rdrop.com/users/paulmck/scalability/paper/consume.2014.02.16c.pdf
+> >
+> > Section 3 shows the results of a manual scan through the Linux kernel's
+> > dependency chains, and Section 4.1 lists a probably incomplete (and no
+> > doubt erroneous) list of coding standards required to make dependency
+> > chains work on current compilers.  Any comments and suggestions are more
+> > than welcome!
+> 
+> Thanks, that's very interesting (especially the non-local dependency chains).
+> 
+> At a first glance, the "4.1 Rules for C-Language RCU Users" seem
+> pretty fragile - they're basically trying to guess the limits of
+> compiler optimisation smartness.
+
+Agreed, but that is the world we currently must live in, given pre-C11
+compilers and the tepid implementations of memory_order_consume in
+the current C11 implementations that I am aware of.  As long as the
+Linux kernel must live in this world for some time to come, I might as
+well document the limitations, fragile though they might be.
+
+> >> For more context, this example is taken from a summary of the thin-air
+> >> problem by Mark Batty and myself,
+> >> <www.cl.cam.ac.uk/~pes20/cpp/notes42.html>, and the problem with
+> >> dependencies via other compilation units was AFAIK first pointed out
+> >> by Hans Boehm.
+> >
+> > Nice document!
+> >
+> > One point of confusion for me...  Example 4 says "language must allow".
+> > Shouldn't that be "language is permitted to allow"?  Seems like an
+> > implementation is always within its rights to avoid an optimization if
+> > its implementation prevents it from safely detecting the oppportunity
+> > for that optimization.  Or am I missing something here?
+> 
+> We're saying that the language definition must allow it, not that any
+> particular implementation must be able to exhibit it.
+
+Ah, got it.  You had me worried there for a bit!  ;-)
+
+							Thanx, Paul
+
