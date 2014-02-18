@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaBRW5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:57:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51168 "EHLO
+	id S1753787AbaBRW6T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:58:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51162 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416AbaBRWrP (ORCPT
+	with ESMTP id S1753323AbaBRWrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:15 -0500
+	Tue, 18 Feb 2014 17:47:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolai Beuermann <mail@nico-beuermann.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 18/40] ALSA: hda - Fix missing VREF setup for Mac Pro 1,1
-Date: Tue, 18 Feb 2014 14:47:19 -0800
-Message-Id: <20140218224433.850335245@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 17/40] ALSA: usb-audio: Add missing kconfig dependecy
+Date: Tue, 18 Feb 2014 14:47:18 -0800
+Message-Id: <20140218224433.823466845@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -31,51 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit c20f31ec421ea4fabea5e95a6afd46c5f41e5599 upstream.
+commit 4fa71c1550a857ff1dbfe9e99acc1f4cfec5f0d0 upstream.
 
-Mac Pro 1,1 with ALC889A codec needs the VREF setup on NID 0x18 to
-VREF50, in order to make the speaker working.  The same fixup was
-already needed for MacBook Air 1,1, so we can reuse it.
+The commit 44dcbbb1cd61 introduced the usage of bitreverse helpers but
+forgot to add the dependency.  This patch adds the selection for
+CONFIG_BITREVERSE.
 
-Reported-by: Nicolai Beuermann <mail@nico-beuermann.de>
+Fixes: 44dcbbb1cd61 ('ALSA: snd-usb: add support for bit-reversed byte formats')
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ sound/usb/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1782,6 +1782,7 @@ enum {
- 	ALC889_FIXUP_IMAC91_VREF,
- 	ALC889_FIXUP_MBA11_VREF,
- 	ALC889_FIXUP_MBA21_VREF,
-+	ALC889_FIXUP_MP11_VREF,
- 	ALC882_FIXUP_INV_DMIC,
- 	ALC882_FIXUP_NO_PRIMARY_HP,
- 	ALC887_FIXUP_ASUS_BASS,
-@@ -2142,6 +2143,12 @@ static const struct hda_fixup alc882_fix
- 		.chained = true,
- 		.chain_id = ALC889_FIXUP_MBP_VREF,
- 	},
-+	[ALC889_FIXUP_MP11_VREF] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = alc889_fixup_mba11_vref,
-+		.chained = true,
-+		.chain_id = ALC885_FIXUP_MACPRO_GPIO,
-+	},
- 	[ALC882_FIXUP_INV_DMIC] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = alc_fixup_inv_dmic_0x12,
-@@ -2205,7 +2212,7 @@ static const struct snd_pci_quirk alc882
- 	SND_PCI_QUIRK(0x106b, 0x00a0, "MacBookPro 3,1", ALC889_FIXUP_MBP_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x00a1, "Macbook", ALC889_FIXUP_MBP_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x00a4, "MacbookPro 4,1", ALC889_FIXUP_MBP_VREF),
--	SND_PCI_QUIRK(0x106b, 0x0c00, "Mac Pro", ALC885_FIXUP_MACPRO_GPIO),
-+	SND_PCI_QUIRK(0x106b, 0x0c00, "Mac Pro", ALC889_FIXUP_MP11_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x1000, "iMac 24", ALC885_FIXUP_MACPRO_GPIO),
- 	SND_PCI_QUIRK(0x106b, 0x2800, "AppleTV", ALC885_FIXUP_MACPRO_GPIO),
- 	SND_PCI_QUIRK(0x106b, 0x2c00, "MacbookPro rev3", ALC889_FIXUP_MBP_VREF),
+--- a/sound/usb/Kconfig
++++ b/sound/usb/Kconfig
+@@ -14,6 +14,7 @@ config SND_USB_AUDIO
+ 	select SND_HWDEP
+ 	select SND_RAWMIDI
+ 	select SND_PCM
++	select BITREVERSE
+ 	help
+ 	  Say Y here to include support for USB audio and USB MIDI
+ 	  devices.
 
 
