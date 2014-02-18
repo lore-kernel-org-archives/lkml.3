@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857AbaBRXXY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:23:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50929 "EHLO
+	id S1752934AbaBRWq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:46:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50868 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748AbaBRWq3 (ORCPT
+	with ESMTP id S1752748AbaBRWqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:29 -0500
+	Tue, 18 Feb 2014 17:46:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xishi Qiu <qiuxishi@huawei.com>
-Subject: [PATCH 3.10 23/26] mm/memory-failure.c: fix memory leak in successful soft offlining
-Date: Tue, 18 Feb 2014 14:47:19 -0800
-Message-Id: <20140218224531.066044629@linuxfoundation.org>
+        Vinayak Kale <vkale@apm.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.10 11/26] arm64: add DSB after icache flush in __flush_icache_all()
+Date: Tue, 18 Feb 2014 14:47:07 -0800
+Message-Id: <20140218224530.728162504@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
 References: <20140218224530.398913499@linuxfoundation.org>
@@ -32,102 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Vinayak Kale <vkale@apm.com>
 
-commit f15bdfa802bfa5eb6b4b5a241b97ec9fa1204a35 upstream.
+commit 5044bad43ee573d0b6d90e3ccb7a40c2c7d25eb4 upstream.
 
-After a successful page migration by soft offlining, the source page is
-not properly freed and it's never reusable even if we unpoison it
-afterward.
+Add DSB after icache flush to complete the cache maintenance operation.
+The function __flush_icache_all() is used only for user space mappings
+and an ISB is not required because of an exception return before executing
+user instructions. An exception return would behave like an ISB.
 
-This is caused by the race between freeing page and setting PG_hwpoison.
-In successful soft offlining, the source page is put (and the refcount
-becomes 0) by putback_lru_page() in unmap_and_move(), where it's linked
-to pagevec and actual freeing back to buddy is delayed.  So if
-PG_hwpoison is set for the page before freeing, the freeing does not
-functions as expected (in such case freeing aborts in
-free_pages_prepare() check.)
-
-This patch tries to make sure to free the source page before setting
-PG_hwpoison on it.  To avoid reallocating, the page keeps
-MIGRATE_ISOLATE until after setting PG_hwpoison.
-
-This patch also removes obsolete comments about "keeping elevated
-refcount" because what they say is not true.  Unlike memory_failure(),
-soft_offline_page() uses no special page isolation code, and the
-soft-offlined pages have no elevated.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ arch/arm64/include/asm/cacheflush.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1421,7 +1421,8 @@ static int __get_any_page(struct page *p
- 
- 	/*
- 	 * Isolate the page, so that it doesn't get reallocated if it
--	 * was free.
-+	 * was free. This flag should be kept set until the source page
-+	 * is freed and PG_hwpoison on it is set.
- 	 */
- 	set_migratetype_isolate(p, true);
- 	/*
-@@ -1444,7 +1445,6 @@ static int __get_any_page(struct page *p
- 		/* Not a free page */
- 		ret = 1;
- 	}
--	unset_migratetype_isolate(p, MIGRATE_MOVABLE);
- 	unlock_memory_hotplug();
- 	return ret;
- }
-@@ -1511,7 +1511,6 @@ static int soft_offline_huge_page(struct
- 			atomic_long_inc(&num_poisoned_pages);
- 		}
- 	}
--	/* keep elevated page count for bad page */
- 	return ret;
+--- a/arch/arm64/include/asm/cacheflush.h
++++ b/arch/arm64/include/asm/cacheflush.h
+@@ -116,6 +116,7 @@ extern void flush_dcache_page(struct pag
+ static inline void __flush_icache_all(void)
+ {
+ 	asm("ic	ialluis");
++	dsb();
  }
  
-@@ -1576,7 +1575,7 @@ int soft_offline_page(struct page *page,
- 			atomic_long_inc(&num_poisoned_pages);
- 		}
- 	}
--	/* keep elevated page count for bad page */
-+	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
- 	return ret;
- }
- 
-@@ -1642,7 +1641,22 @@ static int __soft_offline_page(struct pa
- 			if (ret > 0)
- 				ret = -EIO;
- 		} else {
-+			/*
-+			 * After page migration succeeds, the source page can
-+			 * be trapped in pagevec and actual freeing is delayed.
-+			 * Freeing code works differently based on PG_hwpoison,
-+			 * so there's a race. We need to make sure that the
-+			 * source page should be freed back to buddy before
-+			 * setting PG_hwpoison.
-+			 */
-+			if (!is_free_buddy_page(page))
-+				lru_add_drain_all();
-+			if (!is_free_buddy_page(page))
-+				drain_all_pages();
- 			SetPageHWPoison(page);
-+			if (!is_free_buddy_page(page))
-+				pr_info("soft offline: %#lx: page leaked\n",
-+					pfn);
- 			atomic_long_inc(&num_poisoned_pages);
- 		}
- 	} else {
+ #define flush_dcache_mmap_lock(mapping) \
 
 
