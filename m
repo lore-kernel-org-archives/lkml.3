@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaBRWqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50944 "EHLO
+	id S1754050AbaBRXVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:21:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50953 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978AbaBRWqb (ORCPT
+	with ESMTP id S1753017AbaBRWqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:31 -0500
+	Tue, 18 Feb 2014 17:46:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xishi Qiu <qiuxishi@huawei.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 3.10 26/26] mm: fix process accidentally killed by mce because of huge page migration
-Date: Tue, 18 Feb 2014 14:47:22 -0800
-Message-Id: <20140218224531.147324861@linuxfoundation.org>
+        Harald Freudenberger <freude@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.10 04/26] crypto: s390 - fix des and des3_ede cbc concurrency issue
+Date: Tue, 18 Feb 2014 14:47:00 -0800
+Message-Id: <20140218224530.528994713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
 References: <20140218224530.398913499@linuxfoundation.org>
@@ -29,85 +29,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xishi Qiu <qiuxishi@huawei.com>
+From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-Based on c8721bbbdd36382de51cd6b7a56322e0acca2414 upstream, but only the
-bugfix portion pulled out.
+commit adc3fcf1552b6e406d172fd9690bbd1395053d13 upstream.
 
-Hi Naoya or Greg,
+In s390 des and des3_ede cbc mode the iv value is not protected
+against concurrency access and modifications from another running
+en/decrypt operation which is using the very same tfm struct
+instance. This fix copies the iv to the local stack before
+the crypto operation and stores the value back when done.
 
-We found a bug in 3.10.x.
-The problem is that we accidentally have a hwpoisoned hugepage in free
-hugepage list. It could happend in the the following scenario:
-
-        process A                           process B
-
-  migrate_huge_page
-  put_page (old hugepage)
-    linked to free hugepage list
-                                     hugetlb_fault
-                                       hugetlb_no_page
-                                         alloc_huge_page
-                                           dequeue_huge_page_vma
-                                             dequeue_huge_page_node
-                                               (steal hwpoisoned hugepage)
-  set_page_hwpoison_huge_page
-  dequeue_hwpoisoned_huge_page
-    (fail to dequeue)
-
-I tested this bug, one process keeps allocating huge page, and I 
-use sysfs interface to soft offline a huge page, then received:
-"MCE: Killing UCP:2717 due to hardware memory corruption fault at 8200034"
-
-Upstream kernel is free from this bug because of these two commits:
-
-f15bdfa802bfa5eb6b4b5a241b97ec9fa1204a35
-mm/memory-failure.c: fix memory leak in successful soft offlining
-
-c8721bbbdd36382de51cd6b7a56322e0acca2414
-mm: memory-hotplug: enable memory hotplug to handle hugepage
-
-The first one, although the problem is about memory leak, this patch
-moves unset_migratetype_isolate(), which is important to avoid the race.
-The latter is not a bug fix and it's too big, so I rewrite a small one.
-
-The following patch can fix this bug.(please apply f15bdfa802bf first)
-
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ arch/s390/crypto/des_s390.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -21,6 +21,7 @@
- #include <linux/rmap.h>
- #include <linux/swap.h>
- #include <linux/swapops.h>
-+#include <linux/page-isolation.h>
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -105,29 +105,35 @@ static int ecb_desall_crypt(struct blkci
+ }
  
- #include <asm/page.h>
- #include <asm/pgtable.h>
-@@ -517,9 +518,15 @@ static struct page *dequeue_huge_page_no
+ static int cbc_desall_crypt(struct blkcipher_desc *desc, long func,
+-			    u8 *iv, struct blkcipher_walk *walk)
++			    struct blkcipher_walk *walk)
  {
- 	struct page *page;
++	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	int ret = blkcipher_walk_virt(desc, walk);
+ 	unsigned int nbytes = walk->nbytes;
++	struct {
++		u8 iv[DES_BLOCK_SIZE];
++		u8 key[DES3_KEY_SIZE];
++	} param;
  
--	if (list_empty(&h->hugepage_freelists[nid]))
-+	list_for_each_entry(page, &h->hugepage_freelists[nid], lru)
-+		if (!is_migrate_isolate_page(page))
-+			break;
-+	/*
-+	 * if 'non-isolated free hugepage' not found on the list,
-+	 * the allocation fails.
-+	 */
-+	if (&h->hugepage_freelists[nid] == &page->lru)
- 		return NULL;
--	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
- 	list_move(&page->lru, &h->hugepage_activelist);
- 	set_page_refcounted(page);
- 	h->free_huge_pages--;
+ 	if (!nbytes)
+ 		goto out;
+ 
+-	memcpy(iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.key, ctx->key, DES3_KEY_SIZE);
+ 	do {
+ 		/* only use complete blocks */
+ 		unsigned int n = nbytes & ~(DES_BLOCK_SIZE - 1);
+ 		u8 *out = walk->dst.virt.addr;
+ 		u8 *in = walk->src.virt.addr;
+ 
+-		ret = crypt_s390_kmc(func, iv, out, in, n);
++		ret = crypt_s390_kmc(func, &param, out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
+ 		nbytes &= DES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	} while ((nbytes = walk->nbytes));
+-	memcpy(walk->iv, iv, DES_BLOCK_SIZE);
++	memcpy(walk->iv, param.iv, DES_BLOCK_SIZE);
+ 
+ out:
+ 	return ret;
+@@ -179,22 +185,20 @@ static int cbc_des_encrypt(struct blkcip
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, &walk);
+ }
+ 
+ static int cbc_des_decrypt(struct blkcipher_desc *desc,
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des_alg = {
+@@ -327,22 +331,20 @@ static int cbc_des3_encrypt(struct blkci
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, &walk);
+ }
+ 
+ static int cbc_des3_decrypt(struct blkcipher_desc *desc,
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des3_alg = {
 
 
