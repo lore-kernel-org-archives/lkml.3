@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaBRGrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 01:47:06 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:50064 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752623AbaBRGrE (ORCPT
+	id S1754102AbaBRHBV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 02:01:21 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:51694 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239AbaBRHBU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 01:47:04 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Michal Simek <monstr@monstr.eu>
-Cc: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
-        achew@nvidia.com, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2] microblaze: Rename global function heartbeat()
-Date: Mon, 17 Feb 2014 22:46:54 -0800
-Message-Id: <1392706014-23332-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Tue, 18 Feb 2014 02:01:20 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH v2] Bluetooth: allocate static minor for vhci
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1392700766-4374-1-git-send-email-lucas.demarchi@intel.com>
+Date: Mon, 17 Feb 2014 23:01:11 -0800
+Cc: "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lucas De Marchi <lucas.demarchi@intel.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BD98E109-FE9C-4F67-84AC-3CEA048641BE@holtmann.org>
+References: <1392700766-4374-1-git-send-email-lucas.demarchi@intel.com>
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-microblaze:allmodconfig complains for some configurations that 'heartbeat'
-is redefined as different kind of symbol. This is seen in test compiles
-of watchdog drivers, which often use 'heartbeat' as ststic variable.
+Hi Lucas,
 
-Since 'heartbeat' is an unfortunate name for a global function,
-rename it to microblaze_heartbeat. Also rename the setup function
-to microblaze_setup_heartbeat.
+> Commit bfacbb9 (Bluetooth: Use devname:vhci module alias for virtual HCI
+> driver) added the module alias to hci_vhci module so it's possible to
+> create the /dev/vhci node. However creating an alias without
+> specifying the minor doesn't allow us to create the node ahead,
+> triggerring module auto-load when it's first accessed.
+> 
+> Starting with depmod from kmod 16 we started to warn if there's a
+> devname alias without specifying the major and minor.
+> 
+> Let's do the same done for uhid, kvm, fuse and others, specifying a
+> fixed minor. In systems with systemd as the init the following will
+> happen: on early boot systemd will call "kmod static-nodes" to read
+> /lib/modules/$(uname -r)/modules.devname and then create the nodes. When
+> first accessed these "dead" nodes will trigger the module loading.
+> 
+> Signed-off-by: Lucas De Marchi <lucas.demarchi@intel.com>
+> ---
+> 
+> Changes from v1:
+> - use minor=137, since 240 is reserved for local use
+> 
+> We talked about using 197, but that's being used by pxa3xx-gcu, too.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v2: Use microblaze_ instead of xilinx_ as function prefix.
+looks fine to me. If Kay and/or Greg want to ack it, then I take it through bluetooth-next tree.
 
- arch/microblaze/include/asm/setup.h |    4 ++--
- arch/microblaze/kernel/heartbeat.c  |    4 ++--
- arch/microblaze/kernel/timer.c      |    4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
+Regards
 
-diff --git a/arch/microblaze/include/asm/setup.h b/arch/microblaze/include/asm/setup.h
-index b2c08ce..be84a4d 100644
---- a/arch/microblaze/include/asm/setup.h
-+++ b/arch/microblaze/include/asm/setup.h
-@@ -23,8 +23,8 @@ int setup_early_printk(char *opt);
- void remap_early_printk(void);
- void disable_early_printk(void);
- 
--void heartbeat(void);
--void setup_heartbeat(void);
-+void microblaze_heartbeat(void);
-+void microblaze_setup_heartbeat(void);
- 
- #   ifdef CONFIG_MMU
- extern void mmu_reset(void);
-diff --git a/arch/microblaze/kernel/heartbeat.c b/arch/microblaze/kernel/heartbeat.c
-index 1879a05..4643e3a 100644
---- a/arch/microblaze/kernel/heartbeat.c
-+++ b/arch/microblaze/kernel/heartbeat.c
-@@ -17,7 +17,7 @@
- 
- static unsigned int base_addr;
- 
--void heartbeat(void)
-+void microblaze_heartbeat(void)
- {
- 	static unsigned int cnt, period, dist;
- 
-@@ -42,7 +42,7 @@ void heartbeat(void)
- 	}
- }
- 
--void setup_heartbeat(void)
-+void microblaze_setup_heartbeat(void)
- {
- 	struct device_node *gpio = NULL;
- 	int *prop;
-diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
-index fb0c6144..717a3d9 100644
---- a/arch/microblaze/kernel/timer.c
-+++ b/arch/microblaze/kernel/timer.c
-@@ -140,7 +140,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- {
- 	struct clock_event_device *evt = &clockevent_xilinx_timer;
- #ifdef CONFIG_HEART_BEAT
--	heartbeat();
-+	microblaze_heartbeat();
- #endif
- 	timer_ack();
- 	evt->event_handler(evt);
-@@ -274,7 +274,7 @@ static void __init xilinx_timer_init(struct device_node *timer)
- 
- 	setup_irq(irq, &timer_irqaction);
- #ifdef CONFIG_HEART_BEAT
--	setup_heartbeat();
-+	microblaze_setup_heartbeat();
- #endif
- 	xilinx_clocksource_init();
- 	xilinx_clockevent_init();
--- 
-1.7.9.7
+Marcel
 
