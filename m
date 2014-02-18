@@ -1,123 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270AbaBRQS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:18:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61207 "EHLO mx1.redhat.com"
+	id S1756186AbaBRQUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:20:55 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:36252 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527AbaBRQSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:18:23 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
-References: <1392321837.18779.3249.camel@triegel.csb>
-	 <20140214020144.GO4250@linux.vnet.ibm.com>
-	 <1392352981.18779.3800.camel@triegel.csb>
-	 <20140214172920.GQ4250@linux.vnet.ibm.com>
-	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	 <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	 <1392486310.18779.6447.camel@triegel.csb>
-	 <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	 <1392666947.18779.6838.camel@triegel.csb>
-	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	 <20140218030002.GA15857@linux.vnet.ibm.com>
-	 <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
-	 <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Feb 2014 17:17:38 +0100
-Message-ID: <1392740258.18779.7732.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755710AbaBRQUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 11:20:54 -0500
+Date: Tue, 18 Feb 2014 10:19:06 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Bo Shen <voice.shen@atmel.com>
+CC: Felipe Balbi <balbi@ti.com>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] USB: at91: using USBA_NR_DMAS for DMA channels
+Message-ID: <20140218161839.GD9878@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1389927565-22477-1-git-send-email-voice.shen@atmel.com>
+ <1389927565-22477-2-git-send-email-voice.shen@atmel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4VrXvz3cwkc87Wze"
+Content-Disposition: inline
+In-Reply-To: <1389927565-22477-2-git-send-email-voice.shen@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-17 at 19:42 -0800, Linus Torvalds wrote:
-> On Mon, Feb 17, 2014 at 7:24 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > As far as I can tell, the intent is that you can't do value
-> > speculation (except perhaps for the "relaxed", which quite frankly
-> > sounds largely useless).
-> 
-> Hmm. The language I see for "consume" is not obvious:
-> 
->   "Consume operation: no reads in the current thread dependent on the
-> value currently loaded can be reordered before this load"
+--4VrXvz3cwkc87Wze
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I can't remember seeing that language in the standard (ie, C or C++).
-Where is this from?
+On Fri, Jan 17, 2014 at 10:59:25AM +0800, Bo Shen wrote:
+> When the SoC is earlier than sama5d3 SoC, which have the same number
+> endpoints and DMAs. However for sama5d3 SoC, it has different number
+> for endpoints and DMAs. So, define USBA_NR_DMAs for DMA channels
+>=20
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> ---
+>=20
+>  drivers/usb/gadget/atmel_usba_udc.c | 2 +-
+>  drivers/usb/gadget/atmel_usba_udc.h | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atm=
+el_usba_udc.c
+> index 7e67a81..5cded1c 100644
+> --- a/drivers/usb/gadget/atmel_usba_udc.c
+> +++ b/drivers/usb/gadget/atmel_usba_udc.c
+> @@ -1661,7 +1661,7 @@ static irqreturn_t usba_udc_irq(int irq, void *devi=
+d)
+>  	if (dma_status) {
+>  		int i;
+> =20
+> -		for (i =3D 1; i < USBA_NR_ENDPOINTS; i++)
+> +		for (i =3D 1; i < USBA_NR_DMAS; i++)
+>  			if (dma_status & (1 << i))
+>  				usba_dma_irq(udc, &udc->usba_ep[i]);
+>  	}
+> diff --git a/drivers/usb/gadget/atmel_usba_udc.h b/drivers/usb/gadget/atm=
+el_usba_udc.h
+> index 2922db5..a70706e 100644
+> --- a/drivers/usb/gadget/atmel_usba_udc.h
+> +++ b/drivers/usb/gadget/atmel_usba_udc.h
+> @@ -210,7 +210,7 @@
+>  #define USBA_FIFO_BASE(x)	((x) << 16)
+> =20
+>  /* Synth parameters */
+> -#define USBA_NR_ENDPOINTS	7
+> +#define USBA_NR_DMAS		7
 
-> and it could make a compiler writer say that value speculation is
-> still valid, if you do it like this (with "ptr" being the atomic
-> variable):
-> 
->   value = ptr->val;
+what's the difference ? You just renamed this macro. Also, please
+clarify a bit your commit log.
 
-I assume the load from ptr has mo_consume ordering?
+--=20
+balbi
 
-> into
-> 
->   tmp = ptr;
->   value = speculated.value;
->   if (unlikely(tmp != &speculated))
->     value = tmp->value;
-> 
-> which is still bogus. The load of "ptr" does happen before the load of
-> "value = speculated->value" in the instruction stream, but it would
-> still result in the CPU possibly moving the value read before the
-> pointer read at least on ARM and power.
+--4VrXvz3cwkc87Wze
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-And surprise, in the C/C++ model the load from ptr is sequenced-before
-the load from speculated, but there's no ordering constraint on the
-reads-from relation for the value load if you use mo_consume on the ptr
-load.  Thus, the transformed code has less ordering constraints than the
-original code, and we arrive at the same outcome.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> So if you're a compiler person, you think you followed the letter of
-> the spec - as far as *you* were concerned, no load dependent on the
-> value of the atomic load moved to before the atomic load.
+iQIcBAEBAgAGBQJTA4f6AAoJEIaOsuA1yqREuvsQAKUbaHqjqDvwWlceprpGndRJ
+5LZ4KfDu9v/5fTina1cKEoyRt1WMFkx3sxWgKTitCBAAyxKuyGLCfHmuFhWFaVsm
+wcltIxsi3hqXRuJR9IJvKUpcAGeplhvzxZoNof9ZrnOPtC/BCTbD+SIazssQvuc8
++2V94BckzZCJA2Yat3u10IAzs+wcEA13Y1iHpTovrjFyVAUKTSgX1NxRDWmRCm/g
+iIz770B9Hf3TFcE9KHoE1GRnIo4eAY92k1nrUlQgQHRglwW+ItWfSadaqCctrEdi
+9pwo0h2P97Xk7HdDbHXF37/ETGna11sX3tOxPLZNmqItv3vPR4nz9L7nzBMdOE6y
+t8K6jJtWsGHRt+TpSzrysNV5j/eIlyt7srsp8WOJsEscUu6C0SSVfuJrsF3T9x6N
+cshj0XO23HId4wPLDBqL1T/mX+i/h4IE6GWgaMybPiFtqkJoUePZKrADgqd4Z6CD
+281E71zDRpyw0AuTABodhK1PgvAFoj2gEe+Gr6FHSbV+JCRKANnlaXirJAklVWvw
+rVvjS3fL2hgXQo5OcQyOCJTUAcpCnrD9VIhgSN471H0Qu2HWVKIVJcrKwuXZCq6j
+OHNwsN40ZJMQ4nmTx1Zdyu0mEjcr2CYOnL1MKUcPfn77umpOrTqQ/J56Uo9TuXtI
+er72NtDnN7XIpiurZTKx
+=Sh/P
+-----END PGP SIGNATURE-----
 
-No.  Because the wobbly sentence you cited(?) above is not what the
-standard says.
-
-Would you please stop making claims about what compiler writers would do
-or not if you seemingly aren't even familiar with the model that
-compiler writers would use to reason about transformations?  Seriously?
-
-> You go home,
-> happy, knowing you've done your job. Never mind that you generated
-> code that doesn't actually work.
-> 
-> I dread having to explain to the compiler person that he may be right
-> in some theoretical virtual machine, but the code is subtly broken and
-> nobody will ever understand why (and likely not be able to create a
-> test-case showing the breakage).
-> 
-> But maybe the full standard makes it clear that "reordered before this
-> load" actually means on the real hardware, not just in the generated
-> instruction stream.
-
-Do you think everyone else is stupid?  If there's an ordering constraint
-in the virtual machine, it better be present when executing in the real
-machine unless it provably cannot result in different output as
-specified by the language's semantics.
-
-> Reading it with understanding of the *intent* and
-> understanding all the different memory models that requirement should
-> be obvious (on alpha, you need an "rmb" instruction after the load),
-> but ...
-
-The standard is clear on what's required.  I strongly suggest reading
-the formalization of the memory model by Batty et al.
-
+--4VrXvz3cwkc87Wze--
