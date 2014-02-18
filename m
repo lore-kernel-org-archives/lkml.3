@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471AbaBRPbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:31:37 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50622 "EHLO
+	id S1756525AbaBRPb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:31:58 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50610 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756388AbaBRPbJ (ORCPT
+	by vger.kernel.org with ESMTP id S1756371AbaBRPbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 10:31:09 -0500
+	Tue, 18 Feb 2014 10:31:08 -0500
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@kernel.org
 Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
@@ -15,9 +15,9 @@ Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
         haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
         patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
         linux@arm.linux.org.uk
-Subject: [PATCH 17/17 v2] ASoC: pxa: tosa: Update locking around use of DAPM pin API
-Date: Tue, 18 Feb 2014 15:22:28 +0000
-Message-Id: <1392736948-26623-18-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 16/17 v2] ASoC: pxa: spitz: Update locking around use of DAPM pin API
+Date: Tue, 18 Feb 2014 15:22:27 +0000
+Message-Id: <1392736948-26623-17-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -30,61 +30,103 @@ atomically, update to do so.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- sound/soc/pxa/tosa.c |   28 ++++++++++++++++------------
- 1 files changed, 16 insertions(+), 12 deletions(-)
+ sound/soc/pxa/spitz.c |   51 ++++++++++++++++++++++++++----------------------
+ 1 files changed, 28 insertions(+), 23 deletions(-)
 
-diff --git a/sound/soc/pxa/tosa.c b/sound/soc/pxa/tosa.c
-index 1d9c2ed..2a4b438 100644
---- a/sound/soc/pxa/tosa.c
-+++ b/sound/soc/pxa/tosa.c
-@@ -48,31 +48,35 @@ static void tosa_ext_control(struct snd_soc_codec *codec)
- {
- 	struct snd_soc_dapm_context *dapm = &codec->dapm;
+diff --git a/sound/soc/pxa/spitz.c b/sound/soc/pxa/spitz.c
+index fc052d8..04dbb5a 100644
+--- a/sound/soc/pxa/spitz.c
++++ b/sound/soc/pxa/spitz.c
+@@ -46,61 +46,66 @@ static int spitz_mic_gpio;
  
+ static void spitz_ext_control(struct snd_soc_dapm_context *dapm)
+ {
 +	snd_soc_dapm_mutex_lock(dapm);
 +
+ 	if (spitz_spk_func == SPITZ_SPK_ON)
+-		snd_soc_dapm_enable_pin(dapm, "Ext Spk");
++		snd_soc_dapm_enable_pin_unlocked(dapm, "Ext Spk");
+ 	else
+-		snd_soc_dapm_disable_pin(dapm, "Ext Spk");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Ext Spk");
+ 
  	/* set up jack connection */
- 	switch (tosa_jack_func) {
- 	case TOSA_HP:
--		snd_soc_dapm_disable_pin(dapm, "Mic (Internal)");
+ 	switch (spitz_jack_func) {
+ 	case SPITZ_HP:
+ 		/* enable and unmute hp jack, disable mic bias */
+-		snd_soc_dapm_disable_pin(dapm, "Headset Jack");
+-		snd_soc_dapm_disable_pin(dapm, "Mic Jack");
+-		snd_soc_dapm_disable_pin(dapm, "Line Jack");
 -		snd_soc_dapm_enable_pin(dapm, "Headphone Jack");
--		snd_soc_dapm_disable_pin(dapm, "Headset Jack");
-+		snd_soc_dapm_disable_pin_unlocked(dapm, "Mic (Internal)");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Headset Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Mic Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Line Jack");
 +		snd_soc_dapm_enable_pin_unlocked(dapm, "Headphone Jack");
-+		snd_soc_dapm_disable_pin_unlocked(dapm, "Headset Jack");
+ 		gpio_set_value(SPITZ_GPIO_MUTE_L, 1);
+ 		gpio_set_value(SPITZ_GPIO_MUTE_R, 1);
  		break;
- 	case TOSA_MIC_INT:
--		snd_soc_dapm_enable_pin(dapm, "Mic (Internal)");
+ 	case SPITZ_MIC:
+ 		/* enable mic jack and bias, mute hp */
 -		snd_soc_dapm_disable_pin(dapm, "Headphone Jack");
 -		snd_soc_dapm_disable_pin(dapm, "Headset Jack");
-+		snd_soc_dapm_enable_pin_unlocked(dapm, "Mic (Internal)");
+-		snd_soc_dapm_disable_pin(dapm, "Line Jack");
+-		snd_soc_dapm_enable_pin(dapm, "Mic Jack");
 +		snd_soc_dapm_disable_pin_unlocked(dapm, "Headphone Jack");
 +		snd_soc_dapm_disable_pin_unlocked(dapm, "Headset Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Line Jack");
++		snd_soc_dapm_enable_pin_unlocked(dapm, "Mic Jack");
+ 		gpio_set_value(SPITZ_GPIO_MUTE_L, 0);
+ 		gpio_set_value(SPITZ_GPIO_MUTE_R, 0);
  		break;
- 	case TOSA_HEADSET:
--		snd_soc_dapm_disable_pin(dapm, "Mic (Internal)");
+ 	case SPITZ_LINE:
+ 		/* enable line jack, disable mic bias and mute hp */
 -		snd_soc_dapm_disable_pin(dapm, "Headphone Jack");
--		snd_soc_dapm_enable_pin(dapm, "Headset Jack");
-+		snd_soc_dapm_disable_pin_unlocked(dapm, "Mic (Internal)");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Jack");
+-		snd_soc_dapm_disable_pin(dapm, "Mic Jack");
+-		snd_soc_dapm_enable_pin(dapm, "Line Jack");
 +		snd_soc_dapm_disable_pin_unlocked(dapm, "Headphone Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Headset Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Mic Jack");
++		snd_soc_dapm_enable_pin_unlocked(dapm, "Line Jack");
+ 		gpio_set_value(SPITZ_GPIO_MUTE_L, 0);
+ 		gpio_set_value(SPITZ_GPIO_MUTE_R, 0);
+ 		break;
+ 	case SPITZ_HEADSET:
+ 		/* enable and unmute headset jack enable mic bias, mute L hp */
+-		snd_soc_dapm_disable_pin(dapm, "Headphone Jack");
+-		snd_soc_dapm_enable_pin(dapm, "Mic Jack");
+-		snd_soc_dapm_disable_pin(dapm, "Line Jack");
+-		snd_soc_dapm_enable_pin(dapm, "Headset Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Headphone Jack");
++		snd_soc_dapm_enable_pin_unlocked(dapm, "Mic Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Line Jack");
 +		snd_soc_dapm_enable_pin_unlocked(dapm, "Headset Jack");
+ 		gpio_set_value(SPITZ_GPIO_MUTE_L, 0);
+ 		gpio_set_value(SPITZ_GPIO_MUTE_R, 1);
+ 		break;
+ 	case SPITZ_HP_OFF:
+ 
+ 		/* jack removed, everything off */
+-		snd_soc_dapm_disable_pin(dapm, "Headphone Jack");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Jack");
+-		snd_soc_dapm_disable_pin(dapm, "Mic Jack");
+-		snd_soc_dapm_disable_pin(dapm, "Line Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Headphone Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Headset Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Mic Jack");
++		snd_soc_dapm_disable_pin_unlocked(dapm, "Line Jack");
+ 		gpio_set_value(SPITZ_GPIO_MUTE_L, 0);
+ 		gpio_set_value(SPITZ_GPIO_MUTE_R, 0);
  		break;
  	}
- 
- 	if (tosa_spk_func == TOSA_SPK_ON)
--		snd_soc_dapm_enable_pin(dapm, "Speaker");
-+		snd_soc_dapm_enable_pin_unlocked(dapm, "Speaker");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "Speaker");
-+		snd_soc_dapm_disable_pin_unlocked(dapm, "Speaker");
+-	snd_soc_dapm_sync(dapm);
 +
 +	snd_soc_dapm_sync_unlocked(dapm);
- 
--	snd_soc_dapm_sync(dapm);
++
 +	snd_soc_dapm_mutex_unlock(dapm);
  }
  
- static int tosa_startup(struct snd_pcm_substream *substream)
+ static int spitz_startup(struct snd_pcm_substream *substream)
 -- 
 1.7.2.5
 
