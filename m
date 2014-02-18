@@ -1,163 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925AbaBRXRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:17:07 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:51937 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753498AbaBRXRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:17:00 -0500
-Date: Tue, 18 Feb 2014 23:16:57 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1402182315000.10262@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1050780251-1392765417=:10262"
+	id S1754399AbaBRXRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:17:23 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:37168 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182AbaBRXRT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 18:17:19 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>
+Cc: Devicetree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/5] BCM59056 PMU regulator support
+Date: Tue, 18 Feb 2014 18:17:07 -0500
+Message-Id: <1392765432-9111-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+The BCM59056 is a multi-function power management unit used with the
+BCM281xx family of SoCs. This series adds an MFD and voltage regulator
+driver to support the BCM59056. The bcm28155-ap DT support is updated
+to enable use of regulators on the otg and sdhci peripherals.
 
---29444707-1050780251-1392765417=:10262
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Changes since v1:
+        - renamed to bcm590xx to accomodate future family parts
+        - remove use of subsys_initcall
+        - fix BCM590XX_MAX_REGISTER value
+        - remove unused chip id in mfd of/i2c matching
+        - switch to of_platform_populate() in mfd
+        - update binding to single document with regulators as optional
+          properties in the regulator subdevice IP description
+        - remove unused regulator get/set mode ops
+        - remove unneeded regulator NULL constraint check
+        - regulators property is optional, allow the driver to probe
+          when it is missing
+        - move of_node presence check into bcm590xx_parse_dt_reg_data()
 
+Matt Porter (5):
+  mfd: add bcm590xx pmu DT binding
+  mfd: add bcm590xx pmu driver
+  regulator: add bcm590xx regulator driver
+  ARM: configs: bcm_defconfig: enable bcm590xx regulator support
+  ARM: dts: add bcm590xx pmu support and enable for bcm28155-ap
 
-Hi Linus,
+ Documentation/devicetree/bindings/mfd/bcm590xx.txt |  49 +++
+ arch/arm/boot/dts/bcm28155-ap.dts                  |  43 ++-
+ arch/arm/boot/dts/bcm59056.dtsi                    | 162 ++++++++
+ arch/arm/configs/bcm_defconfig                     |   7 +
+ drivers/mfd/Kconfig                                |   8 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/bcm590xx.c                             |  86 +++++
+ drivers/regulator/Kconfig                          |   8 +
+ drivers/regulator/Makefile                         |   1 +
+ drivers/regulator/bcm590xx-regulator.c             | 419 +++++++++++++++++++++
+ include/linux/mfd/bcm590xx.h                       |  31 ++
+ 11 files changed, 814 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/bcm590xx.txt
+ create mode 100644 arch/arm/boot/dts/bcm59056.dtsi
+ create mode 100644 drivers/mfd/bcm590xx.c
+ create mode 100644 drivers/regulator/bcm590xx-regulator.c
+ create mode 100644 include/linux/mfd/bcm590xx.h
 
-Lots of little small things, nothing too major, nouveau regression fixes,
-vmware fixes for the new hw support, memory leaks in error path fixes.
+-- 
+1.8.4
 
-Dave.
-
-The following changes since commit 60f76eab19e3903e810bdc3ec846c158efcd2e21:
-
-  Merge tag 'dma-buf-for-3.14' of git://git.kernel.org/pub/scm/linux/kernel/git/sumits/dma-buf (2014-02-17 12:42:45 -0800)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 75936c65dda54a08d9124f24f8725f86a4adc286:
-
-  Merge tag 'ttm-fixes-3.14-2014-02-18' of git://people.freedesktop.org/~thomash/linux into drm-fixes (2014-02-19 08:21:26 +1000)
-
-----------------------------------------------------------------
-
-Alex Deucher (7):
-      drm/radeon: unify bpc handling
-      drm: add DRM_CAPs for cursor size
-      drm/radeon: fill in DRM_CAPs for cursor size
-      drm/radeon/dpm: reduce r7xx vblank mclk threshold to 200
-      drm/radeon: fix display tiling setup on SI
-      drm/radeon/si: fix typo in dpm sq ramping setup
-      drm/radeon/ni: fix typo in dpm sq ramping setup
-
-Alexandre Courbot (2):
-      drm/nouveau: fix ENG_RUNLIST register address
-      drm/ttm: declare 'struct device' in ttm_page_alloc.h
-
-Charmaine Lee (1):
-      drm/vmwgfx: Get maximum mob size from register SVGA_REG_MOB_MAX_SIZE
-
-Christian König (1):
-      drm/radeon: fix CP semaphores on CIK
-
-Dan Carpenter (2):
-      drm/vmwgfx: unlock on error path in vmw_execbuf_process()
-      drm/radeon: delete a stray tab
-
-Dave Airlie (6):
-      Merge branch 'tda998x-fixes' of git://ftp.arm.linux.org.uk/~rmk/linux-cubox into drm-fixes
-      Merge tag 'drm-intel-fixes-2014-02-14' of ssh://git.freedesktop.org/git/drm-intel into drm-fixes
-      Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-      Merge branch 'drm-fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-      Merge tag 'vmwgfx-fixes-3.14-2014-02-18' of git://people.freedesktop.org/~thomash/linux into drm-fixes
-      Merge tag 'ttm-fixes-3.14-2014-02-18' of git://people.freedesktop.org/~thomash/linux into drm-fixes
-
-Dave Jones (1):
-      drm/i2c: tda998x: Fix memory leak in tda998x_encoder_init error path.
-
-Emil Velikov (1):
-      drm/nouveau/fb: use correct ram oclass for nv1a hardware
-
-Ilia Mirkin (7):
-      drm/nouveau: set irq_enabled manually
-      drm/nv4c/mc: nv4x igp's have a different msi rearm register
-      drm/nv4c/vga: decode register is in a different place on nv4x igp's
-      drm/nv4c/bios: disallow retrieving from prom on nv4x igp's
-      drm/nv50/gr: add missing nv_error parameter priv
-      drm/nv50/disp: use correct register to determine DP display bpp
-      drm/nouveau: fix TTM_PL_TT memtype on pre-nv50
-
-Jani Nikula (2):
-      drm/i915/dp: increase native aux defer retry timeout
-      drm/i915/dp: add native aux defer retry limit
-
-Masanari Iida (1):
-      drm/ttm: Fix memory leak in ttm_agp_backend.c
-
-Thomas Hellstrom (4):
-      drm/vmwgfx: Fix a couple of sparse warnings and errors
-      drm/vmwgfx: Remove stray const
-      drm/vmwgfx: Fix possible integer overflow
-      drm/vmwgfx: Fix command defines and checks
-
-Ville Syrjälä (2):
-      drm/i915: Add intel_ring_cachline_align()
-      drm/i915: Prevent MI_DISPLAY_FLIP straddling two cachelines on IVB
-
- drivers/gpu/drm/drm_ioctl.c                       |  12 +++
- drivers/gpu/drm/i2c/tda998x_drv.c                 |   4 +-
- drivers/gpu/drm/i915/intel_display.c              |  14 +++
- drivers/gpu/drm/i915/intel_dp.c                   |  19 ++--
- drivers/gpu/drm/i915/intel_ringbuffer.c           |  21 ++++
- drivers/gpu/drm/i915/intel_ringbuffer.h           |   1 +
- drivers/gpu/drm/nouveau/Makefile                  |   1 +
- drivers/gpu/drm/nouveau/core/engine/device/nv40.c |  10 +-
- drivers/gpu/drm/nouveau/core/engine/disp/nv50.c   |   2 +-
- drivers/gpu/drm/nouveau/core/engine/fifo/nve0.c   |   2 +-
- drivers/gpu/drm/nouveau/core/engine/graph/nv50.c  |   2 +-
- drivers/gpu/drm/nouveau/core/include/subdev/mc.h  |   1 +
- drivers/gpu/drm/nouveau/core/subdev/bios/base.c   |   4 +
- drivers/gpu/drm/nouveau/core/subdev/fb/nv1a.c     |   2 +-
- drivers/gpu/drm/nouveau/core/subdev/mc/nv04.h     |   1 +
- drivers/gpu/drm/nouveau/core/subdev/mc/nv44.c     |   2 +-
- drivers/gpu/drm/nouveau/core/subdev/mc/nv4c.c     |  45 ++++++++
- drivers/gpu/drm/nouveau/nouveau_bo.c              |   2 +-
- drivers/gpu/drm/nouveau/nouveau_drm.c             |   3 +
- drivers/gpu/drm/nouveau/nouveau_vga.c             |   4 +-
- drivers/gpu/drm/radeon/atombios_crtc.c            |  15 +--
- drivers/gpu/drm/radeon/atombios_encoders.c        |   7 +-
- drivers/gpu/drm/radeon/evergreen.c                |   2 +-
- drivers/gpu/drm/radeon/ni_dpm.c                   |   2 +-
- drivers/gpu/drm/radeon/radeon.h                   |   4 +-
- drivers/gpu/drm/radeon/radeon_display.c           |   2 +
- drivers/gpu/drm/radeon/radeon_ring.c              |   2 +-
- drivers/gpu/drm/radeon/radeon_semaphore.c         |  19 +++-
- drivers/gpu/drm/radeon/rv770_dpm.c                |   9 +-
- drivers/gpu/drm/radeon/si_dpm.c                   |   2 +-
- drivers/gpu/drm/ttm/ttm_agp_backend.c             |   1 +
- drivers/gpu/drm/vmwgfx/svga3d_reg.h               | 122 +++++++++++++---------
- drivers/gpu/drm/vmwgfx/svga3d_surfacedefs.h       |  11 +-
- drivers/gpu/drm/vmwgfx/svga_reg.h                 |   9 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_context.c           |   9 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c               |   3 +
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.h               |   1 +
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c           |   9 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c             |   3 +
- drivers/gpu/drm/vmwgfx/vmwgfx_shader.c            |  16 +--
- include/drm/drm_crtc.h                            |   3 +
- include/drm/ttm/ttm_page_alloc.h                  |   2 +
- include/uapi/drm/drm.h                            |   2 +
- include/uapi/drm/vmwgfx_drm.h                     |   1 +
- 44 files changed, 292 insertions(+), 116 deletions(-)
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/mc/nv4c.c
---29444707-1050780251-1392765417=:10262--
