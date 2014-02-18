@@ -1,512 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaBRFGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 00:06:24 -0500
-Received: from ozlabs.org ([203.10.76.45]:46084 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792AbaBRFGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 00:06:20 -0500
-Date: Tue, 18 Feb 2014 16:06:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Feb 18
-Message-Id: <20140218160612.34d64514ade66fcb21a6cc0f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Feb_2014_16_06_12_+1100_IwJR4fLsEMenhs/c"
+	id S1753897AbaBRFIl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 00:08:41 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:36650 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaBRFIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 00:08:39 -0500
+Date: Tue, 18 Feb 2014 05:10:25 +0000
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 1/4] zram: introduce compressing backend abstraction
+Message-ID: <20140218051025.GA2705@gmail.com>
+References: <1392313402-5728-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1392313402-5728-2-git-send-email-sergey.senozhatsky@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392313402-5728-2-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Feb_2014_16_06_12_+1100_IwJR4fLsEMenhs/c
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 13, 2014 at 08:43:19PM +0300, Sergey Senozhatsky wrote:
+> ZRAM performs direct LZO compression algorithm calls, making it the one and
+> only option. Introduce compressing backend abstraction zcomp in order to
+> support multiple compression algorithms with the following set of operations:
+>         .create
+>         .destroy
+>         .compress
+>         .decompress
+> 
+> Schematically zram write() usually contains the following steps:
+> 0) preparation (decompression of partioal IO, etc.)
+> 1) lock buffer_lock mutex (protects meta compress buffers)
+> 2) compress (using meta compress buffers)
+> 3) alloc and map zs_pool object
+> 4) copy compressed data (from meta compress buffers) to object allocated by 3)
+> 5) free previous pool page, assign a new one
+> 6) unlock buffer_lock mutex
+> 
+> As we can see, compressing buffers must remain untouched from 1) to 4),
+> because, otherwise, concurrent write() can overwrite data. At the same
+> time, zram_meta must be aware of a) specific compression algorithm
+> memory requirements and b) necessary locking to protect compression
+> buffers. Besides, zram holds buffer_lock almost through the whole write()
+> function, making parallel compression impossible. To remove requirement
+> a) new struct zcomp_strm introduced, which contain a compress/decompress
+> `buffer' and compression algorithm `private' part. While struct zcomp
+> implements zcomp_strm stream handling and locking by means of get() and put()
+> semantics and removes requirement b) from zram meta. zcomp ->create() and
+> ->destroy(), respectively, allocate and deallocate algorithm specific
+> zcomp_strm `private' part.
+> 
+> Every zcomp has a list of idle zcomp_strm structs, spinlock to protect idle
+> list and wait queue, making it possible to perform parallel compressions.
+> Each time zram issues a zcomp_strm_get() call, the following set of operations
+> performed:
+> - spin lock strm_lock
+> - if idle list is not empty, remove zcomp_strm from idle list, spin
+>   unlock and return zcomp stream pointer to caller
+> - if idle list is empty, current adds itself to wait queue. it will be
+>   awaken by zcomp_strm_put() caller.
+> 
+> zcomp_strm_put():
+> - spin lock strm_lock
+> - add zcomp stream to idle list
+> - spin unlock, wake up sleeper
+> 
+> In other words, zcomp_strm_get() turns caller into exclusive user of a stream
+> and zcomp_strm_put() makes a particular zcomp stream available.
+> 
+> Usage examples.
+> 
+> To initialize compressing backend:
+> 	comp = zcomp_create(NAME) /* NAME e.g. "lzo" */
+> 
+> which initialises compressing backend if requested algorithm is supported.
+> 
+> Compress:
+> 	zstrm = zcomp_strm_get(comp)
+> 	zcomp_compress(comp, zstrm, src, &dst_len)
+> 	[..] /* copy compressed data */
+> 	zcomp_strm_put(comp, zstrm)
+> 
+> Decompress:
+> 	zcomp_decompress(comp, src, src_len, dst);
+> 
+> Free compessing backend and its zcomp stream:
+> 	zcomp_destroy(comp)
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-Hi all,
+Just minor nitpicks below.
 
-If you see failures in building this tree due to missing declarations of
-k..alloc/free, then it may be caused by commit 2bd59d48ebfb ("cgroup:
-convert to kernfs").  Please send Tejun Heo <tj@kernel.org> a patch
-adding an inclusion of linux/slab.h to the appropriate file(s).
+> ---
+>  drivers/block/zram/zcomp.c     | 151 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/block/zram/zcomp.h     |  56 +++++++++++++++
+>  drivers/block/zram/zcomp_lzo.c |  48 +++++++++++++
+>  3 files changed, 255 insertions(+)
+>  create mode 100644 drivers/block/zram/zcomp.c
+>  create mode 100644 drivers/block/zram/zcomp.h
+>  create mode 100644 drivers/block/zram/zcomp_lzo.c
+> 
+> diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+> new file mode 100644
+> index 0000000..3af25b6
+> --- /dev/null
+> +++ b/drivers/block/zram/zcomp.c
+> @@ -0,0 +1,151 @@
+> +/*
+> + * Copyright (C) 2014 Sergey Senozhatsky.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/string.h>
+> +#include <linux/slab.h>
+> +#include <linux/wait.h>
+> +#include <linux/sched.h>
+> +
+> +#include "zcomp.h"
+> +
+> +extern struct zcomp_backend zcomp_lzo;
+> +
+> +static void zcomp_strm_free(struct zcomp *comp, struct zcomp_strm *zstrm)
+> +{
+> +	comp->backend->destroy(zstrm->private);
+> +	free_pages((unsigned long)zstrm->buffer, 1);
+> +	kfree(zstrm);
+> +}
+> +
+> +/*
+> + * allocate new zcomp_strm structure with ->private initialized by
+> + * backend, return NULL on error
+> + */
+> +static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
+> +{
+> +	struct zcomp_strm *zstrm = kmalloc(sizeof(*zstrm), GFP_KERNEL);
+> +	if (!zstrm)
+> +		return NULL;
+> +
+> +	INIT_LIST_HEAD(&zstrm->list);
 
-This tree fails (more than usual) the powerpc allyesconfig build.
+No need to initialize.
 
-Changes since 20140217:
+> +	zstrm->private = comp->backend->create();
 
-New tree: keystone
+Pz, check zstrm->private NULL and handle it out.
+Otherwise, zcomp_strm_free could pass NULL with backend's destroy
+so all of backend should handle NULL argument, which is not good for me.
 
-The powerpc tree still had its build failure.
+> +	/*
+> +	 * allocate 2 pages. 1 for compressed data, plus 1 extra for the
+> +	 * case when compressed size is larger than the original one
+> +	 */
+> +	zstrm->buffer = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
+> +	if (!zstrm->private || !zstrm->buffer) {
+> +		zcomp_strm_free(comp, zstrm);
+> +		zstrm = NULL;
+> +	}
+> +	return zstrm;
+> +}
+> +
+> +/*
+> + * get existing idle zcomp_strm or wait until other process release
+> + * (zcomp_strm_put()) one for us
+> + */
+> +struct zcomp_strm *zcomp_strm_get(struct zcomp *comp)
+> +{
+> +	struct zcomp_strm *zstrm;
+> +
+> +	while (1) {
+> +		spin_lock(&comp->strm_lock);
+> +		if (list_empty(&comp->idle_strm)) {
+> +			spin_unlock(&comp->strm_lock);
+> +			wait_event(comp->strm_wait,
+> +					!list_empty(&comp->idle_strm));
+> +			continue;
+> +		}
+> +
+> +		zstrm = list_entry(comp->idle_strm.next,
+> +				struct zcomp_strm, list);
+> +		list_del(&zstrm->list);
+> +		spin_unlock(&comp->strm_lock);
+> +		break;
+> +	}
+> +	return zstrm;
+> +}
+> +
+> +/* add zcomp_strm back to idle list and wake up waiter (if any) */
+> +void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm)
+> +{
+> +	spin_lock(&comp->strm_lock);
+> +	list_add(&zstrm->list, &comp->idle_strm);
+> +	spin_unlock(&comp->strm_lock);
+> +
+> +	wake_up(&comp->strm_wait);
+> +}
+> +
+> +int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+> +		const unsigned char *src, size_t *dst_len)
+> +{
+> +	return comp->backend->compress(src, zstrm->buffer, dst_len,
+> +			zstrm->private);
+> +}
+> +
+> +int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
+> +		size_t src_len, unsigned char *dst)
+> +{
+> +	return comp->backend->decompress(src, src_len, dst);
+> +}
+> +
+> +void zcomp_destroy(struct zcomp *comp)
+> +{
+> +	struct zcomp_strm *zstrm;
+> +	while (!list_empty(&comp->idle_strm)) {
+> +		zstrm = list_entry(comp->idle_strm.next,
+> +				struct zcomp_strm, list);
+> +		list_del(&zstrm->list);
+> +		zcomp_strm_free(comp, zstrm);
+> +	}
+> +	kfree(comp);
+> +}
 
-The mfd-lj tree still had its build failure so I used the version from
-next-20140210.
+You made zcom_destroy but I couldn't find zcomp_create?
 
-The net-next tree gained conflicts against the net tree.
+> +
+> +static struct zcomp_backend *find_backend(const char *compress)
+> +{
+> +	if (sysfs_streq(compress, "lzo"))
 
-The tip tree gained a conflict against Linus' tree.
+Why do you use sysfs_streq?
+It's not sysfs variable yet.
 
-Non-merge commits (relative to Linus' tree): 3012
- 3389 files changed, 107536 insertions(+), 53392 deletions(-)
+> +		return &zcomp_lzo;
+> +	return NULL;
+> +}
+> +
+> +/*
+> + * search available compressors for requested algorithm.
+> + * allocate new zcomp and initialize it. return NULL
+> + * if requested algorithm is not supported or in case
+> + * of init error
+> + */
+> +struct zcomp *zcomp_create(const char *compress)
+> +{
+> +	struct zcomp *comp;
+> +	struct zcomp_backend *backend;
+> +	struct zcomp_strm *zstrm;
+> +
+> +	backend = find_backend(compress);
+> +	if (!backend)
+> +		return NULL;
+> +
+> +	comp = kmalloc(sizeof(struct zcomp), GFP_KERNEL);
+> +	if (!comp)
+> +		return NULL;
+> +
+> +	comp->backend = backend;
+> +	spin_lock_init(&comp->strm_lock);
+> +	INIT_LIST_HEAD(&comp->idle_strm);
+> +	init_waitqueue_head(&comp->strm_wait);
+> +
+> +	zstrm = zcomp_strm_alloc(comp);
+> +	if (!zstrm) {
+> +		zcomp_destroy(comp);
+> +		return NULL;
+> +	}
+> +	list_add(&zstrm->list, &comp->idle_strm);
+> +	return comp;
+> +}
+> diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+> new file mode 100644
+> index 0000000..7e05d20
+> --- /dev/null
+> +++ b/drivers/block/zram/zcomp.h
+> @@ -0,0 +1,56 @@
+> +/*
+> + * Copyright (C) 2014 Sergey Senozhatsky.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#ifndef _ZCOMP_H_
+> +#define _ZCOMP_H_
+> +
+> +#include <linux/spinlock.h>
+> +
+> +struct zcomp_strm {
+> +	void *buffer;     /* compression/decompression buffer */
+> +	void *private;      /* algorithm private memory */
 
-----------------------------------------------------------------------------
+         							It's not a *memory*.
+									
+> +	struct list_head list;
+> +};
+> +
+> +/* static compression backend */
+> +struct zcomp_backend {
+> +	int (*compress)(const unsigned char *src, unsigned char *dst,
+> +			size_t *dst_len, void *private);
+> +
+> +	int (*decompress)(const unsigned char *src, size_t src_len,
+> +			unsigned char *dst);
+> +
+> +	void * (*create)(void);
+> +	void (*destroy)(void *private);
+> +
+> +	const char *name;
+> +};
+> +
+> +/* dynamic per-device compression frontend */
+> +struct zcomp {
+> +	/* protect strm list */
+> +	spinlock_t strm_lock;
+> +	/* list of available strms */
+> +	struct list_head idle_strm;
+> +	wait_queue_head_t strm_wait;
+> +	struct zcomp_backend *backend;
+> +};
+> +
+> +struct zcomp *zcomp_create(const char *comp);
+> +void zcomp_destroy(struct zcomp *comp);
+> +
+> +struct zcomp_strm *zcomp_strm_get(struct zcomp *comp);
+> +void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm);
+> +
+> +int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+> +		const unsigned char *src, size_t *dst_len);
+> +
+> +int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
+> +		size_t src_len, unsigned char *dst);
+> +#endif /* _ZCOMP_H_ */
+> diff --git a/drivers/block/zram/zcomp_lzo.c b/drivers/block/zram/zcomp_lzo.c
+> new file mode 100644
+> index 0000000..39106a7
+> --- /dev/null
+> +++ b/drivers/block/zram/zcomp_lzo.c
+> @@ -0,0 +1,48 @@
+> +/*
+> + * Copyright (C) 2014 Sergey Senozhatsky.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/lzo.h>
+> +
+> +#include "zcomp.h"
+> +
+> +static void * lzo_create(void)
+                ^
+          unnecessary white space
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-multi_v7_defconfig for arm. After the final fixups (if any), it is also
-built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-allyesconfig (minus CONFIG_PROFILE_ALL_BRANCHES - this fails its final
-link) and i386, sparc, sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-I am currently merging 209 trees (counting Linus' and 28 trees of patches
-pending for Linus' tree).
-
-Stats about the size of the tree over time can be seen at
-http://neuling.org/linux-next-size.html .
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (60f76eab19e3 Merge tag 'dma-buf-for-3.14' of git://g=
-it.kernel.org/pub/scm/linux/kernel/git/sumits/dma-buf)
-Merging fixes/master (b0031f227e47 Merge tag 's2mps11-build' of git://git.k=
-ernel.org/pub/scm/linux/kernel/git/broonie/regulator)
-Merging kbuild-current/rc-fixes (38dbfb59d117 Linus 3.14-rc1)
-Merging arc-current/for-curr (7e22e91102c6 Linux 3.13-rc8)
-Merging arm-current/fixes (39544ac9df20 ARM: 7957/1: add DSB after icache f=
-lush in __flush_icache_all())
-Merging m68k-current/for-linus (7247f55381d5 m68k: Wire up sched_setattr an=
-d sched_getattr)
-Merging metag-fixes/fixes (3b2f64d00c46 Linux 3.11-rc2)
-Merging powerpc-merge/merge (66f9af83e56b powerpc/eeh: Disable EEH on reboo=
-t)
-Merging sparc/master (738b52bb9845 Merge tag 'microblaze-3.14-rc3' of git:/=
-/git.monstr.eu/linux-2.6-microblaze)
-Merging net/master (a6254864c081 ipv4: fix counter in_slow_tot)
-Merging ipsec/master (738b52bb9845 Merge tag 'microblaze-3.14-rc3' of git:/=
-/git.monstr.eu/linux-2.6-microblaze)
-Merging sound-current/for-linus (624aef494f86 ALSA: usb-audio: work around =
-KEF X300A firmware bug)
-Merging pci-current/for-linus (fc40363b2140 ahci: Fix broken fallback to si=
-ngle MSI mode)
-Merging wireless/master (4885c8731a34 hostap: fix "hostap: proc: Use remove=
-_proc_subtree()")
-Merging driver-core.current/driver-core-linus (9e1ccb4a7700 drivers/base: f=
-ix devres handling for master device)
-Merging tty.current/tty-linus (0930b0950a89 vt: Fix secure clear screen)
-Merging usb.current/usb-linus (3635c7e2d59f usb: option: blacklist ZTE MF66=
-7 net interface)
-Merging staging.current/staging-linus (6d0abeca3242 Linux 3.14-rc3)
-Merging char-misc.current/char-misc-linus (bf7471038840 Revert "misc: eepro=
-m: sunxi: Add new compatibles")
-Merging input-current/for-linus (70b0052425ff Input: da9052_onkey - use cor=
-rect register bit for key status)
-Merging md-current/for-linus (d47648fcf061 raid5: avoid finding "discard" s=
-tripe)
-Merging crypto-current/master (ee97dc7db4cb crypto: s390 - fix des and des3=
-_ede ctr concurrency issue)
-Merging ide/master (738b52bb9845 Merge tag 'microblaze-3.14-rc3' of git://g=
-it.monstr.eu/linux-2.6-microblaze)
-Merging dwmw2/master (5950f0803ca9 pcmcia: remove RPX board stuff)
-Merging devicetree-current/devicetree/merge (6f041e99fc7b of: Fix NULL dere=
-ference in unflatten_and_copy())
-Merging rr-fixes/fixes (7122c3e9154b scripts/link-vmlinux.sh: only filter k=
-ernel symbols for arm)
-Merging mfd-fixes/master (73beb63d290f mfd: rtsx_pcr: Disable interrupts be=
-fore cancelling delayed works)
-Merging vfio-fixes/for-linus (239a87020b26 Merge branch 'for-joerg/arm-smmu=
-/fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux into fo=
-r-linus)
-Merging drm-intel-fixes/for-linux-next-fixes (f51a44b9a6c4 drm/i915/dp: add=
- native aux defer retry limit)
-Merging asm-generic/master (fb9de7ebc3a2 xtensa: Use generic asm/mmu.h for =
-nommu)
-Merging arc/for-next (67a2635aa64a ARC: [clockevent] simplify timer ISR)
-Merging arm/for-next (41212aaf9432 Merge branches 'fixes', 'misc', 'mmci', =
-'unstable/omap-dma' and 'unstable/sa11x0' into for-next)
-Merging arm-perf/for-next/perf (72db08319d9e ARM: perf: hook up perf_sample=
-_event_took around pmu irq handling)
-Merging arm-soc/for-next (0ef783f632e3 Merge branch 'fixes' into for-next)
-Merging bcm2835/for-next (777202862f65 Merge branch 'for-3.15/dt' into for-=
-next)
-Merging cortex-m/for-next (f41bfc9423aa Merge tag 'ext4_for_linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4)
-Merging ep93xx/ep93xx-for-next (bfb0709fd17b Merge branch 'ep93xx-fixes' in=
-to ep93xx-for-next)
-Merging imx-mxs/for-next (6e5dad1f97b2 Merge branch 'imx/dt' into for-next)
-Merging ixp4xx/next (19f949f52599 Linux 3.8)
-Merging keystone/next (e2ebc82f6603 Merge branch 'for_3.15/soc' into keysto=
-ne/master)
-Merging msm/for-next (81cf1e061d00 ARM: msm: Rename msm devicetrees to have=
- standard 'qcom' prefix)
-Merging mvebu/for-next (0cfabd34d33b Merge branch 'mvebu/dt-3xx' into for-n=
-ext)
-Merging renesas/next (2a42ac1c36b8 Merge branches 'heads/defconfig-for-v3.1=
-5', 'heads/soc-for-v3.15', 'heads/boards-for-v3.15' and 'heads/dt-for-v3.15=
-' into devel)
-Merging samsung/for-next (403ead113c0c Merge branch 'v3.15-next/dt-samsung'=
- into for-next)
-Merging tegra/for-next (c3a8d073b74a Merge branch for-3.15/defconfig into f=
-or-next)
-Merging arm64/for-next/core (38dbfb59d117 Linus 3.14-rc1)
-Merging blackfin/for-linus (58095fdaaf1c From: Eunbong Song <eunb.song@sams=
-ung.com>)
-Merging c6x/for-linux-next (546153d75a48 c6x: fix build failure caused by c=
-ache.h)
-Merging cris/for-next (cd065a010a97 CRISv10: Readd missing header)
-Merging hexagon/linux-next (44eb66c228fe Hexagon: update CR year for elf.h)
-Merging ia64/next (d52eefb47d4e ia64/xen: Remove Xen support for ia64)
-Merging m68k/for-next (7247f55381d5 m68k: Wire up sched_setattr and sched_g=
-etattr)
-Merging m68knommu/for-next (72a8ab3cb2a5 m68knommu: fix arg types for outs*=
- functions)
-Merging metag/for-next (e9a1d0165bbd metag/smp: Make boot_secondary() stati=
-c)
-Merging microblaze/next (45f7fdc2ffb9 Merge branch 'merge' of git://git.ker=
-nel.org/pub/scm/linux/kernel/git/benh/powerpc)
-Merging mips/mips-for-linux-next (4018c413e06a Merge branch '3.14-fixes' in=
-to mips-for-linux-next)
-Merging openrisc/for-upstream (548dafe880ad openrisc: Use get_signal() sign=
-al_setup_done())
-Merging parisc/for-next (6c700d71f7fa [PARISC] hpux: Remove obsolete regs p=
-arameter from do_execve() in hpux_execve())
-Merging parisc-hd/for-next (38dbfb59d117 Linus 3.14-rc1)
-Merging powerpc/next (f878f84373ae powerpc: Wire up sched_setattr and sched=
-_getattr syscalls)
-Merging mpc5xxx/next (bc7505942233 powerpc/512x: dts: add MPC5125 clock spe=
-cs)
-Merging galak/next (9e2ecdbba3b0 powerpc/fsl-booke: add the reg prop for pc=
-i bridge device node for T4/B4)
-Merging s390/features (3e79a93fe888 s390/kvm: set guest page states to stab=
-le on re-ipl)
-Merging sparc-next/master (049ffa8ab33a Merge branch 'drm-next' of git://pe=
-ople.freedesktop.org/~airlied/linux)
-Merging tile/master (5e01dc7b26d9 Linux 3.12)
-Merging uml/next (989e59fa41c5 um: Include generic barrier.h)
-CONFLICT (content): Merge conflict in arch/um/include/asm/Kbuild
-Merging unicore32/unicore32 (c284464658ac arch/unicore32: remove CONFIG_EXP=
-ERIMENTAL)
-Merging xtensa/for_next (c0e50d41126e xtensa: fix fast_syscall_spill_regist=
-ers)
-Merging btrfs/next (cf93da7bcf45 Btrfs: fix spin_unlock in check_ref_cleanu=
-p)
-Merging ceph/master (bee26897097f libceph: a per-osdc crush scratch buffer)
-Merging cifs/for-next (6b706c2494ca cifs: sanity check length of data to se=
-nd before sending)
-Merging configfs/linux-next (b930c26416c4 Merge branch 'for-linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (9e78d14a9f64 Use %pd in eCryptFS)
-Merging ext3/for_next (4ea7772f828a udf: Fix lockdep warning from udf_symli=
-nk())
-Merging ext4/dev (2d21448cf500 jbd2: mark file-local functions as static)
-Merging f2fs/dev (b63da15e8b47 f2fs: fix the calculation of max_nids)
-Merging fscache/fscache (fe02fb3ec109 FS-Cache: Handle removal of unadded o=
-bject to the fscache_object_list rb tree)
-Merging fuse/for-next (b2ec2778df9d fuse: Turn writeback cache on)
-Merging gfs2/master (ad781971d9b8 GFS2: add missing newline)
-Merging jfs/jfs-next (844fa1b5f849 jfs: set i_ctime when setting ACL)
-Merging logfs/master (339466142b3f Fix the call to BUG() caused by no free =
-segment found)
-Merging nfs/linux-next (292f503cade2 NFSv4: Use the correct net namespace i=
-n nfs4_update_server)
-Merging nfsd/nfsd-next (2ec197db1a56 lockd: send correct lock when granting=
- a delayed lock.)
-Merging omfs/for-next (976d167615b6 Linux 3.1-rc9)
-Merging squashfs/master (6d565409503f Squashfs: fix failure to unlock pages=
- on decompress error)
-Merging v9fs/for-next (38dbfb59d117 Linus 3.14-rc1)
-Merging ubifs/linux-next (5547fec74a56 UBI: fix some use after free bugs)
-Merging xfs/for-next (a64b760771e8 Merge branch 'xfs-async-aio-extend' into=
- for-next)
-Merging file-private-locks/linux-next (1ed1950c412f locks: add new fcntl cm=
-d values for handling file private locks)
-Merging vfs/for-next (527d1511310a Merge branch 'next' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/benh/powerpc)
-Merging pci/next (c128856b48b1 Merge branch 'pci/msi' into next)
-CONFLICT (content): Merge conflict in drivers/ata/ahci.c
-Merging hid/for-next (b834e96335fc Merge branch 'for-3.15/hid-cp2112' into =
-for-next)
-Merging i2c/i2c/for-next (6d0abeca3242 Linux 3.14-rc3)
-Merging jdelvare-hwmon/master (f1cf5deb331c hwmon: Avoid initializing the s=
-ame field twice)
-Merging hwmon-staging/hwmon-next (99fcd9655910 hwmon: Sort Kconfig entries =
-alphabetically)
-Merging v4l-dvb/master (b215621049bd Merge branch 'v4l_for_linus' into to_n=
-ext)
-Merging kbuild/for-next (ff6b9bdb6263 Merge branch 'kbuild/misc' into kbuil=
-d/for-next)
-Merging kconfig/for-next (95edca5c523c localmodconfig: Add config depends b=
-y default settings)
-Merging libata/for-next (6a9bacaf5e8e Merge branch 'for-3.14-fixes' into fo=
-r-next)
-CONFLICT (content): Merge conflict in drivers/ata/sata_mv.c
-Merging pm/linux-next (60042b38645f Merge branch 'pm-cpufreq')
-Merging idle/next (62eec04c7fa3 Merge branch 'turbostat' into release)
-Merging apm/for-next (158204397034 apm-emulation: add hibernation APM event=
-s to support suspend2disk)
-Merging cpupowerutils/master (f16603386b38 cpupower tools: add install targ=
-et to the debug tools' makefiles)
-Merging thermal/next (262afa97587b Merge branches 'soc-eduardo', 'soc', 'mi=
-sc' and 'int3404-thermal' of .git into next)
-CONFLICT (content): Merge conflict in drivers/thermal/Kconfig
-Merging ieee1394/for-next (fcd46b34425d firewire: Enable remote DMA above 4=
- GB)
-Merging dlm/next (075f01775f53 dlm: use INFO for recovery messages)
-Merging swiotlb/linux-next (0cb637bff80d swiotlb: Don't DoS us with 'swiotl=
-b buffer is full' (v2))
-Merging slave-dma/next (35498cd76f5f Merge branch 'fixes' into next)
-Merging dmaengine/next (77873803363c net_dma: mark broken)
-Merging net-next/master (cb6e926e3f73 ipv6:fix checkpatch errors with assig=
-nment in if condition)
-CONFLICT (content): Merge conflict in drivers/net/bonding/bond_main.c
-CONFLICT (content): Merge conflict in drivers/net/bonding/bond_3ad.h
-Merging ipsec-next/master (0f24558e9156 xfrm: avoid creating temporary SA w=
-hen there are no listeners)
-Merging wireless-next/master (35582ad9d342 Staging: rtl8812ae: remove modul=
-es field of rate_control_ops)
-Merging bluetooth/master (c6beca0e0dc7 Bluetooth: Allow HCI User Channel us=
-age for controllers without address)
-Merging infiniband/for-next (7f3c1e1ba82e Merge branches 'cma', 'cxgb4', 'i=
-ser', 'misc', 'mlx4', 'mlx5', 'nes', 'ocrdma', 'qib' and 'usnic' into for-n=
-ext)
-Merging mtd/master (28fa65e643ed mtd: nand: fix off-by-one read retry mode =
-counting)
-Merging l2-mtd/master (a67acac04061 mtd: gen_probe: Remove unnecessary OOM =
-messages)
-Merging crypto/master (883619a931e9 crypto: caam - fix ERA retrieval functi=
-on)
-Merging drm/drm-next (ef64cf9d0604 Merge branch 'drm-nouveau-next' of git:/=
-/anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next)
-Merging drm-intel/for-linux-next (4c0e55288211 drm/i915: fix NULL deref in =
-the load detect code)
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_dp.c
-Merging drm-tegra/drm/for-next (13411ddd3190 drm/tegra: Obtain head number =
-from DT)
-Merging sound/for-next (e2439a540148 ALSA: usx2y: Don't peep the card inter=
-nal object)
-Merging sound-asoc/for-next (db1ac999519d Merge remote-tracking branches 'a=
-soc/topic/wm8962', 'asoc/topic/wm8988', 'asoc/topic/wm8991' and 'asoc/topic=
-/wm8995' into asoc-next)
-Merging modules/modules-next (917307b09ad5 module: remove MODULE_GENERIC_TA=
-BLE)
-Merging virtio/virtio-next (6f0317058f43 tools/virtio: add a missing ))
-Merging input/next (7fb45edba8b5 Input: imx_keypad - Propagate the real err=
-or code on platform_get_irq() failure)
-Merging input-mt/for-next (5e01dc7b26d9 Linux 3.12)
-Merging block/for-next (2a53fee6859b Merge branch 'for-3.14/core' into for-=
-next)
-CONFLICT (content): Merge conflict in block/blk-flush.c
-Merging device-mapper/for-next (a17e5c12cde0 dm io: fix I/O to multiple des=
-tinations)
-Merging embedded/master (4744b43431e8 embedded: fix vc_translate operator p=
-recedence)
-Merging firmware/master (6e03a201bbe8 firmware: speed up request_firmware()=
-, v3)
-Merging pcmcia/master (80af9e6d7ae6 pcmcia at91_cf: fix raw gpio number usa=
-ge)
-Merging mmc/mmc-next (7536d3f83aa4 mmc: core: Enable MMC_CAP2_CACHE_CTRL as=
- default)
-Merging kgdb/kgdb-next (6bedf31c25dd kdb: Remove unhandled ssb command)
-Merging slab/for-next (26e4f2057516 slub: Fix possible format string bug.)
-Merging uclinux/for-next (6dbe51c251a3 Linux 3.9-rc1)
-Merging md/for-next (789b5e031528 md/raid5: Fix CPU hotplug callback regist=
-ration)
-Merging mfd/master (90b128ed1557 Merge tag 'mfd-lee-3.13-3' of git://git.li=
-naro.org/people/ljones/mfd)
-Merging mfd-lj/for-mfd-next (2fc7e7d25bee mfd: max665x: Differentiate betwe=
-en MAX665X devices)
-$ git reset --hard HEAD^
-Merging next-20140210 version of mfd-lj
-Merging battery/master (ac323d8d8070 power: max17040: Fix NULL pointer dere=
-ference when there is no platform_data)
-Merging fbdev/for-next (718b90ac4c21 video: xilinxfb: Simplify error path)
-Merging viafb/viafb-next (838ac785d521 viafb: avoid refresh and mode lookup=
- in set_par)
-Merging omap_dss2/for-next (c4a41bcc1726 video: xilinxfb: Move xilinxfb_pla=
-tform_data directly to the driver)
-Merging regulator/for-next (24a549133084 Merge remote-tracking branches 're=
-gulator/topic/pfuze100', 'regulator/topic/rc5t583', 'regulator/topic/s5m876=
-7', 'regulator/topic/ti-abb', 'regulator/topic/tps6507x', 'regulator/topic/=
-tps65217' and 'regulator/topic/tps65218' into regulator-next)
-Merging security/next (e0c2de2b15da security: cleanup Makefiles to use stan=
-dard syntax for specifying sub-directories)
-Merging selinux/next (81c94e76ce8e selinux: fix the output of ./scripts/get=
-_maintainer.pl for SELinux)
-Merging lblnet/next (d8ec26d7f828 Linux 3.13)
-Merging watchdog/master (9badfe833fa1 watchdog: w83697hf_wdt: return ENODEV=
- if no device was found)
-Merging dwmw2-iommu/master (e5d0c874391a Merge tag 'iommu-updates-v3.12' of=
- git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu)
-Merging iommu/next (dd1a175695ed Merge branches 'arm/smmu', 'core', 'x86/vt=
--d', 'arm/shmobile', 'x86/amd', 'ppc/pamu', 'iommu/fixes' and 'arm/msm' int=
-o next)
-Merging vfio/next (3be3a074cf5b vfio-pci: Don't use device_lock around AER =
-interrupt setup)
-Merging osd/linux-next (19350e7627a6 exofs: Print less in r4w)
-Merging jc_docs/docs-next (5c050fb96380 docs: update the development proces=
-s document)
-Merging trivial/for-next (8cc7212a0361 idr: remove unused prototype of idr_=
-free())
-Merging audit/master (f3411cb2b2e3 audit: whitespace fix in kernel-paramete=
-rs.txt)
-Merging fsnotify/for-next (1ca39ab9d21a inotify: automatically restart sysc=
-alls)
-Merging devicetree/devicetree/next (b66548e2a9ba of: Increase MAX_PHANDLE_A=
-RGS)
-CONFLICT (content): Merge conflict in drivers/of/of_net.c
-Applying: net: of: merges fix for a moved comment
-Merging dt-rh/for-next (06b29e76a74b of: search the best compatible match f=
-irst in __of_match_node())
-Merging spi/for-next (8a7dbc2dd48b Merge remote-tracking branches 'spi/topi=
-c/sunxi', 'spi/topic/tegra114', 'spi/topic/topcliff-pch', 'spi/topic/txx9' =
-and 'spi/topic/xfer' into spi-next)
-Merging tip/auto-latest (47e0b4a158d4 Merge branch 'x86/x32')
-CONFLICT (content): Merge conflict in arch/avr32/include/asm/Kbuild
-Merging clockevents/clockevents/next (00e2bcd6d35f clocksource: Timer-sun5i=
-: Switch to sched_clock_register())
-Merging edac/linux_next (3e45588825c1 cell_edac: fix missing of_node_put)
-Merging edac-amd/for-next (9d0e8d8348d5 amd64_edac: Fix logic to determine =
-channel for F15 M30h processors)
-Merging ftrace/for-next (3132e107d608 tracing: Check if tracing is enabled =
-in trace_puts())
-Merging rcu/rcu/next (a9b5bb435cce locktorture: Add kvm-recheck.sh plug-in =
-for locktorture)
-CONFLICT (content): Merge conflict in mm/slub.c
-Merging uprobes/for-next (0326f5a94dde uprobes/core: Handle breakpoint and =
-singlestep exceptions)
-Merging kvm/linux-next (b73117c49364 Merge branch 'kvm-ppc-next' of git://g=
-ithub.com/agraf/linux-2.6 into kvm-queue)
-Merging kvm-arm/kvm-arm-next (b73117c49364 Merge branch 'kvm-ppc-next' of g=
-it://github.com/agraf/linux-2.6 into kvm-queue)
-Merging kvm-ppc/kvm-ppc-next (b73117c49364 Merge branch 'kvm-ppc-next' of g=
-it://github.com/agraf/linux-2.6 into kvm-queue)
-Merging oprofile/for-next (6ce4eac1f600 Linux 3.13-rc1)
-Merging fw-nohz/nohz/next (74876a98a87a printk: Wake up klogd using irq_wor=
-k)
-Merging xen-tip/linux-next (b1f5d76c5d9b Merge branch 'devel/for-linus-3.15=
-' into linux-next)
-Merging percpu/for-next (d5f2deed588b Merge branch 'for-3.14' into for-next)
-Merging workqueues/for-next (fada94ee64e6 workqueue: add args to workqueue =
-lockdep name)
-Merging drivers-x86/linux-next (b4b0b4a9e039 ipc: add intel-mid's pci id ma=
-cros)
-Merging chrome-platform/for-next (2b8454a75b90 platform/chrome: unregister =
-platform driver/device when module exit)
-Merging sysctl/master (4e474a00d7ff sysctl: protect poll() in entries that =
-may go away)
-Merging regmap/for-next (fd9f175f06f7 Merge remote-tracking branches 'regma=
-p/topic/irq' and 'regmap/topic/nodev' into regmap-next)
-Merging hsi/for-next (43139a61fc68 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (59e35a9e5315 drivers/leds: delete non-required insta=
-nces of include <linux/init.h>)
-Merging driver-core/driver-core-next (aabaf4c2050d sysfs: create bin_attrib=
-utes under the requested group)
-Merging tty/tty-next (c600558668e4 serial: max310x: Fix devicetree document=
-ation for clock name)
-Merging usb/usb-next (6d36b6f31373 phy-core: Don't allow building phy-core =
-as a module)
-Merging usb-gadget/next (836a2164491b usb: phy: keystone: remove redundant =
-return value check of platform_get_resource())
-Merging staging/staging-next (6e9c6e87a662 Merge 3.14-rc3 into staging-next)
-Merging char-misc/char-misc-next (5dba4c56dfa6 Drivers: hv: Ballon: Make pr=
-essure posting thread sleep interruptibly)
-Merging cgroup/for-next (2220f5edf5f4 Merge branch 'for-3.15' into for-next)
-Merging scsi/for-next (3ce438df1068 [SCSI] hpsa: allow SCSI mid layer to ha=
-ndle unit attention)
-Merging target-updates/for-next (b28a960c42fc Linux 3.14-rc2)
-Merging target-merge/for-next-merge (b28a960c42fc Linux 3.14-rc2)
-Merging writeback/writeback-for-next (f9b0e058cbd0 writeback: Fix data corr=
-uption on NFS)
-Merging hwspinlock/linux-next (8b37fcfc9b34 hwspinlock: add MAINTAINERS ent=
-ries)
-Merging pinctrl/for-next (97e00faaf16a pinctrl: sh-pfc: r8a7790: Break out =
-USB0 OVC/VBUS)
-Merging vhost/linux-next (d3d665a654a3 vhost-scsi: whitespace tweak)
-Merging remoteproc/for-next (b9777859ec01 remoteproc: fix kconfig dependenc=
-ies for VIRTIO)
-Merging rpmsg/for-next (397944df3290 rpmsg: fix kconfig dependencies for VI=
-RTIO)
-Merging gpio/for-next (a3485d088516 gpio: consumer.h: Move forward declarat=
-ions outside #ifdef)
-Merging dma-mapping/dma-mapping-next (c091c71ad221 x86: dma-mapping: fix GF=
-P_ATOMIC macro usage)
-Merging pwm/for-next (6691a19966f0 pwm: tiecap: Remove duplicate put_sync c=
-all)
-Merging dma-buf/for-next (c0b00a525c12 dma-buf: update debugfs output)
-Merging userns/for-next (f58437f1f916 MIPS: VPE: Remove vpe_getuid and vpe_=
-getgid)
-Merging ktest/for-next (961d9caceea2 ktest: Add BISECT_TRIES to bisect test)
-Merging signal/for-next (20b4fb485227 Merge branch 'for-linus' of git://git=
-.kernel.org/pub/scm/linux/kernel/git/viro/vfs)
-Merging clk/clk-next (fd3fdaf09f26 clk: sort Makefile)
-Merging random/dev (a9f069e38cc3 random: use the architectural HWRNG for th=
-e SHA's IV in extract_buf())
-Merging lzo-update/lzo-update (42b775abafaf lib/lzo: huge LZO decompression=
- speedup on ARM by using unaligned access)
-Merging arm64-hugepages/for-next/hugepages (af07484863e0 ARM64: mm: THP sup=
-port.)
-Merging aio/master (4675348e78fa Merge tag 'stable/for-linus-3.14-rc2-tag' =
-of git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip)
-Merging akpm-current/current (c28515337902 drivers/misc/sgi-gru/grukdump.c:=
- cleanup gru_dump_context() a little)
-CONFLICT (content): Merge conflict in mm/memcontrol.c
-CONFLICT (content): Merge conflict in kernel/cpuset.c
-$ git checkout -b akpm remotes/origin/akpm/master
-Applying: drivers/spi/spi.c: fix max() warning
-Applying: drivers/w1/w1_int.c: call put_device if device_register fails
-Applying: arm: move arm_dma_limit to setup_dma_zone
-Applying: mm: add strictlimit knob
-Merging akpm/master (aef08984225a mm: add strictlimit knob)
-
---Signature=_Tue__18_Feb_2014_16_06_12_+1100_IwJR4fLsEMenhs/c
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTAupJAAoJEMDTa8Ir7ZwVx3gP/i8cn6m6EvhlSDeCha1VmqOo
-7QNAdQf4GsaezcqYHsgUvrQVSx33eUSd+wPG8mq4diBWeiB1/DMJJoCjvymHg3j/
-3sCsPCBIEZVEr1FJxtWDPuAGWP6VI70CUK+oJFBgWDlAY/CirmP0XC/qX4Dc2q0+
-IBtAizM0VmWToVyXg/rI/6cm0zolxI77jljAUc8iFIOYQWe5P5psE4+wK+NaVeqS
-n+4CYOYN8W/HbyM3tcocI6kOWOPhC+IUc7aBspw0GeYzMeoy5ZrR+XARntWXI5GB
-k8P80nB9u5nxrABu8iWf8D1Q33d0vi28XLX8zURu46O9btUlFgfl0r2RyR+dYcFt
-KqNQAWYJwheO+ZAIBKn+ilfm9agy4vP+Qg2JSELWIj/c/wOpvhGwQrumTdC58ug7
-QsfHg84iE2ROWAAdVJdG3RhQI8lt3SQ8/klvosysJjMNHyb4E5tdkFW87UIbwJp+
-MhtMXCTT/FTLZsvsua8MKX6PyLZUs2Nh1h+us5xC12RD3cT/+erfPswIqVegkuD3
-XjQoZa2831IVSS36bA1pceFwLNdmAZdRBL1ddtHG7jw8Jbmt8rQqzENteNXOAOMr
-HTVpaJDcqlNEkWbpCe10JV9X4dxRozIcT9KoD6kn1KHA9c8ZYLyZVTGP+4KysOq/
-WZ7nL0PEdF8umGcbR4Cl
-=KZ4I
------END PGP SIGNATURE-----
-
---Signature=_Tue__18_Feb_2014_16_06_12_+1100_IwJR4fLsEMenhs/c--
+> +{
+> +	return kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+> +}
+> +
+> +static void lzo_destroy(void *private)
+> +{
+> +	kfree(private);
+> +}
+> +
+> +static int lzo_compress(const unsigned char *src, unsigned char *dst,
+> +		size_t *dst_len, void *private)
+> +{
+> +	int ret = lzo1x_1_compress(src, PAGE_SIZE, dst, dst_len, private);
+> +	return ret == LZO_E_OK ? 0 : ret;
+> +}
+> +
+> +static int lzo_decompress(const unsigned char *src, size_t src_len,
+> +		unsigned char *dst)
+> +{
+> +	size_t dst_len = PAGE_SIZE;
+> +	int ret = lzo1x_decompress_safe(src, src_len, dst, &dst_len);
+> +	return ret == LZO_E_OK ? 0 : ret;
+> +}
+> +
+> +extern struct zcomp_backend zcomp_lzo;
+> +struct zcomp_backend zcomp_lzo = {
+> +	.compress = lzo_compress,
+> +	.decompress = lzo_decompress,
+> +	.create = lzo_create,
+> +	.destroy = lzo_destroy,
+> +	.name = "lzo",
+> +};
+> -- 
+> 1.9.0.rc3.260.g4cf525c
+> 
