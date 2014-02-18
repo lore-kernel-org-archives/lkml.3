@@ -1,105 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482AbaBRDZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 22:25:48 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:55957 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006AbaBRDZq (ORCPT
+	id S1754102AbaBRDaL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 22:30:11 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:51344 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230AbaBRDaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 22:25:46 -0500
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Cc: tomi.valkeinen@ti.com, plagnioj@jcrosoft.com, nsekhar@ti.com,
-        badarkhe.manish@gmail.com
-Subject: [PATCH] video: da8xx-fb: Use "SIMPLE_DEV_PM_OPS" macro
-Date: Tue, 18 Feb 2014 08:55:36 +0530
-Message-Id: <1392693936-23862-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 17 Feb 2014 22:30:09 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 17 Feb 2014 19:29:55 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
+ barriers() for some control dependencies
+Message-ID: <20140218032955.GA31339@thin>
+References: <20140217212625.GA4083@linux.vnet.ibm.com>
+ <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140217214606.GC7941@thin>
+ <20140217225816.GN4250@linux.vnet.ibm.com>
+ <20140218000246.GA19929@thin>
+ <20140218001740.GT4250@linux.vnet.ibm.com>
+ <20140218004510.GK19929@thin>
+ <20140218012137.GA4250@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218012137.GA4250@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update driver to use SIMPLE_DEV_PM_OPS macro for power
-management suspend and resume operations.
+On Mon, Feb 17, 2014 at 05:21:37PM -0800, Paul E. McKenney wrote:
+> On Mon, Feb 17, 2014 at 04:45:11PM -0800, Josh Triplett wrote:
+> > On Mon, Feb 17, 2014 at 04:17:40PM -0800, Paul E. McKenney wrote:
+> > > On Mon, Feb 17, 2014 at 04:02:47PM -0800, Josh Triplett wrote:
+> > > > On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
+> > > > > On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
+> > > > > > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
+> > > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > > > > 
+> > > > > > > Current compilers can "speculate" stores in the case where both legs
+> > > > > > > of the "if" statement start with identical stores.  Because the stores
+> > > > > > > are identical, the compiler knows that the store will unconditionally
+> > > > > > > execute regardless of the "if" condition, and so the compiler is within
+> > > > > > > its rights to hoist the store to precede the condition.  Such hoisting
+> > > > > > > destroys the control-dependency ordering.  This ordering can be restored
+> > > > > > > by placing a barrier() at the beginning of each leg of the "if" statement.
+> > > > > > > This commit adds this requirement to the control-dependencies section.
+> > > > > > > 
+> > > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > > > 
+> > > > > > This is starting to become a rather unreasonable level of fighting the
+> > > > > > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
+> > > > > > doesn't seem like a reasonable thing to require users to do.  Is there
+> > > > > > really no other way to cope with this particular bit of "help" from the
+> > > > > > compiler?
+> > > > > 
+> > > > > Well, we could use smp_mb() instead of barrier(), but that was the
+> > > > > sort of thing that Peter Zijlstra was trying to avoid.
+> > > > 
+> > > > Yeah, that's not an improvement.  The goal would be to make the code no
+> > > > more complex than it already needs to be with ACCESS_ONCE; changing
+> > > > "barrier()" to something else doesn't help (quite apart from smp_mb()
+> > > > being suboptimal).
+> > > > 
+> > > > > That said, I do sympathize completely with your position here -- it is
+> > > > > just that it is better to have our compiler-fights documented that
+> > > > > not, right?
+> > > > 
+> > > > Sure, better to document them, but better still to not have them.  Is
+> > > > there some other way we could avoid this one entirely?
+> > > 
+> > > We could try change the standard so as to outlaw pulling common code from
+> > > both legs of an "if" statement, but that will be a serious uphill battle.
+> > 
+> > And insufficient given widespread use of existing compilers.
+> 
+> Fair point...
+> 
+> > > Or perhaps do something to warn the developer about the possibility of
+> > > this happening.
+> > > 
+> > > Other thoughts?
+> > 
+> > Might be worth bringing this up with the GCC folks to find out if
+> > there's something obvious we're missing.  (For non-obvious values of
+> > "obvious".)
+> 
+> Non-obvious values of "obvious" -- I have no idea what that means, but
+> it does have a nice counter-intuitive sound to it, doesn't it?  ;-)
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-:100644 100644 a1d74dd... 0c0ba92... M	drivers/video/da8xx-fb.c
- drivers/video/da8xx-fb.c |   22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+I'm hoping for something that we'll consider obvious in hindsight.
 
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index a1d74dd..0c0ba92 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -1546,7 +1546,7 @@ err_pm_runtime_disable:
- 	return ret;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static struct lcdc_context {
- 	u32 clk_enable;
- 	u32 ctrl;
-@@ -1610,9 +1610,9 @@ static void lcd_context_restore(void)
- 	return;
- }
- 
--static int fb_suspend(struct platform_device *dev, pm_message_t state)
-+static int fb_suspend(struct device *dev)
- {
--	struct fb_info *info = platform_get_drvdata(dev);
-+	struct fb_info *info = dev_get_drvdata(dev);
- 	struct da8xx_fb_par *par = info->par;
- 
- 	console_lock();
-@@ -1622,18 +1622,18 @@ static int fb_suspend(struct platform_device *dev, pm_message_t state)
- 	fb_set_suspend(info, 1);
- 	lcd_disable_raster(DA8XX_FRAME_WAIT);
- 	lcd_context_save();
--	pm_runtime_put_sync(&dev->dev);
-+	pm_runtime_put_sync(dev);
- 	console_unlock();
- 
- 	return 0;
- }
--static int fb_resume(struct platform_device *dev)
-+static int fb_resume(struct device *dev)
- {
--	struct fb_info *info = platform_get_drvdata(dev);
-+	struct fb_info *info = dev_get_drvdata(dev);
- 	struct da8xx_fb_par *par = info->par;
- 
- 	console_lock();
--	pm_runtime_get_sync(&dev->dev);
-+	pm_runtime_get_sync(dev);
- 	lcd_context_restore();
- 	if (par->blank == FB_BLANK_UNBLANK) {
- 		lcd_enable_raster();
-@@ -1647,19 +1647,17 @@ static int fb_resume(struct platform_device *dev)
- 
- 	return 0;
- }
--#else
--#define fb_suspend NULL
--#define fb_resume NULL
- #endif
- 
-+static SIMPLE_DEV_PM_OPS(fb_pm_ops, fb_suspend, fb_resume);
-+
- static struct platform_driver da8xx_fb_driver = {
- 	.probe = fb_probe,
- 	.remove = fb_remove,
--	.suspend = fb_suspend,
--	.resume = fb_resume,
- 	.driver = {
- 		   .name = DRIVER_NAME,
- 		   .owner = THIS_MODULE,
-+		   .pm	= &fb_pm_ops,
- 		   },
- };
- module_platform_driver(da8xx_fb_driver);
--- 
-1.7.10.4
+> This conversation has started, albeit with much more noise and smoke
+> than signal or light.
 
+Whereabouts is that conversation taking place?
+
+- Josh Triplett
