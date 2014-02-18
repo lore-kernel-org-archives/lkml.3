@@ -1,119 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100AbaBRKIz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:08:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:4334 "EHLO mga02.intel.com"
+	id S1754923AbaBRKH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:07:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56174 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755082AbaBRKIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:08:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,501,1389772800"; 
-   d="scan'208";a="485105972"
-From: sagar.a.kamble@intel.com
-To: intel-gfx@lists.freedesktop.org
-Cc: Sagar Kamble <sagar.a.kamble@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, "G, Pallavi" <pallavi.g@intel.com>
-Subject: [PATCH 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB Cursor Support
-Date: Tue, 18 Feb 2014 15:39:46 +0530
-Message-Id: <1392718186-12453-1-git-send-email-sagar.a.kamble@intel.com>
-X-Mailer: git-send-email 1.8.5
+	id S1754754AbaBRKGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:06:48 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>, e1000-devel@lists.sourceforge.net,
+        linux-driver@qlogic.com, linux-net-drivers@solarflare.com,
+        linux-pci@vger.kernel.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org, pv-drivers@vmware.com,
+        wil6210@qca.qualcomm.com
+Subject: [PATCH net-next 00/35] net: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 11:07:52 +0100
+Message-Id: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sagar Kamble <sagar.a.kamble@intel.com>
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range() and pci_enable_msix_range()
+interfaces.
 
-With this patch we allow larger cursor planes of sizes 128x128
-and 256x256. Planning to extend kms_cursor_crc test for verifying
-these larger planes.
+Cc: e1000-devel@lists.sourceforge.net
+Cc: linux-driver@qlogic.com
+Cc: linux-net-drivers@solarflare.com
+Cc: linux-pci@vger.kernel.org
+Cc: linux-rdma@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: pv-drivers@vmware.com
+Cc: wil6210@qca.qualcomm.com
 
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: G, Pallavi <pallavi.g@intel.com>
-Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
----
- drivers/gpu/drm/i915/i915_reg.h      |  4 ++++
- drivers/gpu/drm/i915/intel_display.c | 25 ++++++++++++++++++++-----
- 2 files changed, 24 insertions(+), 5 deletions(-)
+Alexander Gordeev (35):
+  bnx2: Use pci_enable_msix_range() instead of pci_enable_msix()
+  bnx2x: Use pci_enable_msix_range() instead of pci_enable_msix()
+  tg3: Use pci_enable_msix_range() instead of pci_enable_msix()
+  bna: Use pci_enable_msix_range() instead of pci_enable_msix()
+  cxgb3: Remove superfluous call to pci_disable_msix()
+  cxgb3: Use pci_enable_msix_range() instead of pci_enable_msix()
+  cxgb4: Use pci_enable_msix_range() instead of pci_enable_msix()
+  cxgb4vf: Remove superfluous call to pci_disable_msix()
+  cxgb4vf: Use pci_enable_msix_range() instead of pci_enable_msix()
+  enic: Use pci_enable_msix_range() instead of pci_enable_msix()
+  benet: Use pci_enable_msix_range() instead of pci_enable_msix()
+  e1000e: Use pci_enable_msix_range() instead of pci_enable_msix()
+  i40e: Use pci_enable_msix_range() instead of pci_enable_msix()
+  igb: Use pci_enable_msix_range() instead of pci_enable_msix()
+  igbvf: Use pci_enable_msix_range() instead of pci_enable_msix()
+  ixgbe: Use pci_enable_msix_range() instead of pci_enable_msix()
+  ixgbevf: Use pci_enable_msix_range() instead of pci_enable_msix()
+  mlx4: Use pci_enable_msix_range() instead of pci_enable_msix()
+  mlx5: Use pci_enable_msix_range() instead of pci_enable_msix()
+  myri10ge: Use pci_enable_msix_range() instead of pci_enable_msix()
+  s2io: Use pci_enable_msix_range() instead of pci_enable_msix()
+  vxge: Use pci_enable_msix_range() instead of pci_enable_msix()
+  forcedeth: Fix invalid errno reporting in nv_request_irq()
+  forcedeth: Cleanup MSI-X to MSI to INTx fallback code
+  forcedeth: Use pci_enable_msix_range() instead of pci_enable_msix()
+  netxen: Use pci_enable_msix_range() instead of pci_enable_msix()
+  qlcnic: Cleanup qlcnic_enable_msix() return values
+  qlcnic: Use pci_enable_msix_range() instead of pci_enable_msix()
+  qlge: Get rid of an redundant assignment
+  qlge: Use pci_enable_msix_range() instead of pci_enable_msix()
+  sfc: Use pci_enable_msix_range() instead of pci_enable_msix()
+  niu: Use pci_enable_msix_range() instead of pci_enable_msix()
+  vmxnet3: Fix MSI-X/MSI enablement code
+  vmxnet3: Use pci_enable_msix_range() instead of pci_enable_msix()
+  wil6210: Use pci_enable_msi_range() instead of pci_enable_msi_block()
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 2f564ce..2fee3a2 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3522,7 +3522,11 @@
- /* New style CUR*CNTR flags */
- #define   CURSOR_MODE		0x27
- #define   CURSOR_MODE_DISABLE   0x00
-+#define   CURSOR_MODE_128_32B_AX 0x02
-+#define   CURSOR_MODE_256_32B_AX 0x03
- #define   CURSOR_MODE_64_32B_AX 0x07
-+#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
-+#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
- #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
- #define   MCURSOR_PIPE_SELECT	(1 << 28)
- #define   MCURSOR_PIPE_A	0x00
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index f19e6ea..00b51f3 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7411,10 +7411,18 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
- 	bool visible = base != 0;
- 
- 	if (intel_crtc->cursor_visible != visible) {
-+		int16_t width = intel_crtc->cursor_width;
- 		uint32_t cntl = I915_READ(CURCNTR(pipe));
- 		if (base) {
- 			cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
--			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+
-+			if (width == 64)
-+				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+			else if (width == 128)
-+				cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+			else if (width == 256)
-+				cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+
- 			cntl |= pipe << 28; /* Connect to correct pipe */
- 		} else {
- 			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
-@@ -7439,10 +7447,17 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
- 	bool visible = base != 0;
- 
- 	if (intel_crtc->cursor_visible != visible) {
-+		int16_t width = intel_crtc->cursor_width;
- 		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
- 		if (base) {
- 			cntl &= ~CURSOR_MODE;
--			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+
-+			if (width == 64)
-+				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+			else if (width == 128)
-+				cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+			else if (width == 256)
-+				cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
- 		} else {
- 			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
- 			cntl |= CURSOR_MODE_DISABLE;
-@@ -7538,9 +7553,9 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 		goto finish;
- 	}
- 
--	/* Currently we only support 64x64 cursors */
--	if (width != 64 || height != 64) {
--		DRM_ERROR("we currently only support 64x64 cursors\n");
-+	/* Check for which cursor types we support */
-+	if (width > 256 || height > 256) {
-+		DRM_ERROR("We currently only support 64x64, 128x128, 256x256 cursors\n");
- 		return -EINVAL;
- 	}
- 
+ drivers/net/ethernet/broadcom/bnx2.c               |   15 +--
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c    |   46 ++++-----
+ drivers/net/ethernet/broadcom/tg3.c                |    6 +-
+ drivers/net/ethernet/brocade/bna/bnad.c            |   23 ++---
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c    |   26 ++---
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c    |   50 +++++-----
+ .../net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c    |   35 +++----
+ drivers/net/ethernet/cisco/enic/enic_main.c        |    6 +-
+ drivers/net/ethernet/emulex/benet/be_main.c        |   31 +++---
+ drivers/net/ethernet/intel/e1000e/netdev.c         |   11 ++-
+ drivers/net/ethernet/intel/i40e/i40e_main.c        |   33 +-----
+ drivers/net/ethernet/intel/igb/igb_main.c          |    9 +-
+ drivers/net/ethernet/intel/igbvf/netdev.c          |    6 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c       |   16 +--
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c  |   32 ++----
+ drivers/net/ethernet/mellanox/mlx4/main.c          |   21 +---
+ drivers/net/ethernet/mellanox/mlx5/core/main.c     |   16 +--
+ drivers/net/ethernet/myricom/myri10ge/myri10ge.c   |   40 ++++----
+ drivers/net/ethernet/neterion/s2io.c               |    5 +-
+ drivers/net/ethernet/neterion/vxge/vxge-main.c     |   15 ++-
+ drivers/net/ethernet/nvidia/forcedeth.c            |   41 +++++---
+ .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    5 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c   |   18 ++--
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c       |   16 +--
+ drivers/net/ethernet/sfc/efx.c                     |   20 ++--
+ drivers/net/ethernet/sun/niu.c                     |   11 +--
+ drivers/net/vmxnet3/vmxnet3_drv.c                  |  110 ++++++++-----------
+ drivers/net/wireless/ath/wil6210/pcie_bus.c        |   32 +++---
+ 28 files changed, 295 insertions(+), 400 deletions(-)
+
 -- 
-1.8.5
+1.7.7.6
 
