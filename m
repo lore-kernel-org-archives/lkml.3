@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366AbaBRKLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:11:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19107 "EHLO mx1.redhat.com"
+	id S1755426AbaBRKL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:11:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57851 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754715AbaBRKLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:11:13 -0500
+	id S1755369AbaBRKLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:11:20 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH net-next 30/35] qlge: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 18 Feb 2014 11:11:59 +0100
-Message-Id: <443a0172bc2fe0aa92fca6044d7374475e2ad4c1.1392717503.git.agordeev@redhat.com>
+        "David S. Miller" <davem@davemloft.net>,
+        Jingoo Han <jg1.han@samsung.com>, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH net-next 32/35] niu: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 11:12:01 +0100
+Message-Id: <8832462673133006827fa3eb2fd0c92e34fb7b69.1392717503.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
 References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,48 +28,51 @@ new pci_enable_msi_range() and pci_enable_msix_range()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Shahed Shaikh <shahed.shaikh@qlogic.com>
-Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
-Cc: Ron Mercer <ron.mercer@qlogic.com>
-Cc: linux-driver@qlogic.com
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Jingoo Han <jg1.han@samsung.com>
 Cc: netdev@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/net/ethernet/qlogic/qlge/qlge_main.c |   15 ++++-----------
- 1 files changed, 4 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/sun/niu.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-index 82bace5..adf87d2 100644
---- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-+++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-@@ -3331,23 +3331,16 @@ static void ql_enable_msix(struct ql_adapter *qdev)
- 		for (i = 0; i < qdev->intr_count; i++)
- 			qdev->msi_x_entry[i].entry = i;
+diff --git a/drivers/net/ethernet/sun/niu.c b/drivers/net/ethernet/sun/niu.c
+index 8e2266e..79606f47a 100644
+--- a/drivers/net/ethernet/sun/niu.c
++++ b/drivers/net/ethernet/sun/niu.c
+@@ -9041,7 +9041,7 @@ static void niu_try_msix(struct niu *np, u8 *ldg_num_map)
+ 	struct msix_entry msi_vec[NIU_NUM_LDG];
+ 	struct niu_parent *parent = np->parent;
+ 	struct pci_dev *pdev = np->pdev;
+-	int i, num_irqs, err;
++	int i, num_irqs;
+ 	u8 first_ldg;
  
--		/* Loop to get our vectors.  We start with
--		 * what we want and settle for what we get.
--		 */
--		do {
--			err = pci_enable_msix(qdev->pdev,
--				qdev->msi_x_entry, qdev->intr_count);
--			if (err > 0)
--				qdev->intr_count = err;
--		} while (err > 0);
--
-+		err = pci_enable_msix_range(qdev->pdev, qdev->msi_x_entry,
-+					    1, qdev->intr_count);
- 		if (err < 0) {
- 			kfree(qdev->msi_x_entry);
- 			qdev->msi_x_entry = NULL;
- 			netif_warn(qdev, ifup, qdev->ndev,
- 				   "MSI-X Enable failed, trying MSI.\n");
- 			qlge_irq_type = MSI_IRQ;
--		} else if (err == 0) {
-+		} else {
-+			qdev->intr_count = err;
- 			set_bit(QL_MSIX_ENABLED, &qdev->flags);
- 			netif_info(qdev, ifup, qdev->ndev,
- 				   "MSI-X Enabled, got %d vectors.\n",
+ 	first_ldg = (NIU_NUM_LDG / parent->num_ports) * np->port;
+@@ -9053,21 +9053,16 @@ static void niu_try_msix(struct niu *np, u8 *ldg_num_map)
+ 		    (np->port == 0 ? 3 : 1));
+ 	BUG_ON(num_irqs > (NIU_NUM_LDG / parent->num_ports));
+ 
+-retry:
+ 	for (i = 0; i < num_irqs; i++) {
+ 		msi_vec[i].vector = 0;
+ 		msi_vec[i].entry = i;
+ 	}
+ 
+-	err = pci_enable_msix(pdev, msi_vec, num_irqs);
+-	if (err < 0) {
++	num_irqs = pci_enable_msix_range(pdev, msi_vec, 1, num_irqs);
++	if (num_irqs < 0) {
+ 		np->flags &= ~NIU_FLAGS_MSIX;
+ 		return;
+ 	}
+-	if (err > 0) {
+-		num_irqs = err;
+-		goto retry;
+-	}
+ 
+ 	np->flags |= NIU_FLAGS_MSIX;
+ 	for (i = 0; i < num_irqs; i++)
 -- 
 1.7.7.6
 
