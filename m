@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaBRWqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50676 "EHLO
+	id S1752966AbaBRWqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:46:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50851 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461AbaBRWqF (ORCPT
+	with ESMTP id S1752743AbaBRWqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:05 -0500
+	Tue, 18 Feb 2014 17:46:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bojan Smojver <bojan@rexursive.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ben Hutchings <ben@decadent.org.uk>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 20/24] PM / Hibernate: Hibernate/thaw fixes/improvements
-Date: Tue, 18 Feb 2014 14:47:07 -0800
-Message-Id: <20140218224550.799519336@linuxfoundation.org>
+        rajman mekaco <rajman.mekaco@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.4 08/24] mm/page_alloc.c: remove pageblock_default_order()
+Date: Tue, 18 Feb 2014 14:46:55 -0800
+Message-Id: <20140218224550.466043876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
 References: <20140218224550.221535225@linuxfoundation.org>
@@ -29,178 +33,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bojan Smojver <bojan@rexursive.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit 5a21d489fd9541a4a66b9a500659abaca1b19a51 upstream.
+commit 955c1cd7401565671b064e499115344ec8067dfd upstream.
 
- 1. Do not allocate memory for buffers from emergency pools, unless
-    absolutely required. Do not warn about and do not retry non-essential
-    failed allocations.
+This has always been broken: one version takes an unsigned int and the
+other version takes no arguments.  This bug was hidden because one
+version of set_pageblock_order() was a macro which doesn't evaluate its
+argument.
 
- 2. Do not check the amount of free pages left on every single page
-    write, but wait until one map is completely populated and then check.
+Simplify it all and remove pageblock_default_order() altogether.
 
- 3. Set maximum number of pages for read buffering consistently, instead
-    of inadvertently depending on the size of the sector type.
-
- 4. Fix copyright line, which I missed when I submitted the hibernation
-    threading patch.
-
- 5. Dispense with bit shifting arithmetic to improve readability.
-
- 6. Really recalculate the number of pages required to be free after all
-    allocations have been done.
-
- 7. Fix calculation of pages required for read buffering. Only count in
-    pages that do not belong to high memory.
-
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Li Zefan <lizefan@huawei.com>
+Reported-by: rajman mekaco <rajman.mekaco@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[lizf: Backported to 3.4: adjust context]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/swap.c |   62 ++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 39 insertions(+), 23 deletions(-)
+ mm/page_alloc.c |   33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
 
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -6,7 +6,7 @@
-  *
-  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
-  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
-+ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
-  *
-  * This file is released under the GPLv2.
-  *
-@@ -282,14 +282,17 @@ static int write_page(void *buf, sector_
- 		return -ENOSPC;
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4254,25 +4254,24 @@ static inline void setup_usemap(struct p
  
- 	if (bio_chain) {
--		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
-+		src = (void *)__get_free_page(__GFP_WAIT | __GFP_NOWARN |
-+		                              __GFP_NORETRY);
- 		if (src) {
- 			copy_page(src, buf);
- 		} else {
- 			ret = hib_wait_on_bio_chain(bio_chain); /* Free pages */
- 			if (ret)
- 				return ret;
--			src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
-+			src = (void *)__get_free_page(__GFP_WAIT |
-+			                              __GFP_NOWARN |
-+			                              __GFP_NORETRY);
- 			if (src) {
- 				copy_page(src, buf);
- 			} else {
-@@ -367,12 +370,17 @@ static int swap_write_page(struct swap_m
- 		clear_page(handle->cur);
- 		handle->cur_swap = offset;
- 		handle->k = 0;
--	}
--	if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
--		error = hib_wait_on_bio_chain(bio_chain);
--		if (error)
--			goto out;
--		handle->reqd_free_pages = reqd_free_pages();
-+
-+		if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
-+			error = hib_wait_on_bio_chain(bio_chain);
-+			if (error)
-+				goto out;
-+			/*
-+			 * Recalculate the number of required free pages, to
-+			 * make sure we never take more than half.
-+			 */
-+			handle->reqd_free_pages = reqd_free_pages();
-+		}
- 	}
-  out:
- 	return error;
-@@ -419,8 +427,9 @@ static int swap_writer_finish(struct swa
- /* Maximum number of threads for compression/decompression. */
- #define LZO_THREADS	3
+ #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
  
--/* Maximum number of pages for read buffering. */
--#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
-+/* Minimum/maximum number of pages for read buffering. */
-+#define LZO_MIN_RD_PAGES	1024
-+#define LZO_MAX_RD_PAGES	8192
- 
- 
- /**
-@@ -631,12 +640,6 @@ static int save_image_lzo(struct swap_ma
- 	}
- 
- 	/*
--	 * Adjust number of free pages after all allocations have been done.
--	 * We don't want to run out of pages when writing.
--	 */
--	handle->reqd_free_pages = reqd_free_pages();
+-/* Return a sensible default order for the pageblock size. */
+-static inline int pageblock_default_order(void)
+-{
+-	if (HPAGE_SHIFT > PAGE_SHIFT)
+-		return HUGETLB_PAGE_ORDER;
 -
--	/*
- 	 * Start the CRC32 thread.
- 	 */
- 	init_waitqueue_head(&crc->go);
-@@ -657,6 +660,12 @@ static int save_image_lzo(struct swap_ma
- 		goto out_clean;
- 	}
- 
-+	/*
-+	 * Adjust the number of required free pages after all allocations have
-+	 * been done. We don't want to run out of pages when writing.
-+	 */
-+	handle->reqd_free_pages = reqd_free_pages();
+-	return MAX_ORDER-1;
+-}
+-
+ /* Initialise the number of pages represented by NR_PAGEBLOCK_BITS */
+-static inline void __init set_pageblock_order(unsigned int order)
++static inline void __init set_pageblock_order(void)
+ {
++	unsigned int order;
 +
- 	printk(KERN_INFO
- 		"PM: Using %u thread(s) for compression.\n"
- 		"PM: Compressing and saving image data (%u pages) ...     ",
-@@ -1067,7 +1076,7 @@ static int load_image_lzo(struct swap_ma
- 	unsigned i, thr, run_threads, nr_threads;
- 	unsigned ring = 0, pg = 0, ring_size = 0,
- 	         have = 0, want, need, asked = 0;
--	unsigned long read_pages;
-+	unsigned long read_pages = 0;
- 	unsigned char **page = NULL;
- 	struct dec_data *data = NULL;
- 	struct crc_data *crc = NULL;
-@@ -1079,7 +1088,7 @@ static int load_image_lzo(struct swap_ma
- 	nr_threads = num_online_cpus() - 1;
- 	nr_threads = clamp_val(nr_threads, 1, LZO_THREADS);
+ 	/* Check that pageblock_nr_pages has not already been setup */
+ 	if (pageblock_order)
+ 		return;
  
--	page = vmalloc(sizeof(*page) * LZO_READ_PAGES);
-+	page = vmalloc(sizeof(*page) * LZO_MAX_RD_PAGES);
- 	if (!page) {
- 		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
- 		ret = -ENOMEM;
-@@ -1144,15 +1153,22 @@ static int load_image_lzo(struct swap_ma
- 	}
- 
++	if (HPAGE_SHIFT > PAGE_SHIFT)
++		order = HUGETLB_PAGE_ORDER;
++	else
++		order = MAX_ORDER - 1;
++
  	/*
--	 * Adjust number of pages for read buffering, in case we are short.
-+	 * Set the number of pages for read buffering.
-+	 * This is complete guesswork, because we'll only know the real
-+	 * picture once prepare_image() is called, which is much later on
-+	 * during the image load phase. We'll assume the worst case and
-+	 * say that none of the image pages are from high memory.
+ 	 * Assume the largest contiguous order of interest is a huge page.
+-	 * This value may be variable depending on boot parameters on IA64
++	 * This value may be variable depending on boot parameters on IA64 and
++	 * powerpc.
  	 */
--	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
--	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
-+	if (low_free_pages() > snapshot_get_image_size())
-+		read_pages = (low_free_pages() - snapshot_get_image_size()) / 2;
-+	read_pages = clamp_val(read_pages, LZO_MIN_RD_PAGES, LZO_MAX_RD_PAGES);
+ 	pageblock_order = order;
+ }
+@@ -4280,15 +4279,13 @@ static inline void __init set_pageblock_
  
- 	for (i = 0; i < read_pages; i++) {
- 		page[i] = (void *)__get_free_page(i < LZO_CMP_PAGES ?
- 		                                  __GFP_WAIT | __GFP_HIGH :
--		                                  __GFP_WAIT);
-+		                                  __GFP_WAIT | __GFP_NOWARN |
-+		                                  __GFP_NORETRY);
-+
- 		if (!page[i]) {
- 			if (i < LZO_CMP_PAGES) {
- 				ring_size = i;
+ /*
+  * When CONFIG_HUGETLB_PAGE_SIZE_VARIABLE is not set, set_pageblock_order()
+- * and pageblock_default_order() are unused as pageblock_order is set
+- * at compile-time. See include/linux/pageblock-flags.h for the values of
+- * pageblock_order based on the kernel config
++ * is unused as pageblock_order is set at compile-time. See
++ * include/linux/pageblock-flags.h for the values of pageblock_order based on
++ * the kernel config
+  */
+-static inline int pageblock_default_order(unsigned int order)
++static inline void set_pageblock_order(void)
+ {
+-	return MAX_ORDER-1;
+ }
+-#define set_pageblock_order(x)	do {} while (0)
+ 
+ #endif /* CONFIG_HUGETLB_PAGE_SIZE_VARIABLE */
+ 
+@@ -4376,7 +4373,7 @@ static void __paginginit free_area_init_
+ 		if (!size)
+ 			continue;
+ 
+-		set_pageblock_order(pageblock_default_order());
++		set_pageblock_order();
+ 		setup_usemap(pgdat, zone, zone_start_pfn, size);
+ 		ret = init_currently_empty_zone(zone, zone_start_pfn,
+ 						size, MEMMAP_EARLY);
 
 
