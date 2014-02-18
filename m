@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaBRXAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:00:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51151 "EHLO
+	id S1753369AbaBRWrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:47:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51127 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376AbaBRWrM (ORCPT
+	with ESMTP id S1753323AbaBRWrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:12 -0500
+	Tue, 18 Feb 2014 17:47:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.13 14/40] arm64: Invalidate the TLB when replacing pmd entries during boot
-Date: Tue, 18 Feb 2014 14:47:15 -0800
-Message-Id: <20140218224433.737121512@linuxfoundation.org>
+        Dave Jones <davej@fedoraproject.org>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.12 24/32] [media] mxl111sf: Fix unintentional garbage stack read
+Date: Tue, 18 Feb 2014 14:47:24 -0800
+Message-Id: <20140218224500.788311610@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
-References: <20140218224433.337299968@linuxfoundation.org>
+In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
+References: <20140218224500.101465031@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,53 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Dave Jones <davej@fedoraproject.org>
 
-commit a55f9929a9b257f84b6cc7b2397379cabd744a22 upstream.
+commit 866e8d8a9dc1ebb4f9e67197e264ac2df81f7d4b upstream.
 
-With the 64K page size configuration, __create_page_tables in head.S
-maps enough memory to get started but using 64K pages rather than 512M
-sections with a single pgd/pud/pmd entry pointing to a pte table.
-create_mapping() may override the pgd/pud/pmd table entry with a block
-(section) one if the RAM size is more than 512MB and aligned correctly.
-For the end of this block to be accessible, the old TLB entry must be
-invalidated.
+mxl111sf_read_reg takes an address of a variable to write to as an argument.
+drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c:mxl111sf_config_pin_mux_modes
+passes several uninitialized stack variables to this routine, expecting
+them to be filled in.  In the event that something unexpected happens when
+reading from the chip, we end up doing a pr_debug of the value passed in,
+revealing whatever garbage happened to be on the stack.
 
-Reported-by: Mark Salter <msalter@redhat.com>
-Tested-by: Mark Salter <msalter@redhat.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Change the pr_debug to match what happens in the 'success' case, where we
+assign buf[1] to *data.
+
+Spotted with Coverity (Bugs 731910 through 731917)
+
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/mm/mmu.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/media/usb/dvb-usb-v2/mxl111sf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm64/mm/mmu.c
-+++ b/arch/arm64/mm/mmu.c
-@@ -203,10 +203,18 @@ static void __init alloc_init_pmd(pud_t
- 	do {
- 		next = pmd_addr_end(addr, end);
- 		/* try section mapping first */
--		if (((addr | next | phys) & ~SECTION_MASK) == 0)
-+		if (((addr | next | phys) & ~SECTION_MASK) == 0) {
-+			pmd_t old_pmd =*pmd;
- 			set_pmd(pmd, __pmd(phys | prot_sect_kernel));
--		else
-+			/*
-+			 * Check for previous table entries created during
-+			 * boot (__create_page_tables) and flush them.
-+			 */
-+			if (!pmd_none(old_pmd))
-+				flush_tlb_all();
-+		} else {
- 			alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys));
-+		}
- 		phys += next - addr;
- 	} while (pmd++, addr = next, addr != end);
+--- a/drivers/media/usb/dvb-usb-v2/mxl111sf.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
+@@ -105,7 +105,7 @@ int mxl111sf_read_reg(struct mxl111sf_st
+ 		ret = -EINVAL;
+ 	}
+ 
+-	pr_debug("R: (0x%02x, 0x%02x)\n", addr, *data);
++	pr_debug("R: (0x%02x, 0x%02x)\n", addr, buf[1]);
+ fail:
+ 	return ret;
  }
 
 
