@@ -1,126 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796AbaBRUut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:50:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911AbaBRUus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:50:48 -0500
-Date: Tue, 18 Feb 2014 15:50:44 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Steve Grubb <sgrubb@redhat.com>
-Subject: Re: [PATCH] audit: add arch field to seccomp event log
-Message-ID: <20140218205044.GL16640@madcap2.tricolour.ca>
-References: <4bc8c03bda84e004c331546e228b334811b03254.1392409147.git.rgb@redhat.com>
- <1392410961.2760.17.camel@localhost>
- <20140214205057.GF18807@madcap2.tricolour.ca>
- <20140214205218.GG18807@madcap2.tricolour.ca>
- <1392412322.2760.21.camel@localhost>
+	id S1752043AbaBRUv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:51:27 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45770 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871AbaBRUvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 15:51:25 -0500
+Date: Tue, 18 Feb 2014 21:51:31 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jason Cooper <jason@lakedaemon.net>
+cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] irqchip: dove: drivers for v3.14
+In-Reply-To: <20140217193230.GW7862@titan.lakedaemon.net>
+Message-ID: <alpine.DEB.2.02.1402182124480.4468@ionos.tec.linutronix.de>
+References: <20131201172914.GV2879@titan.lakedaemon.net> <20131211175037.GY10053@titan.lakedaemon.net> <20140110183430.GO19878@titan.lakedaemon.net> <20140128173531.GT29184@titan.lakedaemon.net> <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
+ <20140204211219.GK8533@titan.lakedaemon.net> <alpine.DEB.2.02.1402042230230.24986@ionos.tec.linutronix.de> <20140207180836.GE8533@titan.lakedaemon.net> <20140217193230.GW7862@titan.lakedaemon.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392412322.2760.21.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/14, Eric Paris wrote:
-> On Fri, 2014-02-14 at 15:52 -0500, Richard Guy Briggs wrote:
-> > On 14/02/14, Richard Guy Briggs wrote:
-> > > On 14/02/14, Eric Paris wrote:
-> > > > On Fri, 2014-02-14 at 15:23 -0500, Richard Guy Briggs wrote:
-> > > > > The AUDIT_SECCOMP record looks something like this:
-> > > > > 
-> > > > > type=SECCOMP msg=audit(1373478171.953:32775): auid=4325 uid=4325 gid=4325 ses=1 subj=unconfined_u:unconfined_r:unconfined_t:s0 pid=12381 comm="test" sig=31 syscall=231 compat=0 ip=0x39ea8bca89 code=0x0
-> > > > > 
-> > > > > In order to determine what syscall 231 maps to, we need to have the arch= field right before it.
-> > > > > 
-> > > > > To see the event, compile this test.c program:
-> > > > > 
-> > > > > =====
-> > > > > int main(void)
-> > > > > {
-> > > > >         return seccomp_load(seccomp_init(SCMP_ACT_KILL));
-> > > > > }
-> > > > > =====
-> > > > > 
-> > > > > gcc -g test.c -o test -lseccomp
-> > > > > 
-> > > > > After running the program, find the record by:  ausearch --start recent -m SECCOMP -i
-> > > > > ---
-> > > > >  kernel/auditsc.c |    1 +
-> > > > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > > > 
-> > > > > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> > > > > index 6874c1f..c464d44 100644
-> > > > > --- a/kernel/auditsc.c
-> > > > > +++ b/kernel/auditsc.c
-> > > > > @@ -2412,6 +2412,7 @@ void __audit_seccomp(unsigned long syscall, long signr, int code)
-> > > > >  		return;
-> > > > >  	audit_log_task(ab);
-> > > > >  	audit_log_format(ab, " sig=%ld", signr);
-> > > > > +	audit_log_format(ab, " arch=%x", current->audit_context->arch);
-> > > > 
-> > > > 
-> > > > What happens if the task does not have current->audit_context allocated?
-> > > > Seems possible if signr is non-zero...
+On Mon, 17 Feb 2014, Jason Cooper wrote:
+> On Fri, Feb 07, 2014 at 01:08:36PM -0500, Jason Cooper wrote:
+> > On Tue, Feb 04, 2014 at 10:30:53PM +0100, Thomas Gleixner wrote:
+> > > On Tue, 4 Feb 2014, Jason Cooper wrote:
 > > > 
-> > > I had assumed that since we got this far, that there was an audit
-> > > context.  This was my first patch:
+> > > > On Tue, Feb 04, 2014 at 07:59:58PM +0100, Thomas Gleixner wrote:
+> > > > > On Tue, 28 Jan 2014, Jason Cooper wrote:
+> > > > > > I see you pulled in mvebu/irqchip-fixes.  Thanks for that.  It's getting
+> > > > > > near to the end of the merge window and there's been no activity on this
+> > > > > > pull request.
+> > > > > > 
+> > > > > > Please let us know if there's anything we can do to assist.
+> > > > > 
+> > > > > Nah. I simply forgot about it. About to send a pull request to Linus.
+> > > > 
+> > > > hmmm.  I see the pull request contains the patches from
+> > > > mvebu/irqchip-fixes (armada), but not the patches from mvebu/irqchip
+> > > > (dove):
+> > > > 
+> > > >   40b367d95fb3 irqchip: irq-dove: Add PMU interrupt controller.
+> > > > 
+> > > > which is what this thread was originally a pull request for.
+> > > > 
+> > > > 
+> > > > Are you planning to send a second pull request to Linus?
+> > > 
+> > > Duh. I'll pick that up tomorrow
 > > 
-> > Sorry, pulled the trigger too fast:
-> > 
-> > ---
-> >  kernel/auditsc.c |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> > index 6874c1f..3023d03 100644
-> > --- a/kernel/auditsc.c
-> > +++ b/kernel/auditsc.c
-> > @@ -2406,12 +2406,18 @@ void audit_core_dumps(long signr)
-> >  void __audit_seccomp(unsigned long syscall, long signr, int code)
-> >  {
-> >         struct audit_buffer *ab;
-> > +       struct audit_context *context audit_get_context(current, 0, 0);
+> > Ping?
 > 
-> missing '='   but this isn't what audit_get_context() does...   it's
-> crappy naming...    I'd think a combo of audit_dummy_context() and
-> current->audit_context would be most appropriate.
+> I think it's safe to say that the Dove PMU interrupt controller isn't
+> going to make it in to v3.14.  I've posted a patch to remove the DT node
+> for v3.14.
 
-Ok.  I think I finally understand audit_dummy_context().  Thanks for the
-hint.  However, it appears it is not useful in this sitation, since if
-there is an audit_context, even a dummy context, it appears arch is
-filled in.
-
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-@@ -2406,12 +2406,18 @@ void audit_core_dumps(long signr)
- void __audit_seccomp(unsigned long syscall, long signr, int code)
- {
- 	struct audit_buffer *ab;
-+	struct audit_context *context = current->audit_context;
+Yes, sorry. I messed that one up.
  
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
- 	if (unlikely(!ab))
- 		return;
- 	audit_log_task(ab);
- 	audit_log_format(ab, " sig=%ld", signr);
-+	audit_log_format(ab, " arch=");
-+	if (context)
-+		audit_log_format(ab, "%x", context->arch);
-+	else
-+		audit_log_format(ab, "(null)");
- 	audit_log_format(ab, " syscall=%ld", syscall);
- 	audit_log_format(ab, " compat=%d", is_compat_task());
- 	audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
+> If you don't mind, I'll go ahead and take this pull request through the
+> mvebu tree for v3.15.  So that way it's off your plate and you don't
+> have to worry about it.
 
-- RGB
+I pushed it out to tip/irq/core now.
+ 
+> There's more mvebu irqchip stuff on the way :)
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+You have an entry in my mail filter rules now, so you'll end up in the
+priority queue with your pull requests :)
+
+Btw, I just looked at that dove driver and if you look at the other
+drivers/irqchip variants which use the generic irq domain/chip stuff,
+then the code in the init functions +/- some minimalistic fixes is
+just the same boiler plate except for quirks or a few register writes.
+
+This the diff of the relevant code for orion and dove.
+
+--- drivers/irqchip/irq-orion.c	2014-02-18 21:27:35.655468837 +0100
++++ drivers/irqchip/irq-dove.c	2014-02-18 21:27:57.099469874 +0100
+@@ -1,14 +1,10 @@
++#define DOVE_PMU_IRQ_CAUSE	0x00
++#define DOVE_PMU_IRQ_MASK	0x04
+-/*
+- * Orion SoC bridge interrupt controller
+- */
+-#define ORION_BRIDGE_IRQ_CAUSE	0x00
+-#define ORION_BRIDGE_IRQ_MASK	0x04
+-
+-static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
++static void dove_pmu_irq_handler(unsigned int irq, struct irq_desc *desc)
+ {
+ 	struct irq_domain *d = irq_get_handler_data(irq);
+-	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, irq);
+-	u32 stat = readl_relaxed(gc->reg_base + ORION_BRIDGE_IRQ_CAUSE) &
++	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, 0);
++	u32 stat = readl_relaxed(gc->reg_base + DOVE_PMU_IRQ_CAUSE) &
+ 		   gc->mask_cache;
+
+Identical except for the register constants, which are identical as well.
+ 
+ 	while (stat) {
+@@ -123,17 +36,14 @@
+ 	}
+ }
+ 
+-static int __init orion_bridge_irq_init(struct device_node *np,
+-					struct device_node *parent)
++static int __init dove_pmu_irq_init(struct device_node *np,
++				    struct device_node *parent)
+ {
+ 	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
+ 	struct resource r;
+ 	struct irq_domain *domain;
+ 	struct irq_chip_generic *gc;
+-	int ret, irq, nrirqs = 32;
+-
+-	/* get optional number of interrupts provided */
+-	of_property_read_u32(np, "marvell,#interrupts", &nrirqs);
++	int ret, irq, nrirqs = 7;
+
+So the difference here is nrirqs
+ 
+ 	domain = irq_domain_add_linear(np, nrirqs,
+ 				       &irq_generic_chip_ops, NULL);
+@@ -174,19 +107,20 @@
+ 		return -ENOMEM;
+ 	}
+ 
+-	gc->chip_types[0].regs.ack = ORION_BRIDGE_IRQ_CAUSE;
+-	gc->chip_types[0].regs.mask = ORION_BRIDGE_IRQ_MASK;
+-	gc->chip_types[0].chip.irq_ack = irq_gc_ack_clr_bit;
++	gc->chip_types[0].regs.ack = DOVE_PMU_IRQ_CAUSE;
++	gc->chip_types[0].regs.mask = DOVE_PMU_IRQ_MASK;
++	gc->chip_types[0].chip.irq_ack = pmu_irq_ack;
+ 	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
+ 	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
+ 
+
+
+-	/* mask all interrupts */
+-	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_MASK);
++	/* mask and clear all interrupts */
++	writel(0, gc->reg_base + DOVE_PMU_IRQ_MASK);
++	writel(0, gc->reg_base + DOVE_PMU_IRQ_CAUSE);
+ 
+ 	irq_set_handler_data(irq, domain);
+-	irq_set_chained_handler(irq, orion_bridge_irq_handler);
++	irq_set_chained_handler(irq, dove_pmu_irq_handler);
+ 
+ 	return 0;
+ }
+-IRQCHIP_DECLARE(orion_bridge_intc,
+-		"marvell,orion-bridge-intc", orion_bridge_irq_init);
++IRQCHIP_DECLARE(dove_pmu_intc,
++		"marvell,dove-pmu-intc", dove_pmu_irq_init);
+
+I omitted the second variant in irq-orion.c which is the same
+boilerplate with a few minimal changes.
+
+It'd be really nice if someone would sit down and make one or two
+general irqchip init function which gets rid of this copied code and
+reduces the init functions to the bare minimum. That's not only true
+for the orion/dove case it's the same for lot of irq-*.c variants plus
+minus the individual extras and of course bugs.
+
+Thanks,
+
+	tglx
