@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281AbaBRSyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:54:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38802 "EHLO mga09.intel.com"
+	id S1751643AbaBRS6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:58:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:33934 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864AbaBRSyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:54:18 -0500
+	id S1750950AbaBRS6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 13:58:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="457573354"
-Date: Tue, 18 Feb 2014 10:54:17 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Denis Turischev <denis.turischev@compulab.co.il>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RESEND] [PATCH] xhci: Switch Intel Lynx Point ports to EHCI on
- shutdown.
-Message-ID: <20140218185417.GD7395@xanatos>
-References: <52B31EDA.60908@compulab.co.il>
- <52F0CAB8.20803@compulab.co.il>
- <53030EEF.7090708@compulab.co.il>
+   d="scan'208";a="483586625"
+Date: Tue, 18 Feb 2014 11:04:13 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] usb/xhci: fix compilation warning when !CONFIG_PCI &&
+ !CONFIG_PM
+Message-ID: <20140218190412.GA32402@psi-dev26.jf.intel.com>
+References: <1389059068-18491-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1389063739-6028-1-git-send-email-david.a.cohen@linux.intel.com>
+ <20140218180030.GA10029@psi-dev26.jf.intel.com>
+ <20140218184741.GI28506@saruman.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53030EEF.7090708@compulab.co.il>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140218184741.GI28506@saruman.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delay in reviewing this.  It helps me if you don't make the
-patch in-reply-to a months old thread. :)  I'll take a look at this
-shortly.
+On Tue, Feb 18, 2014 at 12:47:41PM -0600, Felipe Balbi wrote:
+> On Tue, Feb 18, 2014 at 10:00:30AM -0800, David Cohen wrote:
+> > Hi Sarah,
+> > 
+> > On Mon, Jan 06, 2014 at 07:02:19PM -0800, David Cohen wrote:
+> > > When CONFIG_PCI and CONFIG_PM are not selected, xhci.c gets this
+> > > warning:
+> > > drivers/usb/host/xhci.c:409:13: warning: ‘xhci_msix_sync_irqs’ defined
+> > > but not used [-Wunused-function]
+> > > 
+> > > It happens due to lack of __maybe_unused flag on xhci_msix_sync_irqs()
+> > > function in case of !CONFIG_PCI.
+> > > 
+> > > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> > > ---
+> > 
+> > Ping :)
+> > Any comments here?
+> > 
+> > Br, David
+> > 
+> > > 
+> > > Change v1 -> v2:
+> > >  - xhci_msix_sync_irqs() already uses __maybe_unused flag when CONFIG_PCI is
+> > >    set. Proper solution is to add same flag when !CONFIG_PCI instead of define
+> > >    function as inline.
+> > > 
+> > >  drivers/usb/host/xhci.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> > > index 4265b48856f6..ed6b717b8ee1 100644
+> > > --- a/drivers/usb/host/xhci.c
+> > > +++ b/drivers/usb/host/xhci.c
+> > > @@ -406,7 +406,7 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
+> > >  {
+> > >  }
+> > >  
+> > > -static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+> > > +static void __maybe_unused xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+> 
+> bellow is likely a better fix. Usually stubs are marked inline, rather
+> than getting an unused attribute:
 
-Sarah Sharp
+Thanks for commenting. That would be actually the v1 of my patch :)
+I changed after I see the proper function has __maybe_unused flag.
 
-On Tue, Feb 18, 2014 at 09:42:39AM +0200, Denis Turischev wrote:
-> The same issue like with Panther Point chipsets. If the USB ports are
-> switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
-> which will wake the system. Some BIOS have work around for this, but not all.
-> One example is Compulab's mini-desktop, the Intense-PC2.
+But I'm fine with Sarah picking any of the patch's versions.
+
+Br, David
+
 > 
-> The bug can be avoided if the USB ports are switched back to EHCI on
-> shutdown.
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 3712359..8f1a6d5 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -404,16 +404,16 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
+>  
+>  #else
+>  
+> -static int xhci_try_enable_msi(struct usb_hcd *hcd)
+> +static inline int xhci_try_enable_msi(struct usb_hcd *hcd)
+>  {
+>  	return 0;
+>  }
+>  
+> -static void xhci_cleanup_msix(struct xhci_hcd *xhci)
+> +static inline void xhci_cleanup_msix(struct xhci_hcd *xhci)
+>  {
+>  }
+>  
+> -static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+> +static inline void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+>  {
+>  }
+>  
 > 
-> Signed-off-by: Denis Turischev <denis@compulab.co.il>
-> ---
->  drivers/usb/host/xhci-pci.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-> index 3c898c1..9233d12 100644
-> --- a/drivers/usb/host/xhci-pci.c
-> +++ b/drivers/usb/host/xhci-pci.c
-> @@ -134,6 +134,8 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
->  		 */
->  		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
->  			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-> +
-> +		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
->  	}
->  	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
->  			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
-> -- 1.8.1.2
-> 
-> 
+> -- 
+> balbi
+
+
