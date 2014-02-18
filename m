@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587AbaBRUGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:06:06 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53853 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaBRUGD (ORCPT
+	id S1751703AbaBRUJG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:09:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49003 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaBRUJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:06:03 -0500
-Message-ID: <5303BD27.4000905@wwwdotorg.org>
-Date: Tue, 18 Feb 2014 13:05:59 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Feb 2014 15:09:05 -0500
+Date: Tue, 18 Feb 2014 12:10:29 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL 0/8] PHY subsystem fixes for 3.14-rc4
+Message-ID: <20140218201029.GA14315@kroah.com>
+References: <1392627565-1829-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@rjwysocki.net,
-        swarren@nvidia.com
-CC: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: remove sysfs link when a cpu != policy->cpu,
- is removed
-References: <324f43fc664f51eec355b08b6c2d4cedd2140b4c.1392628861.git.viresh.kumar@linaro.org>
-In-Reply-To: <324f43fc664f51eec355b08b6c2d4cedd2140b4c.1392628861.git.viresh.kumar@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392627565-1829-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 02:22 AM, Viresh Kumar wrote:
-> Earlier patch tried to do this but missed this piece of code to fix.
+On Mon, Feb 17, 2014 at 02:29:17PM +0530, Kishon Vijay Abraham I wrote:
+> Hi Greg,
 > 
-> 42f921a cpufreq: remove sysfs files for CPUs which failed to come back after
-> resume
+> Here's the PULL requeust for PHY subsystem for this -rc cycle. There isn't
+> anything major but a bunch of obvious fixes and cleanup.
 > 
-> Currently we are getting this on suspend/resume:
+> Let me know If I have to change anything.
 > 
-> ------------[ cut here ]------------
-> WARNING: CPU: 0 PID: 877 at fs/sysfs/dir.c:52 sysfs_warn_dup+0x68/0x84()
-> sysfs: cannot create duplicate filename '/devices/system/cpu/cpu1/cpufreq'
-...
-> Fix this by removing sysfs link for cpufreq directory when cpu removed isn't
-> policy->cpu.
+> Thanks
+> Kishon
+> 
+> The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
+> 
+>   Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git tags/for-3.14-rc4
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Is this a signed tag?  It doesn't look like it from this side, so it
+would be great if you could redo it as a signed tag so I "know" I'm
+pulling the right thing in the future.
+
+For now, I'll just take the "raw" patches.
+
+thanks,
+
+greg k-h
