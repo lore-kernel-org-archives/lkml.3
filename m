@@ -1,144 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212AbaBRPpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:45:07 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:46345 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755478AbaBRPpE (ORCPT
+	id S1756047AbaBRPuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:50:09 -0500
+Received: from nm40.bullet.mail.ne1.yahoo.com ([98.138.229.33]:45658 "EHLO
+	nm40.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755016AbaBRPuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 10:45:04 -0500
-Date: Tue, 18 Feb 2014 16:42:12 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: David =?iso-8859-1?Q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
-Cc: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 8/8] ARM: sunxi: Add documentation for driver for
- SD/MMC hosts found on Allwinner sunxi SoCs
-Message-ID: <20140218154212.GL3142@lukather>
-References: <20140217095907.15040.81893.stgit@pagira.o2s.ch>
- <20140217100302.15040.56273.stgit@pagira.o2s.ch>
+	Tue, 18 Feb 2014 10:50:07 -0500
+X-Yahoo-Newman-Property: ymail-4
+X-Yahoo-Newman-Id: 135349.67101.bm@omp1022.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=MSTMZcyBzL6kSQ0mdZY1RW7pyg9BRGXG76TsmtaTMZvoXm/PdX6SDIeOXSVPQsDdWXtgg5l4qdlZnbRXddUqMKV20gTKZJydvEDYPFD8Z1LgN3mSL+K72ZFqnHQODadBFFmQjMTE9qvHQxRqt2FGrZ5GuqAb59pm5cX+P1lj6vI=;
+X-YMail-OSG: FneWKKkVM1lzxf5fSdN9vPAinoQTE8s_yy6YQcJog0PpqVl
+ YFOWe.BmvBbJ73ON_pmMt7rCbuH22js5fJIWTwRv25xIDxCuEPl2bv7248VX
+ .UIJOI6T.9wFb0UrmpIQVQyVvyIsCFAIq3HNqtDSDSWxC4PdAxrSUugfv4b1
+ 9A8bsjvIgC2E4SY5u7dySJqGawLdqzdG6O6W07.jhICwBfvBhAMA7DQOMtsu
+ UEujyF.7bnHwNYzkRYEfu75T25b1GQCaZ0SSI.8ft7LU7Cm1NW2MH1Xe3kBs
+ wDe73WufYz2SylyW0StCY_YErBUiXX5bb5bBFDx8NsgjphHIgZfli1IOXMus
+ ElFsQxlTIV3bVA2OdIYc6VBfrg.FHZJBSPdsf21DNAEznHlVSNCK1seTzy9u
+ UEoVJZblYa3aKGKUloMS4yLZ2jh.IKF.cFF_voc7GPxuW5LW1bv8a8X1M.us
+ nyvVfVpH86g9oZwRnkvi_UF2YtIyLf6kZrXghW30clKVr59EBbHOkm15Rqtt
+ Grve3fQVMn.7Z9Uiy6TRD2brtK81od3pvtdk_qUcoM6xqkQ--
+X-Rocket-MIMEInfo: 002.001,SXQgc291bmRzIGFzIGlmIHlvdSBoYXZlIG5vdCBoZWFyZCB0aGUgZ29vZCBuZXdzOg0Kc3lzdGVtZC4NCg0KT3IgeW91IGhhdmUgbm90IGRpZ2VzdGVkIGl0IGVub3VnaDoNCnN5c3RlbWQuDQoNClN5c3RlbUQgaXMgdG91dGVkIGFzIGEgbmV3IHJlcXVpcmVkICJzb2Z0d2FyZSBzdGFjayIgZm9yIGxpbnV4DQphY2NvcmRpbmcgdG8gUG90dGVyaW5nICh3aG8gaXMgYSBkb3VjaGJhZyB0aGF0IHNob3VsZCBiZSBrZXB0IGF3YXkgZnJvbSBjb21wdXRlcnMNCmFuZCBvdGhlciBwZW9wbGUncyBwcmVzZW50YXRpb24BMAEBAQE-
+X-Mailer: YahooMailClassic/424 YahooMailWebService/0.8.177.636
+Message-ID: <1392738441.89634.YahooMailBasic@web141705.mail.bf1.yahoo.com>
+Date: Tue, 18 Feb 2014 07:47:21 -0800 (PST)
+From: ChaosEsque Team <chaosesqueteam@yahoo.com>
+Subject: Re: Honestly, f__k systemd and f__k lennart, and f__k the fans of them. Where's linus in all of this?
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20140217152224.5e7c0187@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DN8g+DOX2TxGxleI"
-Content-Disposition: inline
-In-Reply-To: <20140217100302.15040.56273.stgit@pagira.o2s.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It sounds as if you have not heard the good news:
+systemd.
 
---DN8g+DOX2TxGxleI
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Or you have not digested it enough:
+systemd.
 
-On Mon, Feb 17, 2014 at 11:03:02AM +0100, David Lanzend=F6rfer wrote:
-> Signed-off-by: David Lanzend=F6rfer <david.lanzendoerfer@o2s.ch>
-> ---
->  .../devicetree/bindings/mmc/sunxi-mmc.txt          |   32 ++++++++++++++=
-++++++
->  1 file changed, 32 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
->=20
-> diff --git a/Documentation/devicetree/bindings/mmc/sunxi-mmc.txt b/Docume=
-ntation/devicetree/bindings/mmc/sunxi-mmc.txt
-> new file mode 100644
-> index 0000000..5ce8c5e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
-> @@ -0,0 +1,32 @@
-> +* Allwinner sunxi MMC controller
-> +
-> +The highspeed MMC host controller on Allwinner SoCs provides an interface
-> +for MMC, SD and SDIO types of memory cards.
-> +
-> +Supported maximum speeds are the ones of the eMMC standard 4.5 as well
-> +as the speed of SD standard 3.0.
-> +Absolute maximum transfer rate is 200MB/s
-> +
-> +Required properties:
-> +- compatible: Should be "allwinner,<revision>-<chip>-mmc".
-> +  The supported chips include a10, a10s, 13, a20 and a31.
+SystemD is touted as a new required "software stack" for linux
+according to Pottering (who is a douchbag that should be kept away from computers
+and other people's presentations) and his followers.
 
-Please use the real compatibles here. It's much easier to search
-for. Plus, your driver doesn't support all the SoCs you're mentionning here.
+Gnome is requiring it, along with breaking compatability in libgtk
+(eventhough libgtk is the GIMP's library, gnome folks have decided to take it over)
 
-> +- base registers are 0x1000 appart, so the base of mmc1
-> +  would be 0x01c0f000+0x1000=3D0x01c10000(see example)
-> +  and so on.
+SystemD and gnome are embracing and extending everything.
+They are extinguishing unix-like linux on the ground.
 
-Please provide the real property name to use. No need for an example
-here, you have a full-fledged one in a few lines.
+Their fans/employees/agents try to get systemd adopted
+exclusively in every distro. To force everyone into compliance.
+They are constantly constantly evangelizing systemd.
+Anyone who opposes them is a troll and they have them banned.
 
-> +- clocks requires the reference at the ahb clock gate
-> +  with the correct index (mmc0 -> 8, mmc1 -> 9, and so on)
-> +  as well as the reference to the correct mod0 clock.
+They say if you don't like systemd etc, use mac or switch to bsd.
+This included the debian-devs.
 
-Ditto. Plus, this is not a mod0 clock.
+Lennart Pottering is the scumbag that is spearheading this.
+Redhat is the company.
 
-> +- interrupts requires the correct IRQ line
-> +  (mmc0 -> 32, mmc1 -> 33, and so on)
+Fuck SystemD
 
-Ditto.
+--------------------------------------------
+On Mon, 2/17/14, One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
 
-> +
-> +Examples:
-> +
-> +mmc0: mmc@01c0f000 {
-> +	compatible =3D "allwinner,sun5i-a13-mmc";
-> +	reg =3D <0x01c0f000 0x1000>;
-> +	clocks =3D <&ahb_gates 8>, <&mmc0_clk>;
-> +	clock-names =3D "ahb", "mod";
-
-You never talked about the clock-names property, and which clocks were
-supposed to be provided.
-
-> +	interrupts =3D <0 32 4>;
-> +	bus-width =3D <4>;
-
-And you never talked about bus-width either.
-
-> +	status =3D "disabled";
-> +};
->=20
-
-Isn't the cd-gpios property requested too?
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---DN8g+DOX2TxGxleI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTA39UAAoJEBx+YmzsjxAgrQoP/1HzFSTgYBFAw1bVtXhU/jtZ
-GljPpZDpY/1ME7jQb38kGhD5FB3t392ECFtEryOhvzoif91WQzB5Rd8SHKn58zLZ
-vD4zmfAIGiT8x5ifXBVGYAP5TNj9hsG0eKUFQM0tNV+WuUC7L713FkclAR7FlZHX
-4GTHvFKIBmdlpUbFBkAzBfcjDkczA/hjOyoxYX6zFV6i1AEy1xpkd9y5C+LqwA7l
-rffSqhp1I95S7V1md0UReZmMUVqT4jpgYVLpDWiJ0rf1nBanT0axpF8HNsDYb/zl
-PCEj7PteTdgic8q2g2aXnEDshYMhMavf8hrEFIfO0U6hu+Vmj3ei729kM9wl//DO
-FrakQUlJq1le838wk0VIiwRicfP4ooWht6a9VtlTSDEZbOHTNfrewhsqMw/bS+wu
-8PrNIiwRGgFTmfX220PLDoiQRDf9Cq5tk6NEiOkzE4IPMfWb/FzB6Gvfa/JJneyy
-mq/WYY2ucyLXokmUh2hTOqe9Sxt3hgcZgsVCde4T7KleMPfGD1YLvAbXUwlE6Mg0
-OuVw+3u2HgR1hTSC44TBXQlCxFKFvBJmKiMmFfNI5pJq7tSFvWWQEtXhfe24lgN+
-WsUtpy0GMT6RE1SCNOHVs7PuhcTUvtzAe3pgf6XVLvtRrE4cqHyVVXrFp1PVPydC
-cPA2PLr4hDTwfP0O65uO
-=l3Jv
------END PGP SIGNATURE-----
-
---DN8g+DOX2TxGxleI--
+ Subject: Re: Honestly, f__k systemd and f__k lennart, and f__k the fans of them. Where's linus in all of this?
+ To: "ChaosEsque Team" <chaosesqueteam@yahoo.com>
+ Cc: "Borislav Petkov" <bp@alien8.de>, linux-kernel@vger.kernel.org
+ Date: Monday, February 17, 2014, 7:22 AM
+ 
+ > And maybe make a statement that
+ linux is NOT systemd, there is no
+ > new "linux software stack" that pottering and friends
+ keep insisting on.
+ 
+ The largest Linux user is Android, which I don't think uses
+ systemd. The
+ kernel does not care. You can use emacs as your init for all
+ the kernel
+ cares and handle all your udev messages in emacs lisp.
+ 
+ The kernel does not care. Indeed if the kernel did care
+ about whether
+ someone used systemd, forked Debian or wanted to run emacs
+ lisp as their
+ init then it would mean the architecture was wrong.
+ 
+ It's simply not the kernel's problem what people run as init
+ and if
+ Debian wishes to divide into two distributions (Deb and Ian
+ perhaps...)
+ then this is the wrong list for that debate.
+ 
+ Alan
+ 
