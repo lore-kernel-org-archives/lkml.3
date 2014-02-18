@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329AbaBRPBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:01:04 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:62728 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272AbaBRO5g (ORCPT
+	id S932151AbaBRPBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:01:40 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:54981 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932308AbaBRO5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:57:36 -0500
+	Tue, 18 Feb 2014 09:57:31 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, DCG_UPD_stlinux_kernel@list.st.com,
         dwmw2@infradead.org, linux-mtd@lists.infradead.org,
         computersforpeace@gmail.com, Angus.Clark@st.com
-Subject: [PATCH 26/35] mtd: st_spi_fsm: Write to Flash via the FSM FIFO
-Date: Tue, 18 Feb 2014 14:55:53 +0000
-Message-Id: <1392735362-1245-27-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 24/35] mtd: st_spi_fsm: Prepare default sequences for read/write/erase
+Date: Tue, 18 Feb 2014 14:55:51 +0000
+Message-Id: <1392735362-1245-25-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
 References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
@@ -22,40 +22,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we write data to the FIFO the FSM Controller subsequently writes
-that data out to the Serial Flash chip.
+Most chips require a predefined set of FSM message sequences for read,
+write and erase operations. This patch provides a way to set them up,
+which it will do so if a chip specific initialisation routine isn't
+been provided.
 
 Acked-by Angus Clark <angus.clark@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index e4815fe..ea55548 100644
+index b8570e8..fe538bb 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -668,6 +668,20 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
- 	}
+@@ -845,6 +845,38 @@ static int stfsm_search_prepare_rw_seq(struct stfsm *fsm,
+ 	return 0;
  }
  
-+static int stfsm_write_fifo(struct stfsm *fsm,
-+			    const uint32_t *buf, const uint32_t size)
++/* Prepare a READ/WRITE/ERASE 'default' sequences */
++static int stfsm_prepare_rwe_seqs_default(struct stfsm *fsm)
 +{
-+	uint32_t words = size >> 2;
++	uint32_t flags = fsm->info->flags;
++	int ret;
 +
-+	dev_dbg(fsm->dev, "writing %d bytes to FIFO\n", size);
++	/* Configure 'READ' sequence */
++	ret = stfsm_search_prepare_rw_seq(fsm, &stfsm_seq_read,
++					  default_read_configs);
++	if (ret) {
++		dev_err(fsm->dev,
++			"failed to prep READ sequence with flags [0x%08x]\n",
++			flags);
++		return ret;
++	}
 +
-+	BUG_ON((((uint32_t)buf) & 0x3) || (size & 0x3));
++	/* Configure 'WRITE' sequence */
++	ret = stfsm_search_prepare_rw_seq(fsm, &stfsm_seq_write,
++					  default_write_configs);
++	if (ret) {
++		dev_err(fsm->dev,
++			"failed to prep WRITE sequence with flags [0x%08x]\n",
++			flags);
++		return ret;
++	}
 +
-+	writesl(fsm->base + SPI_FAST_SEQ_DATA_REG, buf, words);
++	/* Configure 'ERASE_SECTOR' sequence */
++	stfsm_prepare_erasesec_seq(fsm, &stfsm_seq_erase_sector);
 +
-+	return size;
++	return 0;
 +}
 +
- static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
+ static int stfsm_n25q_config(struct stfsm *fsm)
  {
- 	struct stfsm_seq *seq = &stfsm_seq_en_32bit_addr;
+ 	uint32_t flags = fsm->info->flags;
+@@ -1150,6 +1182,10 @@ static int stfsm_probe(struct platform_device *pdev)
+ 		ret = info->config(fsm);
+ 		if (ret)
+ 			return ret;
++	} else {
++		ret = stfsm_prepare_rwe_seqs_default(fsm);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, fsm);
 -- 
 1.8.3.2
 
