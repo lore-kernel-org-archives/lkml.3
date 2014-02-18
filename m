@@ -1,158 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaBRTnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:43:17 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45313 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaBRTnP (ORCPT
+	id S1752670AbaBRToY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:44:24 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:56859 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaBRToW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:43:15 -0500
-Date: Tue, 18 Feb 2014 20:43:21 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexey Perevalov <a.perevalov@samsung.com>
-cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        anton@enomsg.org, kyungmin.park@samsung.com, akpm@linux-foundation.org,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v2 0/3] Deferrable timers support for timerfd API
-In-Reply-To: <53021972.4050400@samsung.com>
-Message-ID: <alpine.DEB.2.02.1402181955420.4468@ionos.tec.linutronix.de>
-References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com> <52DEC6A3.9020600@linaro.org> <52E606D8.6000401@samsung.com> <alpine.DEB.2.02.1402041419420.24986@ionos.tec.linutronix.de> <52F1DDA8.90605@samsung.com> <alpine.DEB.2.02.1402051229260.24986@ionos.tec.linutronix.de>
- <52F2B504.5010403@linaro.org> <alpine.DEB.2.02.1402052306580.24986@ionos.tec.linutronix.de> <52F3C8A5.708@samsung.com> <alpine.DEB.2.02.1402062148440.21991@ionos.tec.linutronix.de> <5300D752.5030403@samsung.com> <alpine.DEB.2.02.1402161634590.21991@ionos.tec.linutronix.de>
- <53021972.4050400@samsung.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 18 Feb 2014 14:44:22 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <5301E411.5060908@citrix.com>
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com> <5301E411.5060908@citrix.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 18 Feb 2014 11:43:59 -0800
+X-Google-Sender-Auth: CfQ0a7M_apZAVSil2meB-j0R34M
+Message-ID: <CAB=NE6VxNByeWGk6_Ow7WgxA3HCwGBjrjL9MNVRGsEfFyeKTdw@mail.gmail.com>
+Subject: Re: [Xen-devel] [RFC v2 0/4] net: bridge / ip optimizations for
+ virtual net backends
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014, Alexey Perevalov wrote:
-> On 02/16/2014 07:39 PM, Thomas Gleixner wrote:
+On Mon, Feb 17, 2014 at 2:27 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+> On 15/02/14 02:59, Luis R. Rodriguez wrote:
+>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>
+>> This v2 series changes the approach from my original virtualization
+>> multicast patch series [0] by abandoning completely the multicast
+>> issues and instead generalizing an approach for virtualization
+>> backends. There are two things in common with virtualization
+>> backends:
+>>
+>>   0) they should not become the root bridge
+>>   1) they don't need ipv4 / ipv6 interfaces
+>
+> Why?  There's no real difference between a backend network device and a
+> physical device (from the point of view of the backend domain).  I do
+> not think these are intrinsic properties of backend devices.
 
-> Here is the summary:
-> 
-> now value    |  difference with previous value
-> 2159122612405|
-> 2158816038362|    306574043
-> 2158532090801|    283947561
-> 2158200013165|    332077636
-> 2157928085502|    271927663
-> 2157600425537|    327659965
-> 2157328089996|    272335541
-> 2157000091028|    327998968
-> 2156728086117|    272004911
-> 2156432078659|    296007458
-> 2156101736770|    330341889
-> 2155816087467|    285649303
-> 2155532081987|    284005480
-> 2155228092094|    303989893
-> 2154912090729|    316001365
-> 2154632081099|    280009630
-> 2154328094166|    303986933
-> 2154000086890|    328007276
-> 
-> Timer was charged with 300ms interval. And we see difference in neighborhood
->  of point 300 000 000 - 300ms. The average value as we can see:
-> 301325030.294118
->  - the average delay is 1 ms.
+Let me clarify the original motivation as that can likely help explain
+how I ended up with this patch series.
 
-Math is hard, right?
+SUSE has had reports of xen backend interfaces ending up with
+duplicate address notification filling up logs on systems with a
+series of guests, these reports go back to 2006. This was root caused
+to DAD on IPv6 interfaces, and a work around implemented to disable
+DAD [0] on multicast links. Even though this patch as a work around
+should not be applicable anymore given that since the xen-netback
+upstreaming since 2.6.39 ether_setup is used and that enables the
+multicast flag, we should try ensure the issue doesn't creep up
+anymore. As per the IPv6 RFCs and Linux IPv6 implementation -- DAD
+should be triggered even in the case of manual IP configuration and
+when the link goes up, as such SLAAC will always take place on IPv6
+interfaces. Although not documented upon my review I determined the
+original issue could also be attributed to the corner case documented
+on Appendix A of RFC 4862 [1] and this could be more prevalent for
+xen-netback given we stuck to the same MAC address for all xen-netback
+interfaces. I first tried to generalize the work around and address
+the multicast case requirement for IPv6 [2], and explicitly disabling
+multicast on xen-netback. Although this approach could likely be
+generalized further by taking into account for NBMA links by checking
+dev->type I determined we didn't need IPv6 interfaces at all on the
+xent-netback interfaces. This lead me to further review if we even
+needed IPv4 interfaces as well, and it turns out we do not.
 
-Lets look at the trace data:
+New motivation: removing IPv4 and IPv6 from the backend interfaces can
+save up a lot of boiler plate run time code, triggers from ever taking
+place, and simplifying the backend interaces. If there is no use for
+IPv4 and IPv6 interfaces why do we have them? Note: I have yet to test
+the NAT case.
 
-> hrtimer=0xffffffffa04a9280 now=2154000086890 function=timerfd_tmrproc/0x0
->           <idle>-0     [000]   339.148391: hrtimer_start:
-> hrtimer=0xffffffffa04a9280 function=timerfd_tmrproc expires=2154300000000
-> softexpires=2154300000000
+> I can see these being useful knobs for administrators (or management
+> toolstacks) to turn on, on a per-device basis.
 
-expires=2154300000000
+Agreed but these knobs don't even exist for drivers yet, let alone for
+system administrators. I certainly can shoot for another series to let
+administrators configure this as a preference but -- if we know a
+driver won't need IPv4 and IPv6 interfaces why not just allow drivers
+to disable them all together? Consider the simplification of the
+interfaces on the host.
 
->           <idle>-0     [000]   339.157821: hrtimer_expire_entry:
-> hrtimer=0xffffffffa04a9280 now=2154328094166 function=timerfd_tmrproc/0x0
+[0] https://gitorious.org/opensuse/kernel-source/source/8e16582178a29b03e850468004a47e7be5ed3005:patches.xen/ipv6-no-autoconf
+[1] http://tools.ietf.org/html/rfc4862
+[2] http://marc.info/?l=linux-netdev&m=139207142110536&w=2
 
-now=2154328094166 
-
--> delay = 2154328094166 - 2154300000000 = 28094166 = 28ms
-
-
->           <idle>-0     [000]   339.157837: hrtimer_start:
-> hrtimer=0xffffffffa04a9280 function=timerfd_tmrproc expires=2154600000000
-> softexpires=2154600000000
-
-expires=2154600000000
-
->           <idle>-0     [000]   339.170895: hrtimer_expire_entry:
-> hrtimer=0xffffffffa04a9280 now=2154632081099 function=timerfd_tmrproc/0x0
-
-now=2154632081099
-
--> delay = 2154632081099 - 2154600000000 = 32081099 = 32ms
-
-You cannot sum up the delta between the expiry times when you use an
-timer on an absolute time line. You need to look at the delta between
-the programmed expiry time and the actual expiry time. That tells you
-the deferred time. And running your excerpt through a filter tells me:
-
-Delta:  28.0ms
-Delta:  32.0ms
-Delta:  12.0ms
-Delta:  28.0ms
-Delta:  32.0ms
-Delta:  16.0ms
-Delta:   1.0ms
-Delta:  32.0ms
-Delta:  28.0ms
-Delta:   0.0ms
-Delta:  28.0ms
-Delta:   0.0ms
-Delta:  28.0ms
-Delta:   0.0ms
-Delta:  32.0ms
-Delta:  16.0ms
-Delta:  22.0ms
-
-Avg:    19.0ms
-
-> 4298170712|    300000000
-> 4298170637|    300000000
-> 4298170562|    300000000
-> 4298170483|    316000000
-> 4298170387|    384000000
-> 4298170287|    400000000
-> 4298170212|    300000000
-> 4298170129|    332000000
-> 4298170053|    304000000
-> 4298169978|    300000000
-> 4298169903|    300000000
-> 4298169828|    300000000
-> 
-> Average delay here is 20ms.
-
-Your trace tells a different story:
-
-Delta:   0.0ms
-Delta:   0.0ms
-Delta:   0.0ms
-Delta:   1.0ms
-Delta:   8.0ms
-Delta:   0.0ms
-Delta:  25.0ms
-Delta:  21.0ms
-Delta:   4.0ms
-Delta:   0.0ms
-Delta:   0.0ms
-Delta:   0.0ms
-
-Avg:     4.0ms
-
-> Maybe it's due cpuidle implementation or clock_device on my system. It was
-> MENU cpuidle governor.
-
-I fear it's something else ...
-
-Thanks,
-
-	tglx
+  Luis
