@@ -1,93 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaBRAPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:15:38 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55601 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaBRAPg (ORCPT
+	id S1753736AbaBRARq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:17:46 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:38339 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390AbaBRARp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:15:36 -0500
-Date: Tue, 18 Feb 2014 09:14:20 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Markus Pargmann <mpa@pengutronix.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        stable@vger.kernel.org
-Message-ID: <20140218001420.GF2669@sirena.org.uk>
-References: <1392577256-20475-1-git-send-email-mpa@pengutronix.de>
+	Mon, 17 Feb 2014 19:17:45 -0500
+Date: Mon, 17 Feb 2014 16:17:40 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
+ barriers() for some control dependencies
+Message-ID: <20140218001740.GT4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140217212625.GA4083@linux.vnet.ibm.com>
+ <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140217214606.GC7941@thin>
+ <20140217225816.GN4250@linux.vnet.ibm.com>
+ <20140218000246.GA19929@thin>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0hHDr/TIsw4o3iPK"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392577256-20475-1-git-send-email-mpa@pengutronix.de>
-X-Cookie: Don't read everything you believe.
+In-Reply-To: <20140218000246.GA19929@thin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.99.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core bugfix: Use normal enable for always_on
- regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021800-7164-0000-0000-000006274B3C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 17, 2014 at 04:02:47PM -0800, Josh Triplett wrote:
+> On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
+> > On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
+> > > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
+> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > Current compilers can "speculate" stores in the case where both legs
+> > > > of the "if" statement start with identical stores.  Because the stores
+> > > > are identical, the compiler knows that the store will unconditionally
+> > > > execute regardless of the "if" condition, and so the compiler is within
+> > > > its rights to hoist the store to precede the condition.  Such hoisting
+> > > > destroys the control-dependency ordering.  This ordering can be restored
+> > > > by placing a barrier() at the beginning of each leg of the "if" statement.
+> > > > This commit adds this requirement to the control-dependencies section.
+> > > > 
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > This is starting to become a rather unreasonable level of fighting the
+> > > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
+> > > doesn't seem like a reasonable thing to require users to do.  Is there
+> > > really no other way to cope with this particular bit of "help" from the
+> > > compiler?
+> > 
+> > Well, we could use smp_mb() instead of barrier(), but that was the
+> > sort of thing that Peter Zijlstra was trying to avoid.
+> 
+> Yeah, that's not an improvement.  The goal would be to make the code no
+> more complex than it already needs to be with ACCESS_ONCE; changing
+> "barrier()" to something else doesn't help (quite apart from smp_mb()
+> being suboptimal).
+> 
+> > That said, I do sympathize completely with your position here -- it is
+> > just that it is better to have our compiler-fights documented that
+> > not, right?
+> 
+> Sure, better to document them, but better still to not have them.  Is
+> there some other way we could avoid this one entirely?
 
---0hHDr/TIsw4o3iPK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+We could try change the standard so as to outlaw pulling common code from
+both legs of an "if" statement, but that will be a serious uphill battle.
+Or perhaps do something to warn the developer about the possibility of
+this happening.
 
-On Sun, Feb 16, 2014 at 08:00:56PM +0100, Markus Pargmann wrote:
+Other thoughts?
 
-Please use more standard subject lines, don't do things like "core
-bugfix", just write a normal changelog.
+							Thanx, Paul
 
-> +static int _regulator_do_enable_no_delay(struct regulator_dev *rdev)
-> +{
-> +	int ret;
-> +
-> +	if (rdev->ena_pin) {
-> +		ret = regulator_ena_gpio_ctrl(rdev, true);
-> +		if (ret < 0)
-> +			return ret;
-> +		rdev->ena_gpio_state = 1;
-> +	} else if (rdev->desc->ops->enable) {
-> +		ret = rdev->desc->ops->enable(rdev);
-> +	} else {
-> +		ret = -EINVAL;
-> +	}
-> +
-> +	return ret;
-> +}
+> - Josh Triplett
+> 
+> > > >  Documentation/memory-barriers.txt | 26 +++++++++++++++++++-------
+> > > >  1 file changed, 19 insertions(+), 7 deletions(-)
+> > > > 
+> > > > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> > > > index f2668c19807e..adfaca831a90 100644
+> > > > --- a/Documentation/memory-barriers.txt
+> > > > +++ b/Documentation/memory-barriers.txt
+> > > > @@ -608,26 +608,30 @@ as follows:
+> > > >  	b = p;  /* BUG: Compiler can reorder!!! */
+> > > >  	do_something();
+> > > >  
+> > > > -The solution is again ACCESS_ONCE(), which preserves the ordering between
+> > > > -the load from variable 'a' and the store to variable 'b':
+> > > > +The solution is again ACCESS_ONCE() and barrier(), which preserves the
+> > > > +ordering between the load from variable 'a' and the store to variable 'b':
+> > > >  
+> > > >  	q = ACCESS_ONCE(a);
+> > > >  	if (q) {
+> > > > +		barrier();
+> > > >  		ACCESS_ONCE(b) = p;
+> > > >  		do_something();
+> > > >  	} else {
+> > > > +		barrier();
+> > > >  		ACCESS_ONCE(b) = p;
+> > > >  		do_something_else();
+> > > >  	}
+> > > >  
+> > > > -You could also use barrier() to prevent the compiler from moving
+> > > > -the stores to variable 'b', but barrier() would not prevent the
+> > > > -compiler from proving to itself that a==1 always, so ACCESS_ONCE()
+> > > > -is also needed.
+> > > > +The initial ACCESS_ONCE() is required to prevent the compiler from
+> > > > +proving the value of 'a', and the pair of barrier() invocations are
+> > > > +required to prevent the compiler from pulling the two identical stores
+> > > > +to 'b' out from the legs of the "if" statement.
+> > > >  
+> > > >  It is important to note that control dependencies absolutely require a
+> > > >  a conditional.  For example, the following "optimized" version of
+> > > > -the above example breaks ordering:
+> > > > +the above example breaks ordering, which is why the barrier() invocations
+> > > > +are absolutely required if you have identical stores in both legs of
+> > > > +the "if" statement:
+> > > >  
+> > > >  	q = ACCESS_ONCE(a);
+> > > >  	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
+> > > > @@ -643,9 +647,11 @@ It is of course legal for the prior load to be part of the conditional,
+> > > >  for example, as follows:
+> > > >  
+> > > >  	if (ACCESS_ONCE(a) > 0) {
+> > > > +		barrier();
+> > > >  		ACCESS_ONCE(b) = q / 2;
+> > > >  		do_something();
+> > > >  	} else {
+> > > > +		barrier();
+> > > >  		ACCESS_ONCE(b) = q / 3;
+> > > >  		do_something_else();
+> > > >  	}
+> > > > @@ -659,9 +665,11 @@ the needed conditional.  For example:
+> > > >  
+> > > >  	q = ACCESS_ONCE(a);
+> > > >  	if (q % MAX) {
+> > > > +		barrier();
+> > > >  		ACCESS_ONCE(b) = p;
+> > > >  		do_something();
+> > > >  	} else {
+> > > > +		barrier();
+> > > >  		ACCESS_ONCE(b) = p;
+> > > >  		do_something_else();
+> > > >  	}
+> > > > @@ -723,6 +731,10 @@ In summary:
+> > > >        use smb_rmb(), smp_wmb(), or, in the case of prior stores and
+> > > >        later loads, smp_mb().
+> > > >  
+> > > > +  (*) If both legs of the "if" statement begin with identical stores
+> > > > +      to the same variable, a barrier() statement is required at the
+> > > > +      beginning of each leg of the "if" statement.
+> > > > +
+> > > >    (*) Control dependencies require at least one run-time conditional
+> > > >        between the prior load and the subsequent store, and this
+> > > >        conditional must involve the prior load.  If the compiler
+> > > > -- 
+> > > > 1.8.1.5
+> > > > 
+> > > 
+> > 
+> 
 
-I don't understand this.  Why is this called _no_delay() and why don't
-we want to delay when applying constraints?  We don't want to ever be in
-a position where we think a supply is enabled but it has in fact not
-finished ramping, and of course enable() may in fact be blocking anyway.
-
-The use of the common code to do enable is good fix but this just seems
-odd.
-
---0hHDr/TIsw4o3iPK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTAqXZAAoJELSic+t+oim9QtYP+wTrgVT7sSOSGROT31EeC29u
-4g2C1Zx899SfIoDMks50xWGVn1i3IOhNOAfCh4JKyTwXkcS9kgiTxVIpMoFfPEoj
-IY6hVlP8xyTT6a91+k2HHkFNW/bLNiHf7CH3YQv5yOlglOubRwWTG60fV3GbFoaF
-UfPb0Cg621s+yPVdm6pXW0pU8MEtXVOuZrB+bLRBGQTYnrx0VHmsaGcQqa8ylx/3
-qBqeiqfyvUUHQnmuCKUQuuPQnf3ltZszF6t5WDr5KnYC6hlA5OU2gKZYn7MtlWc6
-fw/TYgIQQPkzs9V1el7SAiLvU1QhpjYAkzZheY2IZIXAEgG54kpQGQJTRrWqhAVY
-cR9M//BEGDsg0kia5+jttHBRH7zGro8gkq15N8NkZth21VF/N1Oer7KAAZyyABps
-qdc0ulsVvCE8ehiyHUjw4/jI4Q/6ybiuqXTnkjR9Cggpqxf7UbFR2kUOVagw1iS5
-PASBWU91u5bRFWYgNqpQ6FbYYvU9R6ITo8cZ7gwSY4P/soRAqlZBNvV6ji0m2Vju
-CKIdWL23H057dLAyYapxAPsz1u3VLtPMTxgIULzVCLNxvC8jzQsTgZsh0uCxd5bx
-n5j8mq6mAAn7PaGqcPPHVEZfC7pXGC7yVYo7IhJ/xpVG35vLHe6aYMqGcJHFyctU
-A90yTooH8XIeuP0RbuRc
-=1HUe
------END PGP SIGNATURE-----
-
---0hHDr/TIsw4o3iPK--
