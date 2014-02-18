@@ -1,94 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaBRB0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 20:26:42 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:41342 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaBRB0k (ORCPT
+	id S1752979AbaBRB2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 20:28:39 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:49036 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751097AbaBRB2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 20:26:40 -0500
-Date: Mon, 17 Feb 2014 17:26:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	Mon, 17 Feb 2014 20:28:37 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjUHAAO2AlN5LJYe/2dsb2JhbABZgwa7B4VUgRUXdIIlAQEEATocIwULCAMYCSUPBSUDIROHfQfKcxcWjhRXB4Q4BJgrilCHVINBKIEt
+Date: Tue, 18 Feb 2014 12:27:53 +1100
+From: Dave Chinner <david@fromorbit.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140218012636.GB4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
- <1392486310.18779.6447.camel@triegel.csb>
- <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
- <1392666947.18779.6838.camel@triegel.csb>
- <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
- <1392672063.18779.6940.camel@triegel.csb>
- <1392675939.18779.7063.camel@triegel.csb>
- <CA+55aFx2jxE8sTZEmNnMg6ktDuU_0xPiEw3=qH0=+xat8p8cAA@mail.gmail.com>
- <1392680518.18779.7213.camel@triegel.csb>
- <CA+55aFzSBZMC6kbdJj5Jus9-q1dzXdCYQXfMm34O+9h8SbGcGQ@mail.gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140218012753.GG13997@dastard>
+References: <20140212004403.GA17129@redhat.com>
+ <20140212010941.GM18016@ZenIV.linux.org.uk>
+ <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+ <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+ <20140212054043.GB13997@dastard>
+ <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+ <20140212071829.GE13997@dastard>
+ <20140214002427.GN13997@dastard>
+ <CA+55aFx=i6dbzCUZ6TwCMqniyS4C=tJx9+72p=EA+dU8Vn=2jQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzSBZMC6kbdJj5Jus9-q1dzXdCYQXfMm34O+9h8SbGcGQ@mail.gmail.com>
+In-Reply-To: <CA+55aFx=i6dbzCUZ6TwCMqniyS4C=tJx9+72p=EA+dU8Vn=2jQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021801-0928-0000-0000-000006C44319
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:18:52PM -0800, Linus Torvalds wrote:
-> On Mon, Feb 17, 2014 at 3:41 PM, Torvald Riegel <triegel@redhat.com> wrote:
+On Sat, Feb 15, 2014 at 03:50:29PM -0800, Linus Torvalds wrote:
+> [ Added linux-mm to the participants list ]
+> 
+> On Thu, Feb 13, 2014 at 4:24 PM, Dave Chinner <david@fromorbit.com> wrote:
 > >
-> > There's an underlying problem here that's independent from the actual
-> > instance that you're worried about here: "no sense" is a ultimately a
-> > matter of taste/objectives/priorities as long as the respective
-> > specification is logically consistent.
+> > Dave, the patch below should chop off the stack usage from
+> > xfs_log_force_lsn() issuing IO by deferring it to the CIL workqueue.
+> > Can you given this a run?
 > 
-> Yes. But I don't think it's "independent".
-> 
-> Exactly *because* some people will read standards without applying
-> "does the resulting code generation actually make sense for the
-> programmer that wrote the code", the standard has to be pretty clear.
-> 
-> The standard often *isn't* pretty clear. It wasn't clear enough when
-> it came to "volatile", and yet that was a *much* simpler concept than
-> atomic accesses and memory ordering.
-> 
-> And most of the time it's not a big deal. But because the C standard
-> generally tries to be very portable, and cover different machines,
-> there tends to be a mindset that anything inherently unportable is
-> "undefined" or "implementation defined", and then the compiler writer
-> is basically given free reign to do anything they want (with
-> "implementation defined" at least requiring that it is reliably the
-> same thing).
-> 
-> And when it comes to memory ordering, *everything* is basically
-> non-portable, because different CPU's very much have different rules.
-> I worry that that means that the standard then takes the stance that
-> "well, compiler re-ordering is no worse than CPU re-ordering, so we
-> let the compiler do anything". And then we have to either add
-> "volatile" to make sure the compiler doesn't do that, or use an overly
-> strict memory model at the compiler level that makes it all pointless.
+> Ok, so DaveJ confirmed that DaveC's patch fixes his issue (damn,
+> people, your parents were some seriously boring people, were they not?
+> We've got too many Dave's around),
 
-For whatever it is worth, this line of reasoning has been one reason why
-I have been objecting strenuously every time someone on the committee
-suggests eliminating "volatile" from the standard.
+It's an exclusive club - we have 'kernel hacker Dave' reunions in
+bars around the world. We should get some tshirts made up....  :)
 
-							Thanx, Paul
-
-> So I really really hope that the standard doesn't give compiler
-> writers free hands to do anything that they can prove is "equivalent"
-> in the virtual C machine model. That's not how you get reliable
-> results.
+> but DaveC earlier pointed out that
+> pretty much any memory allocation path can end up using 3kB of stack
+> even without XFS being involved.
 > 
->                Linus
-> 
+> Which does bring up the question whether we should look (once more) at
+> the VM direct-reclaim path, and try to avoid GFP_FS/IO direct
+> reclaim..
 
+We do that mostly already, but GFP_KERNEL allows swap IO and that's
+where the deepest stack I saw came from.
+
+Even if we don't allow IO at all, we're still going to see stack
+usage of 2-2.5k in direct reclaim. e.g.  invalidate a page and enter
+the rmap code.  The rmap is protected by a mutex, so if we fail to
+get that we have about 1.2k of stack consumed from there and that is
+on top of the the allocator/reclaim that has already consumes ~1k of
+stack...
+
+> Direct reclaim historically used to be an important throttling
+> mechanism, and I used to not be a fan of trying to avoid direct
+> reclaim. But the stack depth issue really looks to be pretty bad, and
+> I think we've gotten better at throttling explicitly, so..
+> 
+> I *think* we already limit filesystem writeback to just kswapd (in
+> shrink_page_list()), but DaveC posted a backtrace that goes through
+> do_try_to_free_pages() to shrink_slab(), and through there to the
+> filesystem and then IO. That looked like a disaster.
+
+Right, that's an XFS problem, and I'm working on fixing it. The
+Patch I sent to DaveJ fixes the worst case, but I need to make it
+completely IO-less while still retaining the throttling the IO gives
+us.
+
+> And that's because (if I read things right) shrink_page_list() limits
+> filesystem page writeback to kswapd, but not swap pages. Which I think
+> probably made more sense back in the days than it does now (I
+> certainly *hope* that swapping is less important today than it was,
+> say, ten years ago)
+> 
+> So I'm wondering whether we should remove that page_is_file_cache()
+> check from shrink_page_list()?
+
+The thing is, the stack usage from the swap IO path is pretty well
+bound - it's just the worst case stack of issuing IO. We know it
+won't recurse into direct reclaim, so mempool allocation and
+blocking is all we need to consider. Compare that to a filesystem
+which may need to allocate extents and hence do transactions and
+split btrees and read metadata and allocate large amounts of memory
+even before it gets to the IO layers.
+
+Hence I suspect that we could do a simple thing like only allow swap
+if there's more than half the stack available in the current reclaim
+context. Because, let's face it, if the submit_bio path is consuming
+more than half the available stack then we're totally screwed from a
+filesystem perspective....
+
+> And then there is that whole shrink_slab() case...
+
+I think with shrinkers we just need to be more careful. The XFS
+behaviour is all my fault, and I should have known better that to
+design code that requires IO in the direct reclaim path. :/
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
