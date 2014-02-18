@@ -1,170 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaBRWb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:31:59 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:46479 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729AbaBRWb4 (ORCPT
+	id S1752893AbaBRWcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:32:11 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:51186 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729AbaBRWcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:31:56 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 4/4] of: Add self test for of_match_node()
-Date: Tue, 18 Feb 2014 22:31:20 +0000
-Message-Id: <1392762680-1498-5-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392762680-1498-1-git-send-email-grant.likely@linaro.org>
-References: <1392762680-1498-1-git-send-email-grant.likely@linaro.org>
+	Tue, 18 Feb 2014 17:32:07 -0500
+Date: Tue, 18 Feb 2014 14:32:02 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Jones <davej@redhat.com>, Akinobu Mita <akinobu.mita@gmail.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] Set bounds on what /proc/self/make-it-fail accepts.
+In-Reply-To: <20140218220606.GA9712@redhat.com>
+Message-ID: <alpine.DEB.2.02.1402181429060.20772@chino.kir.corp.google.com>
+References: <20140218220606.GA9712@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a selftest function for the of_match_node function. of_match_node
-is supposed to handle precedence for the compatible property as well as
-the name and device_type values. This patch adds some test case data and
-a function that makes sure each test node matches against the correct
-entry of an of_device_id table.
+On Tue, 18 Feb 2014, Dave Jones wrote:
 
-This code was written to verify the new of_match_node() implementation
-that is an earlier part of this series.
+> /proc/self/make-it-fail is a boolean, but accepts any number, including
+> negative ones. Change variable to unsigned, and cap upper bound at 1.
+> 
+> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+> 
 
-Currently all but one test passes. There is one scenario where the empty
-"b/name2" node is getting matched against an entry without any
-device_type property at all. It is unknown why this is, but it needs to
-be solved before this patch can be committed. (However, this is testing
-the new of_match_table implementation, which still does far better than
-the old implementation which gets the precedence completely wrong.)
+Hmm, this would break anything that uses anything other than one to enable 
+it, but it looks like Documentation/fault-injection/fault-injection.txt 
+only provides an example for when it does equal one, so it's probably an 
+ok change.  I'm just wondering why non-zero is wrong?  Is this an 
+interface that will be extended to support other modes?
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Kevin Hau <haokexin@gmail.com>
----
- drivers/of/selftest.c                     | 67 +++++++++++++++++++++++++++++++
- drivers/of/testcase-data/testcases.dtsi   |  1 +
- drivers/of/testcase-data/tests-match.dtsi | 19 +++++++++
- 3 files changed, 87 insertions(+)
- create mode 100644 drivers/of/testcase-data/tests-match.dtsi
+Adding Akinobu to the cc.
 
-diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-index e21012bde639..6643d1920985 100644
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -300,6 +300,72 @@ static void __init of_selftest_parse_interrupts_extended(void)
- 	of_node_put(np);
- }
- 
-+static struct of_device_id match_node_table[] = {
-+	{ .data = "A", .name = "name0", }, /* Name alone is lowest priority */
-+	{ .data = "B", .type = "type1", }, /* followed by type alone */
-+
-+	{ .data = "Ca", .name = "name2", .type = "type1", }, /* followed by both together */
-+	{ .data = "Cb", .name = "name2", }, /* Only match when type doesn't match */
-+	{ .data = "Cc", .name = "name2", .type = "type2", },
-+
-+	{ .data = "E", .compatible = "compat3" },
-+	{ .data = "G", .compatible = "compat2", },
-+	{ .data = "H", .compatible = "compat2", .name = "name5", },
-+	{ .data = "I", .compatible = "compat2", .type = "type1", },
-+	{ .data = "J", .compatible = "compat2", .type = "type1", .name = "name8", },
-+	{ .data = "K", .compatible = "compat2", .name = "name9", },
-+	{}
-+};
-+
-+static struct {
-+	const char *path;
-+	const char *data;
-+} match_node_tests[] = {
-+	{ .path = "/testcase-data/match-node/name0", .data = "A", },
-+	{ .path = "/testcase-data/match-node/name1", .data = "B", },
-+	{ .path = "/testcase-data/match-node/a/name2", .data = "Ca", },
-+	{ .path = "/testcase-data/match-node/b/name2", .data = "Cb", },
-+	{ .path = "/testcase-data/match-node/c/name2", .data = "Cc", },
-+	{ .path = "/testcase-data/match-node/name3", .data = "E", },
-+	{ .path = "/testcase-data/match-node/name4", .data = "G", },
-+	{ .path = "/testcase-data/match-node/name5", .data = "H", },
-+	{ .path = "/testcase-data/match-node/name6", .data = "G", },
-+	{ .path = "/testcase-data/match-node/name7", .data = "I", },
-+	{ .path = "/testcase-data/match-node/name8", .data = "J", },
-+	{ .path = "/testcase-data/match-node/name9", .data = "K", },
-+};
-+
-+static void __init of_selftest_match_node(void)
-+{
-+	struct device_node *np;
-+	const struct of_device_id *match;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(match_node_tests); i++) {
-+		np = of_find_node_by_path(match_node_tests[i].path);
-+		if (!np) {
-+			selftest(0, "missing testcase node %s\n",
-+				match_node_tests[i].path);
-+			continue;
-+		}
-+
-+		match = of_match_node(match_node_table, np);
-+		if (!match) {
-+			selftest(0, "%s didn't match anything\n",
-+				match_node_tests[i].path);
-+			continue;
-+		}
-+
-+		if (strcmp(match->data, match_node_tests[i].data) != 0) {
-+			selftest(0, "%s got wrong match. expected %s, got %s\n",
-+				match_node_tests[i].path, match_node_tests[i].data,
-+				(const char *)match->data);
-+			continue;
-+		}
-+		selftest(1, "passed");
-+	}
-+}
-+
- static int __init of_selftest(void)
- {
- 	struct device_node *np;
-@@ -316,6 +382,7 @@ static int __init of_selftest(void)
- 	of_selftest_property_match_string();
- 	of_selftest_parse_interrupts();
- 	of_selftest_parse_interrupts_extended();
-+	of_selftest_match_node();
- 	pr_info("end of selftest - %i passed, %i failed\n",
- 		selftest_results.passed, selftest_results.failed);
- 	return 0;
-diff --git a/drivers/of/testcase-data/testcases.dtsi b/drivers/of/testcase-data/testcases.dtsi
-index 3cc2f55534ac..3a5b75a8e4d7 100644
---- a/drivers/of/testcase-data/testcases.dtsi
-+++ b/drivers/of/testcase-data/testcases.dtsi
-@@ -1,2 +1,3 @@
- #include "tests-phandle.dtsi"
- #include "tests-interrupts.dtsi"
-+#include "tests-match.dtsi"
-diff --git a/drivers/of/testcase-data/tests-match.dtsi b/drivers/of/testcase-data/tests-match.dtsi
-new file mode 100644
-index 000000000000..c9e541129534
---- /dev/null
-+++ b/drivers/of/testcase-data/tests-match.dtsi
-@@ -0,0 +1,19 @@
-+
-+/ {
-+	testcase-data {
-+		match-node {
-+			name0 { };
-+			name1 { device_type = "type1"; };
-+			a { name2 { device_type = "type1"; }; };
-+			b { name2 { }; };
-+			c { name2 { device_type = "type2"; }; };
-+			name3 { compatible = "compat3"; };
-+			name4 { compatible = "compat2", "compat3"; };
-+			name5 { compatible = "compat2", "compat3"; };
-+			name6 { compatible = "compat1", "compat2", "compat3"; };
-+			name7 { compatible = "compat2"; device_type = "type1"; };
-+			name8 { compatible = "compat2"; device_type = "type1"; };
-+			name9 { compatible = "compat2"; };
-+		};
-+	};
-+};
--- 
-1.8.3.2
-
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 51507065263b..b926377c354f 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -1207,7 +1207,7 @@ static ssize_t proc_fault_inject_read(struct file * file, char __user * buf,
+>  	struct task_struct *task = get_proc_task(file_inode(file));
+>  	char buffer[PROC_NUMBUF];
+>  	size_t len;
+> -	int make_it_fail;
+> +	unsigned int make_it_fail;
+>  
+>  	if (!task)
+>  		return -ESRCH;
+> @@ -1224,7 +1224,7 @@ static ssize_t proc_fault_inject_write(struct file * file,
+>  {
+>  	struct task_struct *task;
+>  	char buffer[PROC_NUMBUF], *end;
+> -	int make_it_fail;
+> +	unsigned int make_it_fail;
+>  
+>  	if (!capable(CAP_SYS_RESOURCE))
+>  		return -EPERM;
+> @@ -1236,6 +1236,9 @@ static ssize_t proc_fault_inject_write(struct file * file,
+>  	make_it_fail = simple_strtol(strstrip(buffer), &end, 0);
+>  	if (*end)
+>  		return -EINVAL;
+> +	if (make_it_fail > 1)
+> +		return -EINVAL;
+> +
+>  	task = get_proc_task(file_inode(file));
+>  	if (!task)
+>  		return -ESRCH;
