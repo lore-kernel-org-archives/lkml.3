@@ -1,210 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaBRSah (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:30:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44745 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951AbaBRSag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:30:36 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1392747763-3384-2-git-send-email-trenn@suse.de>
-References: <530265A3.3020302@zytor.com> <1392747763-3384-1-git-send-email-trenn@suse.de> <1392747763-3384-2-git-send-email-trenn@suse.de>
+	id S1751723AbaBRSdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:33:53 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:64653 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaBRSdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 13:33:51 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH 1/4] ACPI: Provide support for ACPI table adding via OS
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 18 Feb 2014 10:27:23 -0800
-To: Thomas Renninger <trenn@suse.de>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, devel@acpica.org,
-        mingo@redhat.com, ck@conrad-kostecki.de, tglx@linutronix.de,
-        rjw@rjwysocki.net
-Message-ID: <7af8855f-8055-467c-89c0-bcab453f3969@email.android.com>
+In-Reply-To: <CAJAp7Oi2sa0VeEOVaSi2B1fsxzcnNRohvRf_r2k44XX9+83tgA@mail.gmail.com>
+References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org>
+	<1392488727-17981-1-git-send-email-jaswinder.singh@linaro.org>
+	<20140218005217.GJ1706@sonymobile.com>
+	<CAJe_ZhdAVK2Yar9kVmbVQLD_JBm9KFzvfv5S0Ba-AXsPEO9HsA@mail.gmail.com>
+	<CAJAp7Oi2sa0VeEOVaSi2B1fsxzcnNRohvRf_r2k44XX9+83tgA@mail.gmail.com>
+Date: Wed, 19 Feb 2014 00:03:50 +0530
+Message-ID: <CABb+yY1oF=U35ZoAf-QOX4FpD9hpbzk2rRixw333m1tU=QFsWg@mail.gmail.com>
+Subject: Re: [PATCHv3 2/6] mailbox: Introduce a new common API
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Bjorn Andersson <bjorn@kryo.se>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Suman Anna <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        Rafael J Wysocki <rafael.j.wysocki@intel.com>,
+        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why can't you add SSDTs? It would be particularly useful.
+On Tue, Feb 18, 2014 at 11:00 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
+> On Mon, Feb 17, 2014 at 11:06 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+>> Hi Courtney,
+>>
+>> On 18 February 2014 06:22, Courtney Cavin <courtney.cavin@sonymobile.com> wrote:
+>>> On Sat, Feb 15, 2014 at 07:25:27PM +0100, Jassi Brar wrote:
+> [...]
+>>>> +struct ipc_client {
+>>>
+>>> I'm not so sure about the naming scheme here.  This header is
+>>> mailbox_client.h, and drivers are expected to go in drivers/mailbox, yet the
+>>> structs and functions have an ipc_ prefix.  Please standardize this,
+>>> preferably to mbox_ or mailbox_.
+>>>
+>> Yeah Loic already pointed that out.
+>> The term 'mailbox' is specific to what ARM calls the IPC links in
+>> their manuals. Perhaps we should rename the directory to drivers/ipc/.
+>>  'Mailbox' is too symbolic. Though I am OK either way.
+>
+> In this world IPC means "Inter-process communication", so I'm afraid it's taken.
+>
+In this very world IPC also stands for "Inter-Processor-Communication" :)
+But OK let's call it mailbox.
 
-On February 18, 2014 10:22:40 AM PST, Thomas Renninger <trenn@suse.de> wrote:
->This is done the same way as the previous ACPI physical table override
->mechanism.
->How to override or add tables via initrd, please look up:
->Documentation/acpi/initrd_table_override.txt
+> [...]
+>>>> +request_token_t ipc_send_message(void *channel, void *mssg);
+>>>
+>>> In the case of the blocking use-case, the function's return type is odd.
+>>> Perhaps, instead of my recommendation above, this could be turned into
+>>> two separate functions: ipc_send_message() and ipc_send_message_async()?
+>>>
+>> In blocking use case, the call will return success (a valid token).
+>> The client sees a valid token and understands that the request was
+>> accepted. And because the client asked it to be a blocking call, it
+>> also understands the TX is successfully completed.  What's odd here?
+>>
 >
->SSDTs can only be overridden, not added.
+> I've tried to figure out why you return your magic type here, from
+> what I can see it's just indicating to the consumer if the tx
+> succeeded (and maybe was put on the fifo?). When constructing this
+> number you have a comment that says "aid for debugging", which
+> indicates that it really doesn't hold any value...
 >
->Overriding only happens if the OEM id of the table header matches the
->one
->with the BIOS provided one.
->All table types (SSDTs are an exception), must only show up once.
->So either you:
->- Add a fresh new table for adding of which type (signature) none
->exists
->     in the BIOS  -> OS ACPI table adding happens.
->or
->- Add a table which already exists in BIOS, but the OEM id must match
->the
->one of the table of the same type (signature) that exists in BIOS
->already
->     -> OS ACPI table overriding happens
->     Typically one copies away the original ACPI table, disassembles,
->  modifies (for example adding debug strings), compiles it and provides
->     the table via initrd for overriding (will have the same OEM id).
->     But this is not necessary, one could also come up with a selfmade
->  table for overriding, by taking care that the signature and OEM id is
->     the same as the one provided by BIOS
+> There is already a convention for this in the kernel, return
+> descriptive negative numbers on failures; 0 on success.
 >
->In ACPI table overriding case you see in dmesg:
->   ACPI: Override [DSDT-  BXDSDT], this is unsafe: tainting kernel
->   Disabling lock debugging due to kernel taint
->
->In ACPI table adding case you see in dmesg (BGRT table got added):
->   ACPI: Add [BGRT-SLIC-WKS], this is unsafe: tainting kernel
->   ACPI: BGRT 000000007fffd1ba 000038 (v00 HPQOEM SLIC-WKS 01072009
->         INTL 20130823)
->
->Signed-off-by: Thomas Renninger <trenn@suse.de>
->CC: hpa@zytor.com
->CC: tglx@linutronix.de
->CC: ck@conrad-kostecki.de
->CC: linux-kernel@vger.kernel.org
->CC: x86@kernel.org
->CC: mingo@redhat.com
->CC: rjw@rjwysocki.net
->CC: devel@acpica.org
->---
->drivers/acpi/osl.c |   89
->+++++++++++++++++++++++++++++++++++++++++++++++++++-
-> 1 files changed, 88 insertions(+), 1 deletions(-)
->
->diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
->index fc1aa79..07439b4 100644
->--- a/drivers/acpi/osl.c
->+++ b/drivers/acpi/osl.c
->@@ -566,6 +566,8 @@ static const char * const table_sigs[] = {
-> 
-> #define ACPI_OVERRIDE_TABLES 64
->static struct cpio_data __initdata
->acpi_initrd_files[ACPI_OVERRIDE_TABLES];
->+/* Remember physical address of overriden or added tables */
->+static acpi_physical_address
->acpi_table_overridden[ACPI_OVERRIDE_TABLES];
-> 
-> #define MAP_CHUNK_SIZE   (NR_FIX_BTMAPS << PAGE_SHIFT)
-> 
->@@ -715,7 +717,7 @@ acpi_os_physical_table_override(struct
->acpi_table_header *existing_table,
-> 	*address = 0;
-> 	return AE_OK;
-> #else
->-	int table_offset = 0;
->+	int no, table_offset = 0;
-> 	struct acpi_table_header *table;
-> 
-> 	*table_length = 0;
->@@ -759,6 +761,12 @@ acpi_os_physical_table_override(struct
->acpi_table_header *existing_table,
-> 		*table_length = table->length;
-> 		acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
-> 		*address = acpi_tables_addr + table_offset;
->+		for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
->+			if (acpi_table_overridden[no] == 0) {
->+				acpi_table_overridden[no] = *address;
->+				break;
->+			}
->+		}
-> 		break;
-> 	} while (table_offset + ACPI_HEADER_SIZE < all_tables_size);
-> 
->@@ -768,6 +776,85 @@ acpi_os_physical_table_override(struct
->acpi_table_header *existing_table,
-> #endif
-> }
-> 
->+acpi_status
->+acpi_os_physical_table_add(acpi_physical_address *address,
->+			   u32 *table_length)
->+{
->+#ifndef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
->+	*table_length = 0;
->+	*address = 0;
->+	return AE_OK;
->+#else
->+	int no, table_offset = 0;
->+	struct acpi_table_header *table;
->+
->+	*table_length = 0;
->+	*address = 0;
->+
->+	if (!acpi_tables_addr)
->+		return AE_OK;
->+
->+	do {
->+		if (table_offset + ACPI_HEADER_SIZE > all_tables_size) {
->+			WARN_ON(1);
->+			return AE_OK;
->+		}
->+
->+		table = acpi_os_map_memory(acpi_tables_addr + table_offset,
->+					   ACPI_HEADER_SIZE);
->+
->+		if (table_offset + table->length > all_tables_size) {
->+			acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
->+			WARN_ON(1);
->+			return AE_OK;
->+		}
->+
->+		table_offset += table->length;
->+
->+		/* Do not add SSDTs for now, they might be intended to get
->+		   overridden when an SSDT gets loaded dynamically in ACPI
->+		   context at any time later */
->+		if (!memcmp("SSDT", table->signature, 4)) {
->+			acpi_os_unmap_memory(table,
->+				     ACPI_HEADER_SIZE);
->+			continue;
->+		}
->+
->+		/* Only add tables that have not been overridden already */
->+		for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
->+			if (acpi_table_overridden[no] == 0)
->+				break;
->+			if (acpi_table_overridden[no] ==
->+			    acpi_tables_addr + table_offset - table->length)
->+				break;
->+		}
->+		/* All tables have been added or overridden */
->+		if (acpi_table_overridden[no] != 0) {
->+			acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
->+			continue;
->+		}
->+		/* Max table override/add limit reached */
->+		if (no == ACPI_OVERRIDE_TABLES) {
->+			acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
->+			return AE_ERROR;
->+		}
->+
->+		table_offset -= table->length;
->+		*table_length = table->length;
->+		*address = acpi_tables_addr + table_offset;
->+		/* do not add this table again */
->+		acpi_table_overridden[no] = *address;
->+		pr_warn(PREFIX
->+			"Add [%4.4s-%8.8s], this is unsafe: tainting kernel\n",
->+			table->signature, table->oem_table_id);
->+		add_taint(TAINT_OVERRIDDEN_ACPI_TABLE, LOCKDEP_NOW_UNRELIABLE);
->+		acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
->+		return AE_OK;
->+	} while (table_offset + ACPI_HEADER_SIZE < all_tables_size);
->+	return AE_OK;
->+#endif
->+}
->+
-> static irqreturn_t acpi_irq(int irq, void *dev_id)
-> {
-> 	u32 handled;
+Courtney isn't talking about '0 as error code' here... which I said I
+am ok making that a negative value.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+>
+> How do you plan to support probe deferral here?
+>
+What exactly do you mean? Aren't the drivers' probe supposed to do that?
+
+> What is the plan to support references in Device Tree?
+>
+As I said right now channel assignment via DT isn't there. Nothing against that.
+
+>>> Although I will admit that I didn't go looking at random code on the
+>>> internet before submitting my series, I did take a look at the previous
+>>> iterations of this submitted for upstream.
+>>>
+>> But you objections (except cosmetic ones) sound like you are not aware
+>> of all use-cases that have been taken care of.
+>
+> Your argument in the discussion of Courtneys proposal was "I have code
+> that depends on my code, let me show it to you first".
+>
+> So please enlighten us on what use cases it is that you do support;
+> that are actually seen in real life.
+>
+Please read my last reply... I have mentioned many use-cases. All
+those are supported and more. Courtney's asking and my giving
+use-cases suggests Courtney wasn't even aware such cases existed.
+Again, please read up the old threads.
+
+  I, Suman Anna and Loic went through a lot of exchanges to cover
+'all' variations in each step of inter-processor-communication. For
+example some controllers have TX-Done irq, some have RX-Done irq, some
+have both and some neither. Some clients want blocking and some async
+xfer. Shared channel vs exclusive ownership support etc. No wonder the
+last two platforms to join us found the api just worked for them.
+  Please point me to your mailbox controller's manual, and I am sure I
+can cook some code for you atleast as good as for your api. And I
+haven't yet even got into reviewing Courtney's implementation. It is
+sad it has come to yours-versus-mine ... Courtney should have picked
+up our original implementation, which has the juice of long
+discussions, and maybe 'fixed' it to taste and submitted.
+
+-Jassi
