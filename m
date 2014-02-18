@@ -1,383 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaBRVSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:18:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35645 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848AbaBRVJH (ORCPT
+	id S1752478AbaBRVTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:19:40 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:51014 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaBRVTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:09:07 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/32] perf tests x86: Add dwarf unwind test
-Date: Tue, 18 Feb 2014 18:08:29 -0300
-Message-Id: <1392757731-32619-11-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
-References: <1392757731-32619-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 18 Feb 2014 16:19:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392668638.21106.5.camel@dcbw.local>
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
+ <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com> <1392668638.21106.5.camel@dcbw.local>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 18 Feb 2014 13:19:15 -0800
+X-Google-Sender-Auth: yXXs7OngIMoZKTo-gE-dCn-y_2c
+Message-ID: <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
+Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
+To: Dan Williams <dcbw@redhat.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+On Mon, Feb 17, 2014 at 12:23 PM, Dan Williams <dcbw@redhat.com> wrote:
+> On Fri, 2014-02-14 at 18:59 -0800, Luis R. Rodriguez wrote:
+>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>
+>> Some interfaces do not need to have any IPv4 or IPv6
+>> addresses, so enable an option to specify this. One
+>> example where this is observed are virtualization
+>> backend interfaces which just use the net_device
+>> constructs to help with their respective frontends.
+>>
+>> This should optimize boot time and complexity on
+>> virtualization environments for each backend interface
+>> while also avoiding triggering SLAAC and DAD, which is
+>> simply pointless for these type of interfaces.
+>
+> Would it not be better/cleaner to use disable_ipv6 and then add a
+> disable_ipv4 sysctl, then use those with that interface?
 
-Adding dwarf unwind test, that setups live machine data over the perf
-test thread and does the remote unwind.
+Sure, but note that the both disable_ipv6 and accept_dada sysctl
+parameters are global. ipv4 and ipv6 interfaces are created upon
+NETDEVICE_REGISTER, which will get triggered when a driver calls
+register_netdev(). The goal of this patch was to enable an early
+optimization for drivers that have no need ever for ipv4 or ipv6
+interfaces.
 
-At this moment this test fails due to bug in the max_stack processing in
-unwind__get_entries function.  This is fixed in following patch.
+Zoltan has noted though some use cases of IPv4 or IPv6 addresses on
+backends though, as such this is no longer applicable as a
+requirement. The ipv4 sysctl however still seems like a reasonable
+approach to enable optimizations of the network in topologies where
+its known we won't need them but -- we'd need to consider a much more
+granular solution, not just global as it is now for disable_ipv6, and
+we'd also have to figure out a clean way to do this to not incur the
+cost of early address interface addition upon register_netdev().
 
-Need to use -fno-optimize-sibling-calls for test compilation, otherwise
-'krava_*' function calls are optimized into jumps and ommited from the
-stack unwind.
+Given that we have a use case for ipv4 and ipv6 addresses on
+xen-netback we no longer have an immediate use case for such early
+optimization primitives though, so I'll drop this.
 
-So far it's enabled only for x86.
+> The IFF_SKIP_IP seems to duplicate at least part of what disable_ipv6 is
+> already doing.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1389098853-14466-6-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile.perf                 |   8 ++
- tools/perf/arch/x86/Makefile             |   1 +
- tools/perf/arch/x86/include/perf_regs.h  |   4 +
- tools/perf/arch/x86/tests/dwarf-unwind.c |  58 +++++++++++++
- tools/perf/tests/builtin-test.c          |   8 ++
- tools/perf/tests/dwarf-unwind.c          | 144 +++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h                 |   9 ++
- 7 files changed, 232 insertions(+)
- create mode 100644 tools/perf/arch/x86/tests/dwarf-unwind.c
- create mode 100644 tools/perf/tests/dwarf-unwind.c
+disable_ipv6 is global, the goal was to make this granular and skip
+the cost upon early boot, but its been clarified we don't need this.
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 7257e7e9e38a..10fcf331e0e3 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -408,6 +408,11 @@ endif
- LIB_OBJS += $(OUTPUT)tests/code-reading.o
- LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
- LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
-+ifndef NO_LIBUNWIND
-+ifeq ($(ARCH),x86)
-+LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
-+endif
-+endif
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-@@ -655,6 +660,9 @@ $(OUTPUT)tests/python-use.o: tests/python-use.c $(OUTPUT)PERF-CFLAGS
- 		-DPYTHON='"$(PYTHON_WORD)"' \
- 		$<
- 
-+$(OUTPUT)tests/dwarf-unwind.o: tests/dwarf-unwind.c
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -fno-optimize-sibling-calls $<
-+
- $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
- 
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index 1cbef7338f84..948ea6cfd681 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -5,6 +5,7 @@ endif
- ifndef NO_LIBUNWIND
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
- endif
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
-diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
-index f3435d62aec1..fc819ca34a7e 100644
---- a/tools/perf/arch/x86/include/perf_regs.h
-+++ b/tools/perf/arch/x86/include/perf_regs.h
-@@ -9,12 +9,16 @@ void perf_regs_load(u64 *regs);
- 
- #ifndef HAVE_ARCH_X86_64_SUPPORT
- #define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
-+#define PERF_REGS_MAX PERF_REG_X86_32_MAX
-+#define PERF_SAMPLE_REGS_ABI PERF_SAMPLE_REGS_ABI_32
- #else
- #define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
- 		       (1ULL << PERF_REG_X86_ES) | \
- 		       (1ULL << PERF_REG_X86_FS) | \
- 		       (1ULL << PERF_REG_X86_GS))
- #define PERF_REGS_MASK (((1ULL << PERF_REG_X86_64_MAX) - 1) & ~REG_NOSUPPORT)
-+#define PERF_REGS_MAX PERF_REG_X86_64_MAX
-+#define PERF_SAMPLE_REGS_ABI PERF_SAMPLE_REGS_ABI_64
- #endif
- #define PERF_REG_IP PERF_REG_X86_IP
- #define PERF_REG_SP PERF_REG_X86_SP
-diff --git a/tools/perf/arch/x86/tests/dwarf-unwind.c b/tools/perf/arch/x86/tests/dwarf-unwind.c
-new file mode 100644
-index 000000000000..371f8493dcfd
---- /dev/null
-+++ b/tools/perf/arch/x86/tests/dwarf-unwind.c
-@@ -0,0 +1,58 @@
-+#include <string.h>
-+#include "perf_regs.h"
-+#include "thread.h"
-+#include "map.h"
-+#include "event.h"
-+#include "tests/tests.h"
-+
-+#define STACK_SIZE 8192
-+
-+static int sample_ustack(struct perf_sample *sample,
-+			 struct thread *thread, u64 *regs)
-+{
-+	struct stack_dump *stack = &sample->user_stack;
-+	struct map *map;
-+	unsigned long sp;
-+	u64 stack_size, *buf;
-+
-+	buf = malloc(STACK_SIZE);
-+	if (!buf) {
-+		pr_debug("failed to allocate sample uregs data\n");
-+		return -1;
-+	}
-+
-+	sp = (unsigned long) regs[PERF_REG_X86_SP];
-+
-+	map = map_groups__find(&thread->mg, MAP__FUNCTION, (u64) sp);
-+	if (!map) {
-+		pr_debug("failed to get stack map\n");
-+		return -1;
-+	}
-+
-+	stack_size = map->end - sp;
-+	stack_size = stack_size > STACK_SIZE ? STACK_SIZE : stack_size;
-+
-+	memcpy(buf, (void *) sp, stack_size);
-+	stack->data = (char *) buf;
-+	stack->size = stack_size;
-+	return 0;
-+}
-+
-+int test__arch_unwind_sample(struct perf_sample *sample,
-+			     struct thread *thread)
-+{
-+	struct regs_dump *regs = &sample->user_regs;
-+	u64 *buf;
-+
-+	buf = malloc(sizeof(u64) * PERF_REGS_MAX);
-+	if (!buf) {
-+		pr_debug("failed to allocate sample uregs data\n");
-+		return -1;
-+	}
-+
-+	perf_regs_load(buf);
-+	regs->abi  = PERF_SAMPLE_REGS_ABI;
-+	regs->regs = buf;
-+
-+	return sample_ustack(sample, thread, buf);
-+}
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 1e67437fb4ca..f5a6ffba8a47 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -115,6 +115,14 @@ static struct test {
- 		.desc = "Test parsing with no sample_id_all bit set",
- 		.func = test__parse_no_sample_id_all,
- 	},
-+#if defined(__x86_64__) || defined(__i386__)
-+#ifdef HAVE_LIBUNWIND_SUPPORT
-+	{
-+		.desc = "Test dwarf unwind",
-+		.func = test__dwarf_unwind,
-+	},
-+#endif
-+#endif
- 	{
- 		.func = NULL,
- 	},
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-new file mode 100644
-index 000000000000..a203c0caaf8a
---- /dev/null
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -0,0 +1,144 @@
-+#include <linux/compiler.h>
-+#include <sys/types.h>
-+#include <unistd.h>
-+#include "tests.h"
-+#include "debug.h"
-+#include "machine.h"
-+#include "event.h"
-+#include "unwind.h"
-+#include "perf_regs.h"
-+#include "map.h"
-+#include "thread.h"
-+
-+static int mmap_handler(struct perf_tool *tool __maybe_unused,
-+			union perf_event *event,
-+			struct perf_sample *sample __maybe_unused,
-+			struct machine *machine)
-+{
-+	return machine__process_mmap_event(machine, event, NULL);
-+}
-+
-+static int init_live_machine(struct machine *machine)
-+{
-+	union perf_event event;
-+	pid_t pid = getpid();
-+
-+	return perf_event__synthesize_mmap_events(NULL, &event, pid, pid,
-+						  mmap_handler, machine, true);
-+}
-+
-+#define MAX_STACK 6
-+
-+static int unwind_entry(struct unwind_entry *entry, void *arg)
-+{
-+	unsigned long *cnt = (unsigned long *) arg;
-+	char *symbol = entry->sym ? entry->sym->name : NULL;
-+	static const char *funcs[MAX_STACK] = {
-+		"test__arch_unwind_sample",
-+		"unwind_thread",
-+		"krava_3",
-+		"krava_2",
-+		"krava_1",
-+		"test__dwarf_unwind"
-+	};
-+
-+	if (*cnt >= MAX_STACK) {
-+		pr_debug("failed: crossed the max stack value %d\n", MAX_STACK);
-+		return -1;
-+	}
-+
-+	if (!symbol) {
-+		pr_debug("failed: got unresolved address 0x%" PRIx64 "\n",
-+			 entry->ip);
-+		return -1;
-+	}
-+
-+	pr_debug("got: %s 0x%" PRIx64 "\n", symbol, entry->ip);
-+	return strcmp((const char *) symbol, funcs[(*cnt)++]);
-+}
-+
-+__attribute__ ((noinline))
-+static int unwind_thread(struct thread *thread, struct machine *machine)
-+{
-+	struct perf_sample sample;
-+	unsigned long cnt = 0;
-+	int err = -1;
-+
-+	memset(&sample, 0, sizeof(sample));
-+
-+	if (test__arch_unwind_sample(&sample, thread)) {
-+		pr_debug("failed to get unwind sample\n");
-+		goto out;
-+	}
-+
-+	err = unwind__get_entries(unwind_entry, &cnt, machine, thread,
-+				  PERF_REGS_MASK, &sample, MAX_STACK);
-+	if (err)
-+		pr_debug("unwind failed\n");
-+	else if (cnt != MAX_STACK) {
-+		pr_debug("got wrong number of stack entries %lu != %d\n",
-+			 cnt, MAX_STACK);
-+		err = -1;
-+	}
-+
-+ out:
-+	free(sample.user_stack.data);
-+	free(sample.user_regs.regs);
-+	return err;
-+}
-+
-+__attribute__ ((noinline))
-+static int krava_3(struct thread *thread, struct machine *machine)
-+{
-+	return unwind_thread(thread, machine);
-+}
-+
-+__attribute__ ((noinline))
-+static int krava_2(struct thread *thread, struct machine *machine)
-+{
-+	return krava_3(thread, machine);
-+}
-+
-+__attribute__ ((noinline))
-+static int krava_1(struct thread *thread, struct machine *machine)
-+{
-+	return krava_2(thread, machine);
-+}
-+
-+int test__dwarf_unwind(void)
-+{
-+	struct machines machines;
-+	struct machine *machine;
-+	struct thread *thread;
-+	int err = -1;
-+
-+	machines__init(&machines);
-+
-+	machine = machines__find(&machines, HOST_KERNEL_ID);
-+	if (!machine) {
-+		pr_err("Could not get machine\n");
-+		return -1;
-+	}
-+
-+	if (init_live_machine(machine)) {
-+		pr_err("Could not init machine\n");
-+		goto out;
-+	}
-+
-+	if (verbose > 1)
-+		machine__fprintf(machine, stderr);
-+
-+	thread = machine__find_thread(machine, getpid());
-+	if (!thread) {
-+		pr_err("Could not get thread\n");
-+		goto out;
-+	}
-+
-+	err = krava_1(thread, machine);
-+
-+ out:
-+	machine__delete_threads(machine);
-+	machine__exit(machine);
-+	machines__exit(&machines);
-+	return err;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index e0ac713857ba..8979309876a7 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -40,5 +40,14 @@ int test__code_reading(void);
- int test__sample_parsing(void);
- int test__keep_tracking(void);
- int test__parse_no_sample_id_all(void);
-+int test__dwarf_unwind(void);
- 
-+#if defined(__x86_64__) || defined(__i386__)
-+#ifdef HAVE_LIBUNWIND_SUPPORT
-+struct thread;
-+struct perf_sample;
-+int test__arch_unwind_sample(struct perf_sample *sample,
-+			     struct thread *thread);
-+#endif
-+#endif
- #endif /* TESTS_H */
--- 
-1.8.1.4
-
+   Luis
