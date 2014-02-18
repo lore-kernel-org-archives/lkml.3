@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaBRASz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:18:55 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:48450 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317AbaBRASx (ORCPT
+	id S1753841AbaBRAWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:22:55 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59348 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893AbaBRAWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:18:53 -0500
+	Mon, 17 Feb 2014 19:22:53 -0500
+Date: Mon, 17 Feb 2014 16:22:48 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, linux@horizon.com
+Subject: Re: [PATCH tip/core/rcu 15/55] rcutorture: Abstract
+ rcu_torture_random()
+Message-ID: <20140218002248.GU4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140217221231.GA8419@linux.vnet.ibm.com>
+ <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392675179-11560-15-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140218001137.GC19929@thin>
 MIME-Version: 1.0
-In-Reply-To: <1392680518.18779.7213.camel@triegel.csb>
-References: <20140207180216.GP4250@linux.vnet.ibm.com>
-	<1391992071.18779.99.camel@triegel.csb>
-	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	<1392183564.18779.2187.camel@triegel.csb>
-	<20140212180739.GB4250@linux.vnet.ibm.com>
-	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-	<20140213002355.GI4250@linux.vnet.ibm.com>
-	<1392321837.18779.3249.camel@triegel.csb>
-	<20140214020144.GO4250@linux.vnet.ibm.com>
-	<1392352981.18779.3800.camel@triegel.csb>
-	<20140214172920.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	<1392486310.18779.6447.camel@triegel.csb>
-	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	<1392666947.18779.6838.camel@triegel.csb>
-	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	<1392672063.18779.6940.camel@triegel.csb>
-	<1392675939.18779.7063.camel@triegel.csb>
-	<CA+55aFx2jxE8sTZEmNnMg6ktDuU_0xPiEw3=qH0=+xat8p8cAA@mail.gmail.com>
-	<1392680518.18779.7213.camel@triegel.csb>
-Date: Mon, 17 Feb 2014 16:18:52 -0800
-X-Google-Sender-Auth: CW5G2P9AC1YDhm5KHw5_U9sU69g
-Message-ID: <CA+55aFzSBZMC6kbdJj5Jus9-q1dzXdCYQXfMm34O+9h8SbGcGQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218001137.GC19929@thin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021800-9332-0000-0000-000003234105
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 3:41 PM, Torvald Riegel <triegel@redhat.com> wrote:
->
-> There's an underlying problem here that's independent from the actual
-> instance that you're worried about here: "no sense" is a ultimately a
-> matter of taste/objectives/priorities as long as the respective
-> specification is logically consistent.
+On Mon, Feb 17, 2014 at 04:11:37PM -0800, Josh Triplett wrote:
+> On Mon, Feb 17, 2014 at 02:12:19PM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > Because rcu_torture_random() will be used by the locking equivalent to
+> > rcutorture, pull it out into its own module.
+> > 
+> > Suggested-by: Rusty Russell <rusty@rustcorp.com.au>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> I'd suggest making CONFIG_TORTURE_TEST a completely invisible option,
+> with no description; it should only be brought in via "select".
+> 
+> Also, it doesn't need most of the headers it currently includes.
+> 
+> Have you considered moving it into the existing random generation
+> infrastructure, as something like "fast_insecure_nonblocking_random"?
+> That seems more generally useful.
 
-Yes. But I don't think it's "independent".
+George Spelvin was also advising me on random-number generation in
+rcutorture, so I added him on CC.  In any case, I would not be adverse
+to using some other random-number service, as long as it is fast enough.
+(George suggested some optimizations that I have not yet tried out.)
 
-Exactly *because* some people will read standards without applying
-"does the resulting code generation actually make sense for the
-programmer that wrote the code", the standard has to be pretty clear.
+							Thanx, Paul
 
-The standard often *isn't* pretty clear. It wasn't clear enough when
-it came to "volatile", and yet that was a *much* simpler concept than
-atomic accesses and memory ordering.
-
-And most of the time it's not a big deal. But because the C standard
-generally tries to be very portable, and cover different machines,
-there tends to be a mindset that anything inherently unportable is
-"undefined" or "implementation defined", and then the compiler writer
-is basically given free reign to do anything they want (with
-"implementation defined" at least requiring that it is reliably the
-same thing).
-
-And when it comes to memory ordering, *everything* is basically
-non-portable, because different CPU's very much have different rules.
-I worry that that means that the standard then takes the stance that
-"well, compiler re-ordering is no worse than CPU re-ordering, so we
-let the compiler do anything". And then we have to either add
-"volatile" to make sure the compiler doesn't do that, or use an overly
-strict memory model at the compiler level that makes it all pointless.
-
-So I really really hope that the standard doesn't give compiler
-writers free hands to do anything that they can prove is "equivalent"
-in the virtual C machine model. That's not how you get reliable
-results.
-
-               Linus
