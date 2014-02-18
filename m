@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280AbaBRR1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:27:10 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:56589 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaBRR1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:27:08 -0500
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="15127804"
-Message-ID: <530397D2.3030207@broadcom.com>
-Date: Tue, 18 Feb 2014 18:26:42 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Denys Vlasenko <dvlasenk@redhat.com>
-CC: Franky Lin <frankyl@broadcom.com>, Hante Meuleman <meuleman@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH] drivers/net/wireless/brcm80211/brcmfmac/sdio_chip.c:
- deinline brcmf_sdio_chip_cr4_enterdl, save 440 bytes
-References: <1392732320-18973-1-git-send-email-dvlasenk@redhat.com> <1392732925.22752.26.camel@joe-AO722> <53039767.1060907@broadcom.com>
-In-Reply-To: <53039767.1060907@broadcom.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754499AbaBRR2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:28:25 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:52849 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751855AbaBRR2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 12:28:22 -0500
+Message-ID: <1392744420.17130.24.camel@iivanov-dev>
+Subject: Re: [PATCH v2 1/3] usb: chipidea: msm: Add device tree binding
+ information
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Date: Tue, 18 Feb 2014 19:27:00 +0200
+In-Reply-To: <20140218161303.GD31116@joshc.qualcomm.com>
+References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
+	 <1392729681-21022-2-git-send-email-iivanov@mm-sol.com>
+	 <20140218161303.GD31116@joshc.qualcomm.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 06:24 PM, Arend van Spriel wrote:
-> On 02/18/2014 03:15 PM, Joe Perches wrote:
->> On Tue, 2014-02-18 at 15:05 +0100, Denys Vlasenko wrote:
->>> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
->>
->> Hi Denys
->>
->> Perhaps these patch subjects would be better without
->> the file path, but shortened to something like:
->>
->> brcmfmac: sdio_chip: deinline function to reduce object size
-> 
-> Indeed, only the driver name prefix is nice to have so
-> 
-> brcmfmac: deinline <func_name> to reduce object size
-> 
-> Given that you are updating sdio_chip.c makes me conclude that you did
-> not make these changes in the wireless-next repository. Can you please
-> resubmit them for wireless-next/master.
 
-O, and the patch should be sent to John Linville as he is the wireless
-maintainer.
+Hi, 
 
-> Regards,
-> Arend
+On Tue, 2014-02-18 at 10:13 -0600, Josh Cartwright wrote: 
+> On Tue, Feb 18, 2014 at 03:21:19PM +0200, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > Document device tree binding information as required by
+> > the Qualcomm USB controller.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > ---
+> >  .../devicetree/bindings/usb/msm-hsusb.txt          |   17 +++++++++++++++++
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Is this really the appropriate place to document this?  It seems like
+> this binding doc should be merged with the i.MX ci13xxx binding in a
+> common ci13xxx doc.
 > 
+
+This driver is a "glue" layer driver which control Qualcomm 
+specific logic around Chipidea IP core. It is supposed to 
+hold "non standard" Chipidea properties, but I suppose that
+ci-hdrc-qcom.txt will be better name and will be similar to 
+i.MX chosen name.
+
+
+What do you think?
+
+Regards,
+Ivan
 
