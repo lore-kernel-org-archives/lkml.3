@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365AbaBRQwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:52:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:18806 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756218AbaBRQwe convert rfc822-to-8bit (ORCPT
+	id S1756499AbaBRQwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:52:43 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48879 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756385AbaBRQwj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:52:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="477132716"
-From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: infinipath <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
-        "Hefty, Sean" <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: RE: [PATCH 2/2] qib: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Thread-Topic: [PATCH 2/2] qib: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Thread-Index: AQHPLLswkRHifewfXkqpJRVXCq5IU5q7Ob8Q
-Date: Tue, 18 Feb 2014 16:52:14 +0000
-Message-ID: <32E1700B9017364D9B60AED9960492BC211F5860@FMSMSX107.amr.corp.intel.com>
-References: <cover.1392733151.git.agordeev@redhat.com>
- <f0eabd77b96e0d679ce6c2e2e544c73063c508ee.1392733151.git.agordeev@redhat.com>
-In-Reply-To: <f0eabd77b96e0d679ce6c2e2e544c73063c508ee.1392733151.git.agordeev@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 18 Feb 2014 11:52:39 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] gpio: msm: switch Kconfig to ARCH_QCOM depends
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1392150132-21877-1-git-send-email-galak@codeaurora.org>
+Date: Tue, 18 Feb 2014 10:40:39 -0600
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Message-Id: <E7F3569D-CA91-4419-A7C2-B62E2830995E@codeaurora.org>
+References: <1392150132-21877-1-git-send-email-galak@codeaurora.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH 2/2] qib: Use pci_enable_msix_range() instead of
-> pci_enable_msix()
-> 
-We are testing this now.
 
-I suggest a subject/summary adding the IB/:
-IB/qib: Use pci_enable_msix_range() instead of pci_enable_msix()
+On Feb 11, 2014, at 2:22 PM, Kumar Gala <galak@codeaurora.org> wrote:
+
+> We've split Qualcomm MSM support into legacy and multiplatform.  The gpio
+> msm-v2 driver is only relevant on the multiplatform supported SoCs so
+> switch the Kconfig depends to ARCH_QCOM.
+> 
+> CC: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
+> Linus,
+> 
+> If you can ack this I'll send it via linux-qcom/arm-soc tree's
+> 
+> thanks
+> 
+> - k
+
+ping
+
+- k
+
+> 
+> drivers/gpio/Kconfig | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 6973387..aa74949 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -192,7 +192,7 @@ config GPIO_MSM_V1
+> 
+> config GPIO_MSM_V2
+> 	tristate "Qualcomm MSM GPIO v2"
+> -	depends on GPIOLIB && OF && ARCH_MSM
+> +	depends on GPIOLIB && OF && ARCH_QCOM
+> 	help
+> 	  Say yes here to support the GPIO interface on ARM v7 based
+> 	  Qualcomm MSM chips.  Most of the pins on the MSM can be
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
