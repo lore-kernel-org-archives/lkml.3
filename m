@@ -1,181 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193AbaBRGHr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 01:07:47 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48812 "EHLO mga11.intel.com"
+	id S1754566AbaBRGID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 01:08:03 -0500
+Received: from mga11.intel.com ([192.55.52.93]:43042 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754117AbaBRGHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 01:07:45 -0500
+	id S1754534AbaBRGH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 01:07:59 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,500,1389772800"; 
-   d="scan'208";a="483239630"
+   d="scan'208";a="483239698"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
-Date: Tue, 18 Feb 2014 14:07:27 +0800
-Message-Id: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v3 10/14] perf, core: simplify need branch stack check
+Date: Tue, 18 Feb 2014 14:07:37 +0800
+Message-Id: <1392703661-15104-11-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
+References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For many profiling tasks we need the callgraph. For example we often
-need to see the caller of a lock or the caller of a memcpy or other
-library function to actually tune the program. Frame pointer unwinding
-is efficient and works well. But frame pointers are off by default on
-64bit code (and on modern 32bit gccs), so there are many binaries around
-that do not use frame pointers. Profiling unchanged production code is
-very useful in practice. On some CPUs frame pointer also has a high
-cost. Dwarf2 unwinding also does not always work and is extremely slow
-(upto 20% overhead).
+event->attr.branch_sample_type is non-zero no matter branch stack
+is enabled explicitly or is enabled implicitly. So we can use it
+to replace intel_pmu_needs_lbr_smpl(). This avoids duplicating
+code that implicitly enables the LBR.
 
-Haswell has a new feature that utilizes the existing Last Branch Record
-facility to record call chains. When the feature is enabled, function
-call will be collected as normal, but as return instructions are
-executed the last captured branch record is popped from the on-chip LBR
-registers. The LBR call stack facility provides an alternative to get
-callgraph. It has some limitations too, but should work in most cases
-and is significantly faster than dwarf. Frame pointer unwinding is still
-the best default, but LBR call stack is a good alternative when nothing
-else works.
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 20 +++-----------------
+ include/linux/perf_event.h             |  5 +++++
+ kernel/events/core.c                   |  3 +++
+ 3 files changed, 11 insertions(+), 17 deletions(-)
 
-This patch series adds LBR call stack support. User can enabled/disable
-this through an sysfs attribute file in the CPU PMU directory:
- echo 1 > /sys/bus/event_source/devices/cpu/lbr_callstack 
-
-When profiling bc(1) on Fedora 19:
- echo 'scale=2000; 4*a(1)' > cmd; perf record -g fp bc -l < cmd
-
-If this feature is enabled, perf report output looks like:
-    50.36%       bc  bc                 [.] bc_divide
-                 |
-                 --- bc_divide
-                     execute
-                     run_code
-                     yyparse
-                     main
-                     __libc_start_main
-                     _start
-
-    33.66%       bc  bc                 [.] _one_mult
-                 |
-                 --- _one_mult
-                     bc_divide
-                     execute
-                     run_code
-                     yyparse
-                     main
-                     __libc_start_main
-                     _start
-
-     7.62%       bc  bc                 [.] _bc_do_add
-                 |
-                 --- _bc_do_add
-                    |
-                    |--99.89%-- 0x2000186a8
-                     --0.11%-- [...]
-
-     6.83%       bc  bc                 [.] _bc_do_sub
-                 |
-                 --- _bc_do_sub
-                    |
-                    |--99.94%-- bc_add
-                    |          execute
-                    |          run_code
-                    |          yyparse
-                    |          main
-                    |          __libc_start_main
-                    |          _start
-                     --0.06%-- [...]
-
-     0.46%       bc  libc-2.17.so       [.] __memset_sse2
-                 |
-                 --- __memset_sse2
-                    |
-                    |--54.13%-- bc_new_num
-                    |          |
-                    |          |--51.00%-- bc_divide
-                    |          |          execute
-                    |          |          run_code
-                    |          |          yyparse
-                    |          |          main
-                    |          |          __libc_start_main
-                    |          |          _start
-                    |          |
-                    |          |--30.46%-- _bc_do_sub
-                    |          |          bc_add
-                    |          |          execute
-                    |          |          run_code
-                    |          |          yyparse
-                    |          |          main
-                    |          |          __libc_start_main
-                    |          |          _start
-                    |          |
-                    |           --18.55%-- _bc_do_add
-                    |                     bc_add
-                    |                     execute
-                    |                     run_code
-                    |                     yyparse
-                    |                     main
-                    |                     __libc_start_main
-                    |                     _start
-                    |
-                     --45.87%-- bc_divide
-                               execute
-                               run_code
-                               yyparse
-                               main
-                               __libc_start_main
-                               _start
-
-If this feature is disabled, perf report output looks like:
-    50.49%       bc  bc                 [.] bc_divide
-                 |
-                 --- bc_divide
-
-    33.57%       bc  bc                 [.] _one_mult
-                 |
-                 --- _one_mult
-
-     7.61%       bc  bc                 [.] _bc_do_add
-                 |
-                 --- _bc_do_add
-                     0x2000186a8
-
-     6.88%       bc  bc                 [.] _bc_do_sub
-                 |
-                 --- _bc_do_sub
-
-     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
-                 |
-                 --- __memcpy_ssse3_back
-
-The LBR call stack has following known limitations
- - Zero length calls are not filtered out by hardware
- - Exception handing such as setjmp/longjmp will have calls/returns not
-   match
- - Pushing different return address onto the stack will have calls/returns
-   not match
- - If callstack is deeper than the LBR, only the last entries are captured
-
-Changes since v1
- - split change into more patches
- - introduce context switch callback and use it to flush LBR
- - use the context switch callback to save/restore LBR
- - dynamic allocate memory area for storing LBR stack, always switch the
-   memory area during context switch
- - disable this feature by default
- - more description in change logs
-
-Changes since v2
- - don't use xchg to switch PMU specific data
- - remove nr_branch_stack from struct perf_event_context
- - simplify the save/restore LBR stack logical
- - remove unnecessary 'has_branch_stack -> needs_branch_stack'
-   conversion
- - more description in change logs
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 84a1c09..722171c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1030,20 +1030,6 @@ static __initconst const u64 slm_hw_cache_event_ids
+  },
+ };
+ 
+-static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+-{
+-	/* user explicitly requested branch sampling */
+-	if (has_branch_stack(event))
+-		return true;
+-
+-	/* implicit branch sampling to correct PEBS skid */
+-	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
+-	    x86_pmu.intel_cap.pebs_format < 2)
+-		return true;
+-
+-	return false;
+-}
+-
+ static void intel_pmu_disable_all(void)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -1208,7 +1194,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
+ 	 * must disable before any actual event
+ 	 * because any event may be combined with LBR
+ 	 */
+-	if (intel_pmu_needs_lbr_smpl(event))
++	if (needs_branch_stack(event))
+ 		intel_pmu_lbr_disable(event);
+ 
+ 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
+@@ -1269,7 +1255,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	 * must enabled before any actual event
+ 	 * because any event may be combined with LBR
+ 	 */
+-	if (intel_pmu_needs_lbr_smpl(event))
++	if (needs_branch_stack(event))
+ 		intel_pmu_lbr_enable(event);
+ 
+ 	if (event->attr.exclude_host)
+@@ -1741,7 +1727,7 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
+ 		x86_pmu.pebs_aliases(event);
+ 
+-	if (intel_pmu_needs_lbr_smpl(event)) {
++	if (needs_branch_stack(event)) {
+ 		ret = intel_pmu_setup_lbr_filter(event);
+ 		if (ret)
+ 			return ret;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 3da433d..6afc675 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -763,6 +763,11 @@ static inline bool has_branch_stack(struct perf_event *event)
+ 	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
+ }
+ 
++static inline bool needs_branch_stack(struct perf_event *event)
++{
++	return event->attr.branch_sample_type != 0;
++}
++
+ extern int perf_output_begin(struct perf_output_handle *handle,
+ 			     struct perf_event *event, unsigned int size);
+ extern void perf_output_end(struct perf_output_handle *handle);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d5417e5..69fbf1b 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6765,6 +6765,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
+ 		goto err_ns;
+ 
++	if (!has_branch_stack(event))
++		event->attr.branch_sample_type = 0;
++
+ 	pmu = perf_init_event(event);
+ 	if (!pmu)
+ 		goto err_ns;
+-- 
+1.8.5.3
 
