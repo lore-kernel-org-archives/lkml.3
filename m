@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125AbaBRKP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:15:29 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36685 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744AbaBRKPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:15:23 -0500
-Message-ID: <530332B7.10909@gmail.com>
-Date: Tue, 18 Feb 2014 11:15:19 +0100
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: Intel Corporation <linux.nics@intel.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        "Justin M. Forbes" <jforbes@redhat.com>
-Subject: WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x276/0x280()
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755303AbaBRKLD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:11:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755282AbaBRKK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:10:57 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH net-next 25/35] forcedeth: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 11:11:54 +0100
+Message-Id: <437d3cd09e304168f525a3097d89e46adc4e73fa.1392717503.git.agordeev@redhat.com>
+In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
+References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range() and pci_enable_msix_range()
+interfaces.
 
-Ahoy!
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-Debugging S3 aka suspend produces 'WARNINGS':
-
-Steps to Reproduce:
-# echo core > /sys/power/pm_test
-# cat /sys/power/pm_test
-none [core] processors platform devices freezer
-# echo mem > /sys/power/state
-Results:
-- dmesg-3.14.0-0.rc3.git0.1.fc21.x86_64+debug-pm_test-core.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864436
-
-Steps to Reproduce:
-# echo processors > /sys/power/pm_test
-# cat /sys/power/pm_test
-none core [processors] platform devices freezer
-# echo mem > /sys/power/state
-Results:
-- dmesg-3.14.0-0.rc3.git0.1.fc21.x86_64+debug-pm_test-processors.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864438
-
-Steps to Reproduce:
-# echo platform > /sys/power/pm_test
-# cat /sys/power/pm_test
-none core processors [platform] devices freezer
-# echo mem > /sys/power/state
-Results:
-- dmesg-3.14.0-0.rc3.git0.1.fc21.x86_64+debug-pm_test-platform.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864439
-
-RHBZ 1010764:
-"[abrt] NETDEV WATCHDOG: em1 (e1000e): transmit queue 0 timed out"
-https://bugzilla.redhat.com/show_bug.cgi?id=1010764
-
-Tested with Rawhide 'kernel-debug-3.14.0-0.rc3.git0.1.fc21.x86_64'
-http://koji.fedoraproject.org/koji/buildinfo?buildID=498711
-
-
-poma
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 74da489..bad3c05 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -3946,8 +3946,11 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
+ 	if (np->msi_flags & NV_MSI_X_CAPABLE) {
+ 		for (i = 0; i < (np->msi_flags & NV_MSI_X_VECTORS_MASK); i++)
+ 			np->msi_x_entry[i].entry = i;
+-		ret = pci_enable_msix(np->pci_dev, np->msi_x_entry, (np->msi_flags & NV_MSI_X_VECTORS_MASK));
+-		if (ret == 0) {
++		ret = pci_enable_msix_range(np->pci_dev,
++					    np->msi_x_entry,
++					    np->msi_flags & NV_MSI_X_VECTORS_MASK,
++					    np->msi_flags & NV_MSI_X_VECTORS_MASK);
++		if (ret > 0) {
+ 			np->msi_flags |= NV_MSI_X_ENABLED;
+ 			if (optimization_mode == NV_OPTIMIZATION_MODE_THROUGHPUT && !intr_test) {
+ 				/* Request irq for rx handling */
+-- 
+1.7.7.6
 
