@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbaBRVdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:33:55 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43941 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbaBRVdy (ORCPT
+	id S1752693AbaBRVeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:34:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36534 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaBRVeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:33:54 -0500
-Date: Tue, 18 Feb 2014 13:33:44 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, linux@horizon.com
-Subject: Re: [PATCH tip/core/rcu 15/55] rcutorture: Abstract
- rcu_torture_random()
-Message-ID: <20140218213344.GY4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140217221231.GA8419@linux.vnet.ibm.com>
- <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392675179-11560-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140218001137.GC19929@thin>
- <20140218002248.GU4250@linux.vnet.ibm.com>
- <20140218002743.GF19929@thin>
+	Tue, 18 Feb 2014 16:34:21 -0500
+Date: Tue, 18 Feb 2014 22:34:00 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 1/3] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+Message-ID: <20140218213400.GS14089@laptop.programming.kicks-ass.net>
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
+ <1392669684-4807-2-git-send-email-Waiman.Long@hp.com>
+ <20140218073951.GZ27965@twins.programming.kicks-ass.net>
+ <5303B6F3.9090001@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140218002743.GF19929@thin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021821-8236-0000-0000-0000075D3B44
+In-Reply-To: <5303B6F3.9090001@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:27:44PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 04:22:48PM -0800, Paul E. McKenney wrote:
-> > On Mon, Feb 17, 2014 at 04:11:37PM -0800, Josh Triplett wrote:
-> > > On Mon, Feb 17, 2014 at 02:12:19PM -0800, Paul E. McKenney wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > Because rcu_torture_random() will be used by the locking equivalent to
-> > > > rcutorture, pull it out into its own module.
-> > > > 
-> > > > Suggested-by: Rusty Russell <rusty@rustcorp.com.au>
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > I'd suggest making CONFIG_TORTURE_TEST a completely invisible option,
-> > > with no description; it should only be brought in via "select".
-> > > 
-> > > Also, it doesn't need most of the headers it currently includes.
-> > > 
-> > > Have you considered moving it into the existing random generation
-> > > infrastructure, as something like "fast_insecure_nonblocking_random"?
-> > > That seems more generally useful.
-> > 
-> > George Spelvin was also advising me on random-number generation in
-> > rcutorture, so I added him on CC.  In any case, I would not be adverse
-> > to using some other random-number service, as long as it is fast enough.
-> > (George suggested some optimizations that I have not yet tried out.)
-> 
-> I suspect the fastest way to find out about any existing generator with
-> the desired properties would be to post this one as a patch to the
-> random number infrastructure and read the resulting replies. :)
+On Tue, Feb 18, 2014 at 02:39:31PM -0500, Waiman Long wrote:
+> The #ifdef is harder to take away here. The point is that doing a 32-bit
+> exchange may accidentally steal the lock with the additional code to handle
+> that. Doing a 16-bit exchange, on the other hand, will never steal the lock
+> and so don't need the extra handling code. I could construct a function with
+> different return values to handle the different cases if you think it will
+> make the code easier to read.
 
-;-)
-
-Random-number improvements on todo list.
-
-							Thanx, Paul
-
+Does it really pay to use xchg() with all those fixup cases? Why not
+have a single cmpxchg() loop that does just the exact atomic op you
+want?
