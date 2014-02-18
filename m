@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbaBRKK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:10:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30743 "EHLO mx1.redhat.com"
+	id S1755347AbaBRKLJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:11:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33735 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755196AbaBRKKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:10:54 -0500
+	id S1755304AbaBRKLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:11:07 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH net-next 23/35] forcedeth: Fix invalid errno reporting in nv_request_irq()
-Date: Tue, 18 Feb 2014 11:11:52 +0100
-Message-Id: <d9b66ce651ddfc5ac7930cd1ac3574745ef4b511.1392717503.git.agordeev@redhat.com>
+        Himanshu Madhani <himanshu.madhani@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>, linux-driver@qlogic.com,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH net-next 28/35] qlcnic: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 11:11:57 +0100
+Message-Id: <cb8eb41f672c62d1149c375bdaf97ca3328703f9.1392717503.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
 References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range() and pci_enable_msix_range()
+interfaces.
+
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Patrick McHardy <kaber@trash.net>
+Cc: Himanshu Madhani <himanshu.madhani@qlogic.com>
+Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
+Cc: Shahed Shaikh <shahed.shaikh@qlogic.com>
+Cc: linux-driver@qlogic.com
 Cc: netdev@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/net/ethernet/nvidia/forcedeth.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 70cf97f..f4270b8 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -3952,8 +3952,9 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 			if (optimization_mode == NV_OPTIMIZATION_MODE_THROUGHPUT && !intr_test) {
- 				/* Request irq for rx handling */
- 				sprintf(np->name_rx, "%s-rx", dev->name);
--				if (request_irq(np->msi_x_entry[NV_MSI_X_VECTOR_RX].vector,
--						nv_nic_irq_rx, IRQF_SHARED, np->name_rx, dev) != 0) {
-+				ret = request_irq(np->msi_x_entry[NV_MSI_X_VECTOR_RX].vector,
-+						  nv_nic_irq_rx, IRQF_SHARED, np->name_rx, dev);
-+				if (ret) {
- 					netdev_info(dev,
- 						    "request_irq failed for rx %d\n",
- 						    ret);
-@@ -3963,8 +3964,9 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 				}
- 				/* Request irq for tx handling */
- 				sprintf(np->name_tx, "%s-tx", dev->name);
--				if (request_irq(np->msi_x_entry[NV_MSI_X_VECTOR_TX].vector,
--						nv_nic_irq_tx, IRQF_SHARED, np->name_tx, dev) != 0) {
-+				ret = request_irq(np->msi_x_entry[NV_MSI_X_VECTOR_TX].vector,
-+						  nv_nic_irq_tx, IRQF_SHARED, np->name_tx, dev);
-+				if (ret) {
- 					netdev_info(dev,
- 						    "request_irq failed for tx %d\n",
- 						    ret);
-@@ -3974,8 +3976,9 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 				}
- 				/* Request irq for link and timer handling */
- 				sprintf(np->name_other, "%s-other", dev->name);
--				if (request_irq(np->msi_x_entry[NV_MSI_X_VECTOR_OTHER].vector,
--						nv_nic_irq_other, IRQF_SHARED, np->name_other, dev) != 0) {
-+				ret = request_irq(np->msi_x_entry[NV_MSI_X_VECTOR_OTHER].vector,
-+						  nv_nic_irq_other, IRQF_SHARED, np->name_other, dev);
-+				if (ret) {
- 					netdev_info(dev,
- 						    "request_irq failed for link %d\n",
- 						    ret);
-@@ -3991,7 +3994,9 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 				set_msix_vector_map(dev, NV_MSI_X_VECTOR_OTHER, NVREG_IRQ_OTHER);
- 			} else {
- 				/* Request irq for all interrupts */
--				if (request_irq(np->msi_x_entry[NV_MSI_X_VECTOR_ALL].vector, handler, IRQF_SHARED, dev->name, dev) != 0) {
-+				ret = request_irq(np->msi_x_entry[NV_MSI_X_VECTOR_ALL].vector,
-+						  handler, IRQF_SHARED, dev->name, dev);
-+				if (ret) {
- 					netdev_info(dev,
- 						    "request_irq failed %d\n",
- 						    ret);
-@@ -4011,7 +4016,8 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 		ret = pci_enable_msi(np->pci_dev);
- 		if (ret == 0) {
- 			np->msi_flags |= NV_MSI_ENABLED;
--			if (request_irq(np->pci_dev->irq, handler, IRQF_SHARED, dev->name, dev) != 0) {
-+			ret = request_irq(np->pci_dev->irq, handler, IRQF_SHARED, dev->name, dev);
-+			if (ret) {
- 				netdev_info(dev, "request_irq failed %d\n",
- 					    ret);
- 				pci_disable_msi(np->pci_dev);
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+index 0c077cf..e07fd94 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+@@ -701,13 +701,17 @@ enable_msix:
+ 		for (vector = 0; vector < num_msix; vector++)
+ 			adapter->msix_entries[vector].entry = vector;
+ 
+-		err = pci_enable_msix(pdev, adapter->msix_entries, num_msix);
+-		if (err == 0) {
++		err = pci_enable_msix_range(pdev,
++					    adapter->msix_entries, 1, num_msix);
++
++		if (err == num_msix) {
+ 			adapter->flags |= QLCNIC_MSIX_ENABLED;
+ 			adapter->ahw->num_msix = num_msix;
+ 			dev_info(&pdev->dev, "using msi-x interrupts\n");
+ 			return 0;
+ 		} else if (err > 0) {
++			pci_disable_msix(pdev);
++
+ 			dev_info(&pdev->dev,
+ 				 "Unable to allocate %d MSI-X vectors, Available vectors %d\n",
+ 				 num_msix, err);
 -- 
 1.7.7.6
 
