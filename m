@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355AbaBRTV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:21:26 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:46613 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652AbaBRTVZ convert rfc822-to-8bit (ORCPT
+	id S1751854AbaBRT17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:27:59 -0500
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:54154 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaBRT15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:21:25 -0500
+	Tue, 18 Feb 2014 14:27:57 -0500
+Message-ID: <5303B422.2010304@hp.com>
+Date: Tue, 18 Feb 2014 14:27:30 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <20140218190245.GA27455@kroah.com>
-References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
-	<1392674322-9036-2-git-send-email-john.stultz@linaro.org>
-	<20140218190245.GA27455@kroah.com>
-Date: Tue, 18 Feb 2014 11:21:24 -0800
-Message-ID: <CALAqxLXTvZqVj7n0PSMa8WrWUeycFVa+b8KvtQvk=r2eYBPa_Q@mail.gmail.com>
-Subject: Re: [PATCH 01/14] staging: binder: Fix death notifications
-From: John Stultz <john.stultz@linaro.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com>
+In-Reply-To: <53029167.4060109@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 11:02 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Feb 17, 2014 at 01:58:29PM -0800, John Stultz wrote:
->> From: Arve Hjønnevåg <arve@android.com>
+On 02/17/2014 05:47 PM, H. Peter Anvin wrote:
+> On 02/17/2014 12:41 PM, Waiman Long wrote:
+>> v3->v4:
+>>   - Remove debugging code and fix a configuration error
+>>   - Simplify the qspinlock structure and streamline the code to make it
+>>     perform a bit better
+>>   - Add an x86 version of asm/qspinlock.h for holding x86 specific
+>>     optimization.
+>>   - Add an optimized x86 code path for 2 contending tasks to improve
+>>     low contention performance.
 >>
->> The change (008fa749e0fe5b2fffd20b7fe4891bb80d072c6a) that moved the
->> node release code to a separate function broke death notifications in
->> some cases. When it encountered a reference without a death
->> notification request, it would skip looking at the remaining
->> references, and therefore fail to send death notifications for them.
+>> v2->v3:
+>>   - Simplify the code by using numerous mode only without an unfair option.
+>>   - Use the latest smp_load_acquire()/smp_store_release() barriers.
+>>   - Move the queue spinlock code to kernel/locking.
+>>   - Make the use of queue spinlock the default for x86-64 without user
+>>     configuration.
+>>   - Additional performance tuning.
 >>
->> Cc: Greg KH <gregkh@linuxfoundation.org>
->> Cc: Colin Cross <ccross@android.com>
->> Cc: Arve Hjønnevåg <arve@android.com>
->> Cc: Android Kernel Team <kernel-team@android.com>
->> Signed-off-by: Arve Hjønnevåg <arve@android.com>
->> Signed-off-by: John Stultz <john.stultz@linaro.org>
->> ---
->>  drivers/staging/android/binder.c | 3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
+>> v1->v2:
+>>   - Add some more comments to document what the code does.
+>>   - Add a numerous CPU mode to support>= 16K CPUs
+>>   - Add a configuration option to allow lock stealing which can further
+>>     improve performance in many cases.
+>>   - Enable wakeup of queue head CPU at unlock time for non-numerous
+>>     CPU mode.
+>>
+>> This patch set introduces a queue-based spinlock implementation that
+>> can replace the default ticket spinlock without increasing the size
+>> of the spinlock data structure. As a result, critical kernel data
+>> structures that embed spinlock won't increase in size and breaking
+>> data alignments.
+>>
+> This is starting to look good, so I have pulled it into
+> tip:x86/spinlocks to start give it some testing mileage.
 >
-> As this broke in 3.10, shouldn't this go to staging-linus and get
-> backported to the stable trees too?
+> 	-hpa
+>
+>
 
-Right. I rearranged this fix to be in the front of this series because
-of this, and mentioned in the cover letter that it might be considered
-for 3.14. If that's considered ok, then it can be pushed to stable as
-well.
+Thank for the additional testing. Please let me know if you find 
+anything wrong.
 
-thanks
--john
+-Longman
