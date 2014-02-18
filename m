@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478AbaBRVTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:19:40 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:51014 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaBRVTi (ORCPT
+	id S1751615AbaBRVZQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:25:16 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:7001 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751116AbaBRVZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:19:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392668638.21106.5.camel@dcbw.local>
-References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
- <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com> <1392668638.21106.5.camel@dcbw.local>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Tue, 18 Feb 2014 13:19:15 -0800
-X-Google-Sender-Auth: yXXs7OngIMoZKTo-gE-dCn-y_2c
-Message-ID: <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
-To: Dan Williams <dcbw@redhat.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+	Tue, 18 Feb 2014 16:25:13 -0500
+Date: Tue, 18 Feb 2014 13:26:59 -0800
+From: Courtney Cavin <courtney.cavin@sonymobile.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Brown <davidb@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] usb: chipidea: msm: Add device tree binding
+ information
+Message-ID: <20140218212659.GL1706@sonymobile.com>
+References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
+ <1392729681-21022-2-git-send-email-iivanov@mm-sol.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1392729681-21022-2-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 12:23 PM, Dan Williams <dcbw@redhat.com> wrote:
-> On Fri, 2014-02-14 at 18:59 -0800, Luis R. Rodriguez wrote:
->> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->>
->> Some interfaces do not need to have any IPv4 or IPv6
->> addresses, so enable an option to specify this. One
->> example where this is observed are virtualization
->> backend interfaces which just use the net_device
->> constructs to help with their respective frontends.
->>
->> This should optimize boot time and complexity on
->> virtualization environments for each backend interface
->> while also avoiding triggering SLAAC and DAD, which is
->> simply pointless for these type of interfaces.
->
-> Would it not be better/cleaner to use disable_ipv6 and then add a
-> disable_ipv4 sysctl, then use those with that interface?
+On Tue, Feb 18, 2014 at 02:21:19PM +0100, Ivan T. Ivanov wrote:
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> 
+> Document device tree binding information as required by
+> the Qualcomm USB controller.
+> 
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  .../devicetree/bindings/usb/msm-hsusb.txt          |   17 +++++++++++++++++
 
-Sure, but note that the both disable_ipv6 and accept_dada sysctl
-parameters are global. ipv4 and ipv6 interfaces are created upon
-NETDEVICE_REGISTER, which will get triggered when a driver calls
-register_netdev(). The goal of this patch was to enable an early
-optimization for drivers that have no need ever for ipv4 or ipv6
-interfaces.
+Although you mentioned to Josh that this is intended for "non-standard"
+Chipidea properties, I don't see any other than requiring that 'dr_mode'
+must be "peripheral".  It would seem that this should all be integrated
+into a ci3xxx.txt.
 
-Zoltan has noted though some use cases of IPv4 or IPv6 addresses on
-backends though, as such this is no longer applicable as a
-requirement. The ipv4 sysctl however still seems like a reasonable
-approach to enable optimizations of the network in topologies where
-its known we won't need them but -- we'd need to consider a much more
-granular solution, not just global as it is now for disable_ipv6, and
-we'd also have to figure out a clean way to do this to not incur the
-cost of early address interface addition upon register_netdev().
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> index 5ea26c6..d4e7e41 100644
+> --- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> +++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> @@ -15,3 +15,20 @@ Example EHCI controller device node:
+>  		usb-phy = <&usb_otg>;
+>  	};
+>  
+> +CI13xxx (Chipidea) USB controllers
+> +
+> +Required properties:
+> +- compatible:   should contain "qcom,ci-hdrc"
 
-Given that we have a use case for ipv4 and ipv6 addresses on
-xen-netback we no longer have an immediate use case for such early
-optimization primitives though, so I'll drop this.
+Is there nothing more specific you could put here?  Maybe a hardware
+revision, or something?
 
-> The IFF_SKIP_IP seems to duplicate at least part of what disable_ipv6 is
-> already doing.
+> +- reg:          offset and length of the register set in the memory map
+> +- interrupts:   interrupt-specifier for the controller interrupt.
+> +- usb-phy:      phandle for the PHY device
+> +- dr_mode:      Sould be "peripheral"
 
-disable_ipv6 is global, the goal was to make this granular and skip
-the cost upon early boot, but its been clarified we don't need this.
+s/Sould/should/
 
-   Luis
+-Courtney
