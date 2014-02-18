@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaBRXCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:02:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51113 "EHLO
+	id S1754024AbaBRXDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:03:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaBRWrE (ORCPT
+	with ESMTP id S1752325AbaBRWrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:04 -0500
+	Tue, 18 Feb 2014 17:47:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Prisk <linux@prisktech.co.nz>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.12 30/32] pinctrl: vt8500: Change devicetree data parsing
-Date: Tue, 18 Feb 2014 14:47:30 -0800
-Message-Id: <20140218224500.966824790@linuxfoundation.org>
+Subject: [PATCH 3.12 29/32] pinctrl: at91: use locked variant of irq_set_handler
+Date: Tue, 18 Feb 2014 14:47:29 -0800
+Message-Id: <20140218224500.933250866@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
 References: <20140218224500.101465031@linuxfoundation.org>
@@ -29,51 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Prisk <linux@prisktech.co.nz>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-commit f17248ed868767567298e1cdf06faf8159a81f7c upstream.
+commit b0dcfd87323ea86501e93d0fa2a98d2fd3579bcf upstream.
 
-Due to an assumption in the VT8500 pinctrl driver, the value passed
-from devicetree for 'wm,pull' was not explicitly translated before
-being passed to pinconf.
+When setting the gpio irq type, use the __irq_set_handler_locked()
+variant instead of the irq_set_handler() to prevent false
+spinlock recursion warning.
 
-Since v3.10, changes to 'enum pin_config_param', PIN_CONFIG_BIAS_PULL_(UP/DOWN)
-no longer map 1-to-1 with the expected values in devicetree.
-
-This patch adds a small translation between the devicetree values (0..2)
-and the enum pin_config_param equivalent values.
-
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pinctrl/vt8500/pinctrl-wmt.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ drivers/pinctrl/pinctrl-at91.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
-+++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
-@@ -276,7 +276,20 @@ static int wmt_pctl_dt_node_to_map_pull(
- 	if (!configs)
- 		return -ENOMEM;
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -1251,22 +1251,22 @@ static int alt_gpio_irq_type(struct irq_
  
--	configs[0] = pull;
-+	switch (pull) {
-+	case 0:
-+		configs[0] = PIN_CONFIG_BIAS_DISABLE;
-+		break;
-+	case 1:
-+		configs[0] = PIN_CONFIG_BIAS_PULL_DOWN;
-+		break;
-+	case 2:
-+		configs[0] = PIN_CONFIG_BIAS_PULL_UP;
-+		break;
-+	default:
-+		configs[0] = PIN_CONFIG_BIAS_DISABLE;
-+		dev_err(data->dev, "invalid pull state %d - disabling\n", pull);
-+	}
- 
- 	map->type = PIN_MAP_TYPE_CONFIGS_PIN;
- 	map->data.configs.group_or_pin = data->groups[group];
+ 	switch (type) {
+ 	case IRQ_TYPE_EDGE_RISING:
+-		irq_set_handler(d->irq, handle_simple_irq);
++		__irq_set_handler_locked(d->irq, handle_simple_irq);
+ 		writel_relaxed(mask, pio + PIO_ESR);
+ 		writel_relaxed(mask, pio + PIO_REHLSR);
+ 		break;
+ 	case IRQ_TYPE_EDGE_FALLING:
+-		irq_set_handler(d->irq, handle_simple_irq);
++		__irq_set_handler_locked(d->irq, handle_simple_irq);
+ 		writel_relaxed(mask, pio + PIO_ESR);
+ 		writel_relaxed(mask, pio + PIO_FELLSR);
+ 		break;
+ 	case IRQ_TYPE_LEVEL_LOW:
+-		irq_set_handler(d->irq, handle_level_irq);
++		__irq_set_handler_locked(d->irq, handle_level_irq);
+ 		writel_relaxed(mask, pio + PIO_LSR);
+ 		writel_relaxed(mask, pio + PIO_FELLSR);
+ 		break;
+ 	case IRQ_TYPE_LEVEL_HIGH:
+-		irq_set_handler(d->irq, handle_level_irq);
++		__irq_set_handler_locked(d->irq, handle_level_irq);
+ 		writel_relaxed(mask, pio + PIO_LSR);
+ 		writel_relaxed(mask, pio + PIO_REHLSR);
+ 		break;
+@@ -1275,7 +1275,7 @@ static int alt_gpio_irq_type(struct irq_
+ 		 * disable additional interrupt modes:
+ 		 * fall back to default behavior
+ 		 */
+-		irq_set_handler(d->irq, handle_simple_irq);
++		__irq_set_handler_locked(d->irq, handle_simple_irq);
+ 		writel_relaxed(mask, pio + PIO_AIMDR);
+ 		return 0;
+ 	case IRQ_TYPE_NONE:
 
 
