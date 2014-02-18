@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaBRWqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50670 "EHLO
+	id S1753185AbaBRXcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:32:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50685 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaBRWqE (ORCPT
+	with ESMTP id S1752516AbaBRWqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:04 -0500
+	Tue, 18 Feb 2014 17:46:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 02/24] mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
-Date: Tue, 18 Feb 2014 14:46:49 -0800
-Message-Id: <20140218224550.291329342@linuxfoundation.org>
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        Asias He <asias@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ben Hutchings <ben@decadent.org.uk>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.4 22/24] virtio-blk: Use block layer provided spinlock
+Date: Tue, 18 Feb 2014 14:47:09 -0800
+Message-Id: <20140218224550.855852434@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
 References: <20140218224550.221535225@linuxfoundation.org>
@@ -33,87 +31,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Asias He <asias@redhat.com>
 
-commit a85d9df1ea1d23682a0ed1e100e6965006595d06 upstream.
+commit 2c95a3290919541b846bee3e0fbaa75860929f53 upstream.
 
-During aio stress test, we observed the following lockdep warning.  This
-mean AIO+numa_balancing is currently deadlockable.
+Block layer will allocate a spinlock for the queue if the driver does
+not provide one in blk_init_queue().
 
-The problem is, aio_migratepage disable interrupt, but
-__set_page_dirty_nobuffers unintentionally enable it again.
+The reason to use the internal spinlock is that blk_cleanup_queue() will
+switch to use the internal spinlock in the cleanup code path.
 
-Generally, all helper function should use spin_lock_irqsave() instead of
-spin_lock_irq() because they don't know caller at all.
+        if (q->queue_lock != &q->__queue_lock)
+                q->queue_lock = &q->__queue_lock;
 
-   other info that might help us debug this:
-    Possible unsafe locking scenario:
+However, processes which are in D state might have taken the driver
+provided spinlock, when the processes wake up, they would release the
+block provided spinlock.
 
-          CPU0
-          ----
-     lock(&(&ctx->completion_lock)->rlock);
-     <Interrupt>
-       lock(&(&ctx->completion_lock)->rlock);
+=====================================
+[ BUG: bad unlock balance detected! ]
+3.4.0-rc7+ #238 Not tainted
+-------------------------------------
+fio/3587 is trying to release lock (&(&q->__queue_lock)->rlock) at:
+[<ffffffff813274d2>] blk_queue_bio+0x2a2/0x380
+but there are no more locks to release!
 
-    *** DEADLOCK ***
+other info that might help us debug this:
+1 lock held by fio/3587:
+ #0:  (&(&vblk->lock)->rlock){......}, at:
+[<ffffffff8132661a>] get_request_wait+0x19a/0x250
 
-      dump_stack+0x19/0x1b
-      print_usage_bug+0x1f7/0x208
-      mark_lock+0x21d/0x2a0
-      mark_held_locks+0xb9/0x140
-      trace_hardirqs_on_caller+0x105/0x1d0
-      trace_hardirqs_on+0xd/0x10
-      _raw_spin_unlock_irq+0x2c/0x50
-      __set_page_dirty_nobuffers+0x8c/0xf0
-      migrate_page_copy+0x434/0x540
-      aio_migratepage+0xb1/0x140
-      move_to_new_page+0x7d/0x230
-      migrate_pages+0x5e5/0x700
-      migrate_misplaced_page+0xbc/0xf0
-      do_numa_page+0x102/0x190
-      handle_pte_fault+0x241/0x970
-      handle_mm_fault+0x265/0x370
-      __do_page_fault+0x172/0x5a0
-      do_page_fault+0x1a/0x70
-      page_fault+0x28/0x30
+Other drivers use block layer provided spinlock as well, e.g. SCSI.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Switching to the block layer provided spinlock saves a bit of memory and
+does not increase lock contention. Performance test shows no real
+difference is observed before and after this patch.
+
+Changes in v2: Improve commit log as Michael suggested.
+
+Cc: virtualization@lists.linux-foundation.org
+Cc: kvm@vger.kernel.org
+Signed-off-by: Asias He <asias@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page-writeback.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/block/virtio_blk.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1993,11 +1993,12 @@ int __set_page_dirty_nobuffers(struct pa
- 	if (!TestSetPageDirty(page)) {
- 		struct address_space *mapping = page_mapping(page);
- 		struct address_space *mapping2;
-+		unsigned long flags;
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -21,8 +21,6 @@ struct workqueue_struct *virtblk_wq;
  
- 		if (!mapping)
- 			return 1;
+ struct virtio_blk
+ {
+-	spinlock_t lock;
+-
+ 	struct virtio_device *vdev;
+ 	struct virtqueue *vq;
  
--		spin_lock_irq(&mapping->tree_lock);
-+		spin_lock_irqsave(&mapping->tree_lock, flags);
- 		mapping2 = page_mapping(page);
- 		if (mapping2) { /* Race with truncate? */
- 			BUG_ON(mapping2 != mapping);
-@@ -2006,7 +2007,7 @@ int __set_page_dirty_nobuffers(struct pa
- 			radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 		}
--		spin_unlock_irq(&mapping->tree_lock);
-+		spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 		if (mapping->host) {
- 			/* !PageAnon && !swapper_space */
- 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+@@ -69,7 +67,7 @@ static void blk_done(struct virtqueue *v
+ 	unsigned int len;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&vblk->lock, flags);
++	spin_lock_irqsave(vblk->disk->queue->queue_lock, flags);
+ 	while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
+ 		int error;
+ 
+@@ -104,7 +102,7 @@ static void blk_done(struct virtqueue *v
+ 	}
+ 	/* In case queue is stopped waiting for more buffers. */
+ 	blk_start_queue(vblk->disk->queue);
+-	spin_unlock_irqrestore(&vblk->lock, flags);
++	spin_unlock_irqrestore(vblk->disk->queue->queue_lock, flags);
+ }
+ 
+ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
+@@ -438,7 +436,6 @@ static int __devinit virtblk_probe(struc
+ 	}
+ 
+ 	INIT_LIST_HEAD(&vblk->reqs);
+-	spin_lock_init(&vblk->lock);
+ 	vblk->vdev = vdev;
+ 	vblk->sg_elems = sg_elems;
+ 	sg_init_table(vblk->sg, vblk->sg_elems);
+@@ -463,7 +460,7 @@ static int __devinit virtblk_probe(struc
+ 		goto out_mempool;
+ 	}
+ 
+-	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, &vblk->lock);
++	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, NULL);
+ 	if (!q) {
+ 		err = -ENOMEM;
+ 		goto out_put_disk;
 
 
