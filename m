@@ -1,118 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbaBRJt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 04:49:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57480 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754472AbaBRJt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 04:49:27 -0500
-Date: Tue, 18 Feb 2014 10:49:20 +0100
-From: Jan Kara <jack@suse.cz>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        rientjes@google.com, Linus <torvalds@linux-foundation.org>,
-        nacc@linux.vnet.ibm.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 ] mm readahead: Fix readahead fail for memoryless cpu
- and limit readahead pages
-Message-ID: <20140218094920.GB29660@quack.suse.cz>
-References: <1392708338-19685-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+	id S1754763AbaBRJu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 04:50:58 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:42596 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030AbaBRJuz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 04:50:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392708338-19685-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.00.1402181001530.2216@localhost.localdomain>
+References: <1391319874-3203-1-git-send-email-linkinjeon@gmail.com>
+	<alpine.LFD.2.00.1402111209450.2225@localhost.localdomain>
+	<CAKYAXd-bD6ZZgpc9E8V1kD9Dj2wrCkbi1i6drNBdUAwsMiv5gg@mail.gmail.com>
+	<alpine.LFD.2.00.1402181001530.2216@localhost.localdomain>
+Date: Tue, 18 Feb 2014 18:50:54 +0900
+Message-ID: <CAKYAXd_xpWg-=T_1PghL_u9wDKTX_Ey5mJxbgVVKth8NoexQQg@mail.gmail.com>
+Subject: Re: [PATCH RESEND 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE
+ for fallocate
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: =?UTF-8?B?THVrw6HFoSBDemVybmVy?= <lczerner@redhat.com>
+Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-02-14 12:55:38, Raghavendra K T wrote:
-> Currently max_sane_readahead() returns zero on the cpu having no local memory node
-> which leads to readahead failure. Fix the readahead failure by returning
-> minimum of (requested pages, 512). Users running application on a memory-less cpu
-> which needs readahead such as streaming application see considerable boost in the
-> performance.
-> 
-> Result:
-> fadvise experiment with FADV_WILLNEED on a PPC machine having memoryless CPU
-> with 1GB testfile ( 12 iterations) yielded around 46.66% improvement.
-> 
-> fadvise experiment with FADV_WILLNEED on a x240 machine with 1GB testfile
-> 32GB* 4G RAM  numa machine ( 12 iterations) showed no impact on the normal
-> NUMA cases w/ patch.
-  Can you try one more thing please? Compare startup time of some big
-executable (Firefox or LibreOffice come to my mind) for the patched and
-normal kernel on a machine which wasn't hit by this NUMA issue. And don't
-forget to do "echo 3 >/proc/sys/vm/drop_caches" before each test to flush
-the caches. If this doesn't show significant differences, I'm OK with the
-patch.
+2014-02-18 18:05 GMT+09:00, Lukáš Czerner <lczerner@redhat.com>:
+> On Wed, 12 Feb 2014, Namjae Jeon wrote:
+>
+>> Date: Wed, 12 Feb 2014 11:28:35 +0900
+>> From: Namjae Jeon <linkinjeon@gmail.com>
+>> To: Lukáš Czerner <lczerner@redhat.com>
+>> Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com,
+>> tytso@mit.edu,
+>>     adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+>>     linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+>>     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+>>     Namjae Jeon <namjae.jeon@samsung.com>,
+>>     Ashish Sangwan <a.sangwan@samsung.com>
+>> Subject: Re: [PATCH RESEND 3/10] ext4: Add support
+>> FALLOC_FL_COLLAPSE_RANGE
+>>     for fallocate
+>>
+>> 2014-02-11 20:59 GMT+09:00, Lukáš Czerner <lczerner@redhat.com>:
+>> > On Sun, 2 Feb 2014, Namjae Jeon wrote:
+>> >
+>> >> Date: Sun,  2 Feb 2014 14:44:34 +0900
+>> >> From: Namjae Jeon <linkinjeon@gmail.com>
+>> >> To: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com,
+>> >> tytso@mit.edu,
+>> >>     adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com
+>> >> Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+>> >>     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+>> >>     Namjae Jeon <linkinjeon@gmail.com>, Namjae Jeon
+>> >> <namjae.jeon@samsung.com>,
+>> >>     Ashish Sangwan <a.sangwan@samsung.com>
+>> >> Subject: [PATCH RESEND 3/10] ext4: Add support
+>> >> FALLOC_FL_COLLAPSE_RANGE
+>> >> for
+>> >>     fallocate
+>> >>
+>> >> From: Namjae Jeon <namjae.jeon@samsung.com>
+>> >>
+>> >> Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+>> Hi Lukas.
+>> >
+>> > Description is missing here, please provide FALLOC_FL_COLLAPSE_RANGE
+>> > description so people know what it's supposed to be doing.
+>> >
+>> > more comments bellow.
+>> Okay, I will udpate.
+>> >
+>> > Thanks!
+>> > -Lukas
+>
+> Hi,
+Hi Lukas.
+>
+> you may have noticed my patches for new FALLOC_FL_ZERO_RANGE
+> fallocate flag. This changes things around the same area as your
+> patches does so we should probably figure out which are going to
+> land in first and then rebase the other on top of that.
+Yes, I have seen your patches. I think that VFS + XFS patches for
+FALLOC_FL_COLLAPSE_RANGE have got a fair amount of review from Dave.
+So they are almost ready. I will post collapse range v5 patches after
+fixing some minor comments tonight or tommorow.
+If there will be no more comments for XFS patch, VFS + XFS patches can
+go through to xfs tree by Dave.
+I think that Ext4 collapse range could go at a later time.(Need your
+reviewed-by tag)
+If still there are comments for xfs patch, I will rebase on top of your patch.
+>
+> One concern I have is that I have not seen any tests provided to
+> verify the feature. But I just may have missed it. Do you have any
+> xfstests test or at least fsx and fsstress patches to provide
+> support for testing FALLOC_FL_COLLAPSE_RANGE ? Patches for
+> util_linux might also be handy.
+Yes, There are 5 new xfstests cases in this patch-set. these will also
+be posted with collapse range patch-set soon.
 
-								Honza
-
-> Kernel     Avg  Stddev
-> base	7.4975	3.92%
-> patched	7.4174  3.26%
-> 
-> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> [Andrew: making return value PAGE_SIZE independent]
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  I would like to thank Honza, David for their valuable suggestions and 
->  patiently reviewing the patches.
-> 
->  Changes in V6:
->   - Just limit the readahead to 2MB on 4k pages system as suggested by Linus.
->  and make it independent of PAGE_SIZE. 
-> 
->  Changes in V5:
->  - Drop the 4k limit for normal readahead. (Jan Kara)
-> 
->  Changes in V4:
->  - Check for total node memory to decide whether we don't
->    have local memory (jan Kara)
->  - Add 4k page limit on readahead for normal and remote readahead (Linus)
->    (Linus suggestion was 16MB limit).
-> 
->  Changes in V3:
->  - Drop iterating over numa nodes that calculates total free pages (Linus)
-> 
->  Agree that we do not have control on allocation for readahead on a
->  particular numa node and hence for remote readahead we can not further
->  sanitize based on potential free pages of that node. and also we do
->  not want to itererate through all nodes to find total free pages.
-> 
->  Suggestions and comments welcome
->  mm/readahead.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/readahead.c b/mm/readahead.c
-> index 0de2360..1fa0d6f 100644
-> --- a/mm/readahead.c
-> +++ b/mm/readahead.c
-> @@ -233,14 +233,14 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
->  	return 0;
->  }
->  
-> +#define MAX_READAHEAD   ((512*4096)/PAGE_CACHE_SIZE)
->  /*
->   * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
->   * sensible upper limit.
->   */
->  unsigned long max_sane_readahead(unsigned long nr)
->  {
-> -	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
-> -		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
-> +	return min(nr, MAX_READAHEAD);
->  }
->  
->  /*
-> -- 
-> 1.7.11.7
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks :)
+>
+> Thanks!
+> -Lukas
