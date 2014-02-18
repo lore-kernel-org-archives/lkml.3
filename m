@@ -1,127 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305AbaBRXr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:47:56 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:54439 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbaBRXrx (ORCPT
+	id S1752845AbaBRXsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:48:41 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:43205 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675AbaBRXsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:47:53 -0500
-Date: Tue, 18 Feb 2014 18:47:50 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-cc: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv4 2/2] arm: Get rid of meminfo
-In-Reply-To: <1392761733-32628-3-git-send-email-lauraa@codeaurora.org>
-Message-ID: <alpine.LFD.2.11.1402181755031.17677@knanqh.ubzr>
-References: <1392761733-32628-1-git-send-email-lauraa@codeaurora.org> <1392761733-32628-3-git-send-email-lauraa@codeaurora.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 18 Feb 2014 18:48:38 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: Peter.Sewell@cl.cam.ac.uk
+In-Reply-To: <1392756211.18779.8263.camel@triegel.csb>
+References: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
+	<1392756211.18779.8263.camel@triegel.csb>
+Date: Tue, 18 Feb 2014 23:48:37 +0000
+X-Google-Sender-Auth: MEX1CKhOVKRXaj37FSdjUwmvVb8
+Message-ID: <CAHWkzRTZk-7JtzHDHBQ++cSY83Hmd+P-0KUposaQN7htW1CxUA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "ramana.radhakrishnan" <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Feb 2014, Laura Abbott wrote:
+On 18 February 2014 20:43, Torvald Riegel <triegel@redhat.com> wrote:
+> On Tue, 2014-02-18 at 12:12 +0000, Peter Sewell wrote:
+>> Several of you have said that the standard and compiler should not
+>> permit speculative writes of atomics, or (effectively) that the
+>> compiler should preserve dependencies.  In simple examples it's easy
+>> to see what that means, but in general it's not so clear what the
+>> language should guarantee, because dependencies may go via non-atomic
+>> code in other compilation units, and we have to consider the extent to
+>> which it's desirable to limit optimisation there.
+>
+> [...]
+>
+>> 2) otherwise, the language definition should prohibit it but the
+>>    compiler would have to preserve dependencies even in compilation
+>>    units that have no mention of atomics.  It's unclear what the
+>>    (runtime and compiler development) cost of that would be in
+>>    practice - perhaps Torvald could comment?
+>
+> If I'm reading the standard correctly, it requires that data
+> dependencies are preserved through loads and stores, including nonatomic
+> ones.  That sounds convenient because it allows programmers to use
+> temporary storage.
 
-> memblock is now fully integrated into the kernel and is the prefered
-> method for tracking memory. Rather than reinvent the wheel with
-> meminfo, migrate to using memblock directly instead of meminfo as
-> an intermediate.
-> 
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+The standard only needs this for consume chains, but if one wanted to
+get rid of thin-air values by requiring implementations to respect all
+(reads-from union dependency) cycles, AFAICS we'd need it pretty much
+everywhere.   I don't myself think that's likely to be a realistic
+proposal, but it does keep coming up, and it'd be very interesting to
+know the actual cost on some credible workload.
 
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-
-A small comments below.
-
-> diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-> index 8d6a089..0196091 100644
-> --- a/arch/arm/include/asm/setup.h
-> +++ b/arch/arm/include/asm/setup.h
-> @@ -26,29 +26,6 @@ static const struct tagtable __tagtable_##fn __tag = { tag, fn }
->   */
->  #define NR_BANKS	CONFIG_ARM_NR_BANKS
-
-This may go as well now.  Please consider this patch as well for your 
-series:
-
-Subject: [PATCH] arm: Get rid of NR_BANKS
-
-This constant is no longer used, except in the atag_to_fdt compatibility
-layer where a local definition is now provided.  This could be removed
-entirely i.e. having no limits but this is probably not worth it.
-
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index e254198177..1ca42ed304 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1090,11 +1090,6 @@ source "arch/arm/firmware/Kconfig"
- 
- source arch/arm/mm/Kconfig
- 
--config ARM_NR_BANKS
--	int
--	default 16 if ARCH_EP93XX
--	default 8
--
- config IWMMXT
- 	bool "Enable iWMMXt support" if !CPU_PJ4
- 	depends on CPU_XSCALE || CPU_XSC3 || CPU_MOHAWK || CPU_PJ4
-diff --git a/arch/arm/boot/compressed/atags_to_fdt.c b/arch/arm/boot/compressed/atags_to_fdt.c
-index d1153c8a76..9448aa0c66 100644
---- a/arch/arm/boot/compressed/atags_to_fdt.c
-+++ b/arch/arm/boot/compressed/atags_to_fdt.c
-@@ -7,6 +7,8 @@
- #define do_extend_cmdline 0
- #endif
- 
-+#define NR_BANKS 16
-+
- static int node_offset(void *fdt, const char *node_path)
- {
- 	int offset = fdt_path_offset(fdt, node_path);
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index 01960916dd..e0adb9f1bf 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -21,11 +21,6 @@
- #define __tagtable(tag, fn) \
- static const struct tagtable __tagtable_##fn __tag = { tag, fn }
- 
--/*
-- * Memory map description
-- */
--#define NR_BANKS	CONFIG_ARM_NR_BANKS
--
- extern int arm_add_memory(u64 start, u64 size);
- extern void early_print(const char *str, ...);
- extern void dump_machine_table(void);
-
+> However, what happens if a dependency "arrives" at a store for which the
+> alias set isn't completely known?  Then we either have to add a barrier
+> to enforce the ordering at this point, or we have to assume that all
+> other potentially aliasing memory locations would also have to start
+> carrying dependencies (which might be in other functions in other
+> compilation units).  Neither option is good.  The first might introduce
+> barriers in places in which they might not be required (or the
+> programmer has to use kill_dependency() quite often to avoid all these).
+> The second is bad because points-to analysis is hard, so in practice the
+> points-to set will not be precisely known for a lot of pointers.  So
+> this might not just creep into other functions via calls of
+> [[carries_dependency]] functions, but also through normal loads and
+> stores, likely prohibiting many optimizations.
+>
+> Furthermore, the dependency tracking can currently only be
+> "disabled/enabled" on a function granularity (via
+> [[carries_dependency]]).  Thus, if we have big functions, then
+> dependency tracking may slow down a lot of code in the big function.  If
+> we have small functions, there's a lot of attributes to be added.
+>
+> If a function may only carry a dependency but doesn't necessarily (eg,
+> depending on input parameters), then the programmer has to make a
+> trade-off whether he/she want's to benefit from mo_consume but slow down
+> other calls due to additional barriers (ie, when this function is called
+> from non-[[carries_dependency]] functions), or vice versa.  (IOW,
+> because of the function granularity, other code's performance is
+> affected.)
+>
+> If a compiler wants to implement dependency tracking just for a few
+> constructs (e.g., operators -> + ...) and use barriers otherwise, then
+> this decision must be compatible with how all this is handled in other
+> compilation units.  Thus, compiler optimizations effectively become part
+> of the ABI, which doesn't seem right.
+>
+> I hope these examples illustrate my concerns about the implementability
+> in practice of this.  It's also why I've suggested to move from an
+> opt-out approach as in the current standard (ie, with kill_dependency())
+> to an opt-in approach for conservative dependency tracking (e.g., with a
+> preserve_dependencies(exp) call, where exp will not be optimized in a
+> way that removes any dependencies).  This wouldn't help with many
+> optimizations being prevented, but it should at least help programmers
+> contain the problem to smaller regions of code.
+>
+> I'm not aware of any implementation that tries to track dependencies, so
+> I can't give any real performance numbers.  This could perhaps be
+> simulated, but I'm not sure whether a realistic case would be made
+> without at least supporting [[carries_dependency]] properly in the
+> compiler, which would be some work.
+>
