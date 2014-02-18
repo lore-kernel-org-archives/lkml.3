@@ -1,187 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540AbaBRXZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:25:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50893 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaBRWqX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:23 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Davidlohr Bueso <davidlohr@hp.com>,
-        Alex Shi <alex.shi@linaro.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 17/26] x86: mm: change tlb_flushall_shift for IvyBridge
-Date: Tue, 18 Feb 2014 14:47:13 -0800
-Message-Id: <20140218224530.899905104@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
-References: <20140218224530.398913499@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1754527AbaBRXZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:25:31 -0500
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:17777
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754443AbaBRXZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 18:25:26 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "rjw@rjwysocki.net" <rjw@rjwysocki.net>
+CC: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Thread-Topic: [PATCH V2] Change ACPI IPMI support to "default y"
+Thread-Index: AQHPLMZ9xGM3QUTlOk+rIS3zgvGkBZq7qAMA///+lK+AAAEmgA==
+Date: Tue, 18 Feb 2014 23:25:02 +0000
+Message-ID: <1392765901.3488.4.camel@x230.lan>
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
+	 <1511662.Ly2fOjCGKz@vostro.rjw.lan> <1392765307.3488.1.camel@x230.lan>
+	 <1920764.8Poj9R8nZQ@vostro.rjw.lan>
+In-Reply-To: <1920764.8Poj9R8nZQ@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 0126A32F74
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(377454003)(189002)(199002)(377424004)(51704005)(24454002)(80976001)(85306002)(47446002)(49866001)(86362001)(87936001)(81542001)(31966008)(4396001)(36756003)(92726001)(19580405001)(74502001)(19580395003)(77982001)(69226001)(81342001)(74662001)(74366001)(56816005)(85852003)(76786001)(46102001)(93136001)(51856001)(90146001)(92566001)(65816001)(80022001)(87266001)(79102001)(94316002)(63696002)(76482001)(77096001)(54316002)(59766001)(47976001)(83322001)(76796001)(50986001)(47736001)(93516002)(33646001)(83072002)(2656002)(54356001)(53806001)(74706001)(95416001)(56776001)(95666001)(81816001)(94946001)(81686001)(74876001)(3826001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB422;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:FCFAE2B3.2627CCE9.EFFA1D9F.5CD0C130.2011C;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <B6E8F948C4395B4CB4D02C334751587E@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1INPwRU000393
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2014-02-19 at 00:35 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, February 18, 2014 11:15:08 PM Matthew Garrett wrote:
+> > For example, if you load the ACPI power meter driver before you've
+> > installed the ACPI IPMI driver you'll typically get failures (most
+> > vendors implement it via IPMI).
+> 
+> Well, any specific machine from any specific vendor?
 
-------------------
-
-From: Mel Gorman <mgorman@suse.de>
-
-commit f98b7a772ab51b52ca4d2a14362fc0e0c8a2e0f3 upstream.
-
-There was a large performance regression that was bisected to
-commit 611ae8e3 ("x86/tlb: enable tlb flush range support for
-x86").  This patch simply changes the default balance point
-between a local and global flush for IvyBridge.
-
-In the interest of allowing the tests to be reproduced, this
-patch was tested using mmtests 0.15 with the following
-configurations
-
-	configs/config-global-dhp__tlbflush-performance
-	configs/config-global-dhp__scheduler-performance
-	configs/config-global-dhp__network-performance
-
-Results are from two machines
-
-Ivybridge   4 threads:  Intel(R) Core(TM) i3-3240 CPU @ 3.40GHz
-Ivybridge   8 threads:  Intel(R) Core(TM) i7-3770 CPU @ 3.40GHz
-
-Page fault microbenchmark showed nothing interesting.
-
-Ebizzy was configured to run multiple iterations and threads.
-Thread counts ranged from 1 to NR_CPUS*2. For each thread count,
-it ran 100 iterations and each iteration lasted 10 seconds.
-
-Ivybridge 4 threads
-                    3.13.0-rc7            3.13.0-rc7
-                       vanilla           altshift-v3
-Mean   1     6395.44 (  0.00%)     6789.09 (  6.16%)
-Mean   2     7012.85 (  0.00%)     8052.16 ( 14.82%)
-Mean   3     6403.04 (  0.00%)     6973.74 (  8.91%)
-Mean   4     6135.32 (  0.00%)     6582.33 (  7.29%)
-Mean   5     6095.69 (  0.00%)     6526.68 (  7.07%)
-Mean   6     6114.33 (  0.00%)     6416.64 (  4.94%)
-Mean   7     6085.10 (  0.00%)     6448.51 (  5.97%)
-Mean   8     6120.62 (  0.00%)     6462.97 (  5.59%)
-
-Ivybridge 8 threads
-                     3.13.0-rc7            3.13.0-rc7
-                        vanilla           altshift-v3
-Mean   1      7336.65 (  0.00%)     7787.02 (  6.14%)
-Mean   2      8218.41 (  0.00%)     9484.13 ( 15.40%)
-Mean   3      7973.62 (  0.00%)     8922.01 ( 11.89%)
-Mean   4      7798.33 (  0.00%)     8567.03 (  9.86%)
-Mean   5      7158.72 (  0.00%)     8214.23 ( 14.74%)
-Mean   6      6852.27 (  0.00%)     7952.45 ( 16.06%)
-Mean   7      6774.65 (  0.00%)     7536.35 ( 11.24%)
-Mean   8      6510.50 (  0.00%)     6894.05 (  5.89%)
-Mean   12     6182.90 (  0.00%)     6661.29 (  7.74%)
-Mean   16     6100.09 (  0.00%)     6608.69 (  8.34%)
-
-Ebizzy hits the worst case scenario for TLB range flushing every
-time and it shows for these Ivybridge CPUs at least that the
-default choice is a poor on.  The patch addresses the problem.
-
-Next was a tlbflush microbenchmark written by Alex Shi at
-http://marc.info/?l=linux-kernel&m=133727348217113 .  It
-measures access costs while the TLB is being flushed.  The
-expectation is that if there are always full TLB flushes that
-the benchmark would suffer and it benefits from range flushing
-
-There are 320 iterations of the test per thread count.  The
-number of entries is randomly selected with a min of 1 and max
-of 512.  To ensure a reasonably even spread of entries, the full
-range is broken up into 8 sections and a random number selected
-within that section.
-
-iteration 1, random number between 0-64
-iteration 2, random number between 64-128 etc
-
-This is still a very weak methodology.  When you do not know
-what are typical ranges, random is a reasonable choice but it
-can be easily argued that the opimisation was for smaller ranges
-and an even spread is not representative of any workload that
-matters.  To improve this, we'd need to know the probability
-distribution of TLB flush range sizes for a set of workloads
-that are considered "common", build a synthetic trace and feed
-that into this benchmark.  Even that is not perfect because it
-would not account for the time between flushes but there are
-limits of what can be reasonably done and still be doing
-something useful.  If a representative synthetic trace is
-provided then this benchmark could be revisited and the shift values retuned.
-
-Ivybridge 4 threads
-                        3.13.0-rc7            3.13.0-rc7
-                           vanilla           altshift-v3
-Mean       1       10.50 (  0.00%)       10.50 (  0.03%)
-Mean       2       17.59 (  0.00%)       17.18 (  2.34%)
-Mean       3       22.98 (  0.00%)       21.74 (  5.41%)
-Mean       5       47.13 (  0.00%)       46.23 (  1.92%)
-Mean       8       43.30 (  0.00%)       42.56 (  1.72%)
-
-Ivybridge 8 threads
-                         3.13.0-rc7            3.13.0-rc7
-                            vanilla           altshift-v3
-Mean       1         9.45 (  0.00%)        9.36 (  0.93%)
-Mean       2         9.37 (  0.00%)        9.70 ( -3.54%)
-Mean       3         9.36 (  0.00%)        9.29 (  0.70%)
-Mean       5        14.49 (  0.00%)       15.04 ( -3.75%)
-Mean       8        41.08 (  0.00%)       38.73 (  5.71%)
-Mean       13       32.04 (  0.00%)       31.24 (  2.49%)
-Mean       16       40.05 (  0.00%)       39.04 (  2.51%)
-
-For both CPUs, average access time is reduced which is good as
-this is the benchmark that was used to tune the shift values in
-the first place albeit it is now known *how* the benchmark was
-used.
-
-The scheduler benchmarks were somewhat inconclusive.  They
-showed gains and losses and makes me reconsider how stable those
-benchmarks really are or if something else might be interfering
-with the test results recently.
-
-Network benchmarks were inconclusive.  Almost all results were
-flat except for netperf-udp tests on the 4 thread machine.
-These results were unstable and showed large variations between
-reboots.  It is unknown if this is a recent problems but I've
-noticed before that netperf-udp results tend to vary.
-
-Based on these results, changing the default for Ivybridge seems
-like a logical choice.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Tested-by: Davidlohr Bueso <davidlohr@hp.com>
-Reviewed-by: Alex Shi <alex.shi@linaro.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-cqnadffh1tiqrshthRj3Esge@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kernel/cpu/intel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -628,7 +628,7 @@ static void __cpuinit intel_tlb_flushall
- 		tlb_flushall_shift = 5;
- 		break;
- 	case 0x63a: /* Ivybridge */
--		tlb_flushall_shift = 1;
-+		tlb_flushall_shift = 2;
- 		break;
- 	default:
- 		tlb_flushall_shift = 6;
-
-
+The Dell R720 and HP DL385 both seem to have this configuration. I
+believe some Ciscos do, too.
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
