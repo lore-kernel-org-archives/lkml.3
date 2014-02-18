@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaBRXPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:15:20 -0500
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:47095
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754340AbaBRXPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:15:13 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "rjw@rjwysocki.net" <rjw@rjwysocki.net>
-CC: "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "minyard@acm.org" <minyard@acm.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
-Thread-Topic: [PATCH V2] Change ACPI IPMI support to "default y"
-Thread-Index: AQHPLMZ9xGM3QUTlOk+rIS3zgvGkBZq7qAMA///89oA=
-Date: Tue, 18 Feb 2014 23:15:08 +0000
-Message-ID: <1392765307.3488.1.camel@x230.lan>
-References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
-	 <1511662.Ly2fOjCGKz@vostro.rjw.lan>
-In-Reply-To: <1511662.Ly2fOjCGKz@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 0126A32F74
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(24454002)(51704005)(189002)(199002)(377454003)(377424004)(83072002)(81342001)(51856001)(74706001)(76796001)(19580395003)(83322001)(80022001)(94946001)(76786001)(19580405001)(90146001)(74366001)(85852003)(81542001)(74876001)(56776001)(54356001)(53806001)(94316002)(74502001)(76482001)(47446002)(46102001)(81816001)(81686001)(74662001)(59766001)(56816005)(77982001)(65816001)(87936001)(49866001)(63696002)(80976001)(77096001)(93136001)(93516002)(92566001)(36756003)(47736001)(69226001)(33646001)(4396001)(31966008)(95666001)(50986001)(2656002)(54316002)(95416001)(85306002)(86362001)(47976001)(87266001)(92726001)(79102001)(3826001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:F0FEF1A3.2E0715E9.EBF4B9BE.88E5E03C.201CB;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <BD61B0A8EF59C54D974E556B5FF0133D@namprd05.prod.outlook.com>
+	id S1754354AbaBRXQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:16:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55659 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754008AbaBRXQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 18:16:43 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nm@ti.com, kgene.kim@samsung.com,
+        jinchoi@broadcom.com, tianyu.lan@intel.com,
+        sebastian.capella@linaro.org, jhbird.choi@samsung.com
+Subject: Re: [PATCH V6 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+Date: Wed, 19 Feb 2014 00:31:33 +0100
+Message-ID: <1451060.DQy33I92MO@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5303DDF9.3050806@wwwdotorg.org>
+References: <cover.1392629003.git.viresh.kumar@linaro.org> <1455643.Gytp1zkkCW@vostro.rjw.lan> <5303DDF9.3050806@wwwdotorg.org>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1INFVwO032572
 
-On Wed, 2014-02-19 at 00:26 +0100, Rafael J. Wysocki wrote:
-> On Tuesday, February 18, 2014 11:28:29 AM Matthew Garrett wrote:
+On Tuesday, February 18, 2014 03:26:01 PM Stephen Warren wrote:
+> On 02/18/2014 03:36 PM, Rafael J. Wysocki wrote:
+> > On Tuesday, February 18, 2014 01:30:52 PM Stephen Warren wrote:
+> >> On 02/17/2014 02:25 AM, Viresh Kumar wrote:
+> >>> This patchset creates/calls cpufreq suspend/resume callbacks from dpm_{suspend|resume}()
+> >>> for handling suspend/resume of cpufreq governors and core.
+> >>>
+> >>> There are multiple problems that are fixed by this patch:
+> >>> - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
+> >>>   wasn't working well with suspend/resume as calls for removing non-boot CPUs
+> >>>   was turning out into a call to drivers ->target() which then tries to play
+> >>>   with regulators. But regulators and their I2C bus were already suspended and
+> >>>   this resulted in a failure. Many platforms have such problems, samsung, tegra,
+> >>>   etc.. They solved it with driver specific PM notifiers where they used to
+> >>>   disable their driver's ->target() routine.
+> >>> - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found an issue where tunables
+> >>>   configuration for clusters/sockets with non-boot CPUs was getting lost after
+> >>>   suspend/resume, as we were notifying governors with CPUFREQ_GOV_POLICY_EXIT on
+> >>>   removal of the last cpu for that policy and so deallocating memory for
+> >>>   tunables.  This is fixed by this patch as we don't allow any operation on
+> >>>   governors after device suspend and before device resume now.
+> >>
+> >> The series,
+> >> Tested-by: Stephen Warren <swarren@nvidia.com>
 > > 
-> > The ACPI IPMI driver implements IPMI operation region support for the ACPI
-> > core. Systems that declare ACPI operation regions may reference them at any
-> > time, including during kernel initialisation. These accesses will fail
-> > unless the ACPI IPMI driver is present, and undesirable system behaviour
-> > may result. Set the default to Y in order to encourage distributions and
-> > users to configure kernels to avoid awkward surprises.
+> > Is this series necessary to fix bugs that you're seeing in 3.14-rc and if so,
+> > the what bugs are they?
 > 
-> Do you have any examples of problems caused by that or is this just theoretical
-> at the moment?
+> No, Viresh sent a separate patch that fixed the sysfs warning I was
+> getting (I believe you've already applied that), and there's still some
+> ongoing discussion about the other kernel spew.
 
-For example, if you load the ACPI power meter driver before you've
-installed the ACPI IPMI driver you'll typically get failures (most
-vendors implement it via IPMI).
+OK, thanks!
 
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
