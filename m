@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaBRXcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:32:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50685 "EHLO
+	id S1753464AbaBRXco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:32:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50680 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaBRWqH (ORCPT
+	with ESMTP id S1752478AbaBRWqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:07 -0500
+	Tue, 18 Feb 2014 17:46:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        Asias He <asias@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Ben Hutchings <ben@decadent.org.uk>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 22/24] virtio-blk: Use block layer provided spinlock
-Date: Tue, 18 Feb 2014 14:47:09 -0800
-Message-Id: <20140218224550.855852434@linuxfoundation.org>
+Subject: [PATCH 3.4 21/24] Input: synaptics - handle out of bounds values from the hardware
+Date: Tue, 18 Feb 2014 14:47:08 -0800
+Message-Id: <20140218224550.826575987@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
 References: <20140218224550.221535225@linuxfoundation.org>
@@ -31,103 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asias He <asias@redhat.com>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-commit 2c95a3290919541b846bee3e0fbaa75860929f53 upstream.
+commit c0394506e69b37c47d391c2a7bbea3ea236d8ec8 upstream.
 
-Block layer will allocate a spinlock for the queue if the driver does
-not provide one in blk_init_queue().
+The touchpad on the Acer Aspire One D250 will report out of range values
+in the extreme lower portion of the touchpad. These appear as abrupt
+changes in the values reported by the hardware from very low values to
+very high values, which can cause unexpected vertical jumps in the
+position of the mouse pointer.
 
-The reason to use the internal spinlock is that blk_cleanup_queue() will
-switch to use the internal spinlock in the cleanup code path.
+What seems to be happening is that the value is wrapping to a two's
+compliment negative value of higher resolution than the 13-bit value
+reported by the hardware, with the high-order bits being truncated. This
+patch adds handling for these values by converting them to the
+appropriate negative values.
 
-        if (q->queue_lock != &q->__queue_lock)
-                q->queue_lock = &q->__queue_lock;
+The only tricky part about this is deciding when to treat a number as
+negative. It stands to reason that if out of range values can be
+reported on the low end then it could also happen on the high end, so
+not all out of range values should be treated as negative. The approach
+taken here is to split the difference between the maximum legitimate
+value for the axis and the maximum possible value that the hardware can
+report, treating values greater than this number as negative and all
+other values as positive. This can be tweaked later if hardware is found
+that operates outside of these parameters.
 
-However, processes which are in D state might have taken the driver
-provided spinlock, when the processes wake up, they would release the
-block provided spinlock.
-
-=====================================
-[ BUG: bad unlock balance detected! ]
-3.4.0-rc7+ #238 Not tainted
--------------------------------------
-fio/3587 is trying to release lock (&(&q->__queue_lock)->rlock) at:
-[<ffffffff813274d2>] blk_queue_bio+0x2a2/0x380
-but there are no more locks to release!
-
-other info that might help us debug this:
-1 lock held by fio/3587:
- #0:  (&(&vblk->lock)->rlock){......}, at:
-[<ffffffff8132661a>] get_request_wait+0x19a/0x250
-
-Other drivers use block layer provided spinlock as well, e.g. SCSI.
-
-Switching to the block layer provided spinlock saves a bit of memory and
-does not increase lock contention. Performance test shows no real
-difference is observed before and after this patch.
-
-Changes in v2: Improve commit log as Michael suggested.
-
-Cc: virtualization@lists.linux-foundation.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Asias He <asias@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+BugLink: http://bugs.launchpad.net/bugs/1001251
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/virtio_blk.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/input/mouse/synaptics.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -21,8 +21,6 @@ struct workqueue_struct *virtblk_wq;
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -40,11 +40,28 @@
+  * Note that newer firmware allows querying device for maximum useable
+  * coordinates.
+  */
++#define XMIN 0
++#define XMAX 6143
++#define YMIN 0
++#define YMAX 6143
+ #define XMIN_NOMINAL 1472
+ #define XMAX_NOMINAL 5472
+ #define YMIN_NOMINAL 1408
+ #define YMAX_NOMINAL 4448
  
- struct virtio_blk
- {
--	spinlock_t lock;
--
- 	struct virtio_device *vdev;
- 	struct virtqueue *vq;
- 
-@@ -69,7 +67,7 @@ static void blk_done(struct virtqueue *v
- 	unsigned int len;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&vblk->lock, flags);
-+	spin_lock_irqsave(vblk->disk->queue->queue_lock, flags);
- 	while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
- 		int error;
- 
-@@ -104,7 +102,7 @@ static void blk_done(struct virtqueue *v
++/* Size in bits of absolute position values reported by the hardware */
++#define ABS_POS_BITS 13
++
++/*
++ * Any position values from the hardware above the following limits are
++ * treated as "wrapped around negative" values that have been truncated to
++ * the 13-bit reporting range of the hardware. These are just reasonable
++ * guesses and can be adjusted if hardware is found that operates outside
++ * of these parameters.
++ */
++#define X_MAX_POSITIVE (((1 << ABS_POS_BITS) + XMAX) / 2)
++#define Y_MAX_POSITIVE (((1 << ABS_POS_BITS) + YMAX) / 2)
++
+ /*
+  * Synaptics touchpads report the y coordinate from bottom to top, which is
+  * opposite from what userspace expects.
+@@ -555,6 +572,12 @@ static int synaptics_parse_hw_state(cons
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
  	}
- 	/* In case queue is stopped waiting for more buffers. */
- 	blk_start_queue(vblk->disk->queue);
--	spin_unlock_irqrestore(&vblk->lock, flags);
-+	spin_unlock_irqrestore(vblk->disk->queue->queue_lock, flags);
+ 
++	/* Convert wrap-around values to negative */
++	if (hw->x > X_MAX_POSITIVE)
++		hw->x -= 1 << ABS_POS_BITS;
++	if (hw->y > Y_MAX_POSITIVE)
++		hw->y -= 1 << ABS_POS_BITS;
++
+ 	return 0;
  }
  
- static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
-@@ -438,7 +436,6 @@ static int __devinit virtblk_probe(struc
- 	}
- 
- 	INIT_LIST_HEAD(&vblk->reqs);
--	spin_lock_init(&vblk->lock);
- 	vblk->vdev = vdev;
- 	vblk->sg_elems = sg_elems;
- 	sg_init_table(vblk->sg, vblk->sg_elems);
-@@ -463,7 +460,7 @@ static int __devinit virtblk_probe(struc
- 		goto out_mempool;
- 	}
- 
--	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, &vblk->lock);
-+	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, NULL);
- 	if (!q) {
- 		err = -ENOMEM;
- 		goto out_put_disk;
 
 
