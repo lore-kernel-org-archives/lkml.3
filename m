@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaBRUbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:31:33 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43406 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaBRUb2 (ORCPT
+	id S1752000AbaBRUcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:32:47 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:55799 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaBRUcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:31:28 -0500
-Message-ID: <5303C31C.4070607@wwwdotorg.org>
-Date: Tue, 18 Feb 2014 13:31:24 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Feb 2014 15:32:46 -0500
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
-        jinchoi@broadcom.com, Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
-References: <cover.1392273722.git.viresh.kumar@linaro.org>	<52FE71BD.3020103@wwwdotorg.org>	<52FE7AFD.2040203@wwwdotorg.org> <CAKohpo=JVUPV81hFmwpuweWrfoEGZ0S_pkb9Fd+-SCXy+O+QCQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=JVUPV81hFmwpuweWrfoEGZ0S_pkb9Fd+-SCXy+O+QCQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <alpine.DEB.2.02.1402182119500.4468@ionos.tec.linutronix.de>
+References: <1392662736-7803-1-git-send-email-john.stultz@linaro.org>
+	<1392662736-7803-2-git-send-email-john.stultz@linaro.org>
+	<alpine.DEB.2.02.1402182119500.4468@ionos.tec.linutronix.de>
+Date: Tue, 18 Feb 2014 12:32:45 -0800
+Message-ID: <CALAqxLX4k4JcUGzVdv68w+4v0fg34G_qBiBhH07kyTssQ1jE1Q@mail.gmail.com>
+Subject: Re: [PATCH] sched_clock: Prevent callers from seeing half-updated data
+From: John Stultz <john.stultz@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Josh Cartwright <joshc@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2014 11:02 PM, Viresh Kumar wrote:
-> On 15 February 2014 01:52, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> BTW, I also happened to test these on a Tegra114 system, on which there
->> is no cpufreq driver, and this series (applied on top of commit
->> 9398a10cd964 Merge tag 'regulator-v3.14-rc2') causes the following
->> during suspend:
-> 
-> Ahh, that's a obvious bug. Following would fix it, thanks:
+On Tue, Feb 18, 2014 at 12:20 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 17 Feb 2014, John Stultz wrote:
+>
+>> From: Stephen Boyd <sboyd@codeaurora.org>
+>>
+>> The generic sched_clock registration function was previously
+>> done lockless, due to the fact that it was expected to be called
+>> only once. However, now there are systems that may register
+>> multiple sched_clock sources, for which the lack of locking has
+>> casued problems:
+>>
+>> If two sched_clock sources are registered we may end up in a
+>> situation where a call to sched_clock() may be accessing the
+>> epoch cycle count for the old counter and the cycle count for the
+>> new counter. This can lead to confusing results where
+>> sched_clock() values jump and then are reset to 0 (due to the way
+>> the registration function forces the epoch_ns to be 0).
+>>
+>> Fix this by reorganizing the registration function to hold the
+>> seqlock for as short a time as possible while we update the
+>> clock_data structure for a new counter. We also put any
+>> accumulated time into epoch_ns instead of resetting the time to
+>> 0 so that the clock doesn't reset after each successful
+>> registration.
+>>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>
+> Peter ???
 
-Yes, I tested V6 of the patch series, which incorporates that change,
-and it's OK.
+So this is the generic sched_clock work, which Peter really hasn't had
+much involvement with yet (mostly because its not yet generic enough
+to work with more then a few arches). But I included him in the CC
+since I think it would be good to have him following along.
+
+thanks
+-john
