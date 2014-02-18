@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaBRDaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 22:30:11 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:51344 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230AbaBRDaJ (ORCPT
+	id S1754160AbaBRDg7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 22:36:59 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:57248 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711AbaBRDg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 22:30:09 -0500
+	Mon, 17 Feb 2014 22:36:58 -0500
 X-Originating-IP: 50.43.14.201
-Date: Mon, 17 Feb 2014 19:29:55 -0800
+Date: Mon, 17 Feb 2014 19:36:42 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -17,92 +17,93 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
- barriers() for some control dependencies
-Message-ID: <20140218032955.GA31339@thin>
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217214606.GC7941@thin>
- <20140217225816.GN4250@linux.vnet.ibm.com>
- <20140218000246.GA19929@thin>
- <20140218001740.GT4250@linux.vnet.ibm.com>
- <20140218004510.GK19929@thin>
- <20140218012137.GA4250@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 19/55] rcutorture: Abstract TOROUT_STRING()
+ and friends
+Message-ID: <20140218033642.GB31339@thin>
+References: <20140217221231.GA8419@linux.vnet.ibm.com>
+ <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392675179-11560-19-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140218002606.GE19929@thin>
+ <20140218005802.GW4250@linux.vnet.ibm.com>
+ <20140218012318.GA8794@thin>
+ <20140218014357.GC4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140218012137.GA4250@linux.vnet.ibm.com>
+In-Reply-To: <20140218014357.GC4250@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 05:21:37PM -0800, Paul E. McKenney wrote:
-> On Mon, Feb 17, 2014 at 04:45:11PM -0800, Josh Triplett wrote:
-> > On Mon, Feb 17, 2014 at 04:17:40PM -0800, Paul E. McKenney wrote:
-> > > On Mon, Feb 17, 2014 at 04:02:47PM -0800, Josh Triplett wrote:
-> > > > On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
-> > > > > On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
-> > > > > > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
-> > > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > > > 
-> > > > > > > Current compilers can "speculate" stores in the case where both legs
-> > > > > > > of the "if" statement start with identical stores.  Because the stores
-> > > > > > > are identical, the compiler knows that the store will unconditionally
-> > > > > > > execute regardless of the "if" condition, and so the compiler is within
-> > > > > > > its rights to hoist the store to precede the condition.  Such hoisting
-> > > > > > > destroys the control-dependency ordering.  This ordering can be restored
-> > > > > > > by placing a barrier() at the beginning of each leg of the "if" statement.
-> > > > > > > This commit adds this requirement to the control-dependencies section.
-> > > > > > > 
-> > > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > > 
-> > > > > > This is starting to become a rather unreasonable level of fighting the
-> > > > > > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
-> > > > > > doesn't seem like a reasonable thing to require users to do.  Is there
-> > > > > > really no other way to cope with this particular bit of "help" from the
-> > > > > > compiler?
+On Mon, Feb 17, 2014 at 05:43:57PM -0800, Paul E. McKenney wrote:
+> On Mon, Feb 17, 2014 at 05:23:18PM -0800, Josh Triplett wrote:
+> > On Mon, Feb 17, 2014 at 04:58:02PM -0800, Paul E. McKenney wrote:
+> > > On Mon, Feb 17, 2014 at 04:26:06PM -0800, Josh Triplett wrote:
+> > > > On Mon, Feb 17, 2014 at 02:12:23PM -0800, Paul E. McKenney wrote:
+> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > > > > 
-> > > > > Well, we could use smp_mb() instead of barrier(), but that was the
-> > > > > sort of thing that Peter Zijlstra was trying to avoid.
+> > > > > These diagnostic macros are not confined to torturing RCU, so this commit
+> > > > > makes them available to other torture tests.
+> > > > > 
+> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > > > > 
-> > > > Yeah, that's not an improvement.  The goal would be to make the code no
-> > > > more complex than it already needs to be with ACCESS_ONCE; changing
-> > > > "barrier()" to something else doesn't help (quite apart from smp_mb()
-> > > > being suboptimal).
-> > > > 
-> > > > > That said, I do sympathize completely with your position here -- it is
-> > > > > just that it is better to have our compiler-fights documented that
-> > > > > not, right?
-> > > > 
-> > > > Sure, better to document them, but better still to not have them.  Is
-> > > > there some other way we could avoid this one entirely?
+> > > > This removes the do {} while (0) around the first of the macros, without
+> > > > any explanation in the commit message.
 > > > 
-> > > We could try change the standard so as to outlaw pulling common code from
-> > > both legs of an "if" statement, but that will be a serious uphill battle.
+> > > checkpatch.pl yelled at me about it.  ;-)
 > > 
-> > And insufficient given widespread use of existing compilers.
-> 
-> Fair point...
-> 
-> > > Or perhaps do something to warn the developer about the possibility of
-> > > this happening.
+> > That's a fine reason, but the change needs documenting in the commit
+> > message.
+> > 
+> > > > Also, to what extent could these be made redundant with pr_fmt?
+> > > > if(verbose) seems like it really ought to become a priority level or
+> > > > dynamic debugging (and it's really awful to further propagate macros
+> > > > that reference an out-of-macro variable).  Ideally all of these could go
+> > > > away in favor of pr_fmt, and then the individual calls to them would
+> > > > become pr_alert, pr_debug, pr_error, or similar.
 > > > 
-> > > Other thoughts?
+> > > I don't immediately see how to get the "!!!" to be there or not with
+> > > pr_fmt(), since the same pr_fmt() would apply to all the macros.
 > > 
-> > Might be worth bringing this up with the GCC folks to find out if
-> > there's something obvious we're missing.  (For non-obvious values of
-> > "obvious".)
+> > Replace VERBOSE_TOROUT_ERRSTRING with something like pr_emerg, or leave
+> > it as pr_alert and drop the priority of the other variations to
+> > something less; then instead of "!!!" you have the existing message
+> > priority mechanism.
 > 
-> Non-obvious values of "obvious" -- I have no idea what that means, but
-> it does have a nice counter-intuitive sound to it, doesn't it?  ;-)
+> Is this message-priority mechanism apparent over a serial console?
+> As in can a script reading the serial console output tell what the
+> message priority is?
 
-I'm hoping for something that we'll consider obvious in hindsight.
+Good point.  Well, if the use of "verbose" and "torture_type" went away in
+favor of dynamic debug and pr_fmt, respectively, then having an
+error-printing macro that just does pr_alert("!!! " ...) doesn't seem so
+bad.
 
-> This conversation has started, albeit with much more noise and smoke
-> than signal or light.
+> > Also, if it helps, note that you can add parameters in pr_fmt, as long
+> > as they're the initial parameters and you add corresponding format
+> > specifiers before the passed format string.  (Many modules do this to
+> > add __func__, for instance.)
+> 
+> Agreed, and I do see some uses of this sort.
 
-Whereabouts is that conversation taking place?
+It should also handle the desired prefix that these macros are adding.
+
+> > > I am also not all that excited about including "verbose" or similar
+> > > into the argument list of all calls to these guys.
+> > 
+> > verbose could go away entirely in favor of dynamic debug; you could then
+> > turn debug on or off for the relevant torture test module instead of
+> > setting verbose.
+> 
+> But I need a pretty fully functional userspace to control the dynamic
+> debug from what I can see.  I really would like to avoid relying on
+> having much of any userspace during rcutorture and locktorture testing.
+> The reason is that avoiding a userspace greatly reduces my memory and
+> disk requirements, allowing me to run more instances of rcutorture and
+> locktorture in parallel on smaller systems.
+
+You can arbitrarily configure dynamic debug from the kernel command
+line; no userspace required.
 
 - Josh Triplett
