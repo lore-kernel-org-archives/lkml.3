@@ -1,277 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110AbaBRQrc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:47:32 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34899 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612AbaBRQr3 (ORCPT
+	id S1754951AbaBRQtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:49:18 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:48761 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaBRQtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:47:29 -0500
-Date: Tue, 18 Feb 2014 08:47:23 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
-Cc: "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>, peterz@infradead.org,
-        Torvald Riegel <triegel@redhat.com>, torvalds@linux-foundation.org,
-        Will Deacon <will.deacon@arm.com>, Ramana.Radhakrishnan@arm.com,
-        dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mingo@kernel.org, gcc@gcc.gnu.org
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140218164723.GM4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
- <20140218145645.GK4250@linux.vnet.ibm.com>
- <CAHWkzRR1YozAuTqSTdyTncyNju6ZqUwYi0h988FBgFLDJAtaEg@mail.gmail.com>
+	Tue, 18 Feb 2014 11:49:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHWkzRR1YozAuTqSTdyTncyNju6ZqUwYi0h988FBgFLDJAtaEg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021816-9332-0000-0000-00000324CFF6
+In-Reply-To: <1392737465.18779.7644.camel@triegel.csb>
+References: <20140207180216.GP4250@linux.vnet.ibm.com>
+	<1391992071.18779.99.camel@triegel.csb>
+	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	<1392183564.18779.2187.camel@triegel.csb>
+	<20140212180739.GB4250@linux.vnet.ibm.com>
+	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	<20140213002355.GI4250@linux.vnet.ibm.com>
+	<1392321837.18779.3249.camel@triegel.csb>
+	<20140214020144.GO4250@linux.vnet.ibm.com>
+	<1392352981.18779.3800.camel@triegel.csb>
+	<20140214172920.GQ4250@linux.vnet.ibm.com>
+	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	<1392486310.18779.6447.camel@triegel.csb>
+	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	<1392666947.18779.6838.camel@triegel.csb>
+	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	<530296CD.5050503@warwick.ac.uk>
+	<CA+55aFyi8QWge7QR0M+ABH-kEiwvoEyMhK6GWRvN1YNKJAFuSQ@mail.gmail.com>
+	<1392737465.18779.7644.camel@triegel.csb>
+Date: Tue, 18 Feb 2014 08:49:13 -0800
+X-Google-Sender-Auth: of4Wjk283HTL78Q6HMXRZuFmWW4
+Message-ID: <CA+55aFxn2KRXDQ91xRs=bO_6d_nA_PSQvoY1_=OxyJ86+KOO9Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Alec Teal <a.teal@warwick.ac.uk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 03:33:35PM +0000, Peter Sewell wrote:
-> Hi Paul,
-> 
-> On 18 February 2014 14:56, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > On Tue, Feb 18, 2014 at 12:12:06PM +0000, Peter Sewell wrote:
-> >> Several of you have said that the standard and compiler should not
-> >> permit speculative writes of atomics, or (effectively) that the
-> >> compiler should preserve dependencies.  In simple examples it's easy
-> >> to see what that means, but in general it's not so clear what the
-> >> language should guarantee, because dependencies may go via non-atomic
-> >> code in other compilation units, and we have to consider the extent to
-> >> which it's desirable to limit optimisation there.
-> >>
-> >> For example, suppose we have, in one compilation unit:
-> >>
-> >>     void f(int ra, int*rb) {
-> >>       if (ra==42)
-> >>         *rb=42;
-> >>       else
-> >>         *rb=42;
-> >>     }
-> >
-> > Hello, Peter!
-> >
-> > Nice example!
-> >
-> > The relevant portion of Documentation/memory-barriers.txt in my -rcu tree
-> > says the following about the control dependency in the above construct:
-> >
-> > ------------------------------------------------------------------------
-> >
-> >         q = ACCESS_ONCE(a);
-> >         if (q) {
-> >                 barrier();
-> >                 ACCESS_ONCE(b) = p;
-> >                 do_something();
-> >         } else {
-> >                 barrier();
-> >                 ACCESS_ONCE(b) = p;
-> >                 do_something_else();
-> >         }
-> >
-> > The initial ACCESS_ONCE() is required to prevent the compiler from
-> > proving the value of 'a', and the pair of barrier() invocations are
-> > required to prevent the compiler from pulling the two identical stores
-> > to 'b' out from the legs of the "if" statement.
-> 
-> thanks
-> 
-> > ------------------------------------------------------------------------
-> >
-> > So yes, current compilers need significant help if it is necessary to
-> > maintain dependencies in that sort of code.
-> >
-> > Similar examples came up in the data-dependency discussions in the
-> > standards committee, which led to the [[carries_dependency]] attribute for
-> > C11 and C++11.  Of course, current compilers don't have this attribute,
-> > and the current Linux kernel code doesn't have any other marking for
-> > data dependencies passing across function boundaries.  (Maybe some time
-> > as an assist for detecting pointer leaks out of RCU read-side critical
-> > sections, but efforts along those lines are a bit stalled at the moment.)
-> >
-> > More on data dependencies below...
-> >
-> >> and in another compilation unit the bodies of two threads:
-> >>
-> >>     // Thread 0
-> >>     r1 = x;
-> >>     f(r1,&r2);
-> >>     y = r2;
-> >>
-> >>     // Thread 1
-> >>     r3 = y;
-> >>     f(r3,&r4);
-> >>     x = r4;
-> >>
-> >> where accesses to x and y are annotated C11 atomic
-> >> memory_order_relaxed or Linux ACCESS_ONCE(), accesses to
-> >> r1,r2,r3,r4,ra,rb are not annotated, and x and y initially hold 0.
-> >>
-> >> (Of course, this is an artificial example, to make the point below as
-> >> simply as possible - in real code the branches of the conditional
-> >> might not be syntactically identical, just equivalent after macro
-> >> expansion and other optimisation.)
-> >>
-> >> In the source program there's a dependency from the read of x to the
-> >> write of y in Thread 0, and from the read of y to the write of x on
-> >> Thread 1.  Dependency-respecting compilation would preserve those and
-> >> the ARM and POWER architectures both respect them, so the reads of x
-> >> and y could not give 42.
-> >>
-> >> But a compiler might well optimise the (non-atomic) body of f() to
-> >> just *rb=42, making the threads effectively
-> >>
-> >>     // Thread 0
-> >>     r1 = x;
-> >>     y = 42;
-> >>
-> >>     // Thread 1
-> >>     r3 = y;
-> >>     x = 42;
-> >>
-> >> (GCC does this at O1, O2, and O3) and the ARM and POWER architectures
-> >> permit those two reads to see 42. That is moreover actually observable
-> >> on current ARM hardware.
-> >
-> > I do agree that this could happen on current compilers and hardware.
-> >
-> > Agreed, but as Peter Zijlstra noted in this thread, this optimization
-> > is to a control dependency, not a data dependency.
-> 
-> Indeed.  In principle (again as Hans has observed) a compiler might
-> well convert between the two, e.g. if operating on single-bit values,
-> or where value-range analysis has shown that a variable can only
-> contain one of a small set of values.   I don't know whether that
-> happens in practice?  Then there are also cases where a compiler is
-> very likely to remove data/address dependencies, eg if some constant C
-> is #define'd to be 0 then an array access indexed by x * C will have
-> the dependency on x removed.  The runtime and compiler development
-> costs of preventing that are also unclear to me.
-> 
-> Given that, whether it's reasonable to treat control and data
-> dependencies differently seems to be an open question.
+On Tue, Feb 18, 2014 at 7:31 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> On Mon, 2014-02-17 at 16:05 -0800, Linus Torvalds wrote:
+>> And exactly because I know enough, I would *really* like atomics to be
+>> well-defined, and have very clear - and *local* - rules about how they
+>> can be combined and optimized.
+>
+> "Local"?
 
-Here is another (admittedly fanciful and probably buggy) implementation
-of f() that relies on data dependencies (according to C11 and C++11),
-but which could not be relied on to preserve thosse data dependencies
-given current pre-C11 compilers:
+Yes.
 
-	int arr[2] = { 42, 43 };
-	int *bigarr;
+So I think that one of the big advantages of atomics over volatile is
+that they *can* be optimized, and as such I'm not at all against
+trying to generate much better code than for volatile accesses.
 
-	int f(int ra)
-	{
-		return arr[ra != 42];
-	}
+But at the same time, that can go too far. For example, one of the
+things we'd want to use atomics for is page table accesses, where it
+is very important that we don't generate multiple accesses to the
+values, because parts of the values can be change *by*hardware* (ie
+accessed and dirty bits).
 
-	// Thread 0
-	r1 = atomic_load_explicit(&gidx, memory_order_consume);
-	r2 = bigarr[f(r1)];
+So imagine that you have some clever global optimizer that sees that
+the program never ever actually sets the dirty bit at all in any
+thread, and then uses that kind of non-local knowledge to make
+optimization decisions. THAT WOULD BE BAD.
 
-	// Thread 1
-	r3 = random() % BIGARR_SIZE;
-	bigarr[r3] = some_integer();
-	atomic_store_explicit(&gidx, r3, memory_order_release);
+Do you see what I'm aiming for? Any optimization that tries to prove
+anything from more than local state is by definition broken, because
+it assumes that everything is described by the program.
 
-	// Mainprogram
-	bigarr = kmalloc(BIGARR_SIZE * sizeof(*bigarr), ...);
-	// Note: bigarr currently contains pre-initialization garbage
-	// Spawn threads 1 and 2
+But *local* optimizations are fine, as long as they follow the obvious
+rule of not actually making changes that are semantically visible.
 
-Many compilers would be happy to convert f() into something like the
-following:
+(In practice, I'd be impressed as hell for that particular example,
+and we actually do end up setting the dirty bit by hand in some
+situations, so the example is slightly made up, but there are other
+cases that might be more realistic in that sometimes we do things that
+are hidden from the compiler - in assembly etc - and the compiler
+might *think* it knows what is going on, but it doesn't actually see
+all accesses).
 
-	int f(int ra)
-	{
-		if (ra == 42)
-			return arr[0];
-		else
-			return arr[1];
-	}
+> Sorry, but the rules *are* very clear.  I *really* suggest to look at
+> the formalization by Batty et al.  And in these rules, proving that a
+> read will always return value X has a well-defined meaning, and you can
+> use it.  That simply follows from how the model is built.
 
-And many would argue that this is a perfectly reasonable conversion.
+What "model"?
 
-However, this breaks the data dependency, and allows Thread 0's load
-from bigarr[] to be speculated, so that r2 might end up containing
-pre-initialization garbage.  This is why the consume.2014.02.16c.pdf
-document advises against attempting to carry dependencies through
-relational operators and booleans (&& and ||) when using current compilers
-(hmmm...  I need to make that advice more strongly stated).  And again,
-this is one of the reasons for the [[carries_dependency]] attribute in
-C11 -- to signal the compiler to be careful in a given function.
+That's the thing. I have tried to figure out whether the model is some
+abstract C model, or a model based on the actual hardware that the
+compiler is compiling for, and whether the model is one that assumes
+the compiler has complete knowledge of the system (see the example
+above).
 
-Again, this example is fanciful.  It is intended to illustrate a data
-dependency that could be broken given current compilers and hardware.
-It is -not- intended as an example of good code for the Linux kernel,
-much the opposite, in fact.
+And it seems to be a mixture of it all. The definitions of the various
+orderings obviously very much imply that the compiler has to insert
+the proper barriers or sequence markers for that architecture, but
+then there is no apparent way to depend on any *other* architecture
+ordering guarantees. Like our knowledge that all architectures (with
+the exception of alpha, which really doesn't end up being something we
+worry about any more) end up having the load dependency ordering
+guarantee.
 
-That said, I would very much welcome a more realistic example.
+> What you seem to want just isn't covered by the model as it is today --
+> you can't infer from that that the model itself would be wrong.  The
+> dependency chains aren't modeled in the way you envision it (except in
+> what consume_mo tries, but that seems to be hard to implement); they are
+> there on the level of the program logic as modeled by the abstract
+> machine and the respective execution/output rules, but they are not
+> built to represent those specific ordering guarantees the HW gives you.
 
-> >> So as far as we can see, either:
-> >>
-> >> 1) if you can accept the latter behaviour (if the Linux codebase does
-> >>    not rely on its absence), the language definition should permit it,
-> >>    and current compiler optimisations can be used,
-> >>
-> >> or
-> >>
-> >> 2) otherwise, the language definition should prohibit it but the
-> >>    compiler would have to preserve dependencies even in compilation
-> >>    units that have no mention of atomics.  It's unclear what the
-> >>    (runtime and compiler development) cost of that would be in
-> >>    practice - perhaps Torvald could comment?
-> >
-> > For current compilers, we have to rely on coding conventions within
-> > the Linux kernel in combination with non-standard extentions to gcc
-> > and specified compiler flags to disable undesirable behavior.  I have a
-> > start on specifying this in a document I am preparing for the standards
-> > committee, a very early draft of which may be found here:
-> >
-> > http://www2.rdrop.com/users/paulmck/scalability/paper/consume.2014.02.16c.pdf
-> >
-> > Section 3 shows the results of a manual scan through the Linux kernel's
-> > dependency chains, and Section 4.1 lists a probably incomplete (and no
-> > doubt erroneous) list of coding standards required to make dependency
-> > chains work on current compilers.  Any comments and suggestions are more
-> > than welcome!
-> 
-> Thanks, that's very interesting (especially the non-local dependency chains).
-> 
-> At a first glance, the "4.1 Rules for C-Language RCU Users" seem
-> pretty fragile - they're basically trying to guess the limits of
-> compiler optimisation smartness.
+So this is a problem. It basically means that we cannot do the kinds
+of things we do now, which very much involve knowing what the memory
+ordering of a particular machine is, and combining that knowledge with
+our knowledge of code generation.
 
-Agreed, but that is the world we currently must live in, given pre-C11
-compilers and the tepid implementations of memory_order_consume in
-the current C11 implementations that I am aware of.  As long as the
-Linux kernel must live in this world for some time to come, I might as
-well document the limitations, fragile though they might be.
+Now, *most* of what we do is protected by locking and is all fine. But
+we do have a few rather subtle places in RCU and in the scheduler
+where we depend on the actual dependency chain.
 
-> >> For more context, this example is taken from a summary of the thin-air
-> >> problem by Mark Batty and myself,
-> >> <www.cl.cam.ac.uk/~pes20/cpp/notes42.html>, and the problem with
-> >> dependencies via other compilation units was AFAIK first pointed out
-> >> by Hans Boehm.
-> >
-> > Nice document!
-> >
-> > One point of confusion for me...  Example 4 says "language must allow".
-> > Shouldn't that be "language is permitted to allow"?  Seems like an
-> > implementation is always within its rights to avoid an optimization if
-> > its implementation prevents it from safely detecting the oppportunity
-> > for that optimization.  Or am I missing something here?
-> 
-> We're saying that the language definition must allow it, not that any
-> particular implementation must be able to exhibit it.
+In *practice*, I seriously doubt any reasonable compiler can actually
+make a mess of it. The kinds of optimizations that would actually
+defeat the dependency chain are simply not realistic. And I suspect
+that will end up being what we rely on - there being no actual sane
+sequence that a compiler would ever do, even if we wouldn't have
+guarantees for some of it.
 
-Ah, got it.  You had me worried there for a bit!  ;-)
+And I suspect  I can live with that. We _have_ lived with that for the
+longest time, after all. We very much do things that aren't covered by
+any existing C standard, and just basically use tricks to coax the
+compiler into never generating code that doesn't work (with our inline
+asm barriers etc being a prime example).
 
-							Thanx, Paul
+> I would also be cautious claiming that the rules you suggested would be
+> very clear and very simple.  I haven't seen a memory model spec from you
+> that would be viable as the standard model for C/C++, nor have I seen
+> proof that this would actually be easier to understand for programmers
+> in general.
 
+So personally, if I were to write the spec, I would have taken a
+completely different approach from what the standard obviously does.
+
+I'd have taken the approach of specifying the required semantics each
+atomic op (ie the memory operations would end up having to be
+annotated with their ordering constraints), and then said that the
+compiler can generate any code that is equivalent to that
+_on_the_target_machine_.
+
+Why? Just to avoid the whole "ok, which set of rules applies now" problem.
+
+>> For example, CPU people actually do tend to give guarantees for
+>> certain things, like stores that are causally related being visible in
+>> a particular order.
+>
+> Yes, but that's not part of the model so far.  If you want to exploit
+> this, please make a suggestion for how to extend the model to cover
+> this.
+
+See above. This is exactly why I detest the C "model" thing. Now you
+need ways to describe those CPU guarantees, because if you can't
+describe them, you can't express them in the model.
+
+I would *much* have preferred the C standard to say that you have to
+generate code that is guaranteed to act the same way - on that machine
+- as the "naive direct unoptimized translation".
+
+IOW, I would *revel* in the fact that different machines are
+different, and basically just describe the "stupid" code generation.
+You'd get the guaranteed semantic baseline, but you'd *also* be able
+to know that whatever architecture guarantees you have would remain.
+Without having to describe those architecture issues.
+
+It would be *so* nice if the C standard had done that for pretty much
+everything that is "implementation dependent". Not just atomics.
+
+[ will look at the rest of your email later ]
+
+                 Linus
