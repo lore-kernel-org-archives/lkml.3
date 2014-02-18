@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaBRTJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:09:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48114 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126AbaBRTJS (ORCPT
+	id S1752286AbaBRTJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:09:59 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:40725 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126AbaBRTJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:09:18 -0500
-Date: Tue, 18 Feb 2014 11:10:43 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 13/14] staging: binder: Support concurrent 32 bit and 64
- bit processes.
-Message-ID: <20140218191043.GC10376@kroah.com>
-References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
- <1392674322-9036-14-git-send-email-john.stultz@linaro.org>
+	Tue, 18 Feb 2014 14:09:57 -0500
+Date: Tue, 18 Feb 2014 13:07:30 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] usb: chipidea: msm: Add device tree binding
+ information
+Message-ID: <20140218190730.GG31116@joshc.qualcomm.com>
+References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
+ <1392729681-21022-2-git-send-email-iivanov@mm-sol.com>
+ <20140218161303.GD31116@joshc.qualcomm.com>
+ <1392744420.17130.24.camel@iivanov-dev>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392674322-9036-14-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1392744420.17130.24.camel@iivanov-dev>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 01:58:41PM -0800, John Stultz wrote:
-> From: Arve Hjønnevåg <arve@android.com>
-> 
-> Add binder_size_t and binder_uintptr_t that is used instead of size_t and
-> void __user * in the user-space interface.
-> 
-> Use 64 bit pointers on all systems unless CONFIG_ANDROID_BINDER_IPC_32BIT
-> is set (which enables the old protocol on 32 bit systems).
-> 
-> Change BINDER_CURRENT_PROTOCOL_VERSION to 8 if
-> CONFIG_ANDROID_BINDER_IPC_32BIT is not set.
-> 
-> Add compat ioctl.
-> 
-> Cc: Colin Cross <ccross@android.com>
-> Cc: Arve Hjønnevåg <arve@android.com>
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> [jstultz: Merged with upstream type changes. Tweaked commit message.
-> Various whitespace fixes and longer Kconfig description for checkpatch]
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+On Tue, Feb 18, 2014 at 07:27:00PM +0200, Ivan T. Ivanov wrote:
+> On Tue, 2014-02-18 at 10:13 -0600, Josh Cartwright wrote: 
+> > On Tue, Feb 18, 2014 at 03:21:19PM +0200, Ivan T. Ivanov wrote:
+> > >  .../devicetree/bindings/usb/msm-hsusb.txt          |   17 +++++++++++++++++
+> > 
+> > Is this really the appropriate place to document this?  It seems like
+> > this binding doc should be merged with the i.MX ci13xxx binding in a
+> > common ci13xxx doc.
+> > 
+>
+> This driver is a "glue" layer driver which control Qualcomm 
+> specific logic around Chipidea IP core. It is supposed to 
+> hold "non standard" Chipidea properties, but I suppose that
+> ci-hdrc-qcom.txt will be better name and will be similar to 
+> i.MX chosen name.
+>
+> What do you think?
 
-Ok, I see that Arve has signed off on this, why the Cc: above to confuse
-me?  :)
+Sounds like an improvement to me.
 
-Anyway, what about the ARM patches that this was based on?  And why the
-previous patch that breaks things on its own?
-
-totally confused...
-
-greg k-h
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
