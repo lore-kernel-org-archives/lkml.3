@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbaBRXco (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:32:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50680 "EHLO
+	id S1753540AbaBRXdB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:33:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50661 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478AbaBRWqG (ORCPT
+	with ESMTP id S1752377AbaBRWqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:06 -0500
+	Tue, 18 Feb 2014 17:46:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ferry <iscsitmp@bananateam.nl>, Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Ben Hutchings <ben@decadent.org.uk>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 21/24] Input: synaptics - handle out of bounds values from the hardware
-Date: Tue, 18 Feb 2014 14:47:08 -0800
-Message-Id: <20140218224550.826575987@linuxfoundation.org>
+Subject: [PATCH 3.4 18/24] target/file: Re-enable optional fd_buffered_io=1 operation
+Date: Tue, 18 Feb 2014 14:47:05 -0800
+Message-Id: <20140218224550.738946250@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
 References: <20140218224550.221535225@linuxfoundation.org>
@@ -31,88 +30,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit c0394506e69b37c47d391c2a7bbea3ea236d8ec8 upstream.
+commit b32f4c7ed85c5cee2a21a55c9f59ebc9d57a2463 upstream.
 
-The touchpad on the Acer Aspire One D250 will report out of range values
-in the extreme lower portion of the touchpad. These appear as abrupt
-changes in the values reported by the hardware from very low values to
-very high values, which can cause unexpected vertical jumps in the
-position of the mouse pointer.
+This patch re-adds the ability to optionally run in buffered FILEIO mode
+(eg: w/o O_DSYNC) for device backends in order to once again use the
+Linux buffered cache as a write-back storage mechanism.
 
-What seems to be happening is that the value is wrapping to a two's
-compliment negative value of higher resolution than the 13-bit value
-reported by the hardware, with the high-order bits being truncated. This
-patch adds handling for these values by converting them to the
-appropriate negative values.
+This logic was originally dropped with mainline v3.5-rc commit:
 
-The only tricky part about this is deciding when to treat a number as
-negative. It stands to reason that if out of range values can be
-reported on the low end then it could also happen on the high end, so
-not all out of range values should be treated as negative. The approach
-taken here is to split the difference between the maximum legitimate
-value for the axis and the maximum possible value that the hardware can
-report, treating values greater than this number as negative and all
-other values as positive. This can be tweaked later if hardware is found
-that operates outside of these parameters.
+commit a4dff3043c231d57f982af635c9d2192ee40e5ae
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Wed May 30 16:25:41 2012 -0700
 
-BugLink: http://bugs.launchpad.net/bugs/1001251
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-[bwh: Backported to 3.2: adjust context]
+    target/file: Use O_DSYNC by default for FILEIO backends
+
+This difference with this patch is that fd_create_virtdevice() now
+forces the explicit setting of emulate_write_cache=1 when buffered FILEIO
+operation has been enabled.
+
+(v2: Switch to FDBD_HAS_BUFFERED_IO_WCE + add more detailed
+     comment as requested by hch)
+
+Reported-by: Ferry <iscsitmp@bananateam.nl>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ drivers/target/target_core_file.c |   41 +++++++++++++++++++++++++++++++++++---
+ drivers/target/target_core_file.h |    1 
+ 2 files changed, 39 insertions(+), 3 deletions(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -40,11 +40,28 @@
-  * Note that newer firmware allows querying device for maximum useable
-  * coordinates.
-  */
-+#define XMIN 0
-+#define XMAX 6143
-+#define YMIN 0
-+#define YMAX 6143
- #define XMIN_NOMINAL 1472
- #define XMAX_NOMINAL 5472
- #define YMIN_NOMINAL 1408
- #define YMAX_NOMINAL 4448
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -138,6 +138,19 @@ static struct se_device *fd_create_virtd
+ 	 * of pure timestamp updates.
+ 	 */
+ 	flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
++	/*
++	 * Optionally allow fd_buffered_io=1 to be enabled for people
++	 * who want use the fs buffer cache as an WriteCache mechanism.
++	 *
++	 * This means that in event of a hard failure, there is a risk
++	 * of silent data-loss if the SCSI client has *not* performed a
++	 * forced unit access (FUA) write, or issued SYNCHRONIZE_CACHE
++	 * to write-out the entire device cache.
++	 */
++	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
++		pr_debug("FILEIO: Disabling O_DSYNC, using buffered FILEIO\n");
++		flags &= ~O_DSYNC;
++	}
  
-+/* Size in bits of absolute position values reported by the hardware */
-+#define ABS_POS_BITS 13
-+
-+/*
-+ * Any position values from the hardware above the following limits are
-+ * treated as "wrapped around negative" values that have been truncated to
-+ * the 13-bit reporting range of the hardware. These are just reasonable
-+ * guesses and can be adjusted if hardware is found that operates outside
-+ * of these parameters.
-+ */
-+#define X_MAX_POSITIVE (((1 << ABS_POS_BITS) + XMAX) / 2)
-+#define Y_MAX_POSITIVE (((1 << ABS_POS_BITS) + YMAX) / 2)
-+
- /*
-  * Synaptics touchpads report the y coordinate from bottom to top, which is
-  * opposite from what userspace expects.
-@@ -555,6 +572,12 @@ static int synaptics_parse_hw_state(cons
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 	}
+ 	file = filp_open(dev_p, flags, 0600);
+ 	if (IS_ERR(file)) {
+@@ -205,6 +218,12 @@ static struct se_device *fd_create_virtd
+ 	if (!dev)
+ 		goto fail;
  
-+	/* Convert wrap-around values to negative */
-+	if (hw->x > X_MAX_POSITIVE)
-+		hw->x -= 1 << ABS_POS_BITS;
-+	if (hw->y > Y_MAX_POSITIVE)
-+		hw->y -= 1 << ABS_POS_BITS;
++	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
++		pr_debug("FILEIO: Forcing setting of emulate_write_cache=1"
++			" with FDBD_HAS_BUFFERED_IO_WCE\n");
++		dev->se_sub_dev->se_dev_attrib.emulate_write_cache = 1;
++	}
 +
- 	return 0;
+ 	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
+ 	fd_dev->fd_queue_depth = dev->queue_depth;
+ 
+@@ -449,6 +468,7 @@ enum {
+ static match_table_t tokens = {
+ 	{Opt_fd_dev_name, "fd_dev_name=%s"},
+ 	{Opt_fd_dev_size, "fd_dev_size=%s"},
++	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
+ 	{Opt_err, NULL}
+ };
+ 
+@@ -460,7 +480,7 @@ static ssize_t fd_set_configfs_dev_param
+ 	struct fd_dev *fd_dev = se_dev->se_dev_su_ptr;
+ 	char *orig, *ptr, *arg_p, *opts;
+ 	substring_t args[MAX_OPT_ARGS];
+-	int ret = 0, token;
++	int ret = 0, arg, token;
+ 
+ 	opts = kstrdup(page, GFP_KERNEL);
+ 	if (!opts)
+@@ -504,6 +524,19 @@ static ssize_t fd_set_configfs_dev_param
+ 					" bytes\n", fd_dev->fd_dev_size);
+ 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
+ 			break;
++		case Opt_fd_buffered_io:
++			match_int(args, &arg);
++			if (arg != 1) {
++				pr_err("bogus fd_buffered_io=%d value\n", arg);
++				ret = -EINVAL;
++				goto out;
++			}
++
++			pr_debug("FILEIO: Using buffered I/O"
++				" operations for struct fd_dev\n");
++
++			fd_dev->fbd_flags |= FDBD_HAS_BUFFERED_IO_WCE;
++			break;
+ 		default:
+ 			break;
+ 		}
+@@ -535,8 +568,10 @@ static ssize_t fd_show_configfs_dev_para
+ 	ssize_t bl = 0;
+ 
+ 	bl = sprintf(b + bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
+-	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: O_DSYNC\n",
+-		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
++	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
++		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
++		(fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) ?
++		"Buffered-WCE" : "O_DSYNC");
+ 	return bl;
  }
  
+--- a/drivers/target/target_core_file.h
++++ b/drivers/target/target_core_file.h
+@@ -18,6 +18,7 @@ struct fd_request {
+ 
+ #define FBDF_HAS_PATH		0x01
+ #define FBDF_HAS_SIZE		0x02
++#define FDBD_HAS_BUFFERED_IO_WCE 0x04
+ 
+ struct fd_dev {
+ 	u32		fbd_flags;
 
 
