@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335AbaBRWMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:12:19 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34748 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751587AbaBRWMR (ORCPT
+	id S1752505AbaBRWMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:12:24 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49630 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751587AbaBRWMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:12:17 -0500
-Message-ID: <5303DABD.9000302@hurleysoftware.com>
-Date: Tue, 18 Feb 2014 17:12:13 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Feb 2014 17:12:21 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: linux-pm@vger.kernel.org, dirk.j.brandewie@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] intel_pstate updates for v3.14-rcX
+Date: Tue, 18 Feb 2014 23:27:11 +0100
+Message-ID: <2705558.gK5sRhMz43@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5303C2C2.8040605@intel.com>
+References: <1392228067-14817-1-git-send-email-dirk.j.brandewie@intel.com> <5303C2C2.8040605@intel.com>
 MIME-Version: 1.0
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-rt-users@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: locking changes in tty broke low latency feature
-References: <20140218093829.GC1741@redhat.com>
-In-Reply-To: <20140218093829.GC1741@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stanislaw,
+On Tuesday, February 18, 2014 12:29:54 PM Dirk Brandewie wrote:
+> Hi Rafael,
 
-On 02/18/2014 04:38 AM, Stanislaw Gruszka wrote:
-> Hi,
->
-> setserial has low_latency option which should minimize receive latency
-> (scheduler delay). AFAICT it is used if someone talk to external device
-> via RS-485/RS-232 and need to have quick requests and responses . On
-> kernel this feature was implemented by direct tty processing from
-> interrupt context:
->
-> void tty_flip_buffer_push(struct tty_port *port)
-> {
->          struct tty_bufhead *buf = &port->buf;
->
->          buf->tail->commit = buf->tail->used;
->
->          if (port->low_latency)
->                  flush_to_ldisc(&buf->work);
->          else
->                  schedule_work(&buf->work);
-> }
->
-> But after 3.12 tty locking changes, calling flush_to_ldisc() from
-> interrupt context is a bug (we got scheduling while atomic bug report
-> here: https://bugzilla.redhat.com/show_bug.cgi?id=1065087 )
->
-> I'm not sure how this should be solved. After Peter get rid all of those
-> race condition in tty layer, we probably don't want go back to use
-> spin_lock's there. Maybe we can create WQ_HIGHPRI workqueue and schedule
-> flush_to_ldisc() work there. Or perhaps users that need to low latency,
-> should switch to thread irq and prioritize serial irq to meat
-> retirements. Anyway setserial low_latency is now broken and all who use
-> this feature in the past can not do this any longer on 3.12+ kernels.
->
-> Thoughts ?
+Hi,
 
-Can you give me an idea of your device's average and minimum required
-latency (please be specific)?  Is your target arch x86 [so I can evaluate the
-the impact of bus-locked instructions relative to your expected]?
+> On 02/12/2014 10:01 AM, dirk.brandewie@gmail.com wrote:
+> > From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> >
+> > Based on v3.14-rc2
+> >
+> > Patch 1 removes energy reporting the patch from Maurizio Lambardi
+> >   intel_pstate: fix race condition in intel_pstate_init() can be dropped.
+> >
+> 
+> Any reason why patches 2-5 did not make rc3 other than timing?
+> 
+> Patches 2/3 can easily wait for v3.15.x
+> 
+> Patches 4/5 fix bugs that are in the wild.
 
-Also, how painful would it be if unsupported termios changes were rejected
-if the port was in low_latency mode and/or if low_latency setting was
-disallowed because of termios state?
+I asked you about them, but you didn't reply:
 
-It would be pointless to throttle low_latency, yes?
+http://marc.info/?l=linux-pm&m=139225158531023&w=4
 
-What would be an acceptable outcome of being unable to accept input?
-Corrupted overrun? Dropped i/o? Queued for later? Please explain with
-comparison to the outcome of missed minimum latency.
+Again, do patches [4-5/5] depend on [2-3/5]?
 
-Regards,
-Peter Hurley
+If not, I can queue them up for -rc4.
+
+Thanks,
+Rafael
+
