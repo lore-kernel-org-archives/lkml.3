@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189AbaBRWio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:38:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50552 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099AbaBRWin (ORCPT
+	id S1752066AbaBRWpn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:45:43 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:37371 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838AbaBRWpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:38:43 -0500
-Date: Tue, 18 Feb 2014 14:38:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus <torvalds@linux-foundation.org>, nacc@linux.vnet.ibm.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 ] mm readahead: Fix readahead fail for memoryless cpu
- and limit readahead pages
-Message-Id: <20140218143838.aee7a4f0c94ab28b3b04c1e4@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1402181421590.20772@chino.kir.corp.google.com>
-References: <1392708338-19685-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1402181421590.20772@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 18 Feb 2014 17:45:41 -0500
+Message-ID: <5303E28A.8010200@oracle.com>
+Date: Tue, 18 Feb 2014 16:45:30 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        JFS Discussion <jfs-discussion@lists.sourceforge.net>
+Subject: [GIT PULL] jfs for 3.14-rc4
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Feb 2014 14:23:44 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
+The following changes since commit c18f7b51200c3c8b76c63e391f9995b65ace9c83:
 
-> On Tue, 18 Feb 2014, Raghavendra K T wrote:
-> 
-> > Currently max_sane_readahead() returns zero on the cpu having no local memory node
-> > which leads to readahead failure. Fix the readahead failure by returning
-> > minimum of (requested pages, 512). Users running application on a memory-less cpu
-> > which needs readahead such as streaming application see considerable boost in the
-> > performance.
-> > 
-> > Result:
-> > fadvise experiment with FADV_WILLNEED on a PPC machine having memoryless CPU
-> > with 1GB testfile ( 12 iterations) yielded around 46.66% improvement.
-> > 
-> > fadvise experiment with FADV_WILLNEED on a x240 machine with 1GB testfile
-> > 32GB* 4G RAM  numa machine ( 12 iterations) showed no impact on the normal
-> > NUMA cases w/ patch.
-> > 
-> > Kernel     Avg  Stddev
-> > base	7.4975	3.92%
-> > patched	7.4174  3.26%
-> > 
-> > Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > [Andrew: making return value PAGE_SIZE independent]
-> > Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> So this replaces 
-> mm-readaheadc-fix-readahead-fail-for-no-local-memory-and-limit-readahead-pages.patch 
-> in -mm correct?
+  jfs: fix generic posix ACL regression (2014-02-08 10:50:58 -0600)
 
-yup.
+are available in the git repository at:
 
-> >  Changes in V6:
-> >   - Just limit the readahead to 2MB on 4k pages system as suggested by Linus.
-> >  and make it independent of PAGE_SIZE. 
-> > 
-> 
-> I'm not sure I understand why we want to be independent of PAGE_SIZE since 
-> we're still relying on PAGE_CACHE_SIZE.  Don't you mean to do
-> 
-> #define MAX_READAHEAD	((512*PAGE_SIZE)/PAGE_CACHE_SIZE)
+  git://github.com/kleikamp/linux-shaggy.git tags/jfs-3.14-rc4
 
-MAX_READAHEAD is in units of "pages".
+for you to fetch changes up to 844fa1b5f8493cff4b976fa7a5b9ebeeafdd75cc:
 
-This:
+  jfs: set i_ctime when setting ACL (2014-02-13 15:56:05 -0600)
 
-+#define MAX_READAHEAD   ((512*4096)/PAGE_CACHE_SIZE)
+----------------------------------------------------------------
+Another ACL regression. This one more subtle.
 
-means "two megabytes", and is implemented in a way to ensure that
-MAX_READAHEAD=2mb on 4k pagesize as well as on 64k pagesize.  Because
-we don't want variations in PAGE_SIZE to cause alterations in readahead
-behavior.
+----------------------------------------------------------------
+Dave Kleikamp (1):
+      jfs: set i_ctime when setting ACL
+
+ fs/jfs/acl.c | 2 ++
+ 1 file changed, 2 insertions(+)
