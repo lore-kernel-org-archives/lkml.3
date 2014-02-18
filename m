@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983AbaBRVNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:13:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35721 "EHLO
+	id S1753164AbaBRVO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:14:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35710 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314AbaBRVJL (ORCPT
+	with ESMTP id S1752220AbaBRVJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:09:11 -0500
+	Tue, 18 Feb 2014 16:09:10 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Steven Rostedt <rostedt@goodmis.org>, yrl.pp-manager.tt@hitachi.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 24/32] perf probe: Replace line_list with intlist
-Date: Tue, 18 Feb 2014 18:08:43 -0300
-Message-Id: <1392757731-32619-25-git-send-email-acme@infradead.org>
+Subject: [PATCH 26/32] perf probe: Show in what binaries/modules probes are set
+Date: Tue, 18 Feb 2014 18:08:45 -0300
+Message-Id: <1392757731-32619-27-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
 References: <1392757731-32619-1-git-send-email-acme@infradead.org>
@@ -31,11 +31,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Replace line_list (struct line_node) with intlist for reducing similar
-codes.
+Show the name of binary file or modules in which the probes are set with
+--list option.
+
+Without this change;
+
+  # ./perf probe -m drm drm_av_sync_delay
+  # ./perf probe -x perf dso__load_vmlinux
+
+  # ./perf probe -l
+    probe:drm_av_sync_delay (on drm_av_sync_delay)
+    probe_perf:dso__load_vmlinux (on 0x000000000006d110)
+
+With this change;
+
+  # ./perf probe -l
+    probe:drm_av_sync_delay (on drm_av_sync_delay in drm)
+    probe_perf:dso__load_vmlinux (on 0x000000000006d110 in /kbuild/ksrc/linux-3/tools/perf/perf)
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: "David A. Long" <dave.long@linaro.org>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -44,324 +58,54 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20140206053209.29635.81043.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
+Link: http://lkml.kernel.org/r/20140206053213.29635.69948.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-probe.c     | 12 ++++---
- tools/perf/util/probe-event.c  | 22 ++++++------
- tools/perf/util/probe-event.h  | 12 ++-----
- tools/perf/util/probe-finder.c | 81 +++++++-----------------------------------
- tools/perf/util/probe-finder.h |  3 +-
- 5 files changed, 35 insertions(+), 95 deletions(-)
+ tools/perf/util/probe-event.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 78948882e3de..cdcd4eb3a57d 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -268,9 +268,9 @@ static int opt_set_filter(const struct option *opt __maybe_unused,
- 	return 0;
- }
- 
--static void init_params(void)
-+static int init_params(void)
- {
--	line_range__init(&params.line_range);
-+	return line_range__init(&params.line_range);
- }
- 
- static void cleanup_params(void)
-@@ -515,9 +515,11 @@ int cmd_probe(int argc, const char **argv, const char *prefix)
- {
- 	int ret;
- 
--	init_params();
--	ret = __cmd_probe(argc, argv, prefix);
--	cleanup_params();
-+	ret = init_params();
-+	if (!ret) {
-+		ret = __cmd_probe(argc, argv, prefix);
-+		cleanup_params();
-+	}
- 
- 	return ret;
- }
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index a4649e7449c5..f70fd08f00b7 100644
+index ace3ba37c880..de9fe906f3be 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -561,7 +561,7 @@ static int _show_one_line(FILE *fp, int l, bool skip, bool show_num)
- static int __show_line_range(struct line_range *lr, const char *module)
- {
- 	int l = 1;
--	struct line_node *ln;
-+	struct int_node *ln;
- 	struct debuginfo *dinfo;
- 	FILE *fp;
- 	int ret;
-@@ -614,8 +614,8 @@ static int __show_line_range(struct line_range *lr, const char *module)
- 			goto end;
- 	}
- 
--	list_for_each_entry(ln, &lr->line_list, list) {
--		for (; ln->line > l; l++) {
-+	intlist__for_each(ln, lr->line_list) {
-+		for (; ln->i > l; l++) {
- 			ret = show_one_line(fp, l - lr->offset);
- 			if (ret < 0)
- 				goto end;
-@@ -775,24 +775,22 @@ int show_available_vars(struct perf_probe_event *pevs __maybe_unused,
- 
- void line_range__clear(struct line_range *lr)
- {
--	struct line_node *ln;
--
- 	free(lr->function);
- 	free(lr->file);
- 	free(lr->path);
- 	free(lr->comp_dir);
--	while (!list_empty(&lr->line_list)) {
--		ln = list_first_entry(&lr->line_list, struct line_node, list);
--		list_del(&ln->list);
--		free(ln);
--	}
-+	intlist__delete(lr->line_list);
- 	memset(lr, 0, sizeof(*lr));
+@@ -1728,7 +1728,8 @@ static struct strlist *get_probe_trace_command_rawlist(int fd)
  }
  
--void line_range__init(struct line_range *lr)
-+int line_range__init(struct line_range *lr)
+ /* Show an event */
+-static int show_perf_probe_event(struct perf_probe_event *pev)
++static int show_perf_probe_event(struct perf_probe_event *pev,
++				 const char *module)
  {
- 	memset(lr, 0, sizeof(*lr));
--	INIT_LIST_HEAD(&lr->line_list);
-+	lr->line_list = intlist__new(NULL);
-+	if (!lr->line_list)
-+		return -ENOMEM;
-+	else
-+		return 0;
- }
+ 	int i, ret;
+ 	char buf[128];
+@@ -1744,6 +1745,8 @@ static int show_perf_probe_event(struct perf_probe_event *pev)
+ 		return ret;
  
- static int parse_line_num(char **ptr, int *val, const char *what)
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index fcaf7273e85a..776c9347a3b6 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -2,6 +2,7 @@
- #define _PROBE_EVENT_H
+ 	printf("  %-20s (on %s", buf, place);
++	if (module)
++		printf(" in %s", module);
  
- #include <stdbool.h>
-+#include "intlist.h"
- #include "strlist.h"
- #include "strfilter.h"
- 
-@@ -76,13 +77,6 @@ struct perf_probe_event {
- 	struct perf_probe_arg	*args;	/* Arguments */
- };
- 
--
--/* Line number container */
--struct line_node {
--	struct list_head	list;
--	int			line;
--};
--
- /* Line range */
- struct line_range {
- 	char			*file;		/* File name */
-@@ -92,7 +86,7 @@ struct line_range {
- 	int			offset;		/* Start line offset */
- 	char			*path;		/* Real path name */
- 	char			*comp_dir;	/* Compile directory */
--	struct list_head	line_list;	/* Visible lines */
-+	struct intlist		*line_list;	/* Visible lines */
- };
- 
- /* List of variables */
-@@ -124,7 +118,7 @@ extern int parse_line_range_desc(const char *cmd, struct line_range *lr);
- extern void line_range__clear(struct line_range *lr);
- 
- /* Initialize line range */
--extern void line_range__init(struct line_range *lr);
-+extern int line_range__init(struct line_range *lr);
- 
- /* Internal use: Return kernel/module path */
- extern const char *kernel_get_module_path(const char *module);
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 061edb162b5b..e5e589fdef9b 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -35,6 +35,7 @@
- #include <linux/bitops.h>
- #include "event.h"
- #include "debug.h"
-+#include "intlist.h"
- #include "util.h"
- #include "symbol.h"
- #include "probe-finder.h"
-@@ -42,65 +43,6 @@
- /* Kprobe tracer basic type is up to u64 */
- #define MAX_BASIC_TYPE_BITS	64
- 
--/* Line number list operations */
--
--/* Add a line to line number list */
--static int line_list__add_line(struct list_head *head, int line)
--{
--	struct line_node *ln;
--	struct list_head *p;
--
--	/* Reverse search, because new line will be the last one */
--	list_for_each_entry_reverse(ln, head, list) {
--		if (ln->line < line) {
--			p = &ln->list;
--			goto found;
--		} else if (ln->line == line)	/* Already exist */
--			return 1;
--	}
--	/* List is empty, or the smallest entry */
--	p = head;
--found:
--	pr_debug("line list: add a line %u\n", line);
--	ln = zalloc(sizeof(struct line_node));
--	if (ln == NULL)
--		return -ENOMEM;
--	ln->line = line;
--	INIT_LIST_HEAD(&ln->list);
--	list_add(&ln->list, p);
--	return 0;
--}
--
--/* Check if the line in line number list */
--static int line_list__has_line(struct list_head *head, int line)
--{
--	struct line_node *ln;
--
--	/* Reverse search, because new line will be the last one */
--	list_for_each_entry(ln, head, list)
--		if (ln->line == line)
--			return 1;
--
--	return 0;
--}
--
--/* Init line number list */
--static void line_list__init(struct list_head *head)
--{
--	INIT_LIST_HEAD(head);
--}
--
--/* Free line number list */
--static void line_list__free(struct list_head *head)
--{
--	struct line_node *ln;
--	while (!list_empty(head)) {
--		ln = list_first_entry(head, struct line_node, list);
--		list_del(&ln->list);
--		free(ln);
--	}
--}
--
- /* Dwarf FL wrappers */
- static char *debuginfo_path;	/* Currently dummy */
- 
-@@ -880,7 +822,7 @@ static int find_probe_point_by_line(struct probe_finder *pf)
- }
- 
- /* Find lines which match lazy pattern */
--static int find_lazy_match_lines(struct list_head *head,
-+static int find_lazy_match_lines(struct intlist *list,
- 				 const char *fname, const char *pat)
- {
- 	FILE *fp;
-@@ -901,7 +843,7 @@ static int find_lazy_match_lines(struct list_head *head,
- 			line[len - 1] = '\0';
- 
- 		if (strlazymatch(line, pat)) {
--			line_list__add_line(head, linenum);
-+			intlist__add(list, linenum);
- 			count++;
+ 	if (pev->nargs > 0) {
+ 		printf(" with");
+@@ -1781,7 +1784,8 @@ static int __show_perf_probe_events(int fd, bool is_kprobe)
+ 			ret = convert_to_perf_probe_event(&tev, &pev,
+ 								is_kprobe);
+ 			if (ret >= 0)
+-				ret = show_perf_probe_event(&pev);
++				ret = show_perf_probe_event(&pev,
++							    tev.point.module);
  		}
- 		linenum++;
-@@ -924,7 +866,7 @@ static int probe_point_lazy_walker(const char *fname, int lineno,
- 	Dwarf_Die *sc_die, die_mem;
- 	int ret;
- 
--	if (!line_list__has_line(&pf->lcache, lineno) ||
-+	if (!intlist__has_entry(pf->lcache, lineno) ||
- 	    strtailcmp(fname, pf->fname) != 0)
- 		return 0;
- 
-@@ -952,9 +894,9 @@ static int find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
- {
- 	int ret = 0;
- 
--	if (list_empty(&pf->lcache)) {
-+	if (intlist__empty(pf->lcache)) {
- 		/* Matching lazy line pattern */
--		ret = find_lazy_match_lines(&pf->lcache, pf->fname,
-+		ret = find_lazy_match_lines(pf->lcache, pf->fname,
- 					    pf->pev->point.lazy_line);
- 		if (ret <= 0)
- 			return ret;
-@@ -1096,7 +1038,9 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
- #endif
- 
- 	off = 0;
--	line_list__init(&pf->lcache);
-+	pf->lcache = intlist__new(NULL);
-+	if (!pf->lcache)
-+		return -ENOMEM;
- 
- 	/* Fastpath: lookup by function name from .debug_pubnames section */
- 	if (pp->function) {
-@@ -1149,7 +1093,8 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
- 	}
- 
- found:
--	line_list__free(&pf->lcache);
-+	intlist__delete(pf->lcache);
-+	pf->lcache = NULL;
- 
- 	return ret;
- }
-@@ -1537,7 +1482,7 @@ static int line_range_add_line(const char *src, unsigned int lineno,
- 		if (lr->path == NULL)
- 			return -ENOMEM;
- 	}
--	return line_list__add_line(&lr->line_list, lineno);
-+	return intlist__add(lr->line_list, lineno);
- }
- 
- static int line_range_walk_cb(const char *fname, int lineno,
-@@ -1565,7 +1510,7 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
- 
- 	/* Update status */
- 	if (ret >= 0)
--		if (!list_empty(&lf->lr->line_list))
-+		if (!intlist__empty(lf->lr->line_list))
- 			ret = lf->found = 1;
- 		else
- 			ret = 0;	/* Lines are not found */
-diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-index ffc33cdd25cc..592c4dac3be9 100644
---- a/tools/perf/util/probe-finder.h
-+++ b/tools/perf/util/probe-finder.h
-@@ -3,6 +3,7 @@
- 
- #include <stdbool.h>
- #include "util.h"
-+#include "intlist.h"
- #include "probe-event.h"
- 
- #define MAX_PROBE_BUFFER	1024
-@@ -66,7 +67,7 @@ struct probe_finder {
- 	const char		*fname;		/* Real file name */
- 	Dwarf_Die		cu_die;		/* Current CU */
- 	Dwarf_Die		sp_die;
--	struct list_head	lcache;		/* Line cache for lazy match */
-+	struct intlist		*lcache;	/* Line cache for lazy match */
- 
- 	/* For variable searching */
- #if _ELFUTILS_PREREQ(0, 142)
+ 		clear_perf_probe_event(&pev);
+ 		clear_probe_trace_event(&tev);
+@@ -1980,7 +1984,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 		group = pev->group;
+ 		pev->event = tev->event;
+ 		pev->group = tev->group;
+-		show_perf_probe_event(pev);
++		show_perf_probe_event(pev, tev->point.module);
+ 		/* Trick here - restore current event/group */
+ 		pev->event = (char *)event;
+ 		pev->group = (char *)group;
 -- 
 1.8.1.4
 
