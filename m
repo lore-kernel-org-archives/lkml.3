@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaBRVQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:16:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35695 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaBRVJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752180AbaBRVJJ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Feb 2014 16:09:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35640 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaBRVJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 16:09:07 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        "David A. Long" <dave.long@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, yrl.pp-manager.tt@hitachi.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 23/32] perf probe: Remove incorrect symbol check for --list
-Date: Tue, 18 Feb 2014 18:08:42 -0300
-Message-Id: <1392757731-32619-24-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/32] perf tests x86: Introduce perf_regs_load function
+Date: Tue, 18 Feb 2014 18:08:28 -0300
+Message-Id: <1392757731-32619-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
 References: <1392757731-32619-1-git-send-email-acme@infradead.org>
@@ -29,52 +29,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Remove unneeded symbol check for --list option.
+Introducing perf_regs_load function, which is going to be used for dwarf
+unwind test in following patches.
 
-This code actually checks whether the given symbol exists in the kernel.
-But this is incorrect for online kernel/module and offline module too:
+It takes single argument as a pointer to the regs dump buffer and
+populates it with current registers values.
 
- - For online kernel/module, the kprobes itself already
-  ensured the symbol exist in the kernel.
- - For offline module, this code can't access the offlined
-  modules. Ignore it.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Jean Pihet <jean.pihet@linaro.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: "David A. Long" <dave.long@linaro.org>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20140206053206.29635.7453.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1389098853-14466-5-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c | 8 --------
- 1 file changed, 8 deletions(-)
+ tools/perf/arch/x86/Makefile            |  1 +
+ tools/perf/arch/x86/include/perf_regs.h |  2 +
+ tools/perf/arch/x86/tests/regs_load.S   | 92 +++++++++++++++++++++++++++++++++
+ 3 files changed, 95 insertions(+)
+ create mode 100644 tools/perf/arch/x86/tests/regs_load.S
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 9aa77832099a..a4649e7449c5 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -739,14 +739,6 @@ out:
- static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- 					struct perf_probe_point *pp)
- {
--	struct symbol *sym;
--
--	sym = __find_kernel_function_by_name(tp->symbol, NULL);
--	if (!sym) {
--		pr_err("Failed to find symbol %s in kernel.\n", tp->symbol);
--		return -ENOENT;
--	}
--
- 	return convert_to_perf_probe_point(tp, pp);
- }
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 8801fe02f206..1cbef7338f84 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -4,6 +4,7 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+ endif
+ ifndef NO_LIBUNWIND
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
+diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
+index e84ca76aae77..f3435d62aec1 100644
+--- a/tools/perf/arch/x86/include/perf_regs.h
++++ b/tools/perf/arch/x86/include/perf_regs.h
+@@ -5,6 +5,8 @@
+ #include "../../util/types.h"
+ #include <asm/perf_regs.h>
  
++void perf_regs_load(u64 *regs);
++
+ #ifndef HAVE_ARCH_X86_64_SUPPORT
+ #define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
+ #else
+diff --git a/tools/perf/arch/x86/tests/regs_load.S b/tools/perf/arch/x86/tests/regs_load.S
+new file mode 100644
+index 000000000000..99167bf644ea
+--- /dev/null
++++ b/tools/perf/arch/x86/tests/regs_load.S
+@@ -0,0 +1,92 @@
++
++#include <linux/linkage.h>
++
++#define AX	 0
++#define BX	 1 * 8
++#define CX	 2 * 8
++#define DX	 3 * 8
++#define SI	 4 * 8
++#define DI	 5 * 8
++#define BP	 6 * 8
++#define SP	 7 * 8
++#define IP	 8 * 8
++#define FLAGS	 9 * 8
++#define CS	10 * 8
++#define SS	11 * 8
++#define DS	12 * 8
++#define ES	13 * 8
++#define FS	14 * 8
++#define GS	15 * 8
++#define R8	16 * 8
++#define R9	17 * 8
++#define R10	18 * 8
++#define R11	19 * 8
++#define R12	20 * 8
++#define R13	21 * 8
++#define R14	22 * 8
++#define R15	23 * 8
++
++.text
++#ifdef HAVE_ARCH_X86_64_SUPPORT
++ENTRY(perf_regs_load)
++	movq %rax, AX(%rdi)
++	movq %rbx, BX(%rdi)
++	movq %rcx, CX(%rdi)
++	movq %rdx, DX(%rdi)
++	movq %rsi, SI(%rdi)
++	movq %rdi, DI(%rdi)
++	movq %rbp, BP(%rdi)
++
++	leaq 8(%rsp), %rax /* exclude this call.  */
++	movq %rax, SP(%rdi)
++
++	movq 0(%rsp), %rax
++	movq %rax, IP(%rdi)
++
++	movq $0, FLAGS(%rdi)
++	movq $0, CS(%rdi)
++	movq $0, SS(%rdi)
++	movq $0, DS(%rdi)
++	movq $0, ES(%rdi)
++	movq $0, FS(%rdi)
++	movq $0, GS(%rdi)
++
++	movq %r8,  R8(%rdi)
++	movq %r9,  R9(%rdi)
++	movq %r10, R10(%rdi)
++	movq %r11, R11(%rdi)
++	movq %r12, R12(%rdi)
++	movq %r13, R13(%rdi)
++	movq %r14, R14(%rdi)
++	movq %r15, R15(%rdi)
++	ret
++ENDPROC(perf_regs_load)
++#else
++ENTRY(perf_regs_load)
++	push %edi
++	movl 8(%esp), %edi
++	movl %eax, AX(%edi)
++	movl %ebx, BX(%edi)
++	movl %ecx, CX(%edi)
++	movl %edx, DX(%edi)
++	movl %esi, SI(%edi)
++	pop %eax
++	movl %eax, DI(%edi)
++	movl %ebp, BP(%edi)
++
++	leal 4(%esp), %eax /* exclude this call.  */
++	movl %eax, SP(%edi)
++
++	movl 0(%esp), %eax
++	movl %eax, IP(%edi)
++
++	movl $0, FLAGS(%edi)
++	movl $0, CS(%edi)
++	movl $0, SS(%edi)
++	movl $0, DS(%edi)
++	movl $0, ES(%edi)
++	movl $0, FS(%edi)
++	movl $0, GS(%edi)
++	ret
++ENDPROC(perf_regs_load)
++#endif
 -- 
 1.8.1.4
 
