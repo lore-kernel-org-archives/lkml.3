@@ -1,61 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaBRGDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 01:03:52 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:32885 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101AbaBRGDu (ORCPT
+	id S1754091AbaBRGEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 01:04:31 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53744 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782AbaBRGEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 01:03:50 -0500
-Message-ID: <5302F7B7.60802@linaro.org>
-Date: Tue, 18 Feb 2014 14:03:35 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Feb 2014 01:04:25 -0500
+X-Original-SENDERIP: 10.177.220.194
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 18 Feb 2014 15:04:26 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 0/4] add compressing abstraction and multi stream
+ support
+Message-ID: <20140218060425.GA26133@bbox>
+References: <1392313402-5728-1-git-send-email-sergey.senozhatsky@gmail.com>
 MIME-Version: 1.0
-To: Michael wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
-        peterz@infradead.org, morten.rasmussen@arm.com
-CC: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
-        linux@arm.linux.org.uk, tony.luck@intel.com, fenghua.yu@intel.com,
-        james.hogan@imgtec.com, jason.low2@hp.com, viresh.kumar@linaro.org,
-        hanjun.guo@linaro.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        pjt@google.com, fengguang.wu@intel.com, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 0/11] remove cpu_load in rq
-References: <1392602117-20773-1-git-send-email-alex.shi@linaro.org> <5302E6FA.508@linux.vnet.ibm.com>
-In-Reply-To: <5302E6FA.508@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392313402-5728-1-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 12:52 PM, Michael wang wrote:
-> On 02/17/2014 09:55 AM, Alex Shi wrote:
->> The cpu_load decays on time according past cpu load of rq. The sched_avg also decays tasks' load on time. Now we has 2 kind decay for cpu_load. That is a kind of redundancy. And increase the system load by decay calculation. This patch try to remove the cpu_load decay.
->>
->> There are 5 load_idx used for cpu_load in sched_domain. busy_idx and idle_idx are not zero usually, but newidle_idx, wake_idx and forkexec_idx are all zero on every arch. A shortcut to remove cpu_Load decay in the first patch. just one line patch for this change.
->>
->> V2,
->> 1, This version do some tuning on load bias of target load, to maximum match current code logical.
->> 2, Got further to remove the cpu_load in rq.
->> 3, Revert the patch 'Limit sd->*_idx range on sysctl' since no needs
->>
->> Any testing/comments are appreciated.
-> 
-> Tested on 12-cpu-x86 box with tip/master, ebizzy and hackbench
-> works fine, show little improvements for each time's testing.
+Hello Sergey,
 
-Thanks a lot for your data!
+On Thu, Feb 13, 2014 at 08:43:18PM +0300, Sergey Senozhatsky wrote:
+> This patchset introduces zcomp compression backend abstraction
+> adding ability to support compression algorithms other than LZO;
+> support for multi compression streams, making parallel compressions
+> possible.
 > 
+> Diff from v4 (reviewed by Minchan Kim):
+> -- renamed zcomp buffer_lock; removed src len and dst len from
+>    compress() and decompress(); not using term `buffer' and
+>    `workmem' in code and documentation; define compress() and
+>    decompress() functions for LZO backend; not using goto's;
+>    do not put idle zcomp_strm to idle list tail.
 > 
-> BTW, I got panic while rebooting, but should not caused by
-> this patch set, will recheck and post the report later.
+> Diff from v3:
+> -- renamed compression backend and working memory structs as requested
+>    by Minchan Kim; fixed several issues noted by Minchan Kim.
 > 
+> Sergey Senozhatsky (4):
+>   zram: introduce compressing backend abstraction
+>   zram: use zcomp compressing backends
+>   zram: zcomp support multi compressing streams
+>   zram: document max_comp_streams
+> 
+>  Documentation/ABI/testing/sysfs-block-zram |   9 +-
+>  Documentation/blockdev/zram.txt            |  20 +++-
+>  drivers/block/zram/Makefile                |   2 +-
+>  drivers/block/zram/zcomp.c                 | 155 +++++++++++++++++++++++++++++
+>  drivers/block/zram/zcomp.h                 |  56 +++++++++++
+>  drivers/block/zram/zcomp_lzo.c             |  48 +++++++++
+>  drivers/block/zram/zram_drv.c              | 102 ++++++++++++-------
+>  drivers/block/zram/zram_drv.h              |  10 +-
+>  8 files changed, 355 insertions(+), 47 deletions(-)
+>  create mode 100644 drivers/block/zram/zcomp.c
+>  create mode 100644 drivers/block/zram/zcomp.h
+>  create mode 100644 drivers/block/zram/zcomp_lzo.c
 
-I reviewed my patch again. Also didn't find suspicious line for the
-following rcu stall.  Will wait for your report. :)
+I reviewed patchset and implement looked good to me but
+I found severe regression in my test which was one stream.
+
+Base is current upstream and zcomp-multi is yours.
+At last, zcom-single is where I tweaked to see schedule overhead
+cause by event.
+   
+   Base                      zcomp-multi                      zcomp-single
+
+==Initial  write             ==Initial  write              ==Initial  write
+records:   5                 records:   5                  records:   5
+avg:       1642424.35        avg:       699610.40          avg:       1655583.71
+std:       39890.95(2.43%)   std:       232014.19(33.16%)  std:       52293.96(3.16%)
+max:       1690170.94        max:       1163473.45         max:       1697164.75
+min:       1568669.52        min:       573429.88          min:       1553410.23
+==Rewrite  ==Rewrite         ==Rewrite
+records:   5                 records:   5                  records:   5
+avg:       1611775.39        avg:       501406.64          avg:       1684419.11
+std:       17144.58(1.06%)   std:       15354.41(3.06%)    std:       18367.42(1.09%)
+max:       1641800.95        max:       531356.78          max:       1706445.84
+min:       1593515.27        min:       488817.78          min:       1655335.73
+==Read     ==Read            ==Read
+records:   5                 records:   5                  records:   5
+avg:       2418916.31        avg:       2385573.68         avg:       2316542.26
+std:       55324.98(2.29%)   std:       64475.37(2.70%)    std:       50621.10(2.19%)
+max:       2517417.72        max:       2444138.89         max:       2383321.09
+min:       2364690.92        min:       2263763.77         min:       2233198.12
+==Re-read  ==Re-read         ==Re-read
+records:   5                 records:   5                  records:   5
+avg:       2351292.92        avg:       2333131.90         avg:       2336306.89
+std:       73358.82(3.12%)   std:       34726.09(1.49%)    std:       74001.47(3.17%)
+max:       2444053.92        max:       2396357.19         max:       2432697.06
+min:       2255477.41        min:       2299239.74         min:       2231400.94
+==Reverse  Read              ==Reverse  Read               ==Reverse  Read
+records:   5                 records:   5                  records:   5
+avg:       2383917.40        avg:       2267700.38         avg:       2328689.00
+std:       51389.78(2.16%)   std:       57018.67(2.51%)    std:       44955.21(1.93%)
+max:       2435560.11        max:       2346465.31         max:       2375047.77
+min:       2290726.91        min:       2188208.84         min:       2251465.20
+==Stride   read              ==Stride   read               ==Stride   read
+records:   5                 records:   5                  records:   5
+avg:       2361656.52        avg:       2292182.65         avg:       2302384.26
+std:       64730.61(2.74%)   std:       34649.38(1.51%)    std:       51145.23(2.22%)
+max:       2471425.77        max:       2341282.19         max:       2375936.66
+min:       2279913.31        min:       2242688.59         min:       2224134.48
+==Random   read              ==Random   read               ==Random   read
+records:   5                 records:   5                  records:   5
+avg:       2369086.95        avg:       2315431.27         avg:       2352314.50
+std:       19870.36(0.84%)   std:       43020.16(1.86%)    std:       51677.02(2.20%)
+max:       2391210.41        max:       2390286.89         max:       2415472.89
+min:       2337092.91        min:       2266433.95         min:       2264088.05
+==Mixed    workload          ==Mixed    workload           ==Mixed    workload
+records:   5                 records:   5                  records:   5
+avg:       1822253.03        avg:       2006455.50         avg:       1918270.29
+std:       95037.10(5.22%)   std:       67792.78(3.38%)    std:       45933.99(2.39%)
+max:       1934495.87        max:       2079128.36         max:       1995693.03
+min:       1694223.48        min:       1914532.49         min:       1856410.41
+==Random   write             ==Random   write              ==Random   write
+records:   5                 records:   5                  records:   5
+avg:       1626318.29        avg:       497250.78          avg:       1695582.06
+std:       38550.23(2.37%)   std:       1405.42(0.28%)     std:       9211.98(0.54%)
+max:       1665839.62        max:       498585.88          max:       1703808.22
+min:       1562141.21        min:       494526.45          min:       1677664.94
+==Pwrite   ==Pwrite          ==Pwrite
+records:   5                 records:   5                  records:   5
+avg:       1654641.25        avg:       581709.22          avg:       1641452.34
+std:       47202.59(2.85%)   std:       9670.46(1.66%)     std:       38963.62(2.37%)
+max:       1740682.36        max:       591300.09          max:       1687387.69
+min:       1611436.34        min:       564324.38          min:       1570496.11
+==Pread    ==Pread           ==Pread
+records:   5                 records:   5                  records:   5
+avg:       2308891.23        avg:       2381945.97         avg:       2347688.68
+std:       192436.37(8.33%)  std:       22957.85(0.96%)    std:       31682.43(1.35%)
+max:       2548482.56        max:       2415788.27         max:       2381937.58
+min:       1960229.11        min:       2349188.16         min:       2292507.52
+
+
+zcomp-single patch
+
+>From 99abaf9c185953c35b0e3cd12ebb90b57f3bbd50 Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Tue, 18 Feb 2014 11:41:11 +0900
+Subject: [PATCH] zram: add single lock
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/block/zram/zcomp.c | 24 +++++-------------------
+ drivers/block/zram/zcomp.h |  2 +-
+ 2 files changed, 6 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+index a032f49a52e2..03f4241083ac 100644
+--- a/drivers/block/zram/zcomp.c
++++ b/drivers/block/zram/zcomp.c
+@@ -56,32 +56,18 @@ struct zcomp_strm *zcomp_strm_get(struct zcomp *comp)
+ {
+ 	struct zcomp_strm *zstrm;
+ 
+-	while (1) {
+-		spin_lock(&comp->strm_lock);
+-		if (list_empty(&comp->idle_strm)) {
+-			spin_unlock(&comp->strm_lock);
+-			wait_event(comp->strm_wait,
+-					!list_empty(&comp->idle_strm));
+-			continue;
+-		}
+-
+-		zstrm = list_entry(comp->idle_strm.next,
++	mutex_lock(&comp->strm_lock);
++	zstrm = list_entry(comp->idle_strm.next,
+ 				struct zcomp_strm, list);
+-		list_del(&zstrm->list);
+-		spin_unlock(&comp->strm_lock);
+-		break;
+-	}
++	list_del(&zstrm->list);
+ 	return zstrm;
+ }
+ 
+ /* add zcomp_strm back to idle list and wake up waiter (if any) */
+ void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm)
+ {
+-	spin_lock(&comp->strm_lock);
+ 	list_add(&zstrm->list, &comp->idle_strm);
+-	spin_unlock(&comp->strm_lock);
+-
+-	wake_up(&comp->strm_wait);
++	mutex_unlock(&comp->strm_lock);
+ }
+ 
+ int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+@@ -138,7 +124,7 @@ struct zcomp *zcomp_create(const char *compress, int num_strm)
+ 		return NULL;
+ 
+ 	comp->backend = backend;
+-	spin_lock_init(&comp->strm_lock);
++	mutex_init(&comp->strm_lock);
+ 	INIT_LIST_HEAD(&comp->idle_strm);
+ 	init_waitqueue_head(&comp->strm_wait);
+ 
+diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+index 52899de40ca5..bfcec1cf7d2e 100644
+--- a/drivers/block/zram/zcomp.h
++++ b/drivers/block/zram/zcomp.h
+@@ -35,7 +35,7 @@ struct zcomp_backend {
+ /* dynamic per-device compression frontend */
+ struct zcomp {
+ 	/* protect strm list */
+-	spinlock_t strm_lock;
++	struct mutex strm_lock;
+ 	/* list of available strms */
+ 	struct list_head idle_strm;
+ 	wait_queue_head_t strm_wait;
+-- 
+1.8.5.3
+
+As you can see, your patch made zram too much regressed when it
+used one stream buffer. The reason I guessed is overhead of
+scheduling by sleep/wakeup when others couldn't find a idle stream
+so I had an experiment with below simple patch to restore old behavior
+so it works well again. The reason old behaivor was really good is
+it uses mutex with spin_on_owner so that it could avoid frequent
+sleep/wakeup.
+
+A solution I could think is that we could grow up the number of
+buffer dynamically up to max_buffers(ex, 2 * number of CPU) so we
+could grab a idle stream easily for each CPU while we could release
+buffers by shrinker when the memory pressure is severe.
+Of course, we should keep one buffer to work.
+
+Another solution I can imagaine is to define CONFIG_ZRAM_MULTI_STREAM
+and CONFIG_ZRAM_SINGLE_STREAM(ie, default) so we couldn't break good
+performance for old cases and new users who want write parallel
+could use ZRAM_MULTI which should be several streams at a default
+rather than a stream. And we could ehhacne it further by dynamic control
+as I mentioned.
+
+Thoughts?
+
+
 > 
+> -- 
+> 1.9.0.rc3.260.g4cf525c
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Thanks
-    Alex
+Kind regards,
+Minchan Kim
