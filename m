@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaBRBwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 20:52:45 -0500
-Received: from ozlabs.org ([203.10.76.45]:49729 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394AbaBRBwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 20:52:44 -0500
-Date: Tue, 18 Feb 2014 12:52:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dingtianhong <dingtianhong@huawei.com>, Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20140218125235.255d20c138b514902bd9fd0c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Feb_2014_12_52_35_+1100_CZX=QCV6juD2VVq8"
+	id S1752629AbaBRB7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 20:59:53 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58301 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaBRB7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 20:59:52 -0500
+Date: Tue, 18 Feb 2014 10:59:40 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140218015940.GA2669@sirena.org.uk>
+References: <1392627817-26957-1-git-send-email-sachin.kamat@linaro.org>
+ <1392627817-26957-2-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="07KgZKBWke2i7lgQ"
+Content-Disposition: inline
+In-Reply-To: <1392627817-26957-2-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.99.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/9] regulator: as3722: Add missing of_node_put
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Feb_2014_12_52_35_+1100_CZX=QCV6juD2VVq8
-Content-Type: text/plain; charset=US-ASCII
+
+--07KgZKBWke2i7lgQ
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On Mon, Feb 17, 2014 at 02:33:30PM +0530, Sachin Kamat wrote:
+> Add of_node_put to decrement the ref count.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/bonding/bond_main.c between commit f80889a5b79c ("bonding:
-Fix deadlock in bonding driver when using netpoll") from the net tree and
-commit 90194264ceff ("bonding: Neaten pr_<level>") from the net-next tree.
+Applied, thanks.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/bonding/bond_main.c
-index 1c6104d3501d,3bce855e627b..000000000000
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@@ -1547,13 -1544,12 +1545,13 @@@ int bond_enslave(struct net_device *bon
-  		write_lock_bh(&bond->curr_slave_lock);
-  		bond_select_active_slave(bond);
-  		write_unlock_bh(&bond->curr_slave_lock);
- +		unblock_netpoll_tx();
-  	}
- =20
-- 	pr_info("%s: enslaving %s as a%s interface with a%s link.\n",
-+ 	pr_info("%s: Enslaving %s as %s interface with %s link\n",
-  		bond_dev->name, slave_dev->name,
-- 		bond_is_active_slave(new_slave) ? "n active" : " backup",
-- 		new_slave->link !=3D BOND_LINK_DOWN ? "n up" : " down");
-+ 		bond_is_active_slave(new_slave) ? "an active" : "a backup",
-+ 		new_slave->link !=3D BOND_LINK_DOWN ? "an up" : "a down");
- =20
-  	/* enslave is successful */
-  	return 0;
-@@@ -2865,11 -2858,9 +2862,11 @@@ static int bond_slave_netdev_event(unsi
-  			break;
-  		}
- =20
-- 		pr_info("%s: Primary slave changed to %s, reselecting active slave.\n",
-- 			bond->dev->name, bond->primary_slave ? slave_dev->name :
-- 							       "none");
-+ 		pr_info("%s: Primary slave changed to %s, reselecting active slave\n",
-+ 			bond->dev->name,
-+ 			bond->primary_slave ? slave_dev->name : "none");
- +
- +		block_netpoll_tx();
-  		write_lock_bh(&bond->curr_slave_lock);
-  		bond_select_active_slave(bond);
-  		write_unlock_bh(&bond->curr_slave_lock);
-
---Signature=_Tue__18_Feb_2014_12_52_35_+1100_CZX=QCV6juD2VVq8
-Content-Type: application/pgp-signature
+--07KgZKBWke2i7lgQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJTArzoAAoJEMDTa8Ir7ZwVEP8P+gLhzr8/LuMY7B8iHeBNKFsB
-vIaDS0TyhZC8F4awQkHY5D9HeQaVbHZzE+1EOMS6qwp/RaDqHxd39XVjgFLp3GxZ
-4kSDyxTK6iinPQbLtjWMBE0CYjLkrgvtAGnhyi1Frz8fH0gqr7NBx6aYvvotSgsX
-sZIP6AY2/p7d7ZPwKzCYAX5Icdn7Y4vzJW/tmFCmXXEZoM/WKrXXkM5tI2czRFLW
-s8yS4ThwrwsXIU28ImJlPuvTkMmz6X1WKmzdhMy3ER44/U77brNlLRgJqGntJz+A
-LGMdlTEiEfjNIcsbgJRhBYLVsq3PsuVOnRPUq4I/xm3+cUx0Py2MjBXOFsGVrRic
-6INCafXW+TsadaB8N6Pe+z4X7TCNuNWGf2nWcUbkUpN6/4Y7bO2h1weaOpZecHNB
-ZhfSjdlF5NrjIOk7ESyh/OGYgzscVhPgBwkMqz50+9jEjd708hv95YoVOp5f+gYz
-bDKiAdmWsXgjMS6M95uo0VWFYrMz79XuwgI8Hx8QJIJU54f7lCx2Sy1bwnxKmttP
-ljUiWNpu5+qGJ1KqMfLMxsZasoQF4tDAIplpw24UIyUkFMJgR3KTkU3XOavoBuIT
-EamWmdamR/R6mP/Bm4vL4G7+zxkJZ5DfOrbU9J/p+be7EPFqUiEL8P/eVaZ3GeIR
-dUCRxcdkR0wdK0fdhRYF
-=a1jx
+iQIcBAEBAgAGBQJTAr6IAAoJELSic+t+oim9SH0P/AwSToOjbV6iI0Gmz8MUTeij
+Uea+TBZp0ZIDHeorai+68P8b1pnnD3qWAwEm6OsIm5zA0GxZa/0hrNPN9IJhX5if
+UgH3gplBZXr+EuJ72Fesv4FSYMSmyFyoGZyen6Ipq2gk5MKH3yAVQyl/fHgTrrfW
+F/sR3GMkGYy+xm3TerzkqsdxmBp8zgy2zKGzQ4jg9/d2HKeZ7T6PpNmu5Q5GsdJ3
+VEw8mvXT2qYB/8T27+Xi81iashQn/7ypyt8khHMCukaXaTKHr3SOKWlI3WJzguRB
+IatSw0oYp4XKFblmVgUBb2GpEKNibREfA8iFL57O+6JphEDlm5VN1srzdDy+/HvZ
+LH3Fi4DqJi4HjkYcAT0KFmUaxMdEgrfh2m+ol93h19+sDnAAVz6S8yYtB0LOKvwg
+d4IX9O7Nv2JF8tGe5r2Pjo5NY9uDhkiYqS3v/nS/dWEko86plc2e3paZ8EJ1Dc7F
+9lvoFFkEtmTeYWWZtUHLkWJ0ARBZbIK8qJ0fwXjgNMxxJHTNSthI4F7CL+gZEEI5
+Vie5+rFl4Byv8dCtWqFdMFTNGnA2cBiaGS05nyOO6R/GUUwghPHYSoKh7fNxd1ka
+J/hz6B8UPKyZ/bjwQDYnAxIWtTx2Bhk4AfjpDNvWMikJKW3l2PnJC1Zt3KZ5rl8Y
++PRMGMBArhPBFhEUBEJF
+=UTa4
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__18_Feb_2014_12_52_35_+1100_CZX=QCV6juD2VVq8--
+--07KgZKBWke2i7lgQ--
