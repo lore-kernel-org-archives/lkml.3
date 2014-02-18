@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087AbaBROh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:37:27 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2070 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755992AbaBRO3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:29:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="485209694"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 10/20] Kbuild, lto: add ld-version and ld-ifversion macros
-Date: Tue, 18 Feb 2014 15:28:48 +0100
-Message-Id: <1392733738-8290-11-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
-References: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
+	id S932159AbaBROhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:37:55 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:52494 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932134AbaBROhv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 09:37:51 -0500
+Message-ID: <5303703A.8060002@linaro.org>
+Date: Tue, 18 Feb 2014 22:37:46 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lan Tianyu <tianyu.lan@intel.com>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v4 5/5] ACPI: Replace printk with pr_* in tables.c
+References: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org>  <1392731700-10992-6-git-send-email-hanjun.guo@linaro.org> <1392732373.22752.22.camel@joe-AO722>
+In-Reply-To: <1392732373.22752.22.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 2014年02月18日 22:06, Joe Perches wrote:
+> On Tue, 2014-02-18 at 21:55 +0800, Hanjun Guo wrote:
+>> This patch just do some clean up to replace printk with pr_*,
+>> no functional change.
+> trivial note:
+>
+>> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+> []
+>> @@ -55,8 +55,7 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
+>>   		{
+>>   			struct acpi_madt_local_apic *p =
+>>   			    (struct acpi_madt_local_apic *)header;
+>> -			printk(KERN_INFO PREFIX
+>> -			       "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+>> +			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+>>   			       p->processor_id, p->id,
+>>   			       (p->lapic_flags & ACPI_MADT_ENABLED) ? "enabled" : "disabled");
+> It'd be nice to realign the additional lines to the open
+> parenthesis, here and everywhere else in this patch
+>
+> 			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+> 				p->processor_id, p->id,
+> 				(p->lapic_flags & ACPI_MADT_ENABLED) ? "enabled" : "disabled");
 
-To check the linker version. Used by the LTO makefile.
+Thanks for your comments, will update patch 1/5 and 5/5 follow your 
+suggestion :)
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- Documentation/kbuild/makefiles.txt | 10 ++++++++++
- scripts/Kbuild.include             |  9 +++++++++
- scripts/ld-version.sh              |  8 ++++++++
- 3 files changed, 27 insertions(+)
- create mode 100755 scripts/ld-version.sh
-
-diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-index d567a7c..40d51f3 100644
---- a/Documentation/kbuild/makefiles.txt
-+++ b/Documentation/kbuild/makefiles.txt
-@@ -595,6 +595,16 @@ more details, with real examples.
- 		#Makefile
- 		LDFLAGS_vmlinux += $(call ld-option, -X)
- 
-+    ld-version
-+	ld-version returns the full version number of $(LD), for three
-+	number binutils versions, like the Linux binutils
-+
-+    ld-ifversion
-+	Check the version number of the $(LD) linker in an if.
-+
-+	Example:
-+		#Makefile.lto
-+		ifeq ($(call ld-ifversion,-ge,22710001,y),y)
- 
- === 4 Host Program support
- 
-diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-index 547e15d..93a0da2 100644
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -155,6 +155,15 @@ ld-option = $(call try-run,\
- # Important: no spaces around options
- ar-option = $(call try-run, $(AR) rc$(1) "$$TMP",$(1),$(2))
- 
-+# ld-version
-+# Usage: $(call ld-version)
-+# Note this is mainly for HJ Lu's 3 number binutil versions
-+ld-version = $(shell $(LD) --version | $(srctree)/scripts/ld-version.sh)
-+
-+# ld-ifversion
-+# Usage:  $(call ld-ifversion, -ge, 22252, y)
-+ld-ifversion = $(shell [ $(call ld-version) $(1) $(2) ] && echo $(3))
-+
- ######
- 
- ###
-diff --git a/scripts/ld-version.sh b/scripts/ld-version.sh
-new file mode 100755
-index 0000000..198580d
---- /dev/null
-+++ b/scripts/ld-version.sh
-@@ -0,0 +1,8 @@
-+#!/usr/bin/awk -f
-+# extract linker version number from stdin and turn into single number
-+	{
-+	gsub(".*)", "");
-+	split($1,a, ".");
-+	print a[1]*10000000 + a[2]*100000 + a[3]*10000 + a[4]*100 + a[5];
-+	exit
-+	}
--- 
-1.8.5.2
-
+Hanjun
