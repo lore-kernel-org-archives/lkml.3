@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569AbaBRPHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:07:42 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57737 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755354AbaBRPHi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 10:07:38 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Theodore Tso <tytso@mit.edu>, Peter Weber <bugs@ttyhoney.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kevin Smith <thirdwiggin@gmail.com>,
-        Rinat Ibragimov <ibragimovrinat@mail.ru>, sov.info@mail.ru,
-        Thomas Christensen <christensenthomas@gmail.com>,
-        Vladimir Sherenkov <a_12300@mail.ru>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Daniel Vetter <daniel@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>
-Subject: Re: [PATCH v4] ACPI / video: Add systems that should favour native backlight interface
-Date: Tue, 18 Feb 2014 16:22:27 +0100
-Message-ID: <1903167.TtlOFgMB6X@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <s5hfvngy2bh.wl%tiwai@suse.de>
-References: <5302F58C.1080001@intel.com> <20140218103442.GS5018@intel.com> <s5hfvngy2bh.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756585AbaBRPIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:08:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756224AbaBRPHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 10:07:20 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Mike Marciniszyn <infinipath@intel.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH 2/2] qib: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 16:09:02 +0100
+Message-Id: <f0eabd77b96e0d679ce6c2e2e544c73063c508ee.1392733151.git.agordeev@redhat.com>
+In-Reply-To: <cover.1392733151.git.agordeev@redhat.com>
+References: <cover.1392733151.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 18, 2014 02:31:46 PM Takashi Iwai wrote:
-> At Tue, 18 Feb 2014 12:34:42 +0200,
-> Mika Westerberg wrote:
-> > 
-> > On Tue, Feb 18, 2014 at 01:54:20PM +0800, Aaron Lu wrote:
-> > > +	{
-> > > +	.callback = video_set_use_native_backlight,
-> > > +	.ident = "HP EliteBook 2013 models",
-> > > +	.matches = {
-> > > +		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-> > > +		DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook "),
-> > > +		DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
-> > > +		},
-> > > +	},
-> > 
-> > I see my device is listed here but the above doesn't really use native
-> > backlight because it is still in acpi_osi blacklist. Tried this and I can
-> > see both acpi_video0 and intel_backlight listed under /sys/class/backlight.
-> > Was this the intention?
-> 
-> The acpi_osi blacklist commit (2d4054d84224) has to be reverted, as I
-> mentioned earlier.  But the revert can be done individually after
-> merging this patch.  Rafael, could you care?
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range() and pci_enable_msix_range()
+interfaces.
 
-Done.  Please check the result in linux-pm.git/linux-next.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Mike Marciniszyn <infinipath@intel.com>
+Cc: Roland Dreier <roland@kernel.org>
+Cc: Sean Hefty <sean.hefty@intel.com>
+Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/infiniband/hw/qib/qib_pcie.c |   55 +++++++++++++++++----------------
+ 1 files changed, 28 insertions(+), 27 deletions(-)
 
-Thanks,
-Rafael
+diff --git a/drivers/infiniband/hw/qib/qib_pcie.c b/drivers/infiniband/hw/qib/qib_pcie.c
+index c8d9c4a..61a0046 100644
+--- a/drivers/infiniband/hw/qib/qib_pcie.c
++++ b/drivers/infiniband/hw/qib/qib_pcie.c
+@@ -197,46 +197,47 @@ static void qib_msix_setup(struct qib_devdata *dd, int pos, u32 *msixcnt,
+ 			   struct qib_msix_entry *qib_msix_entry)
+ {
+ 	int ret;
+-	u32 tabsize = 0;
+-	u16 msix_flags;
++	int nvec = *msixcnt;
+ 	struct msix_entry *msix_entry;
+ 	int i;
+ 
++	ret = pci_msix_vec_count(dd->pcidev);
++	if (ret < 0)
++		goto do_intx;
++
++	nvec = min(nvec, ret);
++
+ 	/* We can't pass qib_msix_entry array to qib_msix_setup
+ 	 * so use a dummy msix_entry array and copy the allocated
+ 	 * irq back to the qib_msix_entry array. */
+-	msix_entry = kmalloc(*msixcnt * sizeof(*msix_entry), GFP_KERNEL);
+-	if (!msix_entry) {
+-		ret = -ENOMEM;
++	msix_entry = kmalloc(nvec * sizeof(*msix_entry), GFP_KERNEL);
++	if (!msix_entry)
+ 		goto do_intx;
+-	}
+-	for (i = 0; i < *msixcnt; i++)
++
++	for (i = 0; i < nvec; i++)
+ 		msix_entry[i] = qib_msix_entry[i].msix;
+ 
+-	pci_read_config_word(dd->pcidev, pos + PCI_MSIX_FLAGS, &msix_flags);
+-	tabsize = 1 + (msix_flags & PCI_MSIX_FLAGS_QSIZE);
+-	if (tabsize > *msixcnt)
+-		tabsize = *msixcnt;
+-	ret = pci_enable_msix(dd->pcidev, msix_entry, tabsize);
+-	if (ret > 0) {
+-		tabsize = ret;
+-		ret = pci_enable_msix(dd->pcidev, msix_entry, tabsize);
+-	}
+-do_intx:
+-	if (ret) {
+-		qib_dev_err(dd,
+-			"pci_enable_msix %d vectors failed: %d, falling back to INTx\n",
+-			tabsize, ret);
+-		tabsize = 0;
+-	}
+-	for (i = 0; i < tabsize; i++)
++	ret = pci_enable_msix_range(dd->pcidev, msix_entry, 1, nvec);
++	if (ret < 0)
++		goto free_msix_entry;
++	else
++		nvec = ret;
++
++	for (i = 0; i < nvec; i++)
+ 		qib_msix_entry[i].msix = msix_entry[i];
++
+ 	kfree(msix_entry);
+-	*msixcnt = tabsize;
++	*msixcnt = nvec;
++	return;
+ 
+-	if (ret)
+-		qib_enable_intx(dd->pcidev);
++free_msix_entry:
++	kfree(msix_entry);
+ 
++do_intx:
++	qib_dev_err(dd, "pci_enable_msix_range %d vectors failed: %d, "
++			"falling back to INTx\n", nvec, ret);
++	*msixcnt = 0;
++	qib_enable_intx(dd->pcidev);
+ }
+ 
+ /**
+-- 
+1.7.7.6
 
