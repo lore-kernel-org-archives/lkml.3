@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaBRVcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:32:47 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:56463 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaBRVcn convert rfc822-to-8bit (ORCPT
+	id S1752645AbaBRVc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:32:59 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:40126 "EHLO
+	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaBRVc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:32:43 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCHv3 2/6] mailbox: Introduce a new common API
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1392488727-17981-1-git-send-email-jaswinder.singh@linaro.org>
-Date: Tue, 18 Feb 2014 15:32:37 -0600
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, s-anna@ti.com,
-        tony@atomide.com, omar.ramirez@copitl.com, loic.pallardy@st.com,
-        lftan.linux@gmail.com, slapdau@yahoo.com.au,
-        courtney.cavin@sonymobile.com, rafael.j.wysocki@intel.com,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <95FE2F33-B9C5-4F24-B639-3F1D42EFD1E1@codeaurora.org>
-References: <1392488526-17715-1-git-send-email-jaswinder.singh@linaro.org> <1392488727-17981-1-git-send-email-jaswinder.singh@linaro.org>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-X-Mailer: Apple Mail (2.1827)
+	Tue, 18 Feb 2014 16:32:56 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Tue, 18 Feb 2014 13:19:59 -0800
+Message-ID: <5303D185.8020302@synaptics.com>
+Date: Tue, 18 Feb 2014 13:32:53 -0800
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Andrew Duggan <aduggan@synaptics.com>,
+        Vincent Huang <vincent.huang@tw.synaptics.com>,
+        Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/11] Input: synaptics-rmi4 - do not update configuration
+ in rmi_f01_probe()
+References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com> <1392269277-16391-3-git-send-email-dmitry.torokhov@gmail.com> <52FD1BC0.1050009@synaptics.com> <20140213215432.GA6225@core.coreip.homeip.net> <52FEA01B.7040604@synaptics.com> <20140217192321.GC19223@core.coreip.homeip.net>
+In-Reply-To: <20140217192321.GC19223@core.coreip.homeip.net>
+X-Originating-IP: [10.3.20.103]
+X-Brightmail-Tracker: AAAAAQAAAWE=
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/17/2014 11:23 AM, Dmitry Torokhov wrote:
+> On Fri, Feb 14, 2014 at 03:00:43PM -0800, Christopher Heiny wrote:
+>> On 02/13/2014 01:54 PM, Dmitry Torokhov wrote:
+>>> On Thu, Feb 13, 2014 at 11:23:44AM -0800, Christopher Heiny wrote:
+>>>>> On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
+>>>>>>> Do not write configuration data in probe(), we have config() for that.
+>>>>>
+>>>>> Then we should call config() in rmi_function_probe() to ensure that
+>>>>> any platform data or device tree configuration settings get written
+>>>>> to the device.
+>>>
+>>> Well, yes, we may elect to update device configuration in probe, but
+>>> then we should not be doing that 2nd time in ->config(). We shoudl pick
+>>> either one or another.
+>>
+>> But as the code currently stands, config() is only called when a
+>> device reset is detected, not during initialization.  So if there's
+>> platform specific configuration data that needs to be written to a
+>> function, it won't get written until after a device reset occurs,
+>> which might never happen.  So either we need to write that data (or
+>> call config()) in each function's probe(), or in
+>> rmi_function_probe().
+>
+> Ah, I missed the fact that we do not normally call ->config() unless
+> device was reset. BTW, if device was reset, shouldn't we tear down
+> everything and then reenumerate all functions?
 
-On Feb 15, 2014, at 12:25 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+That's only required if the reset is a result of the device being 
+reflashed.  Since we're dropping support for user-space control of 
+reflash, and will instead use an in-driver reflash, we know which resets 
+are the result of a reflash and which aren't. The reflash code will do 
+the following sequence:
 
-> Introduce common framework for client/protocol drivers and
-> controller drivers of Inter-Processor-Communication (IPC).
-> 
-> Client driver developers should have a look at
-> include/linux/mailbox_client.h to understand the part of
-> the API exposed to client drivers.
-> Similarly controller driver developers should have a look
-> at include/linux/mailbox_controller.h
-> 
-> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
-> ---
-> drivers/mailbox/Makefile           |   4 +
-> drivers/mailbox/mailbox.c          | 534 +++++++++++++++++++++++++++++++++++++
-> include/linux/mailbox.h            |  17 ++
-> include/linux/mailbox_client.h     |  87 ++++++
-> include/linux/mailbox_controller.h | 102 +++++++
-> 5 files changed, 744 insertions(+)
-> create mode 100644 drivers/mailbox/mailbox.c
-> create mode 100644 include/linux/mailbox.h
-> create mode 100644 include/linux/mailbox_client.h
-> create mode 100644 include/linux/mailbox_controller.h
+- tell the core to tear down the functions
+- perform the reflash operation
+- reset the device
+- tell the core to re-enumerate the functions
 
-What’s the intent of trying to provide a unified interface here?  I’m trying to understand what benefit we are going for, I get possibly wanting something to reduce duplication in drivers (help functions, library, etc).  But do we really see benefit in a common interface for clients?
 
-Are we really going to mix a OMAP mailbox controller with a client developed for some other SoC vendor?
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+					Chris
