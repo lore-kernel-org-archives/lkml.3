@@ -1,619 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaBRUdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:33:49 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47429 "EHLO bear.ext.ti.com"
+	id S1752759AbaBRUd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:33:57 -0500
+Received: from sauhun.de ([89.238.76.85]:44396 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580AbaBRUdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:33:22 -0500
-From: Nishanth Menon <nm@ti.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [RFC PATCH 3/6] PM / Voltagedomain: introduce voltage domain driver support
-Date: Tue, 18 Feb 2014 14:32:20 -0600
-Message-ID: <1392755543-28335-4-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392755543-28335-1-git-send-email-nm@ti.com>
-References: <1392755543-28335-1-git-send-email-nm@ti.com>
+	id S1751854AbaBRUdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 15:33:54 -0500
+Date: Tue, 18 Feb 2014 21:33:46 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: David Howells <dhowells@redhat.com>
+Cc: wolfram@the-dreams.de, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c: Add message transfer tracepoints for I2C
+Message-ID: <20140218203346.GG18768@katana>
+References: <20140109214954.25590.73057.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5UGlQXeG3ziZS81+"
+Content-Disposition: inline
+In-Reply-To: <20140109214954.25590.73057.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many SoCs have basic concepts of voltage rails supplying a specific
-SoC device. These voltage rails may be as simple as a single regulator
-or complex to be three or more regulators that are transitioned in
-tandem with respect to clock changes. In some cases, they may tend
-to use custom frameworks to do the actual voltage transition OR use
-hardware modules that takes hints about the required configuration and
-does optimized voltage transitions.
 
-The current regulator model provides the basic building blocks for the
-transitions, however SoC drivers specific to each of these devices, be
-it cpufreq/devfreq have to replicate the logic for functionality.
+--5UGlQXeG3ziZS81+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-To simply the logic, we can hence introduce a layer that takes care
-of the mundane transition logic, registration mechanisms to provide
-the "user drivers" such as cpufreq/devfreq a generic interface, whose
-details are abstracted by the device tree description for the SoC on
-which the driver operates on.
+Hi David,
 
-This allows us opportunity to make generic cpufreq / devfreq drivers
-which may deal with a single clock, however the actual voltage change
-mechanism can be customized specific to SoC without impact to the
-generic driver.
+On Thu, Jan 09, 2014 at 09:49:54PM +0000, David Howells wrote:
+> Add tracepoints into the I2C message transfer function to retrieve the me=
+ssage
+> sent or received.  The following config options must be turned on to make=
+ use
+> of the facility:
+>=20
+> 	CONFIG_FTRACE
+> 	CONFIG_ENABLE_DEFAULT_TRACERS
+>=20
+> The I2C tracepoint can be enabled thusly:
+>=20
+> 	echo 1 >/sys/kernel/debug/tracing/events/i2c/i2c_transfer/enable
+>=20
+> and will dump messages that can be viewed in /sys/kernel/debug/tracing/tr=
+ace
+> that look like:
+>=20
+> 	... i2c_write: i2c-5 #0 f=3D00 a=3D44 l=3D2 [0214]
+> 	... i2c_read: i2c-5 #1 f=3D01 a=3D44 l=3D4
+> 	... i2c_reply: i2c-5 #1 f=3D01 a=3D44 l=3D4 [33000000]
+> 	... i2c_result: i2c-5 n=3D2 ret=3D2
+>=20
+> formatted as:
+>=20
+> 	i2c-<adapter-nr>
+> 	#<message-array-index>
+> 	f=3D<flags>
+> 	a=3D<addr>
+> 	l=3D<datalen>
+> 	n=3D<message-array-size>
+> 	ret=3D<result>
+> 	[<data>]
+>=20
+> The operation is done between the i2c_write/i2c_read lines and the i2c_re=
+ply
+> and i2c_result lines so that if the hardware hangs, the trace buffer can =
+be
+> consulted to determine the problematic operation.
+>=20
+> The adapters to be traced can be selected by something like:
+>=20
+> 	echo adapter_nr=3D=3D1 >/sys/kernel/debug/tracing/events/i2c/filter
+>=20
+> These changes are based on code from Steven Rostedt.
+>=20
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/power/voltdm/Kconfig                  |    5 +
- drivers/power/voltdm/Makefile                 |    3 +
- drivers/power/voltdm/core.c                   |  347 +++++++++++++++++++++++--
- drivers/power/voltdm/voltage_domain_private.h |   86 ++++++
- 4 files changed, 424 insertions(+), 17 deletions(-)
- create mode 100644 drivers/power/voltdm/voltage_domain_private.h
+I like it very much, just have some comments about the format.
 
-diff --git a/drivers/power/voltdm/Kconfig b/drivers/power/voltdm/Kconfig
-index c5353bd..270fdab 100644
---- a/drivers/power/voltdm/Kconfig
-+++ b/drivers/power/voltdm/Kconfig
-@@ -5,3 +5,8 @@ config VOLTAGE_DOMAIN
- 	---help---
- 	  Core voltage domain framework using common clock framework's
- 	  notifier mechanism.
-+
-+menu "Voltage Domain Framework Drivers"
-+	depends on VOLTAGE_DOMAIN
-+
-+endmenu
-diff --git a/drivers/power/voltdm/Makefile b/drivers/power/voltdm/Makefile
-index 3fa4408..fd32040 100644
---- a/drivers/power/voltdm/Makefile
-+++ b/drivers/power/voltdm/Makefile
-@@ -1,2 +1,5 @@
- # Generic voltage domain
- obj-$(CONFIG_VOLTAGE_DOMAIN)	+= core.o
-+
-+# Hardware specific voltage domain
-+# please keep this section sorted lexicographically by file/directory path name
-diff --git a/drivers/power/voltdm/core.c b/drivers/power/voltdm/core.c
-index d0ed27e..69f6e81 100644
---- a/drivers/power/voltdm/core.c
-+++ b/drivers/power/voltdm/core.c
-@@ -10,12 +10,32 @@
-  * that scale voltage when a clock changes its output frequency.
-  */
- #include <linux/device.h>
-+#include <linux/module.h>
- #include <linux/of.h>
- #include <linux/pm_opp.h>
- #include <linux/pm_voltage_domain.h>
- #include <linux/regulator/consumer.h>
- #include <linux/slab.h>
- 
-+#include "voltage_domain_private.h"
-+
-+/**
-+ * struct pm_voltdm_dev - internal representation of voltage domain devices
-+ * @desc:	voltage domain description
-+ * @dev:	voltage domain device
-+ * @list:	list to remaining voltage domain devices
-+ * @lock:	mutex to control data structure modifications and serialize ops
-+ * @notifier_list:	list of notifiers registered for this device
-+ */
-+struct pm_voltdm_dev {
-+	const struct pm_voltdm_desc *desc;
-+	struct device *dev;
-+	struct list_head list;
-+	/* list lock */
-+	struct mutex lock;
-+	struct list_head notifier_list;
-+};
-+
- /**
-  * struct volt_scale_data - Internal structure to maintain notifier information
-  * @dev:	device on behalf of which we register the notifier
-@@ -23,6 +43,9 @@
-  * @reg:	regulator if any which is used for scaling voltage
-  * @tol:	voltage tolerance in %
-  * @nb:		notifier block pointer
-+ * @list:	list head for the notifier
-+ * @vdev:	pointer to voltage domain device for this notifier
-+ * @voltdm_data: voltdm driver specific data
-  */
- struct volt_scale_data {
- 	struct device *dev;
-@@ -30,23 +53,208 @@ struct volt_scale_data {
- 	struct regulator *reg;
- 	int tol;
- 	struct notifier_block nb;
-+	struct list_head list;
-+
-+	struct pm_voltdm_dev *vdev;
-+	void *voltdm_data;
- };
- 
- #define to_volt_scale_data(_nb) container_of(_nb, \
- 		struct volt_scale_data, nb)
- 
-+static DEFINE_MUTEX(pm_voltdm_list_lock);
-+static LIST_HEAD(pm_voltdm_list);
-+
-+static inline bool voltmd_skip_check(struct pm_voltdm_dev *vdev)
-+{
-+	bool ret = false;
-+
-+	if (vdev) {
-+		const struct pm_voltdm_desc *desc;
-+
-+		if (IS_ERR(vdev))
-+			return false;
-+
-+		mutex_lock(&vdev->lock);
-+		desc = vdev->desc;
-+
-+		if (desc->flags & VOLTAGE_DOMAIN_FLAG_NOTIFY_ALL)
-+			ret = true;
-+		mutex_unlock(&vdev->lock);
-+	}
-+
-+	return ret;
-+}
-+
-+static inline int voltmd_scale_voltage(struct volt_scale_data *vsd,
-+				       unsigned long flags, int volt, int tol)
-+{
-+	int ret;
-+	struct pm_voltdm_dev *vdev = vsd->vdev;
-+
-+	if (vdev) {
-+		const struct pm_voltdm_ops *ops;
-+
-+		if (IS_ERR(vdev))
-+			return PTR_ERR(vdev);
-+
-+		mutex_lock(&vdev->lock);
-+		ops = vdev->desc->ops;
-+
-+		ret = ops->voltdm_do_transition(vdev->dev,
-+						vsd->voltdm_data,
-+						flags, volt, tol);
-+		mutex_unlock(&vdev->lock);
-+	} else {
-+		ret = regulator_set_voltage_tol(vsd->reg, volt, tol);
-+	}
-+
-+	return ret;
-+}
-+
-+static struct pm_voltdm_dev *voltdm_parse_of(struct device_node *np,
-+					     const char *supply,
-+					     struct of_phandle_args *args)
-+{
-+	char prop_name[32];	/* 32 is max size of property name */
-+	bool found = false;
-+	struct device_node *voltdm_np;
-+	struct pm_voltdm_dev *vdev = NULL;
-+	int ret;
-+
-+	snprintf(prop_name, sizeof(prop_name), "%s-voltdm", supply);
-+	voltdm_np = of_parse_phandle(np, prop_name, 0);
-+	if (voltdm_np) {
-+		ret = of_parse_phandle_with_args(np, prop_name, "#voltdm-cells",
-+						 0, args);
-+		if (ret)
-+			return ERR_PTR(ret);
-+
-+		mutex_lock(&pm_voltdm_list_lock);
-+		list_for_each_entry(vdev, &pm_voltdm_list, list)
-+		    if (vdev->dev->parent && voltdm_np == vdev->dev->of_node) {
-+			found = true;
-+			break;
-+		}
-+		mutex_unlock(&pm_voltdm_list_lock);
-+
-+		/* if node is present and not ready, then defer */
-+		if (!found)
-+			return ERR_PTR(-EPROBE_DEFER);
-+	} else {
-+		return NULL;
-+	}
-+
-+	return vdev;
-+}
-+
-+static int voltdm_get(struct volt_scale_data *vsd, struct device_node *np,
-+		      const char *supply, struct of_phandle_args *args,
-+		      bool *skip_reg)
-+{
-+	struct pm_voltdm_dev *vdev = vsd->vdev;
-+	struct device *dev = vsd->dev;
-+	int ret = 0;
-+
-+	if (vdev) {
-+		const struct pm_voltdm_ops *ops;
-+		if (IS_ERR(vdev))
-+			return PTR_ERR(vdev);
-+
-+		mutex_lock(&vdev->lock);
-+		if (!try_module_get(vdev->dev->driver->owner)) {
-+			ret = -ENODEV;
-+		} else {
-+			ops = vdev->desc->ops;
-+			if (ops->voltdm_get)
-+				ret = ops->voltdm_get(vdev->dev, dev, np,
-+						      args, supply,
-+						      &vsd->voltdm_data);
-+			if (ret)
-+				module_put(vdev->dev->driver->owner);
-+		}
-+		if (!ret)
-+			list_add(&vsd->list, &vdev->notifier_list);
-+
-+		mutex_unlock(&vdev->lock);
-+	} else {
-+		vsd->reg = regulator_get_optional(dev, supply);
-+		if (IS_ERR(vsd->reg))
-+			ret = PTR_ERR(vsd->reg);
-+		/* Regulator is not mandatory */
-+		if (ret != -EPROBE_DEFER) {
-+			ret = 0;
-+			*skip_reg = false;
-+			dev_dbg(dev, "%s: Failed to get %s regulator:%d\n",
-+				__func__, supply, ret);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static void voltdm_put(struct volt_scale_data *vsd)
-+{
-+	struct pm_voltdm_dev *vdev = vsd->vdev;
-+
-+	if (vdev) {
-+		const struct pm_voltdm_ops *ops;
-+
-+		if (IS_ERR(vdev))
-+			return;
-+
-+		mutex_lock(&vdev->lock);
-+		ops = vdev->desc->ops;
-+		if (ops->voltdm_put)
-+			ops->voltdm_put(vdev->dev, vsd->dev, vsd->voltdm_data);
-+		list_del(&vsd->list);
-+		module_put(vdev->dev->driver->owner);
-+		mutex_unlock(&vdev->lock);
-+	} else {
-+		if (!IS_ERR(vsd->reg))
-+			regulator_put(vsd->reg);
-+	}
-+}
-+
-+static int voltdm_get_latency(struct volt_scale_data *vsd, int min, int max)
-+{
-+	struct pm_voltdm_dev *vdev = vsd->vdev;
-+	const struct pm_voltdm_ops *ops;
-+	int ret;
-+
-+	if (!vdev)
-+		return regulator_set_voltage_time(vsd->reg, min, max);
-+
-+	if (IS_ERR(vdev))
-+		return PTR_ERR(vdev);
-+
-+	mutex_lock(&vdev->lock);
-+	ops = vdev->desc->ops;
-+
-+	if (!ops->voltdm_latency)
-+		ret = -ENXIO;
-+	else
-+		ret = ops->voltdm_latency(vdev->dev, vsd->voltdm_data,
-+					  min, max);
-+	mutex_unlock(&vdev->lock);
-+
-+	return ret;
-+}
-+
- static int clk_volt_notifier_handler(struct notifier_block *nb,
- 				     unsigned long flags, void *data)
- {
- 	struct clk_notifier_data *cnd = data;
- 	struct volt_scale_data *vsd = to_volt_scale_data(nb);
-+	struct pm_voltdm_dev *vdev = vsd->vdev;
- 	int ret, volt, tol;
- 	struct dev_pm_opp *opp;
- 	unsigned long old_rate = cnd->old_rate;
- 	unsigned long new_rate = cnd->new_rate;
- 
--	if ((new_rate < old_rate && flags == PRE_RATE_CHANGE) ||
--	    (new_rate > old_rate && flags == POST_RATE_CHANGE))
-+	if (!voltmd_skip_check(vdev) &&
-+	    ((new_rate < old_rate && flags == PRE_RATE_CHANGE) ||
-+	     (new_rate > old_rate && flags == POST_RATE_CHANGE)))
- 		return NOTIFY_OK;
- 
- 	rcu_read_lock();
-@@ -69,7 +277,7 @@ static int clk_volt_notifier_handler(struct notifier_block *nb,
- 	dev_dbg(vsd->dev, "%s: %lu -> %lu, V=%d, tol=%d, clk_flag=%lu\n",
- 		__func__, old_rate, new_rate, volt, tol, flags);
- 
--	ret = regulator_set_voltage_tol(vsd->reg, volt, tol);
-+	ret = voltmd_scale_voltage(vsd, flags, volt, tol);
- 	if (ret) {
- 		dev_err(vsd->dev,
- 			"%s: Failed to scale voltage(%u): %d\n", __func__,
-@@ -101,6 +309,14 @@ struct notifier_block *of_pm_voltdm_notifier_register(struct device *dev,
- 	struct dev_pm_opp *opp;
- 	unsigned long min, max, freq;
- 	int ret;
-+	struct of_phandle_args voltdm_args = {NULL};
-+	struct pm_voltdm_dev *vdev = NULL;
-+	bool skip_reg = false;
-+
-+	/* First look for voltdm of node */
-+	vdev = voltdm_parse_of(np, supply, &voltdm_args);
-+	if (IS_ERR(vdev))
-+		return (struct notifier_block *)vdev;
- 
- 	vsd = kzalloc(sizeof(*vsd), GFP_KERNEL);
- 	if (!vsd)
-@@ -109,19 +325,16 @@ struct notifier_block *of_pm_voltdm_notifier_register(struct device *dev,
- 	vsd->dev = dev;
- 	vsd->clk = clk;
- 	vsd->nb.notifier_call = clk_volt_notifier_handler;
--	vsd->reg = regulator_get_optional(dev, supply);
--	ret = 0;
--	if (IS_ERR(vsd->reg))
--		ret = PTR_ERR(vsd->reg);
--	/* regulator is not mandatory */
--	if (ret != -EPROBE_DEFER) {
--		dev_warn(dev, "%s: Failed to get %s regulator:%d\n",
-+	vsd->vdev = vdev;
-+	ret = voltdm_get(vsd, np, supply, &voltdm_args, &skip_reg);
-+
-+	if (ret) {
-+		dev_warn(dev, "%s: Failed to get %s regulator/voltdm: %d\n",
- 			 __func__, supply, ret);
--		ret = 0;
- 		goto err_free_vsd;
- 	}
--	/* For devices that are not ready.... */
--	if (ret)
-+	/* if not mandatory... */
-+	if (skip_reg)
- 		goto err_free_vsd;
- 
- 	rcu_read_lock();
-@@ -138,7 +351,7 @@ struct notifier_block *of_pm_voltdm_notifier_register(struct device *dev,
- 	max = dev_pm_opp_get_voltage(opp);
- 	rcu_read_unlock();
- 
--	*voltage_latency = regulator_set_voltage_time(vsd->reg, min, max);
-+	*voltage_latency = voltdm_get_latency(vsd, min, max);
- 	if (*voltage_latency < 0) {
- 		dev_warn(dev,
- 			 "%s: Fail calculating voltage latency[%ld<->%ld]:%d\n",
-@@ -163,7 +376,7 @@ err_bad_opp:
- 	dev_err(dev, "%s: failed to get OPP, %d\n", __func__, ret);
- 
- err_free_reg:
--	regulator_put(vsd->reg);
-+	voltdm_put(vsd);
- 
- err_free_vsd:
- 	kfree(vsd);
-@@ -187,9 +400,109 @@ void of_pm_voltdm_notifier_unregister(struct notifier_block *nb)
- 	vsd = to_volt_scale_data(nb);
- 	clk = vsd->clk;
- 	clk_notifier_unregister(clk, nb);
--	if (!IS_ERR(vsd->reg))
--		regulator_put(vsd->reg);
-+	voltdm_put(vsd);
- 
- 	kfree(vsd);
- }
- EXPORT_SYMBOL_GPL(of_pm_voltdm_notifier_unregister);
-+
-+static void devm_voltdm_release(struct device *dev, void *res)
-+{
-+	struct pm_voltdm_dev *vdev = *(struct pm_voltdm_dev **)res;
-+	struct volt_scale_data *vsd;
-+
-+	mutex_lock(&pm_voltdm_list_lock);
-+	mutex_lock(&vdev->lock);
-+	list_for_each_entry(vsd, &vdev->notifier_list, list) {
-+		dev_warn(dev, "%s: pending notifier from device %s!\n",
-+			 __func__, dev_name(vsd->dev));
-+		vsd->vdev = ERR_PTR(-EINVAL);
-+	}
-+	mutex_unlock(&vdev->lock);
-+
-+	list_del(&vdev->list);
-+	mutex_unlock(&pm_voltdm_list_lock);
-+
-+	kfree(vdev);
-+}
-+
-+/**
-+ * devm_voltdm_register - Resource managed voltage domain registration
-+ * @dev: pointer to the device representing the voltage domain
-+ * @desc: voltage domain descriptor
-+ *
-+ * Called by voltage domain drivers to register a voltagedomain.  Returns a
-+ * valid pointer to struct pm_voltdm_dev on success or an ERR_PTR() on
-+ * error.  The voltagedomain will automatically be released when the device
-+ * is unbound.
-+ */
-+struct pm_voltdm_dev *devm_voltdm_register(struct device *dev,
-+					   const struct pm_voltdm_desc *desc)
-+{
-+	struct pm_voltdm_dev **ptr, *vdev;
-+
-+	if (!dev || !desc)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (!desc->ops)
-+		return ERR_PTR(-EINVAL);
-+
-+	/* Mandatory to have notify transition */
-+	if (!desc->ops->voltdm_do_transition) {
-+		dev_err(dev, "%s: Bad desc -do_transition missing\n", __func__);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
-+	if (!vdev)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ptr = devres_alloc(devm_voltdm_release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr) {
-+		kfree(vdev);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	vdev->desc = desc;
-+	vdev->dev = dev;
-+	mutex_init(&vdev->lock);
-+	INIT_LIST_HEAD(&vdev->notifier_list);
-+	mutex_lock(&pm_voltdm_list_lock);
-+	list_add(&vdev->list, &pm_voltdm_list);
-+	mutex_unlock(&pm_voltdm_list_lock);
-+
-+	*ptr = vdev;
-+	devres_add(dev, ptr);
-+
-+	return vdev;
-+}
-+EXPORT_SYMBOL_GPL(devm_voltdm_register);
-+
-+static int devm_vdev_match(struct device *dev, void *res, void *data)
-+{
-+	struct pm_voltdm_dev **r = res;
-+	if (!r || !*r) {
-+		WARN_ON(!r || !*r);
-+		return 0;
-+	}
-+	return *r == data;
-+}
-+
-+/**
-+ * devm_voltdm_unregister - Resource managed voltagedomain unregister
-+ * @vdev: voltage domain device returned by devm_voltdm_register()
-+ *
-+ * Unregister a voltdm registered with devm_voltdm_register().
-+ * Normally this function will not need to be called and the resource
-+ * management code will ensure that the resource is freed.
-+ */
-+void devm_voltdm_unregister(struct pm_voltdm_dev *vdev)
-+{
-+	int rc;
-+	struct device *dev = vdev->dev;
-+
-+	rc = devres_release(dev, devm_voltdm_release, devm_vdev_match, vdev);
-+	if (rc != 0)
-+		WARN_ON(rc);
-+}
-+EXPORT_SYMBOL_GPL(devm_voltdm_unregister);
-diff --git a/drivers/power/voltdm/voltage_domain_private.h b/drivers/power/voltdm/voltage_domain_private.h
-new file mode 100644
-index 0000000..e63c2b1
---- /dev/null
-+++ b/drivers/power/voltdm/voltage_domain_private.h
-@@ -0,0 +1,86 @@
-+/*
-+ * Voltage Domain private header for voltage domain drivers
-+ *
-+ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
-+ *	Nishanth Menon
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __PM_VOLTAGE_DOMAIN_PRIVATE__
-+#define __PM_VOLTAGE_DOMAIN_PRIVATE__
-+
-+#include <linux/pm_voltage_domain.h>
-+
-+struct pm_voltdm_dev;
-+
-+/**
-+ * struct pm_voltdm_ops - Operations functions for voltage domain
-+ * @voltdm_get: (optional) invoked when notifier is to be registered.
-+ * @voltdm_put: (optional) invoked when notifier is unregistered.
-+ * @voltdm_latency:	(optional) compute and provide voltage domain
-+ *			transition latency.
-+ * @voltdm_do_transition: (mandatory) callback for notification
-+ *
-+ * np_args - is arguments to the node phandle - useful when specific voltage
-+ * domain is refered to using indices.
-+ * voltdm_data - is the voltage domain driver specific data corresponding to
-+ * driver information per registration (may point to domain driver specific
-+ * data including reference to index. This is always provided back to the
-+ * driver at various follow on operations.
-+ * clk_notifier_flags - follows the standard clk notification flags
-+ */
-+struct pm_voltdm_ops {
-+	int (*voltdm_get)(struct device *voltdm_dev,
-+			  struct device *request_dev,
-+			  struct device_node *np,
-+			  struct of_phandle_args *np_args,
-+			  const char *supply,
-+			  void **voltdm_data);
-+	int (*voltdm_latency)(struct device *voltdm_dev, void *voltdm_data,
-+			      unsigned long min_uv, unsigned long max_uv);
-+	int (*voltdm_do_transition)(struct device *voltdm_dev,
-+				    void *voltdm_data,
-+				    unsigned long clk_notifier_flags,
-+				    int uv, int tol_uv);
-+	void (*voltdm_put)(struct device *voltdm_dev,
-+			   struct device *request_dev,
-+			   void *voltdm_data);
-+};
-+
-+#define VOLTAGE_DOMAIN_FLAG_NOTIFY_ALL		(0x1 << 0)
-+
-+/**
-+ * struct pm_voltdm_desc - Descriptor for the voltage domain
-+ * @ops:	operations for the voltage domain
-+ * @flags:	flags controlling the various operations
-+ */
-+struct pm_voltdm_desc {
-+	const struct pm_voltdm_ops *ops;
-+	u16 flags;
-+};
-+
-+#if defined(CONFIG_VOLTAGE_DOMAIN)
-+struct pm_voltdm_dev *devm_voltdm_register(struct device *dev,
-+					   const struct pm_voltdm_desc *desc);
-+void devm_voltdm_unregister(struct pm_voltdm_dev *vdev);
-+#else
-+static inline struct pm_voltdm_dev *devm_voltdm_register(struct device *dev,
-+					   const struct pm_voltdm_desc *desc)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+
-+static inline void devm_voltdm_unregister(struct pm_voltdm_dev *vdev)
-+{
-+}
-+#endif				/* VOLTAGE_DOMAIN */
-+
-+#endif				/* __PM_VOLTAGE_DOMAIN_PRIVATE__ */
--- 
-1.7.9.5
+> +TRACE_EVENT_FN(i2c_write,
+> +	       TP_PROTO(const struct i2c_adapter *adap, const struct i2c_msg *m=
+sg,
+> +			int num),
+> +	       TP_ARGS(adap, msg, num),
+> +	       TP_STRUCT__entry(
+> +		       __field(int,	adapter_nr		)
+> +		       __field(__u16,	msg_nr			)
+> +		       __field(__u16,	addr			)
+> +		       __field(__u16,	flags			)
+> +		       __field(__u16,	len			)
+> +		       __dynamic_array(__u8, buf, msg->len)	),
+> +	       TP_fast_assign(
+> +		       __entry->adapter_nr =3D adap->nr;
+> +		       __entry->msg_nr =3D num;
+> +		       __entry->addr =3D msg->addr;
+> +		       __entry->flags =3D msg->flags;
+> +		       __entry->len =3D msg->len;
+> +		       memcpy(__get_dynamic_array(buf), msg->buf, msg->len);
+> +			      ),
+> +	       TP_printk("i2c-%d #%u f=3D%02x a=3D%02x l=3D%u [%*phN]",
 
+'flags' are u16 and the whole range is needed -> %04x
+
+'addr' is u16 and either 7 or 10 bits are needed. The core does the
+following when assigning names because it is possible to have devices
+0x50 (7-bit) and 0x050 (10-bit) on the bus:
+
+	/* For 10-bit clients, add an arbitrary offset to avoid collisions */
+	dev_set_name(&client->dev, "%d-%04x", i2c_adapter_id(adap),
+		     client->addr | ((client->flags & I2C_CLIENT_TEN)
+				     ? 0xa000 : 0));
+
+I don't know if this can be implemented. Actually, I don't think it
+needs to be implemented since flags are printed, too. So, with this the
+10-bit case is visible and for the address simply %03x should do.
+
+And for the buffer: %*phN is difficult to read IMO. What about %*ph? Or
+%*phD at least?
+
+Thanks,
+
+   Wolfram
+
+
+--5UGlQXeG3ziZS81+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTA8OqAAoJEBQN5MwUoCm21aYP+wShsWS00Cqe5Y3vX6g5W2Ec
+dMBVo8vPQUn+ekhlyMr+k99xbF0Tqh0e5/Pmlo02VLYK8nWKZscLHm8N/2pIsbDC
+HteiMk5vTvTb11KJE2pnZNipWsTq+Qy754vTIE3motioT7a/TllyR19PINDc4BxC
+F1GDCGHdbTkFz0uO8AgcstFp4wmU2XkCiQxuJjunDyQ5+c+/M0Myz962PohBv1Zk
+Co5WMj8X+oUZCPm7tW+Ao0/yIwj+fkuAf+EBzgutw35vekzlGjqVGmgmnQcamL6/
+W1Hzdy1qzX4kqgYgBwkJVI6U0nXYSo8xbc7ukNDhQpfyLS8rRmu/uaNRNMz4U+Uc
+P9hpGTHnUOzJpktzQbU44sd5QN04I0IT1nqU9GzfYZBPOpKfij8+IAz9mkA52uOp
+mQrDylqWtaFzivjC7j2p5QLecunINI1L66yg00DVeFzacWKZrSfna7Q2PKYHw/8R
+tXN/y/awPXKkwPdGsEKAFny/okbeRNDgPW9NFxJd48UYJaUMlDIgFf8lxWQv//kF
+7S7P9Uyra3F1yznGeltQAD7XQNQcvcnpbw1pNsIg6CJyepuCOtnp6O9AqCHsplPM
+uBl63e5qxhYilrxpV6WoKfz7Rn9TyQ4e8PMk5UAW8qnMLc0W4vjyrTYjs+qAWEX0
+9auB1mse+7I9Vhz9YnZJ
+=3bQ2
+-----END PGP SIGNATURE-----
+
+--5UGlQXeG3ziZS81+--
