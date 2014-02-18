@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935AbaBRWvx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:51:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51259 "EHLO
+	id S1753965AbaBRWwX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:52:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51252 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573AbaBRWrc (ORCPT
+	with ESMTP id S1753463AbaBRWra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:32 -0500
+	Tue, 18 Feb 2014 17:47:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 07/40] NFSv4: Fix memory corruption in nfs4_proc_open_confirm
-Date: Tue, 18 Feb 2014 14:47:08 -0800
-Message-Id: <20140218224433.544476150@linuxfoundation.org>
+        Harald Freudenberger <freude@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.13 05/40] crypto: s390 - fix des and des3_ede ctr concurrency issue
+Date: Tue, 18 Feb 2014 14:47:06 -0800
+Message-Id: <20140218224433.489877282@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -28,70 +29,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-commit 17ead6c85c3d0ef57a14d1373f1f1cee2ce60ea8 upstream.
+commit ee97dc7db4cbda33e4241c2d85b42d1835bc8a35 upstream.
 
-nfs41_wake_and_assign_slot() relies on the task->tk_msg.rpc_argp and
-task->tk_msg.rpc_resp always pointing to the session sequence arguments.
+In s390 des and 3des ctr mode there is one preallocated page
+used to speed up the en/decryption. This page is not protected
+against concurrent usage and thus there is a potential of data
+corruption with multiple threads.
 
-nfs4_proc_open_confirm tries to pull a fast one by reusing the open
-sequence structure, thus causing corruption of the NFSv4 slot table.
+The fix introduces locking/unlocking the ctr page and a slower
+fallback solution at concurrency situations.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c       |    8 ++++----
- include/linux/nfs_xdr.h |    2 ++
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ arch/s390/crypto/des_s390.c |   69 ++++++++++++++++++++++++++++++--------------
+ 1 file changed, 48 insertions(+), 21 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1622,15 +1622,15 @@ static void nfs4_open_confirm_prepare(st
- {
- 	struct nfs4_opendata *data = calldata;
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -25,6 +25,7 @@
+ #define DES3_KEY_SIZE	(3 * DES_KEY_SIZE)
  
--	nfs40_setup_sequence(data->o_arg.server, &data->o_arg.seq_args,
--				&data->o_res.seq_res, task);
-+	nfs40_setup_sequence(data->o_arg.server, &data->c_arg.seq_args,
-+				&data->c_res.seq_res, task);
+ static u8 *ctrblk;
++static DEFINE_SPINLOCK(ctrblk_lock);
+ 
+ struct s390_des_ctx {
+ 	u8 iv[DES_BLOCK_SIZE];
+@@ -368,54 +369,80 @@ static struct crypto_alg cbc_des3_alg =
+ 	}
+ };
+ 
++static unsigned int __ctrblk_init(u8 *ctrptr, unsigned int nbytes)
++{
++	unsigned int i, n;
++
++	/* align to block size, max. PAGE_SIZE */
++	n = (nbytes > PAGE_SIZE) ? PAGE_SIZE : nbytes & ~(DES_BLOCK_SIZE - 1);
++	for (i = DES_BLOCK_SIZE; i < n; i += DES_BLOCK_SIZE) {
++		memcpy(ctrptr + i, ctrptr + i - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
++		crypto_inc(ctrptr + i, DES_BLOCK_SIZE);
++	}
++	return n;
++}
++
+ static int ctr_desall_crypt(struct blkcipher_desc *desc, long func,
+-			    struct s390_des_ctx *ctx, struct blkcipher_walk *walk)
++			    struct s390_des_ctx *ctx,
++			    struct blkcipher_walk *walk)
+ {
+ 	int ret = blkcipher_walk_virt_block(desc, walk, DES_BLOCK_SIZE);
+-	unsigned int i, n, nbytes;
+-	u8 buf[DES_BLOCK_SIZE];
+-	u8 *out, *in;
++	unsigned int n, nbytes;
++	u8 buf[DES_BLOCK_SIZE], ctrbuf[DES_BLOCK_SIZE];
++	u8 *out, *in, *ctrptr = ctrbuf;
++
++	if (!walk->nbytes)
++		return ret;
+ 
+-	memcpy(ctrblk, walk->iv, DES_BLOCK_SIZE);
++	if (spin_trylock(&ctrblk_lock))
++		ctrptr = ctrblk;
++
++	memcpy(ctrptr, walk->iv, DES_BLOCK_SIZE);
+ 	while ((nbytes = walk->nbytes) >= DES_BLOCK_SIZE) {
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 		while (nbytes >= DES_BLOCK_SIZE) {
+-			/* align to block size, max. PAGE_SIZE */
+-			n = (nbytes > PAGE_SIZE) ? PAGE_SIZE :
+-				nbytes & ~(DES_BLOCK_SIZE - 1);
+-			for (i = DES_BLOCK_SIZE; i < n; i += DES_BLOCK_SIZE) {
+-				memcpy(ctrblk + i, ctrblk + i - DES_BLOCK_SIZE,
+-				       DES_BLOCK_SIZE);
+-				crypto_inc(ctrblk + i, DES_BLOCK_SIZE);
+-			}
+-			ret = crypt_s390_kmctr(func, ctx->key, out, in, n, ctrblk);
+-			if (ret < 0 || ret != n)
++			if (ctrptr == ctrblk)
++				n = __ctrblk_init(ctrptr, nbytes);
++			else
++				n = DES_BLOCK_SIZE;
++			ret = crypt_s390_kmctr(func, ctx->key, out, in,
++					       n, ctrptr);
++			if (ret < 0 || ret != n) {
++				if (ctrptr == ctrblk)
++					spin_unlock(&ctrblk_lock);
+ 				return -EIO;
++			}
+ 			if (n > DES_BLOCK_SIZE)
+-				memcpy(ctrblk, ctrblk + n - DES_BLOCK_SIZE,
++				memcpy(ctrptr, ctrptr + n - DES_BLOCK_SIZE,
+ 				       DES_BLOCK_SIZE);
+-			crypto_inc(ctrblk, DES_BLOCK_SIZE);
++			crypto_inc(ctrptr, DES_BLOCK_SIZE);
+ 			out += n;
+ 			in += n;
+ 			nbytes -= n;
+ 		}
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	}
+-
++	if (ctrptr == ctrblk) {
++		if (nbytes)
++			memcpy(ctrbuf, ctrptr, DES_BLOCK_SIZE);
++		else
++			memcpy(walk->iv, ctrptr, DES_BLOCK_SIZE);
++		spin_unlock(&ctrblk_lock);
++	}
+ 	/* final block may be < DES_BLOCK_SIZE, copy only nbytes */
+ 	if (nbytes) {
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 		ret = crypt_s390_kmctr(func, ctx->key, buf, in,
+-				       DES_BLOCK_SIZE, ctrblk);
++				       DES_BLOCK_SIZE, ctrbuf);
+ 		if (ret < 0 || ret != DES_BLOCK_SIZE)
+ 			return -EIO;
+ 		memcpy(out, buf, nbytes);
+-		crypto_inc(ctrblk, DES_BLOCK_SIZE);
++		crypto_inc(ctrbuf, DES_BLOCK_SIZE);
+ 		ret = blkcipher_walk_done(desc, walk, 0);
++		memcpy(walk->iv, ctrbuf, DES_BLOCK_SIZE);
+ 	}
+-	memcpy(walk->iv, ctrblk, DES_BLOCK_SIZE);
+ 	return ret;
  }
  
- static void nfs4_open_confirm_done(struct rpc_task *task, void *calldata)
- {
- 	struct nfs4_opendata *data = calldata;
- 
--	nfs40_sequence_done(task, &data->o_res.seq_res);
-+	nfs40_sequence_done(task, &data->c_res.seq_res);
- 
- 	data->rpc_status = task->tk_status;
- 	if (data->rpc_status == 0) {
-@@ -1688,7 +1688,7 @@ static int _nfs4_proc_open_confirm(struc
- 	};
- 	int status;
- 
--	nfs4_init_sequence(&data->o_arg.seq_args, &data->o_res.seq_res, 1);
-+	nfs4_init_sequence(&data->c_arg.seq_args, &data->c_res.seq_res, 1);
- 	kref_get(&data->kref);
- 	data->rpc_done = 0;
- 	data->rpc_status = 0;
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -379,12 +379,14 @@ struct nfs_openres {
-  * Arguments to the open_confirm call.
-  */
- struct nfs_open_confirmargs {
-+	struct nfs4_sequence_args	seq_args;
- 	const struct nfs_fh *	fh;
- 	nfs4_stateid *		stateid;
- 	struct nfs_seqid *	seqid;
- };
- 
- struct nfs_open_confirmres {
-+	struct nfs4_sequence_res	seq_res;
- 	nfs4_stateid            stateid;
- 	struct nfs_seqid *	seqid;
- };
 
 
