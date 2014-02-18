@@ -1,81 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156AbaBRMGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 07:06:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57484 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753683AbaBRMGS convert rfc822-to-8bit (ORCPT
+	id S1754850AbaBRMML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 07:12:11 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:45309 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683AbaBRMMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 07:06:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,501,1389772800"; 
-   d="scan'208";a="457357743"
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chew, Kean Ho" <kean.ho.chew@intel.com>,
-        "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: RE: [PATCH] pwm: add support for Intel Low Power Subsystem PWM
-Thread-Topic: [PATCH] pwm: add support for Intel Low Power Subsystem PWM
-Thread-Index: AQHPFeODD2mYitjqEkOYVm/Ug18o75qOWl8AgAC154CAAOc8AIArHCbw
-Date: Tue, 18 Feb 2014 12:05:35 +0000
-Message-ID: <604BF5F4C5D71041942BC7E84ED659EA01559812@PGSMSX103.gar.corp.intel.com>
-References: <1390240808-18582-1-git-send-email-chiau.ee.chew@intel.com>
- <20140120132814.212929bd@alan.etchedpixels.co.uk>
- <20140121085236.GI18029@intel.com> <20140121194338.GA12085@ulmo.nvidia.com>
- <20140122093116.GR18029@intel.com>
-In-Reply-To: <20140122093116.GR18029@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Feb 2014 07:12:07 -0500
 MIME-Version: 1.0
+Reply-To: Peter.Sewell@cl.cam.ac.uk
+Date: Tue, 18 Feb 2014 12:12:06 +0000
+X-Google-Sender-Auth: fEaRQeRDUor0Eviuq1ESMt9y3XA
+Message-ID: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
+To: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>,
+        "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, peterz@infradead.org,
+        Torvald Riegel <triegel@redhat.com>, torvalds@linux-foundation.org,
+        Will Deacon <will.deacon@arm.com>, Ramana.Radhakrishnan@arm.com,
+        dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mingo@kernel.org, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
-> Sent: Wednesday, January 22, 2014 5:31 PM
-> To: Thierry Reding
-> Cc: One Thousand Gnomes; Chew, Chiau Ee; linux-pwm@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Chew, Kean Ho; Chang, Rebecca Swee Fun
-> Subject: Re: [PATCH] pwm: add support for Intel Low Power Subsystem PWM
-> 
-> On Tue, Jan 21, 2014 at 08:43:39PM +0100, Thierry Reding wrote:
-> > The idea behind this is that only a single user can have access to a
-> > given PWM device at a time. The PWM device's PWMF_REQUESTED flag is
-> > set (and cleared) under the pwm_lock and any subsequent users will not
-> > be able to use that specific device (pwm_request() return -EBUSY).
-> >
-> > There is obviously an assumption here that each user knows what they
-> > are doing and aren't calling any of the public pwm_*() functions
-> > concurrently. I haven't come across a situation where this is actually
-> > a problem because typically these functions are called either via
-> > sysfs or some other higher-level where synchronization is already
-> > properly handled.
-> >
-> > So the only thing that drivers should be taking care of is
-> > synchronizing access to registers common to multiple PWM devices.
-> 
-> OK, and since LPSS PWM don't share registers we shouldn't need to do anything
-> here.
-> 
-> > Does that clarify things?
-> 
-> It does for me, thanks for the explanation.
+Several of you have said that the standard and compiler should not
+permit speculative writes of atomics, or (effectively) that the
+compiler should preserve dependencies.  In simple examples it's easy
+to see what that means, but in general it's not so clear what the
+language should guarantee, because dependencies may go via non-atomic
+code in other compilation units, and we have to consider the extent to
+which it's desirable to limit optimisation there.
 
-Hi Thierry,
+For example, suppose we have, in one compilation unit:
 
-Would like to find out whether this pwm patch ready to get accepted into mainline kernel? Didn't mean to be pushy :).
-Btw, in order to have the Intel Baytrail PWM controller working, it has dependency on the acpi_lpss.c which I have sent the patch (https://lkml.org/lkml/2014/2/18/127) for upstream as well and cc you in the loop. 
+    void f(int ra, int*rb) {
+      if (ra==42)
+        *rb=42;
+      else
+        *rb=42;
+    }
 
-Thanks,
-Chiau Ee
+and in another compilation unit the bodies of two threads:
+
+    // Thread 0
+    r1 = x;
+    f(r1,&r2);
+    y = r2;
+
+    // Thread 1
+    r3 = y;
+    f(r3,&r4);
+    x = r4;
+
+where accesses to x and y are annotated C11 atomic
+memory_order_relaxed or Linux ACCESS_ONCE(), accesses to
+r1,r2,r3,r4,ra,rb are not annotated, and x and y initially hold 0.
+
+(Of course, this is an artificial example, to make the point below as
+simply as possible - in real code the branches of the conditional
+might not be syntactically identical, just equivalent after macro
+expansion and other optimisation.)
+
+In the source program there's a dependency from the read of x to the
+write of y in Thread 0, and from the read of y to the write of x on
+Thread 1.  Dependency-respecting compilation would preserve those and
+the ARM and POWER architectures both respect them, so the reads of x
+and y could not give 42.
+
+But a compiler might well optimise the (non-atomic) body of f() to
+just *rb=42, making the threads effectively
+
+    // Thread 0
+    r1 = x;
+    y = 42;
+
+    // Thread 1
+    r3 = y;
+    x = 42;
+
+(GCC does this at O1, O2, and O3) and the ARM and POWER architectures
+permit those two reads to see 42. That is moreover actually observable
+on current ARM hardware.
+
+So as far as we can see, either:
+
+1) if you can accept the latter behaviour (if the Linux codebase does
+   not rely on its absence), the language definition should permit it,
+   and current compiler optimisations can be used,
+
+or
+
+2) otherwise, the language definition should prohibit it but the
+   compiler would have to preserve dependencies even in compilation
+   units that have no mention of atomics.  It's unclear what the
+   (runtime and compiler development) cost of that would be in
+   practice - perhaps Torvald could comment?
+
+
+For more context, this example is taken from a summary of the thin-air
+problem by Mark Batty and myself,
+<www.cl.cam.ac.uk/~pes20/cpp/notes42.html>, and the problem with
+dependencies via other compilation units was AFAIK first pointed out
+by Hans Boehm.
+
+Peter
