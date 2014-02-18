@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235AbaBRChY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 21:37:24 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:37916 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855AbaBRChU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 21:37:20 -0500
-Message-ID: <5302C754.8000109@linaro.org>
-Date: Tue, 18 Feb 2014 10:37:08 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
-CC: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
-        linux@arm.linux.org.uk, tony.luck@intel.com, fenghua.yu@intel.com,
-        james.hogan@imgtec.com, alex.shi@linaro.org, jason.low2@hp.com,
-        viresh.kumar@linaro.org, hanjun.guo@linaro.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
-        wangyun@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/11] remove cpu_load in rq
-References: <1392602117-20773-1-git-send-email-alex.shi@linaro.org>
-In-Reply-To: <1392602117-20773-1-git-send-email-alex.shi@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754339AbaBRCiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 21:38:17 -0500
+Received: from mga01.intel.com ([192.55.52.88]:19699 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287AbaBRCiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 21:38:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,864,1389772800"; 
+   d="scan'208";a="476798706"
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: rjw@rjwysocki.net, gregkh@linuxfoundation.org, len.brown@intel.com,
+        pavel@ucw.cz
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhuangzhi.li@intel.com, chuansheng.liu@intel.com
+Subject: [PATCH v4 0/5] Enabling the asynchronous threads for other phases
+Date: Tue, 18 Feb 2014 10:28:43 +0800
+Message-Id: <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
+X-Mailer: git-send-email 1.9.rc0
+In-Reply-To: <y>
+References: <y>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 09:55 AM, Alex Shi wrote:
-> The cpu_load decays on time according past cpu load of rq. The sched_avg also decays tasks' load on time. Now we has 2 kind decay for cpu_load. That is a kind of redundancy. And increase the system load by decay calculation. This patch try to remove the cpu_load decay.
-> 
-> There are 5 load_idx used for cpu_load in sched_domain. busy_idx and idle_idx are not zero usually, but newidle_idx, wake_idx and forkexec_idx are all zero on every arch. A shortcut to remove cpu_Load decay in the first patch. just one line patch for this change.
-> 
-> V2,
-> 1, This version do some tuning on load bias of target load, to maximum match current code logical.
-> 2, Got further to remove the cpu_load in rq.
-> 3, Revert the patch 'Limit sd->*_idx range on sysctl' since no needs
+Hello,
 
-Any comments for this? :)
+This patch series are for enabling the asynchronous threads for the phases
+resume_noirq, resume_early, suspend_noirq and suspend_late.
 
-> 
-> Any testing/comments are appreciated.
-> 
-> This patch rebase on latest tip/master.
-> The git tree for this patchset at:
->  git@github.com:alexshi/power-scheduling.git noload
-> 
-> Thanks
-> Alex
-> 
+Just like commit 5af84b82701a and 97df8c12995, with async threads it will
+reduce the system suspending and resuming time significantly.
 
+With these patches, in my test platform, it saved 80% time in resume_noirq
+phase.
 
--- 
-Thanks
-    Alex
+Best Regards,
+
+---
+V2:
+ -- Based on Rafael's minor changes related to coding style, white space etc;
+ -- Rafael pointed out the v1 series break the device parent-children
+    suspending/resuming order when enabling asyncing, here using the
+    dev completion to sync parent-children order;
+
+V3:
+ -- In patch v2 5/5, there is one missing "dpm_wait_for_children";
+
+V4:
+ -- Rafael pointed out that dpm_wait_for_children()/dpm_wait()
+    should be put after some simple returning statement;
+
+---
+
+[PATCH v4 1/5] PM / sleep: Two flags for async suspend_noirq and
+[PATCH v4 2/5] PM / sleep: Asynchronous threads for resume_noirq
+[PATCH v4 3/5] PM / sleep: Asynchronous threads for resume_early
+[PATCH v4 4/5] PM / sleep: Asynchronous threads for suspend_noirq
+[PATCH v4 5/5] PM / sleep: Asynchronous threads for suspend_late
+
+ drivers/base/power/main.c | 275 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------
+ include/linux/pm.h        |   2 ++
+ 2 files changed, 227 insertions(+), 50 deletions(-)
+
