@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaBRUdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:33:25 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52654 "EHLO arroyo.ext.ti.com"
+	id S1752747AbaBRUdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:33:49 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47429 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006AbaBRUdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:33:20 -0500
+	id S1752580AbaBRUdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 15:33:22 -0500
 From: Nishanth Menon <nm@ti.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Viresh Kumar <viresh.kumar@linaro.org>,
@@ -16,9 +16,9 @@ CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [RFC PATCH 5/6] PM / Voltagedomain: introduce basic voltage domain support for OMAP
-Date: Tue, 18 Feb 2014 14:32:22 -0600
-Message-ID: <1392755543-28335-6-git-send-email-nm@ti.com>
+Subject: [RFC PATCH 3/6] PM / Voltagedomain: introduce voltage domain driver support
+Date: Tue, 18 Feb 2014 14:32:20 -0600
+Message-ID: <1392755543-28335-4-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392755543-28335-1-git-send-email-nm@ti.com>
 References: <1392755543-28335-1-git-send-email-nm@ti.com>
@@ -28,344 +28,592 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP platforms have multiple voltage domains, but each with consistent
-behavior of controlling the VDD (supply) and VBB(ABB/Bias voltage).
+Many SoCs have basic concepts of voltage rails supplying a specific
+SoC device. These voltage rails may be as simple as a single regulator
+or complex to be three or more regulators that are transitioned in
+tandem with respect to clock changes. In some cases, they may tend
+to use custom frameworks to do the actual voltage transition OR use
+hardware modules that takes hints about the required configuration and
+does optimized voltage transitions.
 
-These need to be sequenced in a specific order for functionality.
-Further optimization such as AVS(Adaptive Voltage Scaling), optimized
-voltages from efuse(Class0) can also be introduced based on this basic
-framework.
+The current regulator model provides the basic building blocks for the
+transitions, however SoC drivers specific to each of these devices, be
+it cpufreq/devfreq have to replicate the logic for functionality.
 
-This now allows reuse by voltage domain devices which may share the same
-voltage domain by allowing the regulator framework to maintain per
-consumer usage information.
+To simply the logic, we can hence introduce a layer that takes care
+of the mundane transition logic, registration mechanisms to provide
+the "user drivers" such as cpufreq/devfreq a generic interface, whose
+details are abstracted by the device tree description for the SoC on
+which the driver operates on.
+
+This allows us opportunity to make generic cpufreq / devfreq drivers
+which may deal with a single clock, however the actual voltage change
+mechanism can be customized specific to SoC without impact to the
+generic driver.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/power/voltdm/Kconfig       |    7 +
- drivers/power/voltdm/Makefile      |    1 +
- drivers/power/voltdm/voltdm_omap.c |  287 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 295 insertions(+)
- create mode 100644 drivers/power/voltdm/voltdm_omap.c
+ drivers/power/voltdm/Kconfig                  |    5 +
+ drivers/power/voltdm/Makefile                 |    3 +
+ drivers/power/voltdm/core.c                   |  347 +++++++++++++++++++++++--
+ drivers/power/voltdm/voltage_domain_private.h |   86 ++++++
+ 4 files changed, 424 insertions(+), 17 deletions(-)
+ create mode 100644 drivers/power/voltdm/voltage_domain_private.h
 
 diff --git a/drivers/power/voltdm/Kconfig b/drivers/power/voltdm/Kconfig
-index 270fdab..41bfbc3 100644
+index c5353bd..270fdab 100644
 --- a/drivers/power/voltdm/Kconfig
 +++ b/drivers/power/voltdm/Kconfig
-@@ -9,4 +9,11 @@ config VOLTAGE_DOMAIN
- menu "Voltage Domain Framework Drivers"
- 	depends on VOLTAGE_DOMAIN
- 
-+config VOLTAGE_DOMAIN_OMAP
-+	tristate "TI OMAP Voltage domain driver"
-+	---help---
-+	  Voltage domain support for OMAP platforms which need
-+	  vdd regulator and Adaptive Body Bias(ABB) regulator
-+	  support
+@@ -5,3 +5,8 @@ config VOLTAGE_DOMAIN
+ 	---help---
+ 	  Core voltage domain framework using common clock framework's
+ 	  notifier mechanism.
 +
- endmenu
++menu "Voltage Domain Framework Drivers"
++	depends on VOLTAGE_DOMAIN
++
++endmenu
 diff --git a/drivers/power/voltdm/Makefile b/drivers/power/voltdm/Makefile
-index fd32040..e1cb50d 100644
+index 3fa4408..fd32040 100644
 --- a/drivers/power/voltdm/Makefile
 +++ b/drivers/power/voltdm/Makefile
-@@ -3,3 +3,4 @@ obj-$(CONFIG_VOLTAGE_DOMAIN)	+= core.o
+@@ -1,2 +1,5 @@
+ # Generic voltage domain
+ obj-$(CONFIG_VOLTAGE_DOMAIN)	+= core.o
++
++# Hardware specific voltage domain
++# please keep this section sorted lexicographically by file/directory path name
+diff --git a/drivers/power/voltdm/core.c b/drivers/power/voltdm/core.c
+index d0ed27e..69f6e81 100644
+--- a/drivers/power/voltdm/core.c
++++ b/drivers/power/voltdm/core.c
+@@ -10,12 +10,32 @@
+  * that scale voltage when a clock changes its output frequency.
+  */
+ #include <linux/device.h>
++#include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/pm_opp.h>
+ #include <linux/pm_voltage_domain.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/slab.h>
  
- # Hardware specific voltage domain
- # please keep this section sorted lexicographically by file/directory path name
-+obj-$(CONFIG_VOLTAGE_DOMAIN_OMAP)	+= voltdm_omap.o
-diff --git a/drivers/power/voltdm/voltdm_omap.c b/drivers/power/voltdm/voltdm_omap.c
++#include "voltage_domain_private.h"
++
++/**
++ * struct pm_voltdm_dev - internal representation of voltage domain devices
++ * @desc:	voltage domain description
++ * @dev:	voltage domain device
++ * @list:	list to remaining voltage domain devices
++ * @lock:	mutex to control data structure modifications and serialize ops
++ * @notifier_list:	list of notifiers registered for this device
++ */
++struct pm_voltdm_dev {
++	const struct pm_voltdm_desc *desc;
++	struct device *dev;
++	struct list_head list;
++	/* list lock */
++	struct mutex lock;
++	struct list_head notifier_list;
++};
++
+ /**
+  * struct volt_scale_data - Internal structure to maintain notifier information
+  * @dev:	device on behalf of which we register the notifier
+@@ -23,6 +43,9 @@
+  * @reg:	regulator if any which is used for scaling voltage
+  * @tol:	voltage tolerance in %
+  * @nb:		notifier block pointer
++ * @list:	list head for the notifier
++ * @vdev:	pointer to voltage domain device for this notifier
++ * @voltdm_data: voltdm driver specific data
+  */
+ struct volt_scale_data {
+ 	struct device *dev;
+@@ -30,23 +53,208 @@ struct volt_scale_data {
+ 	struct regulator *reg;
+ 	int tol;
+ 	struct notifier_block nb;
++	struct list_head list;
++
++	struct pm_voltdm_dev *vdev;
++	void *voltdm_data;
+ };
+ 
+ #define to_volt_scale_data(_nb) container_of(_nb, \
+ 		struct volt_scale_data, nb)
+ 
++static DEFINE_MUTEX(pm_voltdm_list_lock);
++static LIST_HEAD(pm_voltdm_list);
++
++static inline bool voltmd_skip_check(struct pm_voltdm_dev *vdev)
++{
++	bool ret = false;
++
++	if (vdev) {
++		const struct pm_voltdm_desc *desc;
++
++		if (IS_ERR(vdev))
++			return false;
++
++		mutex_lock(&vdev->lock);
++		desc = vdev->desc;
++
++		if (desc->flags & VOLTAGE_DOMAIN_FLAG_NOTIFY_ALL)
++			ret = true;
++		mutex_unlock(&vdev->lock);
++	}
++
++	return ret;
++}
++
++static inline int voltmd_scale_voltage(struct volt_scale_data *vsd,
++				       unsigned long flags, int volt, int tol)
++{
++	int ret;
++	struct pm_voltdm_dev *vdev = vsd->vdev;
++
++	if (vdev) {
++		const struct pm_voltdm_ops *ops;
++
++		if (IS_ERR(vdev))
++			return PTR_ERR(vdev);
++
++		mutex_lock(&vdev->lock);
++		ops = vdev->desc->ops;
++
++		ret = ops->voltdm_do_transition(vdev->dev,
++						vsd->voltdm_data,
++						flags, volt, tol);
++		mutex_unlock(&vdev->lock);
++	} else {
++		ret = regulator_set_voltage_tol(vsd->reg, volt, tol);
++	}
++
++	return ret;
++}
++
++static struct pm_voltdm_dev *voltdm_parse_of(struct device_node *np,
++					     const char *supply,
++					     struct of_phandle_args *args)
++{
++	char prop_name[32];	/* 32 is max size of property name */
++	bool found = false;
++	struct device_node *voltdm_np;
++	struct pm_voltdm_dev *vdev = NULL;
++	int ret;
++
++	snprintf(prop_name, sizeof(prop_name), "%s-voltdm", supply);
++	voltdm_np = of_parse_phandle(np, prop_name, 0);
++	if (voltdm_np) {
++		ret = of_parse_phandle_with_args(np, prop_name, "#voltdm-cells",
++						 0, args);
++		if (ret)
++			return ERR_PTR(ret);
++
++		mutex_lock(&pm_voltdm_list_lock);
++		list_for_each_entry(vdev, &pm_voltdm_list, list)
++		    if (vdev->dev->parent && voltdm_np == vdev->dev->of_node) {
++			found = true;
++			break;
++		}
++		mutex_unlock(&pm_voltdm_list_lock);
++
++		/* if node is present and not ready, then defer */
++		if (!found)
++			return ERR_PTR(-EPROBE_DEFER);
++	} else {
++		return NULL;
++	}
++
++	return vdev;
++}
++
++static int voltdm_get(struct volt_scale_data *vsd, struct device_node *np,
++		      const char *supply, struct of_phandle_args *args,
++		      bool *skip_reg)
++{
++	struct pm_voltdm_dev *vdev = vsd->vdev;
++	struct device *dev = vsd->dev;
++	int ret = 0;
++
++	if (vdev) {
++		const struct pm_voltdm_ops *ops;
++		if (IS_ERR(vdev))
++			return PTR_ERR(vdev);
++
++		mutex_lock(&vdev->lock);
++		if (!try_module_get(vdev->dev->driver->owner)) {
++			ret = -ENODEV;
++		} else {
++			ops = vdev->desc->ops;
++			if (ops->voltdm_get)
++				ret = ops->voltdm_get(vdev->dev, dev, np,
++						      args, supply,
++						      &vsd->voltdm_data);
++			if (ret)
++				module_put(vdev->dev->driver->owner);
++		}
++		if (!ret)
++			list_add(&vsd->list, &vdev->notifier_list);
++
++		mutex_unlock(&vdev->lock);
++	} else {
++		vsd->reg = regulator_get_optional(dev, supply);
++		if (IS_ERR(vsd->reg))
++			ret = PTR_ERR(vsd->reg);
++		/* Regulator is not mandatory */
++		if (ret != -EPROBE_DEFER) {
++			ret = 0;
++			*skip_reg = false;
++			dev_dbg(dev, "%s: Failed to get %s regulator:%d\n",
++				__func__, supply, ret);
++		}
++	}
++
++	return ret;
++}
++
++static void voltdm_put(struct volt_scale_data *vsd)
++{
++	struct pm_voltdm_dev *vdev = vsd->vdev;
++
++	if (vdev) {
++		const struct pm_voltdm_ops *ops;
++
++		if (IS_ERR(vdev))
++			return;
++
++		mutex_lock(&vdev->lock);
++		ops = vdev->desc->ops;
++		if (ops->voltdm_put)
++			ops->voltdm_put(vdev->dev, vsd->dev, vsd->voltdm_data);
++		list_del(&vsd->list);
++		module_put(vdev->dev->driver->owner);
++		mutex_unlock(&vdev->lock);
++	} else {
++		if (!IS_ERR(vsd->reg))
++			regulator_put(vsd->reg);
++	}
++}
++
++static int voltdm_get_latency(struct volt_scale_data *vsd, int min, int max)
++{
++	struct pm_voltdm_dev *vdev = vsd->vdev;
++	const struct pm_voltdm_ops *ops;
++	int ret;
++
++	if (!vdev)
++		return regulator_set_voltage_time(vsd->reg, min, max);
++
++	if (IS_ERR(vdev))
++		return PTR_ERR(vdev);
++
++	mutex_lock(&vdev->lock);
++	ops = vdev->desc->ops;
++
++	if (!ops->voltdm_latency)
++		ret = -ENXIO;
++	else
++		ret = ops->voltdm_latency(vdev->dev, vsd->voltdm_data,
++					  min, max);
++	mutex_unlock(&vdev->lock);
++
++	return ret;
++}
++
+ static int clk_volt_notifier_handler(struct notifier_block *nb,
+ 				     unsigned long flags, void *data)
+ {
+ 	struct clk_notifier_data *cnd = data;
+ 	struct volt_scale_data *vsd = to_volt_scale_data(nb);
++	struct pm_voltdm_dev *vdev = vsd->vdev;
+ 	int ret, volt, tol;
+ 	struct dev_pm_opp *opp;
+ 	unsigned long old_rate = cnd->old_rate;
+ 	unsigned long new_rate = cnd->new_rate;
+ 
+-	if ((new_rate < old_rate && flags == PRE_RATE_CHANGE) ||
+-	    (new_rate > old_rate && flags == POST_RATE_CHANGE))
++	if (!voltmd_skip_check(vdev) &&
++	    ((new_rate < old_rate && flags == PRE_RATE_CHANGE) ||
++	     (new_rate > old_rate && flags == POST_RATE_CHANGE)))
+ 		return NOTIFY_OK;
+ 
+ 	rcu_read_lock();
+@@ -69,7 +277,7 @@ static int clk_volt_notifier_handler(struct notifier_block *nb,
+ 	dev_dbg(vsd->dev, "%s: %lu -> %lu, V=%d, tol=%d, clk_flag=%lu\n",
+ 		__func__, old_rate, new_rate, volt, tol, flags);
+ 
+-	ret = regulator_set_voltage_tol(vsd->reg, volt, tol);
++	ret = voltmd_scale_voltage(vsd, flags, volt, tol);
+ 	if (ret) {
+ 		dev_err(vsd->dev,
+ 			"%s: Failed to scale voltage(%u): %d\n", __func__,
+@@ -101,6 +309,14 @@ struct notifier_block *of_pm_voltdm_notifier_register(struct device *dev,
+ 	struct dev_pm_opp *opp;
+ 	unsigned long min, max, freq;
+ 	int ret;
++	struct of_phandle_args voltdm_args = {NULL};
++	struct pm_voltdm_dev *vdev = NULL;
++	bool skip_reg = false;
++
++	/* First look for voltdm of node */
++	vdev = voltdm_parse_of(np, supply, &voltdm_args);
++	if (IS_ERR(vdev))
++		return (struct notifier_block *)vdev;
+ 
+ 	vsd = kzalloc(sizeof(*vsd), GFP_KERNEL);
+ 	if (!vsd)
+@@ -109,19 +325,16 @@ struct notifier_block *of_pm_voltdm_notifier_register(struct device *dev,
+ 	vsd->dev = dev;
+ 	vsd->clk = clk;
+ 	vsd->nb.notifier_call = clk_volt_notifier_handler;
+-	vsd->reg = regulator_get_optional(dev, supply);
+-	ret = 0;
+-	if (IS_ERR(vsd->reg))
+-		ret = PTR_ERR(vsd->reg);
+-	/* regulator is not mandatory */
+-	if (ret != -EPROBE_DEFER) {
+-		dev_warn(dev, "%s: Failed to get %s regulator:%d\n",
++	vsd->vdev = vdev;
++	ret = voltdm_get(vsd, np, supply, &voltdm_args, &skip_reg);
++
++	if (ret) {
++		dev_warn(dev, "%s: Failed to get %s regulator/voltdm: %d\n",
+ 			 __func__, supply, ret);
+-		ret = 0;
+ 		goto err_free_vsd;
+ 	}
+-	/* For devices that are not ready.... */
+-	if (ret)
++	/* if not mandatory... */
++	if (skip_reg)
+ 		goto err_free_vsd;
+ 
+ 	rcu_read_lock();
+@@ -138,7 +351,7 @@ struct notifier_block *of_pm_voltdm_notifier_register(struct device *dev,
+ 	max = dev_pm_opp_get_voltage(opp);
+ 	rcu_read_unlock();
+ 
+-	*voltage_latency = regulator_set_voltage_time(vsd->reg, min, max);
++	*voltage_latency = voltdm_get_latency(vsd, min, max);
+ 	if (*voltage_latency < 0) {
+ 		dev_warn(dev,
+ 			 "%s: Fail calculating voltage latency[%ld<->%ld]:%d\n",
+@@ -163,7 +376,7 @@ err_bad_opp:
+ 	dev_err(dev, "%s: failed to get OPP, %d\n", __func__, ret);
+ 
+ err_free_reg:
+-	regulator_put(vsd->reg);
++	voltdm_put(vsd);
+ 
+ err_free_vsd:
+ 	kfree(vsd);
+@@ -187,9 +400,109 @@ void of_pm_voltdm_notifier_unregister(struct notifier_block *nb)
+ 	vsd = to_volt_scale_data(nb);
+ 	clk = vsd->clk;
+ 	clk_notifier_unregister(clk, nb);
+-	if (!IS_ERR(vsd->reg))
+-		regulator_put(vsd->reg);
++	voltdm_put(vsd);
+ 
+ 	kfree(vsd);
+ }
+ EXPORT_SYMBOL_GPL(of_pm_voltdm_notifier_unregister);
++
++static void devm_voltdm_release(struct device *dev, void *res)
++{
++	struct pm_voltdm_dev *vdev = *(struct pm_voltdm_dev **)res;
++	struct volt_scale_data *vsd;
++
++	mutex_lock(&pm_voltdm_list_lock);
++	mutex_lock(&vdev->lock);
++	list_for_each_entry(vsd, &vdev->notifier_list, list) {
++		dev_warn(dev, "%s: pending notifier from device %s!\n",
++			 __func__, dev_name(vsd->dev));
++		vsd->vdev = ERR_PTR(-EINVAL);
++	}
++	mutex_unlock(&vdev->lock);
++
++	list_del(&vdev->list);
++	mutex_unlock(&pm_voltdm_list_lock);
++
++	kfree(vdev);
++}
++
++/**
++ * devm_voltdm_register - Resource managed voltage domain registration
++ * @dev: pointer to the device representing the voltage domain
++ * @desc: voltage domain descriptor
++ *
++ * Called by voltage domain drivers to register a voltagedomain.  Returns a
++ * valid pointer to struct pm_voltdm_dev on success or an ERR_PTR() on
++ * error.  The voltagedomain will automatically be released when the device
++ * is unbound.
++ */
++struct pm_voltdm_dev *devm_voltdm_register(struct device *dev,
++					   const struct pm_voltdm_desc *desc)
++{
++	struct pm_voltdm_dev **ptr, *vdev;
++
++	if (!dev || !desc)
++		return ERR_PTR(-EINVAL);
++
++	if (!desc->ops)
++		return ERR_PTR(-EINVAL);
++
++	/* Mandatory to have notify transition */
++	if (!desc->ops->voltdm_do_transition) {
++		dev_err(dev, "%s: Bad desc -do_transition missing\n", __func__);
++		return ERR_PTR(-EINVAL);
++	}
++
++	vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
++	if (!vdev)
++		return ERR_PTR(-ENOMEM);
++
++	ptr = devres_alloc(devm_voltdm_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr) {
++		kfree(vdev);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	vdev->desc = desc;
++	vdev->dev = dev;
++	mutex_init(&vdev->lock);
++	INIT_LIST_HEAD(&vdev->notifier_list);
++	mutex_lock(&pm_voltdm_list_lock);
++	list_add(&vdev->list, &pm_voltdm_list);
++	mutex_unlock(&pm_voltdm_list_lock);
++
++	*ptr = vdev;
++	devres_add(dev, ptr);
++
++	return vdev;
++}
++EXPORT_SYMBOL_GPL(devm_voltdm_register);
++
++static int devm_vdev_match(struct device *dev, void *res, void *data)
++{
++	struct pm_voltdm_dev **r = res;
++	if (!r || !*r) {
++		WARN_ON(!r || !*r);
++		return 0;
++	}
++	return *r == data;
++}
++
++/**
++ * devm_voltdm_unregister - Resource managed voltagedomain unregister
++ * @vdev: voltage domain device returned by devm_voltdm_register()
++ *
++ * Unregister a voltdm registered with devm_voltdm_register().
++ * Normally this function will not need to be called and the resource
++ * management code will ensure that the resource is freed.
++ */
++void devm_voltdm_unregister(struct pm_voltdm_dev *vdev)
++{
++	int rc;
++	struct device *dev = vdev->dev;
++
++	rc = devres_release(dev, devm_voltdm_release, devm_vdev_match, vdev);
++	if (rc != 0)
++		WARN_ON(rc);
++}
++EXPORT_SYMBOL_GPL(devm_voltdm_unregister);
+diff --git a/drivers/power/voltdm/voltage_domain_private.h b/drivers/power/voltdm/voltage_domain_private.h
 new file mode 100644
-index 0000000..aacbdde
+index 0000000..e63c2b1
 --- /dev/null
-+++ b/drivers/power/voltdm/voltdm_omap.c
-@@ -0,0 +1,287 @@
++++ b/drivers/power/voltdm/voltage_domain_private.h
+@@ -0,0 +1,86 @@
 +/*
++ * Voltage Domain private header for voltage domain drivers
++ *
 + * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
++ *	Nishanth Menon
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * Helper functions for registering clock rate-change notifier handlers
-+ * that scale voltage when a clock changes its output frequency.
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + */
-+#include <linux/clk.h>
-+#include <linux/cpufreq.h>
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/notifier.h>
-+#include <linux/of_device.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm_opp.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/slab.h>
-+#include "voltage_domain_private.h"
++
++#ifndef __PM_VOLTAGE_DOMAIN_PRIVATE__
++#define __PM_VOLTAGE_DOMAIN_PRIVATE__
++
++#include <linux/pm_voltage_domain.h>
++
++struct pm_voltdm_dev;
 +
 +/**
-+ * struct omap_voltdm_data - OMAP specific voltage domain data
-+ * @vdd_reg:	VDD regulator
-+ * @vbb_reg:	Body Bias regulator
-+ */
-+struct omap_voltdm_data {
-+	struct regulator *vdd_reg;
-+	struct regulator *vbb_reg;
-+};
-+
-+/**
-+ * omap_voltdm_do_transition() - do the voltage domain transition
-+ * @dev:	voltage domain device for which we are doing the transition
-+ * @voltdm_data:	data specific to the device
-+ * @clk_notifier_flags:	clk notifier flags for direction of transition
-+ * @uv:		what voltage to transition to
-+ * @tol_uv:	voltage tolerance to use
-+ */
-+static int omap_voltdm_do_transition(struct device *dev,
-+				     void *voltdm_data,
-+				     unsigned long clk_notifier_flags, int uv,
-+				     int tol_uv)
-+{
-+	struct omap_voltdm_data *data = (struct omap_voltdm_data *)voltdm_data;
-+	int ret;
-+	bool do_abb_first;
-+
-+	/* We dont expect voltdm layer to make mistakes.. but still */
-+	BUG_ON(!data);
-+
-+	do_abb_first = clk_notifier_flags == ABORT_RATE_CHANGE ||
-+	    clk_notifier_flags == POST_RATE_CHANGE;
-+
-+	if (do_abb_first) {
-+		dev_dbg(dev, "vbb pre %duV[tol %duV]\n", uv, tol_uv);
-+		ret = regulator_set_voltage_tol(data->vbb_reg, uv, tol_uv);
-+		if (ret) {
-+			dev_err(dev,
-+				"vbb failed for voltage %duV[tol %duV]:%d\n",
-+				uv, tol_uv, ret);
-+			return ret;
-+		}
-+	}
-+
-+	dev_dbg(dev, "vdd for voltage %duV[tol %duV]\n", uv, tol_uv);
-+	ret = regulator_set_voltage_tol(data->vdd_reg, uv, tol_uv);
-+	if (ret) {
-+		dev_err(dev,
-+			"vdd failed for voltage %duV[tol %duV]:%d\n",
-+			uv, tol_uv, ret);
-+		return ret;
-+	}
-+
-+	if (!do_abb_first) {
-+		dev_dbg(dev, "vbb post %duV[tol %duV]\n", uv, tol_uv);
-+		ret = regulator_set_voltage_tol(data->vbb_reg, uv, tol_uv);
-+		if (ret) {
-+			dev_err(dev,
-+				"vbb failed for voltage %duV[tol %duV]:%d\n",
-+				uv, tol_uv, ret);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * omap_voltdm_latency() - provide the transition latency for the voltage domain
-+ * @dev:	voltage domain device for which we are doing the transition
-+ * @voltdm_data: data specific to the device
-+ * @min:	minimum voltage in uV
-+ * @max:	maximum voltage in uV
++ * struct pm_voltdm_ops - Operations functions for voltage domain
++ * @voltdm_get: (optional) invoked when notifier is to be registered.
++ * @voltdm_put: (optional) invoked when notifier is unregistered.
++ * @voltdm_latency:	(optional) compute and provide voltage domain
++ *			transition latency.
++ * @voltdm_do_transition: (mandatory) callback for notification
 + *
-+ * Return: If successful, the combined transition latency from min to max, else
-+ * returns error value
++ * np_args - is arguments to the node phandle - useful when specific voltage
++ * domain is refered to using indices.
++ * voltdm_data - is the voltage domain driver specific data corresponding to
++ * driver information per registration (may point to domain driver specific
++ * data including reference to index. This is always provided back to the
++ * driver at various follow on operations.
++ * clk_notifier_flags - follows the standard clk notification flags
 + */
-+static int omap_voltdm_latency(struct device *dev, void *voltdm_data,
-+			       unsigned long min, unsigned long max)
-+{
-+	struct omap_voltdm_data *data = (struct omap_voltdm_data *)voltdm_data;
-+	int ret, tot_latency = 0;
-+
-+	/* We dont expect voltdm layer to make mistakes.. but still */
-+	BUG_ON(!data);
-+
-+	ret = regulator_set_voltage_time(data->vdd_reg, min, max);
-+	if (ret < 0) {
-+		dev_warn(dev, "vdd failed voltage latency: %d\n", ret);
-+		return ret;
-+	}
-+	tot_latency += ret;
-+
-+	ret = regulator_set_voltage_time(data->vbb_reg, min, max);
-+	if (ret < 0) {
-+		dev_warn(dev, "vbb failed voltage latency: %d\n", ret);
-+		return ret;
-+	}
-+	tot_latency += ret;
-+
-+	return tot_latency;
-+}
-+
-+static inline void omap_voltdm_cleanup(struct omap_voltdm_data *data)
-+{
-+	if (!IS_ERR(data->vbb_reg))
-+		regulator_put(data->vbb_reg);
-+	if (!IS_ERR(data->vdd_reg))
-+		regulator_put(data->vdd_reg);
-+	kfree(data);
-+}
-+
-+/**
-+ * omap_voltdm_get() - get the voltage domain resources specific to request
-+ * @voltdm_dev:	voltage domain device
-+ * @request_dev:	device for which we have been requested to get
-+ * @np:			unused
-+ * @np_args:		unused
-+ * @supply:		unused
-+ * @*voltdm_data:	returns data for the current request (freed in put)
-+ *
-+ * Return: 0 if everything went OK, else return appropriate error value.
-+ */
-+static int omap_voltdm_get(struct device *voltdm_dev,
++struct pm_voltdm_ops {
++	int (*voltdm_get)(struct device *voltdm_dev,
 +			  struct device *request_dev,
 +			  struct device_node *np,
 +			  struct of_phandle_args *np_args,
 +			  const char *supply,
-+			  void **voltdm_data)
-+{
-+	struct omap_voltdm_data *data;
-+	int ret = 0;
++			  void **voltdm_data);
++	int (*voltdm_latency)(struct device *voltdm_dev, void *voltdm_data,
++			      unsigned long min_uv, unsigned long max_uv);
++	int (*voltdm_do_transition)(struct device *voltdm_dev,
++				    void *voltdm_data,
++				    unsigned long clk_notifier_flags,
++				    int uv, int tol_uv);
++	void (*voltdm_put)(struct device *voltdm_dev,
++			   struct device *request_dev,
++			   void *voltdm_data);
++};
 +
-+	BUG_ON(!voltdm_dev || !request_dev || !voltdm_data);
-+
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+	/* Intialize for use in generic cleanup routine */
-+	data->vdd_reg = ERR_PTR(-ENODEV);
-+	data->vbb_reg = ERR_PTR(-ENODEV);
-+
-+	/*
-+	 * Setup aliases for request device supply to let regulator framework
-+	 * do multi-consumer scenario
-+	 */
-+	ret = regulator_register_supply_alias(request_dev, "vdd", voltdm_dev, "vdd");
-+	if (ret)
-+		goto out_free;
-+	ret = regulator_register_supply_alias(request_dev, "vbb", voltdm_dev, "vbb");
-+	if (ret)
-+		goto out_unreg_vdd;
-+
-+	data->vdd_reg = regulator_get(request_dev, "vdd");
-+	if (IS_ERR(data->vdd_reg)) {
-+		ret = PTR_ERR(data->vdd_reg);
-+		dev_err(voltdm_dev, "Unable to get vdd regulator:%d\n", ret);
-+		goto out_unreg;
-+	}
-+
-+	data->vbb_reg = regulator_get(request_dev, "vbb");
-+	if (IS_ERR(data->vbb_reg)) {
-+		ret = PTR_ERR(data->vbb_reg);
-+		dev_err(voltdm_dev, "Unable to get vbb regulator:%d\n", ret);
-+		goto out_vdd_reg;
-+	}
-+
-+	*voltdm_data = data;
-+	return 0;
-+
-+out_vdd_reg:
-+	regulator_put(data->vdd_reg);
-+out_unreg:
-+	regulator_unregister_supply_alias(request_dev, "vbb");
-+out_unreg_vdd:
-+	regulator_unregister_supply_alias(request_dev, "vdd");
-+out_free:
-+	kfree(data);
-+
-+	return ret;
-+}
++#define VOLTAGE_DOMAIN_FLAG_NOTIFY_ALL		(0x1 << 0)
 +
 +/**
-+ * omap_voltdm_put() - release the resources reserved by omap_voltdm_get()
-+ * @voltdm_dev:		voltage domain device for which we reserved resources
-+ * @request_dev:	device for which we have been requested to put
-+ * @voltdm_data:	data for the request provided by omap_voltdm_get()
++ * struct pm_voltdm_desc - Descriptor for the voltage domain
++ * @ops:	operations for the voltage domain
++ * @flags:	flags controlling the various operations
 + */
-+static void omap_voltdm_put(struct device *voltdm_dev, struct device *request_dev,
-+			    void *voltdm_data)
++struct pm_voltdm_desc {
++	const struct pm_voltdm_ops *ops;
++	u16 flags;
++};
++
++#if defined(CONFIG_VOLTAGE_DOMAIN)
++struct pm_voltdm_dev *devm_voltdm_register(struct device *dev,
++					   const struct pm_voltdm_desc *desc);
++void devm_voltdm_unregister(struct pm_voltdm_dev *vdev);
++#else
++static inline struct pm_voltdm_dev *devm_voltdm_register(struct device *dev,
++					   const struct pm_voltdm_desc *desc)
 +{
-+	struct omap_voltdm_data *data = (struct omap_voltdm_data *)voltdm_data;
-+
-+	/* We dont expect voltdm layer to make mistakes.. but still */
-+	BUG_ON(!data || !voltdm_dev || !request_dev);
-+
-+	regulator_put(data->vbb_reg);
-+	regulator_put(data->vdd_reg);
-+	regulator_unregister_supply_alias(request_dev, "vbb");
-+	regulator_unregister_supply_alias(request_dev, "vdd");
-+	kfree(data);
-+
-+	return;
++	return ERR_PTR(-ENODEV);
 +}
 +
-+static const struct pm_voltdm_ops omap_voltdm_ops = {
-+	.voltdm_get = omap_voltdm_get,
-+	.voltdm_put = omap_voltdm_put,
-+	.voltdm_latency = omap_voltdm_latency,
-+	.voltdm_do_transition = omap_voltdm_do_transition,
-+};
-+
-+static const struct pm_voltdm_desc omap_voltdm_desc = {
-+	.ops = &omap_voltdm_ops,
-+};
-+
-+static const struct of_device_id omap_voltdm_of_match[] = {
-+	{.compatible = "ti,omap-voltdm", .data = &omap_voltdm_desc},
-+	{},
-+};
-+
-+static int omap_voltdm_probe(struct platform_device *pdev)
++static inline void devm_voltdm_unregister(struct pm_voltdm_dev *vdev)
 +{
-+	struct device *dev = &pdev->dev;
-+	const struct of_device_id *match;
-+	struct pm_voltdm_dev *vdev;
-+	int ret = 0;
-+
-+	match = of_match_device(omap_voltdm_of_match, dev);
-+	if (!match) {
-+		/* We do not expect this to happen */
-+		dev_err(dev, "%s: Unable to match device\n", __func__);
-+		return -ENODEV;
-+	}
-+	if (!match->data) {
-+		/* Again, unlikely.. but mistakes do happen */
-+		dev_err(dev, "%s: Bad data in match\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	vdev = devm_voltdm_register(dev, match->data);
-+	if (IS_ERR(vdev)) {
-+		ret = PTR_ERR(vdev);
-+		dev_err(dev, "Failed to register voltage domain %d\n", ret);
-+	}
-+
-+	return ret;
 +}
++#endif				/* VOLTAGE_DOMAIN */
 +
-+MODULE_ALIAS("platform:omap_voltdm");
-+
-+static struct platform_driver omap_voltdm_driver = {
-+	.probe = omap_voltdm_probe,
-+	.driver = {
-+		   .name = "omap_voltdm",
-+		   .owner = THIS_MODULE,
-+		   .of_match_table = of_match_ptr(omap_voltdm_of_match),
-+		   },
-+};
-+module_platform_driver(omap_voltdm_driver);
-+
-+MODULE_DESCRIPTION("Texas Instruments OMAP Voltage Domain driver");
-+MODULE_AUTHOR("Texas Instruments Inc.");
-+MODULE_LICENSE("GPL v2");
++#endif				/* __PM_VOLTAGE_DOMAIN_PRIVATE__ */
 -- 
 1.7.9.5
 
