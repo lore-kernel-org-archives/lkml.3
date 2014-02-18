@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaBRXxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:53:55 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:44857 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321AbaBRXxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:53:52 -0500
-Message-ID: <5303F28C.4060906@intel.com>
-Date: Tue, 18 Feb 2014 15:53:48 -0800
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752351AbaBRX5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:57:35 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:36279 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832AbaBRX5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 18:57:33 -0500
+Date: Wed, 19 Feb 2014 01:57:14 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if
+ they are in page cache
+Message-ID: <20140218235714.GA16064@node.dhcp.inet.fi>
+References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
+ <20140218175900.8CF90E0090@blue.fi.intel.com>
+ <20140218180730.C2552E0090@blue.fi.intel.com>
+ <CA+55aFwEAYhhUijNUf1dRppzh=+5QfXTAdGQe8D_mJH77tPHug@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: dirk.j.brandewie@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] intel_pstate updates for v3.14-rcX
-References: <1392228067-14817-1-git-send-email-dirk.j.brandewie@intel.com> <5303C2C2.8040605@intel.com> <2705558.gK5sRhMz43@vostro.rjw.lan>
-In-Reply-To: <2705558.gK5sRhMz43@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwEAYhhUijNUf1dRppzh=+5QfXTAdGQe8D_mJH77tPHug@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 02:27 PM, Rafael J. Wysocki wrote:
-> On Tuesday, February 18, 2014 12:29:54 PM Dirk Brandewie wrote:
->> Hi Rafael,
->
-> Hi,
->
->> On 02/12/2014 10:01 AM, dirk.brandewie@gmail.com wrote:
->>> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
->>>
->>> Based on v3.14-rc2
->>>
->>> Patch 1 removes energy reporting the patch from Maurizio Lambardi
->>>    intel_pstate: fix race condition in intel_pstate_init() can be dropped.
->>>
->>
->> Any reason why patches 2-5 did not make rc3 other than timing?
->>
->> Patches 2/3 can easily wait for v3.15.x
->>
->> Patches 4/5 fix bugs that are in the wild.
->
-> I asked you about them, but you didn't reply:
->
-> http://marc.info/?l=linux-pm&m=139225158531023&w=4
->
-> Again, do patches [4-5/5] depend on [2-3/5]?
->
-> If not, I can queue them up for -rc4.
+On Tue, Feb 18, 2014 at 10:28:11AM -0800, Linus Torvalds wrote:
+> On Tue, Feb 18, 2014 at 10:07 AM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> >
+> > Patch is wrong. Correct one is below.
+> 
+> Hmm. I don't hate this. Looking through it, it's fairly simple
+> conceptually, and the code isn't that complex either. I can live with
+> this.
+> 
+> I think it's a bit odd how you pass both "max_pgoff" and "nr_pages" to
+> the fault-around function, though. In fact, I'd consider that a bug.
+> Passing in "FAULT_AROUND_PAGES" is just wrong, since the code cannot -
+> and in fact *must* not - actually fault in that many pages, since the
+> starting/ending address can be limited by other things.
+> 
+> So I think that part of the code is bogus. You need to remove
+> nr_pages, because any use of it is just incorrect. I don't think it
+> can actually matter, since the max_pgoff checks are more restrictive,
+> but if you think it can matter please explain how and why it wouldn't
+> be a major bug?
 
-All the patches are independent of one another.
+I don't like this too...
 
-Patch 2 is straight cleanup no functional change but reduces the memory
-footprint slightly.
+Current max_pgoff is end of page table (or end of vma, if it ends before).
 
-Patch 3 is a bug that will only be seen when the PID is reset at init time
-or when a change is made to PID params via debugfs.  The problem will only
-exist for one sample time since it is setting last_err in the PID.
+If we drop nr_pages but keep current max_pgoff, we will potentially setup
+PTRS_PER_PTE pages a time: i.e. page fault to first page of page table and
+all pages are ready. nr_pages limits the number.
 
-Patch 4-5 are bugs found during Baytrail-T testing
+It's not necessary bad idea to populate whole page table at once. I need
+to measure how much latency we will add by doing that.
 
---Dirk
->
-> Thanks,
-> Rafael
->
+The only problem I see is that we take ptl for a bit too long. But with
+split ptl it will affect only page table we populate.
 
+Other approach is too limit ourself to FAULT_AROUND_PAGES from start_addr.
+In this case sometimes we will do useless radix-tree lookup even if we had
+chance to populated pages further in the page table.
+
+> Apart from that, I'd really like to see numbers for different ranges
+> of FAULT_AROUND_ORDER, because I think 5 is pretty high, but on the
+> whole I don't find this horrible, and you still lock the page so it
+> doesn't involve any new rules. I'm not hugely happy with another raw
+> radix-tree user, but it's not horrible.
+> 
+> Btw, is the "radix_tree_deref_retry(page) -> goto restart" really
+> necessary? I'd be almost more inclined to just make it just do a
+> "break;" to break out of the loop and stop doing anything clever at
+> all.
+
+The code has not ready yet. I'll rework it. It just what I had by the end
+of the day. I wanted to know if setup pte directly from ->fault_nonblock()
+is okayish approach or considered layering violation.
+
+-- 
+ Kirill A. Shutemov
