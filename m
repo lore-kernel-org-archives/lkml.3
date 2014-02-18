@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511AbaBRCiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 21:38:52 -0500
-Received: from mga14.intel.com ([143.182.124.37]:32516 "EHLO mga14.intel.com"
+	id S1754543AbaBRCjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 21:39:17 -0500
+Received: from mga03.intel.com ([143.182.124.21]:58660 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473AbaBRCiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 21:38:50 -0500
+	id S1754019AbaBRCjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 21:39:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,864,1389772800"; 
-   d="scan'208";a="476798861"
+   d="scan'208";a="476798941"
 From: Chuansheng Liu <chuansheng.liu@intel.com>
 To: rjw@rjwysocki.net, gregkh@linuxfoundation.org, len.brown@intel.com,
         pavel@ucw.cz
 Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         zhuangzhi.li@intel.com, chuansheng.liu@intel.com
-Subject: [PATCH v4 2/5] PM / sleep: Asynchronous threads for resume_noirq
-Date: Tue, 18 Feb 2014 10:28:45 +0800
-Message-Id: <1392690528-10024-3-git-send-email-chuansheng.liu@intel.com>
+Subject: [PATCH v4 3/5] PM / sleep: Asynchronous threads for resume_early
+Date: Tue, 18 Feb 2014 10:28:46 +0800
+Message-Id: <1392690528-10024-4-git-send-email-chuansheng.liu@intel.com>
 X-Mailer: git-send-email 1.9.rc0
 In-Reply-To: <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
 References: <y>
@@ -26,66 +26,52 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 In analogy with commits 5af84b82701a and 97df8c12995, using
-asynchronous threads can improve the overall resume_noirq time
-significantly.
+asynchronous threads can improve the overall resume_early
+time significantly.
 
-One typical case is:
-In resume_noirq phase and for the PCI devices, the function
-pci_pm_resume_noirq() will be called, and there is one d3_delay
-(10ms) at least.
-
-With the way of asynchronous threads, we just need wait d3_delay
-time once in parallel for each calling, which saves much time to
-resume quickly.
+This patch is for resume_early phase.
 
 Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 ---
- drivers/base/power/main.c | 66 +++++++++++++++++++++++++++++++++++------------
- 1 file changed, 50 insertions(+), 16 deletions(-)
+ drivers/base/power/main.c | 55 +++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 44 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 00c53eb..ea3f1d2 100644
+index ea3f1d2..6d41165 100644
 --- a/drivers/base/power/main.c
 +++ b/drivers/base/power/main.c
-@@ -469,7 +469,7 @@ static void dpm_watchdog_clear(struct dpm_watchdog *wd)
-  * The driver of @dev will not receive interrupts while this function is being
-  * executed.
+@@ -595,7 +595,7 @@ static void dpm_resume_noirq(pm_message_t state)
+  *
+  * Runtime PM is disabled for @dev while this function is being executed.
   */
--static int device_resume_noirq(struct device *dev, pm_message_t state)
-+static int device_resume_noirq(struct device *dev, pm_message_t state, bool async)
+-static int device_resume_early(struct device *dev, pm_message_t state)
++static int device_resume_early(struct device *dev, pm_message_t state, bool async)
  {
  	pm_callback_t callback = NULL;
  	char *info = NULL;
-@@ -484,6 +484,8 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
- 	if (!dev->power.is_noirq_suspended)
+@@ -610,6 +610,8 @@ static int device_resume_early(struct device *dev, pm_message_t state)
+ 	if (!dev->power.is_late_suspended)
  		goto Out;
  
 +	dpm_wait(dev->parent, async);
 +
  	if (dev->pm_domain) {
- 		info = "noirq power domain ";
- 		callback = pm_noirq_op(&dev->pm_domain->ops, state);
-@@ -507,10 +509,29 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
- 	dev->power.is_noirq_suspended = false;
- 
-  Out:
-+	complete_all(&dev->power.completion);
+ 		info = "early power domain ";
+ 		callback = pm_late_early_op(&dev->pm_domain->ops, state);
+@@ -636,38 +638,69 @@ static int device_resume_early(struct device *dev, pm_message_t state)
  	TRACE_RESUME(error);
+ 
+ 	pm_runtime_enable(dev);
++	complete_all(&dev->power.completion);
  	return error;
  }
  
-+static bool is_async(struct device *dev)
-+{
-+	return dev->power.async_suspend && pm_async_enabled
-+		&& !pm_trace_is_enabled();
-+}
-+
-+static void async_resume_noirq(void *data, async_cookie_t cookie)
++static void async_resume_early(void *data, async_cookie_t cookie)
 +{
 +	struct device *dev = (struct device *)data;
 +	int error;
 +
-+	error = device_resume_noirq(dev, pm_transition, true);
++	error = device_resume_early(dev, pm_transition, true);
 +	if (error)
 +		pm_dev_err(dev, pm_transition, " async", error);
 +
@@ -93,18 +79,17 @@ index 00c53eb..ea3f1d2 100644
 +}
 +
  /**
-  * dpm_resume_noirq - Execute "noirq resume" callbacks for all devices.
+  * dpm_resume_early - Execute "early resume" callbacks for all devices.
   * @state: PM transition of the system being carried out.
-@@ -520,29 +541,48 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
   */
- static void dpm_resume_noirq(pm_message_t state)
+ static void dpm_resume_early(pm_message_t state)
  {
 +	struct device *dev;
  	ktime_t starttime = ktime_get();
  
  	mutex_lock(&dpm_list_mtx);
--	while (!list_empty(&dpm_noirq_list)) {
--		struct device *dev = to_device(dpm_noirq_list.next);
+-	while (!list_empty(&dpm_late_early_list)) {
+-		struct device *dev = to_device(dpm_late_early_list.next);
 -		int error;
 +	pm_transition = state;
 +
@@ -113,59 +98,46 @@ index 00c53eb..ea3f1d2 100644
 +	 * in case the starting of async threads is
 +	 * delayed by non-async resuming devices.
 +	 */
-+	list_for_each_entry(dev, &dpm_noirq_list, power.entry) {
++	list_for_each_entry(dev, &dpm_late_early_list, power.entry) {
 +		reinit_completion(&dev->power.completion);
 +		if (is_async(dev)) {
 +			get_device(dev);
-+			async_schedule(async_resume_noirq, dev);
++			async_schedule(async_resume_early, dev);
 +		}
 +	}
  
-+	while (!list_empty(&dpm_noirq_list)) {
-+		dev = to_device(dpm_noirq_list.next);
++	while (!list_empty(&dpm_late_early_list)) {
++		dev = to_device(dpm_late_early_list.next);
  		get_device(dev);
- 		list_move_tail(&dev->power.entry, &dpm_late_early_list);
+ 		list_move_tail(&dev->power.entry, &dpm_suspended_list);
  		mutex_unlock(&dpm_list_mtx);
  
--		error = device_resume_noirq(dev, state);
+-		error = device_resume_early(dev, state);
 -		if (error) {
--			suspend_stats.failed_resume_noirq++;
--			dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
+-			suspend_stats.failed_resume_early++;
+-			dpm_save_failed_step(SUSPEND_RESUME_EARLY);
 -			dpm_save_failed_dev(dev_name(dev));
--			pm_dev_err(dev, state, " noirq", error);
+-			pm_dev_err(dev, state, " early", error);
+-		}
 +		if (!is_async(dev)) {
 +			int error;
-+
-+			error = device_resume_noirq(dev, state, false);
-+			if (error) {
-+				suspend_stats.failed_resume_noirq++;
-+				dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
-+				dpm_save_failed_dev(dev_name(dev));
-+				pm_dev_err(dev, state, " noirq", error);
-+			}
- 		}
  
++			error = device_resume_early(dev, state, false);
++			if (error) {
++				suspend_stats.failed_resume_early++;
++				dpm_save_failed_step(SUSPEND_RESUME_EARLY);
++				dpm_save_failed_dev(dev_name(dev));
++				pm_dev_err(dev, state, " early", error);
++			}
++		}
  		mutex_lock(&dpm_list_mtx);
  		put_device(dev);
  	}
  	mutex_unlock(&dpm_list_mtx);
 +	async_synchronize_full();
- 	dpm_show_time(starttime, state, "noirq");
- 	resume_device_irqs();
- 	cpuidle_resume();
-@@ -742,12 +782,6 @@ static void async_resume(void *data, async_cookie_t cookie)
- 	put_device(dev);
+ 	dpm_show_time(starttime, state, "early");
  }
  
--static bool is_async(struct device *dev)
--{
--	return dev->power.async_suspend && pm_async_enabled
--		&& !pm_trace_is_enabled();
--}
--
- /**
-  * dpm_resume - Execute "resume" callbacks for non-sysdev devices.
-  * @state: PM transition of the system being carried out.
 -- 
 1.9.rc0
 
