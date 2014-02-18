@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaBRT3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:29:16 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:37636 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaBRT3O (ORCPT
+	id S1752325AbaBRT3v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:29:51 -0500
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:41122 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126AbaBRT3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:29:14 -0500
-Message-ID: <5303C29A.6080200@cogentembedded.com>
-Date: Tue, 18 Feb 2014 23:29:14 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Feb 2014 14:29:49 -0500
+Message-ID: <5303B489.7080900@hp.com>
+Date: Tue, 18 Feb 2014 14:29:13 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Ben Dooks <ben.dooks@codethink.co.uk>, grant.likely@linaro.org
-CC: linux-kernel@lists.codethink.co.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2] of_mdio: fix phy interrupt passing
-References: <1392725818-558-1-git-send-email-ben.dooks@codethink.co.uk>
-In-Reply-To: <1392725818-558-1-git-send-email-ben.dooks@codethink.co.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 1/3] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <1392669684-4807-2-git-send-email-Waiman.Long@hp.com> <20140218073052.GV27965@twins.programming.kicks-ass.net>
+In-Reply-To: <20140218073052.GV27965@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 02/18/2014 03:16 PM, Ben Dooks wrote:
-
-> The of_mdiobus_register_phy() is not setting phy->irq thus causing
-> some drivers to incorrectly assume that the PHY does not have an
-> IRQ associated with it. Not only do some drivers report no IRQ
-> they do not install an interrupt handler for the PHY.
-
-> Simplify the code setting irq and set the phy->irq at the same
-> time so that we cover the following issues, which should cover
-> all the cases the code will find:
-
-> - Set phy->irq if node has irq property and mdio->irq is NULL
-> - Set phy->irq if node has no irq and mdio->irq is not NULL
-> - Leave phy->irq as PHY_POLL default if none of the above
-
-> This fixes the issue:
->   net eth0: attached PHY 1 (IRQ -1) to driver Micrel KSZ8041RNLI
-
-> to the correct:
->   net eth0: attached PHY 1 (IRQ 416) to driver Micrel KSZ8041RNLI
-
-> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-
-[...]
-
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index 875b7b6..46d95fc 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-[...]
-> @@ -54,12 +54,14 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
->   	if (!phy || IS_ERR(phy))
->   		return 1;
+On 02/18/2014 02:30 AM, Peter Zijlstra wrote:
+> On Mon, Feb 17, 2014 at 03:41:22PM -0500, Waiman Long wrote:
+>> +/*
+>> + * The queue node structure
+>> + *
+>> + * This structure is essentially the same as the mcs_spinlock structure
+>> + * in mcs_spinlock.h file. This structure is retained for future extension
+>> + * where new fields may be added.
+>> + */
+>> +struct qnode {
+>> +	u32		 wait;		/* Waiting flag		*/
+>> +	struct qnode	*next;		/* Next queue node addr */
+>> +};
+>> +
+>> +struct qnode_set {
+>> +	int		node_idx;	/* Current node to use */
+>> +	struct qnode	nodes[MAX_QNODES];
+>> +};
+>> +
+>> +/*
+>> + * Per-CPU queue node structures
+>> + */
+>> +static DEFINE_PER_CPU(struct qnode_set, qnset) ____cacheline_aligned
+>> +	= { 0 };
+> You really didn't pay attention did you.
 >
-> -	if (mdio->irq) {
-> -		prev_irq = mdio->irq[addr];
-> -		mdio->irq[addr] =
-> -			irq_of_parse_and_map(child, 0);
-> -		if (!mdio->irq[addr])
-> -			mdio->irq[addr] = prev_irq;
-> +	rc = irq_of_parse_and_map(child, 0);
-> +	if (rc > 0) {
-> +		phy->irq = rc;
-> +		if (mdio->irq)
-> +			mdio->irq[addr] = rc;
-> +	} else {
-> +		if (mdio->irq)
-> +			phy->irq = mdio->irq[addr];
+> That should be DEFINE_PER_CPU_ALIGNED()
+>
+> Furthermore, your structure is bigger than 1 cacheline; your struct
+> qnode is 16 bytes, 4*16=64, and then you add that int.
 
-    I have now looked thru the of_mdio.c code and the code it calls.
-    This case seems to be cared about by phy_device_create() called earlier 
-via get_phy_device() call just above this hunk; in any case the value will be 
-PHY_POLL. I don't think this branch is needed at all.
+Thank for letting me know about that. This is a minor problem that I 
+will fix in the next version.
 
-WBR, Sergei
-
+-Longman
