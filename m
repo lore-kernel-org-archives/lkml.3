@@ -1,134 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaBRTPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:15:50 -0500
-Received: from smtprelay0202.hostedemail.com ([216.40.44.202]:55112 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751239AbaBRTPs (ORCPT
+	id S1752178AbaBRTRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:17:11 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45944 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239AbaBRTRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:15:48 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1437:1535:1544:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3354:3865:3867:3870:3872:3874:4321:4605:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: death53_89b8a15abcf5e
-X-Filterd-Recvd-Size: 5217
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: Jesse Gross <jesse@nicira.com>, "David S. Miller" <davem@davemloft.net>,
-        dev@openvswitch.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next] openvswitch: Use ether_addr_copy
-Date: Tue, 18 Feb 2014 11:15:45 -0800
-Message-Id: <fee7d53a1cfdec0aec7ea35a1f2f4b5e66766ee3.1392750899.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	Tue, 18 Feb 2014 14:17:09 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1392737654-22682-4-git-send-email-johannes.thumshirn@men.de>
+References: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de> <1392737654-22682-4-git-send-email-johannes.thumshirn@men.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 3/3] iio: adc: Add MEN 16z188 ADC driver
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Tue, 18 Feb 2014 19:17:04 +0000
+To: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <15736e39-f1b0-45b3-a70c-c81370cf49f1@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's slightly smaller/faster for some architectures.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/openvswitch/actions.c      |  4 ++--
- net/openvswitch/flow.c         | 16 ++++++++--------
- net/openvswitch/flow_netlink.c | 12 ++++++------
- 3 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/net/openvswitch/actions.c b/net/openvswitch/actions.c
-index 2c77e7b..c36856a 100644
---- a/net/openvswitch/actions.c
-+++ b/net/openvswitch/actions.c
-@@ -134,8 +134,8 @@ static int set_eth_addr(struct sk_buff *skb,
- 
- 	skb_postpull_rcsum(skb, eth_hdr(skb), ETH_ALEN * 2);
- 
--	memcpy(eth_hdr(skb)->h_source, eth_key->eth_src, ETH_ALEN);
--	memcpy(eth_hdr(skb)->h_dest, eth_key->eth_dst, ETH_ALEN);
-+	ether_addr_copy(eth_hdr(skb)->h_source, eth_key->eth_src);
-+	ether_addr_copy(eth_hdr(skb)->h_dest, eth_key->eth_dst);
- 
- 	ovs_skb_postpush_rcsum(skb, eth_hdr(skb), ETH_ALEN * 2);
- 
-diff --git a/net/openvswitch/flow.c b/net/openvswitch/flow.c
-index 16f4b46..bd67bb4 100644
---- a/net/openvswitch/flow.c
-+++ b/net/openvswitch/flow.c
-@@ -385,14 +385,14 @@ static int parse_icmpv6(struct sk_buff *skb, struct sw_flow_key *key,
- 			    && opt_len == 8) {
- 				if (unlikely(!is_zero_ether_addr(key->ipv6.nd.sll)))
- 					goto invalid;
--				memcpy(key->ipv6.nd.sll,
--				    &nd->opt[offset+sizeof(*nd_opt)], ETH_ALEN);
-+				ether_addr_copy(key->ipv6.nd.sll,
-+						&nd->opt[offset+sizeof(*nd_opt)]);
- 			} else if (nd_opt->nd_opt_type == ND_OPT_TARGET_LL_ADDR
- 				   && opt_len == 8) {
- 				if (unlikely(!is_zero_ether_addr(key->ipv6.nd.tll)))
- 					goto invalid;
--				memcpy(key->ipv6.nd.tll,
--				    &nd->opt[offset+sizeof(*nd_opt)], ETH_ALEN);
-+				ether_addr_copy(key->ipv6.nd.tll,
-+						&nd->opt[offset+sizeof(*nd_opt)]);
- 			}
- 
- 			icmp_len -= opt_len;
-@@ -452,8 +452,8 @@ int ovs_flow_extract(struct sk_buff *skb, u16 in_port, struct sw_flow_key *key)
- 	 * header in the linear data area.
- 	 */
- 	eth = eth_hdr(skb);
--	memcpy(key->eth.src, eth->h_source, ETH_ALEN);
--	memcpy(key->eth.dst, eth->h_dest, ETH_ALEN);
-+	ether_addr_copy(key->eth.src, eth->h_source);
-+	ether_addr_copy(key->eth.dst, eth->h_dest);
- 
- 	__skb_pull(skb, 2 * ETH_ALEN);
- 	/* We are going to push all headers that we pull, so no need to
-@@ -551,8 +551,8 @@ int ovs_flow_extract(struct sk_buff *skb, u16 in_port, struct sw_flow_key *key)
- 				key->ip.proto = ntohs(arp->ar_op);
- 			memcpy(&key->ipv4.addr.src, arp->ar_sip, sizeof(key->ipv4.addr.src));
- 			memcpy(&key->ipv4.addr.dst, arp->ar_tip, sizeof(key->ipv4.addr.dst));
--			memcpy(key->ipv4.arp.sha, arp->ar_sha, ETH_ALEN);
--			memcpy(key->ipv4.arp.tha, arp->ar_tha, ETH_ALEN);
-+			ether_addr_copy(key->ipv4.arp.sha, arp->ar_sha);
-+			ether_addr_copy(key->ipv4.arp.tha, arp->ar_tha);
- 		}
- 	} else if (key->eth.type == htons(ETH_P_IPV6)) {
- 		int nh_len;             /* IPv6 Header + Extensions */
-diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
-index 4d000ac..c883b18 100644
---- a/net/openvswitch/flow_netlink.c
-+++ b/net/openvswitch/flow_netlink.c
-@@ -982,8 +982,8 @@ int ovs_nla_put_flow(const struct sw_flow_key *swkey,
- 		goto nla_put_failure;
- 
- 	eth_key = nla_data(nla);
--	memcpy(eth_key->eth_src, output->eth.src, ETH_ALEN);
--	memcpy(eth_key->eth_dst, output->eth.dst, ETH_ALEN);
-+	ether_addr_copy(eth_key->eth_src, output->eth.src);
-+	ether_addr_copy(eth_key->eth_dst, output->eth.dst);
- 
- 	if (swkey->eth.tci || swkey->eth.type == htons(ETH_P_8021Q)) {
- 		__be16 eth_type;
-@@ -1055,8 +1055,8 @@ int ovs_nla_put_flow(const struct sw_flow_key *swkey,
- 		arp_key->arp_sip = output->ipv4.addr.src;
- 		arp_key->arp_tip = output->ipv4.addr.dst;
- 		arp_key->arp_op = htons(output->ip.proto);
--		memcpy(arp_key->arp_sha, output->ipv4.arp.sha, ETH_ALEN);
--		memcpy(arp_key->arp_tha, output->ipv4.arp.tha, ETH_ALEN);
-+		ether_addr_copy(arp_key->arp_sha, output->ipv4.arp.sha);
-+		ether_addr_copy(arp_key->arp_tha, output->ipv4.arp.tha);
- 	}
- 
- 	if ((swkey->eth.type == htons(ETH_P_IP) ||
-@@ -1143,8 +1143,8 @@ int ovs_nla_put_flow(const struct sw_flow_key *swkey,
- 				nd_key = nla_data(nla);
- 				memcpy(nd_key->nd_target, &output->ipv6.nd.target,
- 							sizeof(nd_key->nd_target));
--				memcpy(nd_key->nd_sll, output->ipv6.nd.sll, ETH_ALEN);
--				memcpy(nd_key->nd_tll, output->ipv6.nd.tll, ETH_ALEN);
-+				ether_addr_copy(nd_key->nd_sll, output->ipv6.nd.sll);
-+				ether_addr_copy(nd_key->nd_tll, output->ipv6.nd.tll);
- 			}
- 		}
- 	}
+On February 18, 2014 3:34:14 PM GMT+00:00, Johannes Thumshirn <johannes.thumshirn@men.de> wrote:
+>Add support for MEN 16z188 ADC IP Core on MCB FPGAs.
+>
+>Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+Looks pretty good apart from the nitpicks. One more little thing...
+>---
+> drivers/iio/adc/Kconfig        |  10 +++
+> drivers/iio/adc/Makefile       |   1 +
+>drivers/iio/adc/men_z188_adc.c | 172
+>+++++++++++++++++++++++++++++++++++++++++
+> 3 files changed, 183 insertions(+)
+> create mode 100644 drivers/iio/adc/men_z188_adc.c
+>
+>diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+>index 2209f28..5209437 100644
+>--- a/drivers/iio/adc/Kconfig
+>+++ b/drivers/iio/adc/Kconfig
+>@@ -204,4 +204,14 @@ config VIPERBOARD_ADC
+> 	  Say yes here to access the ADC part of the Nano River
+> 	  Technologies Viperboard.
+> 
+Alphabetical order please.
+>+config MEN_Z188_ADC
+>+	tristate "MEN 16z188 ADC IP Core support"
+>+	depends on MCB
+>+	help
+>+	  Say yes here to access support the MEN 16z188 ADC IP-Core on a MCB
+>+	  carrier.
+>+
+>+	  This driver can also be built as a module. If so, the module will
+>be
+>+	  called men_z188_adc.
+>+
+> endmenu
+>diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+>index ba9a10a..1584391 100644
+>--- a/drivers/iio/adc/Makefile
+>+++ b/drivers/iio/adc/Makefile
+>@@ -22,3 +22,4 @@ obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
+> obj-$(CONFIG_TI_AM335X_ADC) += ti_am335x_adc.o
+> obj-$(CONFIG_TWL6030_GPADC) += twl6030-gpadc.o
+> obj-$(CONFIG_VIPERBOARD_ADC) += viperboard_adc.o
+And alphabetical order here as well.
+>+obj-$(CONFIG_MEN_Z188_ADC) += men_z188_adc.o
+>diff --git a/drivers/iio/adc/men_z188_adc.c
+>b/drivers/iio/adc/men_z188_adc.c
+>new file mode 100644
+>index 0000000..8bc66cf
+>--- /dev/null
+>+++ b/drivers/iio/adc/men_z188_adc.c
+>@@ -0,0 +1,172 @@
+>+/*
+>+ * MEN 16z188 Analoge to Digial Converter
+>+ *
+>+ * Copyright (C) 2014 MEN Mikroelektronik GmbH (www.men.de)
+>+ * Author: Johannes Thumshirn <johannes.thumshirn@men.de>
+>+ *
+>+ * This program is free software; you can redistribute it and/or
+>modify it
+>+ * under the terms of the GNU General Public License as published by
+>the Free
+>+ * Software Foundation; version 2 of the License.
+>+ */
+>+#include <linux/kernel.h>
+>+#include <linux/module.h>
+>+#include <linux/mcb.h>
+>+#include <linux/iio/iio.h>
+>+
+>+#define Z188_ADC_MAX_CHAN	8
+>+#define Z188_ADC_GAIN		0x0700000
+>+#define Z188_MODE_VOLTAGE	BIT(27)
+>+#define Z188_CFG_AUTO		0x1
+>+#define Z188_CTRL_REG		0x40
+>+
+>+#define ADC_DATA(x) (((x) >> 2) & 0x7ffffc)
+>+#define ADC_OVR(x) ((x) & 0x1)
+>+
+>+struct z188_adc {
+>+	struct resource *mem;
+>+	void __iomem *base;
+>+};
+>+
+>+#define Z188_ADC_CHANNEL(idx) {					\
+>+		.type = IIO_VOLTAGE,				\
+>+		.indexed = 1,					\
+>+		.channel = (idx),				\
+>+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),   \
+>+}
+>+
+>+static struct iio_chan_spec z188_adc_iio_channels[] = {
+>+	Z188_ADC_CHANNEL(0),
+>+	Z188_ADC_CHANNEL(1),
+>+	Z188_ADC_CHANNEL(2),
+>+	Z188_ADC_CHANNEL(3),
+>+	Z188_ADC_CHANNEL(4),
+>+	Z188_ADC_CHANNEL(5),
+>+	Z188_ADC_CHANNEL(6),
+>+	Z188_ADC_CHANNEL(7),
+>+};
+>+
+>+static int z188_iio_read_raw(struct iio_dev *iio_dev,
+>+			struct iio_chan_spec const *chan,
+>+			int *val,
+>+			int *val2,
+>+			long info)
+>+{
+>+	struct z188_adc *adc = iio_priv(iio_dev);
+>+	int ret = 0;
+>+	u16 tmp = 0;
+>+
+>+
+>+	switch (info) {
+>+	case IIO_CHAN_INFO_RAW:
+>+		tmp = readw(adc->base + chan->channel * 4);
+>+
+>+		if (ADC_OVR(tmp)) {
+>+			dev_info(&iio_dev->dev,
+>+				"Oversampling error on ADC channel %d\n",
+>+				chan->channel);
+>+			return -EIO;
+>+		}
+>+		*val = ADC_DATA(tmp);
+>+		ret = IIO_VAL_INT;
+>+		break;
+>+	default:
+>+		ret = -EINVAL;
+>+		break;
+>+	}
+>+
+>+	return ret;
+>+}
+>+
+>+static struct iio_info z188_adc_info = {
+>+	.read_raw = &z188_iio_read_raw,
+>+	.driver_module = THIS_MODULE,
+>+};
+>+
+>+static void men_z188_config_channels(void __iomem *addr)
+>+{
+>+	int i;
+>+	u32 cfg;
+>+	u32 ctl;
+>+
+>+	ctl = readl(addr + Z188_CTRL_REG);
+>+	ctl |= Z188_CFG_AUTO;
+>+	writel(ctl, addr + Z188_CTRL_REG);
+>+
+>+	for (i = 0; i < Z188_ADC_MAX_CHAN; i++) {
+>+		cfg = readl(addr + i);
+>+		cfg &= ~Z188_ADC_GAIN;
+>+		cfg |= Z188_MODE_VOLTAGE;
+>+		writel(cfg, addr + i);
+>+	}
+>+}
+>+
+>+static int men_z188_probe(struct mcb_device *dev,
+>+			const struct mcb_device_id *id)
+>+{
+>+	struct z188_adc *adc;
+>+	struct iio_dev *indio_dev;
+>+	struct resource *mem;
+>+
+>+	indio_dev = devm_iio_device_alloc(&dev->dev, sizeof(struct
+>z188_adc));
+>+	if (!indio_dev)
+>+		return -ENOMEM;
+>+
+>+	adc = iio_priv(indio_dev);
+>+	indio_dev->name = "z188-adc";
+>+	indio_dev->dev.parent = &dev->dev;
+>+	indio_dev->info = &z188_adc_info;
+>+	indio_dev->modes = INDIO_DIRECT_MODE;
+>+	indio_dev->channels = z188_adc_iio_channels;
+>+	indio_dev->num_channels = ARRAY_SIZE(z188_adc_iio_channels);
+>+
+>+	mem = mcb_request_mem(dev, "z188-adc");
+>+	if (!mem)
+>+		return -ENOMEM;
+>+
+>+	adc->base = ioremap(mem->start, resource_size(mem));
+>+	if (adc->base == NULL)
+>+		goto err;
+>+
+>+	men_z188_config_channels(adc->base);
+>+
+>+	adc->mem = mem;
+>+	mcb_set_drvdata(dev, indio_dev);
+>+
+>+	return  devm_iio_device_register(&dev->dev, indio_dev);
+>+
+>+err:
+>+	mcb_release_mem(mem);
+>+	return -ENXIO;
+>+}
+>+
+>+static void men_z188_remove(struct mcb_device *dev)
+>+{
+>+	struct iio_dev *indio_dev  = mcb_get_drvdata(dev);
+>+	struct z188_adc *adc = iio_priv(indio_dev);
+>+
+>+	iounmap(adc->base);
+>+	mcb_release_mem(adc->mem);
+>+
+>+	mcb_set_drvdata(dev, NULL);
+>+}
+>+
+>+static struct mcb_device_id men_z188_ids[] = {
+>+	{ .device = 0xbc },
+>+};
+>+MODULE_DEVICE_TABLE(mcb, men_z188_ids);
+>+
+>+static struct mcb_driver men_z188_driver = {
+>+	.driver = {
+>+		.name = "z188-adc",
+>+		.owner = THIS_MODULE,
+>+	},
+>+	.probe = men_z188_probe,
+>+	.remove = men_z188_remove,
+>+	.id_table = men_z188_ids,
+>+};
+>+module_mcb_driver(men_z188_driver);
+>+
+>+MODULE_AUTHOR("Johannes Thumshirn <johannes.thumshirn@men.de>");
+>+MODULE_LICENSE("GPL");
+>+MODULE_DESCRIPTION("IIO ADC driver for MEN 16z188 ADC Core");
+>+MODULE_ALIAS("mcb:16z188");
+
 -- 
-1.8.1.2.459.gbcd45b4.dirty
-
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
