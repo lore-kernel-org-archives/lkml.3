@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaBRVOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:14:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35712 "EHLO
+	id S1753105AbaBRVOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:14:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35716 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaBRVJK (ORCPT
+	with ESMTP id S1752253AbaBRVJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Feb 2014 16:09:10 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Steven Rostedt <rostedt@goodmis.org>, yrl.pp-manager.tt@hitachi.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 27/32] perf probe: Use ref_reloc_sym based address instead of the symbol name
-Date: Tue, 18 Feb 2014 18:08:46 -0300
-Message-Id: <1392757731-32619-28-git-send-email-acme@infradead.org>
+Subject: [PATCH 22/32] perf probe: Fix to do exit call for symbol maps
+Date: Tue, 18 Feb 2014 18:08:41 -0300
+Message-Id: <1392757731-32619-23-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
 References: <1392757731-32619-1-git-send-email-acme@infradead.org>
@@ -31,91 +31,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Since several local symbols can have same name (e.g. t_show), we need to
-use the relative address from the symbol referred by kmap->ref_reloc_sym
-instead of the target symbol name itself.
+Some perf-probe commands do symbol_init() but doesn't do exit call.
 
-Because the kernel address space layout randomize (kASLR) changes the
-absolute address of kernel symbols, we can't rely on the absolute
-address.
+This fixes that to call symbol_exit() and releases machine if needed.
 
-Note that this works only with debuginfo.
-
-E.g. without this change;
-  ----
-  # ./perf probe -a "t_show \$vars"
-  Added new events:
-    probe:t_show         (on t_show with $vars)
-    probe:t_show_1       (on t_show with $vars)
-    probe:t_show_2       (on t_show with $vars)
-    probe:t_show_3       (on t_show with $vars)
-
-  You can now use it in all perf tools, such as:
-
-          perf record -e probe:t_show_3 -aR sleep 1
-  ----
-OK, we have 4 different t_show()s. All functions have
-different arguments as below;
-  ----
-  # cat /sys/kernel/debug/tracing/kprobe_events
-  p:probe/t_show t_show m=%di:u64 v=%si:u64
-  p:probe/t_show_1 t_show m=%di:u64 v=%si:u64 t=%si:u64
-  p:probe/t_show_2 t_show m=%di:u64 v=%si:u64 fmt=%si:u64
-  p:probe/t_show_3 t_show m=%di:u64 v=%si:u64 file=%si:u64
-  ----
-However, all of them have been put on the *same* address.
-  ----
-  # cat /sys/kernel/debug/kprobes/list
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ----
-
-With this change;
-  ----
-  # ./perf probe -a "t_show \$vars"
-  Added new events:
-    probe:t_show         (on t_show with $vars)
-    probe:t_show_1       (on t_show with $vars)
-    probe:t_show_2       (on t_show with $vars)
-    probe:t_show_3       (on t_show with $vars)
-
-  You can now use it in all perf tools, such as:
-
-          perf record -e probe:t_show_3 -aR sleep 1
-
-  # cat /sys/kernel/debug/tracing/kprobe_events
-  p:probe/t_show _stext+889880 m=%di:u64 v=%si:u64
-  p:probe/t_show_1 _stext+928568 m=%di:u64 v=%si:u64 t=%si:u64
-  p:probe/t_show_2 _stext+969512 m=%di:u64 v=%si:u64 fmt=%si:u64
-  p:probe/t_show_3 _stext+1001416 m=%di:u64 v=%si:u64 file=%si:u64
-
-  # cat /sys/kernel/debug/kprobes/list
-  ffffffffb50d95e0  k  t_show+0x0    [DISABLED]
-  ffffffffb50e2d00  k  t_show+0x0    [DISABLED]
-  ffffffffb50f4990  k  t_show+0x0    [DISABLED]
-  ffffffffb50eccf0  k  t_show+0x0    [DISABLED]
-  ----
-This time, each event is put in different address
-correctly.
-
-Note that currently this doesn't support address-based
-probe on modules (thus the probes on modules are symbol
-based), since it requires relative address probe syntax
-for kprobe-tracer, and it isn't implemented yet.
-
-One more note, this allows us to put events on correct
-address, but --list option should be updated to show
-correct corresponding source code.
+This also merges init_vmlinux() and init_user_exec() because both of
+them are doing similar things.  (init_user_exec() just skips init
+vmlinux related symbol maps)
 
 Changes from v2:
-  - Refer kmap->ref_reloc_sym instead of "_stext".
-  - Refer map->reloc to catch up the kASLR perf fix.
-
-Changes from v1:
-  - Use _stext relative address instead of actual
-    absolute address recorded in debuginfo.
+ - Not to set symbol_conf.try_vmlinux_path in init_symbol_maps()
+   (Thanks to Namhyung Kim!)
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -126,94 +52,277 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20140206053216.29635.22584.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
+Link: http://lkml.kernel.org/r/20140206053204.29635.28334.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c | 58 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 49 insertions(+), 9 deletions(-)
+ tools/perf/util/probe-event.c | 104 +++++++++++++++++++++++-------------------
+ 1 file changed, 56 insertions(+), 48 deletions(-)
 
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index de9fe906f3be..1ce2cb9845b6 100644
+index d8b048c20cde..9aa77832099a 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -383,6 +383,51 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+@@ -73,31 +73,31 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
+ static int convert_name_to_addr(struct perf_probe_event *pev,
+ 				const char *exec);
+ static void clear_probe_trace_event(struct probe_trace_event *tev);
+-static struct machine machine;
++static struct machine *host_machine;
+ 
+ /* Initialize symbol maps and path of vmlinux/modules */
+-static int init_vmlinux(void)
++static int init_symbol_maps(bool user_only)
+ {
+ 	int ret;
+ 
+ 	symbol_conf.sort_by_name = true;
+-	if (symbol_conf.vmlinux_name == NULL)
+-		symbol_conf.try_vmlinux_path = true;
+-	else
+-		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
+ 	ret = symbol__init();
+ 	if (ret < 0) {
+ 		pr_debug("Failed to init symbol map.\n");
+ 		goto out;
+ 	}
+ 
+-	ret = machine__init(&machine, "", HOST_KERNEL_ID);
+-	if (ret < 0)
+-		goto out;
++	if (host_machine || user_only)	/* already initialized */
++		return 0;
+ 
+-	if (machine__create_kernel_maps(&machine) < 0) {
+-		pr_debug("machine__create_kernel_maps() failed.\n");
+-		goto out;
++	if (symbol_conf.vmlinux_name)
++		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
++
++	host_machine = machine__new_host();
++	if (!host_machine) {
++		pr_debug("machine__new_host() failed.\n");
++		symbol__exit();
++		ret = -1;
+ 	}
+ out:
+ 	if (ret < 0)
+@@ -105,21 +105,30 @@ out:
  	return ret;
  }
  
-+static struct ref_reloc_sym *__kernel_get_ref_reloc_sym(void)
++static void exit_symbol_maps(void)
 +{
-+	/* kmap->ref_reloc_sym should be set if host_machine is initialized */
-+	struct kmap *kmap;
-+
-+	kmap = map__kmap(host_machine->vmlinux_maps[MAP__FUNCTION]);
-+	return kmap->ref_reloc_sym;
++	if (host_machine) {
++		machine__delete(host_machine);
++		host_machine = NULL;
++	}
++	symbol__exit();
 +}
 +
-+/* Post processing the probe events */
-+static int post_process_probe_trace_events(struct probe_trace_event *tevs,
-+					   int ntevs, const char *module,
-+					   bool uprobe)
-+{
-+	struct ref_reloc_sym *reloc_sym;
-+	char *tmp;
-+	int i;
-+
-+	if (uprobe)
-+		return add_exec_to_probe_trace_events(tevs, ntevs, module);
-+
-+	/* Note that currently ref_reloc_sym based probe is not for drivers */
-+	if (module)
-+		return add_module_to_probe_trace_events(tevs, ntevs, module);
-+
-+	reloc_sym = __kernel_get_ref_reloc_sym();
-+	if (!reloc_sym) {
-+		pr_warning("Relocated base symbol is not found!\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < ntevs; i++) {
-+		if (tevs[i].point.address) {
-+			tmp = strdup(reloc_sym->name);
-+			if (!tmp)
-+				return -ENOMEM;
-+			free(tevs[i].point.symbol);
-+			tevs[i].point.symbol = tmp;
-+			tevs[i].point.offset = tevs[i].point.address -
-+					       reloc_sym->unrelocated_addr;
-+		}
-+	}
-+	return 0;
-+}
-+
- static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
+ static struct symbol *__find_kernel_function_by_name(const char *name,
+ 						     struct map **mapp)
  {
- 	int i;
-@@ -411,21 +456,16 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 		return 0;
+-	return machine__find_kernel_function_by_name(&machine, name, mapp,
++	return machine__find_kernel_function_by_name(host_machine, name, mapp,
+ 						     NULL);
+ }
+ 
+ static struct map *kernel_get_module_map(const char *module)
+ {
+ 	struct rb_node *nd;
+-	struct map_groups *grp = &machine.kmaps;
++	struct map_groups *grp = &host_machine->kmaps;
+ 
+ 	/* A file path -- this is an offline module */
+ 	if (module && strchr(module, '/'))
+-		return machine__new_module(&machine, 0, module);
++		return machine__new_module(host_machine, 0, module);
+ 
+ 	if (!module)
+ 		module = "kernel";
+@@ -141,7 +150,7 @@ static struct dso *kernel_get_module_dso(const char *module)
+ 	const char *vmlinux_name;
+ 
+ 	if (module) {
+-		list_for_each_entry(dso, &machine.kernel_dsos, node) {
++		list_for_each_entry(dso, &host_machine->kernel_dsos, node) {
+ 			if (strncmp(dso->short_name + 1, module,
+ 				    dso->short_name_len - 2) == 0)
+ 				goto found;
+@@ -150,7 +159,7 @@ static struct dso *kernel_get_module_dso(const char *module)
+ 		return NULL;
  	}
  
-+	pr_debug("Try to find probe point from debuginfo.\n");
- 	/* Searching trace events corresponding to a probe event */
- 	ntevs = debuginfo__find_trace_events(dinfo, pev, tevs, max_tevs);
+-	map = machine.vmlinux_maps[MAP__FUNCTION];
++	map = host_machine->vmlinux_maps[MAP__FUNCTION];
+ 	dso = map->dso;
+ 
+ 	vmlinux_name = symbol_conf.vmlinux_name;
+@@ -173,20 +182,6 @@ const char *kernel_get_module_path(const char *module)
+ 	return (dso) ? dso->long_name : NULL;
+ }
+ 
+-static int init_user_exec(void)
+-{
+-	int ret = 0;
+-
+-	symbol_conf.try_vmlinux_path = false;
+-	symbol_conf.sort_by_name = true;
+-	ret = symbol__init();
+-
+-	if (ret < 0)
+-		pr_debug("Failed to init symbol map.\n");
+-
+-	return ret;
+-}
+-
+ static int convert_exec_to_group(const char *exec, char **result)
+ {
+ 	char *ptr1, *ptr2, *exec_copy;
+@@ -563,7 +558,7 @@ static int _show_one_line(FILE *fp, int l, bool skip, bool show_num)
+  * Show line-range always requires debuginfo to find source file and
+  * line number.
+  */
+-int show_line_range(struct line_range *lr, const char *module)
++static int __show_line_range(struct line_range *lr, const char *module)
+ {
+ 	int l = 1;
+ 	struct line_node *ln;
+@@ -573,10 +568,6 @@ int show_line_range(struct line_range *lr, const char *module)
+ 	char *tmp;
+ 
+ 	/* Search a line range */
+-	ret = init_vmlinux();
+-	if (ret < 0)
+-		return ret;
+-
+ 	dinfo = open_debuginfo(module);
+ 	if (!dinfo) {
+ 		pr_warning("Failed to open debuginfo file.\n");
+@@ -646,6 +637,19 @@ end:
+ 	return ret;
+ }
+ 
++int show_line_range(struct line_range *lr, const char *module)
++{
++	int ret;
++
++	ret = init_symbol_maps(false);
++	if (ret < 0)
++		return ret;
++	ret = __show_line_range(lr, module);
++	exit_symbol_maps();
++
++	return ret;
++}
++
+ static int show_available_vars_at(struct debuginfo *dinfo,
+ 				  struct perf_probe_event *pev,
+ 				  int max_vls, struct strfilter *_filter,
+@@ -707,14 +711,15 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 	int i, ret = 0;
+ 	struct debuginfo *dinfo;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	dinfo = open_debuginfo(module);
+ 	if (!dinfo) {
+ 		pr_warning("Failed to open debuginfo file.\n");
+-		return -ENOENT;
++		ret = -ENOENT;
++		goto out;
+ 	}
+ 
+ 	setup_pager();
+@@ -724,6 +729,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 					     externs);
  
  	debuginfo__delete(dinfo);
++out:
++	exit_symbol_maps();
+ 	return ret;
+ }
  
- 	if (ntevs > 0) {	/* Succeeded to find trace events */
--		pr_debug("find %d probe_trace_events.\n", ntevs);
--		if (target) {
--			if (pev->uprobes)
--				ret = add_exec_to_probe_trace_events(*tevs,
--						 ntevs, target);
--			else
--				ret = add_module_to_probe_trace_events(*tevs,
--						 ntevs, target);
--		}
-+		pr_debug("Found %d probe_trace_events.\n", ntevs);
-+		ret = post_process_probe_trace_events(*tevs, ntevs,
-+							target, pev->uprobes);
- 		if (ret < 0) {
- 			clear_probe_trace_events(*tevs, ntevs);
- 			zfree(tevs);
+@@ -1807,7 +1814,7 @@ int show_perf_probe_events(void)
+ 	if (fd < 0)
+ 		return fd;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -1820,6 +1827,7 @@ int show_perf_probe_events(void)
+ 		close(fd);
+ 	}
+ 
++	exit_symbol_maps();
+ 	return ret;
+ }
+ 
+@@ -2135,12 +2143,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 	if (pkgs == NULL)
+ 		return -ENOMEM;
+ 
+-	if (!pevs->uprobes)
+-		/* Init vmlinux path */
+-		ret = init_vmlinux();
+-	else
+-		ret = init_user_exec();
+-
++	ret = init_symbol_maps(pevs->uprobes);
+ 	if (ret < 0) {
+ 		free(pkgs);
+ 		return ret;
+@@ -2174,6 +2177,7 @@ end:
+ 		zfree(&pkgs[i].tevs);
+ 	}
+ 	free(pkgs);
++	exit_symbol_maps();
+ 
+ 	return ret;
+ }
+@@ -2347,7 +2351,7 @@ static int available_kernel_funcs(const char *module)
+ 	struct map *map;
+ 	int ret;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -2356,7 +2360,10 @@ static int available_kernel_funcs(const char *module)
+ 		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
+ 		return -EINVAL;
+ 	}
+-	return __show_available_funcs(map);
++	ret = __show_available_funcs(map);
++	exit_symbol_maps();
++
++	return ret;
+ }
+ 
+ static int available_user_funcs(const char *target)
+@@ -2364,7 +2371,7 @@ static int available_user_funcs(const char *target)
+ 	struct map *map;
+ 	int ret;
+ 
+-	ret = init_user_exec();
++	ret = init_symbol_maps(true);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -2372,6 +2379,7 @@ static int available_user_funcs(const char *target)
+ 	ret = __show_available_funcs(map);
+ 	dso__delete(map->dso);
+ 	map__delete(map);
++	exit_symbol_maps();
+ 	return ret;
+ }
+ 
 -- 
 1.8.1.4
 
