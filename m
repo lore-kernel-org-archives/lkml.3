@@ -1,127 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaBRTDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:03:44 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61789 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918AbaBRTDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:03:42 -0500
+	id S1751993AbaBRTHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:07:09 -0500
+Received: from imap.thunk.org ([74.207.234.97]:59665 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749AbaBRTHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:07:05 -0500
+Date: Tue, 18 Feb 2014 14:06:55 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jeff Chua <jeff.chua.linux@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        lkml <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@redhat.com>
+Subject: Re: Lenovo X240 (haswell) suspend-to-ram hangs on 3-14.0-rc2
+Message-ID: <20140218190655.GA7649@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jeff Chua <jeff.chua.linux@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+	Peter Hurley <peter@hurleysoftware.com>,
+	lkml <linux-kernel@vger.kernel.org>,
+	Dave Airlie <airlied@redhat.com>
+References: <CAAJw_ZvX2AfS8COiNdN9gi_1xJ4L_vL=ROCzcLL3u0h51kuX3Q@mail.gmail.com>
+ <52FCFD92.7040109@hurleysoftware.com>
+ <s5hiosi3osp.wl%tiwai@suse.de>
+ <CAAJw_ZsoO=kd6cVM3HYrkim5K0RKrnDXYGgodNNQmHVYs19a8A@mail.gmail.com>
+ <s5hha8123vu.wl%tiwai@suse.de>
+ <CAAJw_ZtviRCtaC4-3_ubkYuEt+LYstwbi6qus-5GOoOLYhfecw@mail.gmail.com>
+ <s5hk3cxzce0.wl%tiwai@suse.de>
+ <CAAJw_ZtK+jTOhCPZKhCu_f2nHwUahE8jcR8G4+FbocEc66Ei4g@mail.gmail.com>
+ <20140217195432.GE16660@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+mB=1K43MDZj0Rx3q=ETQMaFsG1j7TXsH6v-7a26JdtqTJkbw@mail.gmail.com>
-References: <1392465619-27614-1-git-send-email-sthokal@xilinx.com>
-	<1392465619-27614-2-git-send-email-sthokal@xilinx.com>
-	<CAJe_Zhc_GNNSDWNFuk+cMHEqxfSCJB_ey=Bf+SwJK-nS=u9ceg@mail.gmail.com>
-	<CA+mB=1KdZZpTmpA0Xp_c4mhgFbjRZ6urYrCwdvoTCmcugQMDUA@mail.gmail.com>
-	<CAJe_ZhdOmu3k9gbPdQzPteyzwsMA8OzWHdhHnXudbF=X7JMhVQ@mail.gmail.com>
-	<CA+mB=1K43MDZj0Rx3q=ETQMaFsG1j7TXsH6v-7a26JdtqTJkbw@mail.gmail.com>
-Date: Wed, 19 Feb 2014 00:33:39 +0530
-Message-ID: <CAJe_ZhfedP7Paf3Zq9chL0WUeLJrsy_DJL05sSbfqnfTtji=HQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] dma: Support multiple interleaved frames with
- non-contiguous memory
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>, michal.simek@xilinx.com,
-        Grant Likely <grant.likely@linaro.org>, robh+dt@kernel.org,
-        devicetree@vger.kernel.org, Levente Kurusa <levex@linux.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        lkml <linux-kernel@vger.kernel.org>, dmaengine@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140217195432.GE16660@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 February 2014 23:16, Srikanth Thokala <sthokal@xilinx.com> wrote:
-> On Tue, Feb 18, 2014 at 10:20 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
->> On 18 February 2014 16:58, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>> On Mon, Feb 17, 2014 at 3:27 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
->>>> On 15 February 2014 17:30, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>>>> The current implementation of interleaved DMA API support multiple
->>>>> frames only when the memory is contiguous by incrementing src_start/
->>>>> dst_start members of interleaved template.
->>>>>
->>>>> But, when the memory is non-contiguous it will restrict slave device
->>>>> to not submit multiple frames in a batch.  This patch handles this
->>>>> issue by allowing the slave device to send array of interleaved dma
->>>>> templates each having a different memory location.
->>>>>
->>>> How fragmented could be memory in your case? Is it inefficient to
->>>> submit separate transfers for each segment/frame?
->>>> It will help if you could give a typical example (chunk size and gap
->>>> in bytes) of what you worry about.
->>>
->>> With scatter-gather engine feature in the hardware, submitting separate
->>> transfers for each frame look inefficient. As an example, our DMA engine
->>> supports up to 16 video frames, with each frame (a typical video frame
->>> size) being contiguous in memory but frames are scattered into different
->>> locations. We could not definitely submit frame by frame as it would be
->>> software overhead (HW interrupting for each frame) resulting in video lags.
->>>
->> IIUIC, it is 30fps and one dma interrupt per frame ... it doesn't seem
->> inefficient at all. Even poor-latency audio would generate a higher
->> interrupt-rate. So the "inefficiency concern" doesn't seem valid to
->> me.
->>
->> Not to mean we shouldn't strive to reduce the interrupt-rate further.
->> Another option is to emulate the ring-buffer scheme of ALSA.... which
->> should be possible since for a session of video playback the frame
->> buffers' locations wouldn't change.
->>
->> Yet another option is to use the full potential of the
->> interleaved-xfer api as such. It seems you confuse a 'video frame'
->> with the interleaved-xfer api's 'frame'. They are different.
->>
->> Assuming your one video frame is F bytes long and Gk is the gap in
->> bytes between end of frame [k] and start of frame [k+1] and  Gi != Gj
->> for i!=j
->> In the context of interleaved-xfer api, you have just 1 Frame of 16
->> chunks. Each chunk is Fbytes and the inter-chunk-gap(ICG) is Gk  where
->> 0<=k<15
->> So for your use-case .....
->>   dma_interleaved_template.numf = 1   /* just 1 frame */
->>   dma_interleaved_template.frame_size = 16  /* containing 16 chunks */
->>    ...... //other parameters
->>
->> You have 3 options to choose from and all should work just as fine.
->> Otherwise please state your problem in real numbers (video-frames'
->> size, count & gap in bytes).
->
-> Initially I interpreted interleaved template the same.  But, Lars corrected me
-> in the subsequent discussion and let me put it here briefly,
->
-> In the interleaved template, each frame represents a line of size denoted by
-> chunk.size and the stride by icg.  'numf' represent number of frames i.e.
-> number of lines.
->
-> In video frame context,
-> chunk.size -> hsize
-> chunk.icg -> stride
-> numf -> vsize
-> and frame_size is always 1 as it will have only one chunk in a line.
->
-But you said in your last post
-  "with each frame (a typical video frame size) being contiguous in memory"
- ... which is not true from what you write above. Anyways, my first 2
-suggestions still hold.
+On Mon, Feb 17, 2014 at 02:54:32PM -0500, Theodore Ts'o wrote:
+> On Tue, Feb 18, 2014 at 01:54:40AM +0800, Jeff Chua wrote:
+> > Any suggestion on how to debug this? bisect? Ted, does your T540p work
+> > with CONFIG_SND_HDA_INTEL=y instead of "m" ?
+> 
+> I can give this a try on my next kernel rebuild.
 
-> So, the API would not allow to pass multiple frames and we came up with a
-> resolution to pass an array of interleaved template structs to handle this.
->
-Yeah the API doesn't allow such xfers that don't fall into any
-'regular expression' of a transfer and also because no controller
-natively supports such xfers -- your controller will break your
-request up into 16 transfers and program them individually, right?
-   BTW if you insist you could still express the 16 video frames as 1
-interleaved-xfer frame with frame_size = (vsize + 1) * 16   ;)
+I can confirm that suspend-to-ram hangs on my T540p if I build with
+CONFIG_SND_HDA_INTEL=y.  I ran the test using v3.14-rc3.
 
-Again, I would suggest you implement ring-buffer type scheme. Say
-prepare 16 interleaved xfer templates and queue them. Upon each
-xfer-done callback (i.e frame rendered), update the data and queue it
-back. It might be much simpler for your actual case. At 30fps, 33ms to
-queue a dma request should _not_ result in any frame-drop.
-
--Jassi
+						- Ted
