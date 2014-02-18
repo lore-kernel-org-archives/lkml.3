@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950AbaBRC3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 21:29:40 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40992 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753753AbaBRC3j (ORCPT
+	id S1753814AbaBRCe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 21:34:27 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39883 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112AbaBRCe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 21:29:39 -0500
-Message-ID: <5302C58E.1070903@hurleysoftware.com>
-Date: Mon, 17 Feb 2014 21:29:34 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 17 Feb 2014 21:34:26 -0500
+Date: Tue, 18 Feb 2014 11:04:04 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140218020404.GG2669@sirena.org.uk>
+References: <1392627817-26957-1-git-send-email-sachin.kamat@linaro.org>
+ <1392627817-26957-8-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] workqueue: Document exceptions to work item non-reentrancy
- guarantee
-References: <1392493119-9277-1-git-send-email-peter@hurleysoftware.com> <1392687834.10088.17.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1392687834.10088.17.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1xx5Q0+Cw+ObE54D"
+Content-Disposition: inline
+In-Reply-To: <1392627817-26957-8-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.99.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 8/9] regulator: tps6507x: Add missing of_node_put
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 08:43 PM, Ben Hutchings wrote:
-> On Sat, 2014-02-15 at 14:38 -0500, Peter Hurley wrote:
->> Since commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77,
->>    workqueue: consider work function when searching for busy work items
->> work items whose work functions are re-assigned are no longer guaranteed
->> non-reentrancy with the previously assigned work function. For example,
->>
->>          PREPARE_WORK(&work, funcA)
->>          schedule_work(&work)
->>            .
->>          < funcA starts >
->>            .
->>          PREPARE_WORK(&work, funcB)
->>          schedule_work(&work)
->>
->> funcA() may run concurrently with funcB().
->>
->> The work item non-reentrancy guarantee is a crucial design guarantee
->> which, if violated, may not have obvious consequences. For example,
->> the entire firewire subsystem expects the as-documented per-work item
->> non-reentrancy guarantee, which was the behavior prior to the above
->> commit, not the per-work function + per-work item behavior since.
->>
->> Document the known exceptions to this guarantee.
-> [...]
->
-> It never would have occurred to me that you could safely change the
-> function for a work item that is already scheduled or running.
-> Especially given that PREPARE_WORK() is just a simple assignment (i.e.
-> no serialisation).
 
-process_one_work() has an established order that safely allows for
-resetting the work function and scheduling the work, and further
-guaranteeing that the new work function will run.
+--1xx5Q0+Cw+ObE54D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Further, existing memory barriers ensure that
-1. The new work function is visible on all cpus before testing if
-    the work is already pending.
-2. The new work function is stored as the worker's current function
-    before the work is marked as not pending.
+On Mon, Feb 17, 2014 at 02:33:36PM +0530, Sachin Kamat wrote:
+> Add of_node_put to decrement the ref count.
 
-If this wasn't possible, then single-threaded workqueues could
-not be used for multiple functions without flushing work.
+Applied, thanks.
 
-I wonder if the floppy driver is broken too.
+--1xx5Q0+Cw+ObE54D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Regards,
-Peter Hurley
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTAr+RAAoJELSic+t+oim97UAP+gLC6RyVvv2vkcePGltX6Y+C
+GKQPJDFdy76GqWI2JP4F2ETViOC9FsUOciq/JQkb2xioBKxzJ45WcIat5lH5wjyh
+cHVno1ubNQPShl1B6BqlkSfdo3MC+/qx3mlrDQKWxuPSYTZ6VUKvKqdOl73/rcNT
+DhfulAwb6pFLEul0QpC5xKqb/H6e5Bk0WF3wfuc8AMBW4+D2u7c/34QJv26IpGy9
+PJb5PKlgccGZVQlmsmo2FcAm894ZGewG+02/+peU0etFnfqC/HbgZN1ZK7YBcult
+P8AwNgTwe79ubmzzSZN5Jg2bfQnWjEkF/erdyaJBvtb8aO8ACLfxBRYiAmgsIQWZ
+MqmsTiS5zvO67um+naIofQdLZSZYXzI5VVuv8pmgoNbtvY4Zcd873fzsGk3KWabe
+kwKegkIsBkZahg944pyHdT9UDnospLkKYHUKD+lPVHSJr9DvCVUBbAm5vQ53XCRe
+Gd6J832e+38MmniVAubSLgm+sDuxMlMSPIBHRnbMgy2GBQrtE+TgSMwUvxI8Mo8X
+4pLNsF3g2zykd3/pAGg8kW1i1h4GiE6otv2ZzFJ4dBdqFxv/C6/R587WAQDXcnTb
+XlVcoQq8YmBGIjDQ6jTz7fbphKvqnP3meKSmUbsktI3EXhjdAP5sgSTYz/AFO4lw
+fTvMxi26YJAcHMB62wTU
+=R9mo
+-----END PGP SIGNATURE-----
 
+--1xx5Q0+Cw+ObE54D--
