@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947AbaBRWwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:52:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51256 "EHLO
+	id S1753557AbaBRWra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:47:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561AbaBRWrb (ORCPT
+	with ESMTP id S1753463AbaBRWr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:31 -0500
+	Tue, 18 Feb 2014 17:47:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 06/40] NFSv4.1: nfs4_destroy_session must call rpc_destroy_waitqueue
-Date: Tue, 18 Feb 2014 14:47:07 -0800
-Message-Id: <20140218224433.517099816@linuxfoundation.org>
+        Andi Shyti <andi@etezian.org>, Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.13 30/40] [media] cx24117: use a valid dev pointer for dev_err printout
+Date: Tue, 18 Feb 2014 14:47:31 -0800
+Message-Id: <20140218224434.185360256@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -28,103 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Andi Shyti <andi@etezian.org>
 
-commit 20b9a9024540a775395d5d1f41eec0ec6ec41f9b upstream.
+commit a33dd5171d141c378df498aba3fa3c9a573cacb6 upstream.
 
-There may still be timers active on the session waitqueues. Make sure
-that we kill them before freeing the memory.
+Don't use '&state->priv->i2c->dev' reference to device because
+state is still 'NULL'. Use '&i2c->dev' instead.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+This bug has been reported by scan.coverity.com
+
+Signed-off-by: Andi Shyti <andi@etezian.org>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c  |    2 +-
- fs/nfs/nfs4session.c |   25 ++++++++++++++++++++-----
- fs/nfs/nfs4session.h |    2 +-
- 3 files changed, 22 insertions(+), 7 deletions(-)
+ drivers/media/dvb-frontends/cx24117.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -169,7 +169,7 @@ void nfs41_shutdown_client(struct nfs_cl
- void nfs40_shutdown_client(struct nfs_client *clp)
- {
- 	if (clp->cl_slot_tbl) {
--		nfs4_release_slot_table(clp->cl_slot_tbl);
-+		nfs4_shutdown_slot_table(clp->cl_slot_tbl);
- 		kfree(clp->cl_slot_tbl);
- 	}
- }
---- a/fs/nfs/nfs4session.c
-+++ b/fs/nfs/nfs4session.c
-@@ -231,14 +231,23 @@ out:
- 	return ret;
- }
+--- a/drivers/media/dvb-frontends/cx24117.c
++++ b/drivers/media/dvb-frontends/cx24117.c
+@@ -1166,7 +1166,7 @@ struct dvb_frontend *cx24117_attach(cons
  
-+/*
-+ * nfs4_release_slot_table - release all slot table entries
-+ */
-+static void nfs4_release_slot_table(struct nfs4_slot_table *tbl)
-+{
-+	nfs4_shrink_slot_table(tbl, 0);
-+}
-+
- /**
-- * nfs4_release_slot_table - release resources attached to a slot table
-+ * nfs4_shutdown_slot_table - release resources attached to a slot table
-  * @tbl: slot table to shut down
-  *
-  */
--void nfs4_release_slot_table(struct nfs4_slot_table *tbl)
-+void nfs4_shutdown_slot_table(struct nfs4_slot_table *tbl)
- {
--	nfs4_shrink_slot_table(tbl, 0);
-+	nfs4_release_slot_table(tbl);
-+	rpc_destroy_wait_queue(&tbl->slot_tbl_waitq);
- }
- 
- /**
-@@ -422,7 +431,7 @@ void nfs41_update_target_slotid(struct n
- 	spin_unlock(&tbl->slot_tbl_lock);
- }
- 
--static void nfs4_destroy_session_slot_tables(struct nfs4_session *session)
-+static void nfs4_release_session_slot_tables(struct nfs4_session *session)
- {
- 	nfs4_release_slot_table(&session->fc_slot_table);
- 	nfs4_release_slot_table(&session->bc_slot_table);
-@@ -450,7 +459,7 @@ int nfs4_setup_session_slot_tables(struc
- 	if (status && tbl->slots == NULL)
- 		/* Fore and back channel share a connection so get
- 		 * both slot tables or neither */
--		nfs4_destroy_session_slot_tables(ses);
-+		nfs4_release_session_slot_tables(ses);
- 	return status;
- }
- 
-@@ -470,6 +479,12 @@ struct nfs4_session *nfs4_alloc_session(
- 	return session;
- }
- 
-+static void nfs4_destroy_session_slot_tables(struct nfs4_session *session)
-+{
-+	nfs4_shutdown_slot_table(&session->fc_slot_table);
-+	nfs4_shutdown_slot_table(&session->bc_slot_table);
-+}
-+
- void nfs4_destroy_session(struct nfs4_session *session)
- {
- 	struct rpc_xprt *xprt;
---- a/fs/nfs/nfs4session.h
-+++ b/fs/nfs/nfs4session.h
-@@ -74,7 +74,7 @@ enum nfs4_session_state {
- 
- extern int nfs4_setup_slot_table(struct nfs4_slot_table *tbl,
- 		unsigned int max_reqs, const char *queue);
--extern void nfs4_release_slot_table(struct nfs4_slot_table *tbl);
-+extern void nfs4_shutdown_slot_table(struct nfs4_slot_table *tbl);
- extern struct nfs4_slot *nfs4_alloc_slot(struct nfs4_slot_table *tbl);
- extern void nfs4_free_slot(struct nfs4_slot_table *tbl, struct nfs4_slot *slot);
- extern void nfs4_slot_tbl_drain_complete(struct nfs4_slot_table *tbl);
+ 	switch (demod) {
+ 	case 0:
+-		dev_err(&state->priv->i2c->dev,
++		dev_err(&i2c->dev,
+ 			"%s: Error attaching frontend %d\n",
+ 			KBUILD_MODNAME, demod);
+ 		goto error1;
 
 
