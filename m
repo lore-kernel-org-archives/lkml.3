@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440AbaBRKLr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:11:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62665 "EHLO mx1.redhat.com"
+	id S1755392AbaBRKLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:11:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14482 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754135AbaBRKLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:11:44 -0500
+	id S1754702AbaBRKLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:11:19 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>, wil6210@qca.qualcomm.com,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH net-next 35/35] wil6210: Use pci_enable_msi_range() instead of pci_enable_msi_block()
-Date: Tue, 18 Feb 2014 11:12:04 +0100
-Message-Id: <2dd74b72b819405a2810664c4fd47f541047b856.1392717503.git.agordeev@redhat.com>
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH net-next 13/35] i40e: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 11:11:42 +0100
+Message-Id: <3655fd750c2f1c00c2474900539a305d50fdeb6f.1392717503.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
 References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,66 +29,63 @@ new pci_enable_msi_range() and pci_enable_msix_range()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: wil6210@qca.qualcomm.com
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: e1000-devel@lists.sourceforge.net
 Cc: netdev@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
-Acked-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
 ---
- drivers/net/wireless/ath/wil6210/pcie_bus.c |   32 ++++++++++++--------------
- 1 files changed, 15 insertions(+), 17 deletions(-)
+ drivers/net/ethernet/intel/i40e/i40e_main.c |   33 +++++----------------------
+ 1 files changed, 6 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/wil6210/pcie_bus.c b/drivers/net/wireless/ath/wil6210/pcie_bus.c
-index eeceab3..e1c8cc4 100644
---- a/drivers/net/wireless/ath/wil6210/pcie_bus.c
-+++ b/drivers/net/wireless/ath/wil6210/pcie_bus.c
-@@ -41,30 +41,28 @@ static int wil_if_pcie_enable(struct wil6210_priv *wil)
- 	switch (use_msi) {
- 	case 3:
- 	case 1:
-+		wil_dbg_misc(wil, "Setup %d MSI interrupts\n", use_msi);
-+		break;
- 	case 0:
-+		wil_dbg_misc(wil, "MSI interrupts disabled, use INTx\n");
- 		break;
- 	default:
--		wil_err(wil, "Invalid use_msi=%d, default to 1\n",
--			use_msi);
-+		wil_err(wil, "Invalid use_msi=%d, default to 1\n", use_msi);
- 		use_msi = 1;
- 	}
--	wil->n_msi = use_msi;
--	if (wil->n_msi) {
--		wil_dbg_misc(wil, "Setup %d MSI interrupts\n", use_msi);
--		rc = pci_enable_msi_block(pdev, wil->n_msi);
--		if (rc && (wil->n_msi == 3)) {
--			wil_err(wil, "3 MSI mode failed, try 1 MSI\n");
--			wil->n_msi = 1;
--			rc = pci_enable_msi_block(pdev, wil->n_msi);
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+index 628e917..3116861 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_main.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+@@ -5856,37 +5856,16 @@ err_out:
+  **/
+ static int i40e_reserve_msix_vectors(struct i40e_pf *pf, int vectors)
+ {
+-	int err = 0;
+-
+-	pf->num_msix_entries = 0;
+-	while (vectors >= I40E_MIN_MSIX) {
+-		err = pci_enable_msix(pf->pdev, pf->msix_entries, vectors);
+-		if (err == 0) {
+-			/* good to go */
+-			pf->num_msix_entries = vectors;
+-			break;
+-		} else if (err < 0) {
+-			/* total failure */
+-			dev_info(&pf->pdev->dev,
+-				 "MSI-X vector reservation failed: %d\n", err);
+-			vectors = 0;
+-			break;
+-		} else {
+-			/* err > 0 is the hint for retry */
+-			dev_info(&pf->pdev->dev,
+-				 "MSI-X vectors wanted %d, retrying with %d\n",
+-				 vectors, err);
+-			vectors = err;
 -		}
--		if (rc) {
--			wil_err(wil, "pci_enable_msi failed, use INTx\n");
--			wil->n_msi = 0;
--		}
--	} else {
--		wil_dbg_misc(wil, "MSI interrupts disabled, use INTx\n");
-+
-+	if (use_msi == 3 && pci_enable_msi_range(pdev, 3, 3) < 0) {
-+		wil_err(wil, "3 MSI mode failed, try 1 MSI\n");
-+		use_msi = 1;
-+	}
-+
-+	if (use_msi == 1 && pci_enable_msi(pdev)) {
-+		wil_err(wil, "pci_enable_msi failed, use INTx\n");
-+		use_msi = 0;
+-	}
+-
+-	if (vectors > 0 && vectors < I40E_MIN_MSIX) {
++	vectors = pci_enable_msix_range(pf->pdev, pf->msix_entries,
++					I40E_MIN_MSIX, vectors);
++	if (vectors < 0) {
+ 		dev_info(&pf->pdev->dev,
+-			 "Couldn't get enough vectors, only %d available\n",
+-			 vectors);
++			 "MSI-X vector reservation failed: %d\n", vectors);
+ 		vectors = 0;
  	}
  
-+	wil->n_msi = use_msi;
++	pf->num_msix_entries = vectors;
 +
- 	rc = wil6210_init_irq(wil, pdev->irq);
- 	if (rc)
- 		goto stop_master;
+ 	return vectors;
+ }
+ 
 -- 
 1.7.7.6
 
