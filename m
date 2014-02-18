@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057AbaBRWqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50940 "EHLO
+	id S1754220AbaBRXTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:19:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50974 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976AbaBRWqa (ORCPT
+	with ESMTP id S1752987AbaBRWqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:30 -0500
+	Tue, 18 Feb 2014 17:46:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 25/26] intel_pstate: Take core C0 time into account for core busy calculation
-Date: Tue, 18 Feb 2014 14:47:21 -0800
-Message-Id: <20140218224531.118777881@linuxfoundation.org>
+        Kyle McMartin <kyle@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.10 08/26] arm64: vdso: prevent ld from aligning PT_LOAD segments to 64k
+Date: Tue, 18 Feb 2014 14:47:04 -0800
+Message-Id: <20140218224530.645503171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
 References: <20140218224530.398913499@linuxfoundation.org>
@@ -29,62 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 upstream.
+commit 40507403485fcb56b83d6ddfc954e9b08305054c upstream.
 
-Take non-idle time into account when calculating core busy time.
-This ensures that intel_pstate will notice a decrease in load.
+Whilst the text segment for our VDSO is marked as PT_LOAD in the ELF
+headers, it is mapped by the kernel and not actually subject to
+demand-paging. ld doesn't realise this, and emits a p_align field of 64k
+(the maximum supported page size), which conflicts with the load address
+picked by the kernel on 4k systems, which will be 4k aligned. This
+causes GDB to fail with "Failed to read a valid object file image from
+memory" when attempting to load the VDSO.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=66581
-Cc: 3.10+ <stable@vger.kernel.org> # 3.10+
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch passes the -n option to ld, which prevents it from aligning
+PT_LOAD segments to the maximum page size.
+
+Reported-by: Kyle McMartin <kyle@redhat.com>
+Acked-by: Kyle McMartin <kyle@redhat.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ arch/arm64/kernel/vdso/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -51,6 +51,7 @@ struct sample {
- 	int32_t core_pct_busy;
- 	u64 aperf;
- 	u64 mperf;
-+	unsigned long long tsc;
- 	int freq;
- };
+--- a/arch/arm64/kernel/vdso/Makefile
++++ b/arch/arm64/kernel/vdso/Makefile
+@@ -48,7 +48,7 @@ $(obj-vdso): %.o: %.S
  
-@@ -86,6 +87,7 @@ struct cpudata {
+ # Actual build commands
+ quiet_cmd_vdsold = VDSOL $@
+-      cmd_vdsold = $(CC) $(c_flags) -Wl,-T $^ -o $@
++      cmd_vdsold = $(CC) $(c_flags) -Wl,-n -Wl,-T $^ -o $@
+ quiet_cmd_vdsoas = VDSOA $@
+       cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
  
- 	u64	prev_aperf;
- 	u64	prev_mperf;
-+	unsigned long long prev_tsc;
- 	int	sample_ptr;
- 	struct sample samples[SAMPLE_COUNT];
- };
-@@ -435,11 +437,17 @@ static inline void intel_pstate_calc_bus
- 					struct sample *sample)
- {
- 	u64 core_pct;
--	core_pct = div64_u64(int_tofp(sample->aperf * 100),
--			     sample->mperf);
--	sample->freq = fp_toint(cpu->pstate.max_pstate * core_pct * 1000);
-+	u64 c0_pct;
- 
--	sample->core_pct_busy = core_pct;
-+	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
-+
-+	c0_pct = div64_u64(sample->mperf * 100, sample->tsc);
-+	sample->freq = fp_toint(
-+		mul_fp(int_tofp(cpu->pstate.max_pstate),
-+			int_tofp(core_pct * 1000)));
-+
-+	sample->core_pct_busy = mul_fp(int_tofp(core_pct),
-+				div_fp(int_tofp(c0_pct + 1), int_tofp(100)));
- }
- 
- static inline void intel_pstate_sample(struct cpudata *cpu)
 
 
