@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaBRWr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:47:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51215 "EHLO
+	id S1752312AbaBRWxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:53:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463AbaBRWrY (ORCPT
+	with ESMTP id S1753535AbaBRWr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:24 -0500
+	Tue, 18 Feb 2014 17:47:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@fedoraproject.org>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.13 27/40] [media] mxl111sf: Fix unintentional garbage stack read
-Date: Tue, 18 Feb 2014 14:47:28 -0800
-Message-Id: <20140218224434.101783899@linuxfoundation.org>
+        Meelis Roos <mroos@linux.ee>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.13 31/40] x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
+Date: Tue, 18 Feb 2014 14:47:32 -0800
+Message-Id: <20140218224434.212367390@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -30,41 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@fedoraproject.org>
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 
-commit 866e8d8a9dc1ebb4f9e67197e264ac2df81f7d4b upstream.
+commit 6583327c4dd55acbbf2a6f25e775b28b3abf9a42 upstream.
 
-mxl111sf_read_reg takes an address of a variable to write to as an argument.
-drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c:mxl111sf_config_pin_mux_modes
-passes several uninitialized stack variables to this routine, expecting
-them to be filled in.  In the event that something unexpected happens when
-reading from the chip, we end up doing a pr_debug of the value passed in,
-revealing whatever garbage happened to be on the stack.
+Commit d61931d89b, "x86: Add optimized popcnt variants" introduced
+compile flag -fcall-saved-rdi for lib/hweight.c. When combined with
+options -fprofile-arcs and -O2, this flag causes gcc to generate
+broken constructor code. As a result, a 64 bit x86 kernel compiled
+with CONFIG_GCOV_PROFILE_ALL=y prints message "gcov: could not create
+file" and runs into sproadic BUGs during boot.
 
-Change the pr_debug to match what happens in the 'success' case, where we
-assign buf[1] to *data.
+The gcc people indicate that these kinds of problems are endemic when
+using ad hoc calling conventions.  It is therefore best to treat any
+file compiled with ad hoc calling conventions as an isolated
+environment and avoid things like profiling or coverage analysis,
+since those subsystems assume a "normal" calling conventions.
 
-Spotted with Coverity (Bugs 731910 through 731917)
+This patch avoids the bug by excluding lib/hweight.o from coverage
+profiling.
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/52F3A30C.7050205@linux.vnet.ibm.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/mxl111sf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/Makefile |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/media/usb/dvb-usb-v2/mxl111sf.c
-+++ b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
-@@ -105,7 +105,7 @@ int mxl111sf_read_reg(struct mxl111sf_st
- 		ret = -EINVAL;
- 	}
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o
+ obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
+ obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
  
--	pr_debug("R: (0x%02x, 0x%02x)\n", addr, *data);
-+	pr_debug("R: (0x%02x, 0x%02x)\n", addr, buf[1]);
- fail:
- 	return ret;
- }
++GCOV_PROFILE_hweight.o := n
+ CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
+ 
 
 
