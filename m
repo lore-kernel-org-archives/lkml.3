@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaBRXCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:02:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51121 "EHLO
+	id S1754000AbaBRXCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:02:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741AbaBRWrF (ORCPT
+	with ESMTP id S1753300AbaBRWrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:05 -0500
+	Tue, 18 Feb 2014 17:47:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.12 32/32] intel_pstate: Take core C0 time into account for core busy calculation
-Date: Tue, 18 Feb 2014 14:47:32 -0800
-Message-Id: <20140218224501.029284866@linuxfoundation.org>
+        Tony Prisk <linux@prisktech.co.nz>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.12 30/32] pinctrl: vt8500: Change devicetree data parsing
+Date: Tue, 18 Feb 2014 14:47:30 -0800
+Message-Id: <20140218224500.966824790@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
 References: <20140218224500.101465031@linuxfoundation.org>
@@ -29,62 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Tony Prisk <linux@prisktech.co.nz>
 
-commit fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 upstream.
+commit f17248ed868767567298e1cdf06faf8159a81f7c upstream.
 
-Take non-idle time into account when calculating core busy time.
-This ensures that intel_pstate will notice a decrease in load.
+Due to an assumption in the VT8500 pinctrl driver, the value passed
+from devicetree for 'wm,pull' was not explicitly translated before
+being passed to pinconf.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=66581
-Cc: 3.10+ <stable@vger.kernel.org> # 3.10+
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Since v3.10, changes to 'enum pin_config_param', PIN_CONFIG_BIAS_PULL_(UP/DOWN)
+no longer map 1-to-1 with the expected values in devicetree.
+
+This patch adds a small translation between the devicetree values (0..2)
+and the enum pin_config_param equivalent values.
+
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/pinctrl/vt8500/pinctrl-wmt.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -51,6 +51,7 @@ struct sample {
- 	int32_t core_pct_busy;
- 	u64 aperf;
- 	u64 mperf;
-+	unsigned long long tsc;
- 	int freq;
- };
+--- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
++++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+@@ -276,7 +276,20 @@ static int wmt_pctl_dt_node_to_map_pull(
+ 	if (!configs)
+ 		return -ENOMEM;
  
-@@ -86,6 +87,7 @@ struct cpudata {
+-	configs[0] = pull;
++	switch (pull) {
++	case 0:
++		configs[0] = PIN_CONFIG_BIAS_DISABLE;
++		break;
++	case 1:
++		configs[0] = PIN_CONFIG_BIAS_PULL_DOWN;
++		break;
++	case 2:
++		configs[0] = PIN_CONFIG_BIAS_PULL_UP;
++		break;
++	default:
++		configs[0] = PIN_CONFIG_BIAS_DISABLE;
++		dev_err(data->dev, "invalid pull state %d - disabling\n", pull);
++	}
  
- 	u64	prev_aperf;
- 	u64	prev_mperf;
-+	unsigned long long prev_tsc;
- 	int	sample_ptr;
- 	struct sample samples[SAMPLE_COUNT];
- };
-@@ -436,11 +438,17 @@ static inline void intel_pstate_calc_bus
- 					struct sample *sample)
- {
- 	u64 core_pct;
--	core_pct = div64_u64(int_tofp(sample->aperf * 100),
--			     sample->mperf);
--	sample->freq = fp_toint(cpu->pstate.max_pstate * core_pct * 1000);
-+	u64 c0_pct;
- 
--	sample->core_pct_busy = core_pct;
-+	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
-+
-+	c0_pct = div64_u64(sample->mperf * 100, sample->tsc);
-+	sample->freq = fp_toint(
-+		mul_fp(int_tofp(cpu->pstate.max_pstate),
-+			int_tofp(core_pct * 1000)));
-+
-+	sample->core_pct_busy = mul_fp(int_tofp(core_pct),
-+				div_fp(int_tofp(c0_pct + 1), int_tofp(100)));
- }
- 
- static inline void intel_pstate_sample(struct cpudata *cpu)
+ 	map->type = PIN_MAP_TYPE_CONFIGS_PIN;
+ 	map->data.configs.group_or_pin = data->groups[group];
 
 
