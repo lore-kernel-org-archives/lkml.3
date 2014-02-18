@@ -1,195 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319AbaBRPkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:40:53 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.137]:32566 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932104AbaBRPkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 10:40:49 -0500
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Feb 2014 10:40:48 EST
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-9.tower-180.messagelabs.com!1392737673!26169754!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Tue, 18 Feb 2014 16:34:34 +0100
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jonathan Cameron <jic23@kernel.org>
-CC: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: [PATCH 2/3] mcb: Add PCI carrier for MEN Chameleon Bus
-Date: Tue, 18 Feb 2014 16:34:13 +0100
-Message-ID: <1392737654-22682-3-git-send-email-johannes.thumshirn@men.de>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de>
-References: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.1.1.31]
+	id S932345AbaBRPlE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:41:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932104AbaBRPlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 10:41:00 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <CA+55aFzSBZMC6kbdJj5Jus9-q1dzXdCYQXfMm34O+9h8SbGcGQ@mail.gmail.com>
+References: <20140207180216.GP4250@linux.vnet.ibm.com>
+	 <1391992071.18779.99.camel@triegel.csb>
+	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	 <1392183564.18779.2187.camel@triegel.csb>
+	 <20140212180739.GB4250@linux.vnet.ibm.com>
+	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	 <20140213002355.GI4250@linux.vnet.ibm.com>
+	 <1392321837.18779.3249.camel@triegel.csb>
+	 <20140214020144.GO4250@linux.vnet.ibm.com>
+	 <1392352981.18779.3800.camel@triegel.csb>
+	 <20140214172920.GQ4250@linux.vnet.ibm.com>
+	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	 <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	 <1392486310.18779.6447.camel@triegel.csb>
+	 <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	 <1392666947.18779.6838.camel@triegel.csb>
+	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	 <1392672063.18779.6940.camel@triegel.csb>
+	 <1392675939.18779.7063.camel@triegel.csb>
+	 <CA+55aFx2jxE8! sTZEmNnMg6ktDuU_0xPiEw3=qH0=+xat8p8cAA@mail.gmail.com>
+	 <1392680518.18779.7213.camel@triegel.csb>
+	 <CA+55aFzSBZMC6kbdJj5Jus9-q1dzXdCYQXfMm34O+9h8SbGcGQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Feb 2014 16:38:40 +0100
+Message-ID: <1392737920.18779.7659.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for MCB over PCI devices. Both PCI attached on-board Chameleon FPGAs
-as well as CompactPCI based MCB carrier cards are supported with this driver.
+On Mon, 2014-02-17 at 16:18 -0800, Linus Torvalds wrote:
+> On Mon, Feb 17, 2014 at 3:41 PM, Torvald Riegel <triegel@redhat.com> wrote:
+> >
+> > There's an underlying problem here that's independent from the actual
+> > instance that you're worried about here: "no sense" is a ultimately a
+> > matter of taste/objectives/priorities as long as the respective
+> > specification is logically consistent.
+> 
+> Yes. But I don't think it's "independent".
+> 
+> Exactly *because* some people will read standards without applying
+> "does the resulting code generation actually make sense for the
+> programmer that wrote the code", the standard has to be pretty clear.
+> 
+> The standard often *isn't* pretty clear. It wasn't clear enough when
+> it came to "volatile", and yet that was a *much* simpler concept than
+> atomic accesses and memory ordering.
+> 
+> And most of the time it's not a big deal. But because the C standard
+> generally tries to be very portable, and cover different machines,
+> there tends to be a mindset that anything inherently unportable is
+> "undefined" or "implementation defined", and then the compiler writer
+> is basically given free reign to do anything they want (with
+> "implementation defined" at least requiring that it is reliably the
+> same thing).
 
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
- drivers/mcb/Kconfig   |  13 ++++++
- drivers/mcb/Makefile  |   2 +
- drivers/mcb/mcb-pci.c | 108 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 123 insertions(+)
- create mode 100644 drivers/mcb/mcb-pci.c
+Yes, that's how it works in general.  And this makes sense, because all
+optimizations rely on that.  Second, you can't keep something consistent
+(eg, between compilers) if it isn't specified.  So if we want stricter
+rules, those need to be specified somewhere.
 
-diff --git a/drivers/mcb/Kconfig b/drivers/mcb/Kconfig
-index 9e7d6f5..8b058bc 100644
---- a/drivers/mcb/Kconfig
-+++ b/drivers/mcb/Kconfig
-@@ -14,3 +14,16 @@ menuconfig MCB
- 
- 	   If build as a module, the module is called mcb.ko
- 
-+if MCB
-+config MCB_PCI
-+	   tristate "PCI based MCB carrier"
-+	   default m if MCB
-+	   help
-+
-+	   This is a MCB carrier on a PCI device. Both PCI attached on-board
-+	   FPGAs as well as CompactPCI attached MCB FPGAs are supported with
-+	   this driver.
-+
-+	   If build as a module, the module is called mcb-pci.ko
-+
-+endif # MCB
-diff --git a/drivers/mcb/Makefile b/drivers/mcb/Makefile
-index 2d9a751..1ae1413 100644
---- a/drivers/mcb/Makefile
-+++ b/drivers/mcb/Makefile
-@@ -3,3 +3,5 @@ obj-$(CONFIG_MCB) += mcb.o
- 
- mcb-y += mcb-core.o
- mcb-y += mcb-parse.o
-+
-+obj-$(CONFIG_MCB_PCI) += mcb-pci.o
-diff --git a/drivers/mcb/mcb-pci.c b/drivers/mcb/mcb-pci.c
-new file mode 100644
-index 0000000..0b1eafa
---- /dev/null
-+++ b/drivers/mcb/mcb-pci.c
-@@ -0,0 +1,108 @@
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/mcb.h>
-+
-+#include "mcb-internal.h"
-+
-+static struct mcb_bus *bus;
-+struct priv {
-+	void __iomem *base;
-+};
-+
-+static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+{
-+	struct priv *priv;
-+	phys_addr_t mapbase;
-+	int ret = 0;
-+	int num_cells;
-+	unsigned long flags;
-+
-+	priv = devm_kzalloc(&pdev->dev, sizeof(struct priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	ret = pci_enable_device(pdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to enable PCI device\n");
-+		return -ENODEV;
-+	}
-+
-+	mapbase = pci_resource_start(pdev, 0);
-+	if (!mapbase) {
-+		dev_err(&pdev->dev, "No PCI resource\n");
-+		goto err_start;
-+	}
-+
-+	ret = pci_request_region(pdev, 0, KBUILD_MODNAME);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request PCI BARs\n");
-+		goto err_start;
-+	}
-+
-+	priv->base = pci_iomap(pdev, 0, 0);
-+	if (!priv->base) {
-+		dev_err(&pdev->dev, "Cannot ioremap\n");
-+		ret = -ENOMEM;
-+		goto err_ioremap;
-+	}
-+
-+	flags = pci_resource_flags(pdev, 0);
-+	if (flags & IORESOURCE_IO) {
-+		ret = -ENOTSUPP;
-+		dev_err(&pdev->dev,
-+			"IO mapped PCI devices are not supported\n");
-+		goto err_ioremap;
-+	}
-+
-+	pci_set_drvdata(pdev, priv);
-+
-+	bus = mcb_alloc_bus();
-+
-+	ret = parse_chameleon_cells(bus, mapbase, priv->base);
-+	if (ret < 0)
-+		goto err_drvdata;
-+	num_cells = ret;
-+
-+	dev_dbg(&pdev->dev, "Found %d cells\n", num_cells);
-+
-+	mcb_bus_add_devices(bus);
-+
-+err_drvdata:
-+	pci_iounmap(pdev, priv->base);
-+err_ioremap:
-+	pci_release_region(pdev, 0);
-+err_start:
-+	pci_disable_device(pdev);
-+	return ret;
-+}
-+
-+static void mcb_pci_remove(struct pci_dev *pdev)
-+{
-+	struct priv *priv = pci_get_drvdata(pdev);
-+
-+	mcb_release_bus(bus);
-+
-+	pci_iounmap(pdev, priv->base);
-+	pci_release_region(pdev, 0);
-+	pci_disable_device(pdev);
-+	pci_set_drvdata(pdev, NULL);
-+}
-+
-+static struct pci_device_id mcb_pci_tbl[] = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MEN, PCI_DEVICE_ID_MEN_CHAMELEON) },
-+	{ 0 },
-+};
-+MODULE_DEVICE_TABLE(pci, mcb_pci_tbl);
-+
-+static struct pci_driver mcb_pci_driver = {
-+	.name = "mcb-pci",
-+	.id_table = mcb_pci_tbl,
-+	.probe = mcb_pci_probe,
-+	.remove = mcb_pci_remove,
-+};
-+
-+module_pci_driver(mcb_pci_driver);
-+
-+MODULE_AUTHOR("Johannes Thumshirn <johannes.thumshirn@men.de>");
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("MCB over PCI support");
--- 
-1.8.5.4
+> And when it comes to memory ordering, *everything* is basically
+> non-portable, because different CPU's very much have different rules.
+
+Well, the current set of memory orders (and the memory model as a whole)
+is portable, even though it might not allow to exploit all hardware
+properties, and thus might perform sub-optimally in some cases.
+
+> I worry that that means that the standard then takes the stance that
+> "well, compiler re-ordering is no worse than CPU re-ordering, so we
+> let the compiler do anything". And then we have to either add
+> "volatile" to make sure the compiler doesn't do that, or use an overly
+> strict memory model at the compiler level that makes it all pointless.
+
+Using "volatile" is not a good option, I think, because synchronization
+between threads should be orthogonal to observable output of the
+abstract machine.
+
+The current memory model might not allow to exploit all hardware
+properties, I agree.
+
+But then why don't we work on how to extend it to do so?  We need to
+specify the behavior we want anyway, and this can't be independent of
+the language semantics, so it has to be conceptually integrated with the
+standard anyway.
+
+> So I really really hope that the standard doesn't give compiler
+> writers free hands to do anything that they can prove is "equivalent"
+> in the virtual C machine model.
+
+It does, but it also doesn't mean this can't be extended.  So let's
+focus on whether we can find an extension.
+
+> That's not how you get reliable
+> results.
+
+In this general form, that's obviously a false claim.
 
