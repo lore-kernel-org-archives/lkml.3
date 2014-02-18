@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaBRVrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:47:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:56624 "EHLO mga09.intel.com"
+	id S1752691AbaBRVr6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:47:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40153 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752260AbaBRVrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:47:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,503,1389772800"; 
-   d="scan'208";a="485433896"
-Message-ID: <5303D4EF.7040906@intel.com>
-Date: Tue, 18 Feb 2014 13:47:27 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>, Vegard Nossum <vegard.nossum@gmail.com>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Vegard Nossum <vegardno@ifi.uio.no>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH V2] mm: add a new command-line kmemcheck value
-References: <53017544.90908@huawei.com>
-In-Reply-To: <53017544.90908@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751982AbaBRVrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 16:47:55 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alec Teal <a.teal@warwick.ac.uk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140218214047.GU14089@laptop.programming.kicks-ass.net>
+References: <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	 <1392486310.18779.6447.camel@triegel.csb>
+	 <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	 <1392666947.18779.6838.camel@triegel.csb>
+	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	 <530296CD.5050503@warwick.ac.uk>
+	 <CA+55aFyi8QWge7QR0M+ABH-kEiwvoEyMhK6GWRvN1YNKJAFuSQ@mail.gmail.c!om>
+	 <1392737465.18779.7644.camel@triegel.csb>
+	 <CA+55aFxn2KRXDQ91xRs=bO_6d_nA_PSQvoY1_=OxyJ86+KOO9Q@mail.gmail.com>
+	 <1392758516.18779.8378.camel@triegel.csb>
+	 <20140218214047.GU14089@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Feb 2014 22:47:15 +0100
+Message-ID: <1392760035.18779.8449.camel@triegel.csb>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2014 06:34 PM, Xishi Qiu wrote:
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index f971306..cd7d75f 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -135,6 +135,15 @@ static void __init probe_page_size_mask(void)
->  		page_size_mask |= 1 << PG_LEVEL_2M;
->  #endif
->  
-> +#if defined(CONFIG_KMEMCHECK)
-> +	if (!kmemcheck_on) {
-> +		if (direct_gbpages)
-> +			page_size_mask |= 1 << PG_LEVEL_1G;
-> +		if (cpu_has_pse)
-> +			page_size_mask |= 1 << PG_LEVEL_2M;
-> +	}
-> +#endif
+On Tue, 2014-02-18 at 22:40 +0100, Peter Zijlstra wrote:
+> On Tue, Feb 18, 2014 at 10:21:56PM +0100, Torvald Riegel wrote:
+> > Well, that's how atomics that aren't volatile are defined in the
+> > standard.  I can see that you want something else too, but that doesn't
+> > mean that the other thing is broken.
+> 
+> Well that other thing depends on being able to see the entire program at
+> compile time. PaulMck already listed various ways in which this is
+> not feasible even for normal userspace code.
+> 
+> In particular; DSOs and JITs were mentioned.
 
-This is a copy-n-paste from just above which is inside a:
+No it doesn't depend on whole-program analysis being possible.  Because
+if it isn't, then a correct compiler will just not do certain
+optimizations simply because it can't prove properties required for the
+optimization to hold.  With the exception of access to objects via magic
+numbers (e.g., fixed and known addresses (see my reply to Paul), which
+are outside of the semantics specified in the standard), I don't see a
+correctness problem here.
 
-#if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
-
-This gets really confusing to figure out which one of these options will
-rule.  Maybe it's just time to add a kmemcheck_active() function which
-gets #ifdef'd to 0 if the config option is off.
-
->  	/* Enable PSE if available */
->  	if (cpu_has_pse)
->  		set_in_cr4(X86_CR4_PSE);
-> @@ -331,6 +340,8 @@ bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
->  	return false;
->  }
->  
-> +extern int kmemcheck_on;
-
-Didn't you _just_ reference this?  Either it's unnecessary, or this code
-doesn't compile.
-
->  /*
->   * Setup the direct mapping of the physical memory at PAGE_OFFSET.
->   * This runs before bootmem is initialized and gets pages directly from
-> diff --git a/arch/x86/mm/kmemcheck/kmemcheck.c b/arch/x86/mm/kmemcheck/kmemcheck.c
-> index d87dd6d..d686ee0 100644
-> --- a/arch/x86/mm/kmemcheck/kmemcheck.c
-> +++ b/arch/x86/mm/kmemcheck/kmemcheck.c
-> @@ -44,30 +44,35 @@
->  #ifdef CONFIG_KMEMCHECK_ONESHOT_BY_DEFAULT
->  #  define KMEMCHECK_ENABLED 2
->  #endif
-> +#define KMEMCHECK_CLOSED 3
->  
-> -int kmemcheck_enabled = KMEMCHECK_ENABLED;
-> +int kmemcheck_enabled = KMEMCHECK_CLOSED;
-> +int kmemcheck_on = 0;
-
-This is pretty confusing.  If I see "kmemcheck_on" and
-"kmemcheck_enabled" in the code, it's hard to figure out which one to
-trust and infer what they were _supposed_ to be doing.
-
-Please add some documentation for these, at least.  The commit message
-isn't enough.
-
-I'd also suggest breaking this up in to at least two pieces: one which
-adds the functions to check at runtime if we want to use kmemcheck, and
-then a second one to actually add this tunable.
