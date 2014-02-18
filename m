@@ -1,120 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871AbaBRRCS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:02:18 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:41157 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979AbaBRRCP (ORCPT
+	id S1756173AbaBRRCm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:02:42 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:37260 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787AbaBRRCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:02:15 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of_mdio: fix phy interrupt passing
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-kernel@lists.codethink.co.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-sh@vger.kernel.org, sergei.shtylyov@cogentembedded.com
-In-Reply-To: <53032A97.8050201@codethink.co.uk>
-References: <1392654580-3706-1-git-send-email-ben.dooks@codethink.co.uk> < 20140218093024.D0E94C403C8@trevor.secretlab.ca> <53032A97.8050201@codethink .co.uk>
-Date: Tue, 18 Feb 2014 17:02:02 +0000
-Message-Id: <20140218170202.424D7C40517@trevor.secretlab.ca>
+	Tue, 18 Feb 2014 12:02:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140218164614.GI21483@n2100.arm.linux.org.uk>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	<1391529538-21685-4-git-send-email-ulf.hansson@linaro.org>
+	<20140218160542.GH21483@n2100.arm.linux.org.uk>
+	<CAPDyKFq3uAoo7p-7hZgBmMJ4jf9A7dC0aUZJYUE0z1Qq5W=0bw@mail.gmail.com>
+	<20140218164614.GI21483@n2100.arm.linux.org.uk>
+Date: Tue, 18 Feb 2014 18:02:38 +0100
+Message-ID: <CAPDyKFrjOyg8K2UfE61NiQLNJy+6RrRf_Y8ogECNAiGDobS1Jg@mail.gmail.com>
+Subject: Re: [PATCH 03/17] mmc: mmci: Mask IRQs for all variants during
+ runtime suspend
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Feb 2014 09:40:39 +0000, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
-> On 18/02/14 09:30, Grant Likely wrote:
-> > On Mon, 17 Feb 2014 16:29:40 +0000, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
-> >> The of_mdiobus_register_phy() is not setting phy->irq this causing
-> >> some drivers to incorrectly assume that the PHY does not have an
-> >> IRQ associated with it or install an interrupt handler for the
-> >> PHY.
-> >>
-> >> Simplify the code setting irq and set the phy->irq at the same
-> >> time so that the case if mdio->irq is not NULL is easier to read.
-> >>
-> >> This fixes the issue:
-> >>   net eth0: attached PHY 1 (IRQ -1) to driver Micrel KSZ8041RNLI
-> >>
-> >> to the correct:
-> >>   net eth0: attached PHY 1 (IRQ 416) to driver Micrel KSZ8041RNLI
-> >>
-> >> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> >> ---
-> >>   drivers/of/of_mdio.c | 12 ++++++------
-> >>   1 file changed, 6 insertions(+), 6 deletions(-)
-> >>
-> >> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> >> index 875b7b6..7b3e7b0 100644
-> >> --- a/drivers/of/of_mdio.c
-> >> +++ b/drivers/of/of_mdio.c
-> >> @@ -44,7 +44,7 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
-> >>   {
-> >>   	struct phy_device *phy;
-> >>   	bool is_c45;
-> >> -	int rc, prev_irq;
-> >> +	int rc;
-> >>   	u32 max_speed = 0;
-> >>
-> >>   	is_c45 = of_device_is_compatible(child,
-> >> @@ -55,11 +55,11 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
-> >>   		return 1;
-> >>
-> >>   	if (mdio->irq) {
-> >> -		prev_irq = mdio->irq[addr];
-> >> -		mdio->irq[addr] =
-> >> -			irq_of_parse_and_map(child, 0);
-> >> -		if (!mdio->irq[addr])
-> >> -			mdio->irq[addr] = prev_irq;
-> >
-> > I cannot for the life for me remeber why the code was structured that
-> > way. Your change is better.
-> >
-> >> +		rc = irq_of_parse_and_map(child, 0);
-> >> +		if (rc > 0) {
-> >> +			mdio->irq[addr] = rc;
-> >> +			phy->irq = rc;
-> >> +		}
-> >>   	}
-> >
-> > The outer if is merely protecting against no irq array being allocated
-> > for the bus. Would not the following be better:
-> >
-> > 	rc = irq_of_parse_and_map(child, 0);
-> > 	if (rc > 0) {
-> > 		phy->irq = rc;
-> > 		if (mdio->irq)
-> > 			mdio->irq[addr] = rc;
-> > 	}
-> 
-> Thanks, that makes sense, although we've both failed to work
-> out if mdio->irq is set, and rc <= 0 case, so:
-> 
->   	rc = irq_of_parse_and_map(child, 0);
->   	if (rc > 0) {
->   		phy->irq = rc;
->   		if (mdio->irq)
->   			mdio->irq[addr] = rc;
->   	} else {
-> 		if (mdio->irq)
-> 			phy->irq = mdio->irq[addr];
-> 	}
+On 18 February 2014 17:46, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Feb 18, 2014 at 05:36:52PM +0100, Ulf Hansson wrote:
+>> If we add SDIO irq support to mmci in future; parts of that
+>> implementation includes a re-route of DAT1 to a GPIO irq when entering
+>> runtime suspend state. The mmci HW will in runtime suspend state, not
+>> be responsible for handling irqs, which is the same as of today.
+>
+> Note that the "irq thread" in sdio_irq is scheduled for destruction -
+> it's buggy when the system is under high load and a driver claims a
+> SDIO irq.  Sched people hate it too...
 
-Is this actually a valid thing to do? I think the only time mdio->irq[]
-is non-zero is when it is set to PHY_POLL. Is it valid to set phy->irq
-to PHY_POLL? I didn't think it was.
+We kind of realized that too, in the early days for ux500. At that
+point we converted it to a use a dedicated work queue, which improved
+the behaviour, don't remember the details why, but maybe I should
+collect the patches and send them out. :-)
 
-g.
+Finally we moved to use a separate GPIO irq as a dedicated SDIO irq
+line for our cw1200 wlan chip, mostly due to gain a bit of
+performance. That happened to simplified the mmci part as well, which
+was welcome.
 
-> 
-> I think that covers all cases. This does rely on mdio->irq
-> being initialised to PHY_POLL if allocated.
-> 
-> Once this is in, it may be easier then to not allocate
-> mdio->irq for the OF case by default unless the driver
-> registering the PHY knows it has the interrupt number(s)
-> for the PHY already.
-> 
-> -- 
-> Ben Dooks				http://www.codethink.co.uk/
-> Senior Engineer				Codethink - Providing Genius
-
+>
+> --
+> FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+> in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+> Estimate before purchase was "up to 13.2Mbit".
