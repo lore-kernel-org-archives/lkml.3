@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844AbaBRRbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:31:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47190 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030AbaBRRbo (ORCPT
+	id S1754880AbaBRRb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:31:59 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:42566 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaBRRb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:31:44 -0500
-Date: Tue, 18 Feb 2014 09:33:08 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lucas De Marchi <lucas.demarchi@intel.com>
-Subject: Re: [PATCH v2] Bluetooth: allocate static minor for vhci
-Message-ID: <20140218173308.GB17368@kroah.com>
-References: <1392700766-4374-1-git-send-email-lucas.demarchi@intel.com>
- <BD98E109-FE9C-4F67-84AC-3CEA048641BE@holtmann.org>
+	Tue, 18 Feb 2014 12:31:56 -0500
+Message-ID: <5303A71B.7060208@cogentembedded.com>
+Date: Tue, 18 Feb 2014 21:31:55 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BD98E109-FE9C-4F67-84AC-3CEA048641BE@holtmann.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Peter Chen <Peter.Chen@freescale.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
+References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>	 <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>	 <53039E2E.2030503@cogentembedded.com> <1392743648.17130.17.camel@iivanov-dev>
+In-Reply-To: <1392743648.17130.17.camel@iivanov-dev>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 11:01:11PM -0800, Marcel Holtmann wrote:
-> Hi Lucas,
-> 
-> > Commit bfacbb9 (Bluetooth: Use devname:vhci module alias for virtual HCI
-> > driver) added the module alias to hci_vhci module so it's possible to
-> > create the /dev/vhci node. However creating an alias without
-> > specifying the minor doesn't allow us to create the node ahead,
-> > triggerring module auto-load when it's first accessed.
-> > 
-> > Starting with depmod from kmod 16 we started to warn if there's a
-> > devname alias without specifying the major and minor.
-> > 
-> > Let's do the same done for uhid, kvm, fuse and others, specifying a
-> > fixed minor. In systems with systemd as the init the following will
-> > happen: on early boot systemd will call "kmod static-nodes" to read
-> > /lib/modules/$(uname -r)/modules.devname and then create the nodes. When
-> > first accessed these "dead" nodes will trigger the module loading.
-> > 
-> > Signed-off-by: Lucas De Marchi <lucas.demarchi@intel.com>
-> > ---
-> > 
-> > Changes from v1:
-> > - use minor=137, since 240 is reserved for local use
-> > 
-> > We talked about using 197, but that's being used by pxa3xx-gcu, too.
-> 
-> looks fine to me. If Kay and/or Greg want to ack it, then I take it through bluetooth-next tree.
+On 02/18/2014 08:14 PM, Ivan T. Ivanov wrote:
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+
+>>> Allows controller to be specified via device tree.
+>>> Pass PHY phandle specified in DT to core driver.
+
+>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>>> ---
+>>>    drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
+>>>    1 file changed, 22 insertions(+), 1 deletion(-)
+
+>>      You also need to describe the binding you're creating in
+>> Documentation/devicetree/bindings/usb/<file>.txt.
+
+> Did you check "[PATCH v2 1/3]"?
+
+    Did you send it to 'linux-usb'? I just didn't get the patch.
+(Typically, the bindings are described in the same patch the DT support is 
+added to the driver bu YMMV, of course.)
+
+> Regards,
+> Ivan
+
+WBR, Sergei
+
