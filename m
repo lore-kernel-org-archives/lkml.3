@@ -1,327 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496AbaBRRHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:07:01 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:4069 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292AbaBRRG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:06:58 -0500
-X-IronPort-AV: E=Sophos;i="4.97,502,1389744000"; 
-   d="scan'208";a="103578607"
-Message-ID: <1392743214.23084.38.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map
- definitions
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Date: Tue, 18 Feb 2014 17:06:54 +0000
-In-Reply-To: <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
-	 <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1754184AbaBRRLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:11:40 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:32890 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaBRRLi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 12:11:38 -0500
+Date: Tue, 18 Feb 2014 18:12:52 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH 03/11] vfs: Don't allow overwriting mounts in the current
+ mount namespace
+Message-ID: <20140218171252.GC4026@tucsk.piliscsaba.szeredi.hu>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+ <87a9kkax0j.fsf@xmission.com>
+ <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+ <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+ <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+ <87li281wx6.fsf_-_@xmission.com>
+ <87ob28kqks.fsf_-_@xmission.com>
+ <8761ogkqhl.fsf_-_@xmission.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8761ogkqhl.fsf_-_@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
-> This patch contains the new definitions necessary for grant mapping.
-
-Is this just adding a bunch of (currently) unused functions? That's a
-slightly odd way to structure a series. They don't seem to be "generic
-helpers" or anything so it would be more normal to introduce these as
-they get used -- it's a bit hard to review them out of context.
-
-> v2:
-
-This sort of intraversion changelog should go after the S-o-b and a
-"---" marker. This way they are not included in the final commit
-message.
-
-[...]
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
-
-v2: Blah blah
-
-v3: Etc etc
-
-
-> @@ -226,6 +248,12 @@ bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed);
+On Sat, Feb 15, 2014 at 01:36:38PM -0800, Eric W. Biederman wrote:
+> 
+> In preparation for allowing mountpoints to be renamed and unlinked
+> in remote filesystems and in other mount namespaces test if on a dentry
+> there is a mount in the local mount namespace before allowing it to
+> be renamed or unlinked.
+> 
+> The primary motivation here are old versions of fusermount unmount
+> which is not safe if the a path can be renamed or unlinked while it is
+> verifying the mount is safe to unmount.  More recent versions are simpler
+> and safer by simply using UMOUNT_NOFOLLOW when unmounting a mount
+> in a directory owned by an arbitrary user.
+> 
+> Miklos Szeredi <miklos@szeredi.hu> reports this is approach is good
+> enough to remove concerns about new kernels mixed with old versions
+> of fusermount.
+> 
+> A secondary motivation for restrictions here is that it removing empty
+> directories that have non-empty mount points on them appears to
+> violate the rule that rmdir can not remove empty directories.  As
+> Linus Torvalds pointed out this is useful for programs (like git) that
+> test if a directory is empty with rmdir.
+> 
+> Therefore this patch arranges to enforce the existing mount point
+> semantics for local mount namespace.
+> 
+> v2: Rewrote the test to be a drop in replacement for d_mountpoint
+> 
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  fs/mount.h     |    9 +++++++++
+>  fs/namei.c     |    8 +++++++-
+>  fs/namespace.c |   35 +++++++++++++++++++++++++++++++++++
+>  3 files changed, 51 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/mount.h b/fs/mount.h
+> index a17458ca6f29..17d913d86add 100644
+> --- a/fs/mount.h
+> +++ b/fs/mount.h
+> @@ -109,3 +109,12 @@ struct proc_mounts {
+>  #define proc_mounts(p) (container_of((p), struct proc_mounts, m))
 >  
->  void xenvif_stop_queue(struct xenvif *vif);
->  
-> +/* Callback from stack when TX packet can be released */
-> +void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success);
+>  extern const struct seq_operations mounts_op;
 > +
-> +/* Unmap a pending page, usually has to be called before xenvif_idx_release */
-
-"usually" or always? How does one determine when it is or isn't
-appropriate to call it later?
-
-> +void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx);
+> +extern int __is_local_mountpoint(struct dentry *dentry);
+> +static inline int is_local_mountpoint(struct dentry *dentry)
+> +{
+> +	if (!d_mountpoint(dentry))
+> +		return 0;
 > +
->  extern bool separate_tx_rx_irq;
+> +	return __is_local_mountpoint(dentry);
+> +}
+> diff --git a/fs/namei.c b/fs/namei.c
+> index d580df2e6804..4e6fe16ef488 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -3507,6 +3507,8 @@ int vfs_rmdir(struct inode *dir, struct dentry *dentry)
+>  	mutex_lock(&dentry->d_inode->i_mutex);
 >  
->  #endif /* __XEN_NETBACK__COMMON_H__ */
-> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-> index 7669d49..f0f0c3d 100644
-> --- a/drivers/net/xen-netback/interface.c
-> +++ b/drivers/net/xen-netback/interface.c
-> @@ -38,6 +38,7 @@
+>  	error = -EBUSY;
+> +	if (is_local_mountpoint(dentry))
+> +		goto out;
+>  	if (d_mountpoint(dentry))
+>  		goto out;
 >  
->  #include <xen/events.h>
->  #include <asm/xen/hypercall.h>
-> +#include <xen/balloon.h>
-
-What is this for?
- 
->  #define XENVIF_QUEUE_LENGTH 32
->  #define XENVIF_NAPI_WEIGHT  64
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index bb241d0..195602f 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -773,6 +773,20 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
->  	return page;
+> @@ -3622,7 +3624,7 @@ int vfs_unlink(struct inode *dir, struct dentry *dentry, struct inode **delegate
+>  		return -EPERM;
+>  
+>  	mutex_lock(&target->i_mutex);
+> -	if (d_mountpoint(dentry))
+> +	if (is_local_mountpoint(dentry) || d_mountpoint(dentry))
+>  		error = -EBUSY;
+>  	else {
+>  		error = security_inode_unlink(dir, dentry);
+> @@ -4001,6 +4003,8 @@ static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
+>  		mutex_lock(&target->i_mutex);
+>  
+>  	error = -EBUSY;
+> +	if (is_local_mountpoint(old_dentry) || is_local_mountpoint(new_dentry))
+> +		goto out;
+>  	if (d_mountpoint(old_dentry) || d_mountpoint(new_dentry))
+>  		goto out;
+>  
+> @@ -4045,6 +4049,8 @@ static int vfs_rename_other(struct inode *old_dir, struct dentry *old_dentry,
+>  	lock_two_nondirectories(source, target);
+>  
+>  	error = -EBUSY;
+> +	if (is_local_mountpoint(old_dentry) || is_local_mountpoint(new_dentry))
+> +		goto out;
+>  	if (d_mountpoint(old_dentry)||d_mountpoint(new_dentry))
+>  		goto out;
+>  
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 22e536705c45..6dc23614d44d 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -631,6 +631,41 @@ struct vfsmount *lookup_mnt(struct path *path)
+>  	return m;
 >  }
 >  
-> +static inline void xenvif_tx_create_gop(struct xenvif *vif,
-> +					u16 pending_idx,
-> +					struct xen_netif_tx_request *txp,
-> +					struct gnttab_map_grant_ref *gop)
-> +{
-> +	vif->pages_to_map[gop-vif->tx_map_ops] = vif->mmap_pages[pending_idx];
-> +	gnttab_set_map_op(gop, idx_to_kaddr(vif, pending_idx),
-> +			  GNTMAP_host_map | GNTMAP_readonly,
-> +			  txp->gref, vif->domid);
-> +
-> +	memcpy(&vif->pending_tx_info[pending_idx].req, txp,
-> +	       sizeof(*txp));
+> +/*
+> + * __is_local_mountpoint - Test to see if dentry is a mountpoint in the
+> + *                         current mount namespace.
+> + *
+> + * The common case is dentries are not mountpoints at all and that
+> + * test is handled inline.  For the slow case when we are actually
+> + * dealing with a mountpoint of some kind, walk through all of the
+> + * mounts in the current mount namespace and test to see if the dentry
+> + * is a mountpoint.
+> + *
+> + * The mount_hashtable is not usable in the context because we
+> + * need to identify all mounts that may be in the current mount
+> + * namespace not just a mount that happens to have some specified
+> + * parent mount.
+> + */
+> +int __is_local_mountpoint(struct dentry *dentry)
 
-Can this not go in xenvif_tx_build_gops? Or conversely should the
-non-mapping code there be factored out?
-
-Given the presence of both kinds of gop the name of this function needs
-to be more specific I think.
-
-> +}
-> +
->  static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
->  					       struct sk_buff *skb,
->  					       struct xen_netif_tx_request *txp,
-> @@ -1612,6 +1626,107 @@ static int xenvif_tx_submit(struct xenvif *vif)
->  	return work_done;
->  }
->  
-> +void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
-> +{
-> +	unsigned long flags;
-> +	pending_ring_idx_t index;
-> +	u16 pending_idx = ubuf->desc;
-> +	struct pending_tx_info *temp =
-> +		container_of(ubuf, struct pending_tx_info, callback_struct);
-> +	struct xenvif *vif = container_of(temp - pending_idx,
-
-This is subtracting a u16 from a pointer?
-
-> +					  struct xenvif,
-> +					  pending_tx_info[0]);
-> +
-> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
-> +	do {
-> +		pending_idx = ubuf->desc;
-> +		ubuf = (struct ubuf_info *) ubuf->ctx;
-> +		index = pending_index(vif->dealloc_prod);
-> +		vif->dealloc_ring[index] = pending_idx;
-> +		/* Sync with xenvif_tx_dealloc_action:
-> +		 * insert idx then incr producer.
-> +		 */
-> +		smp_wmb();
-
-Is this really needed given that there is a lock held?
-
-Or what is dealloc_lock protecting against?
-
-> +		vif->dealloc_prod++;
-
-What happens if the dealloc ring becomes full, will this wrap and cause
-havoc?
-
-> +	} while (ubuf);
-> +	wake_up(&vif->dealloc_wq);
-> +	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
-> +}
-> +
-> +static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
-> +{
-> +	struct gnttab_unmap_grant_ref *gop;
-> +	pending_ring_idx_t dc, dp;
-> +	u16 pending_idx, pending_idx_release[MAX_PENDING_REQS];
-> +	unsigned int i = 0;
-> +
-> +	dc = vif->dealloc_cons;
-> +	gop = vif->tx_unmap_ops;
-> +
-> +	/* Free up any grants we have finished using */
-> +	do {
-> +		dp = vif->dealloc_prod;
-> +
-> +		/* Ensure we see all indices enqueued by all
-> +		 * xenvif_zerocopy_callback().
-> +		 */
-> +		smp_rmb();
-> +
-> +		while (dc != dp) {
-> +			pending_idx =
-> +				vif->dealloc_ring[pending_index(dc++)];
-> +
-> +			/* Already unmapped? */
-> +			if (vif->grant_tx_handle[pending_idx] ==
-> +				NETBACK_INVALID_HANDLE) {
-> +				netdev_err(vif->dev,
-> +					   "Trying to unmap invalid handle! "
-> +					   "pending_idx: %x\n", pending_idx);
-> +				BUG();
-> +			}
-> +
-> +			pending_idx_release[gop-vif->tx_unmap_ops] =
-> +				pending_idx;
-> +			vif->pages_to_unmap[gop-vif->tx_unmap_ops] =
-> +				vif->mmap_pages[pending_idx];
-> +			gnttab_set_unmap_op(gop,
-> +					    idx_to_kaddr(vif, pending_idx),
-> +					    GNTMAP_host_map,
-> +					    vif->grant_tx_handle[pending_idx]);
-> +			vif->grant_tx_handle[pending_idx] =
-> +				NETBACK_INVALID_HANDLE;
-> +			++gop;
-
-Can we run out of space in the gop array?
-
-> +		}
-> +
-> +	} while (dp != vif->dealloc_prod);
-> +
-> +	vif->dealloc_cons = dc;
-
-No barrier here?
-
-> +	if (gop - vif->tx_unmap_ops > 0) {
-> +		int ret;
-> +		ret = gnttab_unmap_refs(vif->tx_unmap_ops,
-> +					vif->pages_to_unmap,
-> +					gop - vif->tx_unmap_ops);
-> +		if (ret) {
-> +			netdev_err(vif->dev, "Unmap fail: nr_ops %x ret %d\n",
-> +				   gop - vif->tx_unmap_ops, ret);
-> +			for (i = 0; i < gop - vif->tx_unmap_ops; ++i) {
-
-This seems liable to be a lot of spew on failure. Perhaps only log the
-ones where gop[i].status != success.
-
-Have you considered whether or not the frontend can force this error to
-occur?
-
-> +				netdev_err(vif->dev,
-> +					   " host_addr: %llx handle: %x status: %d\n",
-> +					   gop[i].host_addr,
-> +					   gop[i].handle,
-> +					   gop[i].status);
-> +			}
-> +			BUG();
-> +		}
-> +	}
-> +
-> +	for (i = 0; i < gop - vif->tx_unmap_ops; ++i)
-> +		xenvif_idx_release(vif, pending_idx_release[i],
-> +				   XEN_NETIF_RSP_OKAY);
-> +}
-> +
-> +
->  /* Called after netfront has transmitted */
->  int xenvif_tx_action(struct xenvif *vif, int budget)
->  {
-> @@ -1678,6 +1793,25 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
->  	vif->mmap_pages[pending_idx] = NULL;
->  }
->  
-> +void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
-
-This is a single shot version of the batched xenvif_tx_dealloc_action
-version? Why not just enqueue the idx to be unmapped later?
+Minor nit: return value of any is_* function is either true or false, so why not
+declare it bool?
 
 > +{
-> +	int ret;
-> +	struct gnttab_unmap_grant_ref tx_unmap_op;
-> +
-> +	if (vif->grant_tx_handle[pending_idx] == NETBACK_INVALID_HANDLE) {
-> +		netdev_err(vif->dev,
-> +			   "Trying to unmap invalid handle! pending_idx: %x\n",
-> +			   pending_idx);
-> +		BUG();
-> +	}
-> +	gnttab_set_unmap_op(&tx_unmap_op,
-> +			    idx_to_kaddr(vif, pending_idx),
-> +			    GNTMAP_host_map,
-> +			    vif->grant_tx_handle[pending_idx]);
-> +	ret = gnttab_unmap_refs(&tx_unmap_op, &vif->mmap_pages[pending_idx], 1);
-> +	BUG_ON(ret);
-> +	vif->grant_tx_handle[pending_idx] = NETBACK_INVALID_HANDLE;
-> +}
->  
->  static void make_tx_response(struct xenvif *vif,
->  			     struct xen_netif_tx_request *txp,
-> @@ -1740,6 +1874,11 @@ static inline int tx_work_todo(struct xenvif *vif)
->  	return 0;
->  }
->  
-> +static inline bool tx_dealloc_work_todo(struct xenvif *vif)
-> +{
-> +	return vif->dealloc_cons != vif->dealloc_prod
-> +}
-> +
->  void xenvif_unmap_frontend_rings(struct xenvif *vif)
->  {
->  	if (vif->tx.sring)
-> @@ -1826,6 +1965,28 @@ int xenvif_kthread(void *data)
->  	return 0;
->  }
->  
-> +int xenvif_dealloc_kthread(void *data)
+> +	struct mnt_namespace *ns = current->nsproxy->mnt_ns;
+> +	struct mount *mnt;
+> +	int is_covered = 0;
 
-Is this going to be a thread per vif?
+And the same for this var.
 
-> +{
-> +	struct xenvif *vif = data;
 > +
-> +	while (!kthread_should_stop()) {
-> +		wait_event_interruptible(vif->dealloc_wq,
-> +					 tx_dealloc_work_todo(vif) ||
-> +					 kthread_should_stop());
-> +		if (kthread_should_stop())
+> +	if (!d_mountpoint(dentry))
+> +		goto out;
+> +
+> +	down_read(&namespace_sem);
+> +	list_for_each_entry(mnt, &ns->list, mnt_list) {
+> +		is_covered = (mnt->mnt_mountpoint == dentry);
+> +		if (is_covered)
 > +			break;
-> +
-> +		xenvif_tx_dealloc_action(vif);
-> +		cond_resched();
 > +	}
-> +
-> +	/* Unmap anything remaining*/
-> +	if (tx_dealloc_work_todo(vif))
-> +		xenvif_tx_dealloc_action(vif);
-> +
-> +	return 0;
+> +	up_read(&namespace_sem);
+> +out:
+> +	return is_covered;
 > +}
 > +
->  static int __init netback_init(void)
+>  static struct mountpoint *new_mountpoint(struct dentry *dentry)
 >  {
->  	int rc = 0;
-
-
+>  	struct list_head *chain = mountpoint_hashtable + hash(NULL, dentry);
+> -- 
+> 1.7.5.4
+> 
