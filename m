@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaBRKKc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:10:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7873 "EHLO mx1.redhat.com"
+	id S1755239AbaBRKKu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:10:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35875 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754743AbaBRKK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:10:27 -0500
+	id S1755196AbaBRKKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:10:48 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH net-next 14/35] igb: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 18 Feb 2014 11:11:43 +0100
-Message-Id: <cc1ca90a844e469ebb5c4460af540a121f5cf678.1392717503.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, Jon Mason <jdmason@kudzu.us>,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH net-next 21/35] s2io: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 11:11:50 +0100
+Message-Id: <0ec6a4ab2cfbebdfaa3eca063bc21e4d87161a6c.1392717503.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
 References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,35 +26,30 @@ new pci_enable_msi_range() and pci_enable_msix_range()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Cc: e1000-devel@lists.sourceforge.net
+Cc: Jon Mason <jdmason@kudzu.us>
 Cc: netdev@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/neterion/s2io.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 46d31a4..84dfa3f 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -1111,10 +1111,11 @@ static void igb_set_interrupt_capability(struct igb_adapter *adapter, bool msix)
- 	for (i = 0; i < numvecs; i++)
- 		adapter->msix_entries[i].entry = i;
+diff --git a/drivers/net/ethernet/neterion/s2io.c b/drivers/net/ethernet/neterion/s2io.c
+index 9eeddbd..56e3a9d 100644
+--- a/drivers/net/ethernet/neterion/s2io.c
++++ b/drivers/net/ethernet/neterion/s2io.c
+@@ -3792,9 +3792,10 @@ static int s2io_enable_msi_x(struct s2io_nic *nic)
+ 	writeq(rx_mat, &bar0->rx_mat);
+ 	readq(&bar0->rx_mat);
  
--	err = pci_enable_msix(adapter->pdev,
--			      adapter->msix_entries,
--			      numvecs);
--	if (err == 0)
-+	err = pci_enable_msix_range(adapter->pdev,
-+				    adapter->msix_entries,
-+				    numvecs,
-+				    numvecs);
-+	if (err > 0)
- 		return;
- 
- 	igb_reset_interrupt_capability(adapter);
+-	ret = pci_enable_msix(nic->pdev, nic->entries, nic->num_entries);
++	ret = pci_enable_msix_range(nic->pdev, nic->entries,
++				    nic->num_entries, nic->num_entries);
+ 	/* We fail init if error or we get less vectors than min required */
+-	if (ret) {
++	if (ret < 0) {
+ 		DBG_PRINT(ERR_DBG, "Enabling MSI-X failed\n");
+ 		kfree(nic->entries);
+ 		swstats->mem_freed += nic->num_entries *
 -- 
 1.7.7.6
 
