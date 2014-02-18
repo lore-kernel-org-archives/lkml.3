@@ -1,213 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779AbaBRO4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:56:33 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:56331 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191AbaBRO4a (ORCPT
+	id S1756373AbaBRPLu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:11:50 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60684 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756297AbaBRPLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:56:30 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, DCG_UPD_stlinux_kernel@list.st.com,
-        dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        computersforpeace@gmail.com, Angus.Clark@st.com
-Subject: [PATCH 01/35] mtd: st_spi_fsm: Allocate resources and register with MTD framework
-Date: Tue, 18 Feb 2014 14:55:28 +0000
-Message-Id: <1392735362-1245-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
-References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
+	Tue, 18 Feb 2014 10:11:48 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ACPI, PCI, ISA: Fix memory leak when there is no IRQ in the ACPI subsystem.
+Date: Tue, 18 Feb 2014 16:26:37 +0100
+Message-ID: <1444429.LQSjxavlaG@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53033433.7080002@linaro.org>
+References: <1392037211-29349-1-git-send-email-tomasz.nowicki@linaro.org> <87065822.vfIc9IskHH@vostro.rjw.lan> <53033433.7080002@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a new driver. It's used to communicate with a special type of
-optimised Serial Flash Controller called the FSM. The FSM uses a subset
-of the SPI protocol to communicate with supported NOR-Flash devices.
+On Tuesday, February 18, 2014 11:21:39 AM Tomasz Nowicki wrote:
+> On 18.02.2014 02:02, Rafael J. Wysocki wrote:
+> > On Monday, February 10, 2014 02:00:11 PM Tomasz Nowicki wrote:
+> >> Whenever we register ISA interrupt or not, we need to free the IRQ routing
+> >> table entry.
+> >>
+> >> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> >> ---
+> >>   drivers/acpi/pci_irq.c |    1 +
+> >>   1 file changed, 1 insertion(+)
+> >>
+> >> diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+> >> index b0e31b6..6ec0f36 100644
+> >> --- a/drivers/acpi/pci_irq.c
+> >> +++ b/drivers/acpi/pci_irq.c
+> >> @@ -432,6 +432,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+> >>   #endif
+> >>   		dev_warn(&dev->dev, "PCI INT %c: no GSI\n", pin_name(pin));
+> >>
+> >> +		kfree(entry);
+> >
+> > If I'm not mistaken, entry is always NULL here, isn't it?
+>
+> acpi_pci_link_allocate_irq() can return negative gsi even if entry != 
+> NULL. For that case we'd have memory leak.
 
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/Kconfig      |   8 ++++
- drivers/mtd/devices/Makefile     |   1 +
- drivers/mtd/devices/st_spi_fsm.c | 101 +++++++++++++++++++++++++++++++++++++++
- drivers/mtd/devices/st_spi_fsm.h |  27 +++++++++++
- 4 files changed, 137 insertions(+)
- create mode 100644 drivers/mtd/devices/st_spi_fsm.c
- create mode 100644 drivers/mtd/devices/st_spi_fsm.h
+And that's what your changelog should be saying, isn't it?
 
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 74ab4b7..0cf48ac 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -217,6 +217,14 @@ config MTD_DOCG3
- 	  M-Systems and now Sandisk. The support is very experimental,
- 	  and doesn't give access to any write operations.
- 
-+config MTD_ST_SPI_FSM
-+	tristate "ST Microelectronics SPI FSM Serial Flash Controller"
-+	depends on ARM || SH
-+	help
-+	  This provides an MTD device driver for the ST Microelectronics
-+	  SPI FSM Serial Flash Controller and support for a subset of
-+	  connected Serial Flash devices.
-+
- if MTD_DOCG3
- config BCH_CONST_M
- 	default 14
-diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
-index d83bd73..c68868f 100644
---- a/drivers/mtd/devices/Makefile
-+++ b/drivers/mtd/devices/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
- obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
- obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
- obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
-+obj-$(CONFIG_MTD_ST_SPI_FSM)    += st_spi_fsm.o
- 
- 
- CFLAGS_docg3.o			+= -I$(src)
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-new file mode 100644
-index 0000000..2f4ebb4
---- /dev/null
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -0,0 +1,101 @@
-+/*
-+ * st_spi_fsm.c	Support for ST Serial Flash Controller
-+ *
-+ * Author: Angus Clark <angus.clark@st.com>
-+ *
-+ * Copyright (C) 2010-2013 STicroelectronics Limited
-+ *
-+ * JEDEC probe based on drivers/mtd/devices/m25p80.c
-+ *
-+ * This code is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/sched.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+
-+#include "st_spi_fsm.h"
-+
-+static int stfsm_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct resource *res;
-+	struct stfsm *fsm;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "No DT found\n");
-+		return -EINVAL;
-+	}
-+
-+	fsm = devm_kzalloc(&pdev->dev, sizeof(*fsm), GFP_KERNEL);
-+	if (!fsm)
-+		return -ENOMEM;
-+
-+	fsm->dev = &pdev->dev;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Resource not found\n");
-+		return -ENODEV;
-+	}
-+
-+	fsm->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(fsm->base)) {
-+		dev_err(&pdev->dev,
-+			"Failed to reserve memory region [0x%08x-0x%08x]\n",
-+			res->start, res->end);
-+		return PTR_ERR(fsm->base);
-+	}
-+
-+	mutex_init(&fsm->lock);
-+
-+	platform_set_drvdata(pdev, fsm);
-+
-+	fsm->mtd.dev.parent	= &pdev->dev;
-+	fsm->mtd.type		= MTD_NORFLASH;
-+	fsm->mtd.writesize	= 4;
-+	fsm->mtd.writebufsize	= fsm->mtd.writesize;
-+	fsm->mtd.flags		= MTD_CAP_NORFLASH;
-+
-+	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
-+}
-+
-+static int stfsm_remove(struct platform_device *pdev)
-+{
-+	struct stfsm *fsm = platform_get_drvdata(pdev);
-+	int err;
-+
-+	err = mtd_device_unregister(&fsm->mtd);
-+	if (err)
-+		return err;
-+
-+	return 0;
-+}
-+
-+static struct of_device_id stfsm_match[] = {
-+	{ .compatible = "st,spi-fsm", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, stfsm_match);
-+
-+static struct platform_driver stfsm_driver = {
-+	.probe		= stfsm_probe,
-+	.remove		= stfsm_remove,
-+	.driver		= {
-+		.name	= "st-spi-fsm",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = stfsm_match,
-+	},
-+};
-+module_platform_driver(stfsm_driver);
-+
-+MODULE_AUTHOR("Angus Clark <angus.clark@st.com>");
-+MODULE_DESCRIPTION("ST SPI FSM driver");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
-new file mode 100644
-index 0000000..df45e1a
---- /dev/null
-+++ b/drivers/mtd/devices/st_spi_fsm.h
-@@ -0,0 +1,27 @@
-+/*
-+ * st_spi_fsm.c	Support for ST Serial Flash Controller
-+ *
-+ * Author: Angus Clark <angus.clark@st.com>
-+ *
-+ * Copyright (C) 2010-2013 STicroelectronics Limited
-+ *
-+ * JEDEC probe based on drivers/mtd/devices/m25p80.c
-+ *
-+ * This code is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef ST_SPI_FSM_H
-+#define ST_SPI_FSM_H
-+
-+struct stfsm {
-+	struct device		*dev;
-+	void __iomem		*base;
-+	struct resource		*region;
-+	struct mtd_info		mtd;
-+	struct mutex		lock;
-+};
-+
-+#endif	/* ST_SPI_FSM_H */
+Queued up for 3.14 and marked for -stable.  I had to rebase it, though, so
+please check the result in linux-pm.git/linux-next.
+
+Thanks!
+
 -- 
-1.8.3.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
