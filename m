@@ -1,117 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaBRSXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:23:50 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:64117 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaBRSXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:23:47 -0500
-MIME-Version: 1.0
-Reply-To: Peter.Sewell@cl.cam.ac.uk
-In-Reply-To: <20140218171609.GP4250@linux.vnet.ibm.com>
-References: <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	<1392486310.18779.6447.camel@triegel.csb>
-	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	<1392666947.18779.6838.camel@triegel.csb>
-	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	<530296CD.5050503@warwick.ac.uk>
-	<CA+55aFyi8QWge7QR0M+ABH-kEiwvoEyMhK6GWRvN1YNKJAFuSQ@mail.gmail.com>
-	<1392737465.18779.7644.camel@triegel.csb>
-	<CA+55aFxn2KRXDQ91xRs=bO_6d_nA_PSQvoY1_=OxyJ86+KOO9Q@mail.gmail.com>
-	<20140218171609.GP4250@linux.vnet.ibm.com>
-Date: Tue, 18 Feb 2014 18:23:47 +0000
-X-Google-Sender-Auth: LqQIdTBIf5Zw-rmIuan76T06yIw
-Message-ID: <CAHWkzRSXxAPShfFTAQj=f5M1L4K1E5D6yLmQS72-b1jNGTPpEA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Torvald Riegel <triegel@redhat.com>, Alec Teal <a.teal@warwick.ac.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752002AbaBRSXf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:23:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41056 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575AbaBRSWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 13:22:54 -0500
+From: Thomas Renninger <trenn@suse.de>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, x86@kernel.org,
+        devel@acpica.org, mingo@redhat.com, ck@conrad-kostecki.de,
+        tglx@linutronix.de, trenn@suse.de, rjw@rjwysocki.net
+Subject: [PATCH 2/4] ACPICA: Introduce new acpi_os_physical_table_add OS callback
+Date: Tue, 18 Feb 2014 19:22:41 +0100
+Message-Id: <1392747763-3384-3-git-send-email-trenn@suse.de>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1392747763-3384-1-git-send-email-trenn@suse.de>
+References: <530265A3.3020302@zytor.com>
+ <1392747763-3384-1-git-send-email-trenn@suse.de>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 February 2014 17:16, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, Feb 18, 2014 at 08:49:13AM -0800, Linus Torvalds wrote:
->> On Tue, Feb 18, 2014 at 7:31 AM, Torvald Riegel <triegel@redhat.com> wrote:
->> > On Mon, 2014-02-17 at 16:05 -0800, Linus Torvalds wrote:
->> >> And exactly because I know enough, I would *really* like atomics to be
->> >> well-defined, and have very clear - and *local* - rules about how they
->> >> can be combined and optimized.
->> >
->> > "Local"?
->>
->> Yes.
->>
->> So I think that one of the big advantages of atomics over volatile is
->> that they *can* be optimized, and as such I'm not at all against
->> trying to generate much better code than for volatile accesses.
->>
->> But at the same time, that can go too far. For example, one of the
->> things we'd want to use atomics for is page table accesses, where it
->> is very important that we don't generate multiple accesses to the
->> values, because parts of the values can be change *by*hardware* (ie
->> accessed and dirty bits).
->>
->> So imagine that you have some clever global optimizer that sees that
->> the program never ever actually sets the dirty bit at all in any
->> thread, and then uses that kind of non-local knowledge to make
->> optimization decisions. THAT WOULD BE BAD.
->
-> Might as well list other reasons why value proofs via whole-program
-> analysis are unreliable for the Linux kernel:
->
-> 1.      As Linus said, changes from hardware.
->
-> 2.      Assembly code that is not visible to the compiler.
->         Inline asms will -normally- let the compiler know what
->         memory they change, but some just use the "memory" tag.
->         Worse yet, I suspect that most compilers don't look all
->         that carefully at .S files.
->
->         Any number of other programs contain assembly files.
->
-> 3.      Kernel modules that have not yet been written.  Now, the
->         compiler could refrain from trying to prove anything about
->         an EXPORT_SYMBOL() or EXPORT_SYMBOL_GPL() variable, but there
->         is currently no way to communicate this information to the
->         compiler other than marking the variable "volatile".
->
->         Other programs have similar issues, e.g., via dlopen().
->
-> 4.      Some drivers allow user-mode code to mmap() some of their
->         state.  Any changes undertaken by the user-mode code would
->         be invisible to the compiler.
->
-> 5.      JITed code produced based on BPF: https://lwn.net/Articles/437981/
->
-> And probably other stuff as well.
+This one allows OS to add arbitrary ACPI tables.
 
-interesting list.  So are you saying that value-range-analysis and
-such-like (I say glibly, without really knowing what "such-like"
-refers to here) are fundamentally incompatible with
-the kernel code, or can you think of some way to tell the compiler a
-bound on the footprint of the "unseen" changes in each of those cases?
+ToDo: It should get checked whether a table with the same signature already
+exists and if this is the case, adding should not happen.
 
-Peter
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: hpa@zytor.com
+CC: tglx@linutronix.de
+CC: ck@conrad-kostecki.de
+CC: linux-kernel@vger.kernel.org
+CC: x86@kernel.org
+CC: mingo@redhat.com
+CC: rjw@rjwysocki.net
+CC: devel@acpica.org
+---
+ drivers/acpi/acpica/tbutils.c |   24 ++++++++++++++++++++++++
+ include/acpi/acpiosxf.h       |    6 ++++++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
+index 6412d3c..c763816 100644
+--- a/drivers/acpi/acpica/tbutils.c
++++ b/drivers/acpi/acpica/tbutils.c
+@@ -453,6 +453,8 @@ static acpi_status acpi_tb_validate_xsdt(acpi_physical_address xsdt_address)
+  *
+  ******************************************************************************/
+ 
++#define ACPI_MAX_TABLE_ADD 64
++
+ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+ {
+ 	struct acpi_table_rsdp *rsdp;
+@@ -623,5 +625,27 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+ 		}
+ 	}
+ 
++	/*
++	 * ACPI Table Add:
++	 * Allow the OS to add additional tables to the global root table list
++	 */
++	for (i = 0; i < ACPI_MAX_TABLE_ADD; i++) {
++		int tmp;
++		table_entry_size = 0;
++		address = 0;
++		status = acpi_os_physical_table_add(&address,
++						    &table_entry_size);
++		if (status == AE_OK && table_entry_size && address) {
++			table = acpi_os_map_memory(address, table_entry_size);
++			ACPI_INFO((AE_INFO, "Add OS provided table:"));
++			acpi_tb_print_table_header(address, table);
++			status = acpi_tb_store_table(address,
++						     table,
++						     table_entry_size,
++						     ACPI_TABLE_ORIGIN_MAPPED,
++						     &tmp);
++		} else
++			break;
++	}
+ 	return_ACPI_STATUS(AE_OK);
+ }
+diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
+index 01e6c6d..70c00ed 100644
+--- a/include/acpi/acpiosxf.h
++++ b/include/acpi/acpiosxf.h
+@@ -111,6 +111,12 @@ acpi_os_physical_table_override(struct acpi_table_header *existing_table,
+ 				u32 *new_table_length);
+ #endif
+ 
++#ifndef ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_physical_table_add
++acpi_status
++acpi_os_physical_table_add(acpi_physical_address * new_address,
++			   u32 *new_table_length);
++#endif
++
+ /*
+  * Spinlock primitives
+  */
+-- 
+1.7.6.1
 
->                                                         Thanx, Paul
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
