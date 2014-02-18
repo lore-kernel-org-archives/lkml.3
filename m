@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111AbaBROaB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:30:01 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2070 "EHLO mga02.intel.com"
+	id S1756124AbaBROaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:30:21 -0500
+Received: from imap.thunk.org ([74.207.234.97]:59535 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755985AbaBRO3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:29:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="457420256"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 01/20] x86, lto: Disable LTO for the x86 VDSO
-Date: Tue, 18 Feb 2014 15:28:39 +0100
-Message-Id: <1392733738-8290-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
-References: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
+	id S1755505AbaBROaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 09:30:17 -0500
+Date: Tue, 18 Feb 2014 09:30:05 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH RESEND 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE
+ for fallocate
+Message-ID: <20140218143005.GO26580@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Namjae Jeon <linkinjeon@gmail.com>,
+	=?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+	viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com,
+	adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Namjae Jeon <namjae.jeon@samsung.com>,
+	Ashish Sangwan <a.sangwan@samsung.com>
+References: <1391319874-3203-1-git-send-email-linkinjeon@gmail.com>
+ <alpine.LFD.2.00.1402111209450.2225@localhost.localdomain>
+ <CAKYAXd-bD6ZZgpc9E8V1kD9Dj2wrCkbi1i6drNBdUAwsMiv5gg@mail.gmail.com>
+ <alpine.LFD.2.00.1402181001530.2216@localhost.localdomain>
+ <CAKYAXd_xpWg-=T_1PghL_u9wDKTX_Ey5mJxbgVVKth8NoexQQg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd_xpWg-=T_1PghL_u9wDKTX_Ey5mJxbgVVKth8NoexQQg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Namjae,
 
-The VDSO does not play well with LTO, so just disable LTO for it.
-Also pass a 32bit linker flag for the 32bit version.
+Did you respond to Matthew Wilcox's comments/question from Feb. 2nd?
 
-Cc: x86@kernel.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/vdso/Makefile | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+> > What if the file is mmaped at the time somebody issues this command?
+> > Seems to me we should drop pagecache pages that overlap with the
+> > removed blocks.  If the removed range is not a multiple of PAGE_SIZE,
+> > then we should also drop any pagecache pages after the removed range.
+>
+> Oops, forgot to add "and if it is a multiple of page size, then we need
+> to update the offsets of any pages after the removed page".
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index fd14be1..db0626c 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -2,6 +2,8 @@
- # Building vDSO images for x86.
- #
- 
-+KBUILD_CFLAGS += $(DISABLE_LTO)
-+
- VDSO64-$(CONFIG_X86_64)		:= y
- VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
- VDSO32-$(CONFIG_X86_32)		:= y
-@@ -35,7 +37,8 @@ export CPPFLAGS_vdso.lds += -P -C
- 
- VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
- 			-Wl,--no-undefined \
--		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
-+			-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096 \
-+			$(DISABLE_LTO)
- 
- $(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
- 
-@@ -127,7 +130,7 @@ vdso32.so-$(VDSO32-y)		+= sysenter
- vdso32-images			= $(vdso32.so-y:%=vdso32-%.so)
- 
- CPPFLAGS_vdso32.lds = $(CPPFLAGS_vdso.lds)
--VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-soname=linux-gate.so.1
-+VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-m,elf_i386 -Wl,-soname=linux-gate.so.1
- 
- # This makes sure the $(obj) subdirectory exists even though vdso32/
- # is not a kbuild sub-make subdirectory.
-@@ -181,7 +184,8 @@ quiet_cmd_vdso = VDSO    $@
- 		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) && \
- 		 sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
- 
--VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
-+VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
-+		${LTO_CFLAGS}
- GCOV_PROFILE := n
- 
- #
--- 
-1.8.5.2
+Dave responded that XFS does the right thing when doing a punch hole
+operation, but it wasn't obvious to me whether FL_COLLAPSE_RANGE does
+the right thing with ext4.
 
+Thanks,
+
+					- Ted
