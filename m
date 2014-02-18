@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaBRTcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:32:36 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:54542 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202AbaBRTcQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:32:16 -0500
-Message-ID: <5303B516.3080409@hp.com>
-Date: Tue, 18 Feb 2014 14:31:34 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v4 1/3] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <1392669684-4807-2-git-send-email-Waiman.Long@hp.com> <20140218073326.GX27965@twins.programming.kicks-ass.net>
-In-Reply-To: <20140218073326.GX27965@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752461AbaBRTcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:32:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:32219 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752434AbaBRTaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:30:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
+   d="scan'208";a="485371178"
+Subject: [RFC][PATCH 1/6] x86: mm: clean up tlb flushing code
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, ak@linux.intel.com, alex.shi@linaro.org,
+        kirill.shutemov@linux.intel.com, mgorman@suse.de,
+        tim.c.chen@linux.intel.com, x86@kernel.org, peterz@infradead.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 18 Feb 2014 11:30:09 -0800
+References: <20140218193008.CA410E17@viggo.jf.intel.com>
+In-Reply-To: <20140218193008.CA410E17@viggo.jf.intel.com>
+Message-Id: <20140218193009.14C1765F@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 02:33 AM, Peter Zijlstra wrote:
-> On Mon, Feb 17, 2014 at 03:41:22PM -0500, Waiman Long wrote:
->> +#define	_QCODE(lock)	(atomic_read(&(lock)->qlcode)>>  _QCODE_OFFSET)
->> +#define	_QLOCK(lock)	(atomic_read(&(lock)->qlcode)&  _QSPINLOCK_LOCKED)
->> +#define GET_QN_IDX(code)	(((code)>>  _QCODE_VAL_OFFSET)&  3)
->> +#define GET_CPU_NR(code)	(((code)>>  (_QCODE_VAL_OFFSET + 2)) - 1)
->> +#ifndef _SET_QCODE
->> +#define _SET_QCODE(cpu, idx)	((((cpu) + 1)<<  (_QCODE_VAL_OFFSET + 2)) |\
->> +				((idx)<<  _QCODE_VAL_OFFSET) |\
->
-> Someone please take the CPP away.. dude most this doesn't need to be a
-> macro. Its used only in 1 or two places and its utterly unreadable.
 
-Yes, I can take them away. It is not a big problem.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
--Longman
+The
+
+	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+
+line of code is not exactly the easiest to audit, especially when
+it ends up at two different indentation levels.  This eliminates
+one of the the copy-n-paste versions.  It also gives us a unified
+exit point for each path through this function.  We need this in
+a minute for our tracepoint.
+
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+
+ b/arch/x86/mm/tlb.c |   23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
+
+diff -puN arch/x86/mm/tlb.c~simplify-tlb-code arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~simplify-tlb-code	2014-02-18 10:59:35.521325070 -0800
++++ b/arch/x86/mm/tlb.c	2014-02-18 10:59:35.529325436 -0800
+@@ -161,23 +161,24 @@ void flush_tlb_current_task(void)
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+ {
++	int need_flush_others_all = 1;
+ 	unsigned long addr;
+ 	unsigned act_entries, tlb_entries = 0;
+ 	unsigned long nr_base_pages;
+ 
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+-		goto flush_all;
++		goto out;
+ 
+ 	if (!current->mm) {
+ 		leave_mm(smp_processor_id());
+-		goto flush_all;
++		goto out;
+ 	}
+ 
+ 	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
+ 					|| vmflag & VM_HUGETLB) {
+ 		local_flush_tlb();
+-		goto flush_all;
++		goto out;
+ 	}
+ 
+ 	/* In modern CPU, last level tlb used for both data/ins */
+@@ -196,22 +197,20 @@ void flush_tlb_mm_range(struct mm_struct
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
++		need_flush_others_all = 0;
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+ 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+ 			__flush_tlb_single(addr);
+ 		}
+-
+-		if (cpumask_any_but(mm_cpumask(mm),
+-				smp_processor_id()) < nr_cpu_ids)
+-			flush_tlb_others(mm_cpumask(mm), mm, start, end);
+-		preempt_enable();
+-		return;
+ 	}
+-
+-flush_all:
++out:
++	if (need_flush_others_all) {
++		start = 0UL;
++		end = TLB_FLUSH_ALL;
++	}
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+-		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
++		flush_tlb_others(mm_cpumask(mm), mm, start, end);
+ 	preempt_enable();
+ }
+ 
+_
