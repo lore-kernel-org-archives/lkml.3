@@ -1,65 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaBRMmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 07:42:37 -0500
-Received: from mga14.intel.com ([143.182.124.37]:20805 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754527AbaBRMmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 07:42:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,501,1389772800"; 
-   d="scan'208";a="477011333"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v1 07/11] x86: perf: intel_pt: Intel PT PMU driver
-In-Reply-To: <20140217144617.GT27965@twins.programming.kicks-ass.net>
-References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com> <1391683834-29868-8-git-send-email-alexander.shishkin@linux.intel.com> <20140217144617.GT27965@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Tue, 18 Feb 2014 14:42:23 +0200
-Message-ID: <874n3wk2xb.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755179AbaBRMof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 07:44:35 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:51210 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855AbaBRMoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 07:44:34 -0500
+Message-ID: <1392727469.13262.4.camel@phoenix>
+Subject: [RFT][PATCH] regulator: tps65218: Convert to use
+ regulator_set_voltage_time_sel
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Keerthy <j-keerthy@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 18 Feb 2014 20:44:29 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Use regulator_set_voltage_time_sel() instead of open-coded.
 
-> On Thu, Feb 06, 2014 at 12:50:30PM +0200, Alexander Shishkin wrote:
->> Add support for Intel Processor Trace (PT) to kernel's perf/itrace events.
->> PT is an extension of Intel Architecture that collects information about
->> software execuction such as control flow, execution modes and timings and
->> formats it into highly compressed binary packets. Even being compressed,
->> these packets are generated at hundreds of megabytes per second per core,
->> which makes it impractical to decode them on the fly in the kernel. Thus,
->> buffers containing this binary stream are zero-copy mapped to the debug
->> tools in userspace for subsequent decoding and analysis.
->> 
->> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
->> ---
->>  arch/x86/include/uapi/asm/msr-index.h     |  18 +
->>  arch/x86/kernel/cpu/Makefile              |   1 +
->>  arch/x86/kernel/cpu/intel_pt.h            | 127 ++++
->>  arch/x86/kernel/cpu/perf_event.c          |   4 +
->>  arch/x86/kernel/cpu/perf_event_intel.c    |  10 +
->>  arch/x86/kernel/cpu/perf_event_intel_pt.c | 991 ++++++++++++++++++++++++++++++
->>  6 files changed, 1151 insertions(+)
->>  create mode 100644 arch/x86/kernel/cpu/intel_pt.h
->>  create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
->
-> Andi said that when itrace is enabled the LBR is wrecked; this patch
-> seems to fail to deal with that.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/tps65218-regulator.c | 37 +++++++++-------------------------
+ 1 file changed, 10 insertions(+), 27 deletions(-)
 
-True, there needs to be a _safe() msr access before any configuration is
-done, I have a fix for that, but let's first deal with the buffer
-management.
+diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
+index cec72fa..69b4b77 100644
+--- a/drivers/regulator/tps65218-regulator.c
++++ b/drivers/regulator/tps65218-regulator.c
+@@ -27,12 +27,10 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/mfd/tps65218.h>
+ 
+-static unsigned int tps65218_ramp_delay = 4000;
+-
+ enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
+ 
+ #define TPS65218_REGULATOR(_name, _id, _ops, _n, _vr, _vm, _er, _em, _t, \
+-			    _lr, _nlr)				\
++			    _lr, _nlr, _delay)			\
+ 	{							\
+ 		.name			= _name,		\
+ 		.id			= _id,			\
+@@ -47,6 +45,7 @@ enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
+ 		.volt_table		= _t,			\
+ 		.linear_ranges		= _lr,			\
+ 		.n_linear_ranges	= _nlr,			\
++		.ramp_delay		= _delay,		\
+ 	}							\
+ 
+ #define TPS65218_INFO(_id, _nm, _min, _max)	\
+@@ -152,22 +151,6 @@ static int tps65218_pmic_disable(struct regulator_dev *dev)
+ 				   dev->desc->enable_mask, TPS65218_PROTECT_L1);
+ }
+ 
+-static int tps65218_set_voltage_time_sel(struct regulator_dev *rdev,
+-	unsigned int old_selector, unsigned int new_selector)
+-{
+-	int old_uv, new_uv;
+-
+-	old_uv = regulator_list_voltage_linear_range(rdev, old_selector);
+-	if (old_uv < 0)
+-		return old_uv;
+-
+-	new_uv = regulator_list_voltage_linear_range(rdev, new_selector);
+-	if (new_uv < 0)
+-		return new_uv;
+-
+-	return DIV_ROUND_UP(abs(old_uv - new_uv), tps65218_ramp_delay);
+-}
+-
+ /* Operations permitted on DCDC1, DCDC2 */
+ static struct regulator_ops tps65218_dcdc12_ops = {
+ 	.is_enabled		= regulator_is_enabled_regmap,
+@@ -177,7 +160,7 @@ static struct regulator_ops tps65218_dcdc12_ops = {
+ 	.set_voltage_sel	= tps65218_pmic_set_voltage_sel,
+ 	.list_voltage		= regulator_list_voltage_linear_range,
+ 	.map_voltage		= regulator_map_voltage_linear_range,
+-	.set_voltage_time_sel	= tps65218_set_voltage_time_sel,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+ };
+ 
+ /* Operations permitted on DCDC3, DCDC4 and LDO1 */
+@@ -203,33 +186,33 @@ static const struct regulator_desc regulators[] = {
+ 			   TPS65218_REG_CONTROL_DCDC1,
+ 			   TPS65218_CONTROL_DCDC1_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC1_EN, NULL,
+-			   dcdc1_dcdc2_ranges, 2),
++			   dcdc1_dcdc2_ranges, 2, 4000),
+ 	TPS65218_REGULATOR("DCDC2", TPS65218_DCDC_2, tps65218_dcdc12_ops, 64,
+ 			   TPS65218_REG_CONTROL_DCDC2,
+ 			   TPS65218_CONTROL_DCDC2_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC2_EN, NULL,
+-			   dcdc1_dcdc2_ranges, 2),
++			   dcdc1_dcdc2_ranges, 2, 4000),
+ 	TPS65218_REGULATOR("DCDC3", TPS65218_DCDC_3, tps65218_ldo1_dcdc34_ops,
+ 			   64, TPS65218_REG_CONTROL_DCDC3,
+ 			   TPS65218_CONTROL_DCDC3_MASK, TPS65218_REG_ENABLE1,
+ 			   TPS65218_ENABLE1_DC3_EN, NULL,
+-			   ldo1_dcdc3_ranges, 2),
++			   ldo1_dcdc3_ranges, 2, 0),
+ 	TPS65218_REGULATOR("DCDC4", TPS65218_DCDC_4, tps65218_ldo1_dcdc34_ops,
+ 			   53, TPS65218_REG_CONTROL_DCDC4,
+ 			   TPS65218_CONTROL_DCDC4_MASK,
+ 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC4_EN, NULL,
+-			   dcdc4_ranges, 2),
++			   dcdc4_ranges, 2, 0),
+ 	TPS65218_REGULATOR("DCDC5", TPS65218_DCDC_5, tps65218_dcdc56_pmic_ops,
+ 			   1, -1, -1, TPS65218_REG_ENABLE1,
+-			   TPS65218_ENABLE1_DC5_EN, NULL, NULL, 0),
++			   TPS65218_ENABLE1_DC5_EN, NULL, NULL, 0, 0),
+ 	TPS65218_REGULATOR("DCDC6", TPS65218_DCDC_6, tps65218_dcdc56_pmic_ops,
+ 			   1, -1, -1, TPS65218_REG_ENABLE1,
+-			   TPS65218_ENABLE1_DC6_EN, NULL, NULL, 0),
++			   TPS65218_ENABLE1_DC6_EN, NULL, NULL, 0, 0),
+ 	TPS65218_REGULATOR("LDO1", TPS65218_LDO_1, tps65218_ldo1_dcdc34_ops, 64,
+ 			   TPS65218_REG_CONTROL_DCDC4,
+ 			   TPS65218_CONTROL_LDO1_MASK, TPS65218_REG_ENABLE2,
+ 			   TPS65218_ENABLE2_LDO1_EN, NULL, ldo1_dcdc3_ranges,
+-			   2),
++			   2, 0),
+ };
+ 
+ static int tps65218_regulator_probe(struct platform_device *pdev)
+-- 
+1.8.1.2
 
-Regards,
---
-Alex
+
+
