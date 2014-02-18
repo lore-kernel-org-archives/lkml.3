@@ -1,56 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693AbaBRVeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:34:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36534 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaBRVeV (ORCPT
+	id S1751698AbaBRVfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:35:45 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47704 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaBRVfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:34:21 -0500
-Date: Tue, 18 Feb 2014 22:34:00 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v4 1/3] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-Message-ID: <20140218213400.GS14089@laptop.programming.kicks-ass.net>
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
- <1392669684-4807-2-git-send-email-Waiman.Long@hp.com>
- <20140218073951.GZ27965@twins.programming.kicks-ass.net>
- <5303B6F3.9090001@hp.com>
+	Tue, 18 Feb 2014 16:35:44 -0500
+Date: Tue, 18 Feb 2014 13:35:36 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 35/55] rcutorture: Fix rcutorture shutdown
+ races
+Message-ID: <20140218213536.GZ4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140217221231.GA8419@linux.vnet.ibm.com>
+ <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392675179-11560-35-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140218003259.GH19929@thin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5303B6F3.9090001@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140218003259.GH19929@thin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021821-1542-0000-0000-0000065E1F53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 02:39:31PM -0500, Waiman Long wrote:
-> The #ifdef is harder to take away here. The point is that doing a 32-bit
-> exchange may accidentally steal the lock with the additional code to handle
-> that. Doing a 16-bit exchange, on the other hand, will never steal the lock
-> and so don't need the extra handling code. I could construct a function with
-> different return values to handle the different cases if you think it will
-> make the code easier to read.
+On Mon, Feb 17, 2014 at 04:32:59PM -0800, Josh Triplett wrote:
+> On Mon, Feb 17, 2014 at 02:12:39PM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > Not all of the rcutorture kthreads waited for kthread_should_stop()
+> > before returning from their top-level functions, and none of them
+> > used torture_shutdown_absorb() properly.  These problems can result in
+> > segfaults and hangs at shutdown time, and some recent changes perturbed
+> > timing sufficiently to make them much more probable.  This commit
+> > therefore creates a torture_kthread_stopping() function that does the
+> > proper kthread shutdown dance in one centralized location.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> One comment below.
+> 
+> >  include/linux/torture.h |  3 ++-
+> >  kernel/rcu/rcutorture.c | 39 +++++++++++----------------------------
+> >  kernel/torture.c        | 26 ++++++++++++++++++++++----
+> >  3 files changed, 35 insertions(+), 33 deletions(-)
+> > 
+> > diff --git a/include/linux/torture.h b/include/linux/torture.h
+> > index 513b85f98585..db9bc7756a32 100644
+> > --- a/include/linux/torture.h
+> > +++ b/include/linux/torture.h
+> > @@ -45,7 +45,7 @@
+> >  #define TOROUT_STRING(s) \
+> >  	pr_alert("%s" TORTURE_FLAG s "\n", torture_type)
+> >  #define VERBOSE_TOROUT_STRING(s) \
+> > -	do { if (verbose) pr_alert("%s" TORTURE_FLAG s "\n", torture_type); } while (0)
+> > +	do { if (verbose) pr_alert("%s" TORTURE_FLAG " %s\n", torture_type, s); } while (0)
+> 
+> This change is completely unrelated to the change described in the
+> commit message.  This should not be part of this commit.
 
-Does it really pay to use xchg() with all those fixup cases? Why not
-have a single cmpxchg() loop that does just the exact atomic op you
-want?
+Turns out that I left out a hunk applying this in torture_kthread_stopping().
+I have added that hunk and updated the commit log explaining why the change
+to VERBOSE_TOROUT_STRING() is required.
+
+								Thanx, Paul
+
+> >  #define VERBOSE_TOROUT_ERRSTRING(s) \
+> >  	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
+> >  
+> > @@ -88,5 +88,6 @@ void torture_init_end(void);
+> >  bool torture_cleanup(void);
+> >  bool torture_must_stop(void);
+> >  bool torture_must_stop_irq(void);
+> > +void torture_kthread_stopping(char *title);
+> >  
+> >  #endif /* __LINUX_TORTURE_H */
+> > diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+> > index aaca2350e0e4..6d12fd18d97f 100644
+> > --- a/kernel/rcu/rcutorture.c
+> > +++ b/kernel/rcu/rcutorture.c
+> > @@ -601,12 +601,13 @@ checkwait:	stutter_wait("rcu_torture_boost");
+> >  	} while (!torture_must_stop());
+> >  
+> >  	/* Clean up and exit. */
+> > -	VERBOSE_TOROUT_STRING("rcu_torture_boost task stopping");
+> > -	torture_shutdown_absorb("rcu_torture_boost");
+> > -	while (!kthread_should_stop() || rbi.inflight)
+> > +	while (!kthread_should_stop() || rbi.inflight) {
+> > +		torture_shutdown_absorb("rcu_torture_boost");
+> >  		schedule_timeout_uninterruptible(1);
+> > +	}
+> >  	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
+> >  	destroy_rcu_head_on_stack(&rbi.rcu);
+> > +	torture_kthread_stopping("rcu_torture_boost");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -637,10 +638,7 @@ rcu_torture_fqs(void *arg)
+> >  		}
+> >  		stutter_wait("rcu_torture_fqs");
+> >  	} while (!torture_must_stop());
+> > -	VERBOSE_TOROUT_STRING("rcu_torture_fqs task stopping");
+> > -	torture_shutdown_absorb("rcu_torture_fqs");
+> > -	while (!kthread_should_stop())
+> > -		schedule_timeout_uninterruptible(1);
+> > +	torture_kthread_stopping("rcu_torture_fqs");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -709,10 +707,7 @@ rcu_torture_writer(void *arg)
+> >  		rcutorture_record_progress(++rcu_torture_current_version);
+> >  		stutter_wait("rcu_torture_writer");
+> >  	} while (!torture_must_stop());
+> > -	VERBOSE_TOROUT_STRING("rcu_torture_writer task stopping");
+> > -	torture_shutdown_absorb("rcu_torture_writer");
+> > -	while (!kthread_should_stop())
+> > -		schedule_timeout_uninterruptible(1);
+> > +	torture_kthread_stopping("rcu_torture_writer");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -747,10 +742,7 @@ rcu_torture_fakewriter(void *arg)
+> >  		stutter_wait("rcu_torture_fakewriter");
+> >  	} while (!torture_must_stop());
+> >  
+> > -	VERBOSE_TOROUT_STRING("rcu_torture_fakewriter task stopping");
+> > -	torture_shutdown_absorb("rcu_torture_fakewriter");
+> > -	while (!kthread_should_stop())
+> > -		schedule_timeout_uninterruptible(1);
+> > +	torture_kthread_stopping("rcu_torture_fakewriter");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -891,12 +883,9 @@ rcu_torture_reader(void *arg)
+> >  		schedule();
+> >  		stutter_wait("rcu_torture_reader");
+> >  	} while (!torture_must_stop());
+> > -	VERBOSE_TOROUT_STRING("rcu_torture_reader task stopping");
+> > -	torture_shutdown_absorb("rcu_torture_reader");
+> >  	if (irqreader && cur_ops->irq_capable)
+> >  		del_timer_sync(&t);
+> > -	while (!kthread_should_stop())
+> > -		schedule_timeout_uninterruptible(1);
+> > +	torture_kthread_stopping("rcu_torture_reader");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -1009,7 +998,7 @@ rcu_torture_stats(void *arg)
+> >  		rcu_torture_stats_print();
+> >  		torture_shutdown_absorb("rcu_torture_stats");
+> >  	} while (!torture_must_stop());
+> > -	VERBOSE_TOROUT_STRING("rcu_torture_stats task stopping");
+> > +	torture_kthread_stopping("rcu_torture_stats");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -1170,12 +1159,9 @@ static int rcu_torture_barrier_cbs(void *arg)
+> >  		if (atomic_dec_and_test(&barrier_cbs_count))
+> >  			wake_up(&barrier_wq);
+> >  	} while (!torture_must_stop());
+> > -	VERBOSE_TOROUT_STRING("rcu_torture_barrier_cbs task stopping");
+> > -	torture_shutdown_absorb("rcu_torture_barrier_cbs");
+> > -	while (!kthread_should_stop())
+> > -		schedule_timeout_interruptible(1);
+> >  	cur_ops->cb_barrier();
+> >  	destroy_rcu_head_on_stack(&rcu);
+> > +	torture_kthread_stopping("rcu_torture_barrier_cbs");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -1206,10 +1192,7 @@ static int rcu_torture_barrier(void *arg)
+> >  		n_barrier_successes++;
+> >  		schedule_timeout_interruptible(HZ / 10);
+> >  	} while (!torture_must_stop());
+> > -	VERBOSE_TOROUT_STRING("rcu_torture_barrier task stopping");
+> > -	torture_shutdown_absorb("rcu_torture_barrier");
+> > -	while (!kthread_should_stop())
+> > -		schedule_timeout_interruptible(1);
+> > +	torture_kthread_stopping("rcu_torture_barrier");
+> >  	return 0;
+> >  }
+> >  
+> > diff --git a/kernel/torture.c b/kernel/torture.c
+> > index 12a5807fb4e9..6f1c6600d183 100644
+> > --- a/kernel/torture.c
+> > +++ b/kernel/torture.c
+> > @@ -169,7 +169,7 @@ torture_onoff(void *arg)
+> >  		}
+> >  		schedule_timeout_interruptible(onoff_interval);
+> >  	}
+> > -	VERBOSE_TOROUT_STRING("torture_onoff task stopping");
+> > +	torture_kthread_stopping("torture_onoff");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -370,7 +370,7 @@ static int torture_shuffle(void *arg)
+> >  		torture_shuffle_tasks();
+> >  		torture_shutdown_absorb("torture_shuffle");
+> >  	} while (!torture_must_stop());
+> > -	VERBOSE_TOROUT_STRING("torture_shuffle task stopping");
+> > +	torture_kthread_stopping("torture_shuffle");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -465,7 +465,7 @@ static int torture_shutdown(void *arg)
+> >  		jiffies_snap = jiffies;
+> >  	}
+> >  	if (torture_must_stop()) {
+> > -		VERBOSE_TOROUT_STRING("torture_shutdown task stopping");
+> > +		torture_kthread_stopping("torture_shutdown");
+> >  		return 0;
+> >  	}
+> >  
+> > @@ -583,7 +583,7 @@ static int torture_stutter(void *arg)
+> >  		ACCESS_ONCE(stutter_pause_test) = 0;
+> >  		torture_shutdown_absorb("torture_stutter");
+> >  	} while (!torture_must_stop());
+> > -	VERBOSE_TOROUT_STRING("torture_stutter task stopping");
+> > +	torture_kthread_stopping("torture_stutter");
+> >  	return 0;
+> >  }
+> >  
+> > @@ -696,3 +696,21 @@ bool torture_must_stop_irq(void)
+> >  	return ACCESS_ONCE(fullstop) != FULLSTOP_DONTSTOP;
+> >  }
+> >  EXPORT_SYMBOL_GPL(torture_must_stop_irq);
+> > +
+> > +/*
+> > + * Each kthread must wait for kthread_should_stop() before returning from
+> > + * its top-level function, otherwise segfaults ensue.  This function
+> > + * prints a "stopping" message and waits for kthread_should_stop(), and
+> > + * should be called from all torture kthreads immediately prior to
+> > + * returning.
+> > + */
+> > +void torture_kthread_stopping(char *title)
+> > +{
+> > +	if (verbose)
+> > +		pr_alert("%s" TORTURE_FLAG " %s\n", torture_type, title);
+> > +	while (!kthread_should_stop()) {
+> > +		torture_shutdown_absorb(title);
+> > +		schedule_timeout_uninterruptible(1);
+> > +	}
+> > +}
+> > +EXPORT_SYMBOL_GPL(torture_kthread_stopping);
+> > -- 
+> > 1.8.1.5
+> > 
+> 
+
