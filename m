@@ -1,172 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365AbaBRRjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:39:41 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53022 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaBRRji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:39:38 -0500
-Date: Tue, 18 Feb 2014 18:40:53 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH 08/11] vfs: Merge check_submounts_and_drop and
- d_invalidate
-Message-ID: <20140218174053.GE4026@tucsk.piliscsaba.szeredi.hu>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
- <87a9kkax0j.fsf@xmission.com>
- <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
- <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
- <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
- <87li281wx6.fsf_-_@xmission.com>
- <87ob28kqks.fsf_-_@xmission.com>
- <87eh34jbsl.fsf_-_@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87eh34jbsl.fsf_-_@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754561AbaBRRkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:40:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46989 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142AbaBRRkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 12:40:21 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <CA+55aFxw+k66jgOVKr0nDuUA91svcZKkBb5purMbfPrO+C+5sQ@mail.gmail.com>
+References: <20140207180216.GP4250@linux.vnet.ibm.com>
+	 <1391992071.18779.99.camel@triegel.csb>
+	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	 <1392183564.18779.2187.camel@triegel.csb>
+	 <20140212180739.GB4250@linux.vnet.ibm.com>
+	 <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	 <20140213002355.GI4250@linux.vnet.ibm.com>
+	 <1392321837.18779.3249.camel@triegel.csb>
+	 <20140214020144.GO4250@linux.vnet.ibm.com>
+	 <1392352981.18779.3800.camel@triegel.csb>
+	 <20140214172920.GQ4250@linux.vnet.ibm.com>
+	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	 <1392485428.18779.6387.camel@triegel.csb>
+	 <CA+55aFw5v8Zc818YoxazFhP0btN1faofNbED=qrpi3VrtRA39w@mail.gmail.com>
+	 <1392674986.18779.7038.camel@triegel.csb>
+	 <CA+55aFz-gaNKxRGU-YPw3xu=T8ZxFv0v22i+R7vWoeQT0i+8Mw@mail.gmail.com>
+	 <1392679048.18779.7168.camel@triegel.csb>
+	 <CA+55aFxw+k66jgOVKr0nDuUA91svcZKkBb5purMbfPrO+C+5sQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Feb 2014 16:46:57 +0100
+Message-ID: <1392738417.18779.7675.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 15, 2014 at 01:39:22PM -0800, Eric W. Biederman wrote:
+On Mon, 2014-02-17 at 16:09 -0800, Linus Torvalds wrote:
+> On Mon, Feb 17, 2014 at 3:17 PM, Torvald Riegel <triegel@redhat.com> wrote:
+> > On Mon, 2014-02-17 at 14:32 -0800,
+> >
+> >> Stop claiming it "can return 1".. It *never* returns 1 unless you do
+> >> the load and *verify* it, or unless the load itself can be made to go
+> >> away. And with the code sequence given, that just doesn't happen. END
+> >> OF STORY.
+> >
+> > void foo();
+> > {
+> >   atomic<int> x = 1;
+> >   if (atomic_load(&x, mo_relaxed) == 1)
+> >     atomic_store(&y, 3, mo_relaxed));
+> > }
 > 
-> Now that d_invalidate is the only caller of check_submounts_and_drop,
-> expand check_submounts_and_drop inline in d_invalidate.
+> This is the very example I gave, where the real issue is not that "you
+> prove that load returns 1", you instead say "store followed by a load
+> can be combined".
 > 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  fs/dcache.c            |   55 +++++++++++++++++++----------------------------
->  include/linux/dcache.h |    1 -
->  2 files changed, 22 insertions(+), 34 deletions(-)
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 27585b1dd6f1..5b41205cbf33 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -608,32 +608,6 @@ kill_it:
->  }
->  EXPORT_SYMBOL(dput);
->  
-> -/**
-> - * d_invalidate - invalidate a dentry
-> - * @dentry: dentry to invalidate
-> - *
-> - * Try to invalidate the dentry if it turns out to be
-> - * possible. If there are reasons not to delete it
-> - * return -EBUSY. On success return 0.
-> - *
-> - * no dcache lock.
-> - */
-> - 
-> -int d_invalidate(struct dentry * dentry)
-> -{
-> -	/*
-> -	 * If it's already been dropped, return OK.
-> -	 */
-> -	spin_lock(&dentry->d_lock);
-> -	if (d_unhashed(dentry)) {
-> -		spin_unlock(&dentry->d_lock);
-> -		return 0;
-> -	}
-> -	spin_unlock(&dentry->d_lock);
-> -
-> -	return check_submounts_and_drop(dentry);
-> -}
-> -EXPORT_SYMBOL(d_invalidate);
->  
->  /* This must be called with d_lock held */
->  static inline void __dget_dlock(struct dentry *dentry)
-> @@ -1175,7 +1149,7 @@ EXPORT_SYMBOL(have_submounts);
->   * reachable (e.g. NFS can unhash a directory dentry and then the complete
->   * subtree can become unreachable).
->   *
-> - * Only one of check_submounts_and_drop() and d_set_mounted() must succeed.  For
-> + * Only one of d_invalidate() and d_set_mounted() must succeed.  For
->   * this reason take rename_lock and d_lock on dentry and ancestors.
->   */
->  int d_set_mounted(struct dentry *dentry)
-> @@ -1184,7 +1158,7 @@ int d_set_mounted(struct dentry *dentry)
->  	int ret = -ENOENT;
->  	write_seqlock(&rename_lock);
->  	for (p = dentry->d_parent; !IS_ROOT(p); p = p->d_parent) {
-> -		/* Need exclusion wrt. check_submounts_and_drop() */
-> +		/* Need exclusion wrt. d_invalidate() */
->  		spin_lock(&p->d_lock);
->  		if (unlikely(d_unhashed(p))) {
->  			spin_unlock(&p->d_lock);
-> @@ -1400,18 +1374,33 @@ static void check_and_drop(void *_data)
->  }
->  
->  /**
-> - * check_submounts_and_drop - detach submounts, prune dcache, and drop
-> + * d_invalidate - detach submounts, prune dcache, and drop
-> + * @dentry: dentry to invalidate (aka detach, prune and drop)
-> + *
-> + * Try to invalidate the dentry if it turns out to be
-> + * possible. If there are reasons not to delete it
-> + * return -EBUSY. On success return 0.
-> + *
-> + * no dcache lock.
->   *
->   * The final d_drop is done as an atomic operation relative to
->   * rename_lock ensuring there are no races with d_set_mounted.  This
->   * ensures there are no unhashed dentries on the path to a mountpoint.
-> - *
-> - * @dentry: dentry to detach, prune and drop
->   */
-> -int check_submounts_and_drop(struct dentry *dentry)
-> +int d_invalidate(struct dentry *dentry)
->  {
->  	int ret = 0;
->  
-> +	/*
-> +	 * If it's already been dropped, return OK.
-> +	 */
-> +	spin_lock(&dentry->d_lock);
-> +	if (d_unhashed(dentry)) {
-> +		spin_unlock(&dentry->d_lock);
-> +		return 0;
-> +	}
-> +	spin_unlock(&dentry->d_lock);
-> +
->  	/* Negative dentries can be dropped without further checks */
->  	if (!dentry->d_inode) {
->  		d_drop(dentry);
+> I (in another email I just wrote) tried to show why the "prove
+> something is true" is a very dangerous model.  Seriously, it's pure
+> crap. It's broken.
 
+I don't see anything dangerous in the example above with the language
+semantics as specified: It's a well-defined situation, given the rules
+of the language.  I replied to the other email you wrote with my
+viewpoint on why the above is useful, how it compares to what you seem
+to what, and where I think we need to start to bridge the gap.
 
-You can optimize this by including the negative check within the above d_locked
-region and calling __d_drop() instead.
+> If the C standard defines atomics in terms of "provable equivalence",
+> it's broken. Exactly because on a *virtual* machine you can prove
+> things that are not actually true in a *real* machine.
 
-> @@ -1445,7 +1434,7 @@ int check_submounts_and_drop(struct dentry *dentry)
->  out:
->  	return ret;
->  }
-> -EXPORT_SYMBOL(check_submounts_and_drop);
-> +EXPORT_SYMBOL(d_invalidate);
->  
->  /**
->   * __d_alloc	-	allocate a dcache entry
-> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-> index bf72e9ac6de0..ae77222c3e86 100644
-> --- a/include/linux/dcache.h
-> +++ b/include/linux/dcache.h
-> @@ -265,7 +265,6 @@ extern void d_prune_aliases(struct inode *);
->  
->  /* test whether we have any submounts in a subdir tree */
->  extern int have_submounts(struct dentry *);
-> -extern int check_submounts_and_drop(struct dentry *);
->  
->  /*
->   * This adds the entry to the hash queues.
-> -- 
-> 1.7.5.4
-> 
+For the control dependencies you have in mind, it's actually the other
+way around.  You expect the real machine's properties in a program whose
+semantics only give you the virtual machine's properties.  Anything you
+prove on the virtual machine will be true on the real machine (in a
+correct implementation) -- but you can't expect to have real-machine
+properties on language that's based on the virtual machine.
+
+> I have the
+> example of value speculation changing the memory ordering model of the
+> actual machine.
+
+This example is not true for the language as specified.  It is true for
+a modified language that you have in mind, but for this one I've just
+seen pretty rough rules so far.  Please see my other reply.
+
