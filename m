@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180AbaBRXKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:10:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51004 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127AbaBRWqn (ORCPT
+	id S1754005AbaBRXLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:11:14 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57261 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750871AbaBRXLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:43 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 14/32] ALSA: usb-audio: Add missing kconfig dependecy
-Date: Tue, 18 Feb 2014 14:47:14 -0800
-Message-Id: <20140218224500.508123551@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
-References: <20140218224500.101465031@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 18 Feb 2014 18:11:11 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: minyard@acm.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Date: Wed, 19 Feb 2014 00:26 +0100
+Message-ID: <1511662.Ly2fOjCGKz@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, February 18, 2014 11:28:29 AM Matthew Garrett wrote:
+> 
+> The ACPI IPMI driver implements IPMI operation region support for the ACPI
+> core. Systems that declare ACPI operation regions may reference them at any
+> time, including during kernel initialisation. These accesses will fail
+> unless the ACPI IPMI driver is present, and undesirable system behaviour
+> may result. Set the default to Y in order to encourage distributions and
+> users to configure kernels to avoid awkward surprises.
 
-------------------
+Do you have any examples of problems caused by that or is this just theoretical
+at the moment?
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit 4fa71c1550a857ff1dbfe9e99acc1f4cfec5f0d0 upstream.
-
-The commit 44dcbbb1cd61 introduced the usage of bitreverse helpers but
-forgot to add the dependency.  This patch adds the selection for
-CONFIG_BITREVERSE.
-
-Fixes: 44dcbbb1cd61 ('ALSA: snd-usb: add support for bit-reversed byte formats')
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/usb/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/sound/usb/Kconfig
-+++ b/sound/usb/Kconfig
-@@ -14,6 +14,7 @@ config SND_USB_AUDIO
- 	select SND_HWDEP
- 	select SND_RAWMIDI
- 	select SND_PCM
-+	select BITREVERSE
- 	help
- 	  Say Y here to include support for USB audio and USB MIDI
- 	  devices.
-
+Rafael
 
