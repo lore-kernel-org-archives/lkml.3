@@ -1,113 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380AbaBRTg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:36:57 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:58556 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652AbaBRTgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:36:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <53021F47.5050702@gmail.com>
-References: <52FDD955.4000701@gmail.com>
-	<20140214091639.GB1782@redhat.com>
-	<52FE5E74.6000509@gmail.com>
-	<53021F47.5050702@gmail.com>
-Date: Tue, 18 Feb 2014 11:36:53 -0800
-X-Google-Sender-Auth: 1aUOm9EzW51R31diN5TT23aADK0
-Message-ID: <CAA9_cmd_AcHRUqqPziyd4bbLGcDWGJdneWd_Wk+KEQynhuHj+w@mail.gmail.com>
-Subject: Re: [dma-debug.c - DMA-API] exceeded overlapping ... & sym53c8xx ...
- tries to free DMA ...
-From: Dan Williams <dan.j.williams@intel.com>
-To: poma <pomidorabelisima@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "IDE/ATA development list" <linux-ide@vger.kernel.org>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Joerg Roedel <joro@8bytes.org>, Tejun Heo <tj@kernel.org>,
-        Gerard Roudier <groudier@club-internet.fr>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Josh Boyer <jwboyer@redhat.com>,
-        "Justin M. Forbes" <jforbes@redhat.com>,
-        Chris Murphy <lists@colorremedies.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752632AbaBRThq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:37:46 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:36430
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751956AbaBRTho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:37:44 -0500
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next] hyperv: Add latest NetVSP versions to auto negotiation
+Date: Tue, 18 Feb 2014 12:28:54 -0800
+Message-Id: <1392755334-25884-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 6:40 AM, poma <pomidorabelisima@gmail.com> wrote:
-> On 14.02.2014 19:20, poma wrote:
->> On 14.02.2014 10:16, Stanislaw Gruszka wrote:
->>> On Fri, Feb 14, 2014 at 09:52:37AM +0100, poma wrote:
->>>>
->>>> Ahoy!
->>>>
->>>> Perhaps this is already solved, but I made the effort to test & record
->>>> all of this, therefore here you are. :)
->>>>
->>>> https://bugzilla.redhat.com/show_bug.cgi?id=1062833
->>>
->>> There is patch posted for this problem
->>> http://marc.info/?l=linux-kernel&m=139233546223338&w=2
->>> It is under review currently, if there will be no complains it will be
->>> applied.
->>>
->>> Stanislaw
->>>
->>
->> Thanks!
->> I have a few questions but the weekend begins, so we'll leave it for
->> later. :)
->> See ya!
->
-> https://bugzilla.redhat.com/show_bug.cgi?id=1062833
->
-> IDE disk - ata_piix - dmesg - OK
-> https://bugzilla.redhat.com/attachment.cgi?id=864085
->
-> SATA disk - ahci - dmesg - OK
-> https://bugzilla.redhat.com/attachment.cgi?id=864086
->
-> SCSI disk - sym53c8xx - dmesg - OK
-> https://bugzilla.redhat.com/attachment.cgi?id=864087
->
-> VirtIO SCSI disk - virtio_scsi - dmesg - OK
-> https://bugzilla.redhat.com/attachment.cgi?id=864088
->
-> USB disk - usb_storage - dmesg - OK
-> https://bugzilla.redhat.com/attachment.cgi?id=864089
->
-> Test media - 'boot-fix-dma-debug-overlap-v2.iso',
-> http://goo.gl/UJSfVn
-> sha256sum:
-> 6d6b36fdcb0a0ff662ff6a27048d6d5f35ac211c34439f75bba1d524b3507e82
-> boot-fix-dma-debug-overlap-v2.iso
->
-> Contains 'kernel-3.14.0-0.rc2.git4.1.fc21.x86_64'
-> based on Rawhide 'kernel-3.14.0-0.rc2.git4.1.fc21'
-> http://koji.fedoraproject.org/koji/buildinfo?buildID=498404
-> with the addition of Dan's 'fix-dma-debug-overlap-v2.patch'
-> "Fix dma debug v2: account for cachelines and read-only mappings in
-> overlap tracking"
-> http://marc.info/?l=linux-netdev&m=139233546723342&q=raw
->
->
-> All tests are PASSED.
->
->        _
->       ( \
->        \ \
->    ____)  \
->   (___)    ------
->  (___)
->  (___)
->   (__)----------------
->
->
->
-> poma
+It auto negotiates the highest NetVSP version supported by both guest and host.
 
-Thanks for the in-depth regression test and report.  Much appreciated!
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/net/hyperv/hyperv_net.h |   53 +++++++++++++++++++++++++++++++++++++++
+ drivers/net/hyperv/netvsc.c     |   26 ++++++++++++------
+ drivers/net/hyperv/netvsc_drv.c |    2 +-
+ 3 files changed, 71 insertions(+), 10 deletions(-)
 
---
-Dan
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index 01a16ea..39fc230 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -139,6 +139,8 @@ int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac);
+ 
+ #define NVSP_PROTOCOL_VERSION_1		2
+ #define NVSP_PROTOCOL_VERSION_2		0x30002
++#define NVSP_PROTOCOL_VERSION_4		0x40000
++#define NVSP_PROTOCOL_VERSION_5		0x50000
+ 
+ enum {
+ 	NVSP_MSG_TYPE_NONE = 0,
+@@ -193,6 +195,23 @@ enum {
+ 
+ 	NVSP_MSG2_TYPE_ALLOC_CHIMNEY_HANDLE,
+ 	NVSP_MSG2_TYPE_ALLOC_CHIMNEY_HANDLE_COMP,
++
++	NVSP_MSG2_MAX = NVSP_MSG2_TYPE_ALLOC_CHIMNEY_HANDLE_COMP,
++
++	/* Version 4 messages */
++	NVSP_MSG4_TYPE_SEND_VF_ASSOCIATION,
++	NVSP_MSG4_TYPE_SWITCH_DATA_PATH,
++	NVSP_MSG4_TYPE_UPLINK_CONNECT_STATE_DEPRECATED,
++
++	NVSP_MSG4_MAX = NVSP_MSG4_TYPE_UPLINK_CONNECT_STATE_DEPRECATED,
++
++	/* Version 5 messages */
++	NVSP_MSG5_TYPE_OID_QUERY_EX,
++	NVSP_MSG5_TYPE_OID_QUERY_EX_COMP,
++	NVSP_MSG5_TYPE_SUBCHANNEL,
++	NVSP_MSG5_TYPE_SEND_INDIRECTION_TABLE,
++
++	NVSP_MSG5_MAX = NVSP_MSG5_TYPE_SEND_INDIRECTION_TABLE,
+ };
+ 
+ enum {
+@@ -447,10 +466,44 @@ union nvsp_2_message_uber {
+ 	struct nvsp_2_free_rxbuf free_rxbuf;
+ } __packed;
+ 
++enum nvsp_subchannel_operation {
++	NVSP_SUBCHANNEL_NONE = 0,
++	NVSP_SUBCHANNEL_ALLOCATE,
++	NVSP_SUBCHANNEL_MAX
++};
++
++struct nvsp_5_subchannel_request {
++	u32 op;
++	u32 num_subchannels;
++} __packed;
++
++struct nvsp_5_subchannel_complete {
++	u32 status;
++	u32 num_subchannels; /* Actual number of subchannels allocated */
++} __packed;
++
++struct nvsp_5_send_indirect_table {
++	/* The number of entries in the send indirection table */
++	u32 count;
++
++	/* The offset of the send indireciton table from top of this struct.
++	 * The send indirection table tells which channel to put the send
++	 * traffic on. Each entry is a channel number.
++	 */
++	u32 offset;
++} __packed;
++
++union nvsp_5_message_uber {
++	struct nvsp_5_subchannel_request subchn_req;
++	struct nvsp_5_subchannel_complete subchn_comp;
++	struct nvsp_5_send_indirect_table send_table;
++} __packed;
++
+ union nvsp_all_messages {
+ 	union nvsp_message_init_uber init_msg;
+ 	union nvsp_1_message_uber v1_msg;
+ 	union nvsp_2_message_uber v2_msg;
++	union nvsp_5_message_uber v5_msg;
+ } __packed;
+ 
+ /* ALL Messages */
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 9a0e9c6..fc2941c 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -290,7 +290,7 @@ static int negotiate_nvsp_ver(struct hv_device *device,
+ 	    NVSP_STAT_SUCCESS)
+ 		return -EINVAL;
+ 
+-	if (nvsp_ver != NVSP_PROTOCOL_VERSION_2)
++	if (nvsp_ver == NVSP_PROTOCOL_VERSION_1)
+ 		return 0;
+ 
+ 	/* NVSPv2 only: Send NDIS config */
+@@ -314,6 +314,10 @@ static int netvsc_connect_vsp(struct hv_device *device)
+ 	struct nvsp_message *init_packet;
+ 	int ndis_version;
+ 	struct net_device *ndev;
++	u32 ver_list[] = {NVSP_PROTOCOL_VERSION_1, NVSP_PROTOCOL_VERSION_2,
++		NVSP_PROTOCOL_VERSION_4, NVSP_PROTOCOL_VERSION_5};
++	int i, num_ver = 4; /* number of different NVSP versions */
++
+ 
+ 	net_device = get_outbound_net_device(device);
+ 	if (!net_device)
+@@ -323,13 +327,14 @@ static int netvsc_connect_vsp(struct hv_device *device)
+ 	init_packet = &net_device->channel_init_pkt;
+ 
+ 	/* Negotiate the latest NVSP protocol supported */
+-	if (negotiate_nvsp_ver(device, net_device, init_packet,
+-			       NVSP_PROTOCOL_VERSION_2) == 0) {
+-		net_device->nvsp_version = NVSP_PROTOCOL_VERSION_2;
+-	} else if (negotiate_nvsp_ver(device, net_device, init_packet,
+-				    NVSP_PROTOCOL_VERSION_1) == 0) {
+-		net_device->nvsp_version = NVSP_PROTOCOL_VERSION_1;
+-	} else {
++	for (i = num_ver - 1; i >= 0; i--)
++		if (negotiate_nvsp_ver(device, net_device, init_packet,
++			ver_list[i])  == 0) {
++			net_device->nvsp_version = ver_list[i];
++			break;
++		}
++
++	if (i < 0) {
+ 		ret = -EPROTO;
+ 		goto cleanup;
+ 	}
+@@ -339,7 +344,10 @@ static int netvsc_connect_vsp(struct hv_device *device)
+ 	/* Send the ndis version */
+ 	memset(init_packet, 0, sizeof(struct nvsp_message));
+ 
+-	ndis_version = 0x00050001;
++	if (net_device->nvsp_version <= NVSP_PROTOCOL_VERSION_4)
++		ndis_version = 0x00050001;
++	else
++		ndis_version = 0x0006001e;
+ 
+ 	init_packet->hdr.msg_type = NVSP_MSG1_TYPE_SEND_NDIS_VER;
+ 	init_packet->msg.v1_msg.
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 1eadc13..3cc9eb3 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -317,7 +317,7 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
+ 	if (nvdev == NULL || nvdev->destroy)
+ 		return -ENODEV;
+ 
+-	if (nvdev->nvsp_version == NVSP_PROTOCOL_VERSION_2)
++	if (nvdev->nvsp_version >= NVSP_PROTOCOL_VERSION_2)
+ 		limit = NETVSC_MTU;
+ 
+ 	if (mtu < 68 || mtu > limit)
+-- 
+1.7.4.1
+
