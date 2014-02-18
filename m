@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587AbaBROKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:10:06 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:45217 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755128AbaBROKE (ORCPT
+	id S1755514AbaBROLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:11:23 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:59548 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298AbaBROLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:10:04 -0500
-Date: Tue, 18 Feb 2014 15:05:16 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: David =?iso-8859-1?Q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
-Cc: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 1/8] clk: sunxi: factors: automatic reparenting support
-Message-ID: <20140218140516.GG3142@lukather>
-References: <20140217095907.15040.81893.stgit@pagira.o2s.ch>
- <20140217100215.15040.63745.stgit@pagira.o2s.ch>
+	Tue, 18 Feb 2014 09:11:21 -0500
+Date: Tue, 18 Feb 2014 08:08:54 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Peter Chen <Peter.Chen@freescale.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
+Message-ID: <20140218140854.GC31116@joshc.qualcomm.com>
+References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
+ <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AGZzQgpsuUlWC1xT"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140217100215.15040.63745.stgit@pagira.o2s.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey Ivan-
 
---AGZzQgpsuUlWC1xT
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Nit below.
 
-On Mon, Feb 17, 2014 at 11:02:15AM +0100, David Lanzend=F6rfer wrote:
-> From: Emilio L=F3pez <emilio@elopez.com.ar>
->=20
-> This commit implements .determine_rate, so that our factor clocks can be
-> reparented when needed.
->=20
-> Signed-off-by: Emilio L=F3pez <emilio@elopez.com.ar>
+On Tue, Feb 18, 2014 at 03:21:20PM +0200, Ivan T. Ivanov wrote:
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> 
+> Allows controller to be specified via device tree.
+> Pass PHY phandle specified in DT to core driver.
+> 
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
+>  1 file changed, 22 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
+> index 2d51d85..3f67f1f 100644
+> --- a/drivers/usb/chipidea/ci_hdrc_msm.c
+> +++ b/drivers/usb/chipidea/ci_hdrc_msm.c
+> @@ -57,9 +57,21 @@ static struct ci_hdrc_platform_data ci_hdrc_msm_platdata = {
+>  static int ci_hdrc_msm_probe(struct platform_device *pdev)
+>  {
+>  	struct platform_device *plat_ci;
+> +	struct usb_phy *phy;
+>  
+>  	dev_dbg(&pdev->dev, "ci_hdrc_msm_probe\n");
+>  
+> +	/*
+> +	 * OTG(PHY) driver takes care of PHY initialization, clock management,
+> +	 * powering up VBUS, mapping of registers address space and power
+> +	 * management.
+> +	 */
+> +	phy = devm_usb_get_phy_by_phandle(&pdev->dev, "usb-phy", 0);
+> +	if (IS_ERR(phy))
+> +		return PTR_ERR(phy);
+> +
+> +	ci_hdrc_msm_platdata.phy = phy;
+> +
+>  	plat_ci = ci_hdrc_add_device(&pdev->dev,
+>  				pdev->resource, pdev->num_resources,
+>  				&ci_hdrc_msm_platdata);
+> @@ -86,10 +98,19 @@ static int ci_hdrc_msm_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +static struct of_device_id msm_ci_dt_match[] = {
 
-Your signed-off-by is missing here.
+const?
 
-Once you added it, you can add my Acked-by
+> +	{ .compatible = "qcom,ci-hdrc", },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, msm_ci_dt_match);
 
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---AGZzQgpsuUlWC1xT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTA2icAAoJEBx+YmzsjxAg5XcP/RzuL8bgLRMimiNCl1CyFMld
-lvpOZG6xCaov8c9kC+BafPfxdlyT1lmZTUS0bfqE2lMhQ7s5GhC81wT+9ZCGN9Gn
-iubRJkBUO5YDui3IEQSbeTBgiA9r73n+DYP47AzwidVaJmIKDbBev4JKnIYFx+yD
-yEyqluPHP7j0vj8LQOis9LmsEiDWvpBggcYTRHoI5JdFYleNGv+7mfeSZgQfZm7c
-ACv1hGS2QC3e+Rz32PzUGbLJyTVrSehIsK3Z158WVVY8iTkeXvDm/zlUuolSCg6P
-SwCFxF0TSqgNXPFHy2YjVm/P1S6b4Dc3ZOZOJ0paQNEMbVcBKWNq/4Gr/L1OHBQC
-Cbal0P3NUyEH+NAryTnJUMzCAvQqCGy39NlSeOyb8Rk4AIHXV6kJ7OV9fnredsUK
-E9AaovmlyuDwEr9o+wQz8LkMtF+QJsO9016LtbEUHHTu9sgZhudP3f/COmi8YNob
-Nvo+9mL83OmP3UjpGoEJh5mzBn90qz9umlwBZ/JCDjwRHiTsxlpvUlpNkbVR/LtO
-8ggkDwy9j0+E6LT0DvTSD4bKAuSd5uqBld/Dc7sQ9L6jTz4IjiPX0glHj2mDloA4
-cbi2AY04KPqoUov1bobfjTlOAe6VI7ECZzUBMQmuucxTtj6YCs18+JaYObcjBekZ
-SzG9uXbSlbT4q1mzGyFU
-=rAhV
------END PGP SIGNATURE-----
-
---AGZzQgpsuUlWC1xT--
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
