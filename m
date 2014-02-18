@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735AbaBRKGj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:06:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15133 "EHLO mx1.redhat.com"
+	id S1754788AbaBRKHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:07:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31823 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754413AbaBRKGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:06:38 -0500
+	id S1754413AbaBRKGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:06:42 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Michael Chan <mchan@broadcom.com>,
+Cc: Alexander Gordeev <agordeev@redhat.com>, Rasesh Mody <rmody@brocade.com>,
         netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH net-next 01/35] bnx2: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 18 Feb 2014 11:07:53 +0100
-Message-Id: <c8d230441b63d4c30818a55b0e6ca0f376572b87.1392717502.git.agordeev@redhat.com>
+Subject: [PATCH net-next 04/35] bna: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Tue, 18 Feb 2014 11:07:56 +0100
+Message-Id: <1801e713e466f57908766fe69678a48d1204f499.1392717503.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
 References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,46 +26,55 @@ new pci_enable_msi_range() and pci_enable_msix_range()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Michael Chan <mchan@broadcom.com>
+Cc: Rasesh Mody <rmody@brocade.com>
 Cc: netdev@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/net/ethernet/broadcom/bnx2.c |   15 ++++-----------
- 1 files changed, 4 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/brocade/bna/bnad.c |   23 +++++++++--------------
+ 1 files changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2.c b/drivers/net/ethernet/broadcom/bnx2.c
-index cda25ac..ca6b362 100644
---- a/drivers/net/ethernet/broadcom/bnx2.c
-+++ b/drivers/net/ethernet/broadcom/bnx2.c
-@@ -6206,7 +6206,7 @@ bnx2_free_irq(struct bnx2 *bp)
- static void
- bnx2_enable_msix(struct bnx2 *bp, int msix_vecs)
- {
--	int i, total_vecs, rc;
-+	int i, total_vecs;
- 	struct msix_entry msix_ent[BNX2_MAX_MSIX_VEC];
- 	struct net_device *dev = bp->dev;
- 	const int len = sizeof(bp->irq_tbl[0].name);
-@@ -6229,16 +6229,9 @@ bnx2_enable_msix(struct bnx2 *bp, int msix_vecs)
- #ifdef BCM_CNIC
- 	total_vecs++;
- #endif
--	rc = -ENOSPC;
--	while (total_vecs >= BNX2_MIN_MSIX_VEC) {
--		rc = pci_enable_msix(bp->pdev, msix_ent, total_vecs);
--		if (rc <= 0)
--			break;
--		if (rc > 0)
--			total_vecs = rc;
--	}
--
--	if (rc != 0)
-+	total_vecs = pci_enable_msix_range(bp->pdev, msix_ent,
-+					   BNX2_MIN_MSIX_VEC, total_vecs);
-+	if (total_vecs < 0)
- 		return;
+diff --git a/drivers/net/ethernet/brocade/bna/bnad.c b/drivers/net/ethernet/brocade/bna/bnad.c
+index cf64f3d..bf436d0 100644
+--- a/drivers/net/ethernet/brocade/bna/bnad.c
++++ b/drivers/net/ethernet/brocade/bna/bnad.c
+@@ -2666,9 +2666,11 @@ bnad_enable_msix(struct bnad *bnad)
+ 	for (i = 0; i < bnad->msix_num; i++)
+ 		bnad->msix_table[i].entry = i;
  
- 	msix_vecs = total_vecs;
+-	ret = pci_enable_msix(bnad->pcidev, bnad->msix_table, bnad->msix_num);
+-	if (ret > 0) {
+-		/* Not enough MSI-X vectors. */
++	ret = pci_enable_msix_range(bnad->pcidev, bnad->msix_table,
++				    1, bnad->msix_num);
++	if (ret < 0) {
++		goto intx_mode;
++	} else if (ret < bnad->msix_num) {
+ 		pr_warn("BNA: %d MSI-X vectors allocated < %d requested\n",
+ 			ret, bnad->msix_num);
+ 
+@@ -2681,18 +2683,11 @@ bnad_enable_msix(struct bnad *bnad)
+ 		bnad->msix_num = BNAD_NUM_TXQ + BNAD_NUM_RXP +
+ 			 BNAD_MAILBOX_MSIX_VECTORS;
+ 
+-		if (bnad->msix_num > ret)
+-			goto intx_mode;
+-
+-		/* Try once more with adjusted numbers */
+-		/* If this fails, fall back to INTx */
+-		ret = pci_enable_msix(bnad->pcidev, bnad->msix_table,
+-				      bnad->msix_num);
+-		if (ret)
++		if (bnad->msix_num > ret) {
++			pci_disable_msix(bnad->pcidev);
+ 			goto intx_mode;
+-
+-	} else if (ret < 0)
+-		goto intx_mode;
++		}
++	}
+ 
+ 	pci_intx(bnad->pcidev, 0);
+ 
 -- 
 1.7.7.6
 
