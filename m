@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaBRTsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:48:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48653 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaBRTsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:48:11 -0500
-Date: Tue, 18 Feb 2014 11:49:36 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Colin Cross <ccross@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 12/14] staging: binder: Fix ABI for 64bit Android
-Message-ID: <20140218194936.GA8584@kroah.com>
-References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
- <1392674322-9036-13-git-send-email-john.stultz@linaro.org>
- <20140218190828.GA10376@kroah.com>
- <CALAqxLWMF0WFAoi-yGtWiKh2Dgw8hpM4NY5F8TQ5Yt3MvHY3kA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALAqxLWMF0WFAoi-yGtWiKh2Dgw8hpM4NY5F8TQ5Yt3MvHY3kA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1752694AbaBRTsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:48:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44557 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752199AbaBRTs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:48:28 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+References: <1392321837.18779.3249.camel@triegel.csb>
+	 <20140214020144.GO4250@linux.vnet.ibm.com>
+	 <1392352981.18779.3800.camel@triegel.csb>
+	 <20140214172920.GQ4250@linux.vnet.ibm.com>
+	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	 <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	 <1392486310.18779.6447.camel@triegel.csb>
+	 <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	 <1392666947.18779.6838.camel@triegel.csb>
+	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	 <20140218030002.GA15857@linux.vnet.ibm.com>
+	 <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	 <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	 <1392740258.18779.7732.camel@triegel.csb>
+	 <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Feb 2014 20:47:47 +0100
+Message-ID: <1392752867.18779.8120.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 11:30:26AM -0800, John Stultz wrote:
-> On Tue, Feb 18, 2014 at 11:08 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Feb 17, 2014 at 01:58:40PM -0800, John Stultz wrote:
-> >> From: Serban Constantinescu <serban.constantinescu@arm.com>
-> >>
-> >> This patch fixes the ABI for 64bit Android userspace.
-> >> BC_REQUEST_DEATH_NOTIFICATION and BC_CLEAR_DEATH_NOTIFICATION claim
-> >> to be using struct binder_ptr_cookie, but they are using a 32bit handle
-> >> and a pointer.
-> >>
-> >> On 32bit systems the payload size is the same as the size of struct
-> >> binder_ptr_cookie, however for 64bit systems this will differ. This
-> >> patch adds struct binder_handle_cookie that fixes this issue for 64bit
-> >> Android.
-> >>
-> >> Since there are no 64bit users of this interface that we know of this
-> >> change should not affect any existing systems.
-> >
-> > But you are changing the ioctl structures here, what is that going to
-> > cause with old programs?
+On Tue, 2014-02-18 at 09:44 -0800, Linus Torvalds wrote:
+> On Tue, Feb 18, 2014 at 8:17 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> > The standard is clear on what's required.  I strongly suggest reading
+> > the formalization of the memory model by Batty et al.
 > 
-> So I'd be glad for Serban or Arve to clarify, but my understanding
-> (and as is described in the commit message) is that the assumption is
-> there are no 64bit binder users at this point, and the ioctl structure
-> changes are made such that existing 32bit applications are unaffected.
+> Can you point to it? Because I can find a draft standard, and it sure
+> as hell does *not* contain any clarity of the model. It has a *lot* of
+> verbiage, but it's pretty much impossible to actually understand, even
+> for somebody who really understands memory ordering.
 
-How does changing the structure size, and contents, not affect any
-applications or the kernel code?  What am I missing here?
+http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
+This has an explanation of the model up front, and then the detailed
+formulae in Section 6.  This is from 2010, and there might have been
+smaller changes since then, but I'm not aware of any bigger ones.
 
-> >> Cc: Colin Cross <ccross@android.com>
-> >> Cc: Arve Hjønnevåg <arve@android.com>
-> >> Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-> >> Cc: Android Kernel Team <kernel-team@android.com>
-> >
-> > I am going to require Acks from someone on the Android team to accept
-> > this, or any other 64bit binder patch, given all the back-and-forth that
-> > has happened with the different patch sets here over the past year or
-> > so.
-> 
-> Certainly reasonable given the earlier back and forth.  For extra
-> context, these have been merged into the 3.10 AOSP by Arve:
-> https://android-review.googlesource.com/#/c/79228/
+The cppmem tool is based on this, so if you want to play around with a
+few code examples, it's pretty nice because it shows you all allowed
+executions, including graphs like in the paper (see elsewhere in this
+thread for CAS syntax):
+http://svr-pes20-cppmem.cl.cam.ac.uk/cppmem/
 
-That's good to see, and a good reason to get them merged, but better
-descriptions and acks would be nice to have :)
-
-How about sending these as a separate series when all worked out, as
-lots of people seem interested in them?
-
-thanks,
-
-greg k-h
