@@ -1,189 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaBRThq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:37:46 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:36430
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751956AbaBRTho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:37:44 -0500
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next] hyperv: Add latest NetVSP versions to auto negotiation
-Date: Tue, 18 Feb 2014 12:28:54 -0800
-Message-Id: <1392755334-25884-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752693AbaBRThy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:37:54 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:44878 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbaBRThv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:37:51 -0500
+X-Auth-Info: sqsuJ+tM76M+wFkdfh4z+/Gbtmmfbf7e9nGfXeVQqLM=
+Date: Tue, 18 Feb 2014 20:37:47 +0100
+From: Gerhard Sittig <gsi@denx.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] spi: core: Validate lenght of the transfers in message
+Message-ID: <20140218193747.GE4524@book.gsilab.sittig.org>
+References: <1392444566-23605-1-git-send-email-iivanov@mm-sol.com>
+ <20140216142512.GR4524@book.gsilab.sittig.org>
+ <20140218000938.GE2669@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218000938.GE2669@sirena.org.uk>
+Organization: DENX Software Engineering GmbH
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It auto negotiates the highest NetVSP version supported by both guest and host.
+On Tue, Feb 18, 2014 at 09:09 +0900, Mark Brown wrote:
+> 
+> On Sun, Feb 16, 2014 at 03:25:12PM +0100, Gerhard Sittig wrote:
+> > On Sat, Feb 15, 2014 at 08:09 +0200, Ivan T. Ivanov wrote:
+> 
+> > - the total length of the SPI transfer cannot be empty (which I'd
+> >   consider an optimization, not a violation, and may need a
+> >   separate discussion)
+> 
+> We probably want to allow that for people doing fun stuff with cs_change
+> though I'm not convinced anything doing that is actually a good idea.
+> 
+> > - the total length of the SPI transfer must be such that each
+> >   "word" must be provided within a full 1/2/4 byte entity, with
+> >   padding bits if the bits-per-word is "odd"
+> 
+> > Is this a misunderstanding on my side?  A terminology thing?  To
+> > me, the "SPI transfer" is the total payload and may have any
+> > arbitrary length.  What you check for is a constraint on the
+> > transfer's length derived from or based on the "word length"
+> > ('word' in SPI context).
+> 
+> > So the code may be appropriate, yet the description may need an
+> > update, to not have the next person ask the same questions again.
+> 
+> It seems fairly clear to me - if we're transferring 16 bit words we need
+> the transfer to me a multiple of 16 bits and so on?  The requirement for
+> padding is unclear I have to say.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/hyperv_net.h |   53 +++++++++++++++++++++++++++++++++++++++
- drivers/net/hyperv/netvsc.c     |   26 ++++++++++++------
- drivers/net/hyperv/netvsc_drv.c |    2 +-
- 3 files changed, 71 insertions(+), 10 deletions(-)
+I meant "padding" in the sense that e.g. 12bit bits-per-word
+require data to be provided or consumed in 16bit quantities (2
+full bytes), 20bit bits-per-word require 4 bytes per SPI word.
+Why not 3 bytes?  I'd guess this is due to FIFO port width.
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 01a16ea..39fc230 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -139,6 +139,8 @@ int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac);
- 
- #define NVSP_PROTOCOL_VERSION_1		2
- #define NVSP_PROTOCOL_VERSION_2		0x30002
-+#define NVSP_PROTOCOL_VERSION_4		0x40000
-+#define NVSP_PROTOCOL_VERSION_5		0x50000
- 
- enum {
- 	NVSP_MSG_TYPE_NONE = 0,
-@@ -193,6 +195,23 @@ enum {
- 
- 	NVSP_MSG2_TYPE_ALLOC_CHIMNEY_HANDLE,
- 	NVSP_MSG2_TYPE_ALLOC_CHIMNEY_HANDLE_COMP,
-+
-+	NVSP_MSG2_MAX = NVSP_MSG2_TYPE_ALLOC_CHIMNEY_HANDLE_COMP,
-+
-+	/* Version 4 messages */
-+	NVSP_MSG4_TYPE_SEND_VF_ASSOCIATION,
-+	NVSP_MSG4_TYPE_SWITCH_DATA_PATH,
-+	NVSP_MSG4_TYPE_UPLINK_CONNECT_STATE_DEPRECATED,
-+
-+	NVSP_MSG4_MAX = NVSP_MSG4_TYPE_UPLINK_CONNECT_STATE_DEPRECATED,
-+
-+	/* Version 5 messages */
-+	NVSP_MSG5_TYPE_OID_QUERY_EX,
-+	NVSP_MSG5_TYPE_OID_QUERY_EX_COMP,
-+	NVSP_MSG5_TYPE_SUBCHANNEL,
-+	NVSP_MSG5_TYPE_SEND_INDIRECTION_TABLE,
-+
-+	NVSP_MSG5_MAX = NVSP_MSG5_TYPE_SEND_INDIRECTION_TABLE,
- };
- 
- enum {
-@@ -447,10 +466,44 @@ union nvsp_2_message_uber {
- 	struct nvsp_2_free_rxbuf free_rxbuf;
- } __packed;
- 
-+enum nvsp_subchannel_operation {
-+	NVSP_SUBCHANNEL_NONE = 0,
-+	NVSP_SUBCHANNEL_ALLOCATE,
-+	NVSP_SUBCHANNEL_MAX
-+};
-+
-+struct nvsp_5_subchannel_request {
-+	u32 op;
-+	u32 num_subchannels;
-+} __packed;
-+
-+struct nvsp_5_subchannel_complete {
-+	u32 status;
-+	u32 num_subchannels; /* Actual number of subchannels allocated */
-+} __packed;
-+
-+struct nvsp_5_send_indirect_table {
-+	/* The number of entries in the send indirection table */
-+	u32 count;
-+
-+	/* The offset of the send indireciton table from top of this struct.
-+	 * The send indirection table tells which channel to put the send
-+	 * traffic on. Each entry is a channel number.
-+	 */
-+	u32 offset;
-+} __packed;
-+
-+union nvsp_5_message_uber {
-+	struct nvsp_5_subchannel_request subchn_req;
-+	struct nvsp_5_subchannel_complete subchn_comp;
-+	struct nvsp_5_send_indirect_table send_table;
-+} __packed;
-+
- union nvsp_all_messages {
- 	union nvsp_message_init_uber init_msg;
- 	union nvsp_1_message_uber v1_msg;
- 	union nvsp_2_message_uber v2_msg;
-+	union nvsp_5_message_uber v5_msg;
- } __packed;
- 
- /* ALL Messages */
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index 9a0e9c6..fc2941c 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -290,7 +290,7 @@ static int negotiate_nvsp_ver(struct hv_device *device,
- 	    NVSP_STAT_SUCCESS)
- 		return -EINVAL;
- 
--	if (nvsp_ver != NVSP_PROTOCOL_VERSION_2)
-+	if (nvsp_ver == NVSP_PROTOCOL_VERSION_1)
- 		return 0;
- 
- 	/* NVSPv2 only: Send NDIS config */
-@@ -314,6 +314,10 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 	struct nvsp_message *init_packet;
- 	int ndis_version;
- 	struct net_device *ndev;
-+	u32 ver_list[] = {NVSP_PROTOCOL_VERSION_1, NVSP_PROTOCOL_VERSION_2,
-+		NVSP_PROTOCOL_VERSION_4, NVSP_PROTOCOL_VERSION_5};
-+	int i, num_ver = 4; /* number of different NVSP versions */
-+
- 
- 	net_device = get_outbound_net_device(device);
- 	if (!net_device)
-@@ -323,13 +327,14 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 	init_packet = &net_device->channel_init_pkt;
- 
- 	/* Negotiate the latest NVSP protocol supported */
--	if (negotiate_nvsp_ver(device, net_device, init_packet,
--			       NVSP_PROTOCOL_VERSION_2) == 0) {
--		net_device->nvsp_version = NVSP_PROTOCOL_VERSION_2;
--	} else if (negotiate_nvsp_ver(device, net_device, init_packet,
--				    NVSP_PROTOCOL_VERSION_1) == 0) {
--		net_device->nvsp_version = NVSP_PROTOCOL_VERSION_1;
--	} else {
-+	for (i = num_ver - 1; i >= 0; i--)
-+		if (negotiate_nvsp_ver(device, net_device, init_packet,
-+			ver_list[i])  == 0) {
-+			net_device->nvsp_version = ver_list[i];
-+			break;
-+		}
-+
-+	if (i < 0) {
- 		ret = -EPROTO;
- 		goto cleanup;
- 	}
-@@ -339,7 +344,10 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 	/* Send the ndis version */
- 	memset(init_packet, 0, sizeof(struct nvsp_message));
- 
--	ndis_version = 0x00050001;
-+	if (net_device->nvsp_version <= NVSP_PROTOCOL_VERSION_4)
-+		ndis_version = 0x00050001;
-+	else
-+		ndis_version = 0x0006001e;
- 
- 	init_packet->hdr.msg_type = NVSP_MSG1_TYPE_SEND_NDIS_VER;
- 	init_packet->msg.v1_msg.
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 1eadc13..3cc9eb3 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -317,7 +317,7 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
- 	if (nvdev == NULL || nvdev->destroy)
- 		return -ENODEV;
- 
--	if (nvdev->nvsp_version == NVSP_PROTOCOL_VERSION_2)
-+	if (nvdev->nvsp_version >= NVSP_PROTOCOL_VERSION_2)
- 		limit = NETVSC_MTU;
- 
- 	if (mtu < 68 || mtu > limit)
+At least this is how I read the check which this patch
+implements.
+
+
+virtually yours
+Gerhard Sittig
 -- 
-1.7.4.1
-
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
