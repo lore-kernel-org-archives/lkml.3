@@ -1,132 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaBRStD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:49:03 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43212 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939AbaBRStA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:49:00 -0500
-Date: Tue, 18 Feb 2014 12:47:41 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: <sarah.a.sharp@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] usb/xhci: fix compilation warning when !CONFIG_PCI &&
- !CONFIG_PM
-Message-ID: <20140218184741.GI28506@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1389059068-18491-1-git-send-email-david.a.cohen@linux.intel.com>
- <1389063739-6028-1-git-send-email-david.a.cohen@linux.intel.com>
- <20140218180030.GA10029@psi-dev26.jf.intel.com>
+	id S1752052AbaBRSta (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:49:30 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:54934 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaBRSt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 13:49:29 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OfrWf2Fun5Ae4m0Y"
-Content-Disposition: inline
-In-Reply-To: <20140218180030.GA10029@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAHWkzRQp3x4Wsnr6ZRdxfk04MuWT3bANnL8=VbCVEZ6+ifiqYA@mail.gmail.com>
+References: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
+	<CA+55aFw=9iKadR-r5sdZdJ_7yDzSV4=+P=gZXXsrxU61wKHf5w@mail.gmail.com>
+	<CAHWkzRQp3x4Wsnr6ZRdxfk04MuWT3bANnL8=VbCVEZ6+ifiqYA@mail.gmail.com>
+Date: Tue, 18 Feb 2014 10:49:27 -0800
+X-Google-Sender-Auth: KOPKE-QtvZTaxtchUSgRPOVzHQE
+Message-ID: <CA+55aFyfjr7=kXu6W83HhMenOnX9fssOGaZTJv_vj6rQ_+jY3Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter.Sewell@cl.cam.ac.uk
+Cc: "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---OfrWf2Fun5Ae4m0Y
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 18, 2014 at 10:21 AM, Peter Sewell
+<Peter.Sewell@cl.cam.ac.uk> wrote:
+>
+> This is a bit more subtle, because (on ARM and POWER) removing the
+> dependency and conditional branch is actually in general *not* equivalent
+> in the hardware, in a concurrent context.
 
-On Tue, Feb 18, 2014 at 10:00:30AM -0800, David Cohen wrote:
-> Hi Sarah,
->=20
-> On Mon, Jan 06, 2014 at 07:02:19PM -0800, David Cohen wrote:
-> > When CONFIG_PCI and CONFIG_PM are not selected, xhci.c gets this
-> > warning:
-> > drivers/usb/host/xhci.c:409:13: warning: =E2=80=98xhci_msix_sync_irqs=
-=E2=80=99 defined
-> > but not used [-Wunused-function]
-> >=20
-> > It happens due to lack of __maybe_unused flag on xhci_msix_sync_irqs()
-> > function in case of !CONFIG_PCI.
-> >=20
-> > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> > ---
->=20
-> Ping :)
-> Any comments here?
->=20
-> Br, David
->=20
-> >=20
-> > Change v1 -> v2:
-> >  - xhci_msix_sync_irqs() already uses __maybe_unused flag when CONFIG_P=
-CI is
-> >    set. Proper solution is to add same flag when !CONFIG_PCI instead of=
- define
-> >    function as inline.
-> >=20
-> >  drivers/usb/host/xhci.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >=20
-> > diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> > index 4265b48856f6..ed6b717b8ee1 100644
-> > --- a/drivers/usb/host/xhci.c
-> > +++ b/drivers/usb/host/xhci.c
-> > @@ -406,7 +406,7 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
-> >  {
-> >  }
-> > =20
-> > -static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
-> > +static void __maybe_unused xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+So I agree, but I think that's a generic issue with non-local memory
+ordering, and is not at all specific to the optimization wrt that
+"x?42:42" expression.
 
-bellow is likely a better fix. Usually stubs are marked inline, rather
-than getting an unused attribute:
+If you have a value that you loaded with a non-relaxed load, and you
+pass that value off to a non-local function that you don't know what
+it does, in my opinion that implies that the compiler had better add
+the necessary serialization to say "whatever that other function does,
+we guarantee the semantics of the load".
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 3712359..8f1a6d5 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -404,16 +404,16 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
-=20
- #else
-=20
--static int xhci_try_enable_msi(struct usb_hcd *hcd)
-+static inline int xhci_try_enable_msi(struct usb_hcd *hcd)
- {
- 	return 0;
- }
-=20
--static void xhci_cleanup_msix(struct xhci_hcd *xhci)
-+static inline void xhci_cleanup_msix(struct xhci_hcd *xhci)
- {
- }
-=20
--static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
-+static inline void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- {
- }
-=20
+So on ppc, if you do a load with "consume" or "acquire" and then call
+another function without having had something in the caller that
+serializes the load, you'd better add the lwsync or whatever before
+the call. Exactly because the function call itself otherwise basically
+breaks the visibility into ordering. You've basically turned a
+load-with-ordering-guarantees into just an integer that you passed off
+to something that doesn't know about the ordering guarantees - and you
+need that "lwsync" in order to still guarantee the ordering.
 
---=20
-balbi
+Tough titties. That's what a CPU with weak memory ordering semantics
+gets in order to have sufficient memory ordering.
 
---OfrWf2Fun5Ae4m0Y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And I don't think it's actually a problem in practice. If you are
+doing loads with ordered semantics, you're not going to pass the
+result off willy-nilly to random functions (or you really *do* require
+the ordering, because the load that did the "acquire" was actually for
+a lock!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+So I really think that the "local optimization" is correct regardless.
 
-iQIcBAEBAgAGBQJTA6rNAAoJEIaOsuA1yqREPywP+waIoe2rdcrSNWn3ttaZ4+Df
-ZvgdzIlG8YY4Tzw6hAccB8KB31/5nAspDbVEdWuOyaQvu3I6UgdWJ1A/ZuaMWySU
-HdiOaJLpf+l5Nt1rpTJj8TEXDkl1SIbBn+pcklzxs+anmcrT65aNWwkC0Tdkfsqc
-/5WzNp4e3uxY/T3aHIz3PeP+54GmhJKtg9Fv9Bc1uQ6XE0rM/EN9a7dM+fnVfus4
-rJZ21oVZWVyMRzogf/TqNHn7q0yHDds+CAhRzCSQyBGzsJhLLiSBy1E21C6xhbbN
-aBZncytZu3x+NLT9WS7VXzMmXdGvnfXLAWWlMFLVOvsyK+TeW6H0mNLccfLpCaky
-8nPSLzbip3ex1WYWYHNAHKknzwo9DX/kB3cbg7cc0a011Qkb4zb4vWkDiYBaqOup
-PZ7W2FuAcvmIEkF0sA6kvqILmGEftam/1PnVJnLWkm/8R8hPXg6JLBRG1Pe6VNZZ
-TOfXuvASiZS4Rb+Cs9pFjrls9kDZ+NyTMcvQCYnu/7jKCh2EApGc9DnjnJPnOgxm
-j/fM9fY5up4n65xwySftcRU9pGTLavd5vW/lKRbDV1E3w7LUnq6Q5QIcRHGUAnlL
-akbJ0k+LoShtkh+5SzOXj2i4/kyzCcwwIa5vjyD0BnN2ha6sKqUwUQhJFz7glPuc
-xffEamUo60jMn4/5UovI
-=8xNN
------END PGP SIGNATURE-----
-
---OfrWf2Fun5Ae4m0Y--
+                   Linus
