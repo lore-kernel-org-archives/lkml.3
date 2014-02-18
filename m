@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468AbaBRUU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:20:59 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:44553 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402AbaBRUU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:20:57 -0500
-Date: Tue, 18 Feb 2014 12:20:54 -0800
-From: Jens Axboe <axboe@kernel.dk>
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [GIT pull] DRBD code reorganization
-Message-ID: <20140218202054.GD25515@kernel.dk>
-References: <1426530.nXFczoq90f@fat-tyre>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1426530.nXFczoq90f@fat-tyre>
+	id S1752314AbaBRUUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:20:43 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60638
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752234AbaBRUUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 15:20:39 -0500
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH 1/2] hyperv_fb: Add screen refresh after pause/resume operation
+Date: Tue, 18 Feb 2014 13:11:30 -0800
+Message-Id: <1392757891-28680-2-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1392757891-28680-1-git-send-email-haiyangz@microsoft.com>
+References: <1392757891-28680-1-git-send-email-haiyangz@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17 2014, Philipp Reisner wrote:
-> Hi Jens,
-> 
-> I have here a number of patches, that do not change any functionality.
-> All patches from Rashika Kheria clean up compiler warnings, like making
-> functions static etc... . All patches from Andreas Grünbacher restructure
-> code for further improvements. A single bugfix is hidden in there, that
-> was committed by me.
-> 
-> Rashika patches where posted for review on LKML on December 19, 2013.
-> The other patches where posted for review on LKML on December 20 and 23.
-> 
-> This is of course for your tree that is intended for the 3.15 merge window.
-> Since you have not created a for-3.15/drivers branch as of today, I based
-> this on Linus' 2.14-rc3.
+This is necessary because after VM is pause/resumed, some portion of
+the screen may need refresh.
 
-Pulled into a for-3.15/drivers branch.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/video/hyperv_fb.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/video/hyperv_fb.c b/drivers/video/hyperv_fb.c
+index 130708f..bbcc8c0 100644
+--- a/drivers/video/hyperv_fb.c
++++ b/drivers/video/hyperv_fb.c
+@@ -218,6 +218,7 @@ struct hvfb_par {
+ 
+ 	struct delayed_work dwork;
+ 	bool update;
++	bool xrefresh;
+ 
+ 	u32 pseudo_palette[16];
+ 	u8 init_buf[MAX_VMBUS_PKT_SIZE];
+@@ -369,7 +370,7 @@ static void synthvid_recv_sub(struct hv_device *hdev)
+ 			synthvid_send_situ(hdev);
+ 		}
+ 
+-		par->update = msg->feature_chg.is_dirt_needed;
++		par->xrefresh = par->update = msg->feature_chg.is_dirt_needed;
+ 		if (par->update)
+ 			schedule_delayed_work(&par->dwork, HVFB_UPDATE_DELAY);
+ 	}
+@@ -522,6 +523,13 @@ static void hvfb_update_work(struct work_struct *w)
+ {
+ 	struct hvfb_par *par = container_of(w, struct hvfb_par, dwork.work);
+ 	struct fb_info *info = par->info;
++	char *argv[] = {"/usr/bin/xrefresh", "-display", ":0.0", NULL};
++	char *envp[] = {"HOME=/", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
++
++	if (par->xrefresh) {
++		par->xrefresh = false;
++		call_usermodehelper(argv[0], argv, envp, UMH_NO_WAIT);
++	}
+ 
+ 	if (par->fb_ready)
+ 		synthvid_update(info);
 -- 
-Jens Axboe
+1.7.4.1
 
