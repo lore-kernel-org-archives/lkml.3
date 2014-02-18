@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaBRWq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51064 "EHLO
+	id S1754083AbaBRXFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:05:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51077 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134AbaBRWqy (ORCPT
+	with ESMTP id S1753246AbaBRWq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:54 -0500
+	Tue, 18 Feb 2014 17:46:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Harald Freudenberger <freude@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.12 05/32] crypto: s390 - fix des and des3_ede ctr concurrency issue
-Date: Tue, 18 Feb 2014 14:47:05 -0800
-Message-Id: <20140218224500.252716664@linuxfoundation.org>
+        Lior Amsalem <alior@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.12 08/32] irqchip: armada-370-xp: fix IPI race condition
+Date: Tue, 18 Feb 2014 14:47:08 -0800
+Message-Id: <20140218224500.340953162@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
 References: <20140218224500.101465031@linuxfoundation.org>
@@ -29,137 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Harald Freudenberger <freude@linux.vnet.ibm.com>
+From: Lior Amsalem <alior@marvell.com>
 
-commit ee97dc7db4cbda33e4241c2d85b42d1835bc8a35 upstream.
+commit a6f089e95b1e08cdea9633d50ad20aa5d44ba64d upstream.
 
-In s390 des and 3des ctr mode there is one preallocated page
-used to speed up the en/decryption. This page is not protected
-against concurrent usage and thus there is a potential of data
-corruption with multiple threads.
+In the Armada 370/XP driver, when we receive an IRQ 0, we read the
+list of doorbells that caused the interrupt from register
+ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS. This gives the list of IPIs that
+were generated. However, instead of acknowledging only the IPIs that
+were generated, we acknowledge *all* the IPIs, by writing
+~IPI_DOORBELL_MASK in the ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS register.
 
-The fix introduces locking/unlocking the ctr page and a slower
-fallback solution at concurrency situations.
+This creates a race condition: if a new IPI that isn't part of the
+ones read into the temporary "ipimask" variable is fired before we
+acknowledge all IPIs, then we will simply loose it. This is causing
+scheduling hangs on SMP intensive workloads.
 
-Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+It is important to mention that this ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS
+register has the following behavior: "A CPU write of 0 clears the bits
+in this field. A CPU write of 1 has no effect". This is what allows us
+to simply write ~ipimask to acknoledge the handled IPIs.
+
+Notice that the same problem is present in the MSI implementation, but
+it will be fixed as a separate patch, so that this IPI fix can be
+pushed to older stable versions as appropriate (all the way to 3.8),
+while the MSI code only appeared in 3.13.
+
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: 344e873e5657e8dc0 'arm: mvebu: Add IPI support via doorbells'
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/crypto/des_s390.c |   69 ++++++++++++++++++++++++++++++--------------
- 1 file changed, 48 insertions(+), 21 deletions(-)
+ drivers/irqchip/irq-armada-370-xp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/crypto/des_s390.c
-+++ b/arch/s390/crypto/des_s390.c
-@@ -25,6 +25,7 @@
- #define DES3_KEY_SIZE	(3 * DES_KEY_SIZE)
+--- a/drivers/irqchip/irq-armada-370-xp.c
++++ b/drivers/irqchip/irq-armada-370-xp.c
+@@ -229,7 +229,7 @@ armada_370_xp_handle_irq(struct pt_regs
+ 						ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS)
+ 				& IPI_DOORBELL_MASK;
  
- static u8 *ctrblk;
-+static DEFINE_SPINLOCK(ctrblk_lock);
+-			writel(~IPI_DOORBELL_MASK, per_cpu_int_base +
++			writel(~ipimask, per_cpu_int_base +
+ 				ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS);
  
- struct s390_des_ctx {
- 	u8 iv[DES_BLOCK_SIZE];
-@@ -368,54 +369,80 @@ static struct crypto_alg cbc_des3_alg =
- 	}
- };
- 
-+static unsigned int __ctrblk_init(u8 *ctrptr, unsigned int nbytes)
-+{
-+	unsigned int i, n;
-+
-+	/* align to block size, max. PAGE_SIZE */
-+	n = (nbytes > PAGE_SIZE) ? PAGE_SIZE : nbytes & ~(DES_BLOCK_SIZE - 1);
-+	for (i = DES_BLOCK_SIZE; i < n; i += DES_BLOCK_SIZE) {
-+		memcpy(ctrptr + i, ctrptr + i - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
-+		crypto_inc(ctrptr + i, DES_BLOCK_SIZE);
-+	}
-+	return n;
-+}
-+
- static int ctr_desall_crypt(struct blkcipher_desc *desc, long func,
--			    struct s390_des_ctx *ctx, struct blkcipher_walk *walk)
-+			    struct s390_des_ctx *ctx,
-+			    struct blkcipher_walk *walk)
- {
- 	int ret = blkcipher_walk_virt_block(desc, walk, DES_BLOCK_SIZE);
--	unsigned int i, n, nbytes;
--	u8 buf[DES_BLOCK_SIZE];
--	u8 *out, *in;
-+	unsigned int n, nbytes;
-+	u8 buf[DES_BLOCK_SIZE], ctrbuf[DES_BLOCK_SIZE];
-+	u8 *out, *in, *ctrptr = ctrbuf;
-+
-+	if (!walk->nbytes)
-+		return ret;
- 
--	memcpy(ctrblk, walk->iv, DES_BLOCK_SIZE);
-+	if (spin_trylock(&ctrblk_lock))
-+		ctrptr = ctrblk;
-+
-+	memcpy(ctrptr, walk->iv, DES_BLOCK_SIZE);
- 	while ((nbytes = walk->nbytes) >= DES_BLOCK_SIZE) {
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		while (nbytes >= DES_BLOCK_SIZE) {
--			/* align to block size, max. PAGE_SIZE */
--			n = (nbytes > PAGE_SIZE) ? PAGE_SIZE :
--				nbytes & ~(DES_BLOCK_SIZE - 1);
--			for (i = DES_BLOCK_SIZE; i < n; i += DES_BLOCK_SIZE) {
--				memcpy(ctrblk + i, ctrblk + i - DES_BLOCK_SIZE,
--				       DES_BLOCK_SIZE);
--				crypto_inc(ctrblk + i, DES_BLOCK_SIZE);
--			}
--			ret = crypt_s390_kmctr(func, ctx->key, out, in, n, ctrblk);
--			if (ret < 0 || ret != n)
-+			if (ctrptr == ctrblk)
-+				n = __ctrblk_init(ctrptr, nbytes);
-+			else
-+				n = DES_BLOCK_SIZE;
-+			ret = crypt_s390_kmctr(func, ctx->key, out, in,
-+					       n, ctrptr);
-+			if (ret < 0 || ret != n) {
-+				if (ctrptr == ctrblk)
-+					spin_unlock(&ctrblk_lock);
- 				return -EIO;
-+			}
- 			if (n > DES_BLOCK_SIZE)
--				memcpy(ctrblk, ctrblk + n - DES_BLOCK_SIZE,
-+				memcpy(ctrptr, ctrptr + n - DES_BLOCK_SIZE,
- 				       DES_BLOCK_SIZE);
--			crypto_inc(ctrblk, DES_BLOCK_SIZE);
-+			crypto_inc(ctrptr, DES_BLOCK_SIZE);
- 			out += n;
- 			in += n;
- 			nbytes -= n;
- 		}
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	}
--
-+	if (ctrptr == ctrblk) {
-+		if (nbytes)
-+			memcpy(ctrbuf, ctrptr, DES_BLOCK_SIZE);
-+		else
-+			memcpy(walk->iv, ctrptr, DES_BLOCK_SIZE);
-+		spin_unlock(&ctrblk_lock);
-+	}
- 	/* final block may be < DES_BLOCK_SIZE, copy only nbytes */
- 	if (nbytes) {
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		ret = crypt_s390_kmctr(func, ctx->key, buf, in,
--				       DES_BLOCK_SIZE, ctrblk);
-+				       DES_BLOCK_SIZE, ctrbuf);
- 		if (ret < 0 || ret != DES_BLOCK_SIZE)
- 			return -EIO;
- 		memcpy(out, buf, nbytes);
--		crypto_inc(ctrblk, DES_BLOCK_SIZE);
-+		crypto_inc(ctrbuf, DES_BLOCK_SIZE);
- 		ret = blkcipher_walk_done(desc, walk, 0);
-+		memcpy(walk->iv, ctrbuf, DES_BLOCK_SIZE);
- 	}
--	memcpy(walk->iv, ctrblk, DES_BLOCK_SIZE);
- 	return ret;
- }
- 
+ 			/* Handle all pending doorbells */
 
 
