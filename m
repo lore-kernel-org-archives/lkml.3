@@ -1,122 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaBRQI4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:08:56 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:58783 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299AbaBRQIy (ORCPT
+	id S1756203AbaBRQKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:10:13 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:45331 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755470AbaBRQKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:08:54 -0500
+	Tue, 18 Feb 2014 11:10:11 -0500
+Message-ID: <530385D9.5090005@monstr.eu>
+Date: Tue, 18 Feb 2014 17:10:01 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Reply-To: Peter.Sewell@cl.cam.ac.uk
-In-Reply-To: <20140218125357.GC27965@twins.programming.kicks-ass.net>
-References: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
-	<20140218125357.GC27965@twins.programming.kicks-ass.net>
-Date: Tue, 18 Feb 2014 16:08:53 +0000
-X-Google-Sender-Auth: YPJmrBbbDBFJuohSLQTcpnCmQnE
-Message-ID: <CAHWkzRQZoWsc5SAJHnbDZckuo9fzt_t88F1K+2U11_mdLyQNxg@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "mark.batty@cl.cam.ac.uk" <Mark.Batty@cl.cam.ac.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Torvald Riegel <triegel@redhat.com>,
-        torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "ramana.radhakrishnan" <Ramana.Radhakrishnan@arm.com>,
-        dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mingo@kernel.org, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Guenter Roeck <linux@roeck-us.net>
+CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
+        achew@nvidia.com
+Subject: Re: [PATCH v2] microblaze: Rename global function heartbeat()
+References: <1392706014-23332-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1392706014-23332-1-git-send-email-linux@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="mPK4nQLnLq7a8k856VuQ4E3khKjMRAkf9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 February 2014 12:53, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Feb 18, 2014 at 12:12:06PM +0000, Peter Sewell wrote:
->> Several of you have said that the standard and compiler should not
->> permit speculative writes of atomics, or (effectively) that the
->> compiler should preserve dependencies.
->
-> The example below only deals with control dependencies; so I'll limit
-> myself to that.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--mPK4nQLnLq7a8k856VuQ4E3khKjMRAkf9
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Data/address dependencies are, if anything, even less clear - see a
-paragraph on that in my reply to Paul.
+On 02/18/2014 07:46 AM, Guenter Roeck wrote:
+> microblaze:allmodconfig complains for some configurations that 'heartbe=
+at'
+> is redefined as different kind of symbol. This is seen in test compiles=
 
->> In simple examples it's easy
->> to see what that means, but in general it's not so clear what the
->> language should guarantee, because dependencies may go via non-atomic
->> code in other compilation units, and we have to consider the extent to
->> which it's desirable to limit optimisation there.
->>
->> For example, suppose we have, in one compilation unit:
->>
->>     void f(int ra, int*rb) {
->>       if (ra==42)
->>         *rb=42;
->>       else
->>         *rb=42;
->>     }
->>
->> and in another compilation unit the bodies of two threads:
->>
->>     // Thread 0
->>     r1 = x;
->>     f(r1,&r2);
->>     y = r2;
->>
->>     // Thread 1
->>     r3 = y;
->>     f(r3,&r4);
->>     x = r4;
->>
->> where accesses to x and y are annotated C11 atomic
->> memory_order_relaxed or Linux ACCESS_ONCE(), accesses to
->> r1,r2,r3,r4,ra,rb are not annotated, and x and y initially hold 0.
->
-> So I'm intuitively ok with this, however I would expect something like:
->
->   void f(_Atomic int ra, _Atomic int *rb);
->
-> To preserve dependencies and not make the conditional go away, simply
-> because in that case the:
->
->   if (ra == 42)
->
-> the 'ra' usage can be seen as an atomic load.
->
->> So as far as we can see, either:
->>
->> 1) if you can accept the latter behaviour (if the Linux codebase does
->>    not rely on its absence), the language definition should permit it,
->>    and current compiler optimisations can be used,
->
-> Currently there's exactly 1 site in the Linux kernel that relies on
-> control dependencies as far as I know -- the one I put in.
+> of watchdog drivers, which often use 'heartbeat' as ststic variable.
+>=20
+> Since 'heartbeat' is an unfortunate name for a global function,
+> rename it to microblaze_heartbeat. Also rename the setup function
+> to microblaze_setup_heartbeat.
+>=20
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> v2: Use microblaze_ instead of xilinx_ as function prefix.
+>=20
+>  arch/microblaze/include/asm/setup.h |    4 ++--
+>  arch/microblaze/kernel/heartbeat.c  |    4 ++--
+>  arch/microblaze/kernel/timer.c      |    4 ++--
+>  3 files changed, 6 insertions(+), 6 deletions(-)
 
-ok, thanks
+Applied. both to microblaze next branch.
 
-> And its
-> limited to a single function, so no cross translation unit funnies
-> there.
+Thanks,
+Michal
 
-One can imagine a language definition that treats code that lies
-entirely within a single compilation unit specially (e.g. if it's
-somehow annotated as relying on dependencies).  But I imagine it would
-be pretty unappealing to work with.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-> Of course, nobody is going to tell me when or where they'll put in the
-> next one; since its now documented as accepted practise.
 
-Is that not fragile?
 
-> However, PaulMck and our RCU usage very much do cross all sorts of TU
-> boundaries; but those are data dependencies.
+--mPK4nQLnLq7a8k856VuQ4E3khKjMRAkf9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-yes - though again see my reply to Paul's note
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-thanks,
-Peter
+iEYEARECAAYFAlMDhdkACgkQykllyylKDCFH4gCfdk6WqmqdN7lNj2Qj0Gx7Qv4L
+YNMAn0AUxxU4bZ25ItbDZi6hLc6GsijA
+=afGn
+-----END PGP SIGNATURE-----
 
-> ~ Peter
+--mPK4nQLnLq7a8k856VuQ4E3khKjMRAkf9--
