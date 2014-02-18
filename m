@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaBRUfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:35:36 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53735 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaBRUfc (ORCPT
+	id S1752559AbaBRUft (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:35:49 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:39984 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaBRUfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:35:32 -0500
+	Tue, 18 Feb 2014 15:35:44 -0500
+Message-ID: <5303C3DD.5050209@ti.com>
+Date: Tue, 18 Feb 2014 15:34:37 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <530338B2.603@kernel.org>
-References: <1392387929-31491-1-git-send-email-marek@goldelico.com>
-	<530338B2.603@kernel.org>
-Date: Tue, 18 Feb 2014 21:35:30 +0100
-Message-ID: <CAAfyv36ZdwpoGsARQKRfvX4EeanZVVus5A444KSE8LOmePhyig@mail.gmail.com>
-Subject: Re: [PATCH 1/2] staging: iio: hmc5843: Add all available models to
- device tree id table.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <galak@kernel.crashing.org>,
+        <devicetree@vger.kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <rob.herring@calxeda.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <dwmw2@infradead.org>, <nsekhar@ti.com>
+Subject: Re: [PATCH v4 0/2] Introduce AEMIF driver for Davinci/Keystone archs
+References: <1391629574-18955-1-git-send-email-ivan.khoronzhuk@ti.com> <53037113.3090105@ti.com> <20140218202702.GA18642@kroah.com>
+In-Reply-To: <20140218202702.GA18642@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
-
-On Tue, Feb 18, 2014 at 11:40 AM, Jonathan Cameron <jic23@kernel.org> wrote:
-> On 14/02/14 14:25, Marek Belisko wrote:
+On Tuesday 18 February 2014 03:27 PM, Greg KH wrote:
+> On Tue, Feb 18, 2014 at 09:41:23AM -0500, Santosh Shilimkar wrote:
+>> Greg,
 >>
->> Signed-off-by: Marek Belisko <marek@goldelico.com>
->
-> I wonder how this got missed.  However, for those data elements to be
-> useful, you will
-> need to read them somewhere in the driver I think.... (if there is any magic
-> that puts this in the relevant i2c locations then point it out to me!)
-There is a table called hmc5843_chip_info_tbl which contains entries
-for all models
-which this driver can handle. And magic is that correct model variant
-is set probe function:
-line: idata->variant = &hmc5843_chip_info_tbl[id->driver_data];
-(id->driver_data contains model value).
->
->> ---
->>   drivers/staging/iio/magnetometer/hmc5843.c | 4 +++-
->>   1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/iio/magnetometer/hmc5843.c
->> b/drivers/staging/iio/magnetometer/hmc5843.c
->> index d4f4dd9..f595fdc 100644
->> --- a/drivers/staging/iio/magnetometer/hmc5843.c
->> +++ b/drivers/staging/iio/magnetometer/hmc5843.c
->> @@ -630,7 +630,9 @@ static const struct i2c_device_id hmc5843_id[] = {
->>   MODULE_DEVICE_TABLE(i2c, hmc5843_id);
->>
->>   static const struct of_device_id hmc5843_of_match[] = {
->> -       { .compatible = "honeywell,hmc5843" },
->> +       { .compatible = "honeywell,hmc5843", .data = (void *)HMC5843_ID },
->> +       { .compatible = "honeywell,hmc5883", .data = (void *)HMC5883_ID },
->> +       { .compatible = "honeywell,hmc5883l", .data = (void *)HMC5883L_ID
->> },
->>         {}
->>   };
->>   MODULE_DEVICE_TABLE(of, hmc5843_of_match);
->>
->
+>> On Wednesday 05 February 2014 02:46 PM, Ivan Khoronzhuk wrote:
+>>> These patches introduce Async External Memory Interface (EMIF16/AEMIF)
+>>> controller driver for Davinci/Keystone archs.
+>>>
+>>> For more informations see documentation:
+>>> Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
+>>> OMAP-L138 - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
+>>> Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+>>>
+>> Can you please have a look at the series ? It has been on the list for
+>> sometime and all the outstanding comments are addressed so far. If
+>> you are ok with it, I would like to get these queued up for 3.15
+>> via your tree.
+> 
+> Why my tree?  Am I the drivers/memory/ maintainer?
+> 
+> /me digs in git...
+> 
+> Ah, it looks like I might be...
+> 
+yes :-)
 
-BR,
+> Ok, let me go review this.
+> 
+Thanks a lot.
 
-marek
+Regards,
+Santosh
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
