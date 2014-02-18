@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbaBRBoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 20:44:12 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:50162 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016AbaBRBoE (ORCPT
+	id S1753811AbaBRBoS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 20:44:18 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40981 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753573AbaBRBoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 20:44:04 -0500
-Date: Mon, 17 Feb 2014 17:43:57 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 19/55] rcutorture: Abstract TOROUT_STRING()
- and friends
-Message-ID: <20140218014357.GC4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140217221231.GA8419@linux.vnet.ibm.com>
- <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392675179-11560-19-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140218002606.GE19929@thin>
- <20140218005802.GW4250@linux.vnet.ibm.com>
- <20140218012318.GA8794@thin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218012318.GA8794@thin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021801-6688-0000-0000-000006B01701
+	Mon, 17 Feb 2014 20:44:14 -0500
+Message-ID: <1392687834.10088.17.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] workqueue: Document exceptions to work item
+ non-reentrancy guarantee
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        stable@vger.kernel.org
+Date: Tue, 18 Feb 2014 01:43:54 +0000
+In-Reply-To: <1392493119-9277-1-git-send-email-peter@hurleysoftware.com>
+References: <1392493119-9277-1-git-send-email-peter@hurleysoftware.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-YpuvPmv+Tr5QojJhW38R"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d8bb:639b:205c:713a
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 05:23:18PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 04:58:02PM -0800, Paul E. McKenney wrote:
-> > On Mon, Feb 17, 2014 at 04:26:06PM -0800, Josh Triplett wrote:
-> > > On Mon, Feb 17, 2014 at 02:12:23PM -0800, Paul E. McKenney wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > These diagnostic macros are not confined to torturing RCU, so this commit
-> > > > makes them available to other torture tests.
-> > > > 
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > This removes the do {} while (0) around the first of the macros, without
-> > > any explanation in the commit message.
-> > 
-> > checkpatch.pl yelled at me about it.  ;-)
-> 
-> That's a fine reason, but the change needs documenting in the commit
-> message.
-> 
-> > > Also, to what extent could these be made redundant with pr_fmt?
-> > > if(verbose) seems like it really ought to become a priority level or
-> > > dynamic debugging (and it's really awful to further propagate macros
-> > > that reference an out-of-macro variable).  Ideally all of these could go
-> > > away in favor of pr_fmt, and then the individual calls to them would
-> > > become pr_alert, pr_debug, pr_error, or similar.
-> > 
-> > I don't immediately see how to get the "!!!" to be there or not with
-> > pr_fmt(), since the same pr_fmt() would apply to all the macros.
-> 
-> Replace VERBOSE_TOROUT_ERRSTRING with something like pr_emerg, or leave
-> it as pr_alert and drop the priority of the other variations to
-> something less; then instead of "!!!" you have the existing message
-> priority mechanism.
 
-Is this message-priority mechanism apparent over a serial console?
-As in can a script reading the serial console output tell what the
-message priority is?
+--=-YpuvPmv+Tr5QojJhW38R
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Also, if it helps, note that you can add parameters in pr_fmt, as long
-> as they're the initial parameters and you add corresponding format
-> specifiers before the passed format string.  (Many modules do this to
-> add __func__, for instance.)
+On Sat, 2014-02-15 at 14:38 -0500, Peter Hurley wrote:
+> Since commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77,
+>   workqueue: consider work function when searching for busy work items
+> work items whose work functions are re-assigned are no longer guaranteed
+> non-reentrancy with the previously assigned work function. For example,
+>=20
+>         PREPARE_WORK(&work, funcA)
+>         schedule_work(&work)
+>           .
+>         < funcA starts >
+>           .
+>         PREPARE_WORK(&work, funcB)
+>         schedule_work(&work)
+>=20
+> funcA() may run concurrently with funcB().
+>=20
+> The work item non-reentrancy guarantee is a crucial design guarantee
+> which, if violated, may not have obvious consequences. For example,
+> the entire firewire subsystem expects the as-documented per-work item
+> non-reentrancy guarantee, which was the behavior prior to the above
+> commit, not the per-work function + per-work item behavior since.
+>=20
+> Document the known exceptions to this guarantee.
+[...]
 
-Agreed, and I do see some uses of this sort.
+It never would have occurred to me that you could safely change the
+function for a work item that is already scheduled or running.
+Especially given that PREPARE_WORK() is just a simple assignment (i.e.
+no serialisation).
 
-> > I am also not all that excited about including "verbose" or similar
-> > into the argument list of all calls to these guys.
-> 
-> verbose could go away entirely in favor of dynamic debug; you could then
-> turn debug on or off for the relevant torture test module instead of
-> setting verbose.
+Perhaps there is a need to document more generally how PREPARE_WORK()
+can be used, not just this quirk of reentrancy.
 
-But I need a pretty fully functional userspace to control the dynamic
-debug from what I can see.  I really would like to avoid relying on
-having much of any userspace during rcutorture and locktorture testing.
-The reason is that avoiding a userspace greatly reduces my memory and
-disk requirements, allowing me to run more instances of rcutorture and
-locktorture in parallel on smaller systems.
+Ben.
 
-							Thanx, Paul
+--=20
+Ben Hutchings
+Nothing is ever a complete failure; it can always serve as a bad example.
 
+--=-YpuvPmv+Tr5QojJhW38R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUwK62ue/yOyVhhEJAQrmdw//ZktygV//PrU5mDg7sAWrAN6tntnoFXMh
+s2isoDEE2vsPJK2XbCXS2PDTdTFUmwT2R3mqPCg7SVv3OMUDQNlL1LWwHfROevLR
+Sn9Dxri7+vn2zE+OkEL8o7bTzH7R7MeqyVV94AjVyye3D1RxaoO5KLbROErrXcT7
+R6ub6vQYSDyhZi8raVjcmIgA8oi5xJea5O4Q2WJaxB80B+4HzEMs+rYB+KHjpBCx
+lynjJTkpwGdttz5G4tag+kPeQ4GUttNQV4UUBV3kYX+Z5VM6TK9rr84OkMHGGjGs
++WYghC4u0x3yGR25MVBUVLAuyNpk7H0OzNiB0z4BF734u+YwugmPEt3aKyHR/8lN
+u3auVThykRCFh8hxbst1/sQ2xoJ1id34RS3ZiMMRC7qCIFwJthcsYctM9Zr6GsiC
+NFD3UPanORk9EmcKOid5jDmm6JZwV5aTQe0HS9REfFE8qeuVyVvoz2+NUIIkjSda
+6P3FLuszFBirg/FxDX9zF34SGoWR59eu+Hy+Wh8FSmmFR34Sbj6Y4RR5Aufe8VtD
+boTKScqrHJ6Wt9oXWnxv77cCe5dAsP1SYDBUVtlMAcGc8fH1GYZNTi0Ed4PPD6yC
+eIntcb4YtyOhKqrWjMG+YQbWB3nrIObqGotxe2LnOe4LuOOC/s8VPnRRkbyBmRjZ
+XH399hv5GPI=
+=n5Wy
+-----END PGP SIGNATURE-----
+
+--=-YpuvPmv+Tr5QojJhW38R--
