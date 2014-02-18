@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801AbaBRKkQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:40:16 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38522 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaBRKkO (ORCPT
+	id S1754836AbaBRKk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:40:27 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:52671 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754806AbaBRKkW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:40:14 -0500
-Message-ID: <530338B2.603@kernel.org>
-Date: Tue, 18 Feb 2014 10:40:50 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Feb 2014 05:40:22 -0500
 MIME-Version: 1.0
-To: Marek Belisko <marek@goldelico.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net
-CC: pmeerw@pmeerw.net, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, hns@goldelico.com
-Subject: Re: [PATCH 1/2] staging: iio: hmc5843: Add all available models to
- device tree id table.
-References: <1392387929-31491-1-git-send-email-marek@goldelico.com>
-In-Reply-To: <1392387929-31491-1-git-send-email-marek@goldelico.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52FA1E59.1000307@linaro.org>
+References: <1392027058-11680-1-git-send-email-ivan.khoronzhuk@ti.com>
+	<1392027058-11680-2-git-send-email-ivan.khoronzhuk@ti.com>
+	<52FA1E59.1000307@linaro.org>
+Date: Tue, 18 Feb 2014 11:40:21 +0100
+Message-ID: <CABuKBeJNwe5VXi2SvPX6Cne-iMHP7bbZarJDNAzuCMbg0E-bCQ@mail.gmail.com>
+Subject: Re: [PATCH v6 1/3] clocksource: timer-keystone: introduce clocksource
+ driver for Keystone
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, santosh.shilimkar@ti.com,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        galak@codeaurora.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
+        grygorii.strashko@ti.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, joshc@codeaurora.org,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        robh+dt@kernel.org, tglx@linutronix.de,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/14 14:25, Marek Belisko wrote:
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
-I wonder how this got missed.  However, for those data elements to be useful, you will
-need to read them somewhere in the driver I think.... (if there is any magic
-that puts this in the relevant i2c locations then point it out to me!)
-> ---
->   drivers/staging/iio/magnetometer/hmc5843.c | 4 +++-
->   1 file changed, 3 insertions(+), 1 deletion(-)
+2014-02-11 13:58 GMT+01:00 Daniel Lezcano <daniel.lezcano@linaro.org>:
+> On 02/10/2014 11:10 AM, Ivan Khoronzhuk wrote:
+>>
+>> Add broadcast clock-event device for the Keystone arch.
+>>
+>> The timer can be configured as a general-purpose 64-bit timer,
+>> dual general-purpose 32-bit timers. When configured as dual 32-bit
+>> timers, each half can operate in conjunction (chain mode) or
+>> independently (unchained mode) of each other.
+>>
+>> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+>> Acked-by: Santosh shilimkar <santosh.shilimkar@ti.com>
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> ---
 >
-> diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
-> index d4f4dd9..f595fdc 100644
-> --- a/drivers/staging/iio/magnetometer/hmc5843.c
-> +++ b/drivers/staging/iio/magnetometer/hmc5843.c
-> @@ -630,7 +630,9 @@ static const struct i2c_device_id hmc5843_id[] = {
->   MODULE_DEVICE_TABLE(i2c, hmc5843_id);
 >
->   static const struct of_device_id hmc5843_of_match[] = {
-> -	{ .compatible = "honeywell,hmc5843" },
-> +	{ .compatible = "honeywell,hmc5843", .data = (void *)HMC5843_ID },
-> +	{ .compatible = "honeywell,hmc5883", .data = (void *)HMC5883_ID },
-> +	{ .compatible = "honeywell,hmc5883l", .data = (void *)HMC5883L_ID },
->   	{}
->   };
->   MODULE_DEVICE_TABLE(of, hmc5843_of_match);
->
+> Applied to my tree for 3.15
 
+I wanted to send a trivial follow-up patch, but I can't find the tree
+to which you have applied this patch.
+Would you mind to indicate me where I can find it.
+
+Cheers,
+Matthias
+
+>
+> --
+>  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+>
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
+
+-- 
+motzblog.wordpress.com
