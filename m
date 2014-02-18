@@ -1,83 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaBRTap (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:30:45 -0500
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:41145 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472AbaBRTan (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:30:43 -0500
-Message-ID: <5303B4C4.2040907@hp.com>
-Date: Tue, 18 Feb 2014 14:30:12 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com> <20140218073111.GW27965@twins.programming.kicks-ass.net>
-In-Reply-To: <20140218073111.GW27965@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752563AbaBRTaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:30:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:27354 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752507AbaBRTaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:30:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
+   d="scan'208";a="457592410"
+Subject: [RFC][PATCH 5/6] x86: mm: new tunable for single vs full TLB flush
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, ak@linux.intel.com, alex.shi@linaro.org,
+        kirill.shutemov@linux.intel.com, mgorman@suse.de,
+        tim.c.chen@linux.intel.com, x86@kernel.org, peterz@infradead.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 18 Feb 2014 11:30:16 -0800
+References: <20140218193008.CA410E17@viggo.jf.intel.com>
+In-Reply-To: <20140218193008.CA410E17@viggo.jf.intel.com>
+Message-Id: <20140218193016.1C3C2BAA@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 02:31 AM, Peter Zijlstra wrote:
-> On Mon, Feb 17, 2014 at 02:47:03PM -0800, H. Peter Anvin wrote:
->> On 02/17/2014 12:41 PM, Waiman Long wrote:
->>> v3->v4:
->>>   - Remove debugging code and fix a configuration error
->>>   - Simplify the qspinlock structure and streamline the code to make it
->>>     perform a bit better
->>>   - Add an x86 version of asm/qspinlock.h for holding x86 specific
->>>     optimization.
->>>   - Add an optimized x86 code path for 2 contending tasks to improve
->>>     low contention performance.
->>>
->>> v2->v3:
->>>   - Simplify the code by using numerous mode only without an unfair option.
->>>   - Use the latest smp_load_acquire()/smp_store_release() barriers.
->>>   - Move the queue spinlock code to kernel/locking.
->>>   - Make the use of queue spinlock the default for x86-64 without user
->>>     configuration.
->>>   - Additional performance tuning.
->>>
->>> v1->v2:
->>>   - Add some more comments to document what the code does.
->>>   - Add a numerous CPU mode to support>= 16K CPUs
->>>   - Add a configuration option to allow lock stealing which can further
->>>     improve performance in many cases.
->>>   - Enable wakeup of queue head CPU at unlock time for non-numerous
->>>     CPU mode.
->>>
->>> This patch set introduces a queue-based spinlock implementation that
->>> can replace the default ticket spinlock without increasing the size
->>> of the spinlock data structure. As a result, critical kernel data
->>> structures that embed spinlock won't increase in size and breaking
->>> data alignments.
->>>
->> This is starting to look good, so I have pulled it into
->> tip:x86/spinlocks to start give it some testing mileage.
-> It very much needs paravirt muck before we can even consider it.
 
-I will start looking at how to make it work with paravirt. Hopefully, it 
-won't take too long.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
--Longman
+Most of the logic here is in the documentation file.  Please take
+a look at it.
+
+I know we've come full-circle here back to a tunable, but this
+new one is *WAY* simpler.  I challenge anyone to describe in one
+sentence how the old one worked.  Here's the way the new one
+works:
+
+	If we are flushing more pages than the ceiling, we use
+	the full flush, otherwise we use invlpg.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+
+ b/Documentation/x86/tlb.txt |   64 ++++++++++++++++++++++++++++++++++++++++++++
+ b/arch/x86/mm/tlb.c         |   47 +++++++++++++++++++++++++++++++-
+ 2 files changed, 110 insertions(+), 1 deletion(-)
+
+diff -puN arch/x86/mm/tlb.c~new-tunable-for-single-vs-full-tlb-flush arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~new-tunable-for-single-vs-full-tlb-flush	2014-02-18 10:59:39.420502826 -0800
++++ b/arch/x86/mm/tlb.c	2014-02-18 10:59:39.427503145 -0800
+@@ -167,7 +167,6 @@ void flush_tlb_current_task(void)
+ 
+ /* in units of pages */
+ unsigned long tlb_single_page_flush_ceiling = 5;
+-
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+ {
+@@ -267,3 +266,49 @@ void flush_tlb_kernel_range(unsigned lon
+ 		on_each_cpu(do_kernel_range_flush, &info, 1);
+ 	}
+ }
++
++static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
++			     size_t count, loff_t *ppos)
++{
++	char buf[32];
++	unsigned int len;
++
++	len = sprintf(buf, "%ld\n", tlb_single_page_flush_ceiling);
++	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
++}
++
++static ssize_t tlbflush_write_file(struct file *file,
++		 const char __user *user_buf, size_t count, loff_t *ppos)
++{
++	char buf[32];
++	ssize_t len;
++	int ceiling;
++
++	len = min(count, sizeof(buf) - 1);
++	if (copy_from_user(buf, user_buf, len))
++		return -EFAULT;
++
++	buf[len] = '\0';
++	if (kstrtoint(buf, 0, &ceiling))
++		return -EINVAL;
++
++	if (ceiling < 0)
++		return -EINVAL;
++
++	tlb_single_page_flush_ceiling = ceiling;
++	return count;
++}
++
++static const struct file_operations fops_tlbflush = {
++	.read = tlbflush_read_file,
++	.write = tlbflush_write_file,
++	.llseek = default_llseek,
++};
++
++static int __init create_tlb_single_page_flush_ceiling(void)
++{
++	debugfs_create_file("tlb_single_page_flush_ceiling", S_IRUSR | S_IWUSR,
++			    arch_debugfs_dir, NULL, &fops_tlbflush);
++	return 0;
++}
++late_initcall(create_tlb_single_page_flush_ceiling);
+diff -puN /dev/null Documentation/x86/tlb.txt
+--- /dev/null	2014-01-15 16:08:30.019511980 -0800
++++ b/Documentation/x86/tlb.txt	2014-02-18 10:59:39.427503145 -0800
+@@ -0,0 +1,64 @@
++When the kernel unmaps or modified the attributes of a range of
++memory, it has two choices:
++ 1. Flush the entire TLB with a two-instruction sequence.  This is
++    a quick operation, but it causes collateral damage: TLB entries
++    from areas other than the one we are trying to flush will be
++    destroyed and must be refilled later, at some cost.
++ 2. Use the invlpg instruction to invalidate a single page at a
++    time.  This could potentialy cost many more instructions, but
++    it is a much more precise operation, causing no collateral
++    damage to other TLB entries.
++
++Which method to do depends on a few things:
++ 1. The size of the flush being performed.  A flush of the entire
++    address space is obviously better performed by flushing the
++    entire TLB than doing 2^48/PAGE_SIZE invlpg calls.
++ 2. The contents of the TLB.  If the TLB is empty, then there will
++    be no collateral damage caused by doing the global flush, and
++    all of the invlpg calls will have ended up being wasted work.
++    Whether or not the range being flushed was in the TLB matters
++    as well.
++ 3. The size of the TLB.  The larger the TLB, the more collateral
++    damage we do with a full flush.  So, the larger the TLB, the
++    more attrative invlpg looks.
++ 4. The microarchitecture.  The TLB has become a multi-level
++    cache on modern CPUs, and the global flushes have become more
++    expensive relative to single-page flushes.
++
++There is obviously no way the kernel can know all these things,
++especially the contents of the TLB during a given flush.  The
++sizes of the flush will vary greatly depending on the workload as
++well.  There is essentially no "right" point to choose.
++
++If you believe that invlpg is being called too often, you can
++lower the tunable:
++
++	/sys/debug/kernel/x86/tlb_single_page_flush_ceiling
++
++This will cause us to do the global flush for more cases.
++Lowering it to 0 will disable the use of invlpg.
++
++You might see invlpg inside of flush_tlb_mm_range() show up in
++profiles, or you can use the trace_tlb_flush() tracepoints. to
++determine how long the flush operations are taking.
++
++Essentially, you are balancing the cycles you spend doing invlpg
++with the cycles that you spend refilling the TLB later.
++
++You can measure how expensive TLB refills are by using
++performance counters and 'perf stat', like this:
++
++perf stat -e
++	cpu/event=0x8,umask=0x84,name=dtlb_load_misses_walk_duration/,
++	cpu/event=0x8,umask=0x82,name=dtlb_load_misses_walk_completed/,
++	cpu/event=0x49,umask=0x4,name=dtlb_store_misses_walk_duration/,
++	cpu/event=0x49,umask=0x2,name=dtlb_store_misses_walk_completed/,
++	cpu/event=0x85,umask=0x4,name=itlb_misses_walk_duration/,
++	cpu/event=0x85,umask=0x2,name=itlb_misses_walk_completed/
++
++That works on an IvyBridge-era CPU (i5-3320M).  Different CPUs
++may have differently-named counters, but they should at least
++be there in some form.  You can use pmu-tools 'ocperf list'
++(https://github.com/andikleen/pmu-tools) to find the right
++counters for a given CPU.
++
+_
