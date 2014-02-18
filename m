@@ -1,160 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbaBRWpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:45:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50614 "EHLO
+	id S1752416AbaBRWqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:46:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838AbaBRWpr (ORCPT
+	with ESMTP id S1752199AbaBRWp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:45:47 -0500
+	Tue, 18 Feb 2014 17:45:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, lizefan@huawei.com
-Subject: [PATCH 3.4 00/24] 3.4.81-stable review
-Date: Tue, 18 Feb 2014 14:46:47 -0800
-Message-Id: <20140218224550.221535225@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, pjt@google.com,
+        Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.4 14/24] sched/nohz: Fix rq->cpu_load[] calculations
+Date: Tue, 18 Feb 2014 14:47:01 -0800
+Message-Id: <20140218224550.629528065@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
+References: <20140218224550.221535225@linuxfoundation.org>
 User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many thanks to Li Zefan for digging up a bunch of these patches, that
-work is much appreciated.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-This is the start of the stable review cycle for the 3.4.81 release.
-There are 24 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+------------------
 
-Responses should be made by Thu Feb 20 22:45:38 UTC 2014.
-Anything received after that time might be too late.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.81-rc1.gz
-and the diffstat can be found below.
+commit 556061b00c9f2fd6a5524b6bde823ef12f299ecf upstream.
 
-thanks,
+While investigating why the load-balancer did funny I found that the
+rq->cpu_load[] tables were completely screwy.. a bit more digging
+revealed that the updates that got through were missing ticks followed
+by a catchup of 2 ticks.
 
-greg k-h
+The catchup assumes the cpu was idle during that time (since only nohz
+can cause missed ticks and the machine is idle etc..) this means that
+esp. the higher indices were significantly lower than they ought to
+be.
 
--------------
-Pseudo-Shortlog of commits:
+The reason for this is that its not correct to compare against jiffies
+on every jiffy on any other cpu than the cpu that updates jiffies.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.81-rc1
+This patch cludges around it by only doing the catch-up stuff from
+nohz_idle_balance() and doing the regular stuff unconditionally from
+the tick.
 
-Jeff Layton <jlayton@redhat.com>
-    nfs: tear down caches in nfs_init_writepagecache when allocation fails
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: pjt@google.com
+Cc: Venkatesh Pallipadi <venki@google.com>
+Link: http://lkml.kernel.org/n/tip-tp4kj18xdd5aj4vvj0qg55s2@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Dan Rosenberg <drosenberg@vsecurity.com>
-    lib/vsprintf.c: kptr_restrict: fix pK-error in SysRq show-all-timers(Q)
+---
+ kernel/sched/core.c  |   53 +++++++++++++++++++++++++++++++++++++--------------
+ kernel/sched/fair.c  |    2 -
+ kernel/sched/sched.h |    2 -
+ 3 files changed, 41 insertions(+), 16 deletions(-)
 
-Asias He <asias@redhat.com>
-    virtio-blk: Use block layer provided spinlock
-
-Seth Forshee <seth.forshee@canonical.com>
-    Input: synaptics - handle out of bounds values from the hardware
-
-Bojan Smojver <bojan@rexursive.com>
-    PM / Hibernate: Hibernate/thaw fixes/improvements
-
-Avi Kivity <avi@redhat.com>
-    KVM: Fix buffer overflow in kvm_set_irq()
-
-Nicholas Bellinger <nab@linux-iscsi.org>
-    target/file: Re-enable optional fd_buffered_io=1 operation
-
-Nicholas Bellinger <nab@linux-iscsi.org>
-    target/file: Use O_DSYNC by default for FILEIO backends
-
-Jan Kara <jack@suse.cz>
-    IB/qib: Convert qib_user_sdma_pin_pages() to use get_user_pages_fast()
-
-Peter Zijlstra <a.p.zijlstra@chello.nl>
-    sched/nohz: Fix rq->cpu_load calculations some more
-
-Peter Zijlstra <a.p.zijlstra@chello.nl>
-    sched/nohz: Fix rq->cpu_load[] calculations
-
-Steven Rostedt <rostedt@goodmis.org>
-    ftrace: Have function graph only trace based on global_ops filters
-
-Steven Rostedt <rostedt@goodmis.org>
-    ftrace: Fix synchronization location disabling and freeing ftrace_ops
-
-Steven Rostedt <rostedt@goodmis.org>
-    ftrace: Synchronize setting function_trace_op with ftrace_trace_function
-
-Mikulas Patocka <mpatocka@redhat.com>
-    dm sysfs: fix a module unload race
-
-Xishi Qiu <qiuxishi@huawei.com>
-    mm: setup pageblock_order before it's used by sparsemem
-
-Andrew Morton <akpm@linux-foundation.org>
-    mm/page_alloc.c: remove pageblock_default_order()
-
-Daniel Vetter <daniel.vetter@ffwll.ch>
-    drm/i915: kick any firmware framebuffers before claiming the gtt
-
-Tao Ma <boyu.mt@taobao.com>
-    ext4: protect group inode free counting with group lock
-
-Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-    printk: Fix scheduling-while-atomic problem in console_cpu_notify()
-
-Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-    x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
-
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-    mm: __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
-
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-    mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
-
-Stephen Smalley <sds@tycho.nsa.gov>
-    SELinux: Fix kernel BUG on empty security contexts.
-
-
--------------
-
-Diffstat:
-
- Makefile                                  |   4 +-
- drivers/block/virtio_blk.c                |   9 +--
- drivers/gpu/drm/i915/i915_dma.c           |  37 ++++++++--
- drivers/infiniband/hw/qib/qib_user_sdma.c |   6 +-
- drivers/input/mouse/synaptics.c           |  23 ++++++
- drivers/md/Kconfig                        |   4 ++
- drivers/md/Makefile                       |   1 +
- drivers/md/dm-builtin.c                   |  50 +++++++++++++
- drivers/md/dm-sysfs.c                     |   5 --
- drivers/md/dm.c                           |  26 ++-----
- drivers/md/dm.h                           |  17 ++++-
- drivers/target/target_core_file.c         |  81 ++++++++++-----------
- drivers/target/target_core_file.h         |   2 +-
- fs/buffer.c                               |   6 +-
- fs/ext4/ialloc.c                          |   4 +-
- fs/nfs/write.c                            |  10 ++-
- include/linux/sched.h                     |   1 +
- kernel/power/swap.c                       |  62 +++++++++++------
- kernel/printk.c                           |   1 -
- kernel/sched/core.c                       |  86 +++++++++++++++++++----
- kernel/sched/fair.c                       |   2 +-
- kernel/sched/sched.h                      |   2 +-
- kernel/time/tick-sched.c                  |   1 +
- kernel/trace/ftrace.c                     | 112 +++++++++++++++++++++++++-----
- lib/Makefile                              |   1 +
- lib/vsprintf.c                            |   3 +-
- mm/internal.h                             |   2 +
- mm/page-writeback.c                       |   5 +-
- mm/page_alloc.c                           |  33 ++++-----
- mm/sparse.c                               |   3 +
- security/selinux/ss/services.c            |   4 ++
- virt/kvm/irq_comm.c                       |   1 +
- 32 files changed, 426 insertions(+), 178 deletions(-)
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -692,8 +692,6 @@ int tg_nop(struct task_group *tg, void *
+ }
+ #endif
+ 
+-void update_cpu_load(struct rq *this_rq);
+-
+ static void set_load_weight(struct task_struct *p)
+ {
+ 	int prio = p->static_prio - MAX_RT_PRIO;
+@@ -2620,22 +2618,13 @@ decay_load_missed(unsigned long load, un
+  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
+  * every tick. We fix it up based on jiffies.
+  */
+-void update_cpu_load(struct rq *this_rq)
++static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
++			      unsigned long pending_updates)
+ {
+-	unsigned long this_load = this_rq->load.weight;
+-	unsigned long curr_jiffies = jiffies;
+-	unsigned long pending_updates;
+ 	int i, scale;
+ 
+ 	this_rq->nr_load_updates++;
+ 
+-	/* Avoid repeated calls on same jiffy, when moving in and out of idle */
+-	if (curr_jiffies == this_rq->last_load_update_tick)
+-		return;
+-
+-	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+-	this_rq->last_load_update_tick = curr_jiffies;
+-
+ 	/* Update our load: */
+ 	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
+ 	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
+@@ -2660,9 +2649,45 @@ void update_cpu_load(struct rq *this_rq)
+ 	sched_avg_update(this_rq);
+ }
+ 
++/*
++ * Called from nohz_idle_balance() to update the load ratings before doing the
++ * idle balance.
++ */
++void update_idle_cpu_load(struct rq *this_rq)
++{
++	unsigned long curr_jiffies = jiffies;
++	unsigned long load = this_rq->load.weight;
++	unsigned long pending_updates;
++
++	/*
++	 * Bloody broken means of dealing with nohz, but better than nothing..
++	 * jiffies is updated by one cpu, another cpu can drift wrt the jiffy
++	 * update and see 0 difference the one time and 2 the next, even though
++	 * we ticked at roughtly the same rate.
++	 *
++	 * Hence we only use this from nohz_idle_balance() and skip this
++	 * nonsense when called from the scheduler_tick() since that's
++	 * guaranteed a stable rate.
++	 */
++	if (load || curr_jiffies == this_rq->last_load_update_tick)
++		return;
++
++	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
++	this_rq->last_load_update_tick = curr_jiffies;
++
++	__update_cpu_load(this_rq, load, pending_updates);
++}
++
++/*
++ * Called from scheduler_tick()
++ */
+ static void update_cpu_load_active(struct rq *this_rq)
+ {
+-	update_cpu_load(this_rq);
++	/*
++	 * See the mess in update_idle_cpu_load().
++	 */
++	this_rq->last_load_update_tick = jiffies;
++	__update_cpu_load(this_rq, this_rq->load.weight, 1);
+ 
+ 	calc_load_account_active(this_rq);
+ }
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5042,7 +5042,7 @@ static void nohz_idle_balance(int this_c
+ 
+ 		raw_spin_lock_irq(&this_rq->lock);
+ 		update_rq_clock(this_rq);
+-		update_cpu_load(this_rq);
++		update_idle_cpu_load(this_rq);
+ 		raw_spin_unlock_irq(&this_rq->lock);
+ 
+ 		rebalance_domains(balance_cpu, CPU_IDLE);
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -873,7 +873,7 @@ extern void resched_cpu(int cpu);
+ extern struct rt_bandwidth def_rt_bandwidth;
+ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
+ 
+-extern void update_cpu_load(struct rq *this_rq);
++extern void update_idle_cpu_load(struct rq *this_rq);
+ 
+ #ifdef CONFIG_CGROUP_CPUACCT
+ #include <linux/cgroup.h>
 
 
