@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaBRWrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:47:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51093 "EHLO
+	id S1753421AbaBRXCY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:02:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51121 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741AbaBRWrA (ORCPT
+	with ESMTP id S1751741AbaBRWrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:00 -0500
+	Tue, 18 Feb 2014 17:47:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Pete Eberlein <pete@sensoray.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.12 26/32] [media] Revert "[media] videobuf_vm_{open,close} race fixes"
-Date: Tue, 18 Feb 2014 14:47:26 -0800
-Message-Id: <20140218224500.842380550@linuxfoundation.org>
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 32/32] intel_pstate: Take core C0 time into account for core busy calculation
+Date: Tue, 18 Feb 2014 14:47:32 -0800
+Message-Id: <20140218224501.029284866@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
 References: <20140218224500.101465031@linuxfoundation.org>
@@ -30,172 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hverkuil@xs4all.nl>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit cca36e2eecec2b8fc869a50ffd3bd0adeed92b8b upstream.
+commit fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 upstream.
 
-This reverts commit a242f426108c284049a69710f871cc9f11b13e61.
+Take non-idle time into account when calculating core busy time.
+This ensures that intel_pstate will notice a decrease in load.
 
-That commit actually caused deadlocks, rather then fixing them.
-
-If ext_lock is set to NULL (otherwise videobuf_queue_lock doesn't do
-anything), then you get this deadlock:
-
-The driver's mmap function calls videobuf_mmap_mapper which calls
-videobuf_queue_lock on q. videobuf_mmap_mapper calls  __videobuf_mmap_mapper,
-__videobuf_mmap_mapper calls videobuf_vm_open and videobuf_vm_open
-calls videobuf_queue_lock on q (introduced by above patch): deadlocked.
-
-This affects drivers using dma-contig and dma-vmalloc. Only dma-sg is
-not affected since it doesn't call videobuf_vm_open from __videobuf_mmap_mapper.
-
-Most drivers these days have a non-NULL ext_lock. Those that still use
-NULL there are all fairly obscure drivers, which is why this hasn't been
-seen earlier.
-
-Since everything worked perfectly fine for many years I prefer to just
-revert this patch rather than trying to fix it. videobuf is quite fragile
-and I rather not touch it too much. Work is (slowly) progressing to move
-everything over to vb2 or at the very least use non-NULL ext_lock in
-videobuf.
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Reported-by: Pete Eberlein <pete@sensoray.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=66581
+Cc: 3.10+ <stable@vger.kernel.org> # 3.10+
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/videobuf-dma-contig.c |   12 +++++-------
- drivers/media/v4l2-core/videobuf-dma-sg.c     |   10 ++++------
- drivers/media/v4l2-core/videobuf-vmalloc.c    |   10 ++++------
- 3 files changed, 13 insertions(+), 19 deletions(-)
+ drivers/cpufreq/intel_pstate.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/drivers/media/v4l2-core/videobuf-dma-contig.c
-+++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
-@@ -66,14 +66,11 @@ static void __videobuf_dc_free(struct de
- static void videobuf_vm_open(struct vm_area_struct *vma)
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -51,6 +51,7 @@ struct sample {
+ 	int32_t core_pct_busy;
+ 	u64 aperf;
+ 	u64 mperf;
++	unsigned long long tsc;
+ 	int freq;
+ };
+ 
+@@ -86,6 +87,7 @@ struct cpudata {
+ 
+ 	u64	prev_aperf;
+ 	u64	prev_mperf;
++	unsigned long long prev_tsc;
+ 	int	sample_ptr;
+ 	struct sample samples[SAMPLE_COUNT];
+ };
+@@ -436,11 +438,17 @@ static inline void intel_pstate_calc_bus
+ 					struct sample *sample)
  {
- 	struct videobuf_mapping *map = vma->vm_private_data;
--	struct videobuf_queue *q = map->q;
+ 	u64 core_pct;
+-	core_pct = div64_u64(int_tofp(sample->aperf * 100),
+-			     sample->mperf);
+-	sample->freq = fp_toint(cpu->pstate.max_pstate * core_pct * 1000);
++	u64 c0_pct;
  
--	dev_dbg(q->dev, "vm_open %p [count=%u,vma=%08lx-%08lx]\n",
-+	dev_dbg(map->q->dev, "vm_open %p [count=%u,vma=%08lx-%08lx]\n",
- 		map, map->count, vma->vm_start, vma->vm_end);
- 
--	videobuf_queue_lock(q);
- 	map->count++;
--	videobuf_queue_unlock(q);
+-	sample->core_pct_busy = core_pct;
++	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
++
++	c0_pct = div64_u64(sample->mperf * 100, sample->tsc);
++	sample->freq = fp_toint(
++		mul_fp(int_tofp(cpu->pstate.max_pstate),
++			int_tofp(core_pct * 1000)));
++
++	sample->core_pct_busy = mul_fp(int_tofp(core_pct),
++				div_fp(int_tofp(c0_pct + 1), int_tofp(100)));
  }
  
- static void videobuf_vm_close(struct vm_area_struct *vma)
-@@ -85,11 +82,12 @@ static void videobuf_vm_close(struct vm_
- 	dev_dbg(q->dev, "vm_close %p [count=%u,vma=%08lx-%08lx]\n",
- 		map, map->count, vma->vm_start, vma->vm_end);
- 
--	videobuf_queue_lock(q);
--	if (!--map->count) {
-+	map->count--;
-+	if (0 == map->count) {
- 		struct videobuf_dma_contig_memory *mem;
- 
- 		dev_dbg(q->dev, "munmap %p q=%p\n", map, q);
-+		videobuf_queue_lock(q);
- 
- 		/* We need first to cancel streams, before unmapping */
- 		if (q->streaming)
-@@ -128,8 +126,8 @@ static void videobuf_vm_close(struct vm_
- 
- 		kfree(map);
- 
-+		videobuf_queue_unlock(q);
- 	}
--	videobuf_queue_unlock(q);
- }
- 
- static const struct vm_operations_struct videobuf_vm_ops = {
---- a/drivers/media/v4l2-core/videobuf-dma-sg.c
-+++ b/drivers/media/v4l2-core/videobuf-dma-sg.c
-@@ -338,14 +338,11 @@ EXPORT_SYMBOL_GPL(videobuf_dma_free);
- static void videobuf_vm_open(struct vm_area_struct *vma)
- {
- 	struct videobuf_mapping *map = vma->vm_private_data;
--	struct videobuf_queue *q = map->q;
- 
- 	dprintk(2, "vm_open %p [count=%d,vma=%08lx-%08lx]\n", map,
- 		map->count, vma->vm_start, vma->vm_end);
- 
--	videobuf_queue_lock(q);
- 	map->count++;
--	videobuf_queue_unlock(q);
- }
- 
- static void videobuf_vm_close(struct vm_area_struct *vma)
-@@ -358,9 +355,10 @@ static void videobuf_vm_close(struct vm_
- 	dprintk(2, "vm_close %p [count=%d,vma=%08lx-%08lx]\n", map,
- 		map->count, vma->vm_start, vma->vm_end);
- 
--	videobuf_queue_lock(q);
--	if (!--map->count) {
-+	map->count--;
-+	if (0 == map->count) {
- 		dprintk(1, "munmap %p q=%p\n", map, q);
-+		videobuf_queue_lock(q);
- 		for (i = 0; i < VIDEO_MAX_FRAME; i++) {
- 			if (NULL == q->bufs[i])
- 				continue;
-@@ -376,9 +374,9 @@ static void videobuf_vm_close(struct vm_
- 			q->bufs[i]->baddr = 0;
- 			q->ops->buf_release(q, q->bufs[i]);
- 		}
-+		videobuf_queue_unlock(q);
- 		kfree(map);
- 	}
--	videobuf_queue_unlock(q);
- 	return;
- }
- 
---- a/drivers/media/v4l2-core/videobuf-vmalloc.c
-+++ b/drivers/media/v4l2-core/videobuf-vmalloc.c
-@@ -54,14 +54,11 @@ MODULE_LICENSE("GPL");
- static void videobuf_vm_open(struct vm_area_struct *vma)
- {
- 	struct videobuf_mapping *map = vma->vm_private_data;
--	struct videobuf_queue *q = map->q;
- 
- 	dprintk(2, "vm_open %p [count=%u,vma=%08lx-%08lx]\n", map,
- 		map->count, vma->vm_start, vma->vm_end);
- 
--	videobuf_queue_lock(q);
- 	map->count++;
--	videobuf_queue_unlock(q);
- }
- 
- static void videobuf_vm_close(struct vm_area_struct *vma)
-@@ -73,11 +70,12 @@ static void videobuf_vm_close(struct vm_
- 	dprintk(2, "vm_close %p [count=%u,vma=%08lx-%08lx]\n", map,
- 		map->count, vma->vm_start, vma->vm_end);
- 
--	videobuf_queue_lock(q);
--	if (!--map->count) {
-+	map->count--;
-+	if (0 == map->count) {
- 		struct videobuf_vmalloc_memory *mem;
- 
- 		dprintk(1, "munmap %p q=%p\n", map, q);
-+		videobuf_queue_lock(q);
- 
- 		/* We need first to cancel streams, before unmapping */
- 		if (q->streaming)
-@@ -116,8 +114,8 @@ static void videobuf_vm_close(struct vm_
- 
- 		kfree(map);
- 
-+		videobuf_queue_unlock(q);
- 	}
--	videobuf_queue_unlock(q);
- 
- 	return;
- }
+ static inline void intel_pstate_sample(struct cpudata *cpu)
 
 
