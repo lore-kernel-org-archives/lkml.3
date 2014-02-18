@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893AbaBRWcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:32:11 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:51186 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729AbaBRWcH (ORCPT
+	id S1752972AbaBRWcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:32:43 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:64564 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943AbaBRWcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:32:07 -0500
-Date: Tue, 18 Feb 2014 14:32:02 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Jones <davej@redhat.com>, Akinobu Mita <akinobu.mita@gmail.com>
-cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] Set bounds on what /proc/self/make-it-fail accepts.
-In-Reply-To: <20140218220606.GA9712@redhat.com>
-Message-ID: <alpine.DEB.2.02.1402181429060.20772@chino.kir.corp.google.com>
-References: <20140218220606.GA9712@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 18 Feb 2014 17:32:39 -0500
+Message-ID: <5303ED9A.6020302@cogentembedded.com>
+Date: Wed, 19 Feb 2014 02:32:42 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Peter Chen <Peter.Chen@freescale.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
+References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com> <1392729681-21022-3-git-send-email-iivanov@mm-sol.com> <53039E2E.2030503@cogentembedded.com> <1392743648.17130.17.camel@iivanov-dev> <5303A71B.7060208@cogentembedded.com> <20140218213428.GM1706@sonymobile.com>
+In-Reply-To: <20140218213428.GM1706@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Feb 2014, Dave Jones wrote:
+Hello.
 
-> /proc/self/make-it-fail is a boolean, but accepts any number, including
-> negative ones. Change variable to unsigned, and cap upper bound at 1.
-> 
-> Signed-off-by: Dave Jones <davej@fedoraproject.org>
-> 
+On 02/19/2014 12:34 AM, Courtney Cavin wrote:
 
-Hmm, this would break anything that uses anything other than one to enable 
-it, but it looks like Documentation/fault-injection/fault-injection.txt 
-only provides an example for when it does equal one, so it's probably an 
-ok change.  I'm just wondering why non-zero is wrong?  Is this an 
-interface that will be extended to support other modes?
+>>>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Adding Akinobu to the cc.
+>>>>> Allows controller to be specified via device tree.
+>>>>> Pass PHY phandle specified in DT to core driver.
 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 51507065263b..b926377c354f 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -1207,7 +1207,7 @@ static ssize_t proc_fault_inject_read(struct file * file, char __user * buf,
->  	struct task_struct *task = get_proc_task(file_inode(file));
->  	char buffer[PROC_NUMBUF];
->  	size_t len;
-> -	int make_it_fail;
-> +	unsigned int make_it_fail;
->  
->  	if (!task)
->  		return -ESRCH;
-> @@ -1224,7 +1224,7 @@ static ssize_t proc_fault_inject_write(struct file * file,
->  {
->  	struct task_struct *task;
->  	char buffer[PROC_NUMBUF], *end;
-> -	int make_it_fail;
-> +	unsigned int make_it_fail;
->  
->  	if (!capable(CAP_SYS_RESOURCE))
->  		return -EPERM;
-> @@ -1236,6 +1236,9 @@ static ssize_t proc_fault_inject_write(struct file * file,
->  	make_it_fail = simple_strtol(strstrip(buffer), &end, 0);
->  	if (*end)
->  		return -EINVAL;
-> +	if (make_it_fail > 1)
-> +		return -EINVAL;
-> +
->  	task = get_proc_task(file_inode(file));
->  	if (!task)
->  		return -ESRCH;
+>>>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>>>>> ---
+>>>>>     drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
+>>>>>     1 file changed, 22 insertions(+), 1 deletion(-)
+
+>>>>       You also need to describe the binding you're creating in
+>>>> Documentation/devicetree/bindings/usb/<file>.txt.
+
+>>> Did you check "[PATCH v2 1/3]"?
+
+>>      Did you send it to 'linux-usb'? I just didn't get the patch.
+>> (Typically, the bindings are described in the same patch the DT support is
+>> added to the driver bu YMMV, of course.)
+
+> Although I would personally agree that this is the most logical method,
+> it would appear that the DT guys disagree with us [1].  Lately, they
+
+    Thank you for the reference.
+
+> seem to have either given up or are otherwise preoccupied, so perhaps
+> you can still slip a few patches by them. ;)
+
+    Yeah, I was at last able to get my Ethernet driver bindings applied. :-)
+
+> -Courtney
+
+> [1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/devicetree/bindings/submitting-patches.txt
+
+WBR, Sergei
+
