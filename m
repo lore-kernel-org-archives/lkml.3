@@ -1,176 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736AbaBRARq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:17:46 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:38339 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390AbaBRARp (ORCPT
+	id S1754088AbaBRASz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:18:55 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:48450 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317AbaBRASx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:17:45 -0500
-Date: Mon, 17 Feb 2014 16:17:40 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
- barriers() for some control dependencies
-Message-ID: <20140218001740.GT4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217214606.GC7941@thin>
- <20140217225816.GN4250@linux.vnet.ibm.com>
- <20140218000246.GA19929@thin>
+	Mon, 17 Feb 2014 19:18:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218000246.GA19929@thin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021800-7164-0000-0000-000006274B3C
+In-Reply-To: <1392680518.18779.7213.camel@triegel.csb>
+References: <20140207180216.GP4250@linux.vnet.ibm.com>
+	<1391992071.18779.99.camel@triegel.csb>
+	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+	<1392183564.18779.2187.camel@triegel.csb>
+	<20140212180739.GB4250@linux.vnet.ibm.com>
+	<CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
+	<20140213002355.GI4250@linux.vnet.ibm.com>
+	<1392321837.18779.3249.camel@triegel.csb>
+	<20140214020144.GO4250@linux.vnet.ibm.com>
+	<1392352981.18779.3800.camel@triegel.csb>
+	<20140214172920.GQ4250@linux.vnet.ibm.com>
+	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	<1392486310.18779.6447.camel@triegel.csb>
+	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	<1392666947.18779.6838.camel@triegel.csb>
+	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	<1392672063.18779.6940.camel@triegel.csb>
+	<1392675939.18779.7063.camel@triegel.csb>
+	<CA+55aFx2jxE8sTZEmNnMg6ktDuU_0xPiEw3=qH0=+xat8p8cAA@mail.gmail.com>
+	<1392680518.18779.7213.camel@triegel.csb>
+Date: Mon, 17 Feb 2014 16:18:52 -0800
+X-Google-Sender-Auth: CW5G2P9AC1YDhm5KHw5_U9sU69g
+Message-ID: <CA+55aFzSBZMC6kbdJj5Jus9-q1dzXdCYQXfMm34O+9h8SbGcGQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:02:47PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
-> > On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
-> > > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > Current compilers can "speculate" stores in the case where both legs
-> > > > of the "if" statement start with identical stores.  Because the stores
-> > > > are identical, the compiler knows that the store will unconditionally
-> > > > execute regardless of the "if" condition, and so the compiler is within
-> > > > its rights to hoist the store to precede the condition.  Such hoisting
-> > > > destroys the control-dependency ordering.  This ordering can be restored
-> > > > by placing a barrier() at the beginning of each leg of the "if" statement.
-> > > > This commit adds this requirement to the control-dependencies section.
-> > > > 
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > This is starting to become a rather unreasonable level of fighting the
-> > > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
-> > > doesn't seem like a reasonable thing to require users to do.  Is there
-> > > really no other way to cope with this particular bit of "help" from the
-> > > compiler?
-> > 
-> > Well, we could use smp_mb() instead of barrier(), but that was the
-> > sort of thing that Peter Zijlstra was trying to avoid.
-> 
-> Yeah, that's not an improvement.  The goal would be to make the code no
-> more complex than it already needs to be with ACCESS_ONCE; changing
-> "barrier()" to something else doesn't help (quite apart from smp_mb()
-> being suboptimal).
-> 
-> > That said, I do sympathize completely with your position here -- it is
-> > just that it is better to have our compiler-fights documented that
-> > not, right?
-> 
-> Sure, better to document them, but better still to not have them.  Is
-> there some other way we could avoid this one entirely?
+On Mon, Feb 17, 2014 at 3:41 PM, Torvald Riegel <triegel@redhat.com> wrote:
+>
+> There's an underlying problem here that's independent from the actual
+> instance that you're worried about here: "no sense" is a ultimately a
+> matter of taste/objectives/priorities as long as the respective
+> specification is logically consistent.
 
-We could try change the standard so as to outlaw pulling common code from
-both legs of an "if" statement, but that will be a serious uphill battle.
-Or perhaps do something to warn the developer about the possibility of
-this happening.
+Yes. But I don't think it's "independent".
 
-Other thoughts?
+Exactly *because* some people will read standards without applying
+"does the resulting code generation actually make sense for the
+programmer that wrote the code", the standard has to be pretty clear.
 
-							Thanx, Paul
+The standard often *isn't* pretty clear. It wasn't clear enough when
+it came to "volatile", and yet that was a *much* simpler concept than
+atomic accesses and memory ordering.
 
-> - Josh Triplett
-> 
-> > > >  Documentation/memory-barriers.txt | 26 +++++++++++++++++++-------
-> > > >  1 file changed, 19 insertions(+), 7 deletions(-)
-> > > > 
-> > > > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> > > > index f2668c19807e..adfaca831a90 100644
-> > > > --- a/Documentation/memory-barriers.txt
-> > > > +++ b/Documentation/memory-barriers.txt
-> > > > @@ -608,26 +608,30 @@ as follows:
-> > > >  	b = p;  /* BUG: Compiler can reorder!!! */
-> > > >  	do_something();
-> > > >  
-> > > > -The solution is again ACCESS_ONCE(), which preserves the ordering between
-> > > > -the load from variable 'a' and the store to variable 'b':
-> > > > +The solution is again ACCESS_ONCE() and barrier(), which preserves the
-> > > > +ordering between the load from variable 'a' and the store to variable 'b':
-> > > >  
-> > > >  	q = ACCESS_ONCE(a);
-> > > >  	if (q) {
-> > > > +		barrier();
-> > > >  		ACCESS_ONCE(b) = p;
-> > > >  		do_something();
-> > > >  	} else {
-> > > > +		barrier();
-> > > >  		ACCESS_ONCE(b) = p;
-> > > >  		do_something_else();
-> > > >  	}
-> > > >  
-> > > > -You could also use barrier() to prevent the compiler from moving
-> > > > -the stores to variable 'b', but barrier() would not prevent the
-> > > > -compiler from proving to itself that a==1 always, so ACCESS_ONCE()
-> > > > -is also needed.
-> > > > +The initial ACCESS_ONCE() is required to prevent the compiler from
-> > > > +proving the value of 'a', and the pair of barrier() invocations are
-> > > > +required to prevent the compiler from pulling the two identical stores
-> > > > +to 'b' out from the legs of the "if" statement.
-> > > >  
-> > > >  It is important to note that control dependencies absolutely require a
-> > > >  a conditional.  For example, the following "optimized" version of
-> > > > -the above example breaks ordering:
-> > > > +the above example breaks ordering, which is why the barrier() invocations
-> > > > +are absolutely required if you have identical stores in both legs of
-> > > > +the "if" statement:
-> > > >  
-> > > >  	q = ACCESS_ONCE(a);
-> > > >  	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
-> > > > @@ -643,9 +647,11 @@ It is of course legal for the prior load to be part of the conditional,
-> > > >  for example, as follows:
-> > > >  
-> > > >  	if (ACCESS_ONCE(a) > 0) {
-> > > > +		barrier();
-> > > >  		ACCESS_ONCE(b) = q / 2;
-> > > >  		do_something();
-> > > >  	} else {
-> > > > +		barrier();
-> > > >  		ACCESS_ONCE(b) = q / 3;
-> > > >  		do_something_else();
-> > > >  	}
-> > > > @@ -659,9 +665,11 @@ the needed conditional.  For example:
-> > > >  
-> > > >  	q = ACCESS_ONCE(a);
-> > > >  	if (q % MAX) {
-> > > > +		barrier();
-> > > >  		ACCESS_ONCE(b) = p;
-> > > >  		do_something();
-> > > >  	} else {
-> > > > +		barrier();
-> > > >  		ACCESS_ONCE(b) = p;
-> > > >  		do_something_else();
-> > > >  	}
-> > > > @@ -723,6 +731,10 @@ In summary:
-> > > >        use smb_rmb(), smp_wmb(), or, in the case of prior stores and
-> > > >        later loads, smp_mb().
-> > > >  
-> > > > +  (*) If both legs of the "if" statement begin with identical stores
-> > > > +      to the same variable, a barrier() statement is required at the
-> > > > +      beginning of each leg of the "if" statement.
-> > > > +
-> > > >    (*) Control dependencies require at least one run-time conditional
-> > > >        between the prior load and the subsequent store, and this
-> > > >        conditional must involve the prior load.  If the compiler
-> > > > -- 
-> > > > 1.8.1.5
-> > > > 
-> > > 
-> > 
-> 
+And most of the time it's not a big deal. But because the C standard
+generally tries to be very portable, and cover different machines,
+there tends to be a mindset that anything inherently unportable is
+"undefined" or "implementation defined", and then the compiler writer
+is basically given free reign to do anything they want (with
+"implementation defined" at least requiring that it is reliably the
+same thing).
 
+And when it comes to memory ordering, *everything* is basically
+non-portable, because different CPU's very much have different rules.
+I worry that that means that the standard then takes the stance that
+"well, compiler re-ordering is no worse than CPU re-ordering, so we
+let the compiler do anything". And then we have to either add
+"volatile" to make sure the compiler doesn't do that, or use an overly
+strict memory model at the compiler level that makes it all pointless.
+
+So I really really hope that the standard doesn't give compiler
+writers free hands to do anything that they can prove is "equivalent"
+in the virtual C machine model. That's not how you get reliable
+results.
+
+               Linus
