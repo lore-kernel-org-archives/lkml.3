@@ -1,87 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaBRWvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:51:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51276 "EHLO
+	id S1753920AbaBRWvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:51:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51273 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591AbaBRWrf (ORCPT
+	with ESMTP id S1753587AbaBRWrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Feb 2014 17:47:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.13 33/40] pinctrl: at91: use locked variant of irq_set_handler
-Date: Tue, 18 Feb 2014 14:47:34 -0800
-Message-Id: <20140218224434.267173197@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [PATCH 3.13 00/40] 3.13.4-stable review
+Date: Tue, 18 Feb 2014 14:47:01 -0800
+Message-Id: <20140218224433.337299968@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
-References: <20140218224433.337299968@linuxfoundation.org>
 User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.13.4 release.
+There are 40 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Feb 20 22:44:22 UTC 2014.
+Anything received after that time might be too late.
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.4-rc1.gz
+and the diffstat can be found below.
 
-commit b0dcfd87323ea86501e93d0fa2a98d2fd3579bcf upstream.
+thanks,
 
-When setting the gpio irq type, use the __irq_set_handler_locked()
-variant instead of the irq_set_handler() to prevent false
-spinlock recursion warning.
+greg k-h
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
+Pseudo-Shortlog of commits:
 
----
- drivers/pinctrl/pinctrl-at91.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.13.4-rc1
 
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -1260,22 +1260,22 @@ static int alt_gpio_irq_type(struct irq_
- 
- 	switch (type) {
- 	case IRQ_TYPE_EDGE_RISING:
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_ESR);
- 		writel_relaxed(mask, pio + PIO_REHLSR);
- 		break;
- 	case IRQ_TYPE_EDGE_FALLING:
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_ESR);
- 		writel_relaxed(mask, pio + PIO_FELLSR);
- 		break;
- 	case IRQ_TYPE_LEVEL_LOW:
--		irq_set_handler(d->irq, handle_level_irq);
-+		__irq_set_handler_locked(d->irq, handle_level_irq);
- 		writel_relaxed(mask, pio + PIO_LSR);
- 		writel_relaxed(mask, pio + PIO_FELLSR);
- 		break;
- 	case IRQ_TYPE_LEVEL_HIGH:
--		irq_set_handler(d->irq, handle_level_irq);
-+		__irq_set_handler_locked(d->irq, handle_level_irq);
- 		writel_relaxed(mask, pio + PIO_LSR);
- 		writel_relaxed(mask, pio + PIO_REHLSR);
- 		break;
-@@ -1284,7 +1284,7 @@ static int alt_gpio_irq_type(struct irq_
- 		 * disable additional interrupt modes:
- 		 * fall back to default behavior
- 		 */
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_AIMDR);
- 		return 0;
- 	case IRQ_TYPE_NONE:
+Philipp Zabel <p.zabel@pengutronix.de>
+    ARM: imx6: Initialize low-power mode early again
+
+Dirk Brandewie <dirk.j.brandewie@intel.com>
+    intel_pstate: Take core C0 time into account for core busy calculation
+
+Darrick J. Wong <darrick.wong@oracle.com>
+    bcache: fix BUG_ON due to integer overflow with GC_SECTORS_USED
+
+Stanislaw Gruszka <sgruszka@redhat.com>
+    pinctrl: protect pinctrl_list add
+
+Tony Prisk <linux@prisktech.co.nz>
+    pinctrl: vt8500: Change devicetree data parsing
+
+Chris Ruehl <chris.ruehl@gtsys.com.hk>
+    pinctrl: imx27: fix offset calculation in imx_read_2bit
+
+Chris Ruehl <chris.ruehl@gtsys.com.hk>
+    pinctrl: imx27: fix wrong offset to ICONFB
+
+Nicolas Ferre <nicolas.ferre@atmel.com>
+    pinctrl: at91: use locked variant of irq_set_handler
+
+Nitin A Kamble <nitin.a.kamble@intel.com>
+    genirq: Generic irq chip requires IRQ_DOMAIN
+
+Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+    x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
+
+Andi Shyti <andi@etezian.org>
+    cx24117: use a valid dev pointer for dev_err printout
+
+Hans Verkuil <hverkuil@xs4all.nl>
+    Revert "[media] videobuf_vm_{open,close} race fixes"
+
+Dave Jones <davej@fedoraproject.org>
+    mxl111sf: Fix compile when CONFIG_DVB_USB_MXL111SF is unset
+
+Dave Jones <davej@fedoraproject.org>
+    mxl111sf: Fix unintentional garbage stack read
+
+Antti Palosaari <crope@iki.fi>
+    af9035: add ID [2040:f900] Hauppauge WinTV-MiniStick 2
+
+Mel Gorman <mgorman@suse.de>
+    x86: mm: change tlb_flushall_shift for IvyBridge
+
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    mm: __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
+
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
+
+Weijie Yang <weijie.yang@samsung.com>
+    mm/swap: fix race on swap_info reuse between swapoff and swapon
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Improve loopback path lookups for AD1983
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Add missing mixer widget for AD1983
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Fix silent output on Toshiba Satellite L40
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Fix missing VREF setup for Mac Pro 1,1
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: usb-audio: Add missing kconfig dependecy
+
+Vinayak Kale <vkale@apm.com>
+    arm64: add DSB after icache flush in __flush_icache_all()
+
+Nathan Lynch <nathan_lynch@mentor.com>
+    arm64: vdso: fix coarse clock handling
+
+Catalin Marinas <catalin.marinas@arm.com>
+    arm64: Invalidate the TLB when replacing pmd entries during boot
+
+Will Deacon <will.deacon@arm.com>
+    arm64: vdso: prevent ld from aligning PT_LOAD segments to 64k
+
+Will Deacon <will.deacon@arm.com>
+    arm64: atomics: fix use of acquire + release for full barrier semantics
+
+Nathan Lynch <nathan_lynch@mentor.com>
+    arm64: vdso: update wtm fields for CLOCK_MONOTONIC_COARSE
+
+Lior Amsalem <alior@marvell.com>
+    irqchip: armada-370-xp: fix MSI race condition
+
+Lior Amsalem <alior@marvell.com>
+    irqchip: armada-370-xp: fix IPI race condition
+
+Mark Brown <broonie@linaro.org>
+    regulator: core: Correct default return value for full constraints
+
+Trond Myklebust <trond.myklebust@primarydata.com>
+    NFSv4: Fix memory corruption in nfs4_proc_open_confirm
+
+Trond Myklebust <trond.myklebust@primarydata.com>
+    NFSv4.1: nfs4_destroy_session must call rpc_destroy_waitqueue
+
+Harald Freudenberger <freude@linux.vnet.ibm.com>
+    crypto: s390 - fix des and des3_ede ctr concurrency issue
+
+Harald Freudenberger <freude@linux.vnet.ibm.com>
+    crypto: s390 - fix des and des3_ede cbc concurrency issue
+
+Harald Freudenberger <freude@linux.vnet.ibm.com>
+    crypto: s390 - fix concurrency issue in aes-ctr mode
+
+Josef Bacik <jbacik@fb.com>
+    Btrfs: disable snapshot aware defrag for now
+
+Stephen Smalley <sds@tycho.nsa.gov>
+    SELinux: Fix kernel BUG on empty security contexts.
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                      |  4 +-
+ arch/arm/mach-imx/clk-imx6q.c                 |  3 +
+ arch/arm/mach-imx/clk-imx6sl.c                |  3 +
+ arch/arm/mach-imx/pm-imx6q.c                  |  2 -
+ arch/arm64/include/asm/atomic.h               | 29 +++++---
+ arch/arm64/include/asm/cacheflush.h           |  1 +
+ arch/arm64/include/asm/cmpxchg.h              |  9 +--
+ arch/arm64/include/asm/futex.h                |  6 +-
+ arch/arm64/kernel/kuser32.S                   |  6 +-
+ arch/arm64/kernel/vdso.c                      |  4 +-
+ arch/arm64/kernel/vdso/Makefile               |  2 +-
+ arch/arm64/kernel/vdso/gettimeofday.S         |  7 +-
+ arch/arm64/lib/bitops.S                       |  3 +-
+ arch/arm64/mm/mmu.c                           | 12 +++-
+ arch/s390/crypto/aes_s390.c                   | 65 ++++++++++++------
+ arch/s390/crypto/des_s390.c                   | 95 +++++++++++++++++----------
+ arch/x86/kernel/cpu/intel.c                   |  2 +-
+ drivers/cpufreq/intel_pstate.c                | 16 +++--
+ drivers/irqchip/irq-armada-370-xp.c           |  4 +-
+ drivers/md/bcache/bcache.h                    |  4 +-
+ drivers/md/bcache/btree.c                     |  2 +-
+ drivers/media/dvb-frontends/cx24117.c         |  2 +-
+ drivers/media/usb/dvb-usb-v2/af9035.c         |  2 +
+ drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.h |  2 +-
+ drivers/media/usb/dvb-usb-v2/mxl111sf.c       |  2 +-
+ drivers/media/v4l2-core/videobuf-dma-contig.c | 12 ++--
+ drivers/media/v4l2-core/videobuf-dma-sg.c     | 10 ++-
+ drivers/media/v4l2-core/videobuf-vmalloc.c    | 10 ++-
+ drivers/pinctrl/core.c                        |  2 +
+ drivers/pinctrl/pinctrl-at91.c                | 10 +--
+ drivers/pinctrl/pinctrl-imx1-core.c           | 10 +--
+ drivers/pinctrl/vt8500/pinctrl-wmt.c          | 15 ++++-
+ drivers/regulator/core.c                      |  9 ++-
+ fs/btrfs/inode.c                              |  2 +-
+ fs/buffer.c                                   |  6 +-
+ fs/nfs/nfs4client.c                           |  2 +-
+ fs/nfs/nfs4proc.c                             |  8 +--
+ fs/nfs/nfs4session.c                          | 25 +++++--
+ fs/nfs/nfs4session.h                          |  2 +-
+ include/linux/nfs_xdr.h                       |  2 +
+ kernel/irq/Kconfig                            |  1 +
+ lib/Makefile                                  |  1 +
+ mm/page-writeback.c                           |  5 +-
+ mm/swapfile.c                                 | 11 +++-
+ security/selinux/ss/services.c                |  4 ++
+ sound/pci/hda/patch_analog.c                  | 27 ++++++++
+ sound/pci/hda/patch_realtek.c                 |  9 ++-
+ sound/usb/Kconfig                             |  1 +
+ 48 files changed, 330 insertions(+), 141 deletions(-)
 
 
