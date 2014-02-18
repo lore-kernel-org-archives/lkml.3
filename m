@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907AbaBRSCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:02:31 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:38953 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344AbaBRSC1 (ORCPT
+	id S1754980AbaBRSCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:02:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47382 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344AbaBRSCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:02:27 -0500
+	Tue, 18 Feb 2014 13:02:32 -0500
+Date: Tue, 18 Feb 2014 10:03:57 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next 01/11 RESEND] mei: add mei_hbuf_acquire wrapper
+Message-ID: <20140218180357.GA15274@kroah.com>
+References: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
+ <1392642807-8878-2-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <100D68C7BA14664A8938383216E40DE04062DEA1@FMSMSX114.amr.corp.intel.com>
-References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
-	<53035FE2.4080300@redhat.com>
-	<100D68C7BA14664A8938383216E40DE04062DEA1@FMSMSX114.amr.corp.intel.com>
-Date: Tue, 18 Feb 2014 10:02:26 -0800
-X-Google-Sender-Auth: z_v864ZoM7GgVzBFl_eF_zb50j4
-Message-ID: <CA+55aFzqZ2S==NyWG67hNV1YsY-oXLjLvCR0JeiHGJOfnoGJBg@mail.gmail.com>
-Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if they
- are in page cache
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>
-Cc: Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392642807-8878-2-git-send-email-tomas.winkler@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 6:15 AM, Wilcox, Matthew R
-<matthew.r.wilcox@intel.com> wrote:
-> We don't really need to lock all the pages being returned to protect against truncate.  We only need to lock the one at the highest index, and check i_size while that lock is held since truncate_inode_pages_range() will block on any page that is locked.
->
-> We're still vulnerable to holepunches, but there's no locking currently between holepunches and truncate, so we're no worse off now.
+On Mon, Feb 17, 2014 at 03:13:17PM +0200, Tomas Winkler wrote:
+> A client has to acquire host buffer
+> before writing, we add lock like wrapper
+> to replace the code snippet
+> 
+> if (dev->hbuf_is_ready)
+>         dev->hbuf_is_ready = false;
+> 
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> ---
+>  drivers/misc/mei/amthif.c    |  7 +-----
+>  drivers/misc/mei/client.c    | 56 ++++++++++++++++++++++++++++----------------
+>  drivers/misc/mei/hw-me.c     |  2 ++
+>  drivers/misc/mei/hw-txe.c    | 17 +++++---------
+>  drivers/misc/mei/interrupt.c |  6 ++---
+>  drivers/misc/mei/mei_dev.h   |  2 ++
+>  drivers/misc/mei/wd.c        | 14 +++++------
+>  7 files changed, 57 insertions(+), 47 deletions(-)
 
-It's not "holepunches and truncate", it's "holepunches and page
-mapping", and I do think we currently serialize the two - the whole
-"check page->mapping still being non-NULL" before mapping it while
-having the page locked does that.
+This patch fails to apply to my char-misc-next branch (I've pulled in
+3.14-rc3 into this branch now):
+	checking file drivers/misc/mei/amthif.c
+	checking file drivers/misc/mei/client.c
+	Hunk #4 FAILED at 681.
+	Hunk #5 succeeded at 815 (offset -2 lines).
+	Hunk #6 succeeded at 848 (offset -2 lines).
+	1 out of 6 hunks FAILED
+	checking file drivers/misc/mei/hw-me.c
+	checking file drivers/misc/mei/hw-txe.c
+	checking file drivers/misc/mei/interrupt.c
+	checking file drivers/misc/mei/mei_dev.h
+	checking file drivers/misc/mei/wd.c
 
-Besides, that per-page locking should serialize against truncate too.
-No, there is no "global" serialization, but there *is* exactly that
-page-level serialization where both truncation and hole punching end
-up making sure that the page no longer exists in the page cache and
-isn't mapped.
+Care to fix this up and resend this series?
 
-I'm just claiming that *because* of the way rmap works for file
-mappings (walking the i_mapped list and page tables), we should
-actually be ok.  The anonymous rmap list is protected by the page
-lock, but the file-backed rmap is protected by the pte lock (well, and
-the "i_mmap_mutex" that in turn protects the i_mmap list etc).
+thanks,
 
-       Linus
+greg k-h
