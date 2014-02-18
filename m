@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511AbaBRXZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:25:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50900 "EHLO
+	id S1753849AbaBRX05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:26:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50887 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850AbaBRWqX (ORCPT
+	with ESMTP id S1752822AbaBRWqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:23 -0500
+	Tue, 18 Feb 2014 17:46:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Becker <schtefan@gmx.net>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 18/26] [media] af9035: add ID [2040:f900] Hauppauge WinTV-MiniStick 2
-Date: Tue, 18 Feb 2014 14:47:14 -0800
-Message-Id: <20140218224530.927525352@linuxfoundation.org>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 16/26] mm: __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
+Date: Tue, 18 Feb 2014 14:47:12 -0800
+Message-Id: <20140218224530.871878311@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
 References: <20140218224530.398913499@linuxfoundation.org>
@@ -29,32 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit f2e4c5e004691dfe37d0e4b363296f28abdb9bc7 upstream.
+commit 227d53b397a32a7614667b3ecaf1d89902fb6c12 upstream.
 
-Add USB ID [2040:f900] for Hauppauge WinTV-MiniStick 2.
-Device is build upon IT9135 chipset.
+To use spin_{un}lock_irq is dangerous if caller disabled interrupt.
+During aio buffer migration, we have a possibility to see the following
+call stack.
 
-Tested-by: Stefan Becker <schtefan@gmx.net>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+aio_migratepage  [disable interrupt]
+  migrate_page_copy
+    clear_page_dirty_for_io
+      set_page_dirty
+        __set_page_dirty_buffers
+          __set_page_dirty
+            spin_lock_irq
+
+This mean, current aio migration is a deadlockable.  spin_lock_irqsave
+is a safer alternative and we should use it.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reported-by: David Rientjes rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/af9035.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/buffer.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -1517,6 +1517,8 @@ static const struct usb_device_id af9035
- 		&af9035_props, "TerraTec Cinergy T Stick Dual RC (rev. 2)", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_LEADTEK, 0x6a05,
- 		&af9035_props, "Leadtek WinFast DTV Dongle Dual", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_HAUPPAUGE, 0xf900,
-+		&af9035_props, "Hauppauge WinTV-MiniStick 2", NULL) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, af9035_id_table);
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -620,14 +620,16 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+ static void __set_page_dirty(struct page *page,
+ 		struct address_space *mapping, int warn)
+ {
+-	spin_lock_irq(&mapping->tree_lock);
++	unsigned long flags;
++
++	spin_lock_irqsave(&mapping->tree_lock, flags);
+ 	if (page->mapping) {	/* Race with truncate? */
+ 		WARN_ON_ONCE(warn && !PageUptodate(page));
+ 		account_page_dirtied(page, mapping);
+ 		radix_tree_tag_set(&mapping->page_tree,
+ 				page_index(page), PAGECACHE_TAG_DIRTY);
+ 	}
+-	spin_unlock_irq(&mapping->tree_lock);
++	spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+ }
+ 
 
 
