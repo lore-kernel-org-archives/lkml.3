@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756AbaBRXJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:09:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51021 "EHLO
+	id S1753183AbaBRWqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:46:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51013 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbaBRWqs (ORCPT
+	with ESMTP id S1751786AbaBRWqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:48 -0500
+	Tue, 18 Feb 2014 17:46:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weijie Yang <weijie.yang@samsung.com>, Hugh Dickins <hughd@google.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 19/32] mm/swap: fix race on swap_info reuse between swapoff and swapon
-Date: Tue, 18 Feb 2014 14:47:19 -0800
-Message-Id: <20140218224500.644010849@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 16/32] ALSA: hda - Fix silent output on Toshiba Satellite L40
+Date: Tue, 18 Feb 2014 14:47:16 -0800
+Message-Id: <20140218224500.562322735@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
 References: <20140218224500.101465031@linuxfoundation.org>
@@ -31,61 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f893ab41e4dae2fe8991faf5d86d029068d1ef3a upstream.
+commit 4528eb19b00d9ccd65ded6f8201eec704267edd8 upstream.
 
-swapoff clear swap_info's SWP_USED flag prematurely and free its
-resources after that.  A concurrent swapon will reuse this swap_info
-while its previous resources are not cleared completely.
+Toshiba Satellite L40 with AD1986A codec requires the EAPD of NID 0x1b
+to be constantly on, otherwise the output doesn't work.
+Unlike most of other AD1986A machines, EAPD is correctly implemented
+in HD-audio manner (that is, bit set = amp on), so we need to clear
+the inv_eapd flag in the fixup, too.
 
-These late freed resources are:
- - p->percpu_cluster
- - swap_cgroup_ctrl[type]
- - block_device setting
- - inode->i_flags &= ~S_SWAPFILE
-
-This patch clears the SWP_USED flag after all its resources are freed,
-so that swapon can reuse this swap_info by alloc_swap_info() safely.
-
-[akpm@linux-foundation.org: tidy up code comment]
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=67481
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/swapfile.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_analog.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1922,7 +1922,6 @@ SYSCALL_DEFINE1(swapoff, const char __us
- 	p->swap_map = NULL;
- 	cluster_info = p->cluster_info;
- 	p->cluster_info = NULL;
--	p->flags = 0;
- 	frontswap_map = frontswap_map_get(p);
- 	frontswap_map_set(p, NULL);
- 	spin_unlock(&p->lock);
-@@ -1948,6 +1947,16 @@ SYSCALL_DEFINE1(swapoff, const char __us
- 		mutex_unlock(&inode->i_mutex);
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -227,6 +227,19 @@ static void ad_fixup_inv_jack_detect(str
  	}
- 	filp_close(swap_file, NULL);
+ }
+ 
++/* Toshiba Satellite L40 implements EAPD in a standard way unlike others */
++static void ad1986a_fixup_eapd(struct hda_codec *codec,
++			       const struct hda_fixup *fix, int action)
++{
++	struct ad198x_spec *spec = codec->spec;
 +
-+	/*
-+	 * Clear the SWP_USED flag after all resources are freed so that swapon
-+	 * can reuse this swap_info in alloc_swap_info() safely.  It is ok to
-+	 * not hold p->lock after we cleared its SWP_WRITEOK.
-+	 */
-+	spin_lock(&swap_lock);
-+	p->flags = 0;
-+	spin_unlock(&swap_lock);
++	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
++		codec->inv_eapd = 0;
++		spec->gen.keep_eapd_on = 1;
++		spec->eapd_nid = 0x1b;
++	}
++}
 +
- 	err = 0;
- 	atomic_inc(&proc_poll_event);
- 	wake_up_interruptible(&proc_poll_wait);
+ enum {
+ 	AD1986A_FIXUP_INV_JACK_DETECT,
+ 	AD1986A_FIXUP_ULTRA,
+@@ -234,6 +247,7 @@ enum {
+ 	AD1986A_FIXUP_3STACK,
+ 	AD1986A_FIXUP_LAPTOP,
+ 	AD1986A_FIXUP_LAPTOP_IMIC,
++	AD1986A_FIXUP_EAPD,
+ };
+ 
+ static const struct hda_fixup ad1986a_fixups[] = {
+@@ -294,6 +308,10 @@ static const struct hda_fixup ad1986a_fi
+ 		.chained_before = 1,
+ 		.chain_id = AD1986A_FIXUP_LAPTOP,
+ 	},
++	[AD1986A_FIXUP_EAPD] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = ad1986a_fixup_eapd,
++	},
+ };
+ 
+ static const struct snd_pci_quirk ad1986a_fixup_tbl[] = {
+@@ -301,6 +319,7 @@ static const struct snd_pci_quirk ad1986
+ 	SND_PCI_QUIRK_MASK(0x1043, 0xff00, 0x8100, "ASUS P5", AD1986A_FIXUP_3STACK),
+ 	SND_PCI_QUIRK_MASK(0x1043, 0xff00, 0x8200, "ASUS M2", AD1986A_FIXUP_3STACK),
+ 	SND_PCI_QUIRK(0x10de, 0xcb84, "ASUS A8N-VM", AD1986A_FIXUP_3STACK),
++	SND_PCI_QUIRK(0x1179, 0xff40, "Toshiba Satellite L40", AD1986A_FIXUP_EAPD),
+ 	SND_PCI_QUIRK(0x144d, 0xc01e, "FSC V2060", AD1986A_FIXUP_LAPTOP),
+ 	SND_PCI_QUIRK_MASK(0x144d, 0xff00, 0xc000, "Samsung", AD1986A_FIXUP_SAMSUNG),
+ 	SND_PCI_QUIRK(0x144d, 0xc027, "Samsung Q1", AD1986A_FIXUP_ULTRA),
 
 
