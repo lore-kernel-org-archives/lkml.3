@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaBRADE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:03:04 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45108 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaBRADD (ORCPT
+	id S1753165AbaBRAEu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:04:50 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:52658 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893AbaBRAEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:03:03 -0500
+	Mon, 17 Feb 2014 19:04:48 -0500
 X-Originating-IP: 50.43.14.201
-Date: Mon, 17 Feb 2014 16:02:47 -0800
+Date: Mon, 17 Feb 2014 16:04:31 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -16,143 +16,82 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
- barriers() for some control dependencies
-Message-ID: <20140218000246.GA19929@thin>
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217214606.GC7941@thin>
- <20140217225816.GN4250@linux.vnet.ibm.com>
+        oleg@redhat.com, sbw@mit.edu, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH tip/core/rcu 09/12] fs: Substitute rcu_access_pointer()
+ for rcu_dereference_raw()
+Message-ID: <20140218000431.GB19929@thin>
+References: <20140217213533.GA5387@linux.vnet.ibm.com>
+ <1392672959-6386-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392672959-6386-9-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140217220014.GH7941@thin>
+ <20140217230511.GP4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140217225816.GN4250@linux.vnet.ibm.com>
+In-Reply-To: <20140217230511.GP4250@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
-> On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
-> > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
+On Mon, Feb 17, 2014 at 03:05:11PM -0800, Paul E. McKenney wrote:
+> On Mon, Feb 17, 2014 at 02:00:15PM -0800, Josh Triplett wrote:
+> > On Mon, Feb 17, 2014 at 01:35:56PM -0800, Paul E. McKenney wrote:
 > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > > 
-> > > Current compilers can "speculate" stores in the case where both legs
-> > > of the "if" statement start with identical stores.  Because the stores
-> > > are identical, the compiler knows that the store will unconditionally
-> > > execute regardless of the "if" condition, and so the compiler is within
-> > > its rights to hoist the store to precede the condition.  Such hoisting
-> > > destroys the control-dependency ordering.  This ordering can be restored
-> > > by placing a barrier() at the beginning of each leg of the "if" statement.
-> > > This commit adds this requirement to the control-dependencies section.
+> > > (Trivial patch.)
+> > > 
+> > > If the code is looking at the RCU-protected pointer itself, but not
+> > > dereferencing it, the rcu_dereference() functions can be downgraded to
+> > > rcu_access_pointer().  This commit makes this downgrade in __alloc_fd(),
+> > > which simply compares the RCU-protected pointer against NULL with no
+> > > dereferencing.
 > > > 
 > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> > > Cc: linux-fsdevel@vger.kernel.org
 > > 
-> > This is starting to become a rather unreasonable level of fighting the
-> > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
-> > doesn't seem like a reasonable thing to require users to do.  Is there
-> > really no other way to cope with this particular bit of "help" from the
-> > compiler?
+> > I'm beginning to wonder if this common pattern ought to have an
+> > rcu_pointer_is_null(), which would not return the pointer, only the
+> > boolean.
 > 
-> Well, we could use smp_mb() instead of barrier(), but that was the
-> sort of thing that Peter Zijlstra was trying to avoid.
+> Or perhaps an rcu_compare_pointer() to also handle the various cases like:
+> 
+> 	if (rcu_dereference_raw(foop) == barp) ...
+> 
+> I added the problem to the RCU cleanup list on the OPW site, and
+> your solution or my elaboration of it might be the right thing to do.
+> (Inspected all 1300 uses of members of the rcu_dereference() family of
+> functions last week, and was feeling a bit buggy-eyed at the end...)
 
-Yeah, that's not an improvement.  The goal would be to make the code no
-more complex than it already needs to be with ACCESS_ONCE; changing
-"barrier()" to something else doesn't help (quite apart from smp_mb()
-being suboptimal).
+rcu_pointer_eq and/or rcu_pointer_neq might make sense, yeah, as
+self-documenting versions of the most sensible way to do the operation,
+to steer people away from rcu_dereference or rcu_dereference_raw.
 
-> That said, I do sympathize completely with your position here -- it is
-> just that it is better to have our compiler-fights documented that
-> not, right?
+- Jsoh Triplett
 
-Sure, better to document them, but better still to not have them.  Is
-there some other way we could avoid this one entirely?
-
-- Josh Triplett
-
-> > >  Documentation/memory-barriers.txt | 26 +++++++++++++++++++-------
-> > >  1 file changed, 19 insertions(+), 7 deletions(-)
+> 							Thanx, Paul
+> 
+> > Regardless, for this patch:
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > 
+> > >  fs/file.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
 > > > 
-> > > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> > > index f2668c19807e..adfaca831a90 100644
-> > > --- a/Documentation/memory-barriers.txt
-> > > +++ b/Documentation/memory-barriers.txt
-> > > @@ -608,26 +608,30 @@ as follows:
-> > >  	b = p;  /* BUG: Compiler can reorder!!! */
-> > >  	do_something();
-> > >  
-> > > -The solution is again ACCESS_ONCE(), which preserves the ordering between
-> > > -the load from variable 'a' and the store to variable 'b':
-> > > +The solution is again ACCESS_ONCE() and barrier(), which preserves the
-> > > +ordering between the load from variable 'a' and the store to variable 'b':
-> > >  
-> > >  	q = ACCESS_ONCE(a);
-> > >  	if (q) {
-> > > +		barrier();
-> > >  		ACCESS_ONCE(b) = p;
-> > >  		do_something();
-> > >  	} else {
-> > > +		barrier();
-> > >  		ACCESS_ONCE(b) = p;
-> > >  		do_something_else();
+> > > diff --git a/fs/file.c b/fs/file.c
+> > > index db25c2bdfe46..18f7d27855c4 100644
+> > > --- a/fs/file.c
+> > > +++ b/fs/file.c
+> > > @@ -497,7 +497,7 @@ repeat:
+> > >  	error = fd;
+> > >  #if 1
+> > >  	/* Sanity check */
+> > > -	if (rcu_dereference_raw(fdt->fd[fd]) != NULL) {
+> > > +	if (rcu_access_pointer(fdt->fd[fd]) != NULL) {
+> > >  		printk(KERN_WARNING "alloc_fd: slot %d not NULL!\n", fd);
+> > >  		rcu_assign_pointer(fdt->fd[fd], NULL);
 > > >  	}
-> > >  
-> > > -You could also use barrier() to prevent the compiler from moving
-> > > -the stores to variable 'b', but barrier() would not prevent the
-> > > -compiler from proving to itself that a==1 always, so ACCESS_ONCE()
-> > > -is also needed.
-> > > +The initial ACCESS_ONCE() is required to prevent the compiler from
-> > > +proving the value of 'a', and the pair of barrier() invocations are
-> > > +required to prevent the compiler from pulling the two identical stores
-> > > +to 'b' out from the legs of the "if" statement.
-> > >  
-> > >  It is important to note that control dependencies absolutely require a
-> > >  a conditional.  For example, the following "optimized" version of
-> > > -the above example breaks ordering:
-> > > +the above example breaks ordering, which is why the barrier() invocations
-> > > +are absolutely required if you have identical stores in both legs of
-> > > +the "if" statement:
-> > >  
-> > >  	q = ACCESS_ONCE(a);
-> > >  	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
-> > > @@ -643,9 +647,11 @@ It is of course legal for the prior load to be part of the conditional,
-> > >  for example, as follows:
-> > >  
-> > >  	if (ACCESS_ONCE(a) > 0) {
-> > > +		barrier();
-> > >  		ACCESS_ONCE(b) = q / 2;
-> > >  		do_something();
-> > >  	} else {
-> > > +		barrier();
-> > >  		ACCESS_ONCE(b) = q / 3;
-> > >  		do_something_else();
-> > >  	}
-> > > @@ -659,9 +665,11 @@ the needed conditional.  For example:
-> > >  
-> > >  	q = ACCESS_ONCE(a);
-> > >  	if (q % MAX) {
-> > > +		barrier();
-> > >  		ACCESS_ONCE(b) = p;
-> > >  		do_something();
-> > >  	} else {
-> > > +		barrier();
-> > >  		ACCESS_ONCE(b) = p;
-> > >  		do_something_else();
-> > >  	}
-> > > @@ -723,6 +731,10 @@ In summary:
-> > >        use smb_rmb(), smp_wmb(), or, in the case of prior stores and
-> > >        later loads, smp_mb().
-> > >  
-> > > +  (*) If both legs of the "if" statement begin with identical stores
-> > > +      to the same variable, a barrier() statement is required at the
-> > > +      beginning of each leg of the "if" statement.
-> > > +
-> > >    (*) Control dependencies require at least one run-time conditional
-> > >        between the prior load and the subsequent store, and this
-> > >        conditional must involve the prior load.  If the compiler
 > > > -- 
 > > > 1.8.1.5
 > > > 
