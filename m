@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006AbaBRA1z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:27:55 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:51907 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869AbaBRA1x (ORCPT
+	id S1754243AbaBRA2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:28:06 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:44383 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaBRA2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:27:53 -0500
-Date: Mon, 17 Feb 2014 16:27:47 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
+	Mon, 17 Feb 2014 19:28:04 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 17 Feb 2014 16:27:44 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         dipankar@in.ibm.com, akpm@linux-foundation.org,
         mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH tip/core/rcu 09/12] fs: Substitute rcu_access_pointer()
- for rcu_dereference_raw()
-Message-ID: <20140218002747.GV4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140217213533.GA5387@linux.vnet.ibm.com>
- <1392672959-6386-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672959-6386-9-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217220014.GH7941@thin>
- <20140217230511.GP4250@linux.vnet.ibm.com>
- <20140218000431.GB19929@thin>
+        oleg@redhat.com, sbw@mit.edu, linux@horizon.com
+Subject: Re: [PATCH tip/core/rcu 15/55] rcutorture: Abstract
+ rcu_torture_random()
+Message-ID: <20140218002743.GF19929@thin>
+References: <20140217221231.GA8419@linux.vnet.ibm.com>
+ <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392675179-11560-15-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140218001137.GC19929@thin>
+ <20140218002248.GU4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140218000431.GB19929@thin>
+In-Reply-To: <20140218002248.GU4250@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021800-0928-0000-0000-00000685157D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:04:31PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 03:05:11PM -0800, Paul E. McKenney wrote:
-> > On Mon, Feb 17, 2014 at 02:00:15PM -0800, Josh Triplett wrote:
-> > > On Mon, Feb 17, 2014 at 01:35:56PM -0800, Paul E. McKenney wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > (Trivial patch.)
-> > > > 
-> > > > If the code is looking at the RCU-protected pointer itself, but not
-> > > > dereferencing it, the rcu_dereference() functions can be downgraded to
-> > > > rcu_access_pointer().  This commit makes this downgrade in __alloc_fd(),
-> > > > which simply compares the RCU-protected pointer against NULL with no
-> > > > dereferencing.
-> > > > 
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> > > > Cc: linux-fsdevel@vger.kernel.org
+On Mon, Feb 17, 2014 at 04:22:48PM -0800, Paul E. McKenney wrote:
+> On Mon, Feb 17, 2014 at 04:11:37PM -0800, Josh Triplett wrote:
+> > On Mon, Feb 17, 2014 at 02:12:19PM -0800, Paul E. McKenney wrote:
+> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > > 
-> > > I'm beginning to wonder if this common pattern ought to have an
-> > > rcu_pointer_is_null(), which would not return the pointer, only the
-> > > boolean.
-> > 
-> > Or perhaps an rcu_compare_pointer() to also handle the various cases like:
-> > 
-> > 	if (rcu_dereference_raw(foop) == barp) ...
-> > 
-> > I added the problem to the RCU cleanup list on the OPW site, and
-> > your solution or my elaboration of it might be the right thing to do.
-> > (Inspected all 1300 uses of members of the rcu_dereference() family of
-> > functions last week, and was feeling a bit buggy-eyed at the end...)
-> 
-> rcu_pointer_eq and/or rcu_pointer_neq might make sense, yeah, as
-> self-documenting versions of the most sensible way to do the operation,
-> to steer people away from rcu_dereference or rcu_dereference_raw.
-
-Good point!  I added this to http://kernelnewbies.org/OPWIntro-RCU?action=show,
-crediting you for the idea.
-
-							Thanx, Paul
-
-> - Jsoh Triplett
-> 
-> > 							Thanx, Paul
-> > 
-> > > Regardless, for this patch:
-> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > Because rcu_torture_random() will be used by the locking equivalent to
+> > > rcutorture, pull it out into its own module.
 > > > 
-> > > >  fs/file.c | 2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > 
-> > > > diff --git a/fs/file.c b/fs/file.c
-> > > > index db25c2bdfe46..18f7d27855c4 100644
-> > > > --- a/fs/file.c
-> > > > +++ b/fs/file.c
-> > > > @@ -497,7 +497,7 @@ repeat:
-> > > >  	error = fd;
-> > > >  #if 1
-> > > >  	/* Sanity check */
-> > > > -	if (rcu_dereference_raw(fdt->fd[fd]) != NULL) {
-> > > > +	if (rcu_access_pointer(fdt->fd[fd]) != NULL) {
-> > > >  		printk(KERN_WARNING "alloc_fd: slot %d not NULL!\n", fd);
-> > > >  		rcu_assign_pointer(fdt->fd[fd], NULL);
-> > > >  	}
-> > > > -- 
-> > > > 1.8.1.5
-> > > > 
-> > > 
+> > > Suggested-by: Rusty Russell <rusty@rustcorp.com.au>
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > > 
+> > I'd suggest making CONFIG_TORTURE_TEST a completely invisible option,
+> > with no description; it should only be brought in via "select".
+> > 
+> > Also, it doesn't need most of the headers it currently includes.
+> > 
+> > Have you considered moving it into the existing random generation
+> > infrastructure, as something like "fast_insecure_nonblocking_random"?
+> > That seems more generally useful.
 > 
+> George Spelvin was also advising me on random-number generation in
+> rcutorture, so I added him on CC.  In any case, I would not be adverse
+> to using some other random-number service, as long as it is fast enough.
+> (George suggested some optimizations that I have not yet tried out.)
 
+I suspect the fastest way to find out about any existing generator with
+the desired properties would be to post this one as a patch to the
+random number infrastructure and read the resulting replies. :)
+
+- Josh Triplett
