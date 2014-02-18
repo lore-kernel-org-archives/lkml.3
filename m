@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407AbaBRWrN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:47:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51144 "EHLO
+	id S1753511AbaBRWrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:47:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323AbaBRWrK (ORCPT
+	with ESMTP id S1753463AbaBRWrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:10 -0500
+	Tue, 18 Feb 2014 17:47:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.13 12/40] arm64: atomics: fix use of acquire + release for full barrier semantics
-Date: Tue, 18 Feb 2014 14:47:13 -0800
-Message-Id: <20140218224433.681616393@linuxfoundation.org>
+        Weijie Yang <weijie.yang@samsung.com>, Hugh Dickins <hughd@google.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 22/40] mm/swap: fix race on swap_info reuse between swapoff and swapon
+Date: Tue, 18 Feb 2014 14:47:23 -0800
+Message-Id: <20140218224433.962806819@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -30,374 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Weijie Yang <weijie.yang@samsung.com>
 
-commit 8e86f0b409a44193f1587e87b69c5dcf8f65be67 upstream.
+commit f893ab41e4dae2fe8991faf5d86d029068d1ef3a upstream.
 
-Linux requires a number of atomic operations to provide full barrier
-semantics, that is no memory accesses after the operation can be
-observed before any accesses up to and including the operation in
-program order.
+swapoff clear swap_info's SWP_USED flag prematurely and free its
+resources after that.  A concurrent swapon will reuse this swap_info
+while its previous resources are not cleared completely.
 
-On arm64, these operations have been incorrectly implemented as follows:
+These late freed resources are:
+ - p->percpu_cluster
+ - swap_cgroup_ctrl[type]
+ - block_device setting
+ - inode->i_flags &= ~S_SWAPFILE
 
-	// A, B, C are independent memory locations
+This patch clears the SWP_USED flag after all its resources are freed,
+so that swapon can reuse this swap_info by alloc_swap_info() safely.
 
-	<Access [A]>
-
-	// atomic_op (B)
-1:	ldaxr	x0, [B]		// Exclusive load with acquire
-	<op(B)>
-	stlxr	w1, x0, [B]	// Exclusive store with release
-	cbnz	w1, 1b
-
-	<Access [C]>
-
-The assumption here being that two half barriers are equivalent to a
-full barrier, so the only permitted ordering would be A -> B -> C
-(where B is the atomic operation involving both a load and a store).
-
-Unfortunately, this is not the case by the letter of the architecture
-and, in fact, the accesses to A and C are permitted to pass their
-nearest half barrier resulting in orderings such as Bl -> A -> C -> Bs
-or Bl -> C -> A -> Bs (where Bl is the load-acquire on B and Bs is the
-store-release on B). This is a clear violation of the full barrier
-requirement.
-
-The simple way to fix this is to implement the same algorithm as ARMv7
-using explicit barriers:
-
-	<Access [A]>
-
-	// atomic_op (B)
-	dmb	ish		// Full barrier
-1:	ldxr	x0, [B]		// Exclusive load
-	<op(B)>
-	stxr	w1, x0, [B]	// Exclusive store
-	cbnz	w1, 1b
-	dmb	ish		// Full barrier
-
-	<Access [C]>
-
-but this has the undesirable effect of introducing *two* full barrier
-instructions. A better approach is actually the following, non-intuitive
-sequence:
-
-	<Access [A]>
-
-	// atomic_op (B)
-1:	ldxr	x0, [B]		// Exclusive load
-	<op(B)>
-	stlxr	w1, x0, [B]	// Exclusive store with release
-	cbnz	w1, 1b
-	dmb	ish		// Full barrier
-
-	<Access [C]>
-
-The simple observations here are:
-
-  - The dmb ensures that no subsequent accesses (e.g. the access to C)
-    can enter or pass the atomic sequence.
-
-  - The dmb also ensures that no prior accesses (e.g. the access to A)
-    can pass the atomic sequence.
-
-  - Therefore, no prior access can pass a subsequent access, or
-    vice-versa (i.e. A is strictly ordered before C).
-
-  - The stlxr ensures that no prior access can pass the store component
-    of the atomic operation.
-
-The only tricky part remaining is the ordering between the ldxr and the
-access to A, since the absence of the first dmb means that we're now
-permitting re-ordering between the ldxr and any prior accesses.
-
->From an (arbitrary) observer's point of view, there are two scenarios:
-
-  1. We have observed the ldxr. This means that if we perform a store to
-     [B], the ldxr will still return older data. If we can observe the
-     ldxr, then we can potentially observe the permitted re-ordering
-     with the access to A, which is clearly an issue when compared to
-     the dmb variant of the code. Thankfully, the exclusive monitor will
-     save us here since it will be cleared as a result of the store and
-     the ldxr will retry. Notice that any use of a later memory
-     observation to imply observation of the ldxr will also imply
-     observation of the access to A, since the stlxr/dmb ensure strict
-     ordering.
-
-  2. We have not observed the ldxr. This means we can perform a store
-     and influence the later ldxr. However, that doesn't actually tell
-     us anything about the access to [A], so we've not lost anything
-     here either when compared to the dmb variant.
-
-This patch implements this solution for our barriered atomic operations,
-ensuring that we satisfy the full barrier requirements where they are
-needed.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+[akpm@linux-foundation.org: tidy up code comment]
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/atomic.h  |   29 ++++++++++++++++++++---------
- arch/arm64/include/asm/cmpxchg.h |    9 +++++----
- arch/arm64/include/asm/futex.h   |    6 ++++--
- arch/arm64/kernel/kuser32.S      |    6 ++++--
- arch/arm64/lib/bitops.S          |    3 ++-
- 5 files changed, 35 insertions(+), 18 deletions(-)
+ mm/swapfile.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/arch/arm64/include/asm/atomic.h
-+++ b/arch/arm64/include/asm/atomic.h
-@@ -64,7 +64,7 @@ static inline int atomic_add_return(int
- 	int result;
- 
- 	asm volatile("// atomic_add_return\n"
--"1:	ldaxr	%w0, %2\n"
-+"1:	ldxr	%w0, %2\n"
- "	add	%w0, %w0, %w3\n"
- "	stlxr	%w1, %w0, %2\n"
- "	cbnz	%w1, 1b"
-@@ -72,6 +72,7 @@ static inline int atomic_add_return(int
- 	: "Ir" (i)
- 	: "cc", "memory");
- 
-+	smp_mb();
- 	return result;
- }
- 
-@@ -96,7 +97,7 @@ static inline int atomic_sub_return(int
- 	int result;
- 
- 	asm volatile("// atomic_sub_return\n"
--"1:	ldaxr	%w0, %2\n"
-+"1:	ldxr	%w0, %2\n"
- "	sub	%w0, %w0, %w3\n"
- "	stlxr	%w1, %w0, %2\n"
- "	cbnz	%w1, 1b"
-@@ -104,6 +105,7 @@ static inline int atomic_sub_return(int
- 	: "Ir" (i)
- 	: "cc", "memory");
- 
-+	smp_mb();
- 	return result;
- }
- 
-@@ -112,17 +114,20 @@ static inline int atomic_cmpxchg(atomic_
- 	unsigned long tmp;
- 	int oldval;
- 
-+	smp_mb();
-+
- 	asm volatile("// atomic_cmpxchg\n"
--"1:	ldaxr	%w1, %2\n"
-+"1:	ldxr	%w1, %2\n"
- "	cmp	%w1, %w3\n"
- "	b.ne	2f\n"
--"	stlxr	%w0, %w4, %2\n"
-+"	stxr	%w0, %w4, %2\n"
- "	cbnz	%w0, 1b\n"
- "2:"
- 	: "=&r" (tmp), "=&r" (oldval), "+Q" (ptr->counter)
- 	: "Ir" (old), "r" (new)
- 	: "cc", "memory");
- 
-+	smp_mb();
- 	return oldval;
- }
- 
-@@ -183,7 +188,7 @@ static inline long atomic64_add_return(l
- 	unsigned long tmp;
- 
- 	asm volatile("// atomic64_add_return\n"
--"1:	ldaxr	%0, %2\n"
-+"1:	ldxr	%0, %2\n"
- "	add	%0, %0, %3\n"
- "	stlxr	%w1, %0, %2\n"
- "	cbnz	%w1, 1b"
-@@ -191,6 +196,7 @@ static inline long atomic64_add_return(l
- 	: "Ir" (i)
- 	: "cc", "memory");
- 
-+	smp_mb();
- 	return result;
- }
- 
-@@ -215,7 +221,7 @@ static inline long atomic64_sub_return(l
- 	unsigned long tmp;
- 
- 	asm volatile("// atomic64_sub_return\n"
--"1:	ldaxr	%0, %2\n"
-+"1:	ldxr	%0, %2\n"
- "	sub	%0, %0, %3\n"
- "	stlxr	%w1, %0, %2\n"
- "	cbnz	%w1, 1b"
-@@ -223,6 +229,7 @@ static inline long atomic64_sub_return(l
- 	: "Ir" (i)
- 	: "cc", "memory");
- 
-+	smp_mb();
- 	return result;
- }
- 
-@@ -231,17 +238,20 @@ static inline long atomic64_cmpxchg(atom
- 	long oldval;
- 	unsigned long res;
- 
-+	smp_mb();
-+
- 	asm volatile("// atomic64_cmpxchg\n"
--"1:	ldaxr	%1, %2\n"
-+"1:	ldxr	%1, %2\n"
- "	cmp	%1, %3\n"
- "	b.ne	2f\n"
--"	stlxr	%w0, %4, %2\n"
-+"	stxr	%w0, %4, %2\n"
- "	cbnz	%w0, 1b\n"
- "2:"
- 	: "=&r" (res), "=&r" (oldval), "+Q" (ptr->counter)
- 	: "Ir" (old), "r" (new)
- 	: "cc", "memory");
- 
-+	smp_mb();
- 	return oldval;
- }
- 
-@@ -253,11 +263,12 @@ static inline long atomic64_dec_if_posit
- 	unsigned long tmp;
- 
- 	asm volatile("// atomic64_dec_if_positive\n"
--"1:	ldaxr	%0, %2\n"
-+"1:	ldxr	%0, %2\n"
- "	subs	%0, %0, #1\n"
- "	b.mi	2f\n"
- "	stlxr	%w1, %0, %2\n"
- "	cbnz	%w1, 1b\n"
-+"	dmb	ish\n"
- "2:"
- 	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
- 	:
---- a/arch/arm64/include/asm/cmpxchg.h
-+++ b/arch/arm64/include/asm/cmpxchg.h
-@@ -29,7 +29,7 @@ static inline unsigned long __xchg(unsig
- 	switch (size) {
- 	case 1:
- 		asm volatile("//	__xchg1\n"
--		"1:	ldaxrb	%w0, %2\n"
-+		"1:	ldxrb	%w0, %2\n"
- 		"	stlxrb	%w1, %w3, %2\n"
- 		"	cbnz	%w1, 1b\n"
- 			: "=&r" (ret), "=&r" (tmp), "+Q" (*(u8 *)ptr)
-@@ -38,7 +38,7 @@ static inline unsigned long __xchg(unsig
- 		break;
- 	case 2:
- 		asm volatile("//	__xchg2\n"
--		"1:	ldaxrh	%w0, %2\n"
-+		"1:	ldxrh	%w0, %2\n"
- 		"	stlxrh	%w1, %w3, %2\n"
- 		"	cbnz	%w1, 1b\n"
- 			: "=&r" (ret), "=&r" (tmp), "+Q" (*(u16 *)ptr)
-@@ -47,7 +47,7 @@ static inline unsigned long __xchg(unsig
- 		break;
- 	case 4:
- 		asm volatile("//	__xchg4\n"
--		"1:	ldaxr	%w0, %2\n"
-+		"1:	ldxr	%w0, %2\n"
- 		"	stlxr	%w1, %w3, %2\n"
- 		"	cbnz	%w1, 1b\n"
- 			: "=&r" (ret), "=&r" (tmp), "+Q" (*(u32 *)ptr)
-@@ -56,7 +56,7 @@ static inline unsigned long __xchg(unsig
- 		break;
- 	case 8:
- 		asm volatile("//	__xchg8\n"
--		"1:	ldaxr	%0, %2\n"
-+		"1:	ldxr	%0, %2\n"
- 		"	stlxr	%w1, %3, %2\n"
- 		"	cbnz	%w1, 1b\n"
- 			: "=&r" (ret), "=&r" (tmp), "+Q" (*(u64 *)ptr)
-@@ -67,6 +67,7 @@ static inline unsigned long __xchg(unsig
- 		BUILD_BUG();
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1922,7 +1922,6 @@ SYSCALL_DEFINE1(swapoff, const char __us
+ 	p->swap_map = NULL;
+ 	cluster_info = p->cluster_info;
+ 	p->cluster_info = NULL;
+-	p->flags = 0;
+ 	frontswap_map = frontswap_map_get(p);
+ 	spin_unlock(&p->lock);
+ 	spin_unlock(&swap_lock);
+@@ -1948,6 +1947,16 @@ SYSCALL_DEFINE1(swapoff, const char __us
+ 		mutex_unlock(&inode->i_mutex);
  	}
- 
-+	smp_mb();
- 	return ret;
- }
- 
---- a/arch/arm64/include/asm/futex.h
-+++ b/arch/arm64/include/asm/futex.h
-@@ -24,10 +24,11 @@
- 
- #define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
- 	asm volatile(							\
--"1:	ldaxr	%w1, %2\n"						\
-+"1:	ldxr	%w1, %2\n"						\
- 	insn "\n"							\
- "2:	stlxr	%w3, %w0, %2\n"						\
- "	cbnz	%w3, 1b\n"						\
-+"	dmb	ish\n"							\
- "3:\n"									\
- "	.pushsection .fixup,\"ax\"\n"					\
- "4:	mov	%w0, %w5\n"						\
-@@ -110,11 +111,12 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
- 		return -EFAULT;
- 
- 	asm volatile("// futex_atomic_cmpxchg_inatomic\n"
--"1:	ldaxr	%w1, %2\n"
-+"1:	ldxr	%w1, %2\n"
- "	sub	%w3, %w1, %w4\n"
- "	cbnz	%w3, 3f\n"
- "2:	stlxr	%w3, %w5, %2\n"
- "	cbnz	%w3, 1b\n"
-+"	dmb	ish\n"
- "3:\n"
- "	.pushsection .fixup,\"ax\"\n"
- "4:	mov	%w0, %w6\n"
---- a/arch/arm64/kernel/kuser32.S
-+++ b/arch/arm64/kernel/kuser32.S
-@@ -38,12 +38,13 @@ __kuser_cmpxchg64:			// 0xffff0f60
- 	.inst	0xe92d00f0		//	push		{r4, r5, r6, r7}
- 	.inst	0xe1c040d0		//	ldrd		r4, r5, [r0]
- 	.inst	0xe1c160d0		//	ldrd		r6, r7, [r1]
--	.inst	0xe1b20e9f		// 1:	ldaexd		r0, r1, [r2]
-+	.inst	0xe1b20f9f		// 1:	ldrexd		r0, r1, [r2]
- 	.inst	0xe0303004		//	eors		r3, r0, r4
- 	.inst	0x00313005		//	eoreqs		r3, r1, r5
- 	.inst	0x01a23e96		//	stlexdeq	r3, r6, [r2]
- 	.inst	0x03330001		//	teqeq		r3, #1
- 	.inst	0x0afffff9		//	beq		1b
-+	.inst	0xf57ff05b		//	dmb		ish
- 	.inst	0xe2730000		//	rsbs		r0, r3, #0
- 	.inst	0xe8bd00f0		//	pop		{r4, r5, r6, r7}
- 	.inst	0xe12fff1e		//	bx		lr
-@@ -55,11 +56,12 @@ __kuser_memory_barrier:			// 0xffff0fa0
- 
- 	.align	5
- __kuser_cmpxchg:			// 0xffff0fc0
--	.inst	0xe1923e9f		// 1:	ldaex		r3, [r2]
-+	.inst	0xe1923f9f		// 1:	ldrex		r3, [r2]
- 	.inst	0xe0533000		//	subs		r3, r3, r0
- 	.inst	0x01823e91		//	stlexeq		r3, r1, [r2]
- 	.inst	0x03330001		//	teqeq		r3, #1
- 	.inst	0x0afffffa		//	beq		1b
-+	.inst	0xf57ff05b		//	dmb		ish
- 	.inst	0xe2730000		//	rsbs		r0, r3, #0
- 	.inst	0xe12fff1e		//	bx		lr
- 
---- a/arch/arm64/lib/bitops.S
-+++ b/arch/arm64/lib/bitops.S
-@@ -46,11 +46,12 @@ ENTRY(	\name	)
- 	mov	x2, #1
- 	add	x1, x1, x0, lsr #3	// Get word offset
- 	lsl	x4, x2, x3		// Create mask
--1:	ldaxr	x2, [x1]
-+1:	ldxr	x2, [x1]
- 	lsr	x0, x2, x3		// Save old value of bit
- 	\instr	x2, x2, x4		// toggle bit
- 	stlxr	w5, x2, [x1]
- 	cbnz	w5, 1b
-+	dmb	ish
- 	and	x0, x0, #1
- 3:	ret
- ENDPROC(\name	)
+ 	filp_close(swap_file, NULL);
++
++	/*
++	 * Clear the SWP_USED flag after all resources are freed so that swapon
++	 * can reuse this swap_info in alloc_swap_info() safely.  It is ok to
++	 * not hold p->lock after we cleared its SWP_WRITEOK.
++	 */
++	spin_lock(&swap_lock);
++	p->flags = 0;
++	spin_unlock(&swap_lock);
++
+ 	err = 0;
+ 	atomic_inc(&proc_poll_event);
+ 	wake_up_interruptible(&proc_poll_wait);
 
 
