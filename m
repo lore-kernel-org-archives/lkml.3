@@ -1,56 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaBRUSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:18:38 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53653 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbaBRUSg (ORCPT
+	id S1751945AbaBRUT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:19:58 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45554 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126AbaBRUT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:18:36 -0500
-Message-ID: <5303C018.1020707@wwwdotorg.org>
-Date: Tue, 18 Feb 2014 13:18:32 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Feb 2014 15:19:56 -0500
+Date: Tue, 18 Feb 2014 21:20:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [PATCH] sched_clock: Prevent callers from seeing half-updated
+ data
+In-Reply-To: <1392662736-7803-2-git-send-email-john.stultz@linaro.org>
+Message-ID: <alpine.DEB.2.02.1402182119500.4468@ionos.tec.linutronix.de>
+References: <1392662736-7803-1-git-send-email-john.stultz@linaro.org> <1392662736-7803-2-git-send-email-john.stultz@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
-        jinchoi@broadcom.com, Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
-References: <cover.1392273722.git.viresh.kumar@linaro.org>	<52FE71BD.3020103@wwwdotorg.org>	<2869027.iYHxWOSS2C@vostro.rjw.lan>	<52FEAECA.5080905@wwwdotorg.org> <CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com>
-In-Reply-To: <CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 02:20 AM, Viresh Kumar wrote:
-> On 15 February 2014 05:33, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 02/14/2014 03:23 PM, Rafael J. Wysocki wrote:
+On Mon, 17 Feb 2014, John Stultz wrote:
+
+> From: Stephen Boyd <sboyd@codeaurora.org>
 > 
->>> Well, it would be good to verify which part, then.
->>
->> Patch 2/7 appears to stop that message from being printed during
->> suspend, and perhaps reduce the number of times it's printed during
->> resume. Patch 7/7 stops the message being printed at all.
->>
->> Looking at patch 7, I wonder if it's simply because tegra_target() was
->> modified never to return -EBUSY, so the bug is still there, but it's
->> just been hidden.
+> The generic sched_clock registration function was previously
+> done lockless, due to the fact that it was expected to be called
+> only once. However, now there are systems that may register
+> multiple sched_clock sources, for which the lack of locking has
+> casued problems:
 > 
-> No, the bug is removed now. Its hidden in current linus/master :)
+> If two sched_clock sources are registered we may end up in a
+> situation where a call to sched_clock() may be accessing the
+> epoch cycle count for the old counter and the cycle count for the
+> new counter. This can lead to confusing results where
+> sched_clock() values jump and then are reset to 0 (due to the way
+> the registration function forces the epoch_ns to be 0).
+> 
+> Fix this by reorganizing the registration function to hold the
+> seqlock for as short a time as possible while we update the
+> clock_data structure for a new counter. We also put any
+> accumulated time into epoch_ns instead of resetting the time to
+> 0 so that the clock doesn't reset after each successful
+> registration.
+> 
+> Cc: Peter Zijlstra <peterz@infradead.org>
 
-I'm not sure what that means; I still see the message:
+Peter ???
 
-cpufreq: __cpufreq_driver_target: Failed to change cpu frequency: -16
-
-... in Linus's tree (805937cf45f9 "Merge tag 'ext4_for_linus_stable' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4").
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Josh Cartwright <joshc@codeaurora.org>
+> Reported-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> [jstultz: Added extra context to the commit message]
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  kernel/time/sched_clock.c | 46 +++++++++++++++++++++++++++++-----------------
+>  1 file changed, 29 insertions(+), 17 deletions(-)
+> 
+> diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+> index 0abb364..4d23dc4 100644
+> --- a/kernel/time/sched_clock.c
+> +++ b/kernel/time/sched_clock.c
+> @@ -116,20 +116,42 @@ static enum hrtimer_restart sched_clock_poll(struct hrtimer *hrt)
+>  void __init sched_clock_register(u64 (*read)(void), int bits,
+>  				 unsigned long rate)
+>  {
+> +	u64 res, wrap, new_mask, new_epoch, cyc, ns;
+> +	u32 new_mult, new_shift;
+> +	ktime_t new_wrap_kt;
+>  	unsigned long r;
+> -	u64 res, wrap;
+>  	char r_unit;
+>  
+>  	if (cd.rate > rate)
+>  		return;
+>  
+>  	WARN_ON(!irqs_disabled());
+> -	read_sched_clock = read;
+> -	sched_clock_mask = CLOCKSOURCE_MASK(bits);
+> -	cd.rate = rate;
+>  
+>  	/* calculate the mult/shift to convert counter ticks to ns. */
+> -	clocks_calc_mult_shift(&cd.mult, &cd.shift, rate, NSEC_PER_SEC, 3600);
+> +	clocks_calc_mult_shift(&new_mult, &new_shift, rate, NSEC_PER_SEC, 3600);
+> +
+> +	new_mask = CLOCKSOURCE_MASK(bits);
+> +
+> +	/* calculate how many ns until we wrap */
+> +	wrap = clocks_calc_max_nsecs(new_mult, new_shift, 0, new_mask);
+> +	new_wrap_kt = ns_to_ktime(wrap - (wrap >> 3));
+> +
+> +	/* update epoch for new counter and update epoch_ns from old counter*/
+> +	new_epoch = read();
+> +	cyc = read_sched_clock();
+> +	ns = cd.epoch_ns + cyc_to_ns((cyc - cd.epoch_cyc) & sched_clock_mask,
+> +			  cd.mult, cd.shift);
+> +
+> +	raw_write_seqcount_begin(&cd.seq);
+> +	read_sched_clock = read;
+> +	sched_clock_mask = new_mask;
+> +	cd.rate = rate;
+> +	cd.wrap_kt = new_wrap_kt;
+> +	cd.mult = new_mult;
+> +	cd.shift = new_shift;
+> +	cd.epoch_cyc = new_epoch;
+> +	cd.epoch_ns = ns;
+> +	raw_write_seqcount_end(&cd.seq);
+>  
+>  	r = rate;
+>  	if (r >= 4000000) {
+> @@ -141,22 +163,12 @@ void __init sched_clock_register(u64 (*read)(void), int bits,
+>  	} else
+>  		r_unit = ' ';
+>  
+> -	/* calculate how many ns until we wrap */
+> -	wrap = clocks_calc_max_nsecs(cd.mult, cd.shift, 0, sched_clock_mask);
+> -	cd.wrap_kt = ns_to_ktime(wrap - (wrap >> 3));
+> -
+>  	/* calculate the ns resolution of this counter */
+> -	res = cyc_to_ns(1ULL, cd.mult, cd.shift);
+> +	res = cyc_to_ns(1ULL, new_mult, new_shift);
+> +
+>  	pr_info("sched_clock: %u bits at %lu%cHz, resolution %lluns, wraps every %lluns\n",
+>  		bits, r, r_unit, res, wrap);
+>  
+> -	update_sched_clock();
+> -
+> -	/*
+> -	 * Ensure that sched_clock() starts off at 0ns
+> -	 */
+> -	cd.epoch_ns = 0;
+> -
+>  	/* Enable IRQ time accounting if we have a fast enough sched_clock */
+>  	if (irqtime > 0 || (irqtime == -1 && rate >= 1000000))
+>  		enable_sched_clock_irqtime();
+> -- 
+> 1.8.3.2
+> 
+> 
