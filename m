@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaBRXSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:18:49 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:53879 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387AbaBRXRW (ORCPT
+	id S1753057AbaBRWqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:46:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50940 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976AbaBRWqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:17:22 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>
-Cc: Devicetree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/5] mfd: add bcm590xx pmu DT binding
-Date: Tue, 18 Feb 2014 18:17:08 -0500
-Message-Id: <1392765432-9111-2-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1392765432-9111-1-git-send-email-mporter@linaro.org>
-References: <1392765432-9111-1-git-send-email-mporter@linaro.org>
+	Tue, 18 Feb 2014 17:46:30 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 25/26] intel_pstate: Take core C0 time into account for core busy calculation
+Date: Tue, 18 Feb 2014 14:47:21 -0800
+Message-Id: <20140218224531.118777881@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
+References: <20140218224530.398913499@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a DT binding for the BCM590xx PMUs. The binding inherits from
-the generic regulator bindings.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+------------------
+
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+
+commit fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 upstream.
+
+Take non-idle time into account when calculating core busy time.
+This ensures that intel_pstate will notice a decrease in load.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=66581
+Cc: 3.10+ <stable@vger.kernel.org> # 3.10+
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- Documentation/devicetree/bindings/mfd/bcm590xx.txt | 49 ++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/bcm590xx.txt
+ drivers/cpufreq/intel_pstate.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/bcm590xx.txt b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
-new file mode 100644
-index 0000000..a4a8039
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
-@@ -0,0 +1,49 @@
-+-------------------------------
-+BCM590xx Power Management Units
-+-------------------------------
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -51,6 +51,7 @@ struct sample {
+ 	int32_t core_pct_busy;
+ 	u64 aperf;
+ 	u64 mperf;
++	unsigned long long tsc;
+ 	int freq;
+ };
+ 
+@@ -86,6 +87,7 @@ struct cpudata {
+ 
+ 	u64	prev_aperf;
+ 	u64	prev_mperf;
++	unsigned long long prev_tsc;
+ 	int	sample_ptr;
+ 	struct sample samples[SAMPLE_COUNT];
+ };
+@@ -435,11 +437,17 @@ static inline void intel_pstate_calc_bus
+ 					struct sample *sample)
+ {
+ 	u64 core_pct;
+-	core_pct = div64_u64(int_tofp(sample->aperf * 100),
+-			     sample->mperf);
+-	sample->freq = fp_toint(cpu->pstate.max_pstate * core_pct * 1000);
++	u64 c0_pct;
+ 
+-	sample->core_pct_busy = core_pct;
++	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
 +
-+Required properties:
-+- compatible: "brcm,bcm59056"
-+- reg: I2C slave address
-+- interrupts: interrupt for the PMU. Generic interrupt client node bindings
-+  are described in interrupt-controller/interrupts.txt
++	c0_pct = div64_u64(sample->mperf * 100, sample->tsc);
++	sample->freq = fp_toint(
++		mul_fp(int_tofp(cpu->pstate.max_pstate),
++			int_tofp(core_pct * 1000)));
 +
-+-----------------------
-+BCM590xx PMU Regulators
-+-----------------------
-+
-+Required properties:
-+- compatible: "brcm,bcm59056-regs"
-+
-+Optional properties:
-+- regulators: This is the list of child nodes that specify the regulator
-+  initialization data for defined regulators.  Generic regulator bindings
-+  are described in regulator/regulator.txt.
-+
-+  The valid regulator-compatible values for BCM59056 are:
-+  	rfldo, camldo1, camldo2, simldo1, simlso2, sdldo, sdxldo,
-+	mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
-+	csr, iosr1, iosr2, msr, sdsr1, sdsr2, vsr
-+
-+Example:
-+	pmu: bcm59056@8 {
-+		compatible = "brcm,bcm59056";
-+		reg = <0x08>;
-+		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>;
-+		regs {
-+			compatible = "brcm,bcm59056-regs";
-+			regulators {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				rfldo_reg: regulator@0 {
-+					reg = <0>;
-+					regulator-compatible = "rfldo";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <3300000>;
-+				};
-+
-+				...
-+			};
-+		};
-+	};
--- 
-1.8.4
++	sample->core_pct_busy = mul_fp(int_tofp(core_pct),
++				div_fp(int_tofp(c0_pct + 1), int_tofp(100)));
+ }
+ 
+ static inline void intel_pstate_sample(struct cpudata *cpu)
+
 
