@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaBRGeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 01:34:50 -0500
-Received: from nm4-vm6.bullet.mail.gq1.yahoo.com ([98.136.218.165]:29595 "EHLO
-	nm4-vm6.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753702AbaBRGeo (ORCPT
+	id S1754045AbaBRGrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 01:47:06 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:50064 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623AbaBRGrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 01:34:44 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=gcom1024; d=yahoo.com;
-	b=Nks4l1yjG06rTQZd7+sAoENcyu4PFy1nRXVbmHeeBcQtqu+BEhKKWNTGdVdE14HSEQs0z07ZQwqpkQgbPk3C4zEas5a8Q8NaBEIunXL7+zuHQM8pxTfR+4DiRs4NCjEsJDM+UCK3Lj8tPQPn8UVKiNKZj9l2R4695taBGyyi8fg=;
-X-Yahoo-Newman-Id: 18359.43726.bm@smtp232.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: RI2brUYVM1l9mp.KFj5VQqQwqwYKQYpu0NISl_cxfVTU5bf
- LDd9jpXCt4FN7YARvr62ab55mK5vGt_I2hr9bOc4etTKdK.ZvOUX257ErPDg
- zqtYkImd0L7HUxr1P_nObUXndvUn4CwIwpDSTqtSc5AHT7iLLbUyTmZ_k6Z4
- f00uaj3ScdV8M8GcE7qSZHsPF2vDcswF1g5_biwNHbY9Ik9140tbhUC2LFKF
- .d5RxbbzwFQJoA_a4L10N9KpzLsUwzm1e6RCrD1UN3_UXjAzE6I9yPuO1KT1
- dvKOV3E92laVNui__Wg9sNJzd7bPsH46hZbOzCrQ4HZ8Q4b._pB4iRmJAsYf
- v2hsYA.Afx8Nm3mHh4tnCKwCjOPreH924u0_CMBfl5ad9jAtyeISPv0iY531
- 1DYHQpaGZ02tv1DJI.VXw6uJbl_7wYki3zCjPGcdAxN6rQRgzKG1zj9Z1kWe
- Ln7CVWPwEVjbtrBJueCkEwsWIJRLUt5je19kCLpS4PMEbZj.kOefM8OiuRoS
- vmEqtstEPEE7uxDnXGhQkp92mAYvTrEQ96sO6
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.138.105.21])
-        by smtp232.mail.gq1.yahoo.com with SMTP; 18 Feb 2014 06:34:43 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH 3/4 v2] Staging: comedi: addi-data: convert printk() to dev_err()
-Date: Tue, 18 Feb 2014 00:34:39 -0600
-Message-Id: <1392705279-29692-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392540082-26064-1-git-send-email-chase.southwood@yahoo.com>
-References: <1392540082-26064-1-git-send-email-chase.southwood@yahoo.com>
+	Tue, 18 Feb 2014 01:47:04 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michal Simek <monstr@monstr.eu>
+Cc: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
+        achew@nvidia.com, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v2] microblaze: Rename global function heartbeat()
+Date: Mon, 17 Feb 2014 22:46:54 -0800
+Message-Id: <1392706014-23332-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch for hwdrv_apci035.c changes a printk() call to a dev_err() call
-since this is generally preferred.  It also removes a newline from the start
-of the error message.
+microblaze:allmodconfig complains for some configurations that 'heartbeat'
+is redefined as different kind of symbol. This is seen in test compiles
+of watchdog drivers, which often use 'heartbeat' as ststic variable.
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+Since 'heartbeat' is an unfortunate name for a global function,
+rename it to microblaze_heartbeat. Also rename the setup function
+to microblaze_setup_heartbeat.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-2: Removed leading newline, per Ian's request.
+v2: Use microblaze_ instead of xilinx_ as function prefix.
 
- drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/microblaze/include/asm/setup.h |    4 ++--
+ arch/microblaze/kernel/heartbeat.c  |    4 ++--
+ arch/microblaze/kernel/timer.c      |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
-index 90d5801..ff64540 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
-@@ -227,7 +227,7 @@ static int i_APCI035_ConfigTimerWatchdog(struct comedi_device *dev,
- 			ui_Command = ui_Command & 0xFFF819E2UL;
+diff --git a/arch/microblaze/include/asm/setup.h b/arch/microblaze/include/asm/setup.h
+index b2c08ce..be84a4d 100644
+--- a/arch/microblaze/include/asm/setup.h
++++ b/arch/microblaze/include/asm/setup.h
+@@ -23,8 +23,8 @@ int setup_early_printk(char *opt);
+ void remap_early_printk(void);
+ void disable_early_printk(void);
  
- 		} else {
--			printk("\n The parameter for Timer/watchdog selection is in error\n");
-+			dev_err(dev->class_dev, "The parameter for Timer/watchdog selection is in error\n");
- 			return -EINVAL;
- 		}
+-void heartbeat(void);
+-void setup_heartbeat(void);
++void microblaze_heartbeat(void);
++void microblaze_setup_heartbeat(void);
+ 
+ #   ifdef CONFIG_MMU
+ extern void mmu_reset(void);
+diff --git a/arch/microblaze/kernel/heartbeat.c b/arch/microblaze/kernel/heartbeat.c
+index 1879a05..4643e3a 100644
+--- a/arch/microblaze/kernel/heartbeat.c
++++ b/arch/microblaze/kernel/heartbeat.c
+@@ -17,7 +17,7 @@
+ 
+ static unsigned int base_addr;
+ 
+-void heartbeat(void)
++void microblaze_heartbeat(void)
+ {
+ 	static unsigned int cnt, period, dist;
+ 
+@@ -42,7 +42,7 @@ void heartbeat(void)
  	}
+ }
+ 
+-void setup_heartbeat(void)
++void microblaze_setup_heartbeat(void)
+ {
+ 	struct device_node *gpio = NULL;
+ 	int *prop;
+diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
+index fb0c6144..717a3d9 100644
+--- a/arch/microblaze/kernel/timer.c
++++ b/arch/microblaze/kernel/timer.c
+@@ -140,7 +140,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ {
+ 	struct clock_event_device *evt = &clockevent_xilinx_timer;
+ #ifdef CONFIG_HEART_BEAT
+-	heartbeat();
++	microblaze_heartbeat();
+ #endif
+ 	timer_ack();
+ 	evt->event_handler(evt);
+@@ -274,7 +274,7 @@ static void __init xilinx_timer_init(struct device_node *timer)
+ 
+ 	setup_irq(irq, &timer_irqaction);
+ #ifdef CONFIG_HEART_BEAT
+-	setup_heartbeat();
++	microblaze_setup_heartbeat();
+ #endif
+ 	xilinx_clocksource_init();
+ 	xilinx_clockevent_init();
 -- 
-1.8.5.3
+1.7.9.7
 
