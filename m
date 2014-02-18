@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaBRKij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:38:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473AbaBRKih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:38:37 -0500
-Message-ID: <53033828.8050505@redhat.com>
-Date: Tue, 18 Feb 2014 11:38:32 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754801AbaBRKkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:40:16 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38522 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030AbaBRKkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:40:14 -0500
+Message-ID: <530338B2.603@kernel.org>
+Date: Tue, 18 Feb 2014 10:40:50 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org
-CC: Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] kvm/vfio: Support for DMA coherent IOMMUs
-References: <20140217201324.22775.31904.stgit@bling.home> <20140217202412.22775.77911.stgit@bling.home>
-In-Reply-To: <20140217202412.22775.77911.stgit@bling.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Marek Belisko <marek@goldelico.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net
+CC: pmeerw@pmeerw.net, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, hns@goldelico.com
+Subject: Re: [PATCH 1/2] staging: iio: hmc5843: Add all available models to
+ device tree id table.
+References: <1392387929-31491-1-git-send-email-marek@goldelico.com>
+In-Reply-To: <1392387929-31491-1-git-send-email-marek@goldelico.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/02/2014 21:24, Alex Williamson ha scritto:
-> VFIO now has support for using the IOMMU_CACHE flag and a mechanism
-> for an external user to test the current operating mode of the IOMMU.
-> Add support for this to the kvm-vfio pseudo device so that we only
-> register noncoherent DMA when necessary.
->
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: Gleb Natapov <gleb@kernel.org>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
+On 14/02/14 14:25, Marek Belisko wrote:
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
+I wonder how this got missed.  However, for those data elements to be useful, you will
+need to read them somewhere in the driver I think.... (if there is any magic
+that puts this in the relevant i2c locations then point it out to me!)
 > ---
->  virt/kvm/vfio.c |   27 ++++++++++++++++++++-------
->  1 file changed, 20 insertions(+), 7 deletions(-)
+>   drivers/staging/iio/magnetometer/hmc5843.c | 4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
 >
-> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-> index b4f9507..ba1a93f 100644
-> --- a/virt/kvm/vfio.c
-> +++ b/virt/kvm/vfio.c
-> @@ -59,6 +59,22 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
->  	symbol_put(vfio_group_put_external_user);
->  }
+> diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
+> index d4f4dd9..f595fdc 100644
+> --- a/drivers/staging/iio/magnetometer/hmc5843.c
+> +++ b/drivers/staging/iio/magnetometer/hmc5843.c
+> @@ -630,7 +630,9 @@ static const struct i2c_device_id hmc5843_id[] = {
+>   MODULE_DEVICE_TABLE(i2c, hmc5843_id);
 >
-> +static bool kvm_vfio_group_is_coherent(struct vfio_group *vfio_group)
-> +{
-> +	long (*fn)(struct vfio_group *, unsigned long);
-> +	long ret;
-> +
-> +	fn = symbol_get(vfio_external_check_extension);
-> +	if (!fn)
-> +		return false;
-> +
-> +	ret = fn(vfio_group, VFIO_DMA_CC_IOMMU);
-> +
-> +	symbol_put(vfio_external_check_extension);
-> +
-> +	return ret > 0;
-> +}
-> +
->  /*
->   * Groups can use the same or different IOMMU domains.  If the same then
->   * adding a new group may change the coherency of groups we've previously
-> @@ -75,13 +91,10 @@ static void kvm_vfio_update_coherency(struct kvm_device *dev)
->  	mutex_lock(&kv->lock);
->
->  	list_for_each_entry(kvg, &kv->group_list, node) {
-> -		/*
-> -		 * TODO: We need an interface to check the coherency of
-> -		 * the IOMMU domain this group is using.  For now, assume
-> -		 * it's always noncoherent.
-> -		 */
-> -		noncoherent = true;
-> -		break;
-> +		if (!kvm_vfio_group_is_coherent(kvg->vfio_group)) {
-> +			noncoherent = true;
-> +			break;
-> +		}
->  	}
->
->  	if (noncoherent != kv->noncoherent) {
+>   static const struct of_device_id hmc5843_of_match[] = {
+> -	{ .compatible = "honeywell,hmc5843" },
+> +	{ .compatible = "honeywell,hmc5843", .data = (void *)HMC5843_ID },
+> +	{ .compatible = "honeywell,hmc5883", .data = (void *)HMC5883_ID },
+> +	{ .compatible = "honeywell,hmc5883l", .data = (void *)HMC5883L_ID },
+>   	{}
+>   };
+>   MODULE_DEVICE_TABLE(of, hmc5843_of_match);
 >
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
