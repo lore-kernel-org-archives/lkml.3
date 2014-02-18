@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaBRXd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:33:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50654 "EHLO
+	id S1753665AbaBRXdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:33:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50646 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346AbaBRWqC (ORCPT
+	with ESMTP id S1752334AbaBRWqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:02 -0500
+	Tue, 18 Feb 2014 17:46:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 17/24] target/file: Use O_DSYNC by default for FILEIO backends
-Date: Tue, 18 Feb 2014 14:47:04 -0800
-Message-Id: <20140218224550.711958451@linuxfoundation.org>
+        Mike Marciniszyn <mike.marciniszyn@intel.com>, Jan Kara <jack@suse.cz>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH 3.4 16/24] IB/qib: Convert qib_user_sdma_pin_pages() to use get_user_pages_fast()
+Date: Tue, 18 Feb 2014 14:47:03 -0800
+Message-Id: <20140218224550.684998163@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
 References: <20140218224550.221535225@linuxfoundation.org>
@@ -31,185 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Jan Kara <jack@suse.cz>
 
-commit a4dff3043c231d57f982af635c9d2192ee40e5ae upstream.
+commit 603e7729920e42b3c2f4dbfab9eef4878cb6e8fa upstream.
 
-Convert to use O_DSYNC for all cases at FILEIO backend creation time to
-avoid the extra syncing of pure timestamp updates with legacy O_SYNC during
-default operation as recommended by hch.  Continue to do this independently of
-Write Cache Enable (WCE) bit, as WCE=0 is currently the default for all backend
-devices and enabled by user on per device basis via attrib/emulate_write_cache.
+qib_user_sdma_queue_pkts() gets called with mmap_sem held for
+writing. Except for get_user_pages() deep down in
+qib_user_sdma_pin_pages() we don't seem to need mmap_sem at all.  Even
+more interestingly the function qib_user_sdma_queue_pkts() (and also
+qib_user_sdma_coalesce() called somewhat later) call copy_from_user()
+which can hit a page fault and we deadlock on trying to get mmap_sem
+when handling that fault.
 
-This patch drops the now unnecessary fd_buffered_io= token usage that was
-originally signalling when to explictly disable O_SYNC at backend creation
-time for buffered I/O operation.  This can end up being dangerous for a number
-of reasons during physical node failure, so go ahead and drop this option
-for now when O_DSYNC is used as the default.
+So just make qib_user_sdma_pin_pages() use get_user_pages_fast() and
+leave mmap_sem locking for mm.
 
-Also allow explict FUA WRITEs -> vfs_fsync_range() call to function in
-fd_execute_cmd() independently of WCE bit setting.
+This deadlock has actually been observed in the wild when the node
+is under memory pressure.
 
-Reported-by: Christoph Hellwig <hch@lst.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+[Backported to 3.4: (Thank to Ben Hutchings)
+ - Adjust context
+ - Adjust indentation and nr_pages argument in qib_user_sdma_pin_pages()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[bwh: Backported to 3.2:
- - We have fd_do_task() and not fd_execute_cmd()
- - Various fields are in struct se_task rather than struct se_cmd
- - fd_create_virtdevice() flags initialisation hasn't been cleaned up]
-Cc: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_file.c |   78 ++++++++------------------------------
- drivers/target/target_core_file.h |    1 
- 2 files changed, 17 insertions(+), 62 deletions(-)
+ drivers/infiniband/hw/qib/qib_user_sdma.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -133,21 +133,11 @@ static struct se_device *fd_create_virtd
- 		ret = PTR_ERR(dev_p);
- 		goto fail;
- 	}
--#if 0
--	if (di->no_create_file)
--		flags = O_RDWR | O_LARGEFILE;
--	else
--		flags = O_RDWR | O_CREAT | O_LARGEFILE;
--#else
--	flags = O_RDWR | O_CREAT | O_LARGEFILE;
--#endif
--/*	flags |= O_DIRECT; */
- 	/*
--	 * If fd_buffered_io=1 has not been set explicitly (the default),
--	 * use O_SYNC to force FILEIO writes to disk.
-+	 * Use O_DSYNC by default instead of O_SYNC to forgo syncing
-+	 * of pure timestamp updates.
- 	 */
--	if (!(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO))
--		flags |= O_SYNC;
-+	flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
+--- a/drivers/infiniband/hw/qib/qib_user_sdma.c
++++ b/drivers/infiniband/hw/qib/qib_user_sdma.c
+@@ -284,8 +284,7 @@ static int qib_user_sdma_pin_pages(const
+ 	int j;
+ 	int ret;
  
- 	file = filp_open(dev_p, flags, 0600);
- 	if (IS_ERR(file)) {
-@@ -399,26 +389,6 @@ static void fd_emulate_sync_cache(struct
- 		transport_complete_sync_cache(cmd, ret == 0);
- }
+-	ret = get_user_pages(current, current->mm, addr,
+-			     npages, 0, 1, pages, NULL);
++	ret = get_user_pages_fast(addr, npages, 0, pages);
  
--/*
-- * WRITE Force Unit Access (FUA) emulation on a per struct se_task
-- * LBA range basis..
-- */
--static void fd_emulate_write_fua(struct se_cmd *cmd, struct se_task *task)
--{
--	struct se_device *dev = cmd->se_dev;
--	struct fd_dev *fd_dev = dev->dev_ptr;
--	loff_t start = task->task_lba * dev->se_sub_dev->se_dev_attrib.block_size;
--	loff_t end = start + task->task_size;
--	int ret;
+ 	if (ret != npages) {
+ 		int i;
+@@ -830,10 +829,7 @@ int qib_user_sdma_writev(struct qib_ctxt
+ 	while (dim) {
+ 		const int mxp = 8;
+ 
+-		down_write(&current->mm->mmap_sem);
+ 		ret = qib_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
+-		up_write(&current->mm->mmap_sem);
 -
--	pr_debug("FILEIO: FUA WRITE LBA: %llu, bytes: %u\n",
--			task->task_lba, task->task_size);
--
--	ret = vfs_fsync_range(fd_dev->fd_file, start, end, 1);
--	if (ret != 0)
--		pr_err("FILEIO: vfs_fsync_range() failed: %d\n", ret);
--}
--
- static int fd_do_task(struct se_task *task)
- {
- 	struct se_cmd *cmd = task->task_se_cmd;
-@@ -433,19 +403,21 @@ static int fd_do_task(struct se_task *ta
- 		ret = fd_do_readv(task);
- 	} else {
- 		ret = fd_do_writev(task);
--
-+		/*
-+		 * Perform implict vfs_fsync_range() for fd_do_writev() ops
-+		 * for SCSI WRITEs with Forced Unit Access (FUA) set.
-+		 * Allow this to happen independent of WCE=0 setting.
-+		 */
- 		if (ret > 0 &&
--		    dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0 &&
- 		    dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0 &&
- 		    (cmd->se_cmd_flags & SCF_FUA)) {
--			/*
--			 * We might need to be a bit smarter here
--			 * and return some sense data to let the initiator
--			 * know the FUA WRITE cache sync failed..?
--			 */
--			fd_emulate_write_fua(cmd, task);
--		}
-+			struct fd_dev *fd_dev = dev->dev_ptr;
-+			loff_t start = task->task_lba *
-+				dev->se_sub_dev->se_dev_attrib.block_size;
-+			loff_t end = start + task->task_size;
- 
-+			vfs_fsync_range(fd_dev->fd_file, start, end, 1);
-+		}
- 	}
- 
- 	if (ret < 0) {
-@@ -477,7 +449,6 @@ enum {
- static match_table_t tokens = {
- 	{Opt_fd_dev_name, "fd_dev_name=%s"},
- 	{Opt_fd_dev_size, "fd_dev_size=%s"},
--	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
- 	{Opt_err, NULL}
- };
- 
-@@ -489,7 +460,7 @@ static ssize_t fd_set_configfs_dev_param
- 	struct fd_dev *fd_dev = se_dev->se_dev_su_ptr;
- 	char *orig, *ptr, *arg_p, *opts;
- 	substring_t args[MAX_OPT_ARGS];
--	int ret = 0, arg, token;
-+	int ret = 0, token;
- 
- 	opts = kstrdup(page, GFP_KERNEL);
- 	if (!opts)
-@@ -533,19 +504,6 @@ static ssize_t fd_set_configfs_dev_param
- 					" bytes\n", fd_dev->fd_dev_size);
- 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
- 			break;
--		case Opt_fd_buffered_io:
--			match_int(args, &arg);
--			if (arg != 1) {
--				pr_err("bogus fd_buffered_io=%d value\n", arg);
--				ret = -EINVAL;
--				goto out;
--			}
--
--			pr_debug("FILEIO: Using buffered I/O"
--				" operations for struct fd_dev\n");
--
--			fd_dev->fbd_flags |= FDBD_USE_BUFFERED_IO;
--			break;
- 		default:
- 			break;
- 		}
-@@ -577,10 +535,8 @@ static ssize_t fd_show_configfs_dev_para
- 	ssize_t bl = 0;
- 
- 	bl = sprintf(b + bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
--	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
--		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
--		(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO) ?
--		"Buffered" : "Synchronous");
-+	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: O_DSYNC\n",
-+		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
- 	return bl;
- }
- 
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -18,7 +18,6 @@ struct fd_request {
- 
- #define FBDF_HAS_PATH		0x01
- #define FBDF_HAS_SIZE		0x02
--#define FDBD_USE_BUFFERED_IO	0x04
- 
- struct fd_dev {
- 	u32		fbd_flags;
+ 		if (ret <= 0)
+ 			goto done_unlock;
+ 		else {
 
 
