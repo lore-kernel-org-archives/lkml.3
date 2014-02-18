@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597AbaBRPc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:32:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50551 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756320AbaBRPbC (ORCPT
+	id S1756629AbaBRPdW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:33:22 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:47273 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756283AbaBRPa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 10:31:02 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
-        lgirdwood@gmail.com, lars@metafoo.de, peter.ujfalusi@ti.com,
-        jarkko.nikula@bitmer.com, eric.y.miao@gmail.com,
-        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux@arm.linux.org.uk
-Subject: [PATCH 12/17 v2] ASoC: omap: n810: Update locking around use of DAPM pin API
-Date: Tue, 18 Feb 2014 15:22:23 +0000
-Message-Id: <1392736948-26623-13-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Tue, 18 Feb 2014 10:30:59 -0500
+Date: Tue, 18 Feb 2014 10:30:56 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>, stable@vger.kernel.org
+Subject: Re: [PATCH] workqueue: Document exceptions to work item
+ non-reentrancy guarantee
+Message-ID: <20140218153056.GC30043@htj.dyndns.org>
+References: <1392493119-9277-1-git-send-email-peter@hurleysoftware.com>
+ <1392687834.10088.17.camel@deadeye.wl.decadent.org.uk>
+ <5302C58E.1070903@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5302C58E.1070903@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pin updates in this driver look like they are intended to be done
-atomically, update to do so.
+On Mon, Feb 17, 2014 at 09:29:34PM -0500, Peter Hurley wrote:
+> >It never would have occurred to me that you could safely change the
+> >function for a work item that is already scheduled or running.
+> >Especially given that PREPARE_WORK() is just a simple assignment (i.e.
+> >no serialisation).
+> 
+> process_one_work() has an established order that safely allows for
+> resetting the work function and scheduling the work, and further
+> guaranteeing that the new work function will run.
+> 
+> Further, existing memory barriers ensure that
+> 1. The new work function is visible on all cpus before testing if
+>    the work is already pending.
+> 2. The new work function is stored as the worker's current function
+>    before the work is marked as not pending.
+> 
+> If this wasn't possible, then single-threaded workqueues could
+> not be used for multiple functions without flushing work.
+> 
+> I wonder if the floppy driver is broken too.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- sound/soc/omap/n810.c |   22 +++++++++++++---------
- 1 files changed, 13 insertions(+), 9 deletions(-)
+Ugh... I'd just rather remove PREPARE_WORK altogether.  It's a pretty
+dumb thing to do anyway.  I'll look into it.
 
-diff --git a/sound/soc/omap/n810.c b/sound/soc/omap/n810.c
-index 3fde9e4..480a39c 100644
---- a/sound/soc/omap/n810.c
-+++ b/sound/soc/omap/n810.c
-@@ -68,26 +68,30 @@ static void n810_ext_control(struct snd_soc_dapm_context *dapm)
- 		break;
- 	}
- 
-+	snd_soc_dapm_mutex_lock(dapm);
-+
- 	if (n810_spk_func)
--		snd_soc_dapm_enable_pin(dapm, "Ext Spk");
-+		snd_soc_dapm_enable_pin_unlocked(dapm, "Ext Spk");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "Ext Spk");
-+		snd_soc_dapm_disable_pin_unlocked(dapm, "Ext Spk");
- 
- 	if (hp)
--		snd_soc_dapm_enable_pin(dapm, "Headphone Jack");
-+		snd_soc_dapm_enable_pin_unlocked(dapm, "Headphone Jack");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "Headphone Jack");
-+		snd_soc_dapm_disable_pin_unlocked(dapm, "Headphone Jack");
- 	if (line1l)
--		snd_soc_dapm_enable_pin(dapm, "LINE1L");
-+		snd_soc_dapm_enable_pin_unlocked(dapm, "LINE1L");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "LINE1L");
-+		snd_soc_dapm_disable_pin_unlocked(dapm, "LINE1L");
- 
- 	if (n810_dmic_func)
--		snd_soc_dapm_enable_pin(dapm, "DMic");
-+		snd_soc_dapm_enable_pin_unlocked(dapm, "DMic");
- 	else
--		snd_soc_dapm_disable_pin(dapm, "DMic");
-+		snd_soc_dapm_disable_pin_unlocked(dapm, "DMic");
-+
-+	snd_soc_dapm_sync_unlocked(dapm);
- 
--	snd_soc_dapm_sync(dapm);
-+	snd_soc_dapm_mutex_unlock(dapm);
- }
- 
- static int n810_startup(struct snd_pcm_substream *substream)
+Thanks.
+
 -- 
-1.7.2.5
-
+tejun
