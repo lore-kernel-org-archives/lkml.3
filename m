@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaBRWq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50868 "EHLO
+	id S1754130AbaBRXXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:23:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50923 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748AbaBRWqS (ORCPT
+	with ESMTP id S1752928AbaBRWq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:18 -0500
+	Tue, 18 Feb 2014 17:46:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vinayak Kale <vkale@apm.com>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.10 11/26] arm64: add DSB after icache flush in __flush_icache_all()
-Date: Tue, 18 Feb 2014 14:47:07 -0800
-Message-Id: <20140218224530.728162504@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 22/26] pinctrl: protect pinctrl_list add
+Date: Tue, 18 Feb 2014 14:47:18 -0800
+Message-Id: <20140218224531.036392693@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
 References: <20140218224530.398913499@linuxfoundation.org>
@@ -29,33 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinayak Kale <vkale@apm.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 5044bad43ee573d0b6d90e3ccb7a40c2c7d25eb4 upstream.
+commit 7b320cb1ed2dbd2c5f2a778197baf76fd6bf545a upstream.
 
-Add DSB after icache flush to complete the cache maintenance operation.
-The function __flush_icache_all() is used only for user space mappings
-and an ISB is not required because of an exception return before executing
-user instructions. An exception return would behave like an ISB.
+We have few fedora bug reports about list corruption on pinctrl,
+for example:
+https://bugzilla.redhat.com/show_bug.cgi?id=1051918
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Most likely corruption happen due lack of protection of pinctrl_list
+when adding new nodes to it. Patch corrects that.
+
+Fixes: 42fed7ba44e ("pinctrl: move subsystem mutex to pinctrl_dev struct")
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/cacheflush.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pinctrl/core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm64/include/asm/cacheflush.h
-+++ b/arch/arm64/include/asm/cacheflush.h
-@@ -116,6 +116,7 @@ extern void flush_dcache_page(struct pag
- static inline void __flush_icache_all(void)
- {
- 	asm("ic	ialluis");
-+	dsb();
- }
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -807,7 +807,9 @@ static struct pinctrl *create_pinctrl(st
+ 	kref_init(&p->users);
  
- #define flush_dcache_mmap_lock(mapping) \
+ 	/* Add the pinctrl handle to the global list */
++	mutex_lock(&pinctrl_list_mutex);
+ 	list_add_tail(&p->node, &pinctrl_list);
++	mutex_unlock(&pinctrl_list_mutex);
+ 
+ 	return p;
+ }
 
 
