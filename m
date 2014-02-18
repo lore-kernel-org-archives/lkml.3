@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaBRX15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:27:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50865 "EHLO
+	id S1754625AbaBRX20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:28:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777AbaBRWqU (ORCPT
+	with ESMTP id S1752721AbaBRWqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:20 -0500
+	Tue, 18 Feb 2014 17:46:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 14/26] ALSA: hda - Add missing mixer widget for AD1983
-Date: Tue, 18 Feb 2014 14:47:10 -0800
-Message-Id: <20140218224530.816855643@linuxfoundation.org>
+        Tao Ma <boyu.mt@taobao.com>, "Theodore Tso" <tytso@mit.edu>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 3.4 06/24] ext4: protect group inode free counting with group lock
+Date: Tue, 18 Feb 2014 14:46:53 -0800
+Message-Id: <20140218224550.401212768@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
-References: <20140218224530.398913499@linuxfoundation.org>
+In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
+References: <20140218224550.221535225@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,34 +25,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Tao Ma <boyu.mt@taobao.com>
 
-commit c7579fed1f1b2567529aea64ef19871337403ab3 upstream.
+commit 6f2e9f0e7d795214b9cf5a47724a273b705fd113 upstream.
 
-The mixer widget on AD1983 at NID 0x0e was missing in the commit
-[f2f8be43c5c9: ALSA: hda - Add aamix NID to AD codecs].
+Now when we set the group inode free count, we don't have a proper
+group lock so that multiple threads may decrease the inode free
+count at the same time. And e2fsck will complain something like:
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70011
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Free inodes count wrong for group #1 (1, counted=0).
+Fix? no
+
+Free inodes count wrong for group #2 (3, counted=0).
+Fix? no
+
+Directories count wrong for group #2 (780, counted=779).
+Fix? no
+
+Free inodes count wrong for group #3 (2272, counted=2273).
+Fix? no
+
+So this patch try to protect it with the ext4_lock_group.
+
+btw, it is found by xfstests test case 269 and the volume is
+mkfsed with the parameter
+"-O ^resize_inode,^uninit_bg,extent,meta_bg,flex_bg,ext_attr"
+and I have run it 100 times and the error in e2fsck doesn't
+show up again.
+
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- sound/pci/hda/patch_analog.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -1680,6 +1680,7 @@ static int ad1983_parse_auto_config(stru
- 		return err;
- 	spec = codec->spec;
+---
+ fs/ext4/ialloc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -778,6 +778,8 @@ got:
+ 			ext4_itable_unused_set(sb, gdp,
+ 					(EXT4_INODES_PER_GROUP(sb) - ino));
+ 		up_read(&grp->alloc_sem);
++	} else {
++		ext4_lock_group(sb, group);
+ 	}
+ 	ext4_free_inodes_set(sb, gdp, ext4_free_inodes_count(sb, gdp) - 1);
+ 	if (S_ISDIR(mode)) {
+@@ -790,8 +792,8 @@ got:
+ 	}
+ 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
+ 		gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
+-		ext4_unlock_group(sb, group);
+ 	}
++	ext4_unlock_group(sb, group);
  
-+	spec->gen.mixer_nid = 0x0e;
- 	spec->gen.beep_nid = 0x10;
- 	set_beep_amp(spec, 0x10, 0, HDA_OUTPUT);
- 	err = ad198x_parse_auto_config(codec);
+ 	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
+ 	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
 
 
