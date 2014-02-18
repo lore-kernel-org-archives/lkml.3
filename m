@@ -1,120 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821AbaBRTfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:35:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60446 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaBRTfp (ORCPT
+	id S1752380AbaBRTg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:36:57 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:58556 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652AbaBRTgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:35:45 -0500
-Date: Tue, 18 Feb 2014 20:35:28 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Li Zefan <lizefan@huawei.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Message-ID: <20140218193528.GQ14089@laptop.programming.kicks-ass.net>
-References: <20140106221251.GJ30183@twins.programming.kicks-ass.net>
- <1389048315.32504.57.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140107083440.GL30183@twins.programming.kicks-ass.net>
- <1389107743.32504.69.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140107211229.GF2480@laptop.programming.kicks-ass.net>
- <1389380100.32504.172.camel@ppwaskie-mobl.amr.corp.intel.com>
- <20140113075528.GR7572@laptop.programming.kicks-ass.net>
- <52D57AC2.3090109@zytor.com>
- <20140127173420.GA9636@twins.programming.kicks-ass.net>
- <1392744567.3069.42.camel@ppwaskie-mobl.amr.corp.intel.com>
+	Tue, 18 Feb 2014 14:36:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392744567.3069.42.camel@ppwaskie-mobl.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53021F47.5050702@gmail.com>
+References: <52FDD955.4000701@gmail.com>
+	<20140214091639.GB1782@redhat.com>
+	<52FE5E74.6000509@gmail.com>
+	<53021F47.5050702@gmail.com>
+Date: Tue, 18 Feb 2014 11:36:53 -0800
+X-Google-Sender-Auth: 1aUOm9EzW51R31diN5TT23aADK0
+Message-ID: <CAA9_cmd_AcHRUqqPziyd4bbLGcDWGJdneWd_Wk+KEQynhuHj+w@mail.gmail.com>
+Subject: Re: [dma-debug.c - DMA-API] exceeded overlapping ... & sym53c8xx ...
+ tries to free DMA ...
+From: Dan Williams <dan.j.williams@intel.com>
+To: poma <pomidorabelisima@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "IDE/ATA development list" <linux-ide@vger.kernel.org>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Joerg Roedel <joro@8bytes.org>, Tejun Heo <tj@kernel.org>,
+        Gerard Roudier <groudier@club-internet.fr>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Josh Boyer <jwboyer@redhat.com>,
+        "Justin M. Forbes" <jforbes@redhat.com>,
+        Chris Murphy <lists@colorremedies.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 05:29:42PM +0000, Waskiewicz Jr, Peter P wrote:
-> > Its not a problem that changing the task:RMID map is expensive, what is
-> > a problem is that there's no deterministic fashion of doing it.
-> 
-> We are going to add to the SDM that changing RMID's often/frequently is
-> not the intended use case for this feature, and can cause bogus data.
-> The real intent is to land threads into an RMID, and run that until the
-> threads are effectively done.
-> 
-> That being said, reassigning a thread to a new RMID is certainly
-> supported, just "frequent" updates is not encouraged at all.
+On Mon, Feb 17, 2014 at 6:40 AM, poma <pomidorabelisima@gmail.com> wrote:
+> On 14.02.2014 19:20, poma wrote:
+>> On 14.02.2014 10:16, Stanislaw Gruszka wrote:
+>>> On Fri, Feb 14, 2014 at 09:52:37AM +0100, poma wrote:
+>>>>
+>>>> Ahoy!
+>>>>
+>>>> Perhaps this is already solved, but I made the effort to test & record
+>>>> all of this, therefore here you are. :)
+>>>>
+>>>> https://bugzilla.redhat.com/show_bug.cgi?id=1062833
+>>>
+>>> There is patch posted for this problem
+>>> http://marc.info/?l=linux-kernel&m=139233546223338&w=2
+>>> It is under review currently, if there will be no complains it will be
+>>> applied.
+>>>
+>>> Stanislaw
+>>>
+>>
+>> Thanks!
+>> I have a few questions but the weekend begins, so we'll leave it for
+>> later. :)
+>> See ya!
+>
+> https://bugzilla.redhat.com/show_bug.cgi?id=1062833
+>
+> IDE disk - ata_piix - dmesg - OK
+> https://bugzilla.redhat.com/attachment.cgi?id=864085
+>
+> SATA disk - ahci - dmesg - OK
+> https://bugzilla.redhat.com/attachment.cgi?id=864086
+>
+> SCSI disk - sym53c8xx - dmesg - OK
+> https://bugzilla.redhat.com/attachment.cgi?id=864087
+>
+> VirtIO SCSI disk - virtio_scsi - dmesg - OK
+> https://bugzilla.redhat.com/attachment.cgi?id=864088
+>
+> USB disk - usb_storage - dmesg - OK
+> https://bugzilla.redhat.com/attachment.cgi?id=864089
+>
+> Test media - 'boot-fix-dma-debug-overlap-v2.iso',
+> http://goo.gl/UJSfVn
+> sha256sum:
+> 6d6b36fdcb0a0ff662ff6a27048d6d5f35ac211c34439f75bba1d524b3507e82
+> boot-fix-dma-debug-overlap-v2.iso
+>
+> Contains 'kernel-3.14.0-0.rc2.git4.1.fc21.x86_64'
+> based on Rawhide 'kernel-3.14.0-0.rc2.git4.1.fc21'
+> http://koji.fedoraproject.org/koji/buildinfo?buildID=498404
+> with the addition of Dan's 'fix-dma-debug-overlap-v2.patch'
+> "Fix dma debug v2: account for cachelines and read-only mappings in
+> overlap tracking"
+> http://marc.info/?l=linux-netdev&m=139233546723342&q=raw
+>
+>
+> All tests are PASSED.
+>
+>        _
+>       ( \
+>        \ \
+>    ____)  \
+>   (___)    ------
+>  (___)
+>  (___)
+>   (__)----------------
+>
+>
+>
+> poma
 
-You don't even need really high frequency, just unsynchronized wrt
-reading the counter. Suppose A flips the RMIDs about and just when its
-done programming B reads them.
+Thanks for the in-depth regression test and report.  Much appreciated!
 
-At that point you've got 0 guarantee the data makes any kind of sense.
-
-> I do see that, however the userspace interface for this isn't ideal for
-> how the feature is intended to be used.  I'm still planning to have this
-> be managed per process in /proc/<pid>, I just had other priorities push
-> this back a bit on my stovetop.
-
-So I really don't like anything /proc/$pid/ nor do I really see a point in
-doing that. What are you going to do in the /proc/$pid/ thing anyway?
-Exposing raw RMIDs is an absolute no-no, and anything else is going to
-end up being yet-another-grouping thing and thus not much different from
-cgroups.
-
-> Also, now that the new SDM is available
-
-Can you guys please set up a mailing list already so we know when
-there's new versions out? Ideally mailing out the actual PDF too so I
-get the automagic download and archive for all versions.
-
-> , there is a new feature added to
-> the same family as CQM, called Memory Bandwidth Monitoring (MBM).  The
-> original cgroup approach would have allowed another subsystem be added
-> next to cacheqos; the perf-cgroup here is not easily expandable.
-> The /proc/<pid> approach can add MBM pretty easily alongside CQM.
-
-I'll have to go read up what you've done now, but if its also RMID based
-I don't see why the proposed scheme won't work.
-
-> > The below is a rough draft, most if not all XXXs should be
-> > fixed/finished. But given I don't actually have hardware that supports
-> > this stuff (afaik) I couldn't be arsed.
-> 
-> The hardware is not publicly available yet, but I know that Red Hat and
-> others have some of these platforms for testing.
-
-Yeah, not in my house therefore it doesn't exist :-)
-
-> I really appreciate the patch.  There was a good amount of thought put
-> into this, and gave a good set of different viewpoints.  I'll keep the
-> comments all here in one place, it'll be easier to discuss than
-> disjointed in the code.
-> 
-> The rotation idea to reclaim RMID's no longer in use is interesting.
-> This differs from the original patch where the original patch would
-> reclaim the RMID when monitoring was disabled for that group of
-> processes.
-> 
-> I can see a merged sort of approach, where if monitoring for a group of
-> processes is disabled, we can place that RMID onto a reclaim list.  The
-> next time an RMID is requested (monitoring is enabled for a
-> process/group of processes), the reclaim list is searched for an RMID
-> that has 0 occupancy (i.e. not in use), or worst-case, find and assign
-> one with the lowest occupancy.  I did discuss this with hpa offline and
-> this seemed reasonable.
-> 
-> Thoughts?
-
-So you have to wait for one 'freed' RMID to become empty before
-'allowing' reads of the other RMIDs, otherwise the visible value can be
-complete rubbish. Even for low frequency rotation, see the above
-scenario about asynchronous operations.
-
-This means you have to always have at least one free RMID.
+--
+Dan
