@@ -1,487 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925AbaBRQiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:38:50 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:36768 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaBRQir (ORCPT
+	id S1756042AbaBRQjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:39:00 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46649 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbaBRQi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:38:47 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
-        lczerner@redhat.com
-Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH v5 5/10] xfstest: shared/001: Standard collapse range tests
-Date: Wed, 19 Feb 2014 01:38:33 +0900
-Message-Id: <1392741513-20165-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 18 Feb 2014 11:38:57 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Kevin Hilman <khilman@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Christopher Covington <cov@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND v3] usb: phy: msm: fix compilation errors when !CONFIG_PM_SLEEP
+Date: Tue, 18 Feb 2014 10:36:29 -0600
+Message-Id: <1392741389-10822-1-git-send-email-joshc@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <20140117182650.GZ8153@joshc.qualcomm.com>
+References: <20140117182650.GZ8153@joshc.qualcomm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Both the PM_RUNTIME and PM_SLEEP callbacks call into the common
+msm_otg_{suspend,resume} routines, however these routines are only being
+built when CONFIG_PM_SLEEP.  In addition, msm_otg_{suspend,resume} also
+depends on msm_hsusb_config_vddcx(), which is only built when
+CONFIG_PM_SLEEP.
 
-This testcase(001) tries to test various corner cases
-for fcollapse range functionality over different type of extents.
+Fix the CONFIG_PM_RUNTIME, !CONFIG_PM_SLEEP case by changing the
+preprocessor conditional, and moving msm_hsusb_config_vddcx().
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+While we're here, eliminate the CONFIG_PM conditional for setting
+up the dev_pm_ops.
+
+This address the following errors Russell King has hit doing randconfig
+builds:
+
+drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_suspend':
+drivers/usb/phy/phy-msm-usb.c:1691:2: error: implicit declaration of function 'msm_otg_suspend'
+drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_resume':
+drivers/usb/phy/phy-msm-usb.c:1699:2: error: implicit declaration of function 'msm_otg_resume'
+
+Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 ---
- common/punch         | 156 ++++++++++++++++++++++++++++++---------------------
- common/rc            |  14 +++++
- tests/shared/001     |  65 +++++++++++++++++++++
- tests/shared/001.out |  49 ++++++++++++++++
- tests/shared/group   |   1 +
- 5 files changed, 222 insertions(+), 63 deletions(-)
- create mode 100755 tests/shared/001
- create mode 100644 tests/shared/001.out
+ drivers/usb/phy/phy-msm-usb.c | 57 ++++++++++++++++++++-----------------------
+ 1 file changed, 26 insertions(+), 31 deletions(-)
 
-diff --git a/common/punch b/common/punch
-index 49715a7..9340d3b 100644
---- a/common/punch
-+++ b/common/punch
-@@ -317,14 +317,29 @@ _test_generic_punch()
- 	map_cmd=$4
- 	filter_cmd=$5
- 	testfile=$6
-+	multiple=1
-+
-+	#
-+	# If we are testing collapse range, we increare all the offsets of this
-+	# test by a factor of 4. We do this because unlike punch, collapse
-+	# range also decreases the size of file hence require bigger offsets.
-+	#
-+	if [ "$zero_cmd" == "fcollapse" ]; then
-+		multiple=4
-+	fi
-+
-+	_4k="$((multiple * 4))k"
-+	_8k="$((multiple * 8))k"
-+	_12k="$((multiple * 12))k"
-+	_20k="$((multiple * 20))k"
- 
- 	# initial test state must be defined, otherwise the first test can fail
- 	# due ot stale file state left from previous tests.
- 	rm -f $testfile
- 
- 	echo "	1. into a hole"
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "$zero_cmd 4k 8k" \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "$zero_cmd $_4k $_8k" \
- 		-c "$map_cmd -v" $testfile | $filter_cmd
- 	[ $? -ne 0 ] && die_now
- 	_md5_checksum $testfile
-@@ -333,9 +348,9 @@ _test_generic_punch()
- 	if [ "$remove_testfile" ]; then
- 		rm -f $testfile
- 	fi
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "pwrite 0 20k" $sync_cmd \
--		-c "$zero_cmd 4k 8k" \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "pwrite 0 $_20k" $sync_cmd \
-+		-c "$zero_cmd $_4k $_8k" \
- 		-c "$map_cmd -v" $testfile | $filter_cmd
- 	[ $? -ne 0 ] && die_now
- 	_md5_checksum $testfile
-@@ -345,9 +360,9 @@ _test_generic_punch()
- 		if [ "$remove_testfile" ]; then
- 			rm -f $testfile
- 		fi
--		$XFS_IO_PROG -f -c "truncate 20k" \
--			-c "$alloc_cmd 0 20k" \
--			-c "$zero_cmd 4k 8k" \
-+		$XFS_IO_PROG -f -c "truncate $_20k" \
-+			-c "$alloc_cmd 0 $_20k" \
-+			-c "$zero_cmd $_4k $_8k" \
- 			-c "$map_cmd -v" $testfile | $filter_cmd
- 		[ $? -ne 0 ] && die_now
- 		_md5_checksum $testfile
-@@ -357,9 +372,9 @@ _test_generic_punch()
- 	if [ "$remove_testfile" ]; then
- 		rm -f $testfile
- 	fi
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "pwrite 8k 8k" $sync_cmd \
--		-c "$zero_cmd 4k 8k" \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "pwrite $_8k $_8k" $sync_cmd \
-+		-c "$zero_cmd $_4k $_8k" \
- 		-c "$map_cmd -v" $testfile | $filter_cmd
- 	[ $? -ne 0 ] && die_now
- 	_md5_checksum $testfile
-@@ -369,9 +384,9 @@ _test_generic_punch()
- 		if [ "$remove_testfile" ]; then
- 			rm -f $testfile
- 		fi
--		$XFS_IO_PROG -f -c "truncate 20k" \
--			-c "$alloc_cmd 8k 8k" \
--			-c "$zero_cmd 4k 8k" \
-+		$XFS_IO_PROG -f -c "truncate $_20k" \
-+			-c "$alloc_cmd $_8k $_8k" \
-+			-c "$zero_cmd $_4k $_8k" \
- 			-c "$map_cmd -v" $testfile | $filter_cmd
- 		[ $? -ne 0 ] && die_now
- 		_md5_checksum $testfile
-@@ -381,9 +396,9 @@ _test_generic_punch()
- 	if [ "$remove_testfile" ]; then
- 		rm -f $testfile
- 	fi
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "pwrite 0 8k" $sync_cmd \
--		-c "$zero_cmd 4k 8k" \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "pwrite 0 $_8k" $sync_cmd \
-+		 -c "$zero_cmd $_4k $_8k" \
- 		-c "$map_cmd -v" $testfile | $filter_cmd
- 	[ $? -ne 0 ] && die_now
- 	_md5_checksum $testfile
-@@ -393,10 +408,10 @@ _test_generic_punch()
- 		if [ "$remove_testfile" ]; then
- 			rm -f $testfile
- 		fi
--		$XFS_IO_PROG -f -c "truncate 20k" \
--			-c "pwrite 0 8k" $sync_cmd \
--			-c "$alloc_cmd 8k 8k" \
--			-c "$zero_cmd 4k 8k" \
-+		$XFS_IO_PROG -f -c "truncate $_20k" \
-+			-c "pwrite 0 $_8k" $sync_cmd \
-+			-c "$alloc_cmd $_8k $_8k" \
-+			-c "$zero_cmd $_4k $_8k" \
- 			-c "$map_cmd -v" $testfile | $filter_cmd
- 		[ $? -ne 0 ] && die_now
- 		_md5_checksum $testfile
-@@ -405,9 +420,9 @@ _test_generic_punch()
- 		if [ "$remove_testfile" ]; then
- 			rm -f $testfile
- 		fi
--		$XFS_IO_PROG -f -c "truncate 20k" \
--			-c "$alloc_cmd 0 8k" \
--			-c "$zero_cmd 4k 8k" \
-+		$XFS_IO_PROG -f -c "truncate $_20k" \
-+			-c "$alloc_cmd 0 $_8k" \
-+			-c "$zero_cmd $_4k $_8k" \
- 			-c "$map_cmd -v" $testfile | $filter_cmd
- 		[ $? -ne 0 ] && die_now
- 		_md5_checksum $testfile
-@@ -416,10 +431,10 @@ _test_generic_punch()
- 		if [ "$remove_testfile" ]; then
- 			rm -f $testfile
- 		fi
--		$XFS_IO_PROG -f -c "truncate 20k" \
--			-c "$alloc_cmd 0 8k" \
--			-c "pwrite 8k 8k" $sync_cmd \
--			-c "$zero_cmd 4k 8k" \
-+		$XFS_IO_PROG -f -c "truncate $_20k" \
-+			-c "$alloc_cmd 0 $_8k" \
-+			-c "pwrite $_8k $_8k" $sync_cmd \
-+			-c "$zero_cmd $_4k $_8k" \
- 			-c "$map_cmd -v" $testfile | $filter_cmd
- 		[ $? -ne 0 ] && die_now
- 		_md5_checksum $testfile
-@@ -429,9 +444,9 @@ _test_generic_punch()
- 	if [ "$remove_testfile" ]; then
- 		rm -f $testfile
- 	fi
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "pwrite 8k 4k" $sync_cmd \
--		-c "$zero_cmd 4k 12k" \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "pwrite $_8k $_4k" $sync_cmd \
-+		-c "$zero_cmd $_4k $_12k" \
- 		-c "$map_cmd -v" $testfile | $filter_cmd
- 	[ $? -ne 0 ] && die_now
- 	_md5_checksum $testfile
-@@ -440,12 +455,12 @@ _test_generic_punch()
- 	if [ "$remove_testfile" ]; then
- 		rm -f $testfile
- 	fi
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "$alloc_cmd 0 20k" \
--		-c "pwrite 0 8k" \
--		-c "pwrite 12k 8k" $sync_cmd \
--		-c "$punch_cmd 8k 4k" \
--		-c "$zero_cmd 4k 12k" \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "$alloc_cmd 0 $_20k" \
-+		-c "pwrite 0 $_8k" \
-+		-c "pwrite $_12k $_8k" $sync_cmd \
-+		-c "$punch_cmd $_8k $_4k" \
-+		-c "$zero_cmd $_4k $_12k" \
- 		-c "$map_cmd -v" $testfile | $filter_cmd
- 	[ $? -ne 0 ] && die_now
- 	_md5_checksum $testfile
-@@ -455,10 +470,10 @@ _test_generic_punch()
- 		if [ "$remove_testfile" ]; then
- 			rm -f $testfile
- 		fi
--		$XFS_IO_PROG -f -c "truncate 20k" \
--			-c "$alloc_cmd 0 20k" \
--			-c "pwrite 8k 4k" $sync_cmd \
--			-c "$zero_cmd 4k 12k" \
-+		$XFS_IO_PROG -f -c "truncate $_20k" \
-+			-c "$alloc_cmd 0 $_20k" \
-+			-c "pwrite $_8k $_4k" $sync_cmd \
-+			-c "$zero_cmd $_4k $_12k" \
- 			-c "$map_cmd -v" $testfile | $filter_cmd
- 		[ $? -ne 0 ] && die_now
- 		_md5_checksum $testfile
-@@ -467,36 +482,51 @@ _test_generic_punch()
- 		if [ "$remove_testfile" ]; then
- 			rm -f $testfile
- 		fi
--		$XFS_IO_PROG -f -c "truncate 20k" \
--			-c "$alloc_cmd 0 20k" \
--			-c "pwrite 0k 8k" $sync_cmd \
--			-c "pwrite 12k 8k" -c "fsync" \
--			-c "$zero_cmd 4k 12k" \
-+		$XFS_IO_PROG -f -c "truncate $_20k" \
-+			-c "$alloc_cmd 0 $_20k" \
-+			-c "pwrite 0k $_4k" $sync_cmd \
-+			-c "pwrite $_12k $_8k" -c "fsync" \
-+			-c "$zero_cmd $_4k $_12k" \
- 			-c "$map_cmd -v" $testfile | $filter_cmd
- 		[ $? -ne 0 ] && die_now
- 		_md5_checksum $testfile
- 	fi
- 
--	echo "	14. data -> hole @ EOF"
--	rm -f $testfile
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "pwrite 0 20k" $sync_cmd \
--		-c "$zero_cmd 12k 8k" \
--		-c "$map_cmd -v" $testfile | $filter_cmd
--	[ $? -ne 0 ] && die_now
--	_md5_checksum $testfile
-+	# Don't need to check EOF case for collapse range.
-+	# VFS layer return invalid error in this case,
-+	# So it is not a proper case for collapse range test of each local fs.
-+	if [ "$zero_cmd" != "fcollapse" ]; then
-+		echo "	14. data -> hole @ EOF"
-+		rm -f $testfile
-+		$XFS_IO_PROG -f -c "truncate $_20k" \
-+			-c "pwrite 0 $_20k" $sync_cmd \
-+			-c "$zero_cmd $_12k $_8k" \
-+			-c "$map_cmd -v" $testfile | $filter_cmd
-+		[ $? -ne 0 ] && die_now
-+		_md5_checksum $testfile
-+	fi
-+
-+	if [ "$zero_cmd" == "fcollapse" ]; then
-+		echo "	14. data -> hole @ 0"
-+	else
-+		echo "	15. data -> hole @ 0"
-+	fi
- 
--	echo "	15. data -> hole @ 0"
- 	if [ "$remove_testfile" ]; then
- 		rm -f $testfile
- 	fi
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "pwrite 0 20k" $sync_cmd \
--		-c "$zero_cmd 0k 8k" \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "pwrite 0 $_20k" $sync_cmd \
-+		-c "$zero_cmd 0 $_8k" \
- 		-c "$map_cmd -v" $testfile | $filter_cmd
- 	[ $? -ne 0 ] && die_now
- 	_md5_checksum $testfile
- 
-+	# If zero_cmd is fcollpase, don't check unaligned offsets
-+	if [ "$zero_cmd" == "fcollapse" ]; then
-+		return
-+	fi
-+
- 	echo "	16. data -> cache cold ->hole"
- 	if [ "$remove_testfile" ]; then
- 		rm -f $testfile
-@@ -504,12 +534,12 @@ _test_generic_punch()
- 	else
- 		cp $testfile $testfile.2
- 	fi
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "pwrite 8k 12k" -c "fsync" $testfile.2 \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "pwrite $_8k $_12k" -c "fsync" $testfile.2 \
- 		> /dev/null
--	$XFS_IO_PROG -f -c "truncate 20k" \
--		-c "pwrite 0 20k" $sync_cmd \
--		-c "$zero_cmd 0k 8k" \
-+	$XFS_IO_PROG -f -c "truncate $_20k" \
-+		-c "pwrite 0 $_20k" $sync_cmd \
-+		-c "$zero_cmd 0k $_8k" \
- 		-c "fadvise -d" \
- 		-c "$map_cmd -v" $testfile | $filter_cmd
- 	diff $testfile $testfile.2
-diff --git a/common/rc b/common/rc
-index e91568b..ff044de 100644
---- a/common/rc
-+++ b/common/rc
-@@ -1332,6 +1332,20 @@ _require_xfs_io_falloc_punch()
- 		_notrun "xfs_io fallocate punch command failed (no fs support?)"
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 64c9d14e..5b37b81 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -159,32 +159,6 @@ put_3p3:
+ 	return rc;
  }
  
-+# check that xfs_io, kernel and filesystem all support fallocate with collapse
-+# range
-+_require_xfs_io_falloc_collapse()
-+{
-+	testfile=$TEST_DIR/$$.falloc
-+	testio=`$XFS_IO_PROG -f -c "pwrite 0 20k" -c "fsync" \
-+		-c "fcollapse 4k 8k" $testfile 2>&1`
-+	rm -f $testfile 2>&1 > /dev/null
-+	echo $testio | grep -q "not found" && \
-+		_notrun "xfs_io fallocate collapse range support is missing"
-+	echo $testio | grep -q "Operation not supported" && \
-+		_notrun "xfs_io fallocate collapse range failed (no fs support?)"
-+}
-+
- # check that xfs_io, kernel and filesystem support fiemap
- _require_xfs_io_fiemap()
+-#ifdef CONFIG_PM_SLEEP
+-#define USB_PHY_SUSP_DIG_VOL  500000
+-static int msm_hsusb_config_vddcx(int high)
+-{
+-	int max_vol = USB_PHY_VDD_DIG_VOL_MAX;
+-	int min_vol;
+-	int ret;
+-
+-	if (high)
+-		min_vol = USB_PHY_VDD_DIG_VOL_MIN;
+-	else
+-		min_vol = USB_PHY_SUSP_DIG_VOL;
+-
+-	ret = regulator_set_voltage(hsusb_vddcx, min_vol, max_vol);
+-	if (ret) {
+-		pr_err("%s: unable to set the voltage for regulator "
+-			"HSUSB_VDDCX\n", __func__);
+-		return ret;
+-	}
+-
+-	pr_debug("%s: min_vol:%d max_vol:%d\n", __func__, min_vol, max_vol);
+-
+-	return ret;
+-}
+-#endif
+-
+ static int msm_hsusb_ldo_set_mode(int on)
  {
-diff --git a/tests/shared/001 b/tests/shared/001
-new file mode 100755
-index 0000000..b3ebbba
---- /dev/null
-+++ b/tests/shared/001
-@@ -0,0 +1,65 @@
-+#! /bin/bash
-+# FS QA Test No. 1
-+#
-+# Standard collapse range tests 
-+# This testcase is one of the 4 testcases (shared 001 - 004) which tries to
-+# test various corner cases for fcollapse range functionality over different
-+# type of extents. These tests are based on generic/255 test case.
-+# For the type of tests, check the description of _test_generic_punch
-+# in common/rc.
-+#-----------------------------------------------------------------------
-+# Copyright (c) 2013 Samsung Electronics.  All Rights Reserved.
-+#
-+# This program is free software; you can redistribute it and/or
-+# modify it under the terms of the GNU General Public License as
-+# published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope that it would be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, write the Free Software Foundation,
-+# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+#
-+#-----------------------------------------------------------------------
-+#
+ 	int ret = 0;
+@@ -440,7 +414,32 @@ static int msm_otg_reset(struct usb_phy *phy)
+ #define PHY_SUSPEND_TIMEOUT_USEC	(500 * 1000)
+ #define PHY_RESUME_TIMEOUT_USEC	(100 * 1000)
+ 
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
 +
-+seq=`basename $0`
-+seqres=$RESULT_DIR/$seq
-+echo "QA output created by $seq"
-+
-+here=`pwd`
-+tmp=/tmp/$$
-+status=1	# failure is the default!
-+
-+_cleanup()
++#define USB_PHY_SUSP_DIG_VOL  500000
++static int msm_hsusb_config_vddcx(int high)
 +{
-+    rm -f $tmp.*
++	int max_vol = USB_PHY_VDD_DIG_VOL_MAX;
++	int min_vol;
++	int ret;
++
++	if (high)
++		min_vol = USB_PHY_VDD_DIG_VOL_MIN;
++	else
++		min_vol = USB_PHY_SUSP_DIG_VOL;
++
++	ret = regulator_set_voltage(hsusb_vddcx, min_vol, max_vol);
++	if (ret) {
++		pr_err("%s: unable to set the voltage for regulator "
++			"HSUSB_VDDCX\n", __func__);
++		return ret;
++	}
++
++	pr_debug("%s: min_vol:%d max_vol:%d\n", __func__, min_vol, max_vol);
++
++	return ret;
 +}
 +
-+trap "_cleanup ; exit \$status" 0 1 2 3 15
-+
-+# get standard environment, filters and checks
-+# we need to include common/punch to get defination fo filter functions
-+. ./common/rc
-+. ./common/filter
-+. ./common/punch
-+
-+# real QA test starts here
-+_supported_fs xfs ext4
-+_supported_os Linux
-+
-+_require_xfs_io_falloc_punch
-+_require_xfs_io_falloc
-+_require_xfs_io_fiemap
-+_require_xfs_io_falloc_collapse
-+
-+testfile=$TEST_DIR/$seq.$$
-+
-+_test_generic_punch falloc fpunch fcollapse fiemap _filter_hole_fiemap $testfile
-+_check_test_fs
-+
-+status=0
-+exit
-diff --git a/tests/shared/001.out b/tests/shared/001.out
-new file mode 100644
-index 0000000..919dd12
---- /dev/null
-+++ b/tests/shared/001.out
-@@ -0,0 +1,49 @@
-+QA output created by 001
-+	1. into a hole
-+f4f35d60b3cc18aaa6d8d92f0cd3708a
-+	2. into allocated space
-+0: [0..95]: extent
-+f1894a71ac539f6f90426d98a4990a47
-+	3. into unwritten space
-+0: [0..95]: extent
-+f4f35d60b3cc18aaa6d8d92f0cd3708a
-+	4. hole -> data
-+0: [0..31]: hole
-+1: [32..63]: extent
-+2: [64..95]: hole
-+d8f51c20223dbce5c7c90db87bc221b0
-+	5. hole -> unwritten
-+0: [0..31]: hole
-+1: [32..63]: extent
-+2: [64..95]: hole
-+f4f35d60b3cc18aaa6d8d92f0cd3708a
-+	6. data -> hole
-+0: [0..31]: extent
-+1: [32..95]: hole
-+f07217d5ac7ffa15dd8910c4aa912674
-+	7. data -> unwritten
-+0: [0..63]: extent
-+1: [64..95]: hole
-+f07217d5ac7ffa15dd8910c4aa912674
-+	8. unwritten -> hole
-+0: [0..31]: extent
-+1: [32..95]: hole
-+f4f35d60b3cc18aaa6d8d92f0cd3708a
-+	9. unwritten -> data
-+0: [0..63]: extent
-+1: [64..95]: hole
-+d8f51c20223dbce5c7c90db87bc221b0
-+	10. hole -> data -> hole
-+bb7df04e1b0a2570657527a7e108ae23
-+	11. data -> hole -> data
-+0: [0..63]: extent
-+0f0151cbed83e4bf6e5bde26e82ab115
-+	12. unwritten -> data -> unwritten
-+0: [0..63]: extent
-+bb7df04e1b0a2570657527a7e108ae23
-+	13. data -> unwritten -> data
-+0: [0..63]: extent
-+0f0151cbed83e4bf6e5bde26e82ab115
-+	14. data -> hole @ 0
-+0: [0..95]: extent
-+f1894a71ac539f6f90426d98a4990a47
-diff --git a/tests/shared/group b/tests/shared/group
-index 0ad640b..5562f92 100644
---- a/tests/shared/group
-+++ b/tests/shared/group
-@@ -3,6 +3,7 @@
- # - do not start group names with a digit
- # - comment line before each group is "new" description
- #
-+001 auto prealloc
- 032 mkfs auto quick
- 051 acl udf auto quick
- 218 auto fsr quick
+ static int msm_otg_suspend(struct msm_otg *motg)
+ {
+ 	struct usb_phy *phy = &motg->phy;
+@@ -1734,22 +1733,18 @@ static int msm_otg_pm_resume(struct device *dev)
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM
+ static const struct dev_pm_ops msm_otg_dev_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
+ 	SET_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
+ 				msm_otg_runtime_idle)
+ };
+-#endif
+ 
+ static struct platform_driver msm_otg_driver = {
+ 	.remove = msm_otg_remove,
+ 	.driver = {
+ 		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
+-#ifdef CONFIG_PM
+ 		.pm = &msm_otg_dev_pm_ops,
+-#endif
+ 	},
+ };
+ 
 -- 
-1.7.11-rc0
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
