@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965AbaBRWwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:52:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51252 "EHLO
+	id S1753947AbaBRWwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:52:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51256 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463AbaBRWra (ORCPT
+	with ESMTP id S1753561AbaBRWrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:30 -0500
+	Tue, 18 Feb 2014 17:47:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Harald Freudenberger <freude@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.13 05/40] crypto: s390 - fix des and des3_ede ctr concurrency issue
-Date: Tue, 18 Feb 2014 14:47:06 -0800
-Message-Id: <20140218224433.489877282@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 06/40] NFSv4.1: nfs4_destroy_session must call rpc_destroy_waitqueue
+Date: Tue, 18 Feb 2014 14:47:07 -0800
+Message-Id: <20140218224433.517099816@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -29,137 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Harald Freudenberger <freude@linux.vnet.ibm.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit ee97dc7db4cbda33e4241c2d85b42d1835bc8a35 upstream.
+commit 20b9a9024540a775395d5d1f41eec0ec6ec41f9b upstream.
 
-In s390 des and 3des ctr mode there is one preallocated page
-used to speed up the en/decryption. This page is not protected
-against concurrent usage and thus there is a potential of data
-corruption with multiple threads.
+There may still be timers active on the session waitqueues. Make sure
+that we kill them before freeing the memory.
 
-The fix introduces locking/unlocking the ctr page and a slower
-fallback solution at concurrency situations.
-
-Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/crypto/des_s390.c |   69 ++++++++++++++++++++++++++++++--------------
- 1 file changed, 48 insertions(+), 21 deletions(-)
+ fs/nfs/nfs4client.c  |    2 +-
+ fs/nfs/nfs4session.c |   25 ++++++++++++++++++++-----
+ fs/nfs/nfs4session.h |    2 +-
+ 3 files changed, 22 insertions(+), 7 deletions(-)
 
---- a/arch/s390/crypto/des_s390.c
-+++ b/arch/s390/crypto/des_s390.c
-@@ -25,6 +25,7 @@
- #define DES3_KEY_SIZE	(3 * DES_KEY_SIZE)
- 
- static u8 *ctrblk;
-+static DEFINE_SPINLOCK(ctrblk_lock);
- 
- struct s390_des_ctx {
- 	u8 iv[DES_BLOCK_SIZE];
-@@ -368,54 +369,80 @@ static struct crypto_alg cbc_des3_alg =
- 	}
- };
- 
-+static unsigned int __ctrblk_init(u8 *ctrptr, unsigned int nbytes)
-+{
-+	unsigned int i, n;
-+
-+	/* align to block size, max. PAGE_SIZE */
-+	n = (nbytes > PAGE_SIZE) ? PAGE_SIZE : nbytes & ~(DES_BLOCK_SIZE - 1);
-+	for (i = DES_BLOCK_SIZE; i < n; i += DES_BLOCK_SIZE) {
-+		memcpy(ctrptr + i, ctrptr + i - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
-+		crypto_inc(ctrptr + i, DES_BLOCK_SIZE);
-+	}
-+	return n;
-+}
-+
- static int ctr_desall_crypt(struct blkcipher_desc *desc, long func,
--			    struct s390_des_ctx *ctx, struct blkcipher_walk *walk)
-+			    struct s390_des_ctx *ctx,
-+			    struct blkcipher_walk *walk)
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -169,7 +169,7 @@ void nfs41_shutdown_client(struct nfs_cl
+ void nfs40_shutdown_client(struct nfs_client *clp)
  {
- 	int ret = blkcipher_walk_virt_block(desc, walk, DES_BLOCK_SIZE);
--	unsigned int i, n, nbytes;
--	u8 buf[DES_BLOCK_SIZE];
--	u8 *out, *in;
-+	unsigned int n, nbytes;
-+	u8 buf[DES_BLOCK_SIZE], ctrbuf[DES_BLOCK_SIZE];
-+	u8 *out, *in, *ctrptr = ctrbuf;
-+
-+	if (!walk->nbytes)
-+		return ret;
- 
--	memcpy(ctrblk, walk->iv, DES_BLOCK_SIZE);
-+	if (spin_trylock(&ctrblk_lock))
-+		ctrptr = ctrblk;
-+
-+	memcpy(ctrptr, walk->iv, DES_BLOCK_SIZE);
- 	while ((nbytes = walk->nbytes) >= DES_BLOCK_SIZE) {
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		while (nbytes >= DES_BLOCK_SIZE) {
--			/* align to block size, max. PAGE_SIZE */
--			n = (nbytes > PAGE_SIZE) ? PAGE_SIZE :
--				nbytes & ~(DES_BLOCK_SIZE - 1);
--			for (i = DES_BLOCK_SIZE; i < n; i += DES_BLOCK_SIZE) {
--				memcpy(ctrblk + i, ctrblk + i - DES_BLOCK_SIZE,
--				       DES_BLOCK_SIZE);
--				crypto_inc(ctrblk + i, DES_BLOCK_SIZE);
--			}
--			ret = crypt_s390_kmctr(func, ctx->key, out, in, n, ctrblk);
--			if (ret < 0 || ret != n)
-+			if (ctrptr == ctrblk)
-+				n = __ctrblk_init(ctrptr, nbytes);
-+			else
-+				n = DES_BLOCK_SIZE;
-+			ret = crypt_s390_kmctr(func, ctx->key, out, in,
-+					       n, ctrptr);
-+			if (ret < 0 || ret != n) {
-+				if (ctrptr == ctrblk)
-+					spin_unlock(&ctrblk_lock);
- 				return -EIO;
-+			}
- 			if (n > DES_BLOCK_SIZE)
--				memcpy(ctrblk, ctrblk + n - DES_BLOCK_SIZE,
-+				memcpy(ctrptr, ctrptr + n - DES_BLOCK_SIZE,
- 				       DES_BLOCK_SIZE);
--			crypto_inc(ctrblk, DES_BLOCK_SIZE);
-+			crypto_inc(ctrptr, DES_BLOCK_SIZE);
- 			out += n;
- 			in += n;
- 			nbytes -= n;
- 		}
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	if (clp->cl_slot_tbl) {
+-		nfs4_release_slot_table(clp->cl_slot_tbl);
++		nfs4_shutdown_slot_table(clp->cl_slot_tbl);
+ 		kfree(clp->cl_slot_tbl);
  	}
--
-+	if (ctrptr == ctrblk) {
-+		if (nbytes)
-+			memcpy(ctrbuf, ctrptr, DES_BLOCK_SIZE);
-+		else
-+			memcpy(walk->iv, ctrptr, DES_BLOCK_SIZE);
-+		spin_unlock(&ctrblk_lock);
-+	}
- 	/* final block may be < DES_BLOCK_SIZE, copy only nbytes */
- 	if (nbytes) {
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		ret = crypt_s390_kmctr(func, ctx->key, buf, in,
--				       DES_BLOCK_SIZE, ctrblk);
-+				       DES_BLOCK_SIZE, ctrbuf);
- 		if (ret < 0 || ret != DES_BLOCK_SIZE)
- 			return -EIO;
- 		memcpy(out, buf, nbytes);
--		crypto_inc(ctrblk, DES_BLOCK_SIZE);
-+		crypto_inc(ctrbuf, DES_BLOCK_SIZE);
- 		ret = blkcipher_walk_done(desc, walk, 0);
-+		memcpy(walk->iv, ctrbuf, DES_BLOCK_SIZE);
- 	}
--	memcpy(walk->iv, ctrblk, DES_BLOCK_SIZE);
+ }
+--- a/fs/nfs/nfs4session.c
++++ b/fs/nfs/nfs4session.c
+@@ -231,14 +231,23 @@ out:
  	return ret;
  }
  
++/*
++ * nfs4_release_slot_table - release all slot table entries
++ */
++static void nfs4_release_slot_table(struct nfs4_slot_table *tbl)
++{
++	nfs4_shrink_slot_table(tbl, 0);
++}
++
+ /**
+- * nfs4_release_slot_table - release resources attached to a slot table
++ * nfs4_shutdown_slot_table - release resources attached to a slot table
+  * @tbl: slot table to shut down
+  *
+  */
+-void nfs4_release_slot_table(struct nfs4_slot_table *tbl)
++void nfs4_shutdown_slot_table(struct nfs4_slot_table *tbl)
+ {
+-	nfs4_shrink_slot_table(tbl, 0);
++	nfs4_release_slot_table(tbl);
++	rpc_destroy_wait_queue(&tbl->slot_tbl_waitq);
+ }
+ 
+ /**
+@@ -422,7 +431,7 @@ void nfs41_update_target_slotid(struct n
+ 	spin_unlock(&tbl->slot_tbl_lock);
+ }
+ 
+-static void nfs4_destroy_session_slot_tables(struct nfs4_session *session)
++static void nfs4_release_session_slot_tables(struct nfs4_session *session)
+ {
+ 	nfs4_release_slot_table(&session->fc_slot_table);
+ 	nfs4_release_slot_table(&session->bc_slot_table);
+@@ -450,7 +459,7 @@ int nfs4_setup_session_slot_tables(struc
+ 	if (status && tbl->slots == NULL)
+ 		/* Fore and back channel share a connection so get
+ 		 * both slot tables or neither */
+-		nfs4_destroy_session_slot_tables(ses);
++		nfs4_release_session_slot_tables(ses);
+ 	return status;
+ }
+ 
+@@ -470,6 +479,12 @@ struct nfs4_session *nfs4_alloc_session(
+ 	return session;
+ }
+ 
++static void nfs4_destroy_session_slot_tables(struct nfs4_session *session)
++{
++	nfs4_shutdown_slot_table(&session->fc_slot_table);
++	nfs4_shutdown_slot_table(&session->bc_slot_table);
++}
++
+ void nfs4_destroy_session(struct nfs4_session *session)
+ {
+ 	struct rpc_xprt *xprt;
+--- a/fs/nfs/nfs4session.h
++++ b/fs/nfs/nfs4session.h
+@@ -74,7 +74,7 @@ enum nfs4_session_state {
+ 
+ extern int nfs4_setup_slot_table(struct nfs4_slot_table *tbl,
+ 		unsigned int max_reqs, const char *queue);
+-extern void nfs4_release_slot_table(struct nfs4_slot_table *tbl);
++extern void nfs4_shutdown_slot_table(struct nfs4_slot_table *tbl);
+ extern struct nfs4_slot *nfs4_alloc_slot(struct nfs4_slot_table *tbl);
+ extern void nfs4_free_slot(struct nfs4_slot_table *tbl, struct nfs4_slot *slot);
+ extern void nfs4_slot_tbl_drain_complete(struct nfs4_slot_table *tbl);
 
 
