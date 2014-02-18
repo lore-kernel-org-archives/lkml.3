@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaBRVfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:35:45 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:47704 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaBRVfo (ORCPT
+	id S1752009AbaBRVgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:36:19 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:40393 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871AbaBRVgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:35:44 -0500
-Date: Tue, 18 Feb 2014 13:35:36 -0800
+	Tue, 18 Feb 2014 16:36:17 -0500
+Date: Tue, 18 Feb 2014 13:36:11 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Josh Triplett <josh@joshtriplett.org>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -16,245 +16,367 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 35/55] rcutorture: Fix rcutorture shutdown
- races
-Message-ID: <20140218213536.GZ4250@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 37/55] rcutorture: Abstract
+ torture_create_kthread()
+Message-ID: <20140218213611.GA4250@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
  <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392675179-11560-35-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140218003259.GH19929@thin>
+ <1392675179-11560-37-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140218003402.GI19929@thin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140218003259.GH19929@thin>
+In-Reply-To: <20140218003402.GI19929@thin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021821-1542-0000-0000-0000065E1F53
+x-cbid: 14021821-6688-0000-0000-000006BAB3D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:32:59PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 02:12:39PM -0800, Paul E. McKenney wrote:
+On Mon, Feb 17, 2014 at 04:34:02PM -0800, Josh Triplett wrote:
+> On Mon, Feb 17, 2014 at 02:12:41PM -0800, Paul E. McKenney wrote:
 > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > 
-> > Not all of the rcutorture kthreads waited for kthread_should_stop()
-> > before returning from their top-level functions, and none of them
-> > used torture_shutdown_absorb() properly.  These problems can result in
-> > segfaults and hangs at shutdown time, and some recent changes perturbed
-> > timing sufficiently to make them much more probable.  This commit
-> > therefore creates a torture_kthread_stopping() function that does the
-> > proper kthread shutdown dance in one centralized location.
+> > Creation of kthreads is not RCU-specific, so this commit abstracts
+> > out torture_create_kthread(), saving a few tens of lines of code in
+> > the process.
 > > 
 > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
 > One comment below.
 > 
-> >  include/linux/torture.h |  3 ++-
-> >  kernel/rcu/rcutorture.c | 39 +++++++++++----------------------------
-> >  kernel/torture.c        | 26 ++++++++++++++++++++++----
-> >  3 files changed, 35 insertions(+), 33 deletions(-)
+> >  include/linux/torture.h |  8 +++-
+> >  kernel/rcu/rcutorture.c | 98 ++++++++++---------------------------------------
+> >  kernel/torture.c        | 80 +++++++++++++++++-----------------------
+> >  3 files changed, 60 insertions(+), 126 deletions(-)
 > > 
 > > diff --git a/include/linux/torture.h b/include/linux/torture.h
-> > index 513b85f98585..db9bc7756a32 100644
+> > index db9bc7756a32..e5264c6ecfeb 100644
 > > --- a/include/linux/torture.h
 > > +++ b/include/linux/torture.h
-> > @@ -45,7 +45,7 @@
-> >  #define TOROUT_STRING(s) \
-> >  	pr_alert("%s" TORTURE_FLAG s "\n", torture_type)
+> > @@ -47,7 +47,7 @@
 > >  #define VERBOSE_TOROUT_STRING(s) \
-> > -	do { if (verbose) pr_alert("%s" TORTURE_FLAG s "\n", torture_type); } while (0)
-> > +	do { if (verbose) pr_alert("%s" TORTURE_FLAG " %s\n", torture_type, s); } while (0)
-> 
-> This change is completely unrelated to the change described in the
-> commit message.  This should not be part of this commit.
-
-Turns out that I left out a hunk applying this in torture_kthread_stopping().
-I have added that hunk and updated the commit log explaining why the change
-to VERBOSE_TOROUT_STRING() is required.
-
-								Thanx, Paul
-
+> >  	do { if (verbose) pr_alert("%s" TORTURE_FLAG " %s\n", torture_type, s); } while (0)
 > >  #define VERBOSE_TOROUT_ERRSTRING(s) \
-> >  	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
-> >  
-> > @@ -88,5 +88,6 @@ void torture_init_end(void);
-> >  bool torture_cleanup(void);
+> > -	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
+> > +	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! %s\n", torture_type, s); } while (0)
+> 
+> This change is also unrelated, and should not occur in this commit.
+
+It is required for the invocation in _torture_create_kthread() below.
+I have updated the commit log to call this out.
+
+							Thanx, Paul
+
+> - Josh Triplett
+> 
+> >  /* Definitions for a non-string torture-test module parameter. */
+> >  #define torture_parm(type, name, init, msg) \
+> > @@ -89,5 +89,11 @@ bool torture_cleanup(void);
 > >  bool torture_must_stop(void);
 > >  bool torture_must_stop_irq(void);
-> > +void torture_kthread_stopping(char *title);
+> >  void torture_kthread_stopping(char *title);
+> > +int _torture_create_kthread(int (*fn)(void *arg), void *arg, char *s, char *m,
+> > +			     char *f, struct task_struct **tp);
+> > +
+> > +#define torture_create_kthread(n, arg, tp) \
+> > +	_torture_create_kthread(n, (arg), #n, "Creating " #n " task", \
+> > +				"Failed to create " #n, &(tp))
 > >  
 > >  #endif /* __LINUX_TORTURE_H */
 > > diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-> > index aaca2350e0e4..6d12fd18d97f 100644
+> > index cf365160b44f..951a5559d9fa 100644
 > > --- a/kernel/rcu/rcutorture.c
 > > +++ b/kernel/rcu/rcutorture.c
-> > @@ -601,12 +601,13 @@ checkwait:	stutter_wait("rcu_torture_boost");
-> >  	} while (!torture_must_stop());
-> >  
-> >  	/* Clean up and exit. */
-> > -	VERBOSE_TOROUT_STRING("rcu_torture_boost task stopping");
-> > -	torture_shutdown_absorb("rcu_torture_boost");
-> > -	while (!kthread_should_stop() || rbi.inflight)
-> > +	while (!kthread_should_stop() || rbi.inflight) {
-> > +		torture_shutdown_absorb("rcu_torture_boost");
-> >  		schedule_timeout_uninterruptible(1);
-> > +	}
-> >  	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
-> >  	destroy_rcu_head_on_stack(&rbi.rcu);
-> > +	torture_kthread_stopping("rcu_torture_boost");
-> >  	return 0;
+> > @@ -1104,19 +1104,9 @@ static int rcu_torture_stall(void *args)
+> >  /* Spawn CPU-stall kthread, if stall_cpu specified. */
+> >  static int __init rcu_torture_stall_init(void)
+> >  {
+> > -	int ret;
+> > -
+> >  	if (stall_cpu <= 0)
+> >  		return 0;
+> > -	VERBOSE_TOROUT_STRING("Creating rcu_torture_stall task");
+> > -	stall_task = kthread_run(rcu_torture_stall, NULL, "rcu_torture_stall");
+> > -	if (IS_ERR(stall_task)) {
+> > -		ret = PTR_ERR(stall_task);
+> > -		stall_task = NULL;
+> > -		return ret;
+> > -	}
+> > -	torture_shuffle_task_register(stall_task);
+> > -	return 0;
+> > +	return torture_create_kthread(rcu_torture_stall, NULL, stall_task);
 > >  }
 > >  
-> > @@ -637,10 +638,7 @@ rcu_torture_fqs(void *arg)
-> >  		}
-> >  		stutter_wait("rcu_torture_fqs");
-> >  	} while (!torture_must_stop());
-> > -	VERBOSE_TOROUT_STRING("rcu_torture_fqs task stopping");
-> > -	torture_shutdown_absorb("rcu_torture_fqs");
-> > -	while (!kthread_should_stop())
-> > -		schedule_timeout_uninterruptible(1);
-> > +	torture_kthread_stopping("rcu_torture_fqs");
-> >  	return 0;
+> >  /* Clean up after the CPU-stall kthread, if one was spawned. */
+> > @@ -1225,29 +1215,13 @@ static int rcu_torture_barrier_init(void)
+> >  		return -ENOMEM;
+> >  	for (i = 0; i < n_barrier_cbs; i++) {
+> >  		init_waitqueue_head(&barrier_cbs_wq[i]);
+> > -		VERBOSE_TOROUT_STRING("Creating rcu_torture_barrier_cbs task");
+> > -		barrier_cbs_tasks[i] = kthread_run(rcu_torture_barrier_cbs,
+> > -						   (void *)(long)i,
+> > -						   "rcu_torture_barrier_cbs");
+> > -		if (IS_ERR(barrier_cbs_tasks[i])) {
+> > -			ret = PTR_ERR(barrier_cbs_tasks[i]);
+> > -			VERBOSE_TOROUT_ERRSTRING("Failed to create rcu_torture_barrier_cbs");
+> > -			barrier_cbs_tasks[i] = NULL;
+> > +		ret = torture_create_kthread(rcu_torture_barrier_cbs,
+> > +					     (void *)(long)i,
+> > +					     barrier_cbs_tasks[i]);
+> > +		if (ret)
+> >  			return ret;
+> > -		}
+> > -		torture_shuffle_task_register(barrier_cbs_tasks[i]);
+> >  	}
+> > -	VERBOSE_TOROUT_STRING("Creating rcu_torture_barrier task");
+> > -	barrier_task = kthread_run(rcu_torture_barrier, NULL,
+> > -				   "rcu_torture_barrier");
+> > -	if (IS_ERR(barrier_task)) {
+> > -		ret = PTR_ERR(barrier_task);
+> > -		VERBOSE_TOROUT_ERRSTRING("Failed to create rcu_torture_barrier");
+> > -		barrier_task = NULL;
+> > -		return ret;
+> > -	}
+> > -	torture_shuffle_task_register(barrier_task);
+> > -	return 0;
+> > +	return torture_create_kthread(rcu_torture_barrier, NULL, barrier_task);
 > >  }
 > >  
-> > @@ -709,10 +707,7 @@ rcu_torture_writer(void *arg)
-> >  		rcutorture_record_progress(++rcu_torture_current_version);
-> >  		stutter_wait("rcu_torture_writer");
-> >  	} while (!torture_must_stop());
-> > -	VERBOSE_TOROUT_STRING("rcu_torture_writer task stopping");
-> > -	torture_shutdown_absorb("rcu_torture_writer");
-> > -	while (!kthread_should_stop())
-> > -		schedule_timeout_uninterruptible(1);
-> > +	torture_kthread_stopping("rcu_torture_writer");
-> >  	return 0;
-> >  }
+> >  /* Clean up after RCU barrier testing. */
+> > @@ -1515,17 +1489,10 @@ rcu_torture_init(void)
 > >  
-> > @@ -747,10 +742,7 @@ rcu_torture_fakewriter(void *arg)
-> >  		stutter_wait("rcu_torture_fakewriter");
-> >  	} while (!torture_must_stop());
+> >  	/* Start up the kthreads. */
 > >  
-> > -	VERBOSE_TOROUT_STRING("rcu_torture_fakewriter task stopping");
-> > -	torture_shutdown_absorb("rcu_torture_fakewriter");
-> > -	while (!kthread_should_stop())
-> > -		schedule_timeout_uninterruptible(1);
-> > +	torture_kthread_stopping("rcu_torture_fakewriter");
-> >  	return 0;
-> >  }
-> >  
-> > @@ -891,12 +883,9 @@ rcu_torture_reader(void *arg)
-> >  		schedule();
-> >  		stutter_wait("rcu_torture_reader");
-> >  	} while (!torture_must_stop());
-> > -	VERBOSE_TOROUT_STRING("rcu_torture_reader task stopping");
-> > -	torture_shutdown_absorb("rcu_torture_reader");
-> >  	if (irqreader && cur_ops->irq_capable)
-> >  		del_timer_sync(&t);
-> > -	while (!kthread_should_stop())
-> > -		schedule_timeout_uninterruptible(1);
-> > +	torture_kthread_stopping("rcu_torture_reader");
-> >  	return 0;
-> >  }
-> >  
-> > @@ -1009,7 +998,7 @@ rcu_torture_stats(void *arg)
-> >  		rcu_torture_stats_print();
-> >  		torture_shutdown_absorb("rcu_torture_stats");
-> >  	} while (!torture_must_stop());
-> > -	VERBOSE_TOROUT_STRING("rcu_torture_stats task stopping");
-> > +	torture_kthread_stopping("rcu_torture_stats");
-> >  	return 0;
-> >  }
-> >  
-> > @@ -1170,12 +1159,9 @@ static int rcu_torture_barrier_cbs(void *arg)
-> >  		if (atomic_dec_and_test(&barrier_cbs_count))
-> >  			wake_up(&barrier_wq);
-> >  	} while (!torture_must_stop());
-> > -	VERBOSE_TOROUT_STRING("rcu_torture_barrier_cbs task stopping");
-> > -	torture_shutdown_absorb("rcu_torture_barrier_cbs");
-> > -	while (!kthread_should_stop())
-> > -		schedule_timeout_interruptible(1);
-> >  	cur_ops->cb_barrier();
-> >  	destroy_rcu_head_on_stack(&rcu);
-> > +	torture_kthread_stopping("rcu_torture_barrier_cbs");
-> >  	return 0;
-> >  }
-> >  
-> > @@ -1206,10 +1192,7 @@ static int rcu_torture_barrier(void *arg)
-> >  		n_barrier_successes++;
-> >  		schedule_timeout_interruptible(HZ / 10);
-> >  	} while (!torture_must_stop());
-> > -	VERBOSE_TOROUT_STRING("rcu_torture_barrier task stopping");
-> > -	torture_shutdown_absorb("rcu_torture_barrier");
-> > -	while (!kthread_should_stop())
-> > -		schedule_timeout_interruptible(1);
-> > +	torture_kthread_stopping("rcu_torture_barrier");
-> >  	return 0;
-> >  }
-> >  
+> > -	VERBOSE_TOROUT_STRING("Creating rcu_torture_writer task");
+> > -	writer_task = kthread_create(rcu_torture_writer, NULL,
+> > -				     "rcu_torture_writer");
+> > -	if (IS_ERR(writer_task)) {
+> > -		firsterr = PTR_ERR(writer_task);
+> > -		VERBOSE_TOROUT_ERRSTRING("Failed to create writer");
+> > -		writer_task = NULL;
+> > +	firsterr = torture_create_kthread(rcu_torture_writer, NULL,
+> > +					  writer_task);
+> > +	if (firsterr)
+> >  		goto unwind;
+> > -	}
+> > -	torture_shuffle_task_register(writer_task);
+> > -	wake_up_process(writer_task);
+> >  	fakewriter_tasks = kzalloc(nfakewriters * sizeof(fakewriter_tasks[0]),
+> >  				   GFP_KERNEL);
+> >  	if (fakewriter_tasks == NULL) {
+> > @@ -1534,16 +1501,10 @@ rcu_torture_init(void)
+> >  		goto unwind;
+> >  	}
+> >  	for (i = 0; i < nfakewriters; i++) {
+> > -		VERBOSE_TOROUT_STRING("Creating rcu_torture_fakewriter task");
+> > -		fakewriter_tasks[i] = kthread_run(rcu_torture_fakewriter, NULL,
+> > -						  "rcu_torture_fakewriter");
+> > -		if (IS_ERR(fakewriter_tasks[i])) {
+> > -			firsterr = PTR_ERR(fakewriter_tasks[i]);
+> > -			VERBOSE_TOROUT_ERRSTRING("Failed to create fakewriter");
+> > -			fakewriter_tasks[i] = NULL;
+> > +		firsterr = torture_create_kthread(rcu_torture_fakewriter,
+> > +						  NULL, fakewriter_tasks[i]);
+> > +		if (firsterr)
+> >  			goto unwind;
+> > -		}
+> > -		torture_shuffle_task_register(fakewriter_tasks[i]);
+> >  	}
+> >  	reader_tasks = kzalloc(nrealreaders * sizeof(reader_tasks[0]),
+> >  			       GFP_KERNEL);
+> > @@ -1553,28 +1514,16 @@ rcu_torture_init(void)
+> >  		goto unwind;
+> >  	}
+> >  	for (i = 0; i < nrealreaders; i++) {
+> > -		VERBOSE_TOROUT_STRING("Creating rcu_torture_reader task");
+> > -		reader_tasks[i] = kthread_run(rcu_torture_reader, NULL,
+> > -					      "rcu_torture_reader");
+> > -		if (IS_ERR(reader_tasks[i])) {
+> > -			firsterr = PTR_ERR(reader_tasks[i]);
+> > -			VERBOSE_TOROUT_ERRSTRING("Failed to create reader");
+> > -			reader_tasks[i] = NULL;
+> > +		firsterr = torture_create_kthread(rcu_torture_reader, NULL,
+> > +						  reader_tasks[i]);
+> > +		if (firsterr)
+> >  			goto unwind;
+> > -		}
+> > -		torture_shuffle_task_register(reader_tasks[i]);
+> >  	}
+> >  	if (stat_interval > 0) {
+> > -		VERBOSE_TOROUT_STRING("Creating rcu_torture_stats task");
+> > -		stats_task = kthread_run(rcu_torture_stats, NULL,
+> > -					"rcu_torture_stats");
+> > -		if (IS_ERR(stats_task)) {
+> > -			firsterr = PTR_ERR(stats_task);
+> > -			VERBOSE_TOROUT_ERRSTRING("Failed to create stats");
+> > -			stats_task = NULL;
+> > +		firsterr = torture_create_kthread(rcu_torture_stats, NULL,
+> > +						  stats_task);
+> > +		if (firsterr)
+> >  			goto unwind;
+> > -		}
+> > -		torture_shuffle_task_register(stats_task);
+> >  	}
+> >  	if (test_no_idle_hz) {
+> >  		firsterr = torture_shuffle_init(shuffle_interval * HZ);
+> > @@ -1592,16 +1541,9 @@ rcu_torture_init(void)
+> >  		fqs_duration = 0;
+> >  	if (fqs_duration) {
+> >  		/* Create the fqs thread */
+> > -		VERBOSE_TOROUT_STRING("Creating rcu_torture_fqs task");
+> > -		fqs_task = kthread_run(rcu_torture_fqs, NULL,
+> > -				       "rcu_torture_fqs");
+> > -		if (IS_ERR(fqs_task)) {
+> > -			firsterr = PTR_ERR(fqs_task);
+> > -			VERBOSE_TOROUT_ERRSTRING("Failed to create fqs");
+> > -			fqs_task = NULL;
+> > +		torture_create_kthread(rcu_torture_fqs, NULL, fqs_task);
+> > +		if (firsterr)
+> >  			goto unwind;
+> > -		}
+> > -		torture_shuffle_task_register(fqs_task);
+> >  	}
+> >  	if (test_boost_interval < 1)
+> >  		test_boost_interval = 1;
 > > diff --git a/kernel/torture.c b/kernel/torture.c
-> > index 12a5807fb4e9..6f1c6600d183 100644
+> > index 6f1c6600d183..94760f0f2923 100644
 > > --- a/kernel/torture.c
 > > +++ b/kernel/torture.c
-> > @@ -169,7 +169,7 @@ torture_onoff(void *arg)
-> >  		}
-> >  		schedule_timeout_interruptible(onoff_interval);
-> >  	}
-> > -	VERBOSE_TOROUT_STRING("torture_onoff task stopping");
-> > +	torture_kthread_stopping("torture_onoff");
-> >  	return 0;
-> >  }
+> > @@ -180,23 +180,16 @@ torture_onoff(void *arg)
+> >   */
+> >  int torture_onoff_init(long ooholdoff, long oointerval)
+> >  {
+> > -#ifdef CONFIG_HOTPLUG_CPU
+> > -	int ret;
+> > +	int ret = 0;
 > >  
-> > @@ -370,7 +370,7 @@ static int torture_shuffle(void *arg)
-> >  		torture_shuffle_tasks();
-> >  		torture_shutdown_absorb("torture_shuffle");
-> >  	} while (!torture_must_stop());
-> > -	VERBOSE_TOROUT_STRING("torture_shuffle task stopping");
-> > +	torture_kthread_stopping("torture_shuffle");
-> >  	return 0;
-> >  }
-> >  
-> > @@ -465,7 +465,7 @@ static int torture_shutdown(void *arg)
-> >  		jiffies_snap = jiffies;
-> >  	}
-> >  	if (torture_must_stop()) {
-> > -		VERBOSE_TOROUT_STRING("torture_shutdown task stopping");
-> > +		torture_kthread_stopping("torture_shutdown");
+> > +#ifdef CONFIG_HOTPLUG_CPU
+> >  	onoff_holdoff = ooholdoff;
+> >  	onoff_interval = oointerval;
+> >  	if (onoff_interval <= 0)
 > >  		return 0;
+> > -	VERBOSE_TOROUT_STRING("Creating torture_onoff task");
+> > -	onoff_task = kthread_run(torture_onoff, NULL, "torture_onoff");
+> > -	if (IS_ERR(onoff_task)) {
+> > -		ret = PTR_ERR(onoff_task);
+> > -		onoff_task = NULL;
+> > -		return ret;
+> > -	}
+> > -	torture_shuffle_task_register(onoff_task);
+> > +	ret = torture_create_kthread(torture_onoff, NULL, onoff_task);
+> >  #endif /* #ifdef CONFIG_HOTPLUG_CPU */
+> > -	return 0;
+> > +	return ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(torture_onoff_init);
+> >  
+> > @@ -379,8 +372,6 @@ static int torture_shuffle(void *arg)
+> >   */
+> >  int torture_shuffle_init(long shuffint)
+> >  {
+> > -	int ret;
+> > -
+> >  	shuffle_interval = shuffint;
+> >  
+> >  	shuffle_idle_cpu = -1;
+> > @@ -391,17 +382,7 @@ int torture_shuffle_init(long shuffint)
 > >  	}
 > >  
-> > @@ -583,7 +583,7 @@ static int torture_stutter(void *arg)
-> >  		ACCESS_ONCE(stutter_pause_test) = 0;
-> >  		torture_shutdown_absorb("torture_stutter");
-> >  	} while (!torture_must_stop());
-> > -	VERBOSE_TOROUT_STRING("torture_stutter task stopping");
-> > +	torture_kthread_stopping("torture_stutter");
-> >  	return 0;
+> >  	/* Create the shuffler thread */
+> > -	VERBOSE_TOROUT_STRING("Creating torture_shuffle task");
+> > -	shuffler_task = kthread_run(torture_shuffle, NULL, "torture_shuffle");
+> > -	if (IS_ERR(shuffler_task)) {
+> > -		ret = PTR_ERR(shuffler_task);
+> > -		free_cpumask_var(shuffle_tmp_mask);
+> > -		VERBOSE_TOROUT_ERRSTRING("Failed to create shuffler");
+> > -		shuffler_task = NULL;
+> > -		return ret;
+> > -	}
+> > -	torture_shuffle_task_register(shuffler_task);
+> > -	return 0;
+> > +	return torture_create_kthread(torture_shuffle, NULL, shuffler_task);
 > >  }
+> >  EXPORT_SYMBOL_GPL(torture_shuffle_init);
 > >  
-> > @@ -696,3 +696,21 @@ bool torture_must_stop_irq(void)
-> >  	return ACCESS_ONCE(fullstop) != FULLSTOP_DONTSTOP;
+> > @@ -483,25 +464,16 @@ static int torture_shutdown(void *arg)
+> >   */
+> >  int torture_shutdown_init(int ssecs, void (*cleanup)(void))
+> >  {
+> > -	int ret;
+> > +	int ret = 0;
+> >  
+> >  	shutdown_secs = ssecs;
+> >  	torture_shutdown_hook = cleanup;
+> >  	if (shutdown_secs > 0) {
+> > -		VERBOSE_TOROUT_STRING("Creating torture_shutdown task");
+> >  		shutdown_time = jiffies + shutdown_secs * HZ;
+> > -		shutdown_task = kthread_create(torture_shutdown, NULL,
+> > -					       "torture_shutdown");
+> > -		if (IS_ERR(shutdown_task)) {
+> > -			ret = PTR_ERR(shutdown_task);
+> > -			VERBOSE_TOROUT_ERRSTRING("Failed to create shutdown");
+> > -			shutdown_task = NULL;
+> > -			return ret;
+> > -		}
+> > -		torture_shuffle_task_register(shutdown_task);
+> > -		wake_up_process(shutdown_task);
+> > +		ret = torture_create_kthread(torture_shutdown, NULL,
+> > +					     shutdown_task);
+> >  	}
+> > -	return 0;
+> > +	return ret;
 > >  }
-> >  EXPORT_SYMBOL_GPL(torture_must_stop_irq);
+> >  EXPORT_SYMBOL_GPL(torture_shutdown_init);
+> >  
+> > @@ -595,16 +567,8 @@ int torture_stutter_init(int s)
+> >  	int ret;
+> >  
+> >  	stutter = s;
+> > -	VERBOSE_TOROUT_STRING("Creating torture_stutter task");
+> > -	stutter_task = kthread_run(torture_stutter, NULL, "torture_stutter");
+> > -	if (IS_ERR(stutter_task)) {
+> > -		ret = PTR_ERR(stutter_task);
+> > -		VERBOSE_TOROUT_ERRSTRING("Failed to create stutter");
+> > -		stutter_task = NULL;
+> > -		return ret;
+> > -	}
+> > -	torture_shuffle_task_register(stutter_task);
+> > -	return 0;
+> > +	ret = torture_create_kthread(torture_stutter, NULL, stutter_task);
+> > +	return ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(torture_stutter_init);
+> >  
+> > @@ -714,3 +678,25 @@ void torture_kthread_stopping(char *title)
+> >  	}
+> >  }
+> >  EXPORT_SYMBOL_GPL(torture_kthread_stopping);
 > > +
 > > +/*
-> > + * Each kthread must wait for kthread_should_stop() before returning from
-> > + * its top-level function, otherwise segfaults ensue.  This function
-> > + * prints a "stopping" message and waits for kthread_should_stop(), and
-> > + * should be called from all torture kthreads immediately prior to
-> > + * returning.
+> > + * Create a generic torture kthread that is immediately runnable.  If you
+> > + * need the kthread to be stopped so that you can do something to it before
+> > + * it starts, you will need to open-code your own.
 > > + */
-> > +void torture_kthread_stopping(char *title)
+> > +int _torture_create_kthread(int (*fn)(void *arg), void *arg, char *s, char *m,
+> > +			    char *f, struct task_struct **tp)
 > > +{
-> > +	if (verbose)
-> > +		pr_alert("%s" TORTURE_FLAG " %s\n", torture_type, title);
-> > +	while (!kthread_should_stop()) {
-> > +		torture_shutdown_absorb(title);
-> > +		schedule_timeout_uninterruptible(1);
+> > +	int ret = 0;
+> > +
+> > +	VERBOSE_TOROUT_STRING(m);
+> > +	*tp = kthread_run(fn, arg, s);
+> > +	if (IS_ERR(*tp)) {
+> > +		ret = PTR_ERR(*tp);
+> > +		VERBOSE_TOROUT_ERRSTRING(f);
+> > +		*tp = NULL;
 > > +	}
+> > +	torture_shuffle_task_register(*tp);
+> > +	return ret;
 > > +}
-> > +EXPORT_SYMBOL_GPL(torture_kthread_stopping);
+> > +EXPORT_SYMBOL_GPL(_torture_create_kthread);
 > > -- 
 > > 1.8.1.5
 > > 
