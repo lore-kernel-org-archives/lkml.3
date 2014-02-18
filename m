@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaBRVOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:14:18 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35719 "EHLO
+	id S1753173AbaBRVQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:16:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35705 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbaBRVJK (ORCPT
+	with ESMTP id S1751151AbaBRVJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:09:10 -0500
+	Tue, 18 Feb 2014 16:09:09 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        "David A. Long" <dave.long@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, yrl.pp-manager.tt@hitachi.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 30/32] perf probe: Show source-level or symbol-level info for uprobes
-Date: Tue, 18 Feb 2014 18:08:49 -0300
-Message-Id: <1392757731-32619-31-git-send-email-acme@infradead.org>
+Subject: [PATCH 17/32] perf callchain: Separate perf_reg_value function in perf_regs object
+Date: Tue, 18 Feb 2014 18:08:36 -0300
+Message-Id: <1392757731-32619-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
 References: <1392757731-32619-1-git-send-email-acme@infradead.org>
@@ -29,319 +29,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Show source-level or symbol-level information for uprobe events.
+Making perf_reg_value function global (formely reg_value), because it's
+going to be used globaly across all code providing the dwarf post unwind
+feature.
 
-Without this change;
-  # ./perf probe -l
-    probe_perf:dso__load_vmlinux (on 0x000000000006d110 in /kbuild/ksrc/linux-3/tools/perf/perf)
+Changing its prototype to be generic:
 
-With this change;
-  # ./perf probe -l
-    probe_perf:dso__load_vmlinux (on dso__load_vmlinux@util/symbol.c in /kbuild/ksrc/linux-3/tools/perf/perf)
+  -int reg_value(unw_word_t *valp, struct regs_dump *regs, int id)
+  +int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
 
-Changes from v2:
- - Update according to previous patches.
+Changing the valp type from libunwind specific 'unw_word_t' to u64.
 
-Changes from v1:
- - Rewrite the code based on new series.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Jean Pihet <jean.pihet@linaro.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: "David A. Long" <dave.long@linaro.org>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20140206053223.29635.51280.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1389098853-14466-13-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c | 227 +++++++++++++++++++++++++++---------------
- 1 file changed, 144 insertions(+), 83 deletions(-)
+ tools/perf/Makefile.perf           |  1 +
+ tools/perf/util/perf_regs.c        | 19 +++++++++++++++++++
+ tools/perf/util/perf_regs.h        | 13 +++++++++++++
+ tools/perf/util/unwind-libunwind.c | 38 ++++++++++++--------------------------
+ 4 files changed, 45 insertions(+), 26 deletions(-)
+ create mode 100644 tools/perf/util/perf_regs.c
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index f86820c39ea4..3c35b7af2adb 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -249,34 +249,6 @@ out:
- 	return ret;
- }
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 9ef6b33bcfe3..f99a392d20be 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -538,6 +538,7 @@ ifeq ($(NO_PERF_REGS),0)
+   ifeq ($(ARCH),x86)
+     LIB_H += arch/x86/include/perf_regs.h
+   endif
++  LIB_OBJS += $(OUTPUT)util/perf_regs.o
+ endif
  
--static int convert_to_perf_probe_point(struct probe_trace_point *tp,
--					struct perf_probe_point *pp)
--{
--	struct symbol *sym;
--	struct map *map;
--	u64 addr = kernel_get_symbol_address_by_name(tp->symbol, true);
--
--	if (addr) {
--		addr += tp->offset;
--		sym = __find_kernel_function(addr, &map);
--		if (!sym)
--			goto failed;
--		pp->function = strdup(sym->name);
--		pp->offset = addr - map->unmap_ip(map, sym->start);
--	} else {
--failed:
--		pp->function = strdup(tp->symbol);
--		pp->offset = tp->offset;
--	}
--
--	if (pp->function == NULL)
--		return -ENOMEM;
--
--	pp->retprobe = tp->retprobe;
--
--	return 0;
--}
--
- #ifdef HAVE_DWARF_SUPPORT
- /* Open new debuginfo of given module */
- static struct debuginfo *open_debuginfo(const char *module)
-@@ -298,44 +270,6 @@ static struct debuginfo *open_debuginfo(const char *module)
- 	return debuginfo__new(path);
- }
- 
--/*
-- * Convert trace point to probe point with debuginfo
-- * Currently only handles kprobes.
-- */
--static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
--					struct perf_probe_point *pp)
--{
--	u64 addr = 0;
--	int ret = -ENOENT;
--	struct debuginfo *dinfo;
--
--	addr = kernel_get_symbol_address_by_name(tp->symbol, false);
--	if (addr) {
--		addr += tp->offset;
--		pr_debug("try to find %s+%ld@%" PRIx64 "\n", tp->symbol,
--			 tp->offset, addr);
--
--		dinfo = open_debuginfo(tp->module);
--		if (dinfo) {
--			ret = debuginfo__find_probe_point(dinfo,
--						 (unsigned long)addr, pp);
--			debuginfo__delete(dinfo);
--		} else {
--			pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n",
--				 addr);
--			ret = -ENOENT;
--		}
--	}
--	if (ret <= 0) {
--		pr_debug("Failed to find corresponding probes from "
--			 "debuginfo. Use kprobe event information.\n");
--		return convert_to_perf_probe_point(tp, pp);
--	}
--	pp->retprobe = tp->retprobe;
--
--	return 0;
--}
--
- static int get_text_start_address(const char *exec, unsigned long *address)
- {
- 	Elf *elf;
-@@ -364,6 +298,57 @@ out:
- 	return ret;
- }
- 
-+/*
-+ * Convert trace point to probe point with debuginfo
-+ */
-+static int find_perf_probe_point_from_dwarf(struct probe_trace_point *tp,
-+					    struct perf_probe_point *pp,
-+					    bool is_kprobe)
+ ifndef NO_LIBNUMA
+diff --git a/tools/perf/util/perf_regs.c b/tools/perf/util/perf_regs.c
+new file mode 100644
+index 000000000000..a3539ef30b15
+--- /dev/null
++++ b/tools/perf/util/perf_regs.c
+@@ -0,0 +1,19 @@
++#include <errno.h>
++#include "perf_regs.h"
++
++int perf_reg_value(u64 *valp, struct regs_dump *regs, int id)
 +{
-+	struct debuginfo *dinfo = NULL;
-+	unsigned long stext = 0;
-+	u64 addr = tp->address;
-+	int ret = -ENOENT;
++	int i, idx = 0;
++	u64 mask = regs->mask;
 +
-+	/* convert the address to dwarf address */
-+	if (!is_kprobe) {
-+		if (!addr) {
-+			ret = -EINVAL;
-+			goto error;
-+		}
-+		ret = get_text_start_address(tp->module, &stext);
-+		if (ret < 0)
-+			goto error;
-+		addr += stext;
-+	} else {
-+		addr = kernel_get_symbol_address_by_name(tp->symbol, false);
-+		if (addr == 0)
-+			goto error;
-+		addr += tp->offset;
++	if (!(mask & (1 << id)))
++		return -EINVAL;
++
++	for (i = 0; i < id; i++) {
++		if (mask & (1 << i))
++			idx++;
 +	}
 +
-+	pr_debug("try to find information at %" PRIx64 " in %s\n", addr,
-+		 tp->module ? : "kernel");
-+
-+	dinfo = open_debuginfo(tp->module);
-+	if (dinfo) {
-+		ret = debuginfo__find_probe_point(dinfo,
-+						 (unsigned long)addr, pp);
-+		debuginfo__delete(dinfo);
-+	} else {
-+		pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n", addr);
-+		ret = -ENOENT;
-+	}
-+
-+	if (ret > 0) {
-+		pp->retprobe = tp->retprobe;
-+		return 0;
-+	}
-+error:
-+	pr_debug("Failed to find corresponding probes from debuginfo.\n");
-+	return ret ? : -ENOENT;
-+}
-+
- static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
- 					  int ntevs, const char *exec)
- {
-@@ -815,10 +800,12 @@ out:
- 
- #else	/* !HAVE_DWARF_SUPPORT */
- 
--static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
--					struct perf_probe_point *pp)
-+static int
-+find_perf_probe_point_from_dwarf(struct probe_trace_point *tp __maybe_unused,
-+				 struct perf_probe_point *pp __maybe_unused,
-+				 bool is_kprobe __maybe_unused)
- {
--	return convert_to_perf_probe_point(tp, pp);
-+	return -ENOSYS;
- }
- 
- static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
-@@ -1343,16 +1330,21 @@ static int parse_probe_trace_command(const char *cmd,
- 	} else
- 		p = argv[1];
- 	fmt1_str = strtok_r(p, "+", &fmt);
--	tp->symbol = strdup(fmt1_str);
--	if (tp->symbol == NULL) {
--		ret = -ENOMEM;
--		goto out;
-+	if (fmt1_str[0] == '0')	/* only the address started with 0x */
-+		tp->address = strtoul(fmt1_str, NULL, 0);
-+	else {
-+		/* Only the symbol-based probe has offset */
-+		tp->symbol = strdup(fmt1_str);
-+		if (tp->symbol == NULL) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+		fmt2_str = strtok_r(NULL, "", &fmt);
-+		if (fmt2_str == NULL)
-+			tp->offset = 0;
-+		else
-+			tp->offset = strtoul(fmt2_str, NULL, 10);
- 	}
--	fmt2_str = strtok_r(NULL, "", &fmt);
--	if (fmt2_str == NULL)
--		tp->offset = 0;
--	else
--		tp->offset = strtoul(fmt2_str, NULL, 10);
- 
- 	tev->nargs = argc - 2;
- 	tev->args = zalloc(sizeof(struct probe_trace_arg) * tev->nargs);
-@@ -1623,6 +1615,79 @@ error:
- 	return NULL;
- }
- 
-+static int find_perf_probe_point_from_map(struct probe_trace_point *tp,
-+					  struct perf_probe_point *pp,
-+					  bool is_kprobe)
-+{
-+	struct symbol *sym = NULL;
-+	struct map *map;
-+	u64 addr;
-+	int ret = -ENOENT;
-+
-+	if (!is_kprobe) {
-+		map = dso__new_map(tp->module);
-+		if (!map)
-+			goto out;
-+		addr = tp->address;
-+		sym = map__find_symbol(map, addr, NULL);
-+	} else {
-+		addr = kernel_get_symbol_address_by_name(tp->symbol, true);
-+		if (addr) {
-+			addr += tp->offset;
-+			sym = __find_kernel_function(addr, &map);
-+		}
-+	}
-+	if (!sym)
-+		goto out;
-+
-+	pp->retprobe = tp->retprobe;
-+	pp->offset = addr - map->unmap_ip(map, sym->start);
-+	pp->function = strdup(sym->name);
-+	ret = pp->function ? 0 : -ENOMEM;
-+
-+out:
-+	if (map && !is_kprobe) {
-+		dso__delete(map->dso);
-+		map__delete(map);
-+	}
-+
-+	return ret;
-+}
-+
-+static int convert_to_perf_probe_point(struct probe_trace_point *tp,
-+					struct perf_probe_point *pp,
-+					bool is_kprobe)
-+{
-+	char buf[128];
-+	int ret;
-+
-+	ret = find_perf_probe_point_from_dwarf(tp, pp, is_kprobe);
-+	if (!ret)
-+		return 0;
-+	ret = find_perf_probe_point_from_map(tp, pp, is_kprobe);
-+	if (!ret)
-+		return 0;
-+
-+	pr_debug("Failed to find probe point from both of dwarf and map.\n");
-+
-+	if (tp->symbol) {
-+		pp->function = strdup(tp->symbol);
-+		pp->offset = tp->offset;
-+	} else if (!tp->module && !is_kprobe) {
-+		ret = e_snprintf(buf, 128, "0x%" PRIx64, (u64)tp->address);
-+		if (ret < 0)
-+			return ret;
-+		pp->function = strdup(buf);
-+		pp->offset = 0;
-+	}
-+	if (pp->function == NULL)
-+		return -ENOMEM;
-+
-+	pp->retprobe = tp->retprobe;
-+
++	*valp = regs->regs[idx];
 +	return 0;
 +}
-+
- static int convert_to_perf_probe_event(struct probe_trace_event *tev,
- 			       struct perf_probe_event *pev, bool is_kprobe)
- {
-@@ -1636,11 +1701,7 @@ static int convert_to_perf_probe_event(struct probe_trace_event *tev,
- 		return -ENOMEM;
+diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
+index a3d42cd74919..d6e8b6a8d7f3 100644
+--- a/tools/perf/util/perf_regs.h
++++ b/tools/perf/util/perf_regs.h
+@@ -1,8 +1,14 @@
+ #ifndef __PERF_REGS_H
+ #define __PERF_REGS_H
  
- 	/* Convert trace_point to probe_point */
--	if (is_kprobe)
--		ret = kprobe_convert_to_perf_probe(&tev->point, &pev->point);
--	else
--		ret = convert_to_perf_probe_point(&tev->point, &pev->point);
++#include "types.h"
++#include "event.h"
++
+ #ifdef HAVE_PERF_REGS_SUPPORT
+ #include <perf_regs.h>
++
++int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
++
+ #else
+ #define PERF_REGS_MASK	0
+ 
+@@ -10,5 +16,12 @@ static inline const char *perf_reg_name(int id __maybe_unused)
+ {
+ 	return NULL;
+ }
++
++static inline int perf_reg_value(u64 *valp __maybe_unused,
++				 struct regs_dump *regs __maybe_unused,
++				 int id __maybe_unused)
++{
++	return 0;
++}
+ #endif /* HAVE_PERF_REGS_SUPPORT */
+ #endif /* __PERF_REGS_H */
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index 79dbfbbeb5ed..bd5768d74f01 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -390,30 +390,13 @@ static int access_dso_mem(struct unwind_info *ui, unw_word_t addr,
+ 	return !(size == sizeof(*data));
+ }
+ 
+-static int reg_value(unw_word_t *valp, struct regs_dump *regs, int id)
+-{
+-	int i, idx = 0;
+-	u64 mask = regs->mask;
 -
-+	ret = convert_to_perf_probe_point(&tev->point, &pev->point, is_kprobe);
- 	if (ret < 0)
+-	if (!(mask & (1 << id)))
+-		return -EINVAL;
+-
+-	for (i = 0; i < id; i++) {
+-		if (mask & (1 << i))
+-			idx++;
+-	}
+-
+-	*valp = regs->regs[idx];
+-	return 0;
+-}
+-
+ static int access_mem(unw_addr_space_t __maybe_unused as,
+ 		      unw_word_t addr, unw_word_t *valp,
+ 		      int __write, void *arg)
+ {
+ 	struct unwind_info *ui = arg;
+ 	struct stack_dump *stack = &ui->sample->user_stack;
+-	unw_word_t start, end;
++	u64 start, end;
+ 	int offset;
+ 	int ret;
+ 
+@@ -423,7 +406,7 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
+ 		return 0;
+ 	}
+ 
+-	ret = reg_value(&start, &ui->sample->user_regs, PERF_REG_SP);
++	ret = perf_reg_value(&start, &ui->sample->user_regs, PERF_REG_SP);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -436,8 +419,9 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
+ 	if (addr < start || addr + sizeof(unw_word_t) >= end) {
+ 		ret = access_dso_mem(ui, addr, valp);
+ 		if (ret) {
+-			pr_debug("unwind: access_mem %p not inside range %p-%p\n",
+-				(void *)addr, (void *)start, (void *)end);
++			pr_debug("unwind: access_mem %p not inside range"
++				 " 0x%" PRIx64 "-0x%" PRIx64 "\n",
++				 (void *) addr, start, end);
+ 			*valp = 0;
+ 			return ret;
+ 		}
+@@ -446,8 +430,8 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
+ 
+ 	offset = addr - start;
+ 	*valp  = *(unw_word_t *)&stack->data[offset];
+-	pr_debug("unwind: access_mem addr %p, val %lx, offset %d\n",
+-		 (void *)addr, (unsigned long)*valp, offset);
++	pr_debug("unwind: access_mem addr %p val %lx, offset %d\n",
++		 (void *) addr, (unsigned long)*valp, offset);
+ 	return 0;
+ }
+ 
+@@ -457,6 +441,7 @@ static int access_reg(unw_addr_space_t __maybe_unused as,
+ {
+ 	struct unwind_info *ui = arg;
+ 	int id, ret;
++	u64 val;
+ 
+ 	/* Don't support write, I suspect we don't need it. */
+ 	if (__write) {
+@@ -473,12 +458,13 @@ static int access_reg(unw_addr_space_t __maybe_unused as,
+ 	if (id < 0)
+ 		return -EINVAL;
+ 
+-	ret = reg_value(valp, &ui->sample->user_regs, id);
++	ret = perf_reg_value(&val, &ui->sample->user_regs, id);
+ 	if (ret) {
+ 		pr_err("unwind: can't read reg %d\n", regnum);
+ 		return ret;
+ 	}
+ 
++	*valp = (unw_word_t) val;
+ 	pr_debug("unwind: reg %d, val %lx\n", regnum, (unsigned long)*valp);
+ 	return 0;
+ }
+@@ -572,7 +558,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 			struct machine *machine, struct thread *thread,
+ 			struct perf_sample *data, int max_stack)
+ {
+-	unw_word_t ip;
++	u64 ip;
+ 	struct unwind_info ui = {
+ 		.sample       = data,
+ 		.thread       = thread,
+@@ -583,7 +569,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 	if (!data->user_regs.regs)
+ 		return -EINVAL;
+ 
+-	ret = reg_value(&ip, &data->user_regs, PERF_REG_IP);
++	ret = perf_reg_value(&ip, &data->user_regs, PERF_REG_IP);
+ 	if (ret)
  		return ret;
  
 -- 
