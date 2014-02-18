@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725AbaBRJcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 04:32:05 -0500
-Received: from mga11.intel.com ([192.55.52.93]:50950 "EHLO mga11.intel.com"
+	id S1754723AbaBRJgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 04:36:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40390 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754472AbaBRJcD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 04:32:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,500,1389772800"; 
-   d="scan'208";a="483315846"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Subject: RE: [PATCH v3 0/4] X86/KVM: enable Intel MPX for KVM
-Thread-Topic: [PATCH v3 0/4] X86/KVM: enable Intel MPX for KVM
-Thread-Index: AQHPLIqDEXGTQoHbzECIeeZtPHIgl5q6vFiQ
-Date: Tue, 18 Feb 2014 09:32:00 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335014F733B@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923350149FC1E@SHSMSX101.ccr.corp.intel.com>
- <52DFB382.5080002@redhat.com> <53032581.7050406@redhat.com>
-In-Reply-To: <53032581.7050406@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754566AbaBRJgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 04:36:08 -0500
+Date: Tue, 18 Feb 2014 10:38:30 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-rt-users@vger.kernel.org
+Subject: locking changes in tty broke low latency feature
+Message-ID: <20140218093829.GC1741@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini wrote:
-> Il 22/01/2014 13:03, Paolo Bonzini ha scritto:
->> Il 22/01/2014 06:29, Liu, Jinsong ha scritto:
->>> These patches are version 3 to enalbe Intel MPX for KVM.
->>> 
->>> Version 1:
->>>   * Add some Intel MPX definiation
->>>   * Fix a cpuid(0x0d, 0) exposing bug, dynamic per XCR0 features
->>> enable/disable 
->>>   * vmx and msr handle for MPX support at KVM
->>>   * enalbe MPX feature for guest
->>> 
->>> Version 2:
->>>   * remove generic MPX definiation, Qiaowei's patch has add the
->>> definiation at kernel side 
->>>   * add MSR_IA32_BNDCFGS to msrs_to_save
->>> 
->>> Version 3:
->>>   * rebase on latest kernel, which include Qiaowei's MPX common
->>> definiation pulled from HPA's tree
->> 
->> I am afraid there is still some work to do on these patches, so they
->> need to be delayed to 3.15. 
->> 
->> Patch 1:
->>     this seems mostly separate from the rest of the MPX work.  I
->>     commented on the missing "ULL" suffix, but I would also like to
->>     understand why you put this patch in this series.
->> 
->> Patch 2:
->>     As remarked in the reply to this patch:
->>     - the vmx_disable_intercept_for_msr has to be unconditional
->>     - you need a new kvm_x86_ops member mpx_supported, to disable
->>     MPX whenever the two VMX controls are not available.
->> 
->> Patch 3:
->>     this patch needs to be rebased.  Apart from that it is fine,
->>     but please move the VMX bits together with patch 2, and the
->>     other bits together with patch 4.
->> 
->> Patch 4:
->>     this patch needs to be rebased and to use the new mpx_supported 
->> member 
->> 
->> If you also want to look at nested VMX support for MPX, that would be
->> nice.  It should not be hard.  Otherwise we can take care of that
->> later. 
->> 
->> Thanks for your work,
->> 
->> Paolo
-> 
-> Are you going to send v4?
-> 
-> Paolo
+Hi,
 
-Yes, I just return from long Chinese Spring Festival, I will send V4 later.
+setserial has low_latency option which should minimize receive latency
+(scheduler delay). AFAICT it is used if someone talk to external device
+via RS-485/RS-232 and need to have quick requests and responses . On
+kernel this feature was implemented by direct tty processing from
+interrupt context:
 
-Thanks,
-Jinsong
+void tty_flip_buffer_push(struct tty_port *port)
+{
+        struct tty_bufhead *buf = &port->buf;
+
+        buf->tail->commit = buf->tail->used;
+
+        if (port->low_latency)
+                flush_to_ldisc(&buf->work);
+        else
+                schedule_work(&buf->work);
+} 
+
+But after 3.12 tty locking changes, calling flush_to_ldisc() from
+interrupt context is a bug (we got scheduling while atomic bug report
+here: https://bugzilla.redhat.com/show_bug.cgi?id=1065087 )
+
+I'm not sure how this should be solved. After Peter get rid all of those
+race condition in tty layer, we probably don't want go back to use
+spin_lock's there. Maybe we can create WQ_HIGHPRI workqueue and schedule
+flush_to_ldisc() work there. Or perhaps users that need to low latency,
+should switch to thread irq and prioritize serial irq to meat
+retirements. Anyway setserial low_latency is now broken and all who use
+this feature in the past can not do this any longer on 3.12+ kernels.
+ 
+Thoughts ?
+
+Stanislaw
+
