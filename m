@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbaBRVcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:32:45 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8123 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751419AbaBRVcn (ORCPT
+	id S1752581AbaBRVdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:33:55 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:43941 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaBRVdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:32:43 -0500
-Date: Tue, 18 Feb 2014 13:34:29 -0800
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Peter Chen <Peter.Chen@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
-Message-ID: <20140218213428.GM1706@sonymobile.com>
-References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
- <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>
- <53039E2E.2030503@cogentembedded.com>
- <1392743648.17130.17.camel@iivanov-dev>
- <5303A71B.7060208@cogentembedded.com>
+	Tue, 18 Feb 2014 16:33:54 -0500
+Date: Tue, 18 Feb 2014 13:33:44 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, linux@horizon.com
+Subject: Re: [PATCH tip/core/rcu 15/55] rcutorture: Abstract
+ rcu_torture_random()
+Message-ID: <20140218213344.GY4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140217221231.GA8419@linux.vnet.ibm.com>
+ <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392675179-11560-15-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140218001137.GC19929@thin>
+ <20140218002248.GU4250@linux.vnet.ibm.com>
+ <20140218002743.GF19929@thin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5303A71B.7060208@cogentembedded.com>
+In-Reply-To: <20140218002743.GF19929@thin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021821-8236-0000-0000-0000075D3B44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 07:31:55PM +0100, Sergei Shtylyov wrote:
-> On 02/18/2014 08:14 PM, Ivan T. Ivanov wrote:
+On Mon, Feb 17, 2014 at 04:27:44PM -0800, Josh Triplett wrote:
+> On Mon, Feb 17, 2014 at 04:22:48PM -0800, Paul E. McKenney wrote:
+> > On Mon, Feb 17, 2014 at 04:11:37PM -0800, Josh Triplett wrote:
+> > > On Mon, Feb 17, 2014 at 02:12:19PM -0800, Paul E. McKenney wrote:
+> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > Because rcu_torture_random() will be used by the locking equivalent to
+> > > > rcutorture, pull it out into its own module.
+> > > > 
+> > > > Suggested-by: Rusty Russell <rusty@rustcorp.com.au>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > I'd suggest making CONFIG_TORTURE_TEST a completely invisible option,
+> > > with no description; it should only be brought in via "select".
+> > > 
+> > > Also, it doesn't need most of the headers it currently includes.
+> > > 
+> > > Have you considered moving it into the existing random generation
+> > > infrastructure, as something like "fast_insecure_nonblocking_random"?
+> > > That seems more generally useful.
+> > 
+> > George Spelvin was also advising me on random-number generation in
+> > rcutorture, so I added him on CC.  In any case, I would not be adverse
+> > to using some other random-number service, as long as it is fast enough.
+> > (George suggested some optimizations that I have not yet tried out.)
 > 
-> >>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> >>> Allows controller to be specified via device tree.
-> >>> Pass PHY phandle specified in DT to core driver.
-> 
-> >>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> >>> ---
-> >>>    drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
-> >>>    1 file changed, 22 insertions(+), 1 deletion(-)
-> 
-> >>      You also need to describe the binding you're creating in
-> >> Documentation/devicetree/bindings/usb/<file>.txt.
-> 
-> > Did you check "[PATCH v2 1/3]"?
-> 
->     Did you send it to 'linux-usb'? I just didn't get the patch.
-> (Typically, the bindings are described in the same patch the DT support is 
-> added to the driver bu YMMV, of course.)
+> I suspect the fastest way to find out about any existing generator with
+> the desired properties would be to post this one as a patch to the
+> random number infrastructure and read the resulting replies. :)
 
-Although I would personally agree that this is the most logical method,
-it would appear that the DT guys disagree with us [1].  Lately, they
-seem to have either given up or are otherwise preoccupied, so perhaps
-you can still slip a few patches by them. ;)
+;-)
 
--Courtney
+Random-number improvements on todo list.
 
-[1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/devicetree/bindings/submitting-patches.txt
+							Thanx, Paul
+
