@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaBRWri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:47:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51269 "EHLO
+	id S1753835AbaBRWtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:49:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51289 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583AbaBRWre (ORCPT
+	with ESMTP id S1753621AbaBRWri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:34 -0500
+	Tue, 18 Feb 2014 17:47:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lior Amsalem <alior@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.13 09/40] irqchip: armada-370-xp: fix IPI race condition
-Date: Tue, 18 Feb 2014 14:47:10 -0800
-Message-Id: <20140218224433.599038315@linuxfoundation.org>
+        Tony Prisk <linux@prisktech.co.nz>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.13 36/40] pinctrl: vt8500: Change devicetree data parsing
+Date: Tue, 18 Feb 2014 14:47:37 -0800
+Message-Id: <20140218224434.349012679@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -31,53 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lior Amsalem <alior@marvell.com>
+From: Tony Prisk <linux@prisktech.co.nz>
 
-commit a6f089e95b1e08cdea9633d50ad20aa5d44ba64d upstream.
+commit f17248ed868767567298e1cdf06faf8159a81f7c upstream.
 
-In the Armada 370/XP driver, when we receive an IRQ 0, we read the
-list of doorbells that caused the interrupt from register
-ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS. This gives the list of IPIs that
-were generated. However, instead of acknowledging only the IPIs that
-were generated, we acknowledge *all* the IPIs, by writing
-~IPI_DOORBELL_MASK in the ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS register.
+Due to an assumption in the VT8500 pinctrl driver, the value passed
+from devicetree for 'wm,pull' was not explicitly translated before
+being passed to pinconf.
 
-This creates a race condition: if a new IPI that isn't part of the
-ones read into the temporary "ipimask" variable is fired before we
-acknowledge all IPIs, then we will simply loose it. This is causing
-scheduling hangs on SMP intensive workloads.
+Since v3.10, changes to 'enum pin_config_param', PIN_CONFIG_BIAS_PULL_(UP/DOWN)
+no longer map 1-to-1 with the expected values in devicetree.
 
-It is important to mention that this ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS
-register has the following behavior: "A CPU write of 0 clears the bits
-in this field. A CPU write of 1 has no effect". This is what allows us
-to simply write ~ipimask to acknoledge the handled IPIs.
+This patch adds a small translation between the devicetree values (0..2)
+and the enum pin_config_param equivalent values.
 
-Notice that the same problem is present in the MSI implementation, but
-it will be fixed as a separate patch, so that this IPI fix can be
-pushed to older stable versions as appropriate (all the way to 3.8),
-while the MSI code only appeared in 3.13.
-
-Signed-off-by: Lior Amsalem <alior@marvell.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: 344e873e5657e8dc0 'arm: mvebu: Add IPI support via doorbells'
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-armada-370-xp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pinctrl/vt8500/pinctrl-wmt.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -407,7 +407,7 @@ armada_370_xp_handle_irq(struct pt_regs
- 						ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS)
- 				& IPI_DOORBELL_MASK;
+--- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
++++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+@@ -276,7 +276,20 @@ static int wmt_pctl_dt_node_to_map_pull(
+ 	if (!configs)
+ 		return -ENOMEM;
  
--			writel(~IPI_DOORBELL_MASK, per_cpu_int_base +
-+			writel(~ipimask, per_cpu_int_base +
- 				ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS);
+-	configs[0] = pull;
++	switch (pull) {
++	case 0:
++		configs[0] = PIN_CONFIG_BIAS_DISABLE;
++		break;
++	case 1:
++		configs[0] = PIN_CONFIG_BIAS_PULL_DOWN;
++		break;
++	case 2:
++		configs[0] = PIN_CONFIG_BIAS_PULL_UP;
++		break;
++	default:
++		configs[0] = PIN_CONFIG_BIAS_DISABLE;
++		dev_err(data->dev, "invalid pull state %d - disabling\n", pull);
++	}
  
- 			/* Handle all pending doorbells */
+ 	map->type = PIN_MAP_TYPE_CONFIGS_PIN;
+ 	map->data.configs.group_or_pin = data->groups[group];
 
 
