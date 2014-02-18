@@ -1,151 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042AbaBRQjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:39:00 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46649 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaBRQi5 (ORCPT
+	id S1756102AbaBRQjH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:39:07 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44564 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbaBRQjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:38:57 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Christopher Covington <cov@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND v3] usb: phy: msm: fix compilation errors when !CONFIG_PM_SLEEP
-Date: Tue, 18 Feb 2014 10:36:29 -0600
-Message-Id: <1392741389-10822-1-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <20140117182650.GZ8153@joshc.qualcomm.com>
-References: <20140117182650.GZ8153@joshc.qualcomm.com>
+	Tue, 18 Feb 2014 11:39:01 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        lczerner@redhat.com
+Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: [PATCH v5 6/10] xfstest: shared/002: Delayed allocation collapse range
+Date: Wed, 19 Feb 2014 01:38:50 +0900
+Message-Id: <1392741530-20199-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both the PM_RUNTIME and PM_SLEEP callbacks call into the common
-msm_otg_{suspend,resume} routines, however these routines are only being
-built when CONFIG_PM_SLEEP.  In addition, msm_otg_{suspend,resume} also
-depends on msm_hsusb_config_vddcx(), which is only built when
-CONFIG_PM_SLEEP.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Fix the CONFIG_PM_RUNTIME, !CONFIG_PM_SLEEP case by changing the
-preprocessor conditional, and moving msm_hsusb_config_vddcx().
+This testcase(002) tries to test various corner cases with delayed extents
+for fcollapse range functionality over different type of extents.
 
-While we're here, eliminate the CONFIG_PM conditional for setting
-up the dev_pm_ops.
-
-This address the following errors Russell King has hit doing randconfig
-builds:
-
-drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_suspend':
-drivers/usb/phy/phy-msm-usb.c:1691:2: error: implicit declaration of function 'msm_otg_suspend'
-drivers/usb/phy/phy-msm-usb.c: In function 'msm_otg_runtime_resume':
-drivers/usb/phy/phy-msm-usb.c:1699:2: error: implicit declaration of function 'msm_otg_resume'
-
-Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
- drivers/usb/phy/phy-msm-usb.c | 57 ++++++++++++++++++++-----------------------
- 1 file changed, 26 insertions(+), 31 deletions(-)
+ tests/shared/002     |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/shared/002.out |   49 +++++++++++++++++++++++++++++++++++++
+ tests/shared/group   |    1 +
+ 3 files changed, 115 insertions(+)
+ create mode 100644 tests/shared/002
+ create mode 100644 tests/shared/002.out
 
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 64c9d14e..5b37b81 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -159,32 +159,6 @@ put_3p3:
- 	return rc;
- }
- 
--#ifdef CONFIG_PM_SLEEP
--#define USB_PHY_SUSP_DIG_VOL  500000
--static int msm_hsusb_config_vddcx(int high)
--{
--	int max_vol = USB_PHY_VDD_DIG_VOL_MAX;
--	int min_vol;
--	int ret;
--
--	if (high)
--		min_vol = USB_PHY_VDD_DIG_VOL_MIN;
--	else
--		min_vol = USB_PHY_SUSP_DIG_VOL;
--
--	ret = regulator_set_voltage(hsusb_vddcx, min_vol, max_vol);
--	if (ret) {
--		pr_err("%s: unable to set the voltage for regulator "
--			"HSUSB_VDDCX\n", __func__);
--		return ret;
--	}
--
--	pr_debug("%s: min_vol:%d max_vol:%d\n", __func__, min_vol, max_vol);
--
--	return ret;
--}
--#endif
--
- static int msm_hsusb_ldo_set_mode(int on)
- {
- 	int ret = 0;
-@@ -440,7 +414,32 @@ static int msm_otg_reset(struct usb_phy *phy)
- #define PHY_SUSPEND_TIMEOUT_USEC	(500 * 1000)
- #define PHY_RESUME_TIMEOUT_USEC	(100 * 1000)
- 
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
+diff --git a/tests/shared/002 b/tests/shared/002
+new file mode 100644
+index 0000000..54b957d
+--- /dev/null
++++ b/tests/shared/002
+@@ -0,0 +1,65 @@
++#! /bin/bash
++# FS QA Test No. 2
++#
++# Delayed allocation collapse range tests
++# This testcase is one of the 4 testcases (shared 001 - 004) which tries to
++# test various corner cases for fcollapse range functionality over different
++# type of extents. These tests are based on generic/255 test case.
++# For the type of tests, check the description of _test_generic_punch
++# in common/rc.
++#-----------------------------------------------------------------------
++# Copyright (c) 2013 Samsung Electronics.  All Rights Reserved.
++#
++# This program is free software; you can redistribute it and/or
++# modify it under the terms of the GNU General Public License as
++# published by the Free Software Foundation.
++#
++# This program is distributed in the hope that it would be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write the Free Software Foundation,
++# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++#
++#-----------------------------------------------------------------------
++#
 +
-+#define USB_PHY_SUSP_DIG_VOL  500000
-+static int msm_hsusb_config_vddcx(int high)
++seq=`basename $0`
++seqres=$RESULT_DIR/$seq
++echo "QA output created by $seq"
++
++here=`pwd`
++tmp=/tmp/$$
++status=1	# failure is the default!
++
++_cleanup()
 +{
-+	int max_vol = USB_PHY_VDD_DIG_VOL_MAX;
-+	int min_vol;
-+	int ret;
-+
-+	if (high)
-+		min_vol = USB_PHY_VDD_DIG_VOL_MIN;
-+	else
-+		min_vol = USB_PHY_SUSP_DIG_VOL;
-+
-+	ret = regulator_set_voltage(hsusb_vddcx, min_vol, max_vol);
-+	if (ret) {
-+		pr_err("%s: unable to set the voltage for regulator "
-+			"HSUSB_VDDCX\n", __func__);
-+		return ret;
-+	}
-+
-+	pr_debug("%s: min_vol:%d max_vol:%d\n", __func__, min_vol, max_vol);
-+
-+	return ret;
++    rm -f $tmp.*
 +}
 +
- static int msm_otg_suspend(struct msm_otg *motg)
- {
- 	struct usb_phy *phy = &motg->phy;
-@@ -1734,22 +1733,18 @@ static int msm_otg_pm_resume(struct device *dev)
- }
- #endif
- 
--#ifdef CONFIG_PM
- static const struct dev_pm_ops msm_otg_dev_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
- 	SET_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
- 				msm_otg_runtime_idle)
- };
--#endif
- 
- static struct platform_driver msm_otg_driver = {
- 	.remove = msm_otg_remove,
- 	.driver = {
- 		.name = DRIVER_NAME,
- 		.owner = THIS_MODULE,
--#ifdef CONFIG_PM
- 		.pm = &msm_otg_dev_pm_ops,
--#endif
- 	},
- };
- 
++trap "_cleanup ; exit \$status" 0 1 2 3 15
++
++# get standard environment, filters and checks
++# we need to include common/punch to get defination fo filter functions
++. ./common/rc
++. ./common/filter
++. ./common/punch
++
++# real QA test starts here
++_supported_fs xfs ext4
++_supported_os Linux
++
++_require_xfs_io_falloc_punch
++_require_xfs_io_falloc
++_require_xfs_io_fiemap
++_require_xfs_io_falloc_collapse
++
++testfile=$TEST_DIR/$seq.$$
++
++_test_generic_punch -d falloc fpunch fcollapse fiemap _filter_hole_fiemap $testfile
++_check_test_fs
++
++status=0
++exit
+diff --git a/tests/shared/002.out b/tests/shared/002.out
+new file mode 100644
+index 0000000..60aaadc
+--- /dev/null
++++ b/tests/shared/002.out
+@@ -0,0 +1,49 @@
++QA output created by 002
++	1. into a hole
++f4f35d60b3cc18aaa6d8d92f0cd3708a
++	2. into allocated space
++0: [0..95]: extent
++f1894a71ac539f6f90426d98a4990a47
++	3. into unwritten space
++0: [0..95]: extent
++f4f35d60b3cc18aaa6d8d92f0cd3708a
++	4. hole -> data
++0: [0..31]: hole
++1: [32..63]: extent
++2: [64..95]: hole
++d8f51c20223dbce5c7c90db87bc221b0
++	5. hole -> unwritten
++0: [0..31]: hole
++1: [32..63]: extent
++2: [64..95]: hole
++f4f35d60b3cc18aaa6d8d92f0cd3708a
++	6. data -> hole
++0: [0..31]: extent
++1: [32..95]: hole
++f07217d5ac7ffa15dd8910c4aa912674
++	7. data -> unwritten
++0: [0..63]: extent
++1: [64..95]: hole
++f07217d5ac7ffa15dd8910c4aa912674
++	8. unwritten -> hole
++0: [0..31]: extent
++1: [32..95]: hole
++f4f35d60b3cc18aaa6d8d92f0cd3708a
++	9. unwritten -> data
++0: [0..63]: extent
++1: [64..95]: hole
++d8f51c20223dbce5c7c90db87bc221b0
++	10. hole -> data -> hole
++bb7df04e1b0a2570657527a7e108ae23
++	11. data -> hole -> data
++0: [0..63]: extent
++0f0151cbed83e4bf6e5bde26e82ab115
++	12. unwritten -> data -> unwritten
++0: [0..63]: extent
++bb7df04e1b0a2570657527a7e108ae23
++	13. data -> unwritten -> data
++0: [0..63]: extent
++0f0151cbed83e4bf6e5bde26e82ab115
++	14. data -> hole @ 0
++0: [0..95]: extent
++f1894a71ac539f6f90426d98a4990a47
+diff --git a/tests/shared/group b/tests/shared/group
+index 5562f92..7230b28 100644
+--- a/tests/shared/group
++++ b/tests/shared/group
+@@ -4,6 +4,7 @@
+ # - comment line before each group is "new" description
+ #
+ 001 auto prealloc
++002 auto prealloc
+ 032 mkfs auto quick
+ 051 acl udf auto quick
+ 218 auto fsr quick
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
 
