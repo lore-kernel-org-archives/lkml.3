@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaBRXFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:05:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51077 "EHLO
+	id S1753731AbaBRXGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:06:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753246AbaBRWq5 (ORCPT
+	with ESMTP id S1753235AbaBRWq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:57 -0500
+	Tue, 18 Feb 2014 17:46:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lior Amsalem <alior@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.12 08/32] irqchip: armada-370-xp: fix IPI race condition
-Date: Tue, 18 Feb 2014 14:47:08 -0800
-Message-Id: <20140218224500.340953162@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.12 07/32] NFSv4: Fix memory corruption in nfs4_proc_open_confirm
+Date: Tue, 18 Feb 2014 14:47:07 -0800
+Message-Id: <20140218224500.316229517@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
 References: <20140218224500.101465031@linuxfoundation.org>
@@ -31,53 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lior Amsalem <alior@marvell.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit a6f089e95b1e08cdea9633d50ad20aa5d44ba64d upstream.
+commit 17ead6c85c3d0ef57a14d1373f1f1cee2ce60ea8 upstream.
 
-In the Armada 370/XP driver, when we receive an IRQ 0, we read the
-list of doorbells that caused the interrupt from register
-ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS. This gives the list of IPIs that
-were generated. However, instead of acknowledging only the IPIs that
-were generated, we acknowledge *all* the IPIs, by writing
-~IPI_DOORBELL_MASK in the ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS register.
+nfs41_wake_and_assign_slot() relies on the task->tk_msg.rpc_argp and
+task->tk_msg.rpc_resp always pointing to the session sequence arguments.
 
-This creates a race condition: if a new IPI that isn't part of the
-ones read into the temporary "ipimask" variable is fired before we
-acknowledge all IPIs, then we will simply loose it. This is causing
-scheduling hangs on SMP intensive workloads.
+nfs4_proc_open_confirm tries to pull a fast one by reusing the open
+sequence structure, thus causing corruption of the NFSv4 slot table.
 
-It is important to mention that this ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS
-register has the following behavior: "A CPU write of 0 clears the bits
-in this field. A CPU write of 1 has no effect". This is what allows us
-to simply write ~ipimask to acknoledge the handled IPIs.
-
-Notice that the same problem is present in the MSI implementation, but
-it will be fixed as a separate patch, so that this IPI fix can be
-pushed to older stable versions as appropriate (all the way to 3.8),
-while the MSI code only appeared in 3.13.
-
-Signed-off-by: Lior Amsalem <alior@marvell.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: 344e873e5657e8dc0 'arm: mvebu: Add IPI support via doorbells'
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-armada-370-xp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c       |    8 ++++----
+ include/linux/nfs_xdr.h |    2 ++
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -229,7 +229,7 @@ armada_370_xp_handle_irq(struct pt_regs
- 						ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS)
- 				& IPI_DOORBELL_MASK;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1611,15 +1611,15 @@ static void nfs4_open_confirm_prepare(st
+ {
+ 	struct nfs4_opendata *data = calldata;
  
--			writel(~IPI_DOORBELL_MASK, per_cpu_int_base +
-+			writel(~ipimask, per_cpu_int_base +
- 				ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS);
+-	nfs40_setup_sequence(data->o_arg.server, &data->o_arg.seq_args,
+-				&data->o_res.seq_res, task);
++	nfs40_setup_sequence(data->o_arg.server, &data->c_arg.seq_args,
++				&data->c_res.seq_res, task);
+ }
  
- 			/* Handle all pending doorbells */
+ static void nfs4_open_confirm_done(struct rpc_task *task, void *calldata)
+ {
+ 	struct nfs4_opendata *data = calldata;
+ 
+-	nfs40_sequence_done(task, &data->o_res.seq_res);
++	nfs40_sequence_done(task, &data->c_res.seq_res);
+ 
+ 	data->rpc_status = task->tk_status;
+ 	if (data->rpc_status == 0) {
+@@ -1677,7 +1677,7 @@ static int _nfs4_proc_open_confirm(struc
+ 	};
+ 	int status;
+ 
+-	nfs4_init_sequence(&data->o_arg.seq_args, &data->o_res.seq_res, 1);
++	nfs4_init_sequence(&data->c_arg.seq_args, &data->c_res.seq_res, 1);
+ 	kref_get(&data->kref);
+ 	data->rpc_done = 0;
+ 	data->rpc_status = 0;
+--- a/include/linux/nfs_xdr.h
++++ b/include/linux/nfs_xdr.h
+@@ -379,12 +379,14 @@ struct nfs_openres {
+  * Arguments to the open_confirm call.
+  */
+ struct nfs_open_confirmargs {
++	struct nfs4_sequence_args	seq_args;
+ 	const struct nfs_fh *	fh;
+ 	nfs4_stateid *		stateid;
+ 	struct nfs_seqid *	seqid;
+ };
+ 
+ struct nfs_open_confirmres {
++	struct nfs4_sequence_res	seq_res;
+ 	nfs4_stateid            stateid;
+ 	struct nfs_seqid *	seqid;
+ };
 
 
