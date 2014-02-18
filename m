@@ -1,53 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbaBRHpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 02:45:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38338 "EHLO mail.zytor.com"
+	id S1754288AbaBRH77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 02:59:59 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64866 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754559AbaBRHpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 02:45:47 -0500
-Message-ID: <53030E46.3060908@zytor.com>
-Date: Mon, 17 Feb 2014 23:39:50 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753573AbaBRH76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 02:59:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,500,1389772800"; 
+   d="scan'208";a="457252228"
+Date: Tue, 18 Feb 2014 16:01:22 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: performance regression due to commit e82e0561("mm: vmscan: obey
+ proportional scanning requirements for kswapd")
+Message-ID: <20140218080122.GO26593@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com> <20140218073111.GW27965@twins.programming.kicks-ass.net>
-In-Reply-To: <20140218073111.GW27965@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 11:31 PM, Peter Zijlstra wrote:
->>
->> This is starting to look good, so I have pulled it into
->> tip:x86/spinlocks to start give it some testing mileage.
-> 
-> It very much needs paravirt muck before we can even consider it.
-> 
+Hi,
 
-Ah yes.  Joy ... I so love PV.
+Commit e82e0561("mm: vmscan: obey proportional scanning requirements for
+kswapd") caused a big performance regression(73%) for vm-scalability/
+lru-file-readonce testcase on a system with 256G memory without swap.
 
-	-hpa
+That testcase simply looks like this:
+     truncate -s 1T /tmp/vm-scalability.img
+     mkfs.xfs -q /tmp/vm-scalability.img
+     mount -o loop /tmp/vm-scalability.img /tmp/vm-scalability
 
+     SPARESE_FILE="/tmp/vm-scalability/sparse-lru-file-readonce"
+     for i in `seq 1 120`; do
+         truncate $SPARESE_FILE-$i -s 36G
+         timeout --foreground -s INT 300 dd bs=4k if=$SPARESE_FILE-$i of=/dev/null
+     done
+
+     wait
+
+Actually, it's not the newlly added code(obey proportional scanning)
+in that commit caused the regression. But instead, it's the following
+change:
++
++               if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
++                       continue;
++
+
+
+-               if (nr_reclaimed >= nr_to_reclaim &&
+-                   sc->priority < DEF_PRIORITY)
++               if (global_reclaim(sc) && !current_is_kswapd())
+                        break;
+
+The difference is that we might reclaim more than requested before
+in the first round reclaimming(sc->priority == DEF_PRIORITY).
+
+So, for a testcase like lru-file-readonce, the dirty rate is fast, and
+reclaimming SWAP_CLUSTER_MAX(32 pages) each time is not enough for catching
+up the dirty rate. And thus page allocation stalls, and performance drops:
+
+   O for e82e0561
+   * for parent commit
+
+                                proc-vmstat.allocstall
+
+     2e+06 ++---------------------------------------------------------------+
+   1.8e+06 O+              O                O               O               |
+           |                                                                |
+   1.6e+06 ++                                                               |
+   1.4e+06 ++                                                               |
+           |                                                                |
+   1.2e+06 ++                                                               |
+     1e+06 ++                                                               |
+    800000 ++                                                               |
+           |                                                                |
+    600000 ++                                                               |
+    400000 ++                                                               |
+           |                                                                |
+    200000 *+..............*................*...............*...............*
+         0 ++---------------------------------------------------------------+
+
+                               vm-scalability.throughput
+
+   2.2e+07 ++---------------------------------------------------------------+
+           |                                                                |
+     2e+07 *+..............*................*...............*...............*
+   1.8e+07 ++                                                               |
+           |                                                                |
+   1.6e+07 ++                                                               |
+           |                                                                |
+   1.4e+07 ++                                                               |
+           |                                                                |
+   1.2e+07 ++                                                               |
+     1e+07 ++                                                               |
+           |                                                                |
+     8e+06 ++              O                O               O               |
+           O                                                                |
+     6e+06 ++---------------------------------------------------------------+
+
+I made a patch which simply keeps reclaimming more if sc->priority == DEF_PRIORITY.
+I'm not sure it's the right way to go or not. Anyway, I pasted it here for comments.
+
+---
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 26ad67f..37004a8 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1828,7 +1828,16 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+ 	struct blk_plug plug;
+-	bool scan_adjusted = false;
++	/*
++	 * On large memory systems, direct reclamming of SWAP_CLUSTER_MAX
++	 * each time may not catch up the dirty rate in some cases(say,
++	 * vm-scalability/lru-file-readonce), which may increase the
++	 * page allocation stall latency in the end.
++	 *
++	 * Here we try to reclaim more than requested for the first round
++	 * (sc->priority == DEF_PRIORITY) to reduce such latency.
++	 */
++	bool scan_adjusted = sc->priority == DEF_PRIORITY;
+ 
+ 	get_scan_count(lruvec, sc, nr);
+ 
+-- 
+1.7.7.6
+
+
+	--yliu
