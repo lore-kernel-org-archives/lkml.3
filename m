@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024AbaBRXDT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:03:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51108 "EHLO
+	id S1754029AbaBRXDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:03:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325AbaBRWrD (ORCPT
+	with ESMTP id S1753294AbaBRWrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:03 -0500
+	Tue, 18 Feb 2014 17:47:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.12 29/32] pinctrl: at91: use locked variant of irq_set_handler
-Date: Tue, 18 Feb 2014 14:47:29 -0800
-Message-Id: <20140218224500.933250866@linuxfoundation.org>
+        Nitin A Kamble <nitin.a.kamble@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.12 28/32] genirq: Generic irq chip requires IRQ_DOMAIN
+Date: Tue, 18 Feb 2014 14:47:28 -0800
+Message-Id: <20140218224500.902706074@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
 References: <20140218224500.101465031@linuxfoundation.org>
@@ -29,59 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Nitin A Kamble <nitin.a.kamble@intel.com>
 
-commit b0dcfd87323ea86501e93d0fa2a98d2fd3579bcf upstream.
+commit 923fa4ea382f592dee2ba3b205befb90cbddf3af upstream.
 
-When setting the gpio irq type, use the __irq_set_handler_locked()
-variant instead of the irq_set_handler() to prevent false
-spinlock recursion warning.
+The generic_chip.c uses interfaces from irq_domain.c which is
+controlled by the IRQ_DOMAIN config option, but there is no Kconfig
+dependency so the build can fail:
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+linux/kernel/irq/generic-chip.c:400:11: error:
+'irq_domain_xlate_onetwocell' undeclared here (not in a function)
+
+Select IRQ_DOMAIN when GENERIC_IRQ_CHIP is selected.
+
+Signed-off-by: Nitin A Kamble <nitin.a.kamble@intel.com>
+Link: http://lkml.kernel.org/r/1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pinctrl/pinctrl-at91.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ kernel/irq/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -1251,22 +1251,22 @@ static int alt_gpio_irq_type(struct irq_
+--- a/kernel/irq/Kconfig
++++ b/kernel/irq/Kconfig
+@@ -40,6 +40,7 @@ config IRQ_EDGE_EOI_HANDLER
+ # Generic configurable interrupt chip implementation
+ config GENERIC_IRQ_CHIP
+        bool
++       select IRQ_DOMAIN
  
- 	switch (type) {
- 	case IRQ_TYPE_EDGE_RISING:
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_ESR);
- 		writel_relaxed(mask, pio + PIO_REHLSR);
- 		break;
- 	case IRQ_TYPE_EDGE_FALLING:
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_ESR);
- 		writel_relaxed(mask, pio + PIO_FELLSR);
- 		break;
- 	case IRQ_TYPE_LEVEL_LOW:
--		irq_set_handler(d->irq, handle_level_irq);
-+		__irq_set_handler_locked(d->irq, handle_level_irq);
- 		writel_relaxed(mask, pio + PIO_LSR);
- 		writel_relaxed(mask, pio + PIO_FELLSR);
- 		break;
- 	case IRQ_TYPE_LEVEL_HIGH:
--		irq_set_handler(d->irq, handle_level_irq);
-+		__irq_set_handler_locked(d->irq, handle_level_irq);
- 		writel_relaxed(mask, pio + PIO_LSR);
- 		writel_relaxed(mask, pio + PIO_REHLSR);
- 		break;
-@@ -1275,7 +1275,7 @@ static int alt_gpio_irq_type(struct irq_
- 		 * disable additional interrupt modes:
- 		 * fall back to default behavior
- 		 */
--		irq_set_handler(d->irq, handle_simple_irq);
-+		__irq_set_handler_locked(d->irq, handle_simple_irq);
- 		writel_relaxed(mask, pio + PIO_AIMDR);
- 		return 0;
- 	case IRQ_TYPE_NONE:
+ # Generic irq_domain hw <--> linux irq number translation
+ config IRQ_DOMAIN
 
 
