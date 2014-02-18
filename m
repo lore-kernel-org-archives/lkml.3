@@ -1,258 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaBRTRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:17:11 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45944 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaBRTRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:17:09 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1392737654-22682-4-git-send-email-johannes.thumshirn@men.de>
-References: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de> <1392737654-22682-4-git-send-email-johannes.thumshirn@men.de>
+	id S1751957AbaBRTT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:19:57 -0500
+Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:11123 "EHLO
+	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751480AbaBRTT4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:19:56 -0500
+From: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+To: Alexander Gordeev <agordeev@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Shahed Shaikh <shahed.shaikh@qlogic.com>,
+        Ron Mercer <ron.mercer@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        netdev <netdev@vger.kernel.org>, linux-pci <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH net-next 29/35] qlge: Get rid of an redundant assignment
+Thread-Topic: [PATCH net-next 29/35] qlge: Get rid of an redundant assignment
+Thread-Index: AQHPLJG+RoVMxuOd9UK6at5Ea/U5jZq7Y5+A
+Date: Tue, 18 Feb 2014 19:19:49 +0000
+Message-ID: <BECD8E8A1B550B48A1BF97C13991F60E46D21C6F@avmb2.qlogic.org>
+References: <cover.1392717502.git.agordeev@redhat.com>
+ <bffe424063b212553530f64b3282e260e2a37074.1392717503.git.agordeev@redhat.com>
+In-Reply-To: <bffe424063b212553530f64b3282e260e2a37074.1392717503.git.agordeev@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.9.131030
+x-originating-ip: [10.1.4.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <DC580FF9B3149B419EAC0A774EE653D2@qlogic.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH 3/3] iio: adc: Add MEN 16z188 ADC driver
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Tue, 18 Feb 2014 19:17:04 +0000
-To: Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <15736e39-f1b0-45b3-a70c-c81370cf49f1@email.android.com>
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7353 signatures=668936
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1305240000 definitions=main-1402180127
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+On 2/18/14 2:11 AM, "Alexander Gordeev" <agordeev@redhat.com> wrote:
 
-On February 18, 2014 3:34:14 PM GMT+00:00, Johannes Thumshirn <johannes.thumshirn@men.de> wrote:
->Add support for MEN 16z188 ADC IP Core on MCB FPGAs.
->
->Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-Looks pretty good apart from the nitpicks. One more little thing...
+>Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+>Cc: Shahed Shaikh <shahed.shaikh@qlogic.com>
+>Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+>Cc: Ron Mercer <ron.mercer@qlogic.com>
+>Cc: linux-driver@qlogic.com
+>Cc: netdev@vger.kernel.org
+>Cc: linux-pci@vger.kernel.org
 >---
-> drivers/iio/adc/Kconfig        |  10 +++
-> drivers/iio/adc/Makefile       |   1 +
->drivers/iio/adc/men_z188_adc.c | 172
->+++++++++++++++++++++++++++++++++++++++++
-> 3 files changed, 183 insertions(+)
-> create mode 100644 drivers/iio/adc/men_z188_adc.c
->
->diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
->index 2209f28..5209437 100644
->--- a/drivers/iio/adc/Kconfig
->+++ b/drivers/iio/adc/Kconfig
->@@ -204,4 +204,14 @@ config VIPERBOARD_ADC
-> 	  Say yes here to access the ADC part of the Nano River
-> 	  Technologies Viperboard.
-> 
-Alphabetical order please.
->+config MEN_Z188_ADC
->+	tristate "MEN 16z188 ADC IP Core support"
->+	depends on MCB
->+	help
->+	  Say yes here to access support the MEN 16z188 ADC IP-Core on a MCB
->+	  carrier.
->+
->+	  This driver can also be built as a module. If so, the module will
->be
->+	  called men_z188_adc.
->+
-> endmenu
->diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
->index ba9a10a..1584391 100644
->--- a/drivers/iio/adc/Makefile
->+++ b/drivers/iio/adc/Makefile
->@@ -22,3 +22,4 @@ obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
-> obj-$(CONFIG_TI_AM335X_ADC) += ti_am335x_adc.o
-> obj-$(CONFIG_TWL6030_GPADC) += twl6030-gpadc.o
-> obj-$(CONFIG_VIPERBOARD_ADC) += viperboard_adc.o
-And alphabetical order here as well.
->+obj-$(CONFIG_MEN_Z188_ADC) += men_z188_adc.o
->diff --git a/drivers/iio/adc/men_z188_adc.c
->b/drivers/iio/adc/men_z188_adc.c
->new file mode 100644
->index 0000000..8bc66cf
->--- /dev/null
->+++ b/drivers/iio/adc/men_z188_adc.c
->@@ -0,0 +1,172 @@
->+/*
->+ * MEN 16z188 Analoge to Digial Converter
->+ *
->+ * Copyright (C) 2014 MEN Mikroelektronik GmbH (www.men.de)
->+ * Author: Johannes Thumshirn <johannes.thumshirn@men.de>
->+ *
->+ * This program is free software; you can redistribute it and/or
->modify it
->+ * under the terms of the GNU General Public License as published by
->the Free
->+ * Software Foundation; version 2 of the License.
->+ */
->+#include <linux/kernel.h>
->+#include <linux/module.h>
->+#include <linux/mcb.h>
->+#include <linux/iio/iio.h>
->+
->+#define Z188_ADC_MAX_CHAN	8
->+#define Z188_ADC_GAIN		0x0700000
->+#define Z188_MODE_VOLTAGE	BIT(27)
->+#define Z188_CFG_AUTO		0x1
->+#define Z188_CTRL_REG		0x40
->+
->+#define ADC_DATA(x) (((x) >> 2) & 0x7ffffc)
->+#define ADC_OVR(x) ((x) & 0x1)
->+
->+struct z188_adc {
->+	struct resource *mem;
->+	void __iomem *base;
->+};
->+
->+#define Z188_ADC_CHANNEL(idx) {					\
->+		.type = IIO_VOLTAGE,				\
->+		.indexed = 1,					\
->+		.channel = (idx),				\
->+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),   \
->+}
->+
->+static struct iio_chan_spec z188_adc_iio_channels[] = {
->+	Z188_ADC_CHANNEL(0),
->+	Z188_ADC_CHANNEL(1),
->+	Z188_ADC_CHANNEL(2),
->+	Z188_ADC_CHANNEL(3),
->+	Z188_ADC_CHANNEL(4),
->+	Z188_ADC_CHANNEL(5),
->+	Z188_ADC_CHANNEL(6),
->+	Z188_ADC_CHANNEL(7),
->+};
->+
->+static int z188_iio_read_raw(struct iio_dev *iio_dev,
->+			struct iio_chan_spec const *chan,
->+			int *val,
->+			int *val2,
->+			long info)
->+{
->+	struct z188_adc *adc = iio_priv(iio_dev);
->+	int ret = 0;
->+	u16 tmp = 0;
->+
->+
->+	switch (info) {
->+	case IIO_CHAN_INFO_RAW:
->+		tmp = readw(adc->base + chan->channel * 4);
->+
->+		if (ADC_OVR(tmp)) {
->+			dev_info(&iio_dev->dev,
->+				"Oversampling error on ADC channel %d\n",
->+				chan->channel);
->+			return -EIO;
->+		}
->+		*val = ADC_DATA(tmp);
->+		ret = IIO_VAL_INT;
->+		break;
->+	default:
->+		ret = -EINVAL;
->+		break;
->+	}
->+
->+	return ret;
->+}
->+
->+static struct iio_info z188_adc_info = {
->+	.read_raw = &z188_iio_read_raw,
->+	.driver_module = THIS_MODULE,
->+};
->+
->+static void men_z188_config_channels(void __iomem *addr)
->+{
->+	int i;
->+	u32 cfg;
->+	u32 ctl;
->+
->+	ctl = readl(addr + Z188_CTRL_REG);
->+	ctl |= Z188_CFG_AUTO;
->+	writel(ctl, addr + Z188_CTRL_REG);
->+
->+	for (i = 0; i < Z188_ADC_MAX_CHAN; i++) {
->+		cfg = readl(addr + i);
->+		cfg &= ~Z188_ADC_GAIN;
->+		cfg |= Z188_MODE_VOLTAGE;
->+		writel(cfg, addr + i);
->+	}
->+}
->+
->+static int men_z188_probe(struct mcb_device *dev,
->+			const struct mcb_device_id *id)
->+{
->+	struct z188_adc *adc;
->+	struct iio_dev *indio_dev;
->+	struct resource *mem;
->+
->+	indio_dev = devm_iio_device_alloc(&dev->dev, sizeof(struct
->z188_adc));
->+	if (!indio_dev)
->+		return -ENOMEM;
->+
->+	adc = iio_priv(indio_dev);
->+	indio_dev->name = "z188-adc";
->+	indio_dev->dev.parent = &dev->dev;
->+	indio_dev->info = &z188_adc_info;
->+	indio_dev->modes = INDIO_DIRECT_MODE;
->+	indio_dev->channels = z188_adc_iio_channels;
->+	indio_dev->num_channels = ARRAY_SIZE(z188_adc_iio_channels);
->+
->+	mem = mcb_request_mem(dev, "z188-adc");
->+	if (!mem)
->+		return -ENOMEM;
->+
->+	adc->base = ioremap(mem->start, resource_size(mem));
->+	if (adc->base == NULL)
->+		goto err;
->+
->+	men_z188_config_channels(adc->base);
->+
->+	adc->mem = mem;
->+	mcb_set_drvdata(dev, indio_dev);
->+
->+	return  devm_iio_device_register(&dev->dev, indio_dev);
->+
->+err:
->+	mcb_release_mem(mem);
->+	return -ENXIO;
->+}
->+
->+static void men_z188_remove(struct mcb_device *dev)
->+{
->+	struct iio_dev *indio_dev  = mcb_get_drvdata(dev);
->+	struct z188_adc *adc = iio_priv(indio_dev);
->+
->+	iounmap(adc->base);
->+	mcb_release_mem(adc->mem);
->+
->+	mcb_set_drvdata(dev, NULL);
->+}
->+
->+static struct mcb_device_id men_z188_ids[] = {
->+	{ .device = 0xbc },
->+};
->+MODULE_DEVICE_TABLE(mcb, men_z188_ids);
->+
->+static struct mcb_driver men_z188_driver = {
->+	.driver = {
->+		.name = "z188-adc",
->+		.owner = THIS_MODULE,
->+	},
->+	.probe = men_z188_probe,
->+	.remove = men_z188_remove,
->+	.id_table = men_z188_ids,
->+};
->+module_mcb_driver(men_z188_driver);
->+
->+MODULE_AUTHOR("Johannes Thumshirn <johannes.thumshirn@men.de>");
->+MODULE_LICENSE("GPL");
->+MODULE_DESCRIPTION("IIO ADC driver for MEN 16z188 ADC Core");
->+MODULE_ALIAS("mcb:16z188");
+> drivers/net/ethernet/qlogic/qlge/qlge_main.c |    1 -
+> 1 files changed, 0 insertions(+), 1 deletions(-)
 
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Acked-by: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+>
+>diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+>b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+>index ce2cfdd..82bace5 100644
+>--- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+>+++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+>@@ -3346,7 +3346,6 @@ static void ql_enable_msix(struct ql_adapter *qdev)
+> 			qdev->msi_x_entry = NULL;
+> 			netif_warn(qdev, ifup, qdev->ndev,
+> 				   "MSI-X Enable failed, trying MSI.\n");
+>-			qdev->intr_count = 1;
+> 			qlge_irq_type = MSI_IRQ;
+> 		} else if (err == 0) {
+> 			set_bit(QL_MSIX_ENABLED, &qdev->flags);
+>-- 
+>1.7.7.6
+>
+
+Thanks
+
+-Jiten
+
