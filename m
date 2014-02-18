@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaBRTbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:31:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48490 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264AbaBRTbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:31:47 -0500
-Date: Tue, 18 Feb 2014 11:33:12 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 01/14] staging: binder: Fix death notifications
-Message-ID: <20140218193312.GA8087@kroah.com>
-References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
- <1392674322-9036-2-git-send-email-john.stultz@linaro.org>
- <20140218190245.GA27455@kroah.com>
- <CALAqxLXTvZqVj7n0PSMa8WrWUeycFVa+b8KvtQvk=r2eYBPa_Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALAqxLXTvZqVj7n0PSMa8WrWUeycFVa+b8KvtQvk=r2eYBPa_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1752738AbaBRTcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:32:17 -0500
+Received: from mga11.intel.com ([192.55.52.93]:35381 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752473AbaBRTaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:30:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
+   d="scan'208";a="477225207"
+Subject: [RFC][PATCH 3/6] x86: mm: fix missed global TLB flush stat
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, ak@linux.intel.com, alex.shi@linaro.org,
+        kirill.shutemov@linux.intel.com, mgorman@suse.de,
+        tim.c.chen@linux.intel.com, x86@kernel.org, peterz@infradead.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 18 Feb 2014 11:30:12 -0800
+References: <20140218193008.CA410E17@viggo.jf.intel.com>
+In-Reply-To: <20140218193008.CA410E17@viggo.jf.intel.com>
+Message-Id: <20140218193012.4D308564@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 11:21:24AM -0800, John Stultz wrote:
-> On Tue, Feb 18, 2014 at 11:02 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Feb 17, 2014 at 01:58:29PM -0800, John Stultz wrote:
-> >> From: Arve Hjønnevåg <arve@android.com>
-> >>
-> >> The change (008fa749e0fe5b2fffd20b7fe4891bb80d072c6a) that moved the
-> >> node release code to a separate function broke death notifications in
-> >> some cases. When it encountered a reference without a death
-> >> notification request, it would skip looking at the remaining
-> >> references, and therefore fail to send death notifications for them.
-> >>
-> >> Cc: Greg KH <gregkh@linuxfoundation.org>
-> >> Cc: Colin Cross <ccross@android.com>
-> >> Cc: Arve Hjønnevåg <arve@android.com>
-> >> Cc: Android Kernel Team <kernel-team@android.com>
-> >> Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> >> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> >> ---
-> >>  drivers/staging/android/binder.c | 3 +--
-> >>  1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> > As this broke in 3.10, shouldn't this go to staging-linus and get
-> > backported to the stable trees too?
-> 
-> Right. I rearranged this fix to be in the front of this series because
-> of this, and mentioned in the cover letter that it might be considered
-> for 3.14. If that's considered ok, then it can be pushed to stable as
-> well.
 
-I never read 00/ emails because they will never show up in the kernel
-changelog :)
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-I'll go queue this up for 3.14-final and the stable trees.
+If we take the
 
-thanks,
+	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
+		local_flush_tlb();
+		goto out;
+	}
 
-greg k-h
+path out of flush_tlb_mm_range(), we will have flushed the tlb,
+but not incremented NR_TLB_LOCAL_FLUSH_ALL.  This unifies the
+way out of the function so that we always take a single path when
+doing a full tlb flush.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+
+ b/arch/x86/mm/tlb.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff -puN arch/x86/mm/tlb.c~fix-missed-global-flush-stat arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~fix-missed-global-flush-stat	2014-02-18 10:59:37.611420354 -0800
++++ b/arch/x86/mm/tlb.c	2014-02-18 10:59:37.619420720 -0800
+@@ -164,8 +164,9 @@ unsigned long tlb_single_page_flush_ceil
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+ {
+-	int need_flush_others_all = 1;
+ 	unsigned long addr;
++	/* do a global flush by default */
++	unsigned long base_pages_to_flush = TLB_FLUSH_ALL;
+ 
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+@@ -176,16 +177,14 @@ void flush_tlb_mm_range(struct mm_struct
+ 		goto out;
+ 	}
+ 
+-	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
+-		local_flush_tlb();
+-		goto out;
+-	}
++	if ((end != TLB_FLUSH_ALL) && !(vmflag & VM_HUGETLB))
++		base_pages_to_flush = (end - start) >> PAGE_SHIFT;
+ 
+-	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
++	if (base_pages_to_flush > tlb_single_page_flush_ceiling) {
++		base_pages_to_flush = TLB_FLUSH_ALL;
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
+-		need_flush_others_all = 0;
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+ 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+@@ -193,7 +192,7 @@ void flush_tlb_mm_range(struct mm_struct
+ 		}
+ 	}
+ out:
+-	if (need_flush_others_all) {
++	if (base_pages_to_flush == TLB_FLUSH_ALL) {
+ 		start = 0UL;
+ 		end = TLB_FLUSH_ALL;
+ 	}
+_
