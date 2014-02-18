@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbaBRK1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:27:25 -0500
-Received: from mga03.intel.com ([143.182.124.21]:54571 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754030AbaBRK1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:27:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,501,1389772800"; 
-   d="scan'208";a="476956177"
-Date: Tue, 18 Feb 2014 12:34:42 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Takashi Iwai <tiwai@suse.de>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Theodore Tso <tytso@mit.edu>, Peter Weber <bugs@ttyhoney.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kevin Smith <thirdwiggin@gmail.com>,
-        Rinat Ibragimov <ibragimovrinat@mail.ru>, sov.info@mail.ru,
-        Thomas Christensen <christensenthomas@gmail.com>,
-        Vladimir Sherenkov <a_12300@mail.ru>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Daniel Vetter <daniel@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>
-Subject: Re: [PATCH v4] ACPI / video: Add systems that should favour native
- backlight interface
-Message-ID: <20140218103442.GS5018@intel.com>
-References: <5302F58C.1080001@intel.com>
+	id S1755035AbaBRK2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:28:09 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:45431 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913AbaBRK2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:28:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5302F58C.1080001@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53017544.90908@huawei.com>
+References: <53017544.90908@huawei.com>
+Date: Tue, 18 Feb 2014 11:28:06 +0100
+Message-ID: <CAOMGZ=Ht22+KuYwmGcJB4gkiu3EpFfj1EFoAF7Mtd7WvjXwJ3A@mail.gmail.com>
+Subject: Re: [PATCH V2] mm: add a new command-line kmemcheck value
+From: Vegard Nossum <vegard.nossum@gmail.com>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Vegard Nossum <vegardno@ifi.uio.no>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        Li Zefan <lizefan@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 01:54:20PM +0800, Aaron Lu wrote:
-> +	{
-> +	.callback = video_set_use_native_backlight,
-> +	.ident = "HP EliteBook 2013 models",
-> +	.matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-> +		DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook "),
-> +		DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
-> +		},
-> +	},
+On 17 February 2014 03:34, Xishi Qiu <qiuxishi@huawei.com> wrote:
+> If we want to debug the kernel memory, we should turn on CONFIG_KMEMCHECK
+> and rebuild the kernel. This always takes a long time and sometimes
+> impossible, e.g. users don't have the kernel source code or the code
+> is different from "www.kernel.org" (private features may be added to the
+> kernel, and usually users can not get the whole code).
+>
+> This patch adds a new command-line "kmemcheck=3", then the kernel will run
+> as the same as CONFIG_KMEMCHECK=off even CONFIG_KMEMCHECK is turn on.
+> "kmemcheck=0/1/2" is the same as originally. This means we can always turn
+> on CONFIG_KMEMCHECK, and use "kmemcheck=3" to control it on/off with out
+> rebuild the kernel.
+>
+> In another word, "kmemcheck=3" is equivalent:
+> 1) turn off CONFIG_KMEMCHECK
+> 2) rebuild the kernel
+> 3) reboot
+>
+> The different between kmemcheck=0 and 3 is the used memory and nr_cpus.
+> Also kmemcheck=0 can used in runtime, and kmemcheck=3 is only used in boot.
+> boottime: kmemcheck=0/1/2/3 (command-line)
+> runtime: kmemcheck=0/1/2 (/proc/sys/kernel/kmemcheck)
 
-I see my device is listed here but the above doesn't really use native
-backlight because it is still in acpi_osi blacklist. Tried this and I can
-see both acpi_video0 and intel_backlight listed under /sys/class/backlight.
-Was this the intention?
+This is not the right way to do what you want.
+
+The behaviour that we want is:
+
+ - CONFIG_KMEMCHECK=y + kmemcheck=0 (boot parameter) should have a
+minimal runtime impact and not limit the number of CPUs
+ - CONFIG_KMEMCHECK=y + kmemcheck=1 should limit the number of CPUs during boot
+ - setting kmemcheck to 1 via /proc/sys/kernel/kmemcheck should
+probably return an error if more than 1 CPU is online
+
+
+Vegard
