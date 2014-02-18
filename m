@@ -1,55 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaBRCJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 21:09:59 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:43390 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885AbaBRCJ5 (ORCPT
+	id S1754249AbaBRCKL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 21:10:11 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:48946 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754188AbaBRCKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 21:09:57 -0500
+	Mon, 17 Feb 2014 21:10:08 -0500
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-pci@vger.kernel.org
 Cc: horms@verge.net.au, linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
         valentine.barshak@cogentembedded.com, ben.dooks@codethink.co.uk,
         geert@linux-m68k.org, bhelgaas@google.com,
         Magnus Damm <magnus.damm@gmail.com>
-Date: Tue, 18 Feb 2014 11:11:11 +0900
-Message-Id: <20140218021111.14164.93740.sendpatchset@w520>
+Date: Tue, 18 Feb 2014 11:11:21 +0900
+Message-Id: <20140218021121.14164.43332.sendpatchset@w520>
 In-Reply-To: <20140218021041.14164.56411.sendpatchset@w520>
 References: <20140218021041.14164.56411.sendpatchset@w520>
-Subject: [PATCH 03/08] PCI: rcar: fix bridge logic configuration accesses
+Subject: [PATCH v3 04/08] PCI: rcar: Register each instance independently
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Dooks <ben.dooks@codethink.co.uk>
+From: Magnus Damm <damm@opensource.se>
 
-The bridge logic at slot 0 only supports reads up to 0x40 and the
-rest of the PCI configuration space for this slot is marked as
-reserved in the manual.
+Convert the code to allow per-device probe() like other device
+drivers. This also delays driver registration due to change from
+subsys_initcall() to regular module_platform_driver().
 
-Trying a read from offset 0x100 is producing an error from the
-bridge. With error interrupts enabled, the following is printed:
-
-pci-rcar-gen2 ee0d0000.pci: error irq: status 00000014
-
-Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- drivers/pci/host/pci-rcar-gen2.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Changes since V2:
+ - Remove __init tags from rcar_pci_map_irq() and rcar_pci_setup()
 
---- 0005/drivers/pci/host/pci-rcar-gen2.c
-+++ work/drivers/pci/host/pci-rcar-gen2.c	2014-02-13 09:45:45.000000000 +0900
-@@ -119,6 +119,10 @@ static void __iomem *rcar_pci_cfg_base(s
- 	if (slot > 2)
- 		return NULL;
+Changes since V1:
+ - Updated to fit on top of patches from Ben Dooks
+ - Use hw_private[1] for hw.private_data, thanks Geert!
+ - Use ARRAY_SIZE with hw_private for hw.nr_controllers
+
+ drivers/pci/host/pci-rcar-gen2.c |   80 +++++++++-----------------------------
+ 1 file changed, 20 insertions(+), 60 deletions(-)
+
+--- 0004/drivers/pci/host/pci-rcar-gen2.c
++++ work/drivers/pci/host/pci-rcar-gen2.c	2014-02-18 10:57:14.000000000 +0900
+@@ -91,9 +91,6 @@
  
-+	/* bridge logic only has registers to 0x40 */
-+	if (slot == 0x0 && where >= 0x40)
-+		return NULL;
-+
- 	val = slot ? RCAR_AHBPCI_WIN1_DEVICE | RCAR_AHBPCI_WIN_CTR_CFG :
- 		     RCAR_AHBPCI_WIN1_HOST | RCAR_AHBPCI_WIN_CTR_CFG;
+ #define RCAR_PCI_UNIT_REV_REG		(RCAR_AHBPCI_PCICOM_OFFSET + 0x48)
  
+-/* Number of internal PCI controllers */
+-#define RCAR_PCI_NR_CONTROLLERS		3
+-
+ struct rcar_pci_priv {
+ 	struct device *dev;
+ 	void __iomem *reg;
+@@ -177,7 +174,7 @@ static int rcar_pci_write_config(struct
+ }
+ 
+ /* PCI interrupt mapping */
+-static int __init rcar_pci_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
++static int rcar_pci_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ {
+ 	struct pci_sys_data *sys = dev->bus->sysdata;
+ 	struct rcar_pci_priv *priv = sys->private_data;
+@@ -226,7 +223,7 @@ static inline void rcar_pci_setup_errirq
+ #endif
+ 
+ /* PCI host controller setup */
+-static int __init rcar_pci_setup(int nr, struct pci_sys_data *sys)
++static int rcar_pci_setup(int nr, struct pci_sys_data *sys)
+ {
+ 	struct rcar_pci_priv *priv = sys->private_data;
+ 	void __iomem *reg = priv->reg;
+@@ -292,6 +289,8 @@ static int __init rcar_pci_setup(int nr,
+ 	pci_add_resource(&sys->resources, &priv->io_res);
+ 	pci_add_resource(&sys->resources, &priv->mem_res);
+ 
++	/* Setup bus number based on platform device id */
++	sys->busnr = to_platform_device(priv->dev)->id;
+ 	return 1;
+ }
+ 
+@@ -300,48 +299,13 @@ static struct pci_ops rcar_pci_ops = {
+ 	.write	= rcar_pci_write_config,
+ };
+ 
+-static struct hw_pci rcar_hw_pci __initdata = {
+-	.map_irq	= rcar_pci_map_irq,
+-	.ops		= &rcar_pci_ops,
+-	.setup		= rcar_pci_setup,
+-};
+-
+-static int rcar_pci_count __initdata;
+-
+-static int __init rcar_pci_add_controller(struct rcar_pci_priv *priv)
+-{
+-	void **private_data;
+-	int count;
+-
+-	if (rcar_hw_pci.nr_controllers < rcar_pci_count)
+-		goto add_priv;
+-
+-	/* (Re)allocate private data pointer array if needed */
+-	count = rcar_pci_count + RCAR_PCI_NR_CONTROLLERS;
+-	private_data = kzalloc(count * sizeof(void *), GFP_KERNEL);
+-	if (!private_data)
+-		return -ENOMEM;
+-
+-	rcar_pci_count = count;
+-	if (rcar_hw_pci.private_data) {
+-		memcpy(private_data, rcar_hw_pci.private_data,
+-		       rcar_hw_pci.nr_controllers * sizeof(void *));
+-		kfree(rcar_hw_pci.private_data);
+-	}
+-
+-	rcar_hw_pci.private_data = private_data;
+-
+-add_priv:
+-	/* Add private data pointer to the array */
+-	rcar_hw_pci.private_data[rcar_hw_pci.nr_controllers++] = priv;
+-	return 0;
+-}
+-
+-static int __init rcar_pci_probe(struct platform_device *pdev)
++static int rcar_pci_probe(struct platform_device *pdev)
+ {
+ 	struct resource *cfg_res, *mem_res;
+ 	struct rcar_pci_priv *priv;
+ 	void __iomem *reg;
++	struct hw_pci hw;
++	void *hw_private[1];
+ 
+ 	cfg_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	reg = devm_ioremap_resource(&pdev->dev, cfg_res);
+@@ -377,31 +341,27 @@ static int __init rcar_pci_probe(struct
+ 		return priv->irq;
+ 	}
+ 
+-	return rcar_pci_add_controller(priv);
++	hw_private[0] = priv;
++	memset(&hw, 0, sizeof(hw));
++	hw.nr_controllers = ARRAY_SIZE(hw_private);
++	hw.private_data = hw_private;
++	hw.map_irq = rcar_pci_map_irq;
++	hw.ops = &rcar_pci_ops;
++	hw.setup = rcar_pci_setup;
++	pci_common_init_dev(&pdev->dev, &hw);
++	return 0;
+ }
+ 
+ static struct platform_driver rcar_pci_driver = {
+ 	.driver = {
+ 		.name = "pci-rcar-gen2",
++		.owner = THIS_MODULE,
++		.suppress_bind_attrs = true,
+ 	},
++	.probe = rcar_pci_probe,
+ };
+ 
+-static int __init rcar_pci_init(void)
+-{
+-	int retval;
+-
+-	retval = platform_driver_probe(&rcar_pci_driver, rcar_pci_probe);
+-	if (!retval)
+-		pci_common_init(&rcar_hw_pci);
+-
+-	/* Private data pointer array is not needed any more */
+-	kfree(rcar_hw_pci.private_data);
+-	rcar_hw_pci.private_data = NULL;
+-
+-	return retval;
+-}
+-
+-subsys_initcall(rcar_pci_init);
++module_platform_driver(rcar_pci_driver);
+ 
+ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("Renesas R-Car Gen2 internal PCI");
