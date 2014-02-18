@@ -1,170 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763AbaBRXd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:33:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50623 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210AbaBRWqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:00 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, pjt@google.com,
-        Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 15/24] sched/nohz: Fix rq->cpu_load calculations some more
-Date: Tue, 18 Feb 2014 14:47:02 -0800
-Message-Id: <20140218224550.657593239@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
-References: <20140218224550.221535225@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1753850AbaBRXeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:34:15 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:51412 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752822AbaBRXeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 18:34:13 -0500
+Date: Tue, 18 Feb 2014 15:34:05 -0800
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: ppc: RECLAIM_DISTANCE 10?
+Message-ID: <20140218233404.GB10844@linux.vnet.ibm.com>
+References: <20140218090658.GA28130@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218090658.GA28130@dhcp22.suse.cz>
+X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021823-0320-0000-0000-0000027E2D7A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hi Michal,
 
-------------------
+On 18.02.2014 [10:06:58 +0100], Michal Hocko wrote:
+> Hi,
+> I have just noticed that ppc has RECLAIM_DISTANCE reduced to 10 set by
+> 56608209d34b (powerpc/numa: Set a smaller value for RECLAIM_DISTANCE to
+> enable zone reclaim). The commit message suggests that the zone reclaim
+> is desirable for all NUMA configurations.
+> 
+> History has shown that the zone reclaim is more often harmful than
+> helpful and leads to performance problems. The default RECLAIM_DISTANCE
+> for generic case has been increased from 20 to 30 around 3.0
+> (32e45ff43eaf mm: increase RECLAIM_DISTANCE to 30).
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Interesting.
 
-commit 5aaa0b7a2ed5b12692c9ffb5222182bd558d3146 upstream.
+> I strongly suspect that the patch is incorrect and it should be
+> reverted. Before I will send a revert I would like to understand what
+> led to the patch in the first place. I do not see why would PPC use only
+> LOCAL_DISTANCE and REMOTE_DISTANCE distances and in fact machines I have
+> seen use different values.
+> 
+> Anton, could you comment please?
 
-Follow up on commit 556061b00 ("sched/nohz: Fix rq->cpu_load[]
-calculations") since while that fixed the busy case it regressed the
-mostly idle case.
+I'll let Anton comment here, but in looking into this issue in working
+on CONFIG_HAVE_MEMORYLESS_NODE support, I realized that any LPAR with
+memoryless nodes will set zone_reclaim_mode to 1. I think we want to
+ignore memoryless nodes when we set up the reclaim mode like the
+following? I'll send it as a proper patch if you agree?
 
-Add a callback from the nohz exit to also age the rq->cpu_load[]
-array. This closes the hole where either there was no nohz load
-balance pass during the nohz, or there was a 'significant' amount of
-idle time between the last nohz balance and the nohz exit.
-
-So we'll update unconditionally from the tick to not insert any
-accidental 0 load periods while busy, and we try and catch up from
-nohz idle balance and nohz exit. Both these are still prone to missing
-a jiffy, but that has always been the case.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: pjt@google.com
-Cc: Venkatesh Pallipadi <venki@google.com>
-Link: http://lkml.kernel.org/n/tip-kt0trz0apodbf84ucjfdbr1a@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/sched.h    |    1 
- kernel/sched/core.c      |   53 ++++++++++++++++++++++++++++++++++++++---------
- kernel/time/tick-sched.c |    1 
- 3 files changed, 45 insertions(+), 10 deletions(-)
-
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -144,6 +144,7 @@ extern unsigned long this_cpu_load(void)
- 
- 
- extern void calc_global_load(unsigned long ticks);
-+extern void update_cpu_load_nohz(void);
- 
- extern unsigned long get_parent_ip(unsigned long addr);
- 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2649,25 +2649,32 @@ static void __update_cpu_load(struct rq
- 	sched_avg_update(this_rq);
- }
- 
-+#ifdef CONFIG_NO_HZ
-+/*
-+ * There is no sane way to deal with nohz on smp when using jiffies because the
-+ * cpu doing the jiffies update might drift wrt the cpu doing the jiffy reading
-+ * causing off-by-one errors in observed deltas; {0,2} instead of {1,1}.
-+ *
-+ * Therefore we cannot use the delta approach from the regular tick since that
-+ * would seriously skew the load calculation. However we'll make do for those
-+ * updates happening while idle (nohz_idle_balance) or coming out of idle
-+ * (tick_nohz_idle_exit).
-+ *
-+ * This means we might still be one tick off for nohz periods.
-+ */
-+
- /*
-  * Called from nohz_idle_balance() to update the load ratings before doing the
-  * idle balance.
-  */
- void update_idle_cpu_load(struct rq *this_rq)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5de4337..4f6ff6f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1853,8 +1853,9 @@ static void __paginginit init_zone_allows_reclaim(int nid)
  {
--	unsigned long curr_jiffies = jiffies;
-+	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
- 	unsigned long load = this_rq->load.weight;
- 	unsigned long pending_updates;
+        int i;
  
- 	/*
--	 * Bloody broken means of dealing with nohz, but better than nothing..
--	 * jiffies is updated by one cpu, another cpu can drift wrt the jiffy
--	 * update and see 0 difference the one time and 2 the next, even though
--	 * we ticked at roughtly the same rate.
--	 *
--	 * Hence we only use this from nohz_idle_balance() and skip this
--	 * nonsense when called from the scheduler_tick() since that's
--	 * guaranteed a stable rate.
-+	 * bail if there's load or we're actually up-to-date.
- 	 */
- 	if (load || curr_jiffies == this_rq->last_load_update_tick)
- 		return;
-@@ -2679,12 +2686,38 @@ void update_idle_cpu_load(struct rq *thi
- }
- 
- /*
-+ * Called from tick_nohz_idle_exit() -- try and fix up the ticks we missed.
-+ */
-+void update_cpu_load_nohz(void)
-+{
-+	struct rq *this_rq = this_rq();
-+	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-+	unsigned long pending_updates;
-+
-+	if (curr_jiffies == this_rq->last_load_update_tick)
-+		return;
-+
-+	raw_spin_lock(&this_rq->lock);
-+	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
-+	if (pending_updates) {
-+		this_rq->last_load_update_tick = curr_jiffies;
-+		/*
-+		 * We were idle, this means load 0, the current load might be
-+		 * !0 due to remote wakeups and the sort.
-+		 */
-+		__update_cpu_load(this_rq, 0, pending_updates);
-+	}
-+	raw_spin_unlock(&this_rq->lock);
-+}
-+#endif /* CONFIG_NO_HZ */
-+
-+/*
-  * Called from scheduler_tick()
-  */
- static void update_cpu_load_active(struct rq *this_rq)
- {
- 	/*
--	 * See the mess in update_idle_cpu_load().
-+	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
- 	__update_cpu_load(this_rq, this_rq->load.weight, 1);
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -582,6 +582,7 @@ void tick_nohz_idle_exit(void)
- 	/* Update jiffies first */
- 	select_nohz_load_balancer(0);
- 	tick_do_update_jiffies64(now);
-+	update_cpu_load_nohz();
- 
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
- 	/*
+-       for_each_online_node(i)
+-               if (node_distance(nid, i) <= RECLAIM_DISTANCE)
++       for_each_online_node(i) {
++               if (node_distance(nid, i) <= RECLAIM_DISTANCE ||
++                                       local_memory_node(nid) != nid)
+                        node_set(i, NODE_DATA(nid)->reclaim_nodes);
+                else
+                        zone_reclaim_mode = 1;
 
+Note, this won't actually do anything if CONFIG_HAVE_MEMORYLESS_NODES is
+not set, but if it is, I think semantically it will indicate that
+memoryless nodes *have* to reclaim remotely.
+
+And actually the above won't work, because the callpath is
+
+start_kernel -> setup_arch -> paging_init [-> free_area_init_nodes ->
+free_area_init_node -> init_zone_allows_reclaim] which is called before
+build_all_zonelists. This is a similar ordering problem as I'm having
+with the MEMORYLESS_NODE support, will work on it.
+
+Thanks,
+Nish
 
