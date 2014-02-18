@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaBRXdB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:33:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50661 "EHLO
+	id S1753562AbaBRXd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:33:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50654 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaBRWqD (ORCPT
+	with ESMTP id S1752346AbaBRWqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:03 -0500
+	Tue, 18 Feb 2014 17:46:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ferry <iscsitmp@bananateam.nl>, Christoph Hellwig <hch@lst.de>,
+        Christoph Hellwig <hch@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Ben Hutchings <ben@decadent.org.uk>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 18/24] target/file: Re-enable optional fd_buffered_io=1 operation
-Date: Tue, 18 Feb 2014 14:47:05 -0800
-Message-Id: <20140218224550.738946250@linuxfoundation.org>
+Subject: [PATCH 3.4 17/24] target/file: Use O_DSYNC by default for FILEIO backends
+Date: Tue, 18 Feb 2014 14:47:04 -0800
+Message-Id: <20140218224550.711958451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
 References: <20140218224550.221535225@linuxfoundation.org>
@@ -32,131 +33,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit b32f4c7ed85c5cee2a21a55c9f59ebc9d57a2463 upstream.
+commit a4dff3043c231d57f982af635c9d2192ee40e5ae upstream.
 
-This patch re-adds the ability to optionally run in buffered FILEIO mode
-(eg: w/o O_DSYNC) for device backends in order to once again use the
-Linux buffered cache as a write-back storage mechanism.
+Convert to use O_DSYNC for all cases at FILEIO backend creation time to
+avoid the extra syncing of pure timestamp updates with legacy O_SYNC during
+default operation as recommended by hch.  Continue to do this independently of
+Write Cache Enable (WCE) bit, as WCE=0 is currently the default for all backend
+devices and enabled by user on per device basis via attrib/emulate_write_cache.
 
-This logic was originally dropped with mainline v3.5-rc commit:
+This patch drops the now unnecessary fd_buffered_io= token usage that was
+originally signalling when to explictly disable O_SYNC at backend creation
+time for buffered I/O operation.  This can end up being dangerous for a number
+of reasons during physical node failure, so go ahead and drop this option
+for now when O_DSYNC is used as the default.
 
-commit a4dff3043c231d57f982af635c9d2192ee40e5ae
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Wed May 30 16:25:41 2012 -0700
+Also allow explict FUA WRITEs -> vfs_fsync_range() call to function in
+fd_execute_cmd() independently of WCE bit setting.
 
-    target/file: Use O_DSYNC by default for FILEIO backends
-
-This difference with this patch is that fd_create_virtdevice() now
-forces the explicit setting of emulate_write_cache=1 when buffered FILEIO
-operation has been enabled.
-
-(v2: Switch to FDBD_HAS_BUFFERED_IO_WCE + add more detailed
-     comment as requested by hch)
-
-Reported-by: Ferry <iscsitmp@bananateam.nl>
-Cc: Christoph Hellwig <hch@lst.de>
+Reported-by: Christoph Hellwig <hch@lst.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[bwh: Backported to 3.2:
+ - We have fd_do_task() and not fd_execute_cmd()
+ - Various fields are in struct se_task rather than struct se_cmd
+ - fd_create_virtdevice() flags initialisation hasn't been cleaned up]
 Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_file.c |   41 +++++++++++++++++++++++++++++++++++---
+ drivers/target/target_core_file.c |   78 ++++++++------------------------------
  drivers/target/target_core_file.h |    1 
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ 2 files changed, 17 insertions(+), 62 deletions(-)
 
 --- a/drivers/target/target_core_file.c
 +++ b/drivers/target/target_core_file.c
-@@ -138,6 +138,19 @@ static struct se_device *fd_create_virtd
- 	 * of pure timestamp updates.
+@@ -133,21 +133,11 @@ static struct se_device *fd_create_virtd
+ 		ret = PTR_ERR(dev_p);
+ 		goto fail;
+ 	}
+-#if 0
+-	if (di->no_create_file)
+-		flags = O_RDWR | O_LARGEFILE;
+-	else
+-		flags = O_RDWR | O_CREAT | O_LARGEFILE;
+-#else
+-	flags = O_RDWR | O_CREAT | O_LARGEFILE;
+-#endif
+-/*	flags |= O_DIRECT; */
+ 	/*
+-	 * If fd_buffered_io=1 has not been set explicitly (the default),
+-	 * use O_SYNC to force FILEIO writes to disk.
++	 * Use O_DSYNC by default instead of O_SYNC to forgo syncing
++	 * of pure timestamp updates.
  	 */
- 	flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
-+	/*
-+	 * Optionally allow fd_buffered_io=1 to be enabled for people
-+	 * who want use the fs buffer cache as an WriteCache mechanism.
-+	 *
-+	 * This means that in event of a hard failure, there is a risk
-+	 * of silent data-loss if the SCSI client has *not* performed a
-+	 * forced unit access (FUA) write, or issued SYNCHRONIZE_CACHE
-+	 * to write-out the entire device cache.
-+	 */
-+	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
-+		pr_debug("FILEIO: Disabling O_DSYNC, using buffered FILEIO\n");
-+		flags &= ~O_DSYNC;
-+	}
+-	if (!(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO))
+-		flags |= O_SYNC;
++	flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
  
  	file = filp_open(dev_p, flags, 0600);
  	if (IS_ERR(file)) {
-@@ -205,6 +218,12 @@ static struct se_device *fd_create_virtd
- 	if (!dev)
- 		goto fail;
+@@ -399,26 +389,6 @@ static void fd_emulate_sync_cache(struct
+ 		transport_complete_sync_cache(cmd, ret == 0);
+ }
  
-+	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
-+		pr_debug("FILEIO: Forcing setting of emulate_write_cache=1"
-+			" with FDBD_HAS_BUFFERED_IO_WCE\n");
-+		dev->se_sub_dev->se_dev_attrib.emulate_write_cache = 1;
-+	}
-+
- 	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
- 	fd_dev->fd_queue_depth = dev->queue_depth;
+-/*
+- * WRITE Force Unit Access (FUA) emulation on a per struct se_task
+- * LBA range basis..
+- */
+-static void fd_emulate_write_fua(struct se_cmd *cmd, struct se_task *task)
+-{
+-	struct se_device *dev = cmd->se_dev;
+-	struct fd_dev *fd_dev = dev->dev_ptr;
+-	loff_t start = task->task_lba * dev->se_sub_dev->se_dev_attrib.block_size;
+-	loff_t end = start + task->task_size;
+-	int ret;
+-
+-	pr_debug("FILEIO: FUA WRITE LBA: %llu, bytes: %u\n",
+-			task->task_lba, task->task_size);
+-
+-	ret = vfs_fsync_range(fd_dev->fd_file, start, end, 1);
+-	if (ret != 0)
+-		pr_err("FILEIO: vfs_fsync_range() failed: %d\n", ret);
+-}
+-
+ static int fd_do_task(struct se_task *task)
+ {
+ 	struct se_cmd *cmd = task->task_se_cmd;
+@@ -433,19 +403,21 @@ static int fd_do_task(struct se_task *ta
+ 		ret = fd_do_readv(task);
+ 	} else {
+ 		ret = fd_do_writev(task);
+-
++		/*
++		 * Perform implict vfs_fsync_range() for fd_do_writev() ops
++		 * for SCSI WRITEs with Forced Unit Access (FUA) set.
++		 * Allow this to happen independent of WCE=0 setting.
++		 */
+ 		if (ret > 0 &&
+-		    dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0 &&
+ 		    dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0 &&
+ 		    (cmd->se_cmd_flags & SCF_FUA)) {
+-			/*
+-			 * We might need to be a bit smarter here
+-			 * and return some sense data to let the initiator
+-			 * know the FUA WRITE cache sync failed..?
+-			 */
+-			fd_emulate_write_fua(cmd, task);
+-		}
++			struct fd_dev *fd_dev = dev->dev_ptr;
++			loff_t start = task->task_lba *
++				dev->se_sub_dev->se_dev_attrib.block_size;
++			loff_t end = start + task->task_size;
  
-@@ -449,6 +468,7 @@ enum {
++			vfs_fsync_range(fd_dev->fd_file, start, end, 1);
++		}
+ 	}
+ 
+ 	if (ret < 0) {
+@@ -477,7 +449,6 @@ enum {
  static match_table_t tokens = {
  	{Opt_fd_dev_name, "fd_dev_name=%s"},
  	{Opt_fd_dev_size, "fd_dev_size=%s"},
-+	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
+-	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
  	{Opt_err, NULL}
  };
  
-@@ -460,7 +480,7 @@ static ssize_t fd_set_configfs_dev_param
+@@ -489,7 +460,7 @@ static ssize_t fd_set_configfs_dev_param
  	struct fd_dev *fd_dev = se_dev->se_dev_su_ptr;
  	char *orig, *ptr, *arg_p, *opts;
  	substring_t args[MAX_OPT_ARGS];
--	int ret = 0, token;
-+	int ret = 0, arg, token;
+-	int ret = 0, arg, token;
++	int ret = 0, token;
  
  	opts = kstrdup(page, GFP_KERNEL);
  	if (!opts)
-@@ -504,6 +524,19 @@ static ssize_t fd_set_configfs_dev_param
+@@ -533,19 +504,6 @@ static ssize_t fd_set_configfs_dev_param
  					" bytes\n", fd_dev->fd_dev_size);
  			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
  			break;
-+		case Opt_fd_buffered_io:
-+			match_int(args, &arg);
-+			if (arg != 1) {
-+				pr_err("bogus fd_buffered_io=%d value\n", arg);
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+
-+			pr_debug("FILEIO: Using buffered I/O"
-+				" operations for struct fd_dev\n");
-+
-+			fd_dev->fbd_flags |= FDBD_HAS_BUFFERED_IO_WCE;
-+			break;
+-		case Opt_fd_buffered_io:
+-			match_int(args, &arg);
+-			if (arg != 1) {
+-				pr_err("bogus fd_buffered_io=%d value\n", arg);
+-				ret = -EINVAL;
+-				goto out;
+-			}
+-
+-			pr_debug("FILEIO: Using buffered I/O"
+-				" operations for struct fd_dev\n");
+-
+-			fd_dev->fbd_flags |= FDBD_USE_BUFFERED_IO;
+-			break;
  		default:
  			break;
  		}
-@@ -535,8 +568,10 @@ static ssize_t fd_show_configfs_dev_para
+@@ -577,10 +535,8 @@ static ssize_t fd_show_configfs_dev_para
  	ssize_t bl = 0;
  
  	bl = sprintf(b + bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
--	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: O_DSYNC\n",
--		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
-+	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
-+		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
-+		(fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) ?
-+		"Buffered-WCE" : "O_DSYNC");
+-	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
+-		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
+-		(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO) ?
+-		"Buffered" : "Synchronous");
++	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: O_DSYNC\n",
++		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
  	return bl;
  }
  
 --- a/drivers/target/target_core_file.h
 +++ b/drivers/target/target_core_file.h
-@@ -18,6 +18,7 @@ struct fd_request {
+@@ -18,7 +18,6 @@ struct fd_request {
  
  #define FBDF_HAS_PATH		0x01
  #define FBDF_HAS_SIZE		0x02
-+#define FDBD_HAS_BUFFERED_IO_WCE 0x04
+-#define FDBD_USE_BUFFERED_IO	0x04
  
  struct fd_dev {
  	u32		fbd_flags;
