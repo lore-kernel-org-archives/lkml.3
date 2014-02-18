@@ -1,147 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaBRPoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:44:13 -0500
-Received: from fieldses.org ([174.143.236.118]:40236 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756026AbaBRPoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 10:44:12 -0500
-Date: Tue, 18 Feb 2014 10:44:06 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>, greg@kroah.com,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd
- superblock's one
-Message-ID: <20140218154406.GD4319@fieldses.org>
-References: <20131230142339.16166.28243.stgit@localhost.localdomain>
- <20140103222226.GD5164@fieldses.org>
- <52FEC818.7030604@huawei.com>
- <20140217221900.GA8401@fieldses.org>
- <53037A03.4020603@parallels.com>
+	id S1756212AbaBRPpH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 10:45:07 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:46345 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755478AbaBRPpE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 10:45:04 -0500
+Date: Tue, 18 Feb 2014 16:42:12 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: David =?iso-8859-1?Q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
+Cc: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 8/8] ARM: sunxi: Add documentation for driver for
+ SD/MMC hosts found on Allwinner sunxi SoCs
+Message-ID: <20140218154212.GL3142@lukather>
+References: <20140217095907.15040.81893.stgit@pagira.o2s.ch>
+ <20140217100302.15040.56273.stgit@pagira.o2s.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DN8g+DOX2TxGxleI"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53037A03.4020603@parallels.com>
+In-Reply-To: <20140217100302.15040.56273.stgit@pagira.o2s.ch>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 07:19:31PM +0400, Stanislav Kinsbursky wrote:
-> 18.02.2014 02:19, J. Bruce Fields пишет:
-> >On Sat, Feb 15, 2014 at 09:51:20AM +0800, Weng Meiling wrote:
-> >>Hi Bruce,
-> >>
-> >>The upstream has merged your git tree for-3.14, but there is no this patch?
-> >>Do you forget this patch?
-> >
-> >Apologies, I'm not sure what happened.
-> >
-> >Looking back at it....  The patch causes all my pynfs reboot recovery
-> >tests to fail.  They're just doing a "systemctl restart
-> >nfs-server.service", and "systemctl status nfs-server.service" shows in
-> >part
-> >
-> >	ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS $RPCNFSDCOUNT (code=exited, status=1/FAILURE)
-> >
-> >So the patch is causing rpc.nfsd to fail?  No network namespaces should
-> >be involved.
-> >
-> >I haven't investigated any further.
-> >
-> 
-> Hi Bruce,
-> Are you sure, that exactly this patch broke your pynfs tests?
-> BTW, systemd manipulates namespaces. Maybe the patch revealed some pynfs internal bugs?
-> What do you think?
 
-It's really just "systemctl restart nfs-server.service" that the patch
-breaks, pynfs isn't involved much.
+--DN8g+DOX2TxGxleI
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The patch I'm actually using follows, but I believe the only difference
-is in the printk message?
+On Mon, Feb 17, 2014 at 11:03:02AM +0100, David Lanzend=F6rfer wrote:
+> Signed-off-by: David Lanzend=F6rfer <david.lanzendoerfer@o2s.ch>
+> ---
+>  .../devicetree/bindings/mmc/sunxi-mmc.txt          |   32 ++++++++++++++=
+++++++
+>  1 file changed, 32 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
+>=20
+> diff --git a/Documentation/devicetree/bindings/mmc/sunxi-mmc.txt b/Docume=
+ntation/devicetree/bindings/mmc/sunxi-mmc.txt
+> new file mode 100644
+> index 0000000..5ce8c5e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
+> @@ -0,0 +1,32 @@
+> +* Allwinner sunxi MMC controller
+> +
+> +The highspeed MMC host controller on Allwinner SoCs provides an interface
+> +for MMC, SD and SDIO types of memory cards.
+> +
+> +Supported maximum speeds are the ones of the eMMC standard 4.5 as well
+> +as the speed of SD standard 3.0.
+> +Absolute maximum transfer rate is 200MB/s
+> +
+> +Required properties:
+> +- compatible: Should be "allwinner,<revision>-<chip>-mmc".
+> +  The supported chips include a10, a10s, 13, a20 and a31.
 
---b
+Please use the real compatibles here. It's much easier to search
+for. Plus, your driver doesn't support all the SoCs you're mentionning here.
 
-commit e1f2922c12cb59baba0f2c7726bee992a0861310
-Author: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Date:   Mon Dec 30 17:23:59 2013 +0300
+> +- base registers are 0x1000 appart, so the base of mmc1
+> +  would be 0x01c0f000+0x1000=3D0x01c10000(see example)
+> +  and so on.
 
-    nfsd: check passed socket's net matches the NFSd superblock's
-    
-    The file descriptor written to the nfsd/portlist file could be for a
-    socket in a different network namespace from the network namespace that
-    the nfsd filesystem was mounted in, and this can cause a crash.
-    
-    For example: "ip netns exec" creates a new network and mount namespace,
-    which duplicates the nfsd mount point which was created in the init_net
-    context.  Thus NFS server stop in the nested network context leads to
-    RPCBIND client destruction in init_net.  Then, on nfsd start in the
-    nested network context, the rpc.nfsd process creates a socket in the
-    nested net and passes it into "write_ports", which leads to RPCBIND
-    socket creation in init_net context for the same reason (the nfsd mount
-    point was created in the init_net context). An attempt to register
-    passed socket in nested net leads to panic, because no RPCBIND client is
-    present in the nested network namespace.
-    
-    This patch adds a check that the passed the socket's net matches the
-    nfsd superblock's net, and returns -EINVAL error to user space if not.
-    
-    Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
-    Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-    Cc: stable@vger.kernel.org
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Please provide the real property name to use. No need for an example
+here, you have a full-fledged one in a few lines.
 
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index 7f55517..1331766 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
- 	if (err != 0 || fd < 0)
- 		return -EINVAL;
- 
-+	if (svc_alien_sock(net, fd)) {
-+		printk(KERN_ERR "%s: socket net is different from NFSd's\n", __func__);
-+		return -EINVAL;
-+	}
-+
- 	err = nfsd_create_serv(net);
- 	if (err != 0)
- 		return err;
-diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
-index 62fd1b7..947009e 100644
---- a/include/linux/sunrpc/svcsock.h
-+++ b/include/linux/sunrpc/svcsock.h
-@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
- int		svc_send(struct svc_rqst *);
- void		svc_drop(struct svc_rqst *);
- void		svc_sock_update_bufs(struct svc_serv *serv);
-+bool		svc_alien_sock(struct net *net, int fd);
- int		svc_addsock(struct svc_serv *serv, const int fd,
- 					char *name_return, const size_t len);
- void		svc_init_xprt_sock(void);
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index b6e59f0..3ba5b87 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1397,6 +1397,17 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
- 	return svsk;
- }
- 
-+bool svc_alien_sock(struct net *net, int fd)
-+{
-+	int err;
-+	struct socket *sock = sockfd_lookup(fd, &err);
-+
-+	if (sock && (sock_net(sock->sk) != net))
-+		return true;
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(svc_alien_sock);
-+
- /**
-  * svc_addsock - add a listener socket to an RPC service
-  * @serv: pointer to RPC service to which to add a new listener
+> +- clocks requires the reference at the ahb clock gate
+> +  with the correct index (mmc0 -> 8, mmc1 -> 9, and so on)
+> +  as well as the reference to the correct mod0 clock.
+
+Ditto. Plus, this is not a mod0 clock.
+
+> +- interrupts requires the correct IRQ line
+> +  (mmc0 -> 32, mmc1 -> 33, and so on)
+
+Ditto.
+
+> +
+> +Examples:
+> +
+> +mmc0: mmc@01c0f000 {
+> +	compatible =3D "allwinner,sun5i-a13-mmc";
+> +	reg =3D <0x01c0f000 0x1000>;
+> +	clocks =3D <&ahb_gates 8>, <&mmc0_clk>;
+> +	clock-names =3D "ahb", "mod";
+
+You never talked about the clock-names property, and which clocks were
+supposed to be provided.
+
+> +	interrupts =3D <0 32 4>;
+> +	bus-width =3D <4>;
+
+And you never talked about bus-width either.
+
+> +	status =3D "disabled";
+> +};
+>=20
+
+Isn't the cd-gpios property requested too?
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--DN8g+DOX2TxGxleI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTA39UAAoJEBx+YmzsjxAgrQoP/1HzFSTgYBFAw1bVtXhU/jtZ
+GljPpZDpY/1ME7jQb38kGhD5FB3t392ECFtEryOhvzoif91WQzB5Rd8SHKn58zLZ
+vD4zmfAIGiT8x5ifXBVGYAP5TNj9hsG0eKUFQM0tNV+WuUC7L713FkclAR7FlZHX
+4GTHvFKIBmdlpUbFBkAzBfcjDkczA/hjOyoxYX6zFV6i1AEy1xpkd9y5C+LqwA7l
+rffSqhp1I95S7V1md0UReZmMUVqT4jpgYVLpDWiJ0rf1nBanT0axpF8HNsDYb/zl
+PCEj7PteTdgic8q2g2aXnEDshYMhMavf8hrEFIfO0U6hu+Vmj3ei729kM9wl//DO
+FrakQUlJq1le838wk0VIiwRicfP4ooWht6a9VtlTSDEZbOHTNfrewhsqMw/bS+wu
+8PrNIiwRGgFTmfX220PLDoiQRDf9Cq5tk6NEiOkzE4IPMfWb/FzB6Gvfa/JJneyy
+mq/WYY2ucyLXokmUh2hTOqe9Sxt3hgcZgsVCde4T7KleMPfGD1YLvAbXUwlE6Mg0
+OuVw+3u2HgR1hTSC44TBXQlCxFKFvBJmKiMmFfNI5pJq7tSFvWWQEtXhfe24lgN+
+WsUtpy0GMT6RE1SCNOHVs7PuhcTUvtzAe3pgf6XVLvtRrE4cqHyVVXrFp1PVPydC
+cPA2PLr4hDTwfP0O65uO
+=l3Jv
+-----END PGP SIGNATURE-----
+
+--DN8g+DOX2TxGxleI--
