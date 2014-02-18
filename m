@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173AbaBRRCm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:02:42 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:37260 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755787AbaBRRCj (ORCPT
+	id S1756394AbaBRRGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:06:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46940 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317AbaBRRGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:02:39 -0500
+	Tue, 18 Feb 2014 12:06:06 -0500
+Date: Tue, 18 Feb 2014 09:07:31 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: SeongJae Park <sj38.park@gmail.com>
+Cc: devel@driverdev.osuosl.org, swetland@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: android: binder: use stack for locally used
+ variable
+Message-ID: <20140218170730.GA32227@kroah.com>
+References: <1392722606-965-1-git-send-email-sj38.park@gmail.com>
+ <1392722606-965-2-git-send-email-sj38.park@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140218164614.GI21483@n2100.arm.linux.org.uk>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-	<1391529538-21685-4-git-send-email-ulf.hansson@linaro.org>
-	<20140218160542.GH21483@n2100.arm.linux.org.uk>
-	<CAPDyKFq3uAoo7p-7hZgBmMJ4jf9A7dC0aUZJYUE0z1Qq5W=0bw@mail.gmail.com>
-	<20140218164614.GI21483@n2100.arm.linux.org.uk>
-Date: Tue, 18 Feb 2014 18:02:38 +0100
-Message-ID: <CAPDyKFrjOyg8K2UfE61NiQLNJy+6RrRf_Y8ogECNAiGDobS1Jg@mail.gmail.com>
-Subject: Re: [PATCH 03/17] mmc: mmci: Mask IRQs for all variants during
- runtime suspend
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392722606-965-2-git-send-email-sj38.park@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 February 2014 17:46, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Feb 18, 2014 at 05:36:52PM +0100, Ulf Hansson wrote:
->> If we add SDIO irq support to mmci in future; parts of that
->> implementation includes a re-route of DAT1 to a GPIO irq when entering
->> runtime suspend state. The mmci HW will in runtime suspend state, not
->> be responsible for handling irqs, which is the same as of today.
->
-> Note that the "irq thread" in sdio_irq is scheduled for destruction -
-> it's buggy when the system is under high load and a driver claims a
-> SDIO irq.  Sched people hate it too...
+On Tue, Feb 18, 2014 at 08:23:26PM +0900, SeongJae Park wrote:
+> The variable `binder_debugfs_dir_entry_root` is declared as static
+> global variable although it is accessed from init function only. Declare
+> it as init function's local variable because it would be better to read
+> and memory efficiency.
 
-We kind of realized that too, in the early days for ux500. At that
-point we converted it to a use a dedicated work queue, which improved
-the behaviour, don't remember the details why, but maybe I should
-collect the patches and send them out. :-)
+Are you sure?  You now just lost that pointer and it can never be freed.
 
-Finally we moved to use a separate GPIO irq as a dedicated SDIO irq
-line for our cw1200 wlan chip, mostly due to gain a bit of
-performance. That happened to simplified the mmci part as well, which
-was welcome.
+Not that it ever was, but before it was obvious as to what would need to
+be done if the module could ever be made to be unloaded...
 
->
-> --
-> FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-> in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-> Estimate before purchase was "up to 13.2Mbit".
+As it is, this code is fine, I can't take this patch.
+
+greg k-h
