@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaBRSi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:38:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:33241 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751205AbaBRSi5 convert rfc822-to-8bit (ORCPT
+	id S1751796AbaBRSkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:40:07 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44888 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaBRSkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:38:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="483575104"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: Thomas Renninger <trenn@suse.de>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "ck@conrad-kostecki.de" <ck@conrad-kostecki.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: RE: [Devel] ACPI: Also allow ACPI table adding via initrd not only
-	overriding
-Thread-Topic: [Devel] ACPI: Also allow ACPI table adding via initrd not only
-	overriding
-Thread-Index: AQHPLNZ+De/YvlNCS0KBaFaNLb+XwZq7V48g
-Date: Tue, 18 Feb 2014 18:38:45 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37C7D7846@ORSMSX103.amr.corp.intel.com>
-References: <530265A3.3020302@zytor.com>
- <1392747763-3384-1-git-send-email-trenn@suse.de>
-In-Reply-To: <1392747763-3384-1-git-send-email-trenn@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Feb 2014 13:40:06 -0500
+Date: Tue, 18 Feb 2014 19:40:10 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Preeti Murthy <preeti.lkml@gmail.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [GIT Pull] timer fixes for 3.14
+In-Reply-To: <CAM4v1pNDbiC54Ot6J2Tpc9t4BgT3fY7jgZkb6Fem4OfedwvV-w@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402181938140.4468@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1402152005210.21991@ionos.tec.linutronix.de> <CAM4v1pNDbiC54Ot6J2Tpc9t4BgT3fY7jgZkb6Fem4OfedwvV-w@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_load_table won't work?
+On Tue, 18 Feb 2014, Preeti Murthy wrote:
 
+> Hi Thomas,
+> 
+> With regard to the patch: "tick: Clear broadcast pending bit when
+> switching to oneshot"
+> isn't BROADCAST_EXIT called atleast after initializing the high
+> resolution timers while
+> handling the broadcast IPI and before re-entering idle? This should
+> clear the cpu bit
+> in the pending mask right?
+> 
+> idle()
+> |__BROADCAST_ENTER
+>     |__halt()
+>       |__broadcast_ipi
+>           |__init_highres()->clear oneshot mask
+>               |__return from interrupt->BROADCAST_EXIT (clear pending mask)
 
+Unfortunately not:
 
-> -----Original Message-----
-> From: Devel [mailto:devel-bounces@acpica.org] On Behalf Of Thomas
-> Renninger
-> Sent: Tuesday, February 18, 2014 10:23 AM
-> Cc: x86@kernel.org; ck@conrad-kostecki.de; linux-kernel@vger.kernel.org;
-> mingo@redhat.com; hpa@zytor.com; tglx@linutronix.de; devel@acpica.org
-> Subject: [Devel] ACPI: Also allow ACPI table adding via initrd not only
-> overriding
-> 
-> The ACPICA patches have to go into separate acpica repository first.
-> It should also be checked in acpica whether the table signature the OS
-> likes to add already exists (from BIOS). In this case the table must not
-> be added.
-> 
-> Worked here by trying to override a DSDT and addind a BGRT table.
-> 
->      Thomas
-> 
-> _______________________________________________
-> Devel mailing list
-> Devel@acpica.org
-> https://lists.acpica.org/mailman/listinfo/devel
+     if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
+     	  clear pending mask;
+     }
+
+>                    |__re-enter idle
+
+Go figure :)
+ 
+Thanks,
+
+	tglx
