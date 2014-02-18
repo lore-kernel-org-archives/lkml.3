@@ -1,136 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaBRXWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:22:49 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37944 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202AbaBRXWp (ORCPT
+	id S1753857AbaBRXXY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:23:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50929 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748AbaBRWq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:22:45 -0500
-Date: Tue, 18 Feb 2014 17:20:17 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mcb: Add PCI carrier for MEN Chameleon Bus
-Message-ID: <20140218232017.GA31820@joshc.qualcomm.com>
-References: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de>
- <1392737654-22682-3-git-send-email-johannes.thumshirn@men.de>
+	Tue, 18 Feb 2014 17:46:29 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH 3.10 23/26] mm/memory-failure.c: fix memory leak in successful soft offlining
+Date: Tue, 18 Feb 2014 14:47:19 -0800
+Message-Id: <20140218224531.066044629@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
+References: <20140218224530.398913499@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392737654-22682-3-git-send-email-johannes.thumshirn@men.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 04:34:13PM +0100, Johannes Thumshirn wrote:
-> Add support for MCB over PCI devices. Both PCI attached on-board Chameleon FPGAs
-> as well as CompactPCI based MCB carrier cards are supported with this driver.
-> 
-> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-> ---
->  drivers/mcb/Kconfig   |  13 ++++++
->  drivers/mcb/Makefile  |   2 +
->  drivers/mcb/mcb-pci.c | 108 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 123 insertions(+)
->  create mode 100644 drivers/mcb/mcb-pci.c
-> 
-> diff --git a/drivers/mcb/Kconfig b/drivers/mcb/Kconfig
-> index 9e7d6f5..8b058bc 100644
-> --- a/drivers/mcb/Kconfig
-> +++ b/drivers/mcb/Kconfig
-> @@ -14,3 +14,16 @@ menuconfig MCB
->  
->  	   If build as a module, the module is called mcb.ko
->  
-> +if MCB
-> +config MCB_PCI
-> +	   tristate "PCI based MCB carrier"
-> +	   default m if MCB
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-'if MCB' is redundant (MCB has to be set for this option to even be
-available).
+------------------
 
-[..]
-> +++ b/drivers/mcb/mcb-pci.c
-> @@ -0,0 +1,108 @@
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-Copyright/license blurb?
+commit f15bdfa802bfa5eb6b4b5a241b97ec9fa1204a35 upstream.
 
-> +#include <linux/module.h>
-> +#include <linux/pci.h>
-> +#include <linux/mcb.h>
-> +
-> +#include "mcb-internal.h"
-> +
-> +static struct mcb_bus *bus;
-> +struct priv {
-> +	void __iomem *base;
-> +};
+After a successful page migration by soft offlining, the source page is
+not properly freed and it's never reusable even if we unpoison it
+afterward.
 
-This seems weird.  Why is the bus not part of your private data?  Seems
-like you're unnecessarily restricting yourself to supporting only one of
-these devices at a time...
+This is caused by the race between freeing page and setting PG_hwpoison.
+In successful soft offlining, the source page is put (and the refcount
+becomes 0) by putback_lru_page() in unmap_and_move(), where it's linked
+to pagevec and actual freeing back to buddy is delayed.  So if
+PG_hwpoison is set for the page before freeing, the freeing does not
+functions as expected (in such case freeing aborts in
+free_pages_prepare() check.)
 
-> +
-> +static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-> +{
-> +	struct priv *priv;
-> +	phys_addr_t mapbase;
-> +	int ret = 0;
+This patch tries to make sure to free the source page before setting
+PG_hwpoison on it.  To avoid reallocating, the page keeps
+MIGRATE_ISOLATE until after setting PG_hwpoison.
 
-No need to initialize.
+This patch also removes obsolete comments about "keeping elevated
+refcount" because what they say is not true.  Unlike memory_failure(),
+soft_offline_page() uses no special page isolation code, and the
+soft-offlined pages have no elevated.
 
-> +	int num_cells;
-> +	unsigned long flags;
-> +
-> +	priv = devm_kzalloc(&pdev->dev, sizeof(struct priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
-> +
-> +	ret = pci_enable_device(pdev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to enable PCI device\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	mapbase = pci_resource_start(pdev, 0);
-> +	if (!mapbase) {
-> +		dev_err(&pdev->dev, "No PCI resource\n");
-> +		goto err_start;
-> +	}
-> +
-> +	ret = pci_request_region(pdev, 0, KBUILD_MODNAME);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to request PCI BARs\n");
-> +		goto err_start;
-> +	}
-> +
-> +	priv->base = pci_iomap(pdev, 0, 0);
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Hmm.  There should really be a devm_* variant for PCI resources.
+---
+ mm/memory-failure.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-[..]
-> +
-> +static void mcb_pci_remove(struct pci_dev *pdev)
-> +{
-> +	struct priv *priv = pci_get_drvdata(pdev);
-> +
-> +	mcb_release_bus(bus);
-> +
-> +	pci_iounmap(pdev, priv->base);
-> +	pci_release_region(pdev, 0);
-> +	pci_disable_device(pdev);
-> +	pci_set_drvdata(pdev, NULL);
-> +}
-> +
-> +static struct pci_device_id mcb_pci_tbl[] = {
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1421,7 +1421,8 @@ static int __get_any_page(struct page *p
+ 
+ 	/*
+ 	 * Isolate the page, so that it doesn't get reallocated if it
+-	 * was free.
++	 * was free. This flag should be kept set until the source page
++	 * is freed and PG_hwpoison on it is set.
+ 	 */
+ 	set_migratetype_isolate(p, true);
+ 	/*
+@@ -1444,7 +1445,6 @@ static int __get_any_page(struct page *p
+ 		/* Not a free page */
+ 		ret = 1;
+ 	}
+-	unset_migratetype_isolate(p, MIGRATE_MOVABLE);
+ 	unlock_memory_hotplug();
+ 	return ret;
+ }
+@@ -1511,7 +1511,6 @@ static int soft_offline_huge_page(struct
+ 			atomic_long_inc(&num_poisoned_pages);
+ 		}
+ 	}
+-	/* keep elevated page count for bad page */
+ 	return ret;
+ }
+ 
+@@ -1576,7 +1575,7 @@ int soft_offline_page(struct page *page,
+ 			atomic_long_inc(&num_poisoned_pages);
+ 		}
+ 	}
+-	/* keep elevated page count for bad page */
++	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
+ 	return ret;
+ }
+ 
+@@ -1642,7 +1641,22 @@ static int __soft_offline_page(struct pa
+ 			if (ret > 0)
+ 				ret = -EIO;
+ 		} else {
++			/*
++			 * After page migration succeeds, the source page can
++			 * be trapped in pagevec and actual freeing is delayed.
++			 * Freeing code works differently based on PG_hwpoison,
++			 * so there's a race. We need to make sure that the
++			 * source page should be freed back to buddy before
++			 * setting PG_hwpoison.
++			 */
++			if (!is_free_buddy_page(page))
++				lru_add_drain_all();
++			if (!is_free_buddy_page(page))
++				drain_all_pages();
+ 			SetPageHWPoison(page);
++			if (!is_free_buddy_page(page))
++				pr_info("soft offline: %#lx: page leaked\n",
++					pfn);
+ 			atomic_long_inc(&num_poisoned_pages);
+ 		}
+ 	} else {
 
-const?
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
