@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaBRU7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:59:51 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:33895 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaBRU7s (ORCPT
+	id S1752579AbaBRU76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:59:58 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:45193 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaBRU7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:59:48 -0500
-Subject: [PATCH v2 2/4] mei: Add include of <linux/irqreturn.h>
+	Tue, 18 Feb 2014 15:59:55 -0500
+Subject: [PATCH v2 3/4] iommu/amd: Add include of <linux/irqreturn.h>
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: e1000-devel@lists.sourceforge.net, Joerg Roedel <joro@8bytes.org>,
@@ -17,8 +17,8 @@ Cc: e1000-devel@lists.sourceforge.net, Joerg Roedel <joro@8bytes.org>,
         Tomas Winkler <tomas.winkler@intel.com>,
         Aaron F Brown <aaron.f.brown@intel.com>,
         Arjan van de Ven <arjan@linux.intel.com>
-Date: Tue, 18 Feb 2014 13:59:46 -0700
-Message-ID: <20140218205946.11014.13654.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Tue, 18 Feb 2014 13:59:52 -0700
+Message-ID: <20140218205952.11014.27095.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140218205925.11014.14973.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140218205925.11014.14973.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -34,19 +34,19 @@ remove that from linux/pci.h, so add explicit includes where needed.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/misc/mei/hw-me.h |    1 +
+ drivers/iommu/amd_iommu_types.h |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/misc/mei/hw-me.h b/drivers/misc/mei/hw-me.h
-index 80bd829fbd9a..893d5119fa9b 100644
---- a/drivers/misc/mei/hw-me.h
-+++ b/drivers/misc/mei/hw-me.h
-@@ -20,6 +20,7 @@
- #define _MEI_INTERFACE_H_
- 
- #include <linux/mei.h>
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index e400fbe411de..cff039df056e 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -25,6 +25,7 @@
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ #include <linux/pci.h>
 +#include <linux/irqreturn.h>
- #include "mei_dev.h"
- #include "client.h"
  
+ /*
+  * Maximum number of IOMMUs supported
 
