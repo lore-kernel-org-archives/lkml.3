@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbaBRM2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 07:28:47 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:63499 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280AbaBRM2q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 07:28:46 -0500
+	id S1755231AbaBRMbA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 07:31:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754298AbaBRMa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 07:30:59 -0500
+Date: Tue, 18 Feb 2014 09:30:13 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+Message-ID: <20140218123013.GA20609@amt.cnet>
+References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
+ <1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
+ <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
+ <20140214225810.57e854cb@redhat.com>
+ <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
+ <20140217085622.39b39cac@redhat.com>
+ <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20140218120522.GG19029@e103034-lin>
-References: <1392602117-20773-1-git-send-email-alex.shi@linaro.org> <20140218120522.GG19029@e103034-lin>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 18 Feb 2014 13:28:25 +0100
-Message-ID: <CAKfTPtDtv=hFtprNpAfRVMEAvWZn-55u8fcHTdJT6xT92Qdt-g@mail.gmail.com>
-Subject: Re: [PATCH v2 0/11] remove cpu_load in rq
-To: Alex Shi <alex.shi@linaro.org>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "jason.low2@hp.com" <jason.low2@hp.com>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "wangyun@linux.vnet.ibm.com" <wangyun@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 February 2014 13:05, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> On Mon, Feb 17, 2014 at 01:55:06AM +0000, Alex Shi wrote:
->> The cpu_load decays on time according past cpu load of rq. The sched_avg also decays tasks' load on time. Now we has 2 kind decay for cpu_load. That is a kind of redundancy. And increase the system load by decay calculation. This patch try to remove the cpu_load decay.
->>
->> There are 5 load_idx used for cpu_load in sched_domain. busy_idx and idle_idx are not zero usually, but newidle_idx, wake_idx and forkexec_idx are all zero on every arch. A shortcut to remove cpu_Load decay in the first patch. just one line patch for this change.
->>
->> V2,
->> 1, This version do some tuning on load bias of target load, to maximum match current code logical.
->> 2, Got further to remove the cpu_load in rq.
->> 3, Revert the patch 'Limit sd->*_idx range on sysctl' since no needs
->>
->> Any testing/comments are appreciated.
->
-> Removing cpu_load completely certainly makes things simpler, my worry is
-> just how much was lost by doing it. I agree that cpu_load needs a
-> cleanup, but I can't convince myself that just removing it completely
-> and not having any longer term view of cpu load anymore is without any
-> negative side-effects.
+On Mon, Feb 17, 2014 at 03:23:16PM -0800, David Rientjes wrote:
+> On Mon, 17 Feb 2014, Luiz Capitulino wrote:
+> 
+> > hugepages= and hugepages_node= are similar, but have different semantics.
+> > 
+> > hugepagesz= and hugepages= create a pool of huge pages of the specified size.
+> > This means that the number of times you specify those options are limited by
+> > the number of different huge pages sizes an arch supports. For x86_64 for
+> > example, this limit is two so one would not specify those options more than
+> > two times. And this doesn't count default_hugepagesz=, which allows you to
+> > drop one hugepagesz= option.
+> > 
+> > hugepages_node= allows you to allocate huge pages per node, so the number of
+> > times you can specify this option is limited by the number of nodes. Also,
+> > hugepages_node= create the pools, if necessary (at least one will be). For
+> > this reason I think it makes a lot of sense to have different options.
+> > 
+> 
+> I understand you may want to add as much code as you can to the boot code 
+> so that you can parse all this information in short-form, and it's 
+> understood that it's possible to specify a different number of varying 
+> hugepage sizes on individual nodes, but let's come back down to reality 
+> here.
+> 
+> Lacking from your entire patchset is a specific example of what you want 
+> to do.  So I think we're all guessing what exactly your usecase is and we 
+> aren't getting any help.  Are you really suggesting that a customer wants 
+> to allocate 4 1GB hugepages on node 0, 12 2MB hugepages on node 0, 6 1GB 
+> hugepages on node 1, 24 2MB hugepages on node 1, 2 1GB hugepages on node 
+> 2, 100 2MB hugepages on node 3, etc?  Please.
 
-Hi Alex,
+Customer has 32GB machine. He wants 8 1GB pages for his performance
+critical application on node0 (KVM guest), and other guests and
+pagecache etc. using the remaining 26GB of memory.
 
-Have you followed this thread about load_idx and the interest of using
-them to use different average period ?
-https://lkml.org/lkml/2014/1/6/499
+> If that's actually the usecase then I'll renew my objection to the entire 
+> patchset and say you want to add the ability to dynamically allocate 1GB 
+> pages and free them at runtime early in initscripts.  If something is 
+> going to be added to init code in the kernel then it better be trivial 
+> since all this can be duplicated in userspace if you really want to be 
+> fussy about it.
 
-Vincent
+Not sure what is the point here. The command line interface addition
+being proposed is simple, is it not?
 
->
-> {source, target}_load() are now instantaneous views of the cpu load,
-> which means that they may change very frequently. That could potentially
-> lead to more task migrations at all levels in the domain hierarchy as we
-> no longer have the more conservative cpu_load[] indexes that were used
-> at NUMA level.
->
-> Maybe some of the NUMA experts have an opinion about this?
->
-> In the discussions around V1 I think blocked load came up again as a
-> potential replacement for the current cpu_load array. There are some
-> issues that need to be solved around blocked_load first though.
->
-> Morten
