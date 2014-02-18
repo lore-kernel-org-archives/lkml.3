@@ -1,31 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaBRVKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:10:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35752 "EHLO
+	id S1752835AbaBRVLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:11:04 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35744 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581AbaBRVJP (ORCPT
+	with ESMTP id S1752569AbaBRVJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:09:15 -0500
+	Tue, 18 Feb 2014 16:09:14 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        "David A. Long" <dave.long@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, yrl.pp-manager.tt@hitachi.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/32] perf tools: Move fs.* to lib/api/fs/
-Date: Tue, 18 Feb 2014 18:08:37 -0300
-Message-Id: <1392757731-32619-19-git-send-email-acme@infradead.org>
+Subject: [PATCH 31/32] perf probe: Allow to add events on the local functions
+Date: Tue, 18 Feb 2014 18:08:50 -0300
+Message-Id: <1392757731-32619-32-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
 References: <1392757731-32619-1-git-send-email-acme@infradead.org>
@@ -35,476 +29,625 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Move to generic library and kill magic.h as it is needed only in fs.h.
+Allow to add events on the local functions without debuginfo.
+(With the debuginfo, we can add events even on inlined functions)
+Currently, probing on local functions requires debuginfo to
+locate actual address. It is also possible without debuginfo since
+we have symbol maps.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
+Without this change;
+  ----
+  # ./perf probe -a t_show
+  Added new event:
+    probe:t_show         (on t_show)
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe:t_show -aR sleep 1
+
+  # ./perf probe -x perf -a identity__map_ip
+  no symbols found in /kbuild/ksrc/linux-3/tools/perf/perf, maybe install a debug package?
+  Failed to load map.
+    Error: Failed to add events. (-22)
+  ----
+As the above results, perf probe just put one event
+on the first found symbol for kprobe event. Moreover,
+for uprobe event, perf probe failed to find local
+functions.
+
+With this change;
+  ----
+  # ./perf probe -a t_show
+  Added new events:
+    probe:t_show         (on t_show)
+    probe:t_show_1       (on t_show)
+    probe:t_show_2       (on t_show)
+    probe:t_show_3       (on t_show)
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe:t_show_3 -aR sleep 1
+
+  # ./perf probe -x perf -a identity__map_ip
+  Added new events:
+    probe_perf:identity__map_ip (on identity__map_ip in /kbuild/ksrc/linux-3/tools/perf/perf)
+    probe_perf:identity__map_ip_1 (on identity__map_ip in /kbuild/ksrc/linux-3/tools/perf/perf)
+    probe_perf:identity__map_ip_2 (on identity__map_ip in /kbuild/ksrc/linux-3/tools/perf/perf)
+    probe_perf:identity__map_ip_3 (on identity__map_ip in /kbuild/ksrc/linux-3/tools/perf/perf)
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe_perf:identity__map_ip_3 -aR sleep 1
+  ----
+Now we succeed to put events on every given local functions
+for both kprobes and uprobes. :)
+
+Note that this also introduces some symbol rbtree
+iteration macros; symbols__for_each, dso__for_each_symbol,
+and map__for_each_symbol. These are for walking through
+the symbol list in a map.
+
+Changes from v2:
+  - Fix add_exec_to_probe_trace_events() not to convert address
+    to tp->symbol any more.
+  - Fix to set kernel probes based on ref_reloc_sym.
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <rric@kernel.org>
-Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: Stephane Eranian <eranian@google.com>
+Cc: "David A. Long" <dave.long@linaro.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386605664-24041-3-git-send-email-bp@alien8.de
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20140206053225.29635.15026.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/api/Makefile                |   2 +
- tools/lib/api/fs/fs.c                 | 124 ++++++++++++++++++++++++++++++++++
- tools/lib/api/fs/fs.h                 |  14 ++++
- tools/perf/Makefile.perf              |   3 -
- tools/perf/tests/parse-events.c       |   2 +-
- tools/perf/util/cpumap.c              |   2 +-
- tools/perf/util/fs.c                  | 119 --------------------------------
- tools/perf/util/fs.h                  |   7 --
- tools/perf/util/include/linux/magic.h |  16 -----
- tools/perf/util/pmu.c                 |   2 +-
- tools/perf/util/python-ext-sources    |   2 +-
- tools/perf/util/record.c              |   2 +-
- tools/perf/util/util.c                |   2 +-
- 13 files changed, 146 insertions(+), 151 deletions(-)
- create mode 100644 tools/lib/api/fs/fs.c
- create mode 100644 tools/lib/api/fs/fs.h
- delete mode 100644 tools/perf/util/fs.c
- delete mode 100644 tools/perf/util/fs.h
- delete mode 100644 tools/perf/util/include/linux/magic.h
+ tools/perf/util/dso.h         |  10 ++
+ tools/perf/util/map.h         |  10 ++
+ tools/perf/util/probe-event.c | 378 +++++++++++++++++++-----------------------
+ tools/perf/util/symbol.h      |  11 ++
+ 4 files changed, 204 insertions(+), 205 deletions(-)
 
-diff --git a/tools/lib/api/Makefile b/tools/lib/api/Makefile
-index ed2f51e11b80..ce00f7ee6455 100644
---- a/tools/lib/api/Makefile
-+++ b/tools/lib/api/Makefile
-@@ -9,8 +9,10 @@ LIB_H=
- LIB_OBJS=
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index cd7d6f078cdd..ab06f1c03655 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -102,6 +102,16 @@ struct dso {
+ 	char		 name[0];
+ };
  
- LIB_H += fs/debugfs.h
-+LIB_H += fs/fs.h
++/* dso__for_each_symbol - iterate over the symbols of given type
++ *
++ * @dso: the 'struct dso *' in which symbols itereated
++ * @pos: the 'struct symbol *' to use as a loop cursor
++ * @n: the 'struct rb_node *' to use as a temporary storage
++ * @type: the 'enum map_type' type of symbols
++ */
++#define dso__for_each_symbol(dso, pos, n, type)	\
++	symbols__for_each_entry(&(dso)->symbols[(type)], pos, n)
++
+ static inline void dso__set_loaded(struct dso *dso, enum map_type type)
+ {
+ 	dso->loaded |= (1 << type);
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 257e513205ce..f00f058afb3b 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -90,6 +90,16 @@ u64 map__objdump_2mem(struct map *map, u64 ip);
  
- LIB_OBJS += $(OUTPUT)fs/debugfs.o
-+LIB_OBJS += $(OUTPUT)fs/fs.o
+ struct symbol;
  
- LIBFILE = libapikfs.a
++/* map__for_each_symbol - iterate over the symbols in the given map
++ *
++ * @map: the 'struct map *' in which symbols itereated
++ * @pos: the 'struct symbol *' to use as a loop cursor
++ * @n: the 'struct rb_node *' to use as a temporary storage
++ * Note: caller must ensure map->dso is not NULL (map is loaded).
++ */
++#define map__for_each_symbol(map, pos, n)	\
++	dso__for_each_symbol(map->dso, pos, n, map->type)
++
+ typedef int (*symbol_filter_t)(struct map *map, struct symbol *sym);
  
-diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-new file mode 100644
-index 000000000000..5b5eb788996e
---- /dev/null
-+++ b/tools/lib/api/fs/fs.c
-@@ -0,0 +1,124 @@
-+/* TODO merge/factor in debugfs.c here */
-+
-+#include <errno.h>
-+#include <stdbool.h>
-+#include <stdio.h>
-+#include <string.h>
-+#include <sys/vfs.h>
-+
-+#include "debugfs.h"
-+#include "fs.h"
-+
-+static const char * const sysfs__fs_known_mountpoints[] = {
-+	"/sys",
-+	0,
-+};
-+
-+static const char * const procfs__known_mountpoints[] = {
-+	"/proc",
-+	0,
-+};
-+
-+struct fs {
-+	const char		*name;
-+	const char * const	*mounts;
-+	char			 path[PATH_MAX + 1];
-+	bool			 found;
-+	long			 magic;
-+};
-+
-+enum {
-+	FS__SYSFS  = 0,
-+	FS__PROCFS = 1,
-+};
-+
-+static struct fs fs__entries[] = {
-+	[FS__SYSFS] = {
-+		.name	= "sysfs",
-+		.mounts	= sysfs__fs_known_mountpoints,
-+		.magic	= SYSFS_MAGIC,
-+	},
-+	[FS__PROCFS] = {
-+		.name	= "proc",
-+		.mounts	= procfs__known_mountpoints,
-+		.magic	= PROC_SUPER_MAGIC,
-+	},
-+};
-+
-+static bool fs__read_mounts(struct fs *fs)
+ void map__init(struct map *map, enum map_type type,
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 3c35b7af2adb..42bec67aaa38 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -70,8 +70,6 @@ static int e_snprintf(char *str, size_t size, const char *format, ...)
+ }
+ 
+ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
+-static int convert_name_to_addr(struct perf_probe_event *pev,
+-				const char *exec);
+ static void clear_probe_trace_event(struct probe_trace_event *tev);
+ static struct machine *host_machine;
+ 
+@@ -249,6 +247,14 @@ out:
+ 	return ret;
+ }
+ 
++static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
 +{
-+	bool found = false;
-+	char type[100];
-+	FILE *fp;
++	int i;
 +
-+	fp = fopen("/proc/mounts", "r");
-+	if (fp == NULL)
-+		return NULL;
-+
-+	while (!found &&
-+	       fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
-+		      fs->path, type) == 2) {
-+
-+		if (strcmp(type, fs->name) == 0)
-+			found = true;
-+	}
-+
-+	fclose(fp);
-+	return fs->found = found;
++	for (i = 0; i < ntevs; i++)
++		clear_probe_trace_event(tevs + i);
 +}
 +
-+static int fs__valid_mount(const char *fs, long magic)
-+{
-+	struct statfs st_fs;
-+
-+	if (statfs(fs, &st_fs) < 0)
-+		return -ENOENT;
-+	else if (st_fs.f_type != magic)
-+		return -ENOENT;
-+
-+	return 0;
-+}
-+
-+static bool fs__check_mounts(struct fs *fs)
-+{
-+	const char * const *ptr;
-+
-+	ptr = fs->mounts;
-+	while (*ptr) {
-+		if (fs__valid_mount(*ptr, fs->magic) == 0) {
-+			fs->found = true;
-+			strcpy(fs->path, *ptr);
-+			return true;
-+		}
-+		ptr++;
-+	}
-+
-+	return false;
-+}
-+
-+static const char *fs__get_mountpoint(struct fs *fs)
-+{
-+	if (fs__check_mounts(fs))
-+		return fs->path;
-+
-+	return fs__read_mounts(fs) ? fs->path : NULL;
-+}
-+
-+static const char *fs__mountpoint(int idx)
-+{
-+	struct fs *fs = &fs__entries[idx];
-+
-+	if (fs->found)
-+		return (const char *)fs->path;
-+
-+	return fs__get_mountpoint(fs);
-+}
-+
-+#define FS__MOUNTPOINT(name, idx)	\
-+const char *name##__mountpoint(void)	\
-+{					\
-+	return fs__mountpoint(idx);	\
-+}
-+
-+FS__MOUNTPOINT(sysfs,  FS__SYSFS);
-+FS__MOUNTPOINT(procfs, FS__PROCFS);
-diff --git a/tools/lib/api/fs/fs.h b/tools/lib/api/fs/fs.h
-new file mode 100644
-index 000000000000..cb7049551f33
---- /dev/null
-+++ b/tools/lib/api/fs/fs.h
-@@ -0,0 +1,14 @@
-+#ifndef __API_FS__
-+#define __API_FS__
-+
-+#ifndef SYSFS_MAGIC
-+#define SYSFS_MAGIC            0x62656572
-+#endif
-+
-+#ifndef PROC_SUPER_MAGIC
-+#define PROC_SUPER_MAGIC       0x9fa0
-+#endif
-+
-+const char *sysfs__mountpoint(void);
-+const char *procfs__mountpoint(void);
-+#endif /* __API_FS__ */
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index f99a392d20be..869b34a51c8c 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -218,7 +218,6 @@ LIB_H += util/include/linux/ctype.h
- LIB_H += util/include/linux/kernel.h
- LIB_H += util/include/linux/list.h
- LIB_H += util/include/linux/export.h
--LIB_H += util/include/linux/magic.h
- LIB_H += util/include/linux/poison.h
- LIB_H += util/include/linux/prefetch.h
- LIB_H += util/include/linux/rbtree.h
-@@ -244,7 +243,6 @@ LIB_H += util/cache.h
- LIB_H += util/callchain.h
- LIB_H += util/build-id.h
- LIB_H += util/debug.h
--LIB_H += util/fs.h
- LIB_H += util/pmu.h
- LIB_H += util/event.h
- LIB_H += util/evsel.h
-@@ -306,7 +304,6 @@ LIB_OBJS += $(OUTPUT)util/annotate.o
- LIB_OBJS += $(OUTPUT)util/build-id.o
- LIB_OBJS += $(OUTPUT)util/config.o
- LIB_OBJS += $(OUTPUT)util/ctype.o
--LIB_OBJS += $(OUTPUT)util/fs.o
- LIB_OBJS += $(OUTPUT)util/pmu.o
- LIB_OBJS += $(OUTPUT)util/environment.o
- LIB_OBJS += $(OUTPUT)util/event.o
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 4db0ae617d70..8605ff5572ae 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -2,7 +2,7 @@
- #include "parse-events.h"
- #include "evsel.h"
- #include "evlist.h"
--#include "fs.h"
-+#include <api/fs/fs.h>
- #include <api/fs/debugfs.h>
- #include "tests.h"
- #include <linux/hw_breakpoint.h>
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index a9b48c42e81e..7fe4994eeb63 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -1,5 +1,5 @@
- #include "util.h"
--#include "fs.h"
-+#include <api/fs/fs.h>
- #include "../perf.h"
- #include "cpumap.h"
- #include <assert.h>
-diff --git a/tools/perf/util/fs.c b/tools/perf/util/fs.c
-deleted file mode 100644
-index f5be1f26e724..000000000000
---- a/tools/perf/util/fs.c
-+++ /dev/null
-@@ -1,119 +0,0 @@
--
--/* TODO merge/factor into tools/lib/lk/debugfs.c */
--
--#include "util.h"
--#include "util/fs.h"
--
--static const char * const sysfs__fs_known_mountpoints[] = {
--	"/sys",
--	0,
--};
--
--static const char * const procfs__known_mountpoints[] = {
--	"/proc",
--	0,
--};
--
--struct fs {
--	const char		*name;
--	const char * const	*mounts;
--	char			 path[PATH_MAX + 1];
--	bool			 found;
--	long			 magic;
--};
--
--enum {
--	FS__SYSFS  = 0,
--	FS__PROCFS = 1,
--};
--
--static struct fs fs__entries[] = {
--	[FS__SYSFS] = {
--		.name	= "sysfs",
--		.mounts	= sysfs__fs_known_mountpoints,
--		.magic	= SYSFS_MAGIC,
--	},
--	[FS__PROCFS] = {
--		.name	= "proc",
--		.mounts	= procfs__known_mountpoints,
--		.magic	= PROC_SUPER_MAGIC,
--	},
--};
--
--static bool fs__read_mounts(struct fs *fs)
+ #ifdef HAVE_DWARF_SUPPORT
+ /* Open new debuginfo of given module */
+ static struct debuginfo *open_debuginfo(const char *module)
+@@ -353,8 +359,7 @@ static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+ 					  int ntevs, const char *exec)
+ {
+ 	int i, ret = 0;
+-	unsigned long offset, stext = 0;
+-	char buf[32];
++	unsigned long stext = 0;
+ 
+ 	if (!exec)
+ 		return 0;
+@@ -365,15 +370,9 @@ static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+ 
+ 	for (i = 0; i < ntevs && ret >= 0; i++) {
+ 		/* point.address is the addres of point.symbol + point.offset */
+-		offset = tevs[i].point.address - stext;
+-		tevs[i].point.offset = 0;
+-		zfree(&tevs[i].point.symbol);
+-		ret = e_snprintf(buf, 32, "0x%lx", offset);
+-		if (ret < 0)
+-			break;
++		tevs[i].point.address -= stext;
+ 		tevs[i].point.module = strdup(exec);
+-		tevs[i].point.symbol = strdup(buf);
+-		if (!tevs[i].point.symbol || !tevs[i].point.module) {
++		if (!tevs[i].point.module) {
+ 			ret = -ENOMEM;
+ 			break;
+ 		}
+@@ -452,14 +451,6 @@ static int post_process_probe_trace_events(struct probe_trace_event *tevs,
+ 	return 0;
+ }
+ 
+-static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
 -{
--	bool found = false;
--	char type[100];
--	FILE *fp;
+-	int i;
 -
--	fp = fopen("/proc/mounts", "r");
--	if (fp == NULL)
--		return NULL;
--
--	while (!found &&
--	       fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
--		      fs->path, type) == 2) {
--
--		if (strcmp(type, fs->name) == 0)
--			found = true;
--	}
--
--	fclose(fp);
--	return fs->found = found;
+-	for (i = 0; i < ntevs; i++)
+-		clear_probe_trace_event(tevs + i);
 -}
 -
--static int fs__valid_mount(const char *fs, long magic)
--{
--	struct statfs st_fs;
--
--	if (statfs(fs, &st_fs) < 0)
--		return -ENOENT;
--	else if (st_fs.f_type != magic)
--		return -ENOENT;
--
--	return 0;
--}
--
--static bool fs__check_mounts(struct fs *fs)
--{
--	const char * const *ptr;
--
--	ptr = fs->mounts;
--	while (*ptr) {
--		if (fs__valid_mount(*ptr, fs->magic) == 0) {
--			fs->found = true;
--			strcpy(fs->path, *ptr);
--			return true;
+ /* Try to find perf_probe_event with debuginfo */
+ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 					  struct probe_trace_event **tevs,
+@@ -1586,20 +1577,27 @@ char *synthesize_probe_trace_command(struct probe_trace_event *tev)
+ 	if (buf == NULL)
+ 		return NULL;
+ 
++	len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s ", tp->retprobe ? 'r' : 'p',
++			 tev->group, tev->event);
++	if (len <= 0)
++		goto error;
++
++	/* Uprobes must have tp->address and tp->module */
++	if (tev->uprobes && (!tp->address || !tp->module))
++		goto error;
++
++	/* Use the tp->address for uprobes */
+ 	if (tev->uprobes)
+-		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s:%s",
+-				 tp->retprobe ? 'r' : 'p',
+-				 tev->group, tev->event,
+-				 tp->module, tp->symbol);
++		ret = e_snprintf(buf + len, MAX_CMDLEN - len, "%s:0x%lx",
++				 tp->module, tp->address);
+ 	else
+-		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s%s%s+%lu",
+-				 tp->retprobe ? 'r' : 'p',
+-				 tev->group, tev->event,
++		ret = e_snprintf(buf + len, MAX_CMDLEN - len, "%s%s%s+%lu",
+ 				 tp->module ?: "", tp->module ? ":" : "",
+ 				 tp->symbol, tp->offset);
+ 
+-	if (len <= 0)
++	if (ret <= 0)
+ 		goto error;
++	len += ret;
+ 
+ 	for (i = 0; i < tev->nargs; i++) {
+ 		ret = synthesize_probe_trace_arg(&tev->args[i], buf + len,
+@@ -2150,113 +2148,175 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 	return ret;
+ }
+ 
+-static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+-					  struct probe_trace_event **tevs,
+-					  int max_tevs, const char *target)
++static char *looking_function_name;
++static int num_matched_functions;
++
++static int probe_function_filter(struct map *map __maybe_unused,
++				      struct symbol *sym)
++{
++	if ((sym->binding == STB_GLOBAL || sym->binding == STB_LOCAL) &&
++	    strcmp(looking_function_name, sym->name) == 0) {
++		num_matched_functions++;
++		return 0;
++	}
++	return 1;
++}
++
++#define strdup_or_goto(str, label)	\
++	({ char *__p = strdup(str); if (!__p) goto label; __p; })
++
++/*
++ * Find probe function addresses from map.
++ * Return an error or the number of found probe_trace_event
++ */
++static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
++					    struct probe_trace_event **tevs,
++					    int max_tevs, const char *target)
+ {
++	struct map *map = NULL;
++	struct kmap *kmap = NULL;
++	struct ref_reloc_sym *reloc_sym = NULL;
+ 	struct symbol *sym;
+-	int ret, i;
++	struct rb_node *nd;
+ 	struct probe_trace_event *tev;
++	struct perf_probe_point *pp = &pev->point;
++	struct probe_trace_point *tp;
++	int ret, i;
+ 
+-	if (pev->uprobes && !pev->group) {
+-		/* Replace group name if not given */
+-		ret = convert_exec_to_group(target, &pev->group);
+-		if (ret != 0) {
+-			pr_warning("Failed to make a group name.\n");
+-			return ret;
 -		}
--		ptr++;
++	/* Init maps of given executable or kernel */
++	if (pev->uprobes)
++		map = dso__new_map(target);
++	else
++		map = kernel_get_module_map(target);
++	if (!map) {
++		ret = -EINVAL;
++		goto out;
+ 	}
+ 
+-	/* Convert perf_probe_event with debuginfo */
+-	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+-	if (ret != 0)
+-		return ret;	/* Found in debuginfo or got an error */
+-
+-	if (pev->uprobes) {
+-		ret = convert_name_to_addr(pev, target);
+-		if (ret < 0)
+-			return ret;
++	/*
++	 * Load matched symbols: Since the different local symbols may have
++	 * same name but different addresses, this lists all the symbols.
++	 */
++	num_matched_functions = 0;
++	looking_function_name = pp->function;
++	ret = map__load(map, probe_function_filter);
++	if (ret || num_matched_functions == 0) {
++		pr_err("Failed to find symbol %s in %s\n", pp->function,
++			target ? : "kernel");
++		ret = -ENOENT;
++		goto out;
++	} else if (num_matched_functions > max_tevs) {
++		pr_err("Too many functions matched in %s\n",
++			target ? : "kernel");
++		ret = -E2BIG;
++		goto out;
+ 	}
+ 
+-	/* Allocate trace event buffer */
+-	tev = *tevs = zalloc(sizeof(struct probe_trace_event));
+-	if (tev == NULL)
+-		return -ENOMEM;
++	if (!pev->uprobes) {
++		kmap = map__kmap(map);
++		reloc_sym = kmap->ref_reloc_sym;
++		if (!reloc_sym) {
++			pr_warning("Relocated base symbol is not found!\n");
++			ret = -EINVAL;
++			goto out;
++		}
++	}
+ 
+-	/* Copy parameters */
+-	tev->point.symbol = strdup(pev->point.function);
+-	if (tev->point.symbol == NULL) {
++	/* Setup result trace-probe-events */
++	*tevs = zalloc(sizeof(*tev) * num_matched_functions);
++	if (!*tevs) {
+ 		ret = -ENOMEM;
+-		goto error;
++		goto out;
+ 	}
+ 
+-	if (target) {
+-		tev->point.module = strdup(target);
+-		if (tev->point.module == NULL) {
+-			ret = -ENOMEM;
+-			goto error;
++	ret = 0;
++	map__for_each_symbol(map, sym, nd) {
++		tev = (*tevs) + ret;
++		tp = &tev->point;
++		if (ret == num_matched_functions) {
++			pr_warning("Too many symbols are listed. Skip it.\n");
++			break;
+ 		}
+-	}
++		ret++;
+ 
+-	tev->point.offset = pev->point.offset;
+-	tev->point.retprobe = pev->point.retprobe;
+-	tev->nargs = pev->nargs;
+-	tev->uprobes = pev->uprobes;
+-
+-	if (tev->nargs) {
+-		tev->args = zalloc(sizeof(struct probe_trace_arg)
+-				   * tev->nargs);
+-		if (tev->args == NULL) {
+-			ret = -ENOMEM;
+-			goto error;
++		if (pp->offset > sym->end - sym->start) {
++			pr_warning("Offset %ld is bigger than the size of %s\n",
++				   pp->offset, sym->name);
++			ret = -ENOENT;
++			goto err_out;
++		}
++		/* Add one probe point */
++		tp->address = map->unmap_ip(map, sym->start) + pp->offset;
++		if (reloc_sym) {
++			tp->symbol = strdup_or_goto(reloc_sym->name, nomem_out);
++			tp->offset = tp->address - reloc_sym->addr;
++		} else {
++			tp->symbol = strdup_or_goto(sym->name, nomem_out);
++			tp->offset = pp->offset;
++		}
++		tp->retprobe = pp->retprobe;
++		if (target)
++			tev->point.module = strdup_or_goto(target, nomem_out);
++		tev->uprobes = pev->uprobes;
++		tev->nargs = pev->nargs;
++		if (tev->nargs) {
++			tev->args = zalloc(sizeof(struct probe_trace_arg) *
++					   tev->nargs);
++			if (tev->args == NULL)
++				goto nomem_out;
+ 		}
+ 		for (i = 0; i < tev->nargs; i++) {
+-			if (pev->args[i].name) {
+-				tev->args[i].name = strdup(pev->args[i].name);
+-				if (tev->args[i].name == NULL) {
+-					ret = -ENOMEM;
+-					goto error;
+-				}
+-			}
+-			tev->args[i].value = strdup(pev->args[i].var);
+-			if (tev->args[i].value == NULL) {
+-				ret = -ENOMEM;
+-				goto error;
+-			}
+-			if (pev->args[i].type) {
+-				tev->args[i].type = strdup(pev->args[i].type);
+-				if (tev->args[i].type == NULL) {
+-					ret = -ENOMEM;
+-					goto error;
+-				}
+-			}
++			if (pev->args[i].name)
++				tev->args[i].name =
++					strdup_or_goto(pev->args[i].name,
++							nomem_out);
++
++			tev->args[i].value = strdup_or_goto(pev->args[i].var,
++							    nomem_out);
++			if (pev->args[i].type)
++				tev->args[i].type =
++					strdup_or_goto(pev->args[i].type,
++							nomem_out);
+ 		}
+ 	}
+ 
+-	if (pev->uprobes)
+-		return 1;
++out:
++	if (map && pev->uprobes) {
++		/* Only when using uprobe(exec) map needs to be released */
++		dso__delete(map->dso);
++		map__delete(map);
++	}
++	return ret;
+ 
+-	/* Currently just checking function name from symbol map */
+-	sym = __find_kernel_function_by_name(tev->point.symbol, NULL);
+-	if (!sym) {
+-		pr_warning("Kernel symbol \'%s\' not found.\n",
+-			   tev->point.symbol);
+-		ret = -ENOENT;
+-		goto error;
+-	} else if (tev->point.offset > sym->end - sym->start) {
+-		pr_warning("Offset specified is greater than size of %s\n",
+-			   tev->point.symbol);
+-		ret = -ENOENT;
+-		goto error;
++nomem_out:
++	ret = -ENOMEM;
++err_out:
++	clear_probe_trace_events(*tevs, num_matched_functions);
++	zfree(tevs);
++	goto out;
++}
+ 
++static int convert_to_probe_trace_events(struct perf_probe_event *pev,
++					  struct probe_trace_event **tevs,
++					  int max_tevs, const char *target)
++{
++	int ret;
++
++	if (pev->uprobes && !pev->group) {
++		/* Replace group name if not given */
++		ret = convert_exec_to_group(target, &pev->group);
++		if (ret != 0) {
++			pr_warning("Failed to make a group name.\n");
++			return ret;
++		}
+ 	}
+ 
+-	return 1;
+-error:
+-	clear_probe_trace_event(tev);
+-	free(tev);
+-	*tevs = NULL;
+-	return ret;
++	/* Convert perf_probe_event with debuginfo */
++	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
++	if (ret != 0)
++		return ret;	/* Found in debuginfo or got an error */
++
++	return find_probe_trace_events_from_map(pev, tevs, max_tevs, target);
+ }
+ 
+ struct __event_package {
+@@ -2461,7 +2521,7 @@ static struct strfilter *available_func_filter;
+ static int filter_available_functions(struct map *map __maybe_unused,
+ 				      struct symbol *sym)
+ {
+-	if (sym->binding == STB_GLOBAL &&
++	if ((sym->binding == STB_GLOBAL || sym->binding == STB_LOCAL) &&
+ 	    strfilter__compare(available_func_filter, sym->name))
+ 		return 0;
+ 	return 1;
+@@ -2509,95 +2569,3 @@ end:
+ 	return ret;
+ }
+ 
+-/*
+- * uprobe_events only accepts address:
+- * Convert function and any offset to address
+- */
+-static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+-{
+-	struct perf_probe_point *pp = &pev->point;
+-	struct symbol *sym;
+-	struct map *map = NULL;
+-	char *function = NULL;
+-	int ret = -EINVAL;
+-	unsigned long long vaddr = 0;
+-
+-	if (!pp->function) {
+-		pr_warning("No function specified for uprobes");
+-		goto out;
 -	}
 -
--	return false;
+-	function = strdup(pp->function);
+-	if (!function) {
+-		pr_warning("Failed to allocate memory by strdup.\n");
+-		ret = -ENOMEM;
+-		goto out;
+-	}
+-
+-	map = dso__new_map(exec);
+-	if (!map) {
+-		pr_warning("Cannot find appropriate DSO for %s.\n", exec);
+-		goto out;
+-	}
+-	available_func_filter = strfilter__new(function, NULL);
+-	if (map__load(map, filter_available_functions)) {
+-		pr_err("Failed to load map.\n");
+-		goto out;
+-	}
+-
+-	sym = map__find_symbol_by_name(map, function, NULL);
+-	if (!sym) {
+-		pr_warning("Cannot find %s in DSO %s\n", function, exec);
+-		goto out;
+-	}
+-
+-	if (map->start > sym->start)
+-		vaddr = map->start;
+-	vaddr += sym->start + pp->offset + map->pgoff;
+-	pp->offset = 0;
+-
+-	if (!pev->event) {
+-		pev->event = function;
+-		function = NULL;
+-	}
+-	if (!pev->group) {
+-		char *ptr1, *ptr2, *exec_copy;
+-
+-		pev->group = zalloc(sizeof(char *) * 64);
+-		exec_copy = strdup(exec);
+-		if (!exec_copy) {
+-			ret = -ENOMEM;
+-			pr_warning("Failed to copy exec string.\n");
+-			goto out;
+-		}
+-
+-		ptr1 = strdup(basename(exec_copy));
+-		if (ptr1) {
+-			ptr2 = strpbrk(ptr1, "-._");
+-			if (ptr2)
+-				*ptr2 = '\0';
+-			e_snprintf(pev->group, 64, "%s_%s", PERFPROBE_GROUP,
+-					ptr1);
+-			free(ptr1);
+-		}
+-		free(exec_copy);
+-	}
+-	free(pp->function);
+-	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
+-	if (!pp->function) {
+-		ret = -ENOMEM;
+-		pr_warning("Failed to allocate memory by zalloc.\n");
+-		goto out;
+-	}
+-	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
+-	ret = 0;
+-
+-out:
+-	if (map) {
+-		dso__delete(map->dso);
+-		map__delete(map);
+-	}
+-	if (function)
+-		free(function);
+-	return ret;
 -}
--
--static const char *fs__get_mountpoint(struct fs *fs)
--{
--	if (fs__check_mounts(fs))
--		return fs->path;
--
--	return fs__read_mounts(fs) ? fs->path : NULL;
--}
--
--static const char *fs__mountpoint(int idx)
--{
--	struct fs *fs = &fs__entries[idx];
--
--	if (fs->found)
--		return (const char *)fs->path;
--
--	return fs__get_mountpoint(fs);
--}
--
--#define FS__MOUNTPOINT(name, idx)	\
--const char *name##__mountpoint(void)	\
--{					\
--	return fs__mountpoint(idx);	\
--}
--
--FS__MOUNTPOINT(sysfs,  FS__SYSFS);
--FS__MOUNTPOINT(procfs, FS__PROCFS);
-diff --git a/tools/perf/util/fs.h b/tools/perf/util/fs.h
-deleted file mode 100644
-index 5e09ce1bab0e..000000000000
---- a/tools/perf/util/fs.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--#ifndef __PERF_FS
--#define __PERF_FS
--
--const char *sysfs__mountpoint(void);
--const char *procfs__mountpoint(void);
--
--#endif /* __PERF_FS */
-diff --git a/tools/perf/util/include/linux/magic.h b/tools/perf/util/include/linux/magic.h
-deleted file mode 100644
-index 07d63cf3e0f6..000000000000
---- a/tools/perf/util/include/linux/magic.h
-+++ /dev/null
-@@ -1,16 +0,0 @@
--#ifndef _PERF_LINUX_MAGIC_H_
--#define _PERF_LINUX_MAGIC_H_
--
--#ifndef DEBUGFS_MAGIC
--#define DEBUGFS_MAGIC          0x64626720
--#endif
--
--#ifndef SYSFS_MAGIC
--#define SYSFS_MAGIC            0x62656572
--#endif
--
--#ifndef PROC_SUPER_MAGIC
--#define PROC_SUPER_MAGIC       0x9fa0
--#endif
--
--#endif
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index b752ecb40d86..00a7dcb2f55c 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -3,7 +3,7 @@
- #include <unistd.h>
- #include <stdio.h>
- #include <dirent.h>
--#include "fs.h"
-+#include <api/fs/fs.h>
- #include <locale.h>
- #include "util.h"
- #include "pmu.h"
-diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
-index 595bfc73d2ed..16a475a7d492 100644
---- a/tools/perf/util/python-ext-sources
-+++ b/tools/perf/util/python-ext-sources
-@@ -17,6 +17,6 @@ util/xyarray.c
- util/cgroup.c
- util/rblist.c
- util/strlist.c
--util/fs.c
-+../lib/api/fs/fs.c
- util/trace-event.c
- ../../lib/rbtree.c
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index 373762501dad..049e0a09ccd3 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -2,7 +2,7 @@
- #include "evsel.h"
- #include "cpumap.h"
- #include "parse-events.h"
--#include "fs.h"
-+#include <api/fs/fs.h>
- #include "util.h"
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 538d484fa6c5..2553ae04b788 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -79,6 +79,17 @@ struct symbol {
+ void symbol__delete(struct symbol *sym);
+ void symbols__delete(struct rb_root *symbols);
  
- typedef void (*setup_probe_fn_t)(struct perf_evsel *evsel);
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 42ad667bb317..9f66549562bd 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -1,6 +1,6 @@
- #include "../perf.h"
- #include "util.h"
--#include "fs.h"
-+#include <api/fs/fs.h>
- #include <sys/mman.h>
- #ifdef HAVE_BACKTRACE_SUPPORT
- #include <execinfo.h>
++/* symbols__for_each_entry - iterate over symbols (rb_root)
++ *
++ * @symbols: the rb_root of symbols
++ * @pos: the 'struct symbol *' to use as a loop cursor
++ * @nd: the 'struct rb_node *' to use as a temporary storage
++ */
++#define symbols__for_each_entry(symbols, pos, nd)			\
++	for (nd = rb_first(symbols);					\
++	     nd && (pos = rb_entry(nd, struct symbol, rb_node));	\
++	     nd = rb_next(nd))
++
+ static inline size_t symbol__size(const struct symbol *sym)
+ {
+ 	return sym->end - sym->start + 1;
 -- 
 1.8.1.4
 
