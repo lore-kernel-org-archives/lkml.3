@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaBRUbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:31:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49212 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaBRUbO (ORCPT
+	id S1752377AbaBRUbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:31:33 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43406 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbaBRUb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:31:14 -0500
-Date: Tue, 18 Feb 2014 12:32:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Colin Cross <ccross@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 12/14] staging: binder: Fix ABI for 64bit Android
-Message-ID: <20140218203239.GA18852@kroah.com>
-References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
- <1392674322-9036-13-git-send-email-john.stultz@linaro.org>
- <20140218190828.GA10376@kroah.com>
- <CALAqxLWMF0WFAoi-yGtWiKh2Dgw8hpM4NY5F8TQ5Yt3MvHY3kA@mail.gmail.com>
- <20140218194936.GA8584@kroah.com>
- <CALAqxLXYzCkwywS2+besc3Ai1yJc9EuDwDEHquF0OnCjPOXe_Q@mail.gmail.com>
+	Tue, 18 Feb 2014 15:31:28 -0500
+Message-ID: <5303C31C.4070607@wwwdotorg.org>
+Date: Tue, 18 Feb 2014 13:31:24 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLXYzCkwywS2+besc3Ai1yJc9EuDwDEHquF0OnCjPOXe_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
+        jinchoi@broadcom.com, Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+References: <cover.1392273722.git.viresh.kumar@linaro.org>	<52FE71BD.3020103@wwwdotorg.org>	<52FE7AFD.2040203@wwwdotorg.org> <CAKohpo=JVUPV81hFmwpuweWrfoEGZ0S_pkb9Fd+-SCXy+O+QCQ@mail.gmail.com>
+In-Reply-To: <CAKohpo=JVUPV81hFmwpuweWrfoEGZ0S_pkb9Fd+-SCXy+O+QCQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 12:02:07PM -0800, John Stultz wrote:
-> On Tue, Feb 18, 2014 at 11:49 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Feb 18, 2014 at 11:30:26AM -0800, John Stultz wrote:
-> >> On Tue, Feb 18, 2014 at 11:08 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Mon, Feb 17, 2014 at 01:58:40PM -0800, John Stultz wrote:
-> >> >> From: Serban Constantinescu <serban.constantinescu@arm.com>
-> >> >>
-> >> >> This patch fixes the ABI for 64bit Android userspace.
-> >> >> BC_REQUEST_DEATH_NOTIFICATION and BC_CLEAR_DEATH_NOTIFICATION claim
-> >> >> to be using struct binder_ptr_cookie, but they are using a 32bit handle
-> >> >> and a pointer.
-> >> >>
-> >> >> On 32bit systems the payload size is the same as the size of struct
-> >> >> binder_ptr_cookie, however for 64bit systems this will differ. This
-> >> >> patch adds struct binder_handle_cookie that fixes this issue for 64bit
-> >> >> Android.
-> >> >>
-> >> >> Since there are no 64bit users of this interface that we know of this
-> >> >> change should not affect any existing systems.
-> >> >
-> >> > But you are changing the ioctl structures here, what is that going to
-> >> > cause with old programs?
-> >>
-> >> So I'd be glad for Serban or Arve to clarify, but my understanding
-> >> (and as is described in the commit message) is that the assumption is
-> >> there are no 64bit binder users at this point, and the ioctl structure
-> >> changes are made such that existing 32bit applications are unaffected.
-> >
-> > How does changing the structure size, and contents, not affect any
-> > applications or the kernel code?  What am I missing here?
+On 02/16/2014 11:02 PM, Viresh Kumar wrote:
+> On 15 February 2014 01:52, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> BTW, I also happened to test these on a Tegra114 system, on which there
+>> is no cpufreq driver, and this series (applied on top of commit
+>> 9398a10cd964 Merge tag 'regulator-v3.14-rc2') causes the following
+>> during suspend:
 > 
-> On 32bit pointers and ints are the same size? (Years ago I sat through
-> your presentation on this, so I'm worried I'm missing something here
-> :)
-> 
-> struct binder_ptr_cookie {
-> void *ptr;
-> void *cookie;
-> };
-> 
-> struct binder_handle_cookie {
-> __u32 handle;
-> void *cookie;
-> } __attribute__((packed));
-> 
-> 
-> On 32bit systems these are the same size.  Now on 64bit systems, this
-> changes things, and would break users, but the assumption here is
-> there are no pre-existing 64bit binder users.
+> Ahh, that's a obvious bug. Following would fix it, thanks:
 
-But you added a field to the existing structure, right?  I don't really
-remember the patch, it was a few hundred back in my review of stuff
-today, sorry...
-
-greg k-h
+Yes, I tested V6 of the patch series, which incorporates that change,
+and it's OK.
