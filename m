@@ -1,89 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750727AbaBRXWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:22:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50934 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962AbaBRWqa (ORCPT
+	id S1754092AbaBRXWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:22:49 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37944 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202AbaBRXWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:30 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>, Jan Kara <jack@suse.cz>,
-        Roland Dreier <roland@purestorage.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.10 24/26] IB/qib: Convert qib_user_sdma_pin_pages() to use get_user_pages_fast()
-Date: Tue, 18 Feb 2014 14:47:20 -0800
-Message-Id: <20140218224531.091301078@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
-References: <20140218224530.398913499@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 18 Feb 2014 18:22:45 -0500
+Date: Tue, 18 Feb 2014 17:20:17 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mcb: Add PCI carrier for MEN Chameleon Bus
+Message-ID: <20140218232017.GA31820@joshc.qualcomm.com>
+References: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de>
+ <1392737654-22682-3-git-send-email-johannes.thumshirn@men.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392737654-22682-3-git-send-email-johannes.thumshirn@men.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 18, 2014 at 04:34:13PM +0100, Johannes Thumshirn wrote:
+> Add support for MCB over PCI devices. Both PCI attached on-board Chameleon FPGAs
+> as well as CompactPCI based MCB carrier cards are supported with this driver.
+> 
+> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> ---
+>  drivers/mcb/Kconfig   |  13 ++++++
+>  drivers/mcb/Makefile  |   2 +
+>  drivers/mcb/mcb-pci.c | 108 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 123 insertions(+)
+>  create mode 100644 drivers/mcb/mcb-pci.c
+> 
+> diff --git a/drivers/mcb/Kconfig b/drivers/mcb/Kconfig
+> index 9e7d6f5..8b058bc 100644
+> --- a/drivers/mcb/Kconfig
+> +++ b/drivers/mcb/Kconfig
+> @@ -14,3 +14,16 @@ menuconfig MCB
+>  
+>  	   If build as a module, the module is called mcb.ko
+>  
+> +if MCB
+> +config MCB_PCI
+> +	   tristate "PCI based MCB carrier"
+> +	   default m if MCB
 
-------------------
+'if MCB' is redundant (MCB has to be set for this option to even be
+available).
 
-From: Jan Kara <jack@suse.cz>
+[..]
+> +++ b/drivers/mcb/mcb-pci.c
+> @@ -0,0 +1,108 @@
 
-commit 603e7729920e42b3c2f4dbfab9eef4878cb6e8fa upstream.
+Copyright/license blurb?
 
-qib_user_sdma_queue_pkts() gets called with mmap_sem held for
-writing. Except for get_user_pages() deep down in
-qib_user_sdma_pin_pages() we don't seem to need mmap_sem at all.  Even
-more interestingly the function qib_user_sdma_queue_pkts() (and also
-qib_user_sdma_coalesce() called somewhat later) call copy_from_user()
-which can hit a page fault and we deadlock on trying to get mmap_sem
-when handling that fault.
+> +#include <linux/module.h>
+> +#include <linux/pci.h>
+> +#include <linux/mcb.h>
+> +
+> +#include "mcb-internal.h"
+> +
+> +static struct mcb_bus *bus;
+> +struct priv {
+> +	void __iomem *base;
+> +};
 
-So just make qib_user_sdma_pin_pages() use get_user_pages_fast() and
-leave mmap_sem locking for mm.
+This seems weird.  Why is the bus not part of your private data?  Seems
+like you're unnecessarily restricting yourself to supporting only one of
+these devices at a time...
 
-This deadlock has actually been observed in the wild when the node
-is under memory pressure.
+> +
+> +static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+> +{
+> +	struct priv *priv;
+> +	phys_addr_t mapbase;
+> +	int ret = 0;
 
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-[Backported to 3.10: (Thanks to Ben Huthings)
- - Adjust context
- - Adjust indentation and nr_pages argument in qib_user_sdma_pin_pages()]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+No need to initialize.
 
----
- drivers/infiniband/hw/qib/qib_user_sdma.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+> +	int num_cells;
+> +	unsigned long flags;
+> +
+> +	priv = devm_kzalloc(&pdev->dev, sizeof(struct priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	ret = pci_enable_device(pdev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to enable PCI device\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	mapbase = pci_resource_start(pdev, 0);
+> +	if (!mapbase) {
+> +		dev_err(&pdev->dev, "No PCI resource\n");
+> +		goto err_start;
+> +	}
+> +
+> +	ret = pci_request_region(pdev, 0, KBUILD_MODNAME);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to request PCI BARs\n");
+> +		goto err_start;
+> +	}
+> +
+> +	priv->base = pci_iomap(pdev, 0, 0);
 
---- a/drivers/infiniband/hw/qib/qib_user_sdma.c
-+++ b/drivers/infiniband/hw/qib/qib_user_sdma.c
-@@ -284,8 +284,7 @@ static int qib_user_sdma_pin_pages(const
- 	int j;
- 	int ret;
- 
--	ret = get_user_pages(current, current->mm, addr,
--			     npages, 0, 1, pages, NULL);
-+	ret = get_user_pages_fast(addr, npages, 0, pages);
- 
- 	if (ret != npages) {
- 		int i;
-@@ -830,10 +829,7 @@ int qib_user_sdma_writev(struct qib_ctxt
- 	while (dim) {
- 		const int mxp = 8;
- 
--		down_write(&current->mm->mmap_sem);
- 		ret = qib_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
--		up_write(&current->mm->mmap_sem);
--
- 		if (ret <= 0)
- 			goto done_unlock;
- 		else {
+Hmm.  There should really be a devm_* variant for PCI resources.
 
+[..]
+> +
+> +static void mcb_pci_remove(struct pci_dev *pdev)
+> +{
+> +	struct priv *priv = pci_get_drvdata(pdev);
+> +
+> +	mcb_release_bus(bus);
+> +
+> +	pci_iounmap(pdev, priv->base);
+> +	pci_release_region(pdev, 0);
+> +	pci_disable_device(pdev);
+> +	pci_set_drvdata(pdev, NULL);
+> +}
+> +
+> +static struct pci_device_id mcb_pci_tbl[] = {
 
+const?
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
