@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaBRW4P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:56:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51189 "EHLO
+	id S1753460AbaBRWrS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:47:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51141 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466AbaBRWrU (ORCPT
+	with ESMTP id S1753370AbaBRWrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:20 -0500
+	Tue, 18 Feb 2014 17:47:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 23/40] mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
-Date: Tue, 18 Feb 2014 14:47:24 -0800
-Message-Id: <20140218224433.990242924@linuxfoundation.org>
+        Nathan Lynch <nathan_lynch@mentor.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.13 11/40] arm64: vdso: update wtm fields for CLOCK_MONOTONIC_COARSE
+Date: Tue, 18 Feb 2014 14:47:12 -0800
+Message-Id: <20140218224433.653703216@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -33,87 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Nathan Lynch <nathan_lynch@mentor.com>
 
-commit a85d9df1ea1d23682a0ed1e100e6965006595d06 upstream.
+commit d4022a335271a48cce49df35d825897914fbffe3 upstream.
 
-During aio stress test, we observed the following lockdep warning.  This
-mean AIO+numa_balancing is currently deadlockable.
+Update wall-to-monotonic fields in the VDSO data page
+unconditionally.  These are used to service CLOCK_MONOTONIC_COARSE,
+which is not guarded by use_syscall.
 
-The problem is, aio_migratepage disable interrupt, but
-__set_page_dirty_nobuffers unintentionally enable it again.
-
-Generally, all helper function should use spin_lock_irqsave() instead of
-spin_lock_irq() because they don't know caller at all.
-
-   other info that might help us debug this:
-    Possible unsafe locking scenario:
-
-          CPU0
-          ----
-     lock(&(&ctx->completion_lock)->rlock);
-     <Interrupt>
-       lock(&(&ctx->completion_lock)->rlock);
-
-    *** DEADLOCK ***
-
-      dump_stack+0x19/0x1b
-      print_usage_bug+0x1f7/0x208
-      mark_lock+0x21d/0x2a0
-      mark_held_locks+0xb9/0x140
-      trace_hardirqs_on_caller+0x105/0x1d0
-      trace_hardirqs_on+0xd/0x10
-      _raw_spin_unlock_irq+0x2c/0x50
-      __set_page_dirty_nobuffers+0x8c/0xf0
-      migrate_page_copy+0x434/0x540
-      aio_migratepage+0xb1/0x140
-      move_to_new_page+0x7d/0x230
-      migrate_pages+0x5e5/0x700
-      migrate_misplaced_page+0xbc/0xf0
-      do_numa_page+0x102/0x190
-      handle_pte_fault+0x241/0x970
-      handle_mm_fault+0x265/0x370
-      __do_page_fault+0x172/0x5a0
-      do_page_fault+0x1a/0x70
-      page_fault+0x28/0x30
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page-writeback.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm64/kernel/vdso.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -2173,11 +2173,12 @@ int __set_page_dirty_nobuffers(struct pa
- 	if (!TestSetPageDirty(page)) {
- 		struct address_space *mapping = page_mapping(page);
- 		struct address_space *mapping2;
-+		unsigned long flags;
+--- a/arch/arm64/kernel/vdso.c
++++ b/arch/arm64/kernel/vdso.c
+@@ -238,6 +238,8 @@ void update_vsyscall(struct timekeeper *
+ 	vdso_data->use_syscall			= use_syscall;
+ 	vdso_data->xtime_coarse_sec		= xtime_coarse.tv_sec;
+ 	vdso_data->xtime_coarse_nsec		= xtime_coarse.tv_nsec;
++	vdso_data->wtm_clock_sec		= tk->wall_to_monotonic.tv_sec;
++	vdso_data->wtm_clock_nsec		= tk->wall_to_monotonic.tv_nsec;
  
- 		if (!mapping)
- 			return 1;
+ 	if (!use_syscall) {
+ 		vdso_data->cs_cycle_last	= tk->clock->cycle_last;
+@@ -245,8 +247,6 @@ void update_vsyscall(struct timekeeper *
+ 		vdso_data->xtime_clock_nsec	= tk->xtime_nsec;
+ 		vdso_data->cs_mult		= tk->mult;
+ 		vdso_data->cs_shift		= tk->shift;
+-		vdso_data->wtm_clock_sec	= tk->wall_to_monotonic.tv_sec;
+-		vdso_data->wtm_clock_nsec	= tk->wall_to_monotonic.tv_nsec;
+ 	}
  
--		spin_lock_irq(&mapping->tree_lock);
-+		spin_lock_irqsave(&mapping->tree_lock, flags);
- 		mapping2 = page_mapping(page);
- 		if (mapping2) { /* Race with truncate? */
- 			BUG_ON(mapping2 != mapping);
-@@ -2186,7 +2187,7 @@ int __set_page_dirty_nobuffers(struct pa
- 			radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 		}
--		spin_unlock_irq(&mapping->tree_lock);
-+		spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 		if (mapping->host) {
- 			/* !PageAnon && !swapper_space */
- 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+ 	smp_wmb();
 
 
