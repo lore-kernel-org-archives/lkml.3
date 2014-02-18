@@ -1,194 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaBRSXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:23:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41060 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587AbaBRSWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:22:54 -0500
-From: Thomas Renninger <trenn@suse.de>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, x86@kernel.org,
-        devel@acpica.org, mingo@redhat.com, ck@conrad-kostecki.de,
-        tglx@linutronix.de, trenn@suse.de, rjw@rjwysocki.net
-Subject: [PATCH 1/4] ACPI: Provide support for ACPI table adding via OS
-Date: Tue, 18 Feb 2014 19:22:40 +0100
-Message-Id: <1392747763-3384-2-git-send-email-trenn@suse.de>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1392747763-3384-1-git-send-email-trenn@suse.de>
-References: <530265A3.3020302@zytor.com>
- <1392747763-3384-1-git-send-email-trenn@suse.de>
-To: unlisted-recipients:; (no To-header on input)
+	id S1751460AbaBRS0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:26:51 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:46144 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871AbaBRS0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 13:26:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392630167-26317-1-git-send-email-fathi.boudra@linaro.org>
+References: <1392630167-26317-1-git-send-email-fathi.boudra@linaro.org>
+Date: Tue, 18 Feb 2014 10:26:49 -0800
+X-Google-Sender-Auth: kcMsr2-OLWr6KaCe0DFGxBsYeQE
+Message-ID: <CAGXu5jJLy1X3_KYhAD+n80dYTRte3B=214k9PQvU8kBNCT=Y5w@mail.gmail.com>
+Subject: Re: [PATCH] Makefile: fix extra parenthesis typo when
+ CC_STACKPROTECTOR_REGULAR is enabled
+From: Kees Cook <keescook@chromium.org>
+To: Fathi Boudra <fathi.boudra@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is done the same way as the previous ACPI physical table override
-mechanism.
-How to override or add tables via initrd, please look up:
-Documentation/acpi/initrd_table_override.txt
+On Mon, Feb 17, 2014 at 1:42 AM, Fathi Boudra <fathi.boudra@linaro.org> wrote:
+> extra parenthesis typo introduced in commit 19952a9203 is causing
+> the following error when CONFIG_CC_STACKPROTECTOR_REGULAR is enabled:
+> Makefile:608: Cannot use CONFIG_CC_STACKPROTECTOR: -fstack-protector not
+> supported by compiler
+> Makefile:608: *** missing separator.  Stop.
 
-SSDTs can only be overridden, not added.
+Yikes! I have no idea how that snuck in. :( Thank you for noticing and
+fixing this.
 
-Overriding only happens if the OEM id of the table header matches the one
-with the BIOS provided one.
-All table types (SSDTs are an exception), must only show up once.
-So either you:
-   - Add a fresh new table for adding of which type (signature) none exists
-     in the BIOS  -> OS ACPI table adding happens.
-or
-   - Add a table which already exists in BIOS, but the OEM id must match the
-     one of the table of the same type (signature) that exists in BIOS already
-     -> OS ACPI table overriding happens
-     Typically one copies away the original ACPI table, disassembles,
-     modifies (for example adding debug strings), compiles it and provides
-     the table via initrd for overriding (will have the same OEM id).
-     But this is not necessary, one could also come up with a selfmade
-     table for overriding, by taking care that the signature and OEM id is
-     the same as the one provided by BIOS
+> Signed-off-by: Fathi Boudra <fathi.boudra@linaro.org>
 
-In ACPI table overriding case you see in dmesg:
-   ACPI: Override [DSDT-  BXDSDT], this is unsafe: tainting kernel
-   Disabling lock debugging due to kernel taint
+Acked-by: Kees Cook <keescook@chromium.org>
 
-In ACPI table adding case you see in dmesg (BGRT table got added):
-   ACPI: Add [BGRT-SLIC-WKS], this is unsafe: tainting kernel
-   ACPI: BGRT 000000007fffd1ba 000038 (v00 HPQOEM SLIC-WKS 01072009
-         INTL 20130823)
+Thanks!
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: hpa@zytor.com
-CC: tglx@linutronix.de
-CC: ck@conrad-kostecki.de
-CC: linux-kernel@vger.kernel.org
-CC: x86@kernel.org
-CC: mingo@redhat.com
-CC: rjw@rjwysocki.net
-CC: devel@acpica.org
----
- drivers/acpi/osl.c |   89 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 88 insertions(+), 1 deletions(-)
+-Kees
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index fc1aa79..07439b4 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -566,6 +566,8 @@ static const char * const table_sigs[] = {
- 
- #define ACPI_OVERRIDE_TABLES 64
- static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
-+/* Remember physical address of overriden or added tables */
-+static acpi_physical_address acpi_table_overridden[ACPI_OVERRIDE_TABLES];
- 
- #define MAP_CHUNK_SIZE   (NR_FIX_BTMAPS << PAGE_SHIFT)
- 
-@@ -715,7 +717,7 @@ acpi_os_physical_table_override(struct acpi_table_header *existing_table,
- 	*address = 0;
- 	return AE_OK;
- #else
--	int table_offset = 0;
-+	int no, table_offset = 0;
- 	struct acpi_table_header *table;
- 
- 	*table_length = 0;
-@@ -759,6 +761,12 @@ acpi_os_physical_table_override(struct acpi_table_header *existing_table,
- 		*table_length = table->length;
- 		acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
- 		*address = acpi_tables_addr + table_offset;
-+		for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
-+			if (acpi_table_overridden[no] == 0) {
-+				acpi_table_overridden[no] = *address;
-+				break;
-+			}
-+		}
- 		break;
- 	} while (table_offset + ACPI_HEADER_SIZE < all_tables_size);
- 
-@@ -768,6 +776,85 @@ acpi_os_physical_table_override(struct acpi_table_header *existing_table,
- #endif
- }
- 
-+acpi_status
-+acpi_os_physical_table_add(acpi_physical_address *address,
-+			   u32 *table_length)
-+{
-+#ifndef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+	*table_length = 0;
-+	*address = 0;
-+	return AE_OK;
-+#else
-+	int no, table_offset = 0;
-+	struct acpi_table_header *table;
-+
-+	*table_length = 0;
-+	*address = 0;
-+
-+	if (!acpi_tables_addr)
-+		return AE_OK;
-+
-+	do {
-+		if (table_offset + ACPI_HEADER_SIZE > all_tables_size) {
-+			WARN_ON(1);
-+			return AE_OK;
-+		}
-+
-+		table = acpi_os_map_memory(acpi_tables_addr + table_offset,
-+					   ACPI_HEADER_SIZE);
-+
-+		if (table_offset + table->length > all_tables_size) {
-+			acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
-+			WARN_ON(1);
-+			return AE_OK;
-+		}
-+
-+		table_offset += table->length;
-+
-+		/* Do not add SSDTs for now, they might be intended to get
-+		   overridden when an SSDT gets loaded dynamically in ACPI
-+		   context at any time later */
-+		if (!memcmp("SSDT", table->signature, 4)) {
-+			acpi_os_unmap_memory(table,
-+				     ACPI_HEADER_SIZE);
-+			continue;
-+		}
-+
-+		/* Only add tables that have not been overridden already */
-+		for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
-+			if (acpi_table_overridden[no] == 0)
-+				break;
-+			if (acpi_table_overridden[no] ==
-+			    acpi_tables_addr + table_offset - table->length)
-+				break;
-+		}
-+		/* All tables have been added or overridden */
-+		if (acpi_table_overridden[no] != 0) {
-+			acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
-+			continue;
-+		}
-+		/* Max table override/add limit reached */
-+		if (no == ACPI_OVERRIDE_TABLES) {
-+			acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
-+			return AE_ERROR;
-+		}
-+
-+		table_offset -= table->length;
-+		*table_length = table->length;
-+		*address = acpi_tables_addr + table_offset;
-+		/* do not add this table again */
-+		acpi_table_overridden[no] = *address;
-+		pr_warn(PREFIX
-+			"Add [%4.4s-%8.8s], this is unsafe: tainting kernel\n",
-+			table->signature, table->oem_table_id);
-+		add_taint(TAINT_OVERRIDDEN_ACPI_TABLE, LOCKDEP_NOW_UNRELIABLE);
-+		acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
-+		return AE_OK;
-+	} while (table_offset + ACPI_HEADER_SIZE < all_tables_size);
-+	return AE_OK;
-+#endif
-+}
-+
- static irqreturn_t acpi_irq(int irq, void *dev_id)
- {
- 	u32 handled;
+> ---
+>  Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/Makefile b/Makefile
+> index 893d6f0..eeaf3e7 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -606,7 +606,7 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
+>    stackp-flag := -fstack-protector
+>    ifeq ($(call cc-option, $(stackp-flag)),)
+>      $(warning Cannot use CONFIG_CC_STACKPROTECTOR: \
+> -             -fstack-protector not supported by compiler))
+> +             -fstack-protector not supported by compiler)
+>    endif
+>  else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
+>    stackp-flag := -fstack-protector-strong
+> --
+> 1.8.1.2
+>
+
+
+
 -- 
-1.7.6.1
-
+Kees Cook
+Chrome OS Security
