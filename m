@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577AbaBRQyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:54:37 -0500
-Received: from imap.thunk.org ([74.207.234.97]:59605 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055AbaBRQyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:54:33 -0500
-Date: Tue, 18 Feb 2014 11:54:26 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: [GIT PULL] ext4 fixes for 3.14
-Message-ID: <20140218165426.GA1482@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
+	id S1756222AbaBRQzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:55:52 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:50199 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaBRQzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 11:55:49 -0500
+Date: Tue, 18 Feb 2014 08:55:44 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140218165543.GO4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1392486310.18779.6447.camel@triegel.csb>
+ <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+ <1392666947.18779.6838.camel@triegel.csb>
+ <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+ <1392672063.18779.6940.camel@triegel.csb>
+ <1392675939.18779.7063.camel@triegel.csb>
+ <CA+55aFx2jxE8!sTZEmNnMg6ktDuU_0xPiEw3=qH0=+xat8p8cAA@mail.gmail.com>
+ <1392680518.18779.7213.camel@triegel.csb>
+ <CA+55aFzSBZMC6kbdJj5Jus9-q1dzXdCYQXfMm34O+9h8SbGcGQ@mail.gmail.com>
+ <1392737920.18779.7659.camel@triegel.csb>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1392737920.18779.7659.camel@triegel.csb>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021816-1344-0000-0000-000005DC1556
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+On Tue, Feb 18, 2014 at 04:38:40PM +0100, Torvald Riegel wrote:
+> On Mon, 2014-02-17 at 16:18 -0800, Linus Torvalds wrote:
+> > On Mon, Feb 17, 2014 at 3:41 PM, Torvald Riegel <triegel@redhat.com> wrote:
+> > >
+> > > There's an underlying problem here that's independent from the actual
+> > > instance that you're worried about here: "no sense" is a ultimately a
+> > > matter of taste/objectives/priorities as long as the respective
+> > > specification is logically consistent.
+> > 
+> > Yes. But I don't think it's "independent".
+> > 
+> > Exactly *because* some people will read standards without applying
+> > "does the resulting code generation actually make sense for the
+> > programmer that wrote the code", the standard has to be pretty clear.
+> > 
+> > The standard often *isn't* pretty clear. It wasn't clear enough when
+> > it came to "volatile", and yet that was a *much* simpler concept than
+> > atomic accesses and memory ordering.
+> > 
+> > And most of the time it's not a big deal. But because the C standard
+> > generally tries to be very portable, and cover different machines,
+> > there tends to be a mindset that anything inherently unportable is
+> > "undefined" or "implementation defined", and then the compiler writer
+> > is basically given free reign to do anything they want (with
+> > "implementation defined" at least requiring that it is reliably the
+> > same thing).
+> 
+> Yes, that's how it works in general.  And this makes sense, because all
+> optimizations rely on that.  Second, you can't keep something consistent
+> (eg, between compilers) if it isn't specified.  So if we want stricter
+> rules, those need to be specified somewhere.
+> 
+> > And when it comes to memory ordering, *everything* is basically
+> > non-portable, because different CPU's very much have different rules.
+> 
+> Well, the current set of memory orders (and the memory model as a whole)
+> is portable, even though it might not allow to exploit all hardware
+> properties, and thus might perform sub-optimally in some cases.
+> 
+> > I worry that that means that the standard then takes the stance that
+> > "well, compiler re-ordering is no worse than CPU re-ordering, so we
+> > let the compiler do anything". And then we have to either add
+> > "volatile" to make sure the compiler doesn't do that, or use an overly
+> > strict memory model at the compiler level that makes it all pointless.
+> 
+> Using "volatile" is not a good option, I think, because synchronization
+> between threads should be orthogonal to observable output of the
+> abstract machine.
 
-  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+Are you thinking of "volatile" -instead- of atomics?  My belief is that
+given the current standard there will be times that we need to use
+"volatile" -in- -addition- to atomics.
 
-are available in the git repository at:
+> The current memory model might not allow to exploit all hardware
+> properties, I agree.
+> 
+> But then why don't we work on how to extend it to do so?  We need to
+> specify the behavior we want anyway, and this can't be independent of
+> the language semantics, so it has to be conceptually integrated with the
+> standard anyway.
+> 
+> > So I really really hope that the standard doesn't give compiler
+> > writers free hands to do anything that they can prove is "equivalent"
+> > in the virtual C machine model.
+> 
+> It does, but it also doesn't mean this can't be extended.  So let's
+> focus on whether we can find an extension.
+> 
+> > That's not how you get reliable
+> > results.
+> 
+> In this general form, that's obviously a false claim.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
+These two sentences starkly illustrate the difference in perspective
+between you two.  You are talking past each other.  Not sure how to fix
+this at the moment, but what else is new?  ;-)
 
-for you to fetch changes up to 37b0791e6a396e9cda060531d3ffb863d93882f9:
+							Thanx, Paul
 
-  ext4: address a benign compiler warning (2014-02-17 20:50:59 -0500)
-
-----------------------------------------------------------------
-Miscellaneous ext4 bug fixes for v3.14
-
-----------------------------------------------------------------
-Azat Khuzhin (1):
-      ext4: initialize multi-block allocator before checking block descriptors
-
-Dan Carpenter (2):
-      jbd2: fix use after free in jbd2_journal_start_reserved()
-      ext4: remove an unneeded check in mext_page_mkuptodate()
-
-Eric Whitney (1):
-      ext4: fix xfstest generic/299 block validity failures
-
-Fabian Frederick (1):
-      ext4: Add __init marking to init_inodecache
-
-Patrick Palka (1):
-      ext4: address a benign compiler warning
-
-Rashika Kheria (1):
-      jbd2: mark file-local functions as static
-
-Theodore Ts'o (5):
-      ext4: don't try to modify s_flags if the the file system is read-only
-      ext4: fix online resize with very large inode tables
-      ext4: fix online resize with a non-standard blocks per group setting
-      ext4: don't leave i_crtime.tv_sec uninitialized
-      ext4: clean up error handling in swap_inode_boot_loader()
-
-Zheng Liu (1):
-      ext4: fix error paths in swap_inode_boot_loader()
-
- fs/ext4/ext4.h        |  2 ++
- fs/ext4/extents.c     |  1 +
- fs/ext4/ioctl.c       | 27 ++++++---------------
- fs/ext4/mballoc.h     |  2 +-
- fs/ext4/move_extent.c |  3 +--
- fs/ext4/resize.c      | 34 ++++++++++++++++----------
- fs/ext4/super.c       | 70 +++++++++++++++++++++++++++++------------------------
- fs/jbd2/journal.c     |  6 ++---
- fs/jbd2/transaction.c |  6 +++--
- 9 files changed, 80 insertions(+), 71 deletions(-)
