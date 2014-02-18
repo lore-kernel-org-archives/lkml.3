@@ -1,90 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaBRXeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:34:15 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:51412 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752822AbaBRXeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:34:13 -0500
-Date: Tue, 18 Feb 2014 15:34:05 -0800
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: ppc: RECLAIM_DISTANCE 10?
-Message-ID: <20140218233404.GB10844@linux.vnet.ibm.com>
-References: <20140218090658.GA28130@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218090658.GA28130@dhcp22.suse.cz>
-X-Operating-System: Linux 3.11.0-15-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021823-0320-0000-0000-0000027E2D7A
+	id S1753911AbaBRXea (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:34:30 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37274 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaBRXeX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 18:34:23 -0500
+Date: Tue, 18 Feb 2014 18:34:21 -0500 (EST)
+Message-Id: <20140218.183421.1907590648974367512.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 18 Feb 2014 15:34:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
 
-On 18.02.2014 [10:06:58 +0100], Michal Hocko wrote:
-> Hi,
-> I have just noticed that ppc has RECLAIM_DISTANCE reduced to 10 set by
-> 56608209d34b (powerpc/numa: Set a smaller value for RECLAIM_DISTANCE to
-> enable zone reclaim). The commit message suggests that the zone reclaim
-> is desirable for all NUMA configurations.
-> 
-> History has shown that the zone reclaim is more often harmful than
-> helpful and leads to performance problems. The default RECLAIM_DISTANCE
-> for generic case has been increased from 20 to 30 around 3.0
-> (32e45ff43eaf mm: increase RECLAIM_DISTANCE to 30).
+1) kvaser CAN driver has fixed limits of some of it's table, validate that
+   we won't exceed those limits at probe time.  Fix from Olivier Sobrie.
 
-Interesting.
+2) Fix rtl8192ce disabling interrupts for too long, from Olivier Langlois.
 
-> I strongly suspect that the patch is incorrect and it should be
-> reverted. Before I will send a revert I would like to understand what
-> led to the patch in the first place. I do not see why would PPC use only
-> LOCAL_DISTANCE and REMOTE_DISTANCE distances and in fact machines I have
-> seen use different values.
-> 
-> Anton, could you comment please?
+3) Fix botched shift in ath5k driver, from Dan Carpenter.
 
-I'll let Anton comment here, but in looking into this issue in working
-on CONFIG_HAVE_MEMORYLESS_NODE support, I realized that any LPAR with
-memoryless nodes will set zone_reclaim_mode to 1. I think we want to
-ignore memoryless nodes when we set up the reclaim mode like the
-following? I'll send it as a proper patch if you agree?
+4) Fix corruption of deferred packets in TIPC, from Erik Hugne.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5de4337..4f6ff6f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1853,8 +1853,9 @@ static void __paginginit init_zone_allows_reclaim(int nid)
- {
-        int i;
- 
--       for_each_online_node(i)
--               if (node_distance(nid, i) <= RECLAIM_DISTANCE)
-+       for_each_online_node(i) {
-+               if (node_distance(nid, i) <= RECLAIM_DISTANCE ||
-+                                       local_memory_node(nid) != nid)
-                        node_set(i, NODE_DATA(nid)->reclaim_nodes);
-                else
-                        zone_reclaim_mode = 1;
+5) Fix newlink error path in macvlan driver, from Cong Wang.
 
-Note, this won't actually do anything if CONFIG_HAVE_MEMORYLESS_NODES is
-not set, but if it is, I think semantically it will indicate that
-memoryless nodes *have* to reclaim remotely.
+6) Fix netpoll deadlock in bonding, from Ding Tianhong.
 
-And actually the above won't work, because the callpath is
+7) Handle GSO packets properly in forwarding path when fragmentation
+   is necessary on egress, from Florian Westphal.
 
-start_kernel -> setup_arch -> paging_init [-> free_area_init_nodes ->
-free_area_init_node -> init_zone_allows_reclaim] which is called before
-build_all_zonelists. This is a similar ordering problem as I'm having
-with the MEMORYLESS_NODE support, will work on it.
+8) Fix axienet build errors, from Michal Simek.
 
-Thanks,
-Nish
+9) Fix refcounting of ubufs on tx in vhost net driver, from Michael
+   S. Tsirkin.
 
+10) Carrier status isn't set properly in hyperv driver, from Haiyang
+    Zhang.
+
+11) Missing pci_disable_device() in tulip_remove_one), from Ingo Molnar.
+
+12) AF_PACKET qdisc bypass mode doesn't adhere to driver provided TX
+    queue selection method.  Add a fallback method mechanism to fix
+    this bug, from Daniel Borkmann.
+
+13) Fix regression in link local route handling on GRE tunnels, from
+    Nicolas Dichtel.
+
+14) Bonding can assign dup aggregator IDs in some sequences of
+    configuration, fix by making the allocation counter per-bond
+    instead of global.  From Jiri Bohac.
+
+15) sctp_connectx() needs compat translations, from Daniel Borkmann.
+
+16) Fix of_mdio PHY interrupt parsing, from Ben Dooks.
+
+Please pull, thanks a lot!
+
+The following changes since commit 738b52bb9845da183b6ff46a8f685b56a63379d1:
+
+  Merge tag 'microblaze-3.14-rc3' of git://git.monstr.eu/linux-2.6-microblaze (2014-02-11 12:24:35 -0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
+
+for you to fetch changes up to 22f08ad9721d4d1a92061b60026144627a60d644:
+
+  MAINTAINERS: add entry for the PHY library (2014-02-18 18:13:40 -0500)
+
+----------------------------------------------------------------
+Aleksander Morgado (1):
+      net: qmi_wwan: add support for Cinterion PXS8 and PHS8
+
+Antonio Quartulli (9):
+      batman-adv: fix soft-interface MTU computation
+      batman-adv: fix TT-TVLV parsing on OGM reception
+      batman-adv: release vlan object after checking the CRC
+      batman-adv: properly check pskb_may_pull return value
+      batman-adv: avoid potential race condition when adding a new neighbour
+      batman-adv: fix TT CRC computation by ensuring byte order
+      batman-adv: free skb on TVLV parsing success
+      batman-adv: avoid double free when orig_node initialization fails
+      batman-adv: fix potential kernel paging error for unicast transmissions
+
+Ben Dooks (1):
+      of_mdio: fix phy interrupt passing
+
+Cong Wang (2):
+      macvlan: unregister net device when netdev_upper_dev_link() fails
+      net: correct error path in rtnl_newlink()
+
+Dan Carpenter (2):
+      ath5k: shifting the wrong variable for AR5K_AR5210
+      af_packet: remove a stray tab in packet_set_ring()
+
+Daniel Borkmann (4):
+      netdevice: add queue selection fallback handler for ndo_select_queue
+      netdevice: move netdev_cap_txqueue for shared usage to header
+      packet: check for ndo_select_queue during queue selection
+      net: sctp: fix sctp_connectx abi for ia32 emulation/compat mode
+
+David S. Miller (3):
+      Merge tag 'linux-can-fixes-for-3.14-20140212' of git://gitorious.org/linux-can/linux-can
+      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+
+Duan Jiong (2):
+      ipv4: distinguish EHOSTUNREACH from the ENETUNREACH
+      ipv4: fix counter in_slow_tot
+
+Emil Goode (2):
+      net: asix: add missing flag to struct driver_info
+      usbnet: remove generic hard_header_len check
+
+Emmanuel Grumbach (1):
+      iwlwifi: disable TX AMPDU by default for iwldvm
+
+Erik Hugne (1):
+      tipc: fix message corruption bug for deferred packets
+
+FX Le Bail (1):
+      ipv4: ipconfig.c: add parentheses in an if statement
+
+Florian Fainelli (2):
+      net: of_mdio: fix of_set_phy_supported after driver probing
+      MAINTAINERS: add entry for the PHY library
+
+Florian Westphal (2):
+      net: core: introduce netif_skb_dev_features
+      net: ip, ipv6: handle gso skbs in forwarding path
+
+Gerrit Renker (1):
+      dccp: re-enable debug macro
+
+Haiyang Zhang (1):
+      hyperv: Fix the carrier status setting
+
+Heiko Schocher (1):
+      drivers: net: cpsw: fix buggy loop condition
+
+Ingo Molnar (1):
+      drivers/net: tulip_remove_one needs to call pci_disable_device()
+
+Jan Luebbe (1):
+      net: fix macvtap type name in Kconfig
+
+Jingoo Han (1):
+      USB2NET: SR9800: use %zu for size_t
+
+Jiri Bohac (1):
+      bonding: 802.3ad: make aggregator_identifier bond-private
+
+John W. Linville (2):
+      Merge git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Liu Junliang (1):
+      USB2NET: Fix Default to 'y' for SR9800 Device Driver, setting to 'n'
+
+Matija Glavinic Pecotic (1):
+      net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receiver's buffer
+
+Michael S. Tsirkin (2):
+      vhost: fix ref cnt checking deadlock
+      vhost: fix a theoretical race in device cleanup
+
+Michal Simek (2):
+      net: axienet: Fix compilation error
+      net: axienet: Fix compilation warnings
+
+Mike Galbraith (1):
+      net,bonding: fix bond_options.c direct rwlock.h include
+
+Nicolas Dichtel (1):
+      gre: add link local route when local addr is any
+
+Olivier Langlois (2):
+      rtlwifi: rtl8192ce: Fix too long disable of IRQs
+      rtlwifi: Fix incorrect return from rtl_ps_enable_nic()
+
+Olivier Sobrie (1):
+      can: kvaser_usb: check number of channels returned by HW
+
+Paul Gortmaker (1):
+      Documentation/networking: delete orphaned 3c505.txt file.
+
+Russell King (1):
+      NET: fec: only enable napi if we are successful
+
+Russell King - ARM Linux (1):
+      hostap: fix "hostap: proc: Use remove_proc_subtree()"
+
+Simon Wunderlich (1):
+      batman-adv: fix potential orig_node reference leak
+
+Srinivas Kandagatla (1):
+      net: stmmac:sti: Add STi SOC glue driver.
+
+Stanislaw Gruszka (1):
+      rtl8187: fix regression on MIPS without coherent DMA
+
+Stefan Sørensen (1):
+      net:phy:dp83640: Move all HW initialization to dp83640_config_init
+
+Thomas Petazzoni (1):
+      net: ethernet: update dependency and help text of mvneta
+
+Tommie Gannert (1):
+      irtty-sir.c: Do not set_termios() on irtty_close()
+
+Uwe Kleine-König (1):
+      net: cpsw: catch of_get_phy_mode failing and propagate error
+
+Vijay Subramanian (1):
+      net: sched: Cleanup PIE comments
+
+dingtianhong (1):
+      bonding: Fix deadlock in bonding driver when using netpoll
+
+wangweidong (2):
+      sctp: fix a missed .data initialization
+      sctp: optimize the sctp_sysctl_net_register
+
+ .../devicetree/bindings/net/sti-dwmac.txt          |  58 ++++
+ Documentation/networking/3c505.txt                 |  45 ---
+ MAINTAINERS                                        |  11 +
+ drivers/net/Kconfig                                |   2 +-
+ drivers/net/bonding/bond_3ad.c                     |   6 +-
+ drivers/net/bonding/bond_3ad.h                     |   1 +
+ drivers/net/bonding/bond_main.c                    |   9 +-
+ drivers/net/bonding/bond_options.c                 |   2 +-
+ drivers/net/can/usb/kvaser_usb.c                   |   2 +
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c    |   4 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h    |   2 +-
+ drivers/net/ethernet/dec/tulip/tulip_core.c        |   1 +
+ drivers/net/ethernet/freescale/fec_main.c          |   4 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c      |   6 +-
+ drivers/net/ethernet/lantiq_etop.c                 |   2 +-
+ drivers/net/ethernet/marvell/Kconfig               |   6 +-
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c         |   4 +-
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h       |   2 +-
+ drivers/net/ethernet/stmicro/stmmac/Kconfig        |  11 +
+ drivers/net/ethernet/stmicro/stmmac/Makefile       |   1 +
+ drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    | 330 +++++++++++++++++++++
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h       |   3 +
+ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   5 +
+ drivers/net/ethernet/ti/cpsw.c                     |  11 +-
+ drivers/net/ethernet/tile/tilegx.c                 |   2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c  |  13 +-
+ drivers/net/hyperv/netvsc_drv.c                    |  53 +++-
+ drivers/net/irda/irtty-sir.c                       |   1 -
+ drivers/net/macvlan.c                              |   5 +-
+ drivers/net/phy/dp83640.c                          |  13 +-
+ drivers/net/team/team.c                            |   2 +-
+ drivers/net/tun.c                                  |   2 +-
+ drivers/net/usb/Kconfig                            |   1 -
+ drivers/net/usb/asix_devices.c                     |   3 +-
+ drivers/net/usb/ax88179_178a.c                     |   4 +
+ drivers/net/usb/gl620a.c                           |   4 +
+ drivers/net/usb/mcs7830.c                          |   5 +-
+ drivers/net/usb/net1080.c                          |   4 +
+ drivers/net/usb/qmi_wwan.c                         |   9 +-
+ drivers/net/usb/rndis_host.c                       |   4 +
+ drivers/net/usb/smsc75xx.c                         |   4 +
+ drivers/net/usb/smsc95xx.c                         |   4 +
+ drivers/net/usb/sr9800.c                           |   6 +-
+ drivers/net/usb/usbnet.c                           |  25 +-
+ drivers/net/wireless/ath/ath5k/phy.c               |   2 +-
+ drivers/net/wireless/hostap/hostap_proc.c          |   2 +-
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c        |  22 +-
+ drivers/net/wireless/iwlwifi/iwl-drv.c             |   2 +-
+ drivers/net/wireless/iwlwifi/iwl-modparams.h       |  11 +-
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c        |  22 +-
+ drivers/net/wireless/mwifiex/main.c                |   2 +-
+ drivers/net/wireless/rtl818x/rtl8187/rtl8187.h     |  10 +-
+ drivers/net/wireless/rtlwifi/ps.c                  |   2 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c        |  18 +-
+ drivers/of/of_mdio.c                               |  22 +-
+ drivers/staging/bcm/Bcmnet.c                       |   2 +-
+ drivers/staging/netlogic/xlr_net.c                 |   2 +-
+ drivers/staging/rtl8188eu/os_dep/os_intfs.c        |   2 +-
+ drivers/vhost/net.c                                |  47 +--
+ include/linux/netdevice.h                          |  36 ++-
+ include/linux/skbuff.h                             |  17 ++
+ include/net/sctp/structs.h                         |  14 +-
+ net/batman-adv/bat_iv_ogm.c                        |  30 +-
+ net/batman-adv/hard-interface.c                    |  22 +-
+ net/batman-adv/originator.c                        |  36 +++
+ net/batman-adv/originator.h                        |   4 +
+ net/batman-adv/routing.c                           |   4 +-
+ net/batman-adv/send.c                              |   9 +-
+ net/batman-adv/translation-table.c                 |  23 +-
+ net/core/dev.c                                     |  22 +-
+ net/core/flow_dissector.c                          |  20 +-
+ net/core/rtnetlink.c                               |  19 +-
+ net/dccp/ccids/lib/tfrc.c                          |   2 +-
+ net/dccp/ccids/lib/tfrc.h                          |   1 +
+ net/ipv4/ip_forward.c                              |  71 ++++-
+ net/ipv4/ipconfig.c                                |   2 +-
+ net/ipv4/route.c                                   |  13 +-
+ net/ipv6/addrconf.c                                |   2 +
+ net/ipv6/ip6_output.c                              |  17 +-
+ net/mac80211/iface.c                               |   6 +-
+ net/packet/af_packet.c                             |  26 +-
+ net/sched/sch_pie.c                                |  21 +-
+ net/sctp/associola.c                               |  82 ++---
+ net/sctp/sm_statefuns.c                            |   2 +-
+ net/sctp/socket.c                                  |  47 ++-
+ net/sctp/sysctl.c                                  |  18 +-
+ net/sctp/ulpevent.c                                |   8 +-
+ net/tipc/core.h                                    |   1 +
+ net/tipc/link.c                                    |   7 +
+ 89 files changed, 1081 insertions(+), 361 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/sti-dwmac.txt
+ delete mode 100644 Documentation/networking/3c505.txt
+ create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
