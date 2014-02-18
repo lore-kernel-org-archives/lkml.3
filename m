@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849AbaBRX05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:26:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50887 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822AbaBRWqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 16/26] mm: __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
-Date: Tue, 18 Feb 2014 14:47:12 -0800
-Message-Id: <20140218224530.871878311@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
-References: <20140218224530.398913499@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1754550AbaBRX1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:27:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40220 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753671AbaBRX1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 18:27:12 -0500
+Date: Tue, 18 Feb 2014 18:27:02 -0500
+From: Dave Jones <davej@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] Set bounds on what /proc/self/make-it-fail accepts.
+Message-ID: <20140218232702.GA26051@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Rientjes <rientjes@google.com>,
+	Akinobu Mita <akinobu.mita@gmail.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20140218220606.GA9712@redhat.com>
+ <alpine.DEB.2.02.1402181429060.20772@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402181429060.20772@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 18, 2014 at 02:32:02PM -0800, David Rientjes wrote:
+ > On Tue, 18 Feb 2014, Dave Jones wrote:
+ > 
+ > > /proc/self/make-it-fail is a boolean, but accepts any number, including
+ > > negative ones. Change variable to unsigned, and cap upper bound at 1.
+ > 
+ > Hmm, this would break anything that uses anything other than one to enable 
+ > it, but it looks like Documentation/fault-injection/fault-injection.txt 
+ > only provides an example for when it does equal one, so it's probably an 
+ > ok change.  I'm just wondering why non-zero is wrong?  Is this an 
+ > interface that will be extended to support other modes?
 
-------------------
+"Wrong" is perhaps too strong a word, but we only ever check it for non-zero state,
+so it seems at best suboptimal to allow strange configurations.
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+When I saw I could set it to nonsense values like -1, I figured it could
+use some idiot proofing. The lack of any checking at all surprised me.
 
-commit 227d53b397a32a7614667b3ecaf1d89902fb6c12 upstream.
+Future extension of this interface seems unlikely given the boolean sounding name.
+(Though we've done that in the past with things like the overcommit_memory sysctl,
+ with pretty awful end-user results).
 
-To use spin_{un}lock_irq is dangerous if caller disabled interrupt.
-During aio buffer migration, we have a possibility to see the following
-call stack.
-
-aio_migratepage  [disable interrupt]
-  migrate_page_copy
-    clear_page_dirty_for_io
-      set_page_dirty
-        __set_page_dirty_buffers
-          __set_page_dirty
-            spin_lock_irq
-
-This mean, current aio migration is a deadlockable.  spin_lock_irqsave
-is a safer alternative and we should use it.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported-by: David Rientjes rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/buffer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -620,14 +620,16 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
- static void __set_page_dirty(struct page *page,
- 		struct address_space *mapping, int warn)
- {
--	spin_lock_irq(&mapping->tree_lock);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mapping->tree_lock, flags);
- 	if (page->mapping) {	/* Race with truncate? */
- 		WARN_ON_ONCE(warn && !PageUptodate(page));
- 		account_page_dirtied(page, mapping);
- 		radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 	}
--	spin_unlock_irq(&mapping->tree_lock);
-+	spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
- }
- 
-
+	Dave
 
