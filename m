@@ -1,245 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaBRTyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:54:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58614 "EHLO mga09.intel.com"
+	id S1751930AbaBRT5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:57:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27517 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832AbaBRTyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:54:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,503,1389772800"; 
-   d="p7s'?scan'208";a="485382658"
-From: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Li Zefan <lizefan@huawei.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+	id S1751745AbaBRT5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 14:57:50 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Thread-Topic: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
-Thread-Index: AQHPCMNUDB9LRbk7GE+jzVKI+L/oYZp1Q6cAgABthYCAAAJHAIAAbYMAgAH1FwCAAFi3gIAAAjYAgAABqYCAABYGAIAAIqSAgAAVLYCAAAYhgIAABtuAgAAJDYCAAKSvAIAAcA2AgABjroCABJCVAIAD/rkAgAI6zACAFGeTAIAike2AgAAjNgCAAAVEgA==
-Date: Tue, 18 Feb 2014 19:54:34 +0000
-Message-ID: <1392753259.607.9.camel@ppwaskie-mobl.amr.corp.intel.com>
-References: <20140106221251.GJ30183@twins.programming.kicks-ass.net>
-	 <1389048315.32504.57.camel@ppwaskie-mobl.amr.corp.intel.com>
-	 <20140107083440.GL30183@twins.programming.kicks-ass.net>
-	 <1389107743.32504.69.camel@ppwaskie-mobl.amr.corp.intel.com>
-	 <20140107211229.GF2480@laptop.programming.kicks-ass.net>
-	 <1389380100.32504.172.camel@ppwaskie-mobl.amr.corp.intel.com>
-	 <20140113075528.GR7572@laptop.programming.kicks-ass.net>
-	 <52D57AC2.3090109@zytor.com>
-	 <20140127173420.GA9636@twins.programming.kicks-ass.net>
-	 <1392744567.3069.42.camel@ppwaskie-mobl.amr.corp.intel.com>
-	 <20140218193528.GQ14089@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140218193528.GQ14089@laptop.programming.kicks-ass.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.3.136.168]
-Content-Type: multipart/signed; micalg=sha-1;
-	protocol="application/x-pkcs7-signature"; boundary="=-0niHBq5WxlLXsjMfHug1"
-MIME-Version: 1.0
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140218165543.GO4250@linux.vnet.ibm.com>
+References: <1392486310.18779.6447.camel@triegel.csb>
+	 <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	 <1392666947.18779.6838.camel@triegel.csb>
+	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	 <1392672063.18779.6940.camel@triegel.csb>
+	 <1392675939.18779.7063.camel@triegel.csb>
+	 <CA+55aFx2jxE8!sTZEmNnMg6ktDuU_0xPiEw3=qH0=+xat8p8cAA@mail.gmail.com>
+	 <1392680518.18779.7213.camel@triegel.csb>
+	 <CA+55aFzSBZMC6kbdJj5Jus9-q1dzXdCYQXfMm34O+9h8SbGcGQ@mail.gmail.com>
+	 <1392737920.18779.7659.camel@triegel.csb>
+	 <20140218165543.GO4250@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Feb 2014 20:57:12 +0100
+Message-ID: <1392753432.18779.8146.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-0niHBq5WxlLXsjMfHug1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2014-02-18 at 08:55 -0800, Paul E. McKenney wrote:
+> On Tue, Feb 18, 2014 at 04:38:40PM +0100, Torvald Riegel wrote:
+> > On Mon, 2014-02-17 at 16:18 -0800, Linus Torvalds wrote:
+> > > On Mon, Feb 17, 2014 at 3:41 PM, Torvald Riegel <triegel@redhat.com> wrote:
+> > > >
+> > > > There's an underlying problem here that's independent from the actual
+> > > > instance that you're worried about here: "no sense" is a ultimately a
+> > > > matter of taste/objectives/priorities as long as the respective
+> > > > specification is logically consistent.
+> > > 
+> > > Yes. But I don't think it's "independent".
+> > > 
+> > > Exactly *because* some people will read standards without applying
+> > > "does the resulting code generation actually make sense for the
+> > > programmer that wrote the code", the standard has to be pretty clear.
+> > > 
+> > > The standard often *isn't* pretty clear. It wasn't clear enough when
+> > > it came to "volatile", and yet that was a *much* simpler concept than
+> > > atomic accesses and memory ordering.
+> > > 
+> > > And most of the time it's not a big deal. But because the C standard
+> > > generally tries to be very portable, and cover different machines,
+> > > there tends to be a mindset that anything inherently unportable is
+> > > "undefined" or "implementation defined", and then the compiler writer
+> > > is basically given free reign to do anything they want (with
+> > > "implementation defined" at least requiring that it is reliably the
+> > > same thing).
+> > 
+> > Yes, that's how it works in general.  And this makes sense, because all
+> > optimizations rely on that.  Second, you can't keep something consistent
+> > (eg, between compilers) if it isn't specified.  So if we want stricter
+> > rules, those need to be specified somewhere.
+> > 
+> > > And when it comes to memory ordering, *everything* is basically
+> > > non-portable, because different CPU's very much have different rules.
+> > 
+> > Well, the current set of memory orders (and the memory model as a whole)
+> > is portable, even though it might not allow to exploit all hardware
+> > properties, and thus might perform sub-optimally in some cases.
+> > 
+> > > I worry that that means that the standard then takes the stance that
+> > > "well, compiler re-ordering is no worse than CPU re-ordering, so we
+> > > let the compiler do anything". And then we have to either add
+> > > "volatile" to make sure the compiler doesn't do that, or use an overly
+> > > strict memory model at the compiler level that makes it all pointless.
+> > 
+> > Using "volatile" is not a good option, I think, because synchronization
+> > between threads should be orthogonal to observable output of the
+> > abstract machine.
+> 
+> Are you thinking of "volatile" -instead- of atomics?  My belief is that
+> given the current standard there will be times that we need to use
+> "volatile" -in- -addition- to atomics.
 
-On Tue, 2014-02-18 at 20:35 +0100, Peter Zijlstra wrote:
-> On Tue, Feb 18, 2014 at 05:29:42PM +0000, Waskiewicz Jr, Peter P wrote:
-> > > Its not a problem that changing the task:RMID map is expensive, what =
-is
-> > > a problem is that there's no deterministic fashion of doing it.
-> >=20
-> > We are going to add to the SDM that changing RMID's often/frequently is
-> > not the intended use case for this feature, and can cause bogus data.
-> > The real intent is to land threads into an RMID, and run that until the
-> > threads are effectively done.
-> >=20
-> > That being said, reassigning a thread to a new RMID is certainly
-> > supported, just "frequent" updates is not encouraged at all.
->=20
-> You don't even need really high frequency, just unsynchronized wrt
-> reading the counter. Suppose A flips the RMIDs about and just when its
-> done programming B reads them.
->=20
-> At that point you've got 0 guarantee the data makes any kind of sense.
+No, I was talking about having to use "volatile" in addition to atomics
+to get synchronization properties for the atomics.  ISTM that this would
+be unfortunate because the objective for "volatile" (ie, declaring what
+is output of the abstract machine) is orthogonal to synchronization
+between threads.  So if we want to preserve control dependencies and get
+ordering guarantees through that, I wouldn't prefer it through hacks
+based on volatile.
 
-Agreed, there is no guarantee with how the hardware is designed.  We
-don't have an instruction that can nuke RMID-tagged cachelines from the
-cache, and the CPU guys (along with hpa) have been very explicit that
-wbinv is not an option.
+For example, if we have a macro or helper function that contains
+synchronization code, but the compiler can prove that the macro/function
+is used just on data only accessible to a single thread, then the
+"volatile" notation on it would prevent optimizations.
 
-> > I do see that, however the userspace interface for this isn't ideal for
-> > how the feature is intended to be used.  I'm still planning to have thi=
-s
-> > be managed per process in /proc/<pid>, I just had other priorities push
-> > this back a bit on my stovetop.
->=20
-> So I really don't like anything /proc/$pid/ nor do I really see a point i=
-n
-> doing that. What are you going to do in the /proc/$pid/ thing anyway?
-> Exposing raw RMIDs is an absolute no-no, and anything else is going to
-> end up being yet-another-grouping thing and thus not much different from
-> cgroups.
+> > The current memory model might not allow to exploit all hardware
+> > properties, I agree.
+> > 
+> > But then why don't we work on how to extend it to do so?  We need to
+> > specify the behavior we want anyway, and this can't be independent of
+> > the language semantics, so it has to be conceptually integrated with the
+> > standard anyway.
+> > 
+> > > So I really really hope that the standard doesn't give compiler
+> > > writers free hands to do anything that they can prove is "equivalent"
+> > > in the virtual C machine model.
+> > 
+> > It does, but it also doesn't mean this can't be extended.  So let's
+> > focus on whether we can find an extension.
+> > 
+> > > That's not how you get reliable
+> > > results.
+> > 
+> > In this general form, that's obviously a false claim.
+> 
+> These two sentences starkly illustrate the difference in perspective
+> between you two.  You are talking past each other.  Not sure how to fix
+> this at the moment, but what else is new?  ;-)
 
-Exactly.  The cgroup grouping mechanisms fit really well with this
-feature.  I was exploring another way to do it given the pushback on
-using cgroups initially.  The RMID's won't be exposed, rather a group
-identifier (in cgroups it's the new subdirectory in the subsystem), and
-RMIDs are assigned by the kernel, completely hidden to userspace.
+Well, we're still talking, and we are making little steps in clarifying
+things, so there is progress :)
 
->=20
-> > Also, now that the new SDM is available
->=20
-> Can you guys please set up a mailing list already so we know when
-> there's new versions out? Ideally mailing out the actual PDF too so I
-> get the automagic download and archive for all versions.
-
-I assume this has been requested before.  As I'm typing this, I just
-received the notification internally that the new SDM is now published.
-I'll forward your request along and see what I hear back.
-
-> > , there is a new feature added to
-> > the same family as CQM, called Memory Bandwidth Monitoring (MBM).  The
-> > original cgroup approach would have allowed another subsystem be added
-> > next to cacheqos; the perf-cgroup here is not easily expandable.
-> > The /proc/<pid> approach can add MBM pretty easily alongside CQM.
->=20
-> I'll have to go read up what you've done now, but if its also RMID based
-> I don't see why the proposed scheme won't work.
-
-Yes please do look at the cgroup patches.  For the RMID allocation, we
-could use your proposal to manage allocation/reclamation, and the
-management interface to userspace will match the use cases I'm trying to
-enable.
-
-> > > The below is a rough draft, most if not all XXXs should be
-> > > fixed/finished. But given I don't actually have hardware that support=
-s
-> > > this stuff (afaik) I couldn't be arsed.
-> >=20
-> > The hardware is not publicly available yet, but I know that Red Hat and
-> > others have some of these platforms for testing.
->=20
-> Yeah, not in my house therefore it doesn't exist :-)
->=20
-> > I really appreciate the patch.  There was a good amount of thought put
-> > into this, and gave a good set of different viewpoints.  I'll keep the
-> > comments all here in one place, it'll be easier to discuss than
-> > disjointed in the code.
-> >=20
-> > The rotation idea to reclaim RMID's no longer in use is interesting.
-> > This differs from the original patch where the original patch would
-> > reclaim the RMID when monitoring was disabled for that group of
-> > processes.
-> >=20
-> > I can see a merged sort of approach, where if monitoring for a group of
-> > processes is disabled, we can place that RMID onto a reclaim list.  The
-> > next time an RMID is requested (monitoring is enabled for a
-> > process/group of processes), the reclaim list is searched for an RMID
-> > that has 0 occupancy (i.e. not in use), or worst-case, find and assign
-> > one with the lowest occupancy.  I did discuss this with hpa offline and
-> > this seemed reasonable.
-> >=20
-> > Thoughts?
->=20
-> So you have to wait for one 'freed' RMID to become empty before
-> 'allowing' reads of the other RMIDs, otherwise the visible value can be
-> complete rubbish. Even for low frequency rotation, see the above
-> scenario about asynchronous operations.
->=20
-> This means you have to always have at least one free RMID.
-
-Understood now, I was missing the asynchronous point you were trying to
-make.  I thought you wanted the free RMID to use that to always assign
-so you know it's "empty," not to get around the twiddling that can
-occur.
-
-Let me know what you think about the cacheqos cgroup implementation I
-sent, and if things don't look horrible, I can respin with your RMID
-management scheme.
-
-Thanks,
--PJ
-
---=20
-PJ Waskiewicz				Open Source Technology Center
-peter.p.waskiewicz.jr@intel.com		Intel Corp.
-
---=-0niHBq5WxlLXsjMfHug1
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-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
-jgvUt1CKjAP30MBN66Optp0GgWSrDwS6pW0Nld3iMX+/IdoG23bUW9BWXMtYXkr6oN7zB+ekvUjg
-vwIDAQABo4IC9jCCAvIwCwYDVR0PBAQDAgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbD
-jHWEmeVRg/2BKIWOn1OCkcAJZ4HevTmV8EMCAWQCAQgwHQYDVR0OBBYEFEawoXzp+DrBd+34bKsE
-yj4wjKHXMB8GA1UdIwQYMBaAFB5pKrTcKP5HGE4hCz+8rBEv8Jj1MIHJBgNVHR8EgcEwgb4wgbug
-gbiggbWGVGh0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJu
-YWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDRBLmNybIZdaHR0cDovL2NlcnRpZmljYXRlcy5p
-bnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWlu
-ZyUyMENBJTIwNEEuY3JsMIHvBggrBgEFBQcBAQSB4jCB3zBpBggrBgEFBQcwAoZdaHR0cDovL3d3
-dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJh
-c2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3J0MHIGCCsGAQUFBzAChmZodHRwOi8vY2VydGlmaWNh
-dGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIw
-QmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjA0QS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQB
-gjcKAwwwKQYJKwYBBAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMMFsGA1UdEQRU
-MFKgLwYKKwYBBAGCNxQCA6AhDB9wZXRlci5wLndhc2tpZXdpY3ouanJAaW50ZWwuY29tgR9wZXRl
-ci5wLndhc2tpZXdpY3ouanJAaW50ZWwuY29tMA0GCSqGSIb3DQEBBQUAA4IBAQDP4L0gv03sv1PN
-XSIPEHQCFZIKC/1T5wPd1EUaFejmnduTD7WcCO61zsMsOPvYTjyrU5f1DYCiV5CUoN0kNdsrOy++
-hWplJlk4TOjQFwzgkuouexNWINAICF7WlH3eMMbM+Fo9GC4K+O4w+KRpSVzR815N8B+YBv4SByIY
-N+Pnkwnxiq5KaD20gJ6EPsgGCos4Ccu4yWVgXrl6jpcjS8ViOU1jPF0PguQ8BftdfUUrprELUiVo
-4RC8q1B/7Yp17tYjIeO7Tb2abzTKp98dXU6agYSK/JNUq2iBhKb5aE+LrlGRTcqC+ioRe1N1D/wX
-1Z2L0MEmNIg/Xf5DVdTUCOzBMYICDjCCAgoCAQEwgYcweTELMAkGA1UEBhMCVVMxCzAJBgNVBAgT
-AkNBMRQwEgYDVQQHEwtTYW50YSBDbGFyYTEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
-BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgNEECCnfQGsYAAAAARQwwCQYF
-Kw4DAhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTE0MDIx
-ODE5NTQxOVowIwYJKoZIhvcNAQkEMRYEFOH+JvmCutq5nvtgq0XojdvUK+8uMA0GCSqGSIb3DQEB
-AQUABIIBAKSBcaorSXJEQTUGB1aUF4lRJfzElTu6/tlRWnRkzh24IybrpY+hakzOzzRHV0lRbJYe
-GsjMGfc4ns61KYCxgLJkCB8lYYGvHNFPf7mqd8mZ4KAdRFxA34g4pemOt9FvrJj4iQjRasDEC30A
-oWT1WHYP1JBllBYZ5snMhm6HcAlUNUC/hDJi5uUqsRzETJZMlHH427kyPreUBctinxqwDs/Qg/KO
-sG+BP89wex/W5lSerI3X/P2ka2IiYcNnuTzXg73ycvCrfnyLlPjdiCpwCLq27kd99pL+KS7QaZrr
-ohvnn8+HI12Pz8nCoMQFbhv15+j9RSnHoaw/xaA221fqyU4AAAAAAAA=
-
-
---=-0niHBq5WxlLXsjMfHug1--
