@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273AbaBRBB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 20:01:57 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37899 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaBRBB4 (ORCPT
+	id S1752677AbaBRBSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 20:18:32 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:49859 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaBRBSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 20:01:56 -0500
-Date: Mon, 17 Feb 2014 17:01:49 -0800
+	Mon, 17 Feb 2014 20:18:30 -0500
+Date: Mon, 17 Feb 2014 17:18:24 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Josh Triplett <josh@joshtriplett.org>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -16,90 +16,133 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 21/55] rcutorture: Export torture_type and
- verbose module parameters
-Message-ID: <20140218010149.GX4250@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 0/55] Torture-test changes for 3.15
+Message-ID: <20140218011824.GY4250@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
- <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392675179-11560-21-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140218002917.GG19929@thin>
+ <20140218004145.GJ19929@thin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140218002917.GG19929@thin>
+In-Reply-To: <20140218004145.GJ19929@thin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021801-9332-0000-0000-000003235867
+x-cbid: 14021801-3532-0000-0000-000005C01D8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:29:18PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 02:12:25PM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Mon, Feb 17, 2014 at 04:41:46PM -0800, Josh Triplett wrote:
+> On Mon, Feb 17, 2014 at 02:12:31PM -0800, Paul E. McKenney wrote:
+> > Hello!
 > > 
-> > The torture_type and verbose module parameters are needed for log messages,
-> > so this commit exports them to include/linux/torture.h.
+> > This series contains rcutorture changes, including adding a simple
+> > locktorture.  Creating this locktorture while sharing the rcutorture
+> > infrastructure was the main point of this patch, but this effort
+> > uncovered a number of shortcomings in rcutorture, which this series
+> > also fixes.
 > > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 1-6.	Usability improvements in rcutorture scripting.
+> > 
+> > 7-13.	Enable concurrent rcutorture runs on systems with sufficient
+> > 	numbers of CPUs.
+
+Checking this list first, then will check the patches themselves.
+
+This one contains 12.
+
+> > 14.	Print the results directory at the end of the test.
+> > 
+> > 15,17-25,27-28,30,32,37-41,46-48.
+> > 	Abstract facilities from rcutorture module and scripting for later
+> > 	use by locktorture.
+
+18 is here.  So is 38 and 39
+
+> > 16.	Don't create a results directory for dryruns.
+
+Here is 16.
+
+> > 26.	Print date and time of each phase of torturing.
+
+Here is 26.
+
+> > 29.	Issue a diagnostic if something does a system shutdown while
+> > 	rcutorture is running.
+> > 
+> > 31.	Apply ACCESS_ONCE() to racy fullstop accesses.
+> > 
+> > 33.	Clean up rcu_torture_init() error handling.
+> > 
+> > 34.	Announce kthread creation.
+> > 
+> > 35.	Clean up a number of rcutorture shutdown races, unifying the
+> > 	required shutdown actions into a new torture_kthread_stopping()
+> > 	function.
+> > 
+> > 36.	Add a missing return statement in rcu_torture_barrier_init().
+> > 
+> > 42.	Create a minimal locktorture module.
+> > 
+> > 43-44.	Add an on-purpose buggy RCU implementation to rcutorture to help
+> > 	test the tests.
+
+Here is 43.
+
+> > 45.	Create a file for Kconfig parameters that are commmon across all
+> > 	rcutorture tests.
+> > 
+> > 49.	Add beginning set of config files for locktorture.
+> > 
+> > 50.	Avoid SEGV when cleanup-hooks function pointer is NULL.
+> > 
+> > 51.	Add locktorture plugin for kvm_recheck.sh.
+> > 
+> > 52.	Rename TREE_RCU-Kconfig.txt to avoid confusing scripts that
+> > 	look for Kconfig files, courtesy of Paul Bolle.
+> > 
+> > 53.	Retain output from kvm-test-1-run.sh script.
+
+Here is 53.
+
+> > 54.	Add an on-purpose buggy lock implementation to locktorture to
+> > 	help test the tests.
+> > 
+> > 55.	Save kvm.sh progress messages to log so that they can be used
+> > 	for later timing analysis.
 > 
-> Assuming this doesn't go away (which I really hope it does), this needs
-> to occur *before* the introduction of the macros using these variables.
+> I replied with comments on 15, 17, 19, 21, 35, and 37.
 
-Yep, it does go away.  ;-)
+Thank you, will respond/apply.
 
-But it bisects as is -- the only user at this point in the series is
-kernel/rcu/rcutorture.c, which is where the definitions got moved from.
+> This series also appears to be missing patches numbered 12, 16, 18, 26,
+> 38, 39, 43, and 53.  (In some cases those patch numbers appear above but
+> the corresponding patches don't appear in subsequent mails; in other
+> cases those numbers appear missing above as well.)
+
+I see them all above, and I received all of them.  Here are URLs for them:
+
+12: https://lkml.org/lkml/2014/2/17/616
+16: http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg590070.html
+18: http://www.spinics.net/lists/kernel/msg1689535.html
+26: http://comments.gmane.org/gmane.linux.kernel/1649714
+38: http://www.spinics.net/lists/kernel/msg1689519.html
+39: http://www.spinics.net/lists/kernel/msg1689526.html
+43: https://lkml.org/lkml/2014/2/17/617
+53: http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg590028.html
+	(along with a very entertaining ad...)
+
+I tried lkml.org first, so you are not the only one missing out on some
+of them.  Hmmm...
+
+I bounced them to you as well, so hopefully they will get there this time.
+Then again, you were --cc'ed on them to start with, so who knows?
+
+> For the remaining patches:
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+Thank you for your review and comments!
 
 							Thanx, Paul
-
-> - Josh Triplett
-> 
-> >  include/linux/torture.h | 4 ++++
-> >  kernel/rcu/rcutorture.c | 8 ++++++--
-> >  2 files changed, 10 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/torture.h b/include/linux/torture.h
-> > index c61b4ce18a13..9b6a4834de8f 100644
-> > --- a/include/linux/torture.h
-> > +++ b/include/linux/torture.h
-> > @@ -49,6 +49,10 @@ extern int fullstop;
-> >  /* Protect fullstop transitions and spawning of kthreads.  */
-> >  extern struct mutex fullstop_mutex;
-> >  
-> > +/* Common module parameters. */
-> > +extern char *torture_type;
-> > +extern bool verbose;
-> > +
-> >  #define TORTURE_FLAG "-torture:"
-> >  #define TOROUT_STRING(s) \
-> >  	pr_alert("%s" TORTURE_FLAG s "\n", torture_type)
-> > diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-> > index 3687619b243a..49cdeeaaa54b 100644
-> > --- a/kernel/rcu/rcutorture.c
-> > +++ b/kernel/rcu/rcutorture.c
-> > @@ -90,11 +90,15 @@ torture_parm(int, test_boost_interval, 7,
-> >  	     "Interval between boost tests, seconds.");
-> >  torture_parm(bool, test_no_idle_hz, true,
-> >  	     "Test support for tickless idle CPUs");
-> > -torture_parm(bool, verbose, false, "Enable verbose debugging printk()s");
-> >  
-> > -static char *torture_type = "rcu";
-> > +char *torture_type = "rcu";
-> > +EXPORT_SYMBOL_GPL(torture_type);
-> >  module_param(torture_type, charp, 0444);
-> >  MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, ...)");
-> > +bool verbose;
-> > +EXPORT_SYMBOL_GPL(verbose);
-> > +module_param(verbose, bool, 0444);
-> > +MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
-> >  
-> >  static int nrealreaders;
-> >  static struct task_struct *writer_task;
-> > -- 
-> > 1.8.1.5
-> > 
-> 
 
