@@ -1,111 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbaBRAvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:51:18 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65517 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754141AbaBRAvP (ORCPT
+	id S1754356AbaBRAve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:51:34 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:45762 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667AbaBRAvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:51:15 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC Patch v1 1/6] acpi_pad: simplify notify handler by using acpi_drv_ops->notify
-Date: Tue, 18 Feb 2014 02:06:03 +0100
-Message-ID: <8893595.ITmXn6Kgg5@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1392613373-11003-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1392613271-10912-1-git-send-email-jiang.liu@linux.intel.com> <1392613373-11003-1-git-send-email-jiang.liu@linux.intel.com>
+	Mon, 17 Feb 2014 19:51:32 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <3240866.imZR2oMAtf@avalon>
+References: <1392339605-20691-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<35710038.vGLtzuIoLe@avalon>
+	<CANqRtoRVCK0jgadwvreMRt1HVVyUmb-CLt5mFEGmvju_VFFbPQ@mail.gmail.com>
+	<3240866.imZR2oMAtf@avalon>
+Date: Tue, 18 Feb 2014 09:51:30 +0900
+Message-ID: <CANqRtoQFeX0y3A9ojKMo8ao+PRFiCzcmjfOqexBRzv-4P1s7Uw@mail.gmail.com>
+Subject: Re: [PATCH 23/27] clocksource: sh_cmt: Add DT support
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 17, 2014 01:02:48 PM Jiang Liu wrote:
-> Use callback acpi_drv_ops->notify to simplify acpi_pad driver's
-> notification handling code.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Hi Laurent,
 
-There is a plan to move away from using struct acpi_driver objects and
-this change will need to be reverted then.  I'm not sure if that's really
-useful?
+On Tue, Feb 18, 2014 at 6:43 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Magnus,
+>
+> On Monday 17 February 2014 10:48:55 Magnus Damm wrote:
+>> On Mon, Feb 17, 2014 at 10:45 AM, Laurent Pinchart wrote:
+>> > On Saturday 15 February 2014 02:22:00 Magnus Damm wrote:
+>> >> On Sat, Feb 15, 2014 at 1:12 AM, Laurent Pinchart wrote:
+>> >> > On Saturday 15 February 2014 01:01:30 Magnus Damm wrote:
+>> >> >> On Sat, Feb 15, 2014 at 12:53 AM, Laurent Pinchart wrote:
+>> >> >> > On Friday 14 February 2014 10:58:22 Mark Rutland wrote:
+>> >> >> >> On Fri, Feb 14, 2014 at 01:00:01AM +0000, Laurent Pinchart wrote:
+>> >> >> >> > +Channels Optional Properties:
+>> >> >> >> > +
+>> >> >> >> > +  - clock-source-rating: rating of the timer as a clock source
+>> >> >> >> > device.
+>> >> >> >> > +  - clock-event-rating: rating of the timer as a clock event
+>> >> >> >> > device.
+>> >> >> >>
+>> >> >> >> This feels like a leak of Linux internals. Why do you need this?
+>> >> >> >
+>> >> >> > You're right, it is. The clock source and clock event ratings are
+>> >> >> > currently configured through platform data, I'll need to find a way
+>> >> >> > to compute them in the driver instead.
+>> >> >>
+>> >> >> That would be very good!
+>> >> >
+>> >> > Any pointer would be appreciated :-) How did you compute the various
+>> >> > ratings used in platform data all over the place ?
+>> >>
+>> >> Historically we used the rating to select between CMT and TMU. For
+>> >> clock sources I suppose you also have the jiffy rating to consider.
+>> >> And for the SMP parts we have ARM IP for TWD and arch timers that have
+>> >> their ratings too. So you need to check all the timers on a particular
+>> >> system and consider what you want to have operating by default. The
+>> >> ARM IP timers should be preferred if available. For clock sources the
+>> >> rule is probably the higher resolution the better.
+>> >>
+>> >> >> > There's still one piece of Linux-specific data I need though, as I
+>> >> >> > need to specify for each channel whether to use it as a clock source
+>> >> >> > device, a clock event device, both of them or none. That's
+>> >> >> > configuration information that needs to be provided somehow.
+>> >> >>
+>> >> >> I think you can decide clock source or clock event assignment based on
+>> >> >> number of channels available. If you have only a single channel then
+>> >> >> both clock event and clock source need to be supported. Otherwise use
+>> >> >> one channel for clock source and the rest for clock events.
+>> >> >
+>> >> > That won't match the current situation. Look at CMT0 in r8a7790 for
+>> >> > instance. There's two hardware channels available, and we only use the
+>> >> > first one, for clock events only.
+>> >>
+>> >> You are correct. The reason for that is that the CMT driver today is
+>> >> optimized for combined clock event and clock source operation.
+>> >>
+>> >> Historically the hardware it initially was written for (sh-mobile on
+>> >> the SH arch) only had a single timer channel so combined operation was
+>> >> required for tickless to work. But since you're asking how to allocate
+>> >> channels then I propose checking numbers of channels available and go
+>> >> from there. With that the r8a7790 support can only get better. =)
+>> >>
+>> >> >> This is probably out of scope for this DT conversion, but it would be
+>> >> >> neat if you somehow could specify the CPU affinity for a channel to
+>> >> >> tie a clock event to an individual CPU core. This would make a a per-
+>> >> >> cpu timer unless I'm mistaken. But that's more of a software policy
+>> >> >> than anything else.
+>> >> >
+>> >> > Yes, that's a configuration that needs to be specified somewhere. I
+>> >> > don't know where though.
+>> >>
+>> >> As long as you have per-channel interrupts described in DT you can
+>> >> probably handle this in a generic way in the driver.
+>> >
+>> > But how do we decide whether to use a single timer channel or one channel
+>> > per CPU ? Will the kernel use one clock event device per CPU
+>> > automatically ? I have to confess I have no idea how this works.
+>>
+>> I guess that's the tricky bit about timer support, it is a mix of
+>> hardware description and software configuration. So it sounds to me
+>> that we need some kind of software configuration interface. But it can
+>> probably be considered when/if we add such kind of support to the
+>> driver. Probably out of scope for now.
+>>
+>> Regardless it seems to me that the hardware description in DT doesn't
+>> need to care about this.
+>
+> I'll revisit that later. Per-CPU timers is not a high priority for now, so
+> I'll just return -EAGAIN :-)
 
-> ---
->  drivers/acpi/acpi_pad.c |   25 +++++--------------------
->  1 file changed, 5 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-> index df96a0f..1e3ce76 100644
-> --- a/drivers/acpi/acpi_pad.c
-> +++ b/drivers/acpi/acpi_pad.c
-> @@ -443,14 +443,11 @@ static void acpi_pad_handle_notify(acpi_handle handle)
->  	mutex_unlock(&isolated_cpus_lock);
->  }
->  
-> -static void acpi_pad_notify(acpi_handle handle, u32 event,
-> -	void *data)
-> +static void acpi_pad_notify(struct acpi_device *device, u32 event)
->  {
-> -	struct acpi_device *device = data;
-> -
->  	switch (event) {
->  	case ACPI_PROCESSOR_AGGREGATOR_NOTIFY:
-> -		acpi_pad_handle_notify(handle);
-> +		acpi_pad_handle_notify(device->handle);
->  		acpi_bus_generate_netlink_event(device->pnp.device_class,
->  			dev_name(&device->dev), event, 0);
->  		break;
-> @@ -462,22 +459,10 @@ static void acpi_pad_notify(acpi_handle handle, u32 event,
->  
->  static int acpi_pad_add(struct acpi_device *device)
->  {
-> -	acpi_status status;
-> -
->  	strcpy(acpi_device_name(device), ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME);
->  	strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
->  
-> -	if (acpi_pad_add_sysfs(device))
-> -		return -ENODEV;
-> -
-> -	status = acpi_install_notify_handler(device->handle,
-> -		ACPI_DEVICE_NOTIFY, acpi_pad_notify, device);
-> -	if (ACPI_FAILURE(status)) {
-> -		acpi_pad_remove_sysfs(device);
-> -		return -ENODEV;
-> -	}
-> -
-> -	return 0;
-> +	return acpi_pad_add_sysfs(device);
->  }
->  
->  static int acpi_pad_remove(struct acpi_device *device)
-> @@ -486,9 +471,8 @@ static int acpi_pad_remove(struct acpi_device *device)
->  	acpi_pad_idle_cpus(0);
->  	mutex_unlock(&isolated_cpus_lock);
->  
-> -	acpi_remove_notify_handler(device->handle,
-> -		ACPI_DEVICE_NOTIFY, acpi_pad_notify);
->  	acpi_pad_remove_sysfs(device);
-> +
->  	return 0;
->  }
->  
-> @@ -505,6 +489,7 @@ static struct acpi_driver acpi_pad_driver = {
->  	.ops = {
->  		.add = acpi_pad_add,
->  		.remove = acpi_pad_remove,
-> +		.notify = acpi_pad_notify,
->  	},
->  };
->  
-> 
+Thanks, that's fine.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Nonetheless, specifying which timer channel to use as a clock source and which
+> channel to use as a clock event device might need to be specified in DT (or
+> somewhere else, but I'm not sure what other options we have here).
+
+I disagree about the need for specifying clock source or clock event
+channel in DT.  Since per-cpu timers is out of scope for now then why
+don't we simply just let the driver automatically allocate the during
+run-time?
+
+In case one CMT channel exists:
+Use that for both clock source and clock event.
+
+In case more than one CMT channel exists:
+Use one separate channel for clock source and one separate channel for
+clock event.
+
+That would cover our existing use case, no?
+
+Thanks,
+
+/ magnus
