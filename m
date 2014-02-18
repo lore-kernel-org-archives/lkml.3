@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120AbaBRQkQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:40:16 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:65025 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804AbaBRQkL (ORCPT
+	id S932171AbaBRQk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:40:27 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46837 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932127AbaBRQkY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:40:11 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
-        lczerner@redhat.com
-Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH v5 10/10] manpage: update FALLOC_FL_COLLAPSE_RANGE flag in fallocate
-Date: Wed, 19 Feb 2014 01:39:53 +0900
-Message-Id: <1392741594-20335-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 18 Feb 2014 11:40:24 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [GIT PULL] qcom SoC changes for v3.15
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <alpine.DEB.2.00.1402111516560.9530@galak-ubuntu.qualcomm.com>
+Date: Tue, 18 Feb 2014 10:40:18 -0600
+Cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Rohit Vaswani <rvaswani@codeaurora.org>,
+        Olof Johansson <olof@lixom.net>, David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5F62C529-4D77-4D33-A546-4780B50CE24C@codeaurora.org>
+References: <alpine.DEB.2.00.1402111516560.9530@galak-ubuntu.qualcomm.com>
+To: arm@kernel.org
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Update FALLOC_FL_COLLAPSE_RANGE flag in fallocate.
+On Feb 11, 2014, at 3:19 PM, Kumar Gala <galak@codeaurora.org> wrote:
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
----
- man2/fallocate.2 |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+> The following changes since commit cf1e8f0cd665e2a9966d2bee4e11ecc0938ff166:
+> 
+>  ARM: qcom: Rename various msm prefixed functions to qcom (2014-02-06 16:20:41 -0600)
+> 
+> are available in the git repository at:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.15
+> 
+> for you to fetch changes up to 6990c132abc984bd6e75ac2be1f1d657cd600f63:
+> 
+>  ARM: qcom: Add SMP support for KPSSv2 (2014-02-11 15:00:40 -0600)
+> 
+> ----------------------------------------------------------------
+> Qualcomm ARM Based SoC Updates for v3.15
+> 
+> * Add support for determining smp ops based on device tree.
+> * Add DT binding specs for Krait/Scorpion enable method
+> * Add DT binding specs for various Krait Processor controller complexes
+> * Add SoC SMP support for Krait Processor Subsystem v1 & v2
+> 
+> ----------------------------------------------------------------
+> Rohit Vaswani (4):
+>      ARM: qcom: Re-organize platsmp to make it extensible
+>      devicetree: bindings: Document Krait/Scorpion cpus and enable-method
+>      ARM: qcom: Add SMP support for KPSSv1
+>      ARM: qcom: Add SMP support for KPSSv2
+> 
+> Stephen Boyd (3):
+>      ARM: Introduce CPU_METHOD_OF_DECLARE() for cpu hotplug/smp
+>      devicetree: bindings: Document qcom,kpss-acc
+>      devicetree: bindings: Document qcom,saw2 node
+> 
+> Documentation/devicetree/bindings/arm/cpus.txt     |  25 +-
+> .../devicetree/bindings/arm/msm/qcom,kpss-acc.txt  |  30 ++
+> .../devicetree/bindings/arm/msm/qcom,saw2.txt      |  35 +++
+> arch/arm/include/asm/smp.h                         |   9 +
+> arch/arm/kernel/devtree.c                          |  40 +++
+> arch/arm/mach-msm/common.h                         |   2 -
+> arch/arm/mach-qcom/board.c                         |  14 -
+> arch/arm/mach-qcom/platsmp.c                       | 341 ++++++++++++++++++---
+> arch/arm/mach-qcom/scm-boot.h                      |   8 +-
+> include/asm-generic/vmlinux.lds.h                  |  10 +
+> 10 files changed, 444 insertions(+), 70 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
+> create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
+> 
+> —
 
-diff --git a/man2/fallocate.2 b/man2/fallocate.2
-index b31bbde..06a0b0c 100644
---- a/man2/fallocate.2
-+++ b/man2/fallocate.2
-@@ -1,5 +1,6 @@
- .\" Copyright (c) 2007 Silicon Graphics, Inc. All Rights Reserved
- .\" Written by Dave Chinner <dgc@sgi.com>
-+.\" Updated by Namjae Jeon <namjae.jeon@samsung.com>
- .\"
- .\" %%%LICENSE_START(GPLv2_ONELINE)
- .\" May be distributed as per GNU General Public License version 2.
-@@ -7,6 +8,7 @@
- .\"
- .\" 2011-09-19: Added FALLOC_FL_PUNCH_HOLE
- .\" 2011-09-19: Substantial restructuring of the page
-+.\" 2014-02-19: Added FALLOC_FL_COLLAPSE_RANGE
- .\"
- .TH FALLOCATE 2 2014-01-24 "Linux" "Linux Programmer's Manual"
- .SH NAME
-@@ -124,6 +126,25 @@ Btrfs (since Linux 3.7)
- .IP *
- tmpfs (since Linux 3.5)
- .\" commit 83e4fa9c16e4af7122e31be3eca5d57881d236fe
-+.SS Collapsing file space
-+Specifiying the
-+.BR FALLOC_FL_COLLAPSE_RANGE
-+flag in
-+.I mode
-+collpse space in the byte range starting at
-+.I offset
-+and continuing for
-+.I len
-+bytes. Within the specified range, it first de-allocates blocks and eliminates
-+the hole created in this process by shifting data blocks into the hole.
-+
-+Different filesystem may implement different limitatios on the granularity of
-+the operation. Most filesystem will limit operations to filesystem block size
-+boundaries, but this boundary may be larger or smaller depending
-+on the filesystem and/or the configuration of the filesystem or file.
-+
-+If filesystem has such limitation on granularity, It will return error(EINVAL).
-+
- .SH RETURN VALUE
- On success,
- .BR fallocate ()
+ping
+
+- k
+
 -- 
-1.7.9.5
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
