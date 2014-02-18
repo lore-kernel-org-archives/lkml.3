@@ -1,73 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaBRWcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:32:43 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:64564 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943AbaBRWcj (ORCPT
+	id S1753039AbaBRWdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:33:07 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:49449 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbaBRWbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:32:39 -0500
-Message-ID: <5303ED9A.6020302@cogentembedded.com>
-Date: Wed, 19 Feb 2014 02:32:42 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Peter Chen <Peter.Chen@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
-References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com> <1392729681-21022-3-git-send-email-iivanov@mm-sol.com> <53039E2E.2030503@cogentembedded.com> <1392743648.17130.17.camel@iivanov-dev> <5303A71B.7060208@cogentembedded.com> <20140218213428.GM1706@sonymobile.com>
-In-Reply-To: <20140218213428.GM1706@sonymobile.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Feb 2014 17:31:55 -0500
+From: Grant Likely <grant.likely@linaro.org>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH 3/4] of: Move testcase FDT data into drivers/of
+Date: Tue, 18 Feb 2014 22:31:19 +0000
+Message-Id: <1392762680-1498-4-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392762680-1498-1-git-send-email-grant.likely@linaro.org>
+References: <1392762680-1498-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+The testcase data is usable by any platform. This patch moves it into
+the drivers/of directory so it can be included by any architecture.
 
-On 02/19/2014 12:34 AM, Courtney Cavin wrote:
+Using the test cases requires manually adding #include <testcases.dtsi>
+to the end of the boards .dtsi file and enabling CONFIG_OF_SELFTEST. Not
+pretty though. A useful project would be to make the testcase code
+easier to execute.
 
->>>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
+ arch/arm/boot/dts/testcases/tests-interrupts.dtsi | 58 -----------------------
+ arch/arm/boot/dts/testcases/tests-phandle.dtsi    | 39 ---------------
+ arch/arm/boot/dts/testcases/tests.dtsi            |  2 -
+ arch/arm/boot/dts/versatile-pb.dts                |  4 +-
+ drivers/of/testcase-data/testcases.dtsi           |  2 +
+ drivers/of/testcase-data/tests-interrupts.dtsi    | 58 +++++++++++++++++++++++
+ drivers/of/testcase-data/tests-phandle.dtsi       | 39 +++++++++++++++
+ scripts/Makefile.lib                              |  1 +
+ 8 files changed, 102 insertions(+), 101 deletions(-)
+ delete mode 100644 arch/arm/boot/dts/testcases/tests-interrupts.dtsi
+ delete mode 100644 arch/arm/boot/dts/testcases/tests-phandle.dtsi
+ delete mode 100644 arch/arm/boot/dts/testcases/tests.dtsi
+ create mode 100644 drivers/of/testcase-data/testcases.dtsi
+ create mode 100644 drivers/of/testcase-data/tests-interrupts.dtsi
+ create mode 100644 drivers/of/testcase-data/tests-phandle.dtsi
 
->>>>> Allows controller to be specified via device tree.
->>>>> Pass PHY phandle specified in DT to core driver.
-
->>>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->>>>> ---
->>>>>     drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
->>>>>     1 file changed, 22 insertions(+), 1 deletion(-)
-
->>>>       You also need to describe the binding you're creating in
->>>> Documentation/devicetree/bindings/usb/<file>.txt.
-
->>> Did you check "[PATCH v2 1/3]"?
-
->>      Did you send it to 'linux-usb'? I just didn't get the patch.
->> (Typically, the bindings are described in the same patch the DT support is
->> added to the driver bu YMMV, of course.)
-
-> Although I would personally agree that this is the most logical method,
-> it would appear that the DT guys disagree with us [1].  Lately, they
-
-    Thank you for the reference.
-
-> seem to have either given up or are otherwise preoccupied, so perhaps
-> you can still slip a few patches by them. ;)
-
-    Yeah, I was at last able to get my Ethernet driver bindings applied. :-)
-
-> -Courtney
-
-> [1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/devicetree/bindings/submitting-patches.txt
-
-WBR, Sergei
+diff --git a/arch/arm/boot/dts/testcases/tests-interrupts.dtsi b/arch/arm/boot/dts/testcases/tests-interrupts.dtsi
+deleted file mode 100644
+index c843720bd3e5..000000000000
+--- a/arch/arm/boot/dts/testcases/tests-interrupts.dtsi
++++ /dev/null
+@@ -1,58 +0,0 @@
+-
+-/ {
+-	testcase-data {
+-		interrupts {
+-			#address-cells = <1>;
+-			#size-cells = <1>;
+-			test_intc0: intc0 {
+-				interrupt-controller;
+-				#interrupt-cells = <1>;
+-			};
+-
+-			test_intc1: intc1 {
+-				interrupt-controller;
+-				#interrupt-cells = <3>;
+-			};
+-
+-			test_intc2: intc2 {
+-				interrupt-controller;
+-				#interrupt-cells = <2>;
+-			};
+-
+-			test_intmap0: intmap0 {
+-				#interrupt-cells = <1>;
+-				#address-cells = <0>;
+-				interrupt-map = <1 &test_intc0 9>,
+-						<2 &test_intc1 10 11 12>,
+-						<3 &test_intc2 13 14>,
+-						<4 &test_intc2 15 16>;
+-			};
+-
+-			test_intmap1: intmap1 {
+-				#interrupt-cells = <2>;
+-				interrupt-map = <0x5000 1 2 &test_intc0 15>;
+-			};
+-
+-			interrupts0 {
+-				interrupt-parent = <&test_intc0>;
+-				interrupts = <1>, <2>, <3>, <4>;
+-			};
+-
+-			interrupts1 {
+-				interrupt-parent = <&test_intmap0>;
+-				interrupts = <1>, <2>, <3>, <4>;
+-			};
+-
+-			interrupts-extended0 {
+-				reg = <0x5000 0x100>;
+-				interrupts-extended = <&test_intc0 1>,
+-						      <&test_intc1 2 3 4>,
+-						      <&test_intc2 5 6>,
+-						      <&test_intmap0 1>,
+-						      <&test_intmap0 2>,
+-						      <&test_intmap0 3>,
+-						      <&test_intmap1 1 2>;
+-			};
+-		};
+-	};
+-};
+diff --git a/arch/arm/boot/dts/testcases/tests-phandle.dtsi b/arch/arm/boot/dts/testcases/tests-phandle.dtsi
+deleted file mode 100644
+index 0007d3cd7dc2..000000000000
+--- a/arch/arm/boot/dts/testcases/tests-phandle.dtsi
++++ /dev/null
+@@ -1,39 +0,0 @@
+-
+-/ {
+-	testcase-data {
+-		phandle-tests {
+-			provider0: provider0 {
+-				#phandle-cells = <0>;
+-			};
+-
+-			provider1: provider1 {
+-				#phandle-cells = <1>;
+-			};
+-
+-			provider2: provider2 {
+-				#phandle-cells = <2>;
+-			};
+-
+-			provider3: provider3 {
+-				#phandle-cells = <3>;
+-			};
+-
+-			consumer-a {
+-				phandle-list =	<&provider1 1>,
+-						<&provider2 2 0>,
+-						<0>,
+-						<&provider3 4 4 3>,
+-						<&provider2 5 100>,
+-						<&provider0>,
+-						<&provider1 7>;
+-				phandle-list-names = "first", "second", "third";
+-
+-				phandle-list-bad-phandle = <12345678 0 0>;
+-				phandle-list-bad-args = <&provider2 1 0>,
+-							<&provider3 0>;
+-				empty-property;
+-				unterminated-string = [40 41 42 43];
+-			};
+-		};
+-	};
+-};
+diff --git a/arch/arm/boot/dts/testcases/tests.dtsi b/arch/arm/boot/dts/testcases/tests.dtsi
+deleted file mode 100644
+index 3f123ecc9dd7..000000000000
+--- a/arch/arm/boot/dts/testcases/tests.dtsi
++++ /dev/null
+@@ -1,2 +0,0 @@
+-/include/ "tests-phandle.dtsi"
+-/include/ "tests-interrupts.dtsi"
+diff --git a/arch/arm/boot/dts/versatile-pb.dts b/arch/arm/boot/dts/versatile-pb.dts
+index f43907c40c93..65f657711323 100644
+--- a/arch/arm/boot/dts/versatile-pb.dts
++++ b/arch/arm/boot/dts/versatile-pb.dts
+@@ -1,4 +1,4 @@
+-/include/ "versatile-ab.dts"
++#include <versatile-ab.dts>
+ 
+ / {
+ 	model = "ARM Versatile PB";
+@@ -47,4 +47,4 @@
+ 	};
+ };
+ 
+-/include/ "testcases/tests.dtsi"
++#include <testcases.dtsi>
+diff --git a/drivers/of/testcase-data/testcases.dtsi b/drivers/of/testcase-data/testcases.dtsi
+new file mode 100644
+index 000000000000..3cc2f55534ac
+--- /dev/null
++++ b/drivers/of/testcase-data/testcases.dtsi
+@@ -0,0 +1,2 @@
++#include "tests-phandle.dtsi"
++#include "tests-interrupts.dtsi"
+diff --git a/drivers/of/testcase-data/tests-interrupts.dtsi b/drivers/of/testcase-data/tests-interrupts.dtsi
+new file mode 100644
+index 000000000000..c843720bd3e5
+--- /dev/null
++++ b/drivers/of/testcase-data/tests-interrupts.dtsi
+@@ -0,0 +1,58 @@
++
++/ {
++	testcase-data {
++		interrupts {
++			#address-cells = <1>;
++			#size-cells = <1>;
++			test_intc0: intc0 {
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++
++			test_intc1: intc1 {
++				interrupt-controller;
++				#interrupt-cells = <3>;
++			};
++
++			test_intc2: intc2 {
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++
++			test_intmap0: intmap0 {
++				#interrupt-cells = <1>;
++				#address-cells = <0>;
++				interrupt-map = <1 &test_intc0 9>,
++						<2 &test_intc1 10 11 12>,
++						<3 &test_intc2 13 14>,
++						<4 &test_intc2 15 16>;
++			};
++
++			test_intmap1: intmap1 {
++				#interrupt-cells = <2>;
++				interrupt-map = <0x5000 1 2 &test_intc0 15>;
++			};
++
++			interrupts0 {
++				interrupt-parent = <&test_intc0>;
++				interrupts = <1>, <2>, <3>, <4>;
++			};
++
++			interrupts1 {
++				interrupt-parent = <&test_intmap0>;
++				interrupts = <1>, <2>, <3>, <4>;
++			};
++
++			interrupts-extended0 {
++				reg = <0x5000 0x100>;
++				interrupts-extended = <&test_intc0 1>,
++						      <&test_intc1 2 3 4>,
++						      <&test_intc2 5 6>,
++						      <&test_intmap0 1>,
++						      <&test_intmap0 2>,
++						      <&test_intmap0 3>,
++						      <&test_intmap1 1 2>;
++			};
++		};
++	};
++};
+diff --git a/drivers/of/testcase-data/tests-phandle.dtsi b/drivers/of/testcase-data/tests-phandle.dtsi
+new file mode 100644
+index 000000000000..0007d3cd7dc2
+--- /dev/null
++++ b/drivers/of/testcase-data/tests-phandle.dtsi
+@@ -0,0 +1,39 @@
++
++/ {
++	testcase-data {
++		phandle-tests {
++			provider0: provider0 {
++				#phandle-cells = <0>;
++			};
++
++			provider1: provider1 {
++				#phandle-cells = <1>;
++			};
++
++			provider2: provider2 {
++				#phandle-cells = <2>;
++			};
++
++			provider3: provider3 {
++				#phandle-cells = <3>;
++			};
++
++			consumer-a {
++				phandle-list =	<&provider1 1>,
++						<&provider2 2 0>,
++						<0>,
++						<&provider3 4 4 3>,
++						<&provider2 5 100>,
++						<&provider0>,
++						<&provider1 7>;
++				phandle-list-names = "first", "second", "third";
++
++				phandle-list-bad-phandle = <12345678 0 0>;
++				phandle-list-bad-args = <&provider2 1 0>,
++							<&provider3 0>;
++				empty-property;
++				unterminated-string = [40 41 42 43];
++			};
++		};
++	};
++};
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 49392ecbef17..79c059e70860 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -152,6 +152,7 @@ ld_flags       = $(LDFLAGS) $(ldflags-y)
+ dtc_cpp_flags  = -Wp,-MD,$(depfile).pre.tmp -nostdinc                    \
+ 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
+ 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
++		 -I$(srctree)/drivers/of/testcase-data                   \
+ 		 -undef -D__DTS__
+ 
+ # Finds the multi-part object the current object will be linked into
+-- 
+1.8.3.2
 
