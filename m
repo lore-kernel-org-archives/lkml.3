@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572AbaBRQxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 11:53:55 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:46803 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068AbaBRQxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 11:53:51 -0500
-Message-ID: <53039E2E.2030503@cogentembedded.com>
-Date: Tue, 18 Feb 2014 20:53:50 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756577AbaBRQyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 11:54:37 -0500
+Received: from imap.thunk.org ([74.207.234.97]:59605 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055AbaBRQyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 11:54:33 -0500
+Date: Tue, 18 Feb 2014 11:54:26 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: [GIT PULL] ext4 fixes for 3.14
+Message-ID: <20140218165426.GA1482@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Peter Chen <Peter.Chen@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
-References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com> <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
 
-On 02/18/2014 04:21 PM, Ivan T. Ivanov wrote:
+  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
 
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+are available in the git repository at:
 
-> Allows controller to be specified via device tree.
-> Pass PHY phandle specified in DT to core driver.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> ---
->   drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
->   1 file changed, 22 insertions(+), 1 deletion(-)
+for you to fetch changes up to 37b0791e6a396e9cda060531d3ffb863d93882f9:
 
-    You also need to describe the binding you're creating in 
-Documentation/devicetree/bindings/usb/<file>.txt.
+  ext4: address a benign compiler warning (2014-02-17 20:50:59 -0500)
 
-WBR, Sergei
+----------------------------------------------------------------
+Miscellaneous ext4 bug fixes for v3.14
 
+----------------------------------------------------------------
+Azat Khuzhin (1):
+      ext4: initialize multi-block allocator before checking block descriptors
+
+Dan Carpenter (2):
+      jbd2: fix use after free in jbd2_journal_start_reserved()
+      ext4: remove an unneeded check in mext_page_mkuptodate()
+
+Eric Whitney (1):
+      ext4: fix xfstest generic/299 block validity failures
+
+Fabian Frederick (1):
+      ext4: Add __init marking to init_inodecache
+
+Patrick Palka (1):
+      ext4: address a benign compiler warning
+
+Rashika Kheria (1):
+      jbd2: mark file-local functions as static
+
+Theodore Ts'o (5):
+      ext4: don't try to modify s_flags if the the file system is read-only
+      ext4: fix online resize with very large inode tables
+      ext4: fix online resize with a non-standard blocks per group setting
+      ext4: don't leave i_crtime.tv_sec uninitialized
+      ext4: clean up error handling in swap_inode_boot_loader()
+
+Zheng Liu (1):
+      ext4: fix error paths in swap_inode_boot_loader()
+
+ fs/ext4/ext4.h        |  2 ++
+ fs/ext4/extents.c     |  1 +
+ fs/ext4/ioctl.c       | 27 ++++++---------------
+ fs/ext4/mballoc.h     |  2 +-
+ fs/ext4/move_extent.c |  3 +--
+ fs/ext4/resize.c      | 34 ++++++++++++++++----------
+ fs/ext4/super.c       | 70 +++++++++++++++++++++++++++++------------------------
+ fs/jbd2/journal.c     |  6 ++---
+ fs/jbd2/transaction.c |  6 +++--
+ 9 files changed, 80 insertions(+), 71 deletions(-)
