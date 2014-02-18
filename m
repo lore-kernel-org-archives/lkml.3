@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416AbaBRWqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50631 "EHLO
+	id S1752671AbaBRWqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:46:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50676 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaBRWp7 (ORCPT
+	with ESMTP id S1752461AbaBRWqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:45:59 -0500
+	Tue, 18 Feb 2014 17:46:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, pjt@google.com,
-        Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 14/24] sched/nohz: Fix rq->cpu_load[] calculations
-Date: Tue, 18 Feb 2014 14:47:01 -0800
-Message-Id: <20140218224550.629528065@linuxfoundation.org>
+        Bojan Smojver <bojan@rexursive.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ben Hutchings <ben@decadent.org.uk>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.4 20/24] PM / Hibernate: Hibernate/thaw fixes/improvements
+Date: Tue, 18 Feb 2014 14:47:07 -0800
+Message-Id: <20140218224550.799519336@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
 References: <20140218224550.221535225@linuxfoundation.org>
@@ -30,145 +29,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Bojan Smojver <bojan@rexursive.com>
 
-commit 556061b00c9f2fd6a5524b6bde823ef12f299ecf upstream.
+commit 5a21d489fd9541a4a66b9a500659abaca1b19a51 upstream.
 
-While investigating why the load-balancer did funny I found that the
-rq->cpu_load[] tables were completely screwy.. a bit more digging
-revealed that the updates that got through were missing ticks followed
-by a catchup of 2 ticks.
+ 1. Do not allocate memory for buffers from emergency pools, unless
+    absolutely required. Do not warn about and do not retry non-essential
+    failed allocations.
 
-The catchup assumes the cpu was idle during that time (since only nohz
-can cause missed ticks and the machine is idle etc..) this means that
-esp. the higher indices were significantly lower than they ought to
-be.
+ 2. Do not check the amount of free pages left on every single page
+    write, but wait until one map is completely populated and then check.
 
-The reason for this is that its not correct to compare against jiffies
-on every jiffy on any other cpu than the cpu that updates jiffies.
+ 3. Set maximum number of pages for read buffering consistently, instead
+    of inadvertently depending on the size of the sector type.
 
-This patch cludges around it by only doing the catch-up stuff from
-nohz_idle_balance() and doing the regular stuff unconditionally from
-the tick.
+ 4. Fix copyright line, which I missed when I submitted the hibernation
+    threading patch.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: pjt@google.com
-Cc: Venkatesh Pallipadi <venki@google.com>
-Link: http://lkml.kernel.org/n/tip-tp4kj18xdd5aj4vvj0qg55s2@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+ 5. Dispense with bit shifting arithmetic to improve readability.
+
+ 6. Really recalculate the number of pages required to be free after all
+    allocations have been done.
+
+ 7. Fix calculation of pages required for read buffering. Only count in
+    pages that do not belong to high memory.
+
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c  |   53 +++++++++++++++++++++++++++++++++++++--------------
- kernel/sched/fair.c  |    2 -
- kernel/sched/sched.h |    2 -
- 3 files changed, 41 insertions(+), 16 deletions(-)
+ kernel/power/swap.c |   62 ++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 39 insertions(+), 23 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -692,8 +692,6 @@ int tg_nop(struct task_group *tg, void *
- }
- #endif
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -6,7 +6,7 @@
+  *
+  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
+  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+- * Copyright (C) 2010 Bojan Smojver <bojan@rexursive.com>
++ * Copyright (C) 2010-2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  *
+@@ -282,14 +282,17 @@ static int write_page(void *buf, sector_
+ 		return -ENOSPC;
  
--void update_cpu_load(struct rq *this_rq);
--
- static void set_load_weight(struct task_struct *p)
- {
- 	int prio = p->static_prio - MAX_RT_PRIO;
-@@ -2620,22 +2618,13 @@ decay_load_missed(unsigned long load, un
-  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-  * every tick. We fix it up based on jiffies.
-  */
--void update_cpu_load(struct rq *this_rq)
-+static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
-+			      unsigned long pending_updates)
- {
--	unsigned long this_load = this_rq->load.weight;
--	unsigned long curr_jiffies = jiffies;
--	unsigned long pending_updates;
- 	int i, scale;
- 
- 	this_rq->nr_load_updates++;
- 
--	/* Avoid repeated calls on same jiffy, when moving in and out of idle */
--	if (curr_jiffies == this_rq->last_load_update_tick)
--		return;
--
--	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
--	this_rq->last_load_update_tick = curr_jiffies;
--
- 	/* Update our load: */
- 	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
- 	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
-@@ -2660,9 +2649,45 @@ void update_cpu_load(struct rq *this_rq)
- 	sched_avg_update(this_rq);
- }
- 
-+/*
-+ * Called from nohz_idle_balance() to update the load ratings before doing the
-+ * idle balance.
-+ */
-+void update_idle_cpu_load(struct rq *this_rq)
-+{
-+	unsigned long curr_jiffies = jiffies;
-+	unsigned long load = this_rq->load.weight;
-+	unsigned long pending_updates;
+ 	if (bio_chain) {
+-		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++		src = (void *)__get_free_page(__GFP_WAIT | __GFP_NOWARN |
++		                              __GFP_NORETRY);
+ 		if (src) {
+ 			copy_page(src, buf);
+ 		} else {
+ 			ret = hib_wait_on_bio_chain(bio_chain); /* Free pages */
+ 			if (ret)
+ 				return ret;
+-			src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++			src = (void *)__get_free_page(__GFP_WAIT |
++			                              __GFP_NOWARN |
++			                              __GFP_NORETRY);
+ 			if (src) {
+ 				copy_page(src, buf);
+ 			} else {
+@@ -367,12 +370,17 @@ static int swap_write_page(struct swap_m
+ 		clear_page(handle->cur);
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+-	}
+-	if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
+-		error = hib_wait_on_bio_chain(bio_chain);
+-		if (error)
+-			goto out;
+-		handle->reqd_free_pages = reqd_free_pages();
 +
++		if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
++			error = hib_wait_on_bio_chain(bio_chain);
++			if (error)
++				goto out;
++			/*
++			 * Recalculate the number of required free pages, to
++			 * make sure we never take more than half.
++			 */
++			handle->reqd_free_pages = reqd_free_pages();
++		}
+ 	}
+  out:
+ 	return error;
+@@ -419,8 +427,9 @@ static int swap_writer_finish(struct swa
+ /* Maximum number of threads for compression/decompression. */
+ #define LZO_THREADS	3
+ 
+-/* Maximum number of pages for read buffering. */
+-#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 8)
++/* Minimum/maximum number of pages for read buffering. */
++#define LZO_MIN_RD_PAGES	1024
++#define LZO_MAX_RD_PAGES	8192
+ 
+ 
+ /**
+@@ -631,12 +640,6 @@ static int save_image_lzo(struct swap_ma
+ 	}
+ 
+ 	/*
+-	 * Adjust number of free pages after all allocations have been done.
+-	 * We don't want to run out of pages when writing.
+-	 */
+-	handle->reqd_free_pages = reqd_free_pages();
+-
+-	/*
+ 	 * Start the CRC32 thread.
+ 	 */
+ 	init_waitqueue_head(&crc->go);
+@@ -657,6 +660,12 @@ static int save_image_lzo(struct swap_ma
+ 		goto out_clean;
+ 	}
+ 
 +	/*
-+	 * Bloody broken means of dealing with nohz, but better than nothing..
-+	 * jiffies is updated by one cpu, another cpu can drift wrt the jiffy
-+	 * update and see 0 difference the one time and 2 the next, even though
-+	 * we ticked at roughtly the same rate.
-+	 *
-+	 * Hence we only use this from nohz_idle_balance() and skip this
-+	 * nonsense when called from the scheduler_tick() since that's
-+	 * guaranteed a stable rate.
++	 * Adjust the number of required free pages after all allocations have
++	 * been done. We don't want to run out of pages when writing.
 +	 */
-+	if (load || curr_jiffies == this_rq->last_load_update_tick)
-+		return;
++	handle->reqd_free_pages = reqd_free_pages();
 +
-+	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
-+	this_rq->last_load_update_tick = curr_jiffies;
+ 	printk(KERN_INFO
+ 		"PM: Using %u thread(s) for compression.\n"
+ 		"PM: Compressing and saving image data (%u pages) ...     ",
+@@ -1067,7 +1076,7 @@ static int load_image_lzo(struct swap_ma
+ 	unsigned i, thr, run_threads, nr_threads;
+ 	unsigned ring = 0, pg = 0, ring_size = 0,
+ 	         have = 0, want, need, asked = 0;
+-	unsigned long read_pages;
++	unsigned long read_pages = 0;
+ 	unsigned char **page = NULL;
+ 	struct dec_data *data = NULL;
+ 	struct crc_data *crc = NULL;
+@@ -1079,7 +1088,7 @@ static int load_image_lzo(struct swap_ma
+ 	nr_threads = num_online_cpus() - 1;
+ 	nr_threads = clamp_val(nr_threads, 1, LZO_THREADS);
+ 
+-	page = vmalloc(sizeof(*page) * LZO_READ_PAGES);
++	page = vmalloc(sizeof(*page) * LZO_MAX_RD_PAGES);
+ 	if (!page) {
+ 		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+ 		ret = -ENOMEM;
+@@ -1144,15 +1153,22 @@ static int load_image_lzo(struct swap_ma
+ 	}
+ 
+ 	/*
+-	 * Adjust number of pages for read buffering, in case we are short.
++	 * Set the number of pages for read buffering.
++	 * This is complete guesswork, because we'll only know the real
++	 * picture once prepare_image() is called, which is much later on
++	 * during the image load phase. We'll assume the worst case and
++	 * say that none of the image pages are from high memory.
+ 	 */
+-	read_pages = (nr_free_pages() - snapshot_get_image_size()) >> 1;
+-	read_pages = clamp_val(read_pages, LZO_CMP_PAGES, LZO_READ_PAGES);
++	if (low_free_pages() > snapshot_get_image_size())
++		read_pages = (low_free_pages() - snapshot_get_image_size()) / 2;
++	read_pages = clamp_val(read_pages, LZO_MIN_RD_PAGES, LZO_MAX_RD_PAGES);
+ 
+ 	for (i = 0; i < read_pages; i++) {
+ 		page[i] = (void *)__get_free_page(i < LZO_CMP_PAGES ?
+ 		                                  __GFP_WAIT | __GFP_HIGH :
+-		                                  __GFP_WAIT);
++		                                  __GFP_WAIT | __GFP_NOWARN |
++		                                  __GFP_NORETRY);
 +
-+	__update_cpu_load(this_rq, load, pending_updates);
-+}
-+
-+/*
-+ * Called from scheduler_tick()
-+ */
- static void update_cpu_load_active(struct rq *this_rq)
- {
--	update_cpu_load(this_rq);
-+	/*
-+	 * See the mess in update_idle_cpu_load().
-+	 */
-+	this_rq->last_load_update_tick = jiffies;
-+	__update_cpu_load(this_rq, this_rq->load.weight, 1);
- 
- 	calc_load_account_active(this_rq);
- }
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5042,7 +5042,7 @@ static void nohz_idle_balance(int this_c
- 
- 		raw_spin_lock_irq(&this_rq->lock);
- 		update_rq_clock(this_rq);
--		update_cpu_load(this_rq);
-+		update_idle_cpu_load(this_rq);
- 		raw_spin_unlock_irq(&this_rq->lock);
- 
- 		rebalance_domains(balance_cpu, CPU_IDLE);
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -873,7 +873,7 @@ extern void resched_cpu(int cpu);
- extern struct rt_bandwidth def_rt_bandwidth;
- extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
- 
--extern void update_cpu_load(struct rq *this_rq);
-+extern void update_idle_cpu_load(struct rq *this_rq);
- 
- #ifdef CONFIG_CGROUP_CPUACCT
- #include <linux/cgroup.h>
+ 		if (!page[i]) {
+ 			if (i < LZO_CMP_PAGES) {
+ 				ring_size = i;
 
 
