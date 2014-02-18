@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720AbaBROQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:16:35 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19283 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755128AbaBROQd convert rfc822-to-8bit (ORCPT
+	id S1755690AbaBROUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:20:09 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:45364 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755016AbaBROUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:16:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="485203869"
-From: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>
-To: Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC, PATCHv2 0/2] mm: map few pages around fault address if
- they are in page cache
-Thread-Topic: [RFC, PATCHv2 0/2] mm: map few pages around fault address if
- they are in page cache
-Thread-Index: AQHPLA+LtMkhTgsne06MzzyLvYMEt5q6U3MAgAE1CAD//3vEjg==
-Date: Tue, 18 Feb 2014 14:15:59 +0000
-Message-ID: <100D68C7BA14664A8938383216E40DE04062DEA1@FMSMSX114.amr.corp.intel.com>
-References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
- <CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>,<53035FE2.4080300@redhat.com>
-In-Reply-To: <53035FE2.4080300@redhat.com>
-Accept-Language: en-CA, en-US
-Content-Language: en-CA
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.19.9.46]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Feb 2014 09:20:04 -0500
+Date: Tue, 18 Feb 2014 15:17:05 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: David =?iso-8859-1?Q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
+Cc: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 3/8] ARM: sunxi: clk: export
+ clk_sunxi_mmc_phase_control
+Message-ID: <20140218141705.GI3142@lukather>
+References: <20140217095907.15040.81893.stgit@pagira.o2s.ch>
+ <20140217100228.15040.32391.stgit@pagira.o2s.ch>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tctmm6wHVGT/P6vA"
+Content-Disposition: inline
+In-Reply-To: <20140217100228.15040.32391.stgit@pagira.o2s.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't really need to lock all the pages being returned to protect against truncate.  We only need to lock the one at the highest index, and check i_size while that lock is held since truncate_inode_pages_range() will block on any page that is locked.
 
-We're still vulnerable to holepunches, but there's no locking currently between holepunches and truncate, so we're no worse off now.
-________________________________________
-From: Rik van Riel [riel@redhat.com]
-Sent: February 18, 2014 5:28 AM
-To: Linus Torvalds; Kirill A. Shutemov
-Cc: Andrew Morton; Mel Gorman; Andi Kleen; Wilcox, Matthew R; Dave Hansen; Alexander Viro; Dave Chinner; linux-mm; linux-fsdevel; Linux Kernel Mailing List
-Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if they are in page cache
+--tctmm6wHVGT/P6vA
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 02/17/2014 02:01 PM, Linus Torvalds wrote:
+On Mon, Feb 17, 2014 at 11:02:28AM +0100, David Lanzend=F6rfer wrote:
+> From: Hans de Goede <hdegoede@redhat.com>
+>=20
+> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 
->  - increment the page _mapcount (iow, do "page_add_file_rmap()"
-> early). This guarantees that any *subsequent* unmap activity on this
-> page will walk the file mapping lists, and become serialized by the
-> page table lock we hold.
->
->  - mb_after_atomic_inc() (this is generally free)
->
->  - test that the page is still unlocked and uptodate, and the page
-> mapping still points to our page.
->
->  - if that is true, we're all good, we can use the page, otherwise we
-> decrement the mapcount (page_remove_rmap()) and skip the page.
->
-> Hmm? Doing something like this means that we would never lock the
-> pages we prefault, and you can go back to your gang lookup rather than
-> that "one page at a time". And the race case is basically never going
-> to trigger.
->
-> Comments?
+Again, your SoB is missing, and that can be squashed with the previous
+patch.
 
-What would the direct io code do when it runs into a page with
-elevated mapcount, but for which a mapping cannot be found yet?
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-Looking at the code, it looks like the above scheme could cause
-some trouble with invalidate_inode_pages2_range(), which has
-the following sequence:
+--tctmm6wHVGT/P6vA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-                        if (page_mapped(page)) {
-                                ... unmap page
-                        }
-                        BUG_ON(page_mapped(page));
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-In other words, it looks like incrementing _mapcount first could
-lead to an oops in the truncate and direct IO code.
+iQIcBAEBAgAGBQJTA2thAAoJEBx+YmzsjxAgQSgP/3QXfcYGS0oqcTD8sCyqf6CZ
+C3ln6LBm2hYpYOiTXvTxix8LR8l3IIs8qWddBlHzcWzx+MDQ+l6JRWBKgCEt1kE3
+it0q9W3NazVxjG/Z29ZlREiu7MNey3bwhEuvrLKOxJMU6NhsRFQlS2PhBOBaViai
+f/MoHIXi/n5E5pOlfYol+z48XzXNOHRU3jAkdmyR1iHS/h86h3Zg7Crl1HldoUtr
+T9WoHy5CCpvPkkmfILk5jFxMpNUbAXcHsAPqKPbeuksAqzUahBQjDTILX91HVAaa
+o73qFgkzzkZxAcnssatnaEsz23GQNo99PCwY5J4H1nt0pKiPoDciWYzI/ROX5HKm
+dm7BohSq73K85YvVoLwuxyjUo5q931Vf8JYiPhA4b/jwCAVLLWBZp1owBH0cAwqI
+6pNwZMdeME2dTa1DswF4ylm7C6BdgFs+d1cCJ3gAVsvUaT76DMRCYF+7Hm8eCPa5
+zmYODXZEK26XpRL8gDsSvxhf3bT+eqzKZau7cr+c0tZ6LQAhR125m8FMDps9UTsz
+UTJ6J4ol0gZQ63IWKa2FKfqo+RvS59LqgZCEhPIXHmG0JR2khiqBt3I1mNvBBb6W
+SbJSObjE6ACcSKI+HyQjd+ndk5FDXp6/upkeDFm53PtIrBDxST82QnqbCMG7QLDc
+oEf+tv2aoWwG76wgkLtQ
+=fAV1
+-----END PGP SIGNATURE-----
 
-The page lock is used to prevent such races.
-
-*sigh*
-
---
-All rights reversed
+--tctmm6wHVGT/P6vA--
