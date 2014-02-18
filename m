@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaBRVLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:11:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35748 "EHLO
+	id S1752887AbaBRVLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:11:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35735 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaBRVJO (ORCPT
+	with ESMTP id S1752484AbaBRVJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:09:14 -0500
+	Tue, 18 Feb 2014 16:09:13 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -18,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/32] perf callchain: Add mask into struct regs_dump
-Date: Tue, 18 Feb 2014 18:08:32 -0300
-Message-Id: <1392757731-32619-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 16/32] perf callchain: Introduce HAVE_DWARF_UNWIND_SUPPORT macro
+Date: Tue, 18 Feb 2014 18:08:35 -0300
+Message-Id: <1392757731-32619-17-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
 References: <1392757731-32619-1-git-send-email-acme@infradead.org>
@@ -32,15 +31,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Adding mask info into struct regs_dump to make the registers information
-compact.
-
-The mask was always passed along, so logically the mask info fits more
-into the struct regs_dump.
+Introducing global macro HAVE_DWARF_UNWIND_SUPPORT to indicate we have
+dwarf unwind support. Any library providing the dwarf post unwind
+support will enable this macro.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Acked-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -49,337 +45,132 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1389098853-14466-9-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1389098853-14466-12-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/arch/x86/tests/dwarf-unwind.c |  1 +
- tools/perf/builtin-inject.c              |  1 -
- tools/perf/tests/dwarf-unwind.c          |  2 +-
- tools/perf/tests/sample-parsing.c        | 17 ++++++++---------
- tools/perf/util/event.h                  |  5 +++--
- tools/perf/util/evsel.c                  | 13 +++++++------
- tools/perf/util/machine.c                |  3 +--
- tools/perf/util/session.c                |  5 +++--
- tools/perf/util/unwind.c                 | 20 ++++++++------------
- tools/perf/util/unwind.h                 |  2 --
- 10 files changed, 32 insertions(+), 37 deletions(-)
+ tools/perf/builtin-record.c     | 10 +++++-----
+ tools/perf/config/Makefile      |  2 +-
+ tools/perf/tests/builtin-test.c |  2 +-
+ tools/perf/tests/tests.h        |  2 +-
+ tools/perf/util/unwind.h        |  7 +++++--
+ 5 files changed, 13 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/arch/x86/tests/dwarf-unwind.c b/tools/perf/arch/x86/tests/dwarf-unwind.c
-index 371f8493dcfd..b602ad93ce63 100644
---- a/tools/perf/arch/x86/tests/dwarf-unwind.c
-+++ b/tools/perf/arch/x86/tests/dwarf-unwind.c
-@@ -53,6 +53,7 @@ int test__arch_unwind_sample(struct perf_sample *sample,
- 	perf_regs_load(buf);
- 	regs->abi  = PERF_SAMPLE_REGS_ABI;
- 	regs->regs = buf;
-+	regs->mask = PERF_REGS_MASK;
- 
- 	return sample_ustack(sample, thread, buf);
- }
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index b3466018bbd7..3a7387551369 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -312,7 +312,6 @@ found:
- 	sample_sw.period = sample->period;
- 	sample_sw.time	 = sample->time;
- 	perf_event__synthesize_sample(event_sw, evsel->attr.sample_type,
--				      evsel->attr.sample_regs_user,
- 				      evsel->attr.read_format, &sample_sw,
- 				      false);
- 	build_id__mark_dso_hit(tool, event_sw, &sample_sw, evsel, machine);
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index a203c0caaf8a..f16ea2808a75 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -72,7 +72,7 @@ static int unwind_thread(struct thread *thread, struct machine *machine)
- 	}
- 
- 	err = unwind__get_entries(unwind_entry, &cnt, machine, thread,
--				  PERF_REGS_MASK, &sample, MAX_STACK);
-+				  &sample, MAX_STACK);
- 	if (err)
- 		pr_debug("unwind failed\n");
- 	else if (cnt != MAX_STACK) {
-diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
-index 1b677202638d..0014d3c8c21c 100644
---- a/tools/perf/tests/sample-parsing.c
-+++ b/tools/perf/tests/sample-parsing.c
-@@ -22,8 +22,8 @@
- } while (0)
- 
- static bool samples_same(const struct perf_sample *s1,
--			 const struct perf_sample *s2, u64 type, u64 regs_user,
--			 u64 read_format)
-+			 const struct perf_sample *s2,
-+			 u64 type, u64 read_format)
- {
- 	size_t i;
- 
-@@ -95,8 +95,9 @@ static bool samples_same(const struct perf_sample *s1,
- 	}
- 
- 	if (type & PERF_SAMPLE_REGS_USER) {
--		size_t sz = hweight_long(regs_user) * sizeof(u64);
-+		size_t sz = hweight_long(s1->user_regs.mask) * sizeof(u64);
- 
-+		COMP(user_regs.mask);
- 		COMP(user_regs.abi);
- 		if (s1->user_regs.abi &&
- 		    (!s1->user_regs.regs || !s2->user_regs.regs ||
-@@ -174,6 +175,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 		.branch_stack	= &branch_stack.branch_stack,
- 		.user_regs	= {
- 			.abi	= PERF_SAMPLE_REGS_ABI_64,
-+			.mask	= sample_regs_user,
- 			.regs	= user_regs,
- 		},
- 		.user_stack	= {
-@@ -201,8 +203,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 		sample.read.one.id    = 99;
- 	}
- 
--	sz = perf_event__sample_event_size(&sample, sample_type,
--					   sample_regs_user, read_format);
-+	sz = perf_event__sample_event_size(&sample, sample_type, read_format);
- 	bufsz = sz + 4096; /* Add a bit for overrun checking */
- 	event = malloc(bufsz);
- 	if (!event) {
-@@ -215,8 +216,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 	event->header.misc = 0;
- 	event->header.size = sz;
- 
--	err = perf_event__synthesize_sample(event, sample_type,
--					    sample_regs_user, read_format,
-+	err = perf_event__synthesize_sample(event, sample_type, read_format,
- 					    &sample, false);
- 	if (err) {
- 		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
-@@ -244,8 +244,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 		goto out_free;
- 	}
- 
--	if (!samples_same(&sample, &sample_out, sample_type,
--			  sample_regs_user, read_format)) {
-+	if (!samples_same(&sample, &sample_out, sample_type, read_format)) {
- 		pr_debug("parsing failed for sample_type %#"PRIx64"\n",
- 			 sample_type);
- 		goto out_free;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 851fa06f4a42..38457d447a13 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -85,6 +85,7 @@ struct sample_event {
- 
- struct regs_dump {
- 	u64 abi;
-+	u64 mask;
- 	u64 *regs;
- };
- 
-@@ -259,9 +260,9 @@ int perf_event__preprocess_sample(const union perf_event *event,
- const char *perf_event__name(unsigned int id);
- 
- size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
--				     u64 sample_regs_user, u64 read_format);
-+				     u64 read_format);
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
--				  u64 sample_regs_user, u64 read_format,
-+				  u64 read_format,
- 				  const struct perf_sample *sample,
- 				  bool swapped);
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 8201abe0925e..adc94dd1794d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1396,10 +1396,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		array++;
- 
- 		if (data->user_regs.abi) {
--			u64 regs_user = evsel->attr.sample_regs_user;
-+			u64 mask = evsel->attr.sample_regs_user;
- 
--			sz = hweight_long(regs_user) * sizeof(u64);
-+			sz = hweight_long(mask) * sizeof(u64);
- 			OVERFLOW_CHECK(array, sz, max_size);
-+			data->user_regs.mask = mask;
- 			data->user_regs.regs = (u64 *)array;
- 			array = (void *)array + sz;
- 		}
-@@ -1451,7 +1452,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 7b8f0e6068b3..eb524f91bffe 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -649,7 +649,7 @@ error:
+ 	return ret;
  }
  
- size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
--				     u64 sample_regs_user, u64 read_format)
-+				     u64 read_format)
+-#ifdef HAVE_LIBUNWIND_SUPPORT
++#ifdef HAVE_DWARF_UNWIND_SUPPORT
+ static int get_stack_size(char *str, unsigned long *_size)
  {
- 	size_t sz, result = sizeof(struct sample_event);
+ 	char *endptr;
+@@ -675,7 +675,7 @@ static int get_stack_size(char *str, unsigned long *_size)
+ 	       max_size, str);
+ 	return -1;
+ }
+-#endif /* HAVE_LIBUNWIND_SUPPORT */
++#endif /* HAVE_DWARF_UNWIND_SUPPORT */
  
-@@ -1517,7 +1518,7 @@ size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
- 	if (type & PERF_SAMPLE_REGS_USER) {
- 		if (sample->user_regs.abi) {
- 			result += sizeof(u64);
--			sz = hweight_long(sample_regs_user) * sizeof(u64);
-+			sz = hweight_long(sample->user_regs.mask) * sizeof(u64);
- 			result += sz;
+ int record_parse_callchain(const char *arg, struct record_opts *opts)
+ {
+@@ -704,7 +704,7 @@ int record_parse_callchain(const char *arg, struct record_opts *opts)
+ 				       "needed for -g fp\n");
+ 			break;
+ 
+-#ifdef HAVE_LIBUNWIND_SUPPORT
++#ifdef HAVE_DWARF_UNWIND_SUPPORT
+ 		/* Dwarf style */
+ 		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
+ 			const unsigned long default_stack_dump_size = 8192;
+@@ -720,7 +720,7 @@ int record_parse_callchain(const char *arg, struct record_opts *opts)
+ 				ret = get_stack_size(tok, &size);
+ 				opts->stack_dump_size = size;
+ 			}
+-#endif /* HAVE_LIBUNWIND_SUPPORT */
++#endif /* HAVE_DWARF_UNWIND_SUPPORT */
  		} else {
- 			result += sizeof(u64);
-@@ -1546,7 +1547,7 @@ size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
- }
+ 			pr_err("callchain: Unknown --call-graph option "
+ 			       "value: %s\n", arg);
+@@ -823,7 +823,7 @@ static struct record record = {
  
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
--				  u64 sample_regs_user, u64 read_format,
-+				  u64 read_format,
- 				  const struct perf_sample *sample,
- 				  bool swapped)
- {
-@@ -1687,7 +1688,7 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 	if (type & PERF_SAMPLE_REGS_USER) {
- 		if (sample->user_regs.abi) {
- 			*array++ = sample->user_regs.abi;
--			sz = hweight_long(sample_regs_user) * sizeof(u64);
-+			sz = hweight_long(sample->user_regs.mask) * sizeof(u64);
- 			memcpy(array, sample->user_regs.regs, sz);
- 			array = (void *)array + sz;
- 		} else {
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 6c08ab03a697..ac37d788b5cb 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1383,8 +1383,7 @@ int machine__resolve_callchain(struct machine *machine,
- 		return 0;
+ #define CALLCHAIN_HELP "setup and enables call-graph (stack chain/backtrace) recording: "
  
- 	return unwind__get_entries(unwind_entry, &callchain_cursor, machine,
--				   thread, evsel->attr.sample_regs_user,
--				   sample, max_stack);
-+				   thread, sample, max_stack);
+-#ifdef HAVE_LIBUNWIND_SUPPORT
++#ifdef HAVE_DWARF_UNWIND_SUPPORT
+ const char record_callchain_help[] = CALLCHAIN_HELP "fp dwarf";
+ #else
+ const char record_callchain_help[] = CALLCHAIN_HELP "fp";
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index c48d44958172..1686583ff7fc 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -338,7 +338,7 @@ ifndef NO_LIBUNWIND
+       CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
+     endif
  
- }
+-    CFLAGS += -DHAVE_LIBUNWIND_SUPPORT
++    CFLAGS += -DHAVE_DWARF_UNWIND_SUPPORT -DHAVE_LIBUNWIND_SUPPORT
+     EXTLIBS += $(LIBUNWIND_LIBS)
+     CFLAGS += $(LIBUNWIND_CFLAGS)
+     LDFLAGS += $(LIBUNWIND_LDFLAGS)
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index f5a6ffba8a47..b11bf8a08430 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -116,7 +116,7 @@ static struct test {
+ 		.func = test__parse_no_sample_id_all,
+ 	},
+ #if defined(__x86_64__) || defined(__i386__)
+-#ifdef HAVE_LIBUNWIND_SUPPORT
++#ifdef HAVE_DWARF_UNWIND_SUPPORT
+ 	{
+ 		.desc = "Test dwarf unwind",
+ 		.func = test__dwarf_unwind,
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 8979309876a7..a24795ca002d 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -43,7 +43,7 @@ int test__parse_no_sample_id_all(void);
+ int test__dwarf_unwind(void);
  
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 5da6ce74c676..1d555d652f58 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -702,11 +702,12 @@ static void regs_dump__printf(u64 mask, u64 *regs)
- 	}
- }
- 
--static void regs_user__printf(struct perf_sample *sample, u64 mask)
-+static void regs_user__printf(struct perf_sample *sample)
- {
- 	struct regs_dump *user_regs = &sample->user_regs;
- 
- 	if (user_regs->regs) {
-+		u64 mask = user_regs->mask;
- 		printf("... user regs: mask 0x%" PRIx64 "\n", mask);
- 		regs_dump__printf(mask, user_regs->regs);
- 	}
-@@ -806,7 +807,7 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
- 		branch_stack__printf(sample);
- 
- 	if (sample_type & PERF_SAMPLE_REGS_USER)
--		regs_user__printf(sample, evsel->attr.sample_regs_user);
-+		regs_user__printf(sample);
- 
- 	if (sample_type & PERF_SAMPLE_STACK_USER)
- 		stack_user__printf(&sample->user_stack);
-diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-index 3b7018102dfb..720a4cae6004 100644
---- a/tools/perf/util/unwind.c
-+++ b/tools/perf/util/unwind.c
-@@ -86,7 +86,6 @@ struct unwind_info {
- 	struct perf_sample	*sample;
- 	struct machine		*machine;
- 	struct thread		*thread;
--	u64			sample_uregs;
- };
- 
- #define dw_read(ptr, type, end) ({	\
-@@ -391,16 +390,16 @@ static int access_dso_mem(struct unwind_info *ui, unw_word_t addr,
- 	return !(size == sizeof(*data));
- }
- 
--static int reg_value(unw_word_t *valp, struct regs_dump *regs, int id,
--		     u64 sample_regs)
-+static int reg_value(unw_word_t *valp, struct regs_dump *regs, int id)
- {
- 	int i, idx = 0;
-+	u64 mask = regs->mask;
- 
--	if (!(sample_regs & (1 << id)))
-+	if (!(mask & (1 << id)))
- 		return -EINVAL;
- 
- 	for (i = 0; i < id; i++) {
--		if (sample_regs & (1 << i))
-+		if (mask & (1 << i))
- 			idx++;
- 	}
- 
-@@ -424,8 +423,7 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
- 		return 0;
- 	}
- 
--	ret = reg_value(&start, &ui->sample->user_regs, PERF_REG_SP,
--			ui->sample_uregs);
-+	ret = reg_value(&start, &ui->sample->user_regs, PERF_REG_SP);
- 	if (ret)
- 		return ret;
- 
-@@ -475,7 +473,7 @@ static int access_reg(unw_addr_space_t __maybe_unused as,
- 	if (id < 0)
- 		return -EINVAL;
- 
--	ret = reg_value(valp, &ui->sample->user_regs, id, ui->sample_uregs);
-+	ret = reg_value(valp, &ui->sample->user_regs, id);
- 	if (ret) {
- 		pr_err("unwind: can't read reg %d\n", regnum);
- 		return ret;
-@@ -572,13 +570,11 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- 
- int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
- 			struct machine *machine, struct thread *thread,
--			u64 sample_uregs, struct perf_sample *data,
--			int max_stack)
-+			struct perf_sample *data, int max_stack)
- {
- 	unw_word_t ip;
- 	struct unwind_info ui = {
- 		.sample       = data,
--		.sample_uregs = sample_uregs,
- 		.thread       = thread,
- 		.machine      = machine,
- 	};
-@@ -587,7 +583,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
- 	if (!data->user_regs.regs)
- 		return -EINVAL;
- 
--	ret = reg_value(&ip, &data->user_regs, PERF_REG_IP, sample_uregs);
-+	ret = reg_value(&ip, &data->user_regs, PERF_REG_IP);
- 	if (ret)
- 		return ret;
- 
+ #if defined(__x86_64__) || defined(__i386__)
+-#ifdef HAVE_LIBUNWIND_SUPPORT
++#ifdef HAVE_DWARF_UNWIND_SUPPORT
+ struct thread;
+ struct perf_sample;
+ int test__arch_unwind_sample(struct perf_sample *sample,
 diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
-index d5966f49e22c..356e1d642f9d 100644
+index 18f33b475c46..b031316f221a 100644
 --- a/tools/perf/util/unwind.h
 +++ b/tools/perf/util/unwind.h
-@@ -17,7 +17,6 @@ typedef int (*unwind_entry_cb_t)(struct unwind_entry *entry, void *arg);
+@@ -13,12 +13,15 @@ struct unwind_entry {
+ 
+ typedef int (*unwind_entry_cb_t)(struct unwind_entry *entry, void *arg);
+ 
+-#ifdef HAVE_LIBUNWIND_SUPPORT
++#ifdef HAVE_DWARF_UNWIND_SUPPORT
  int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
  			struct machine *machine,
  			struct thread *thread,
--			u64 sample_uregs,
  			struct perf_sample *data, int max_stack);
- int unwind__arch_reg_id(int regnum);
++/* libunwind specific */
++#ifdef HAVE_LIBUNWIND_SUPPORT
+ int libunwind__arch_reg_id(int regnum);
++#endif
  #else
-@@ -26,7 +25,6 @@ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
- 		    void *arg __maybe_unused,
- 		    struct machine *machine __maybe_unused,
- 		    struct thread *thread __maybe_unused,
--		    u64 sample_uregs __maybe_unused,
- 		    struct perf_sample *data __maybe_unused,
- 		    int max_stack __maybe_unused)
+ static inline int
+ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
+@@ -30,5 +33,5 @@ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
  {
+ 	return 0;
+ }
+-#endif /* HAVE_LIBUNWIND_SUPPORT */
++#endif /* HAVE_DWARF_UNWIND_SUPPORT */
+ #endif /* __UNWIND_H */
 -- 
 1.8.1.4
 
