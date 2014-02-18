@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaBRSx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 13:53:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55738 "EHLO mga02.intel.com"
+	id S1752281AbaBRSyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 13:54:19 -0500
+Received: from mga09.intel.com ([134.134.136.24]:38802 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314AbaBRSx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 13:53:26 -0500
+	id S1750864AbaBRSyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 13:54:18 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="485353789"
-Date: Tue, 18 Feb 2014 13:53:23 -0500
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if
- they are in page cache
-Message-ID: <20140218185323.GB5744@linux.intel.com>
-References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
- <CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
- <53035FE2.4080300@redhat.com>
- <100D68C7BA14664A8938383216E40DE04062DEA1@FMSMSX114.amr.corp.intel.com>
- <CA+55aFzqZ2S==NyWG67hNV1YsY-oXLjLvCR0JeiHGJOfnoGJBg@mail.gmail.com>
+   d="scan'208";a="457573354"
+Date: Tue, 18 Feb 2014 10:54:17 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Denis Turischev <denis.turischev@compulab.co.il>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RESEND] [PATCH] xhci: Switch Intel Lynx Point ports to EHCI on
+ shutdown.
+Message-ID: <20140218185417.GD7395@xanatos>
+References: <52B31EDA.60908@compulab.co.il>
+ <52F0CAB8.20803@compulab.co.il>
+ <53030EEF.7090708@compulab.co.il>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzqZ2S==NyWG67hNV1YsY-oXLjLvCR0JeiHGJOfnoGJBg@mail.gmail.com>
+In-Reply-To: <53030EEF.7090708@compulab.co.il>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 10:02:26AM -0800, Linus Torvalds wrote:
-> On Tue, Feb 18, 2014 at 6:15 AM, Wilcox, Matthew R
-> <matthew.r.wilcox@intel.com> wrote:
-> > We don't really need to lock all the pages being returned to protect
-> > against truncate.  We only need to lock the one at the highest index,
-> > and check i_size while that lock is held since truncate_inode_pages_range()
-> > will block on any page that is locked.
-> >
-> > We're still vulnerable to holepunches, but there's no locking currently
-> > between holepunches and truncate, so we're no worse off now.
+Sorry for the delay in reviewing this.  It helps me if you don't make the
+patch in-reply-to a months old thread. :)  I'll take a look at this
+shortly.
+
+Sarah Sharp
+
+On Tue, Feb 18, 2014 at 09:42:39AM +0200, Denis Turischev wrote:
+> The same issue like with Panther Point chipsets. If the USB ports are
+> switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
+> which will wake the system. Some BIOS have work around for this, but not all.
+> One example is Compulab's mini-desktop, the Intense-PC2.
 > 
-> It's not "holepunches and truncate", it's "holepunches and page
-> mapping", and I do think we currently serialize the two - the whole
-> "check page->mapping still being non-NULL" before mapping it while
-> having the page locked does that.
-
-Yes, I did mean "holepunches and page faults".  But here's the race I see:
-
-Process A			Process B
-ext4_fallocate()
-ext4_punch_hole()
-filemap_write_and_wait_range()
-mutex_lock(&inode->i_mutex);
-truncate_pagecache_range()
-unmap_mapping_range()
-				__do_fault()
-				filemap_fault()
-				lock_page_or_retry()
-				(page->mapping == mapping at this point)
-				set_pte_at()
-				unlock_page()
-truncate_inode_pages_range()
-(now the pte is pointing at a page that
- is no longer attached to this file)
-mutex_unlock(&inode->i_mutex);
-
-Would we solve the problem by putting in a second call to
-unmap_mapping_range() after calling truncate_inode_pages_range() in
-truncate_pagecache_range(), like truncate_pagecache() does?
-
-> Besides, that per-page locking should serialize against truncate too.
-> No, there is no "global" serialization, but there *is* exactly that
-> page-level serialization where both truncation and hole punching end
-> up making sure that the page no longer exists in the page cache and
-> isn't mapped.
-
-What I'm suggesting is going back to Kirill's earlier patch, but only
-locking the page with the highest index instead of all of the pages.
-truncate() will block on that page and then we'll notice that some or
-all of the other pages are also now past i_size and give up.
+> The bug can be avoided if the USB ports are switched back to EHCI on
+> shutdown.
+> 
+> Signed-off-by: Denis Turischev <denis@compulab.co.il>
+> ---
+>  drivers/usb/host/xhci-pci.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+> index 3c898c1..9233d12 100644
+> --- a/drivers/usb/host/xhci-pci.c
+> +++ b/drivers/usb/host/xhci-pci.c
+> @@ -134,6 +134,8 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+>  		 */
+>  		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
+>  			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
+> +
+> +		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
+>  	}
+>  	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+>  			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+> -- 1.8.1.2
+> 
+> 
