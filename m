@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaBRTHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 14:07:16 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:43679 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126AbaBRTHK (ORCPT
+	id S1751861AbaBRTHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 14:07:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48088 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126AbaBRTHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 14:07:10 -0500
+	Tue, 18 Feb 2014 14:07:04 -0500
+Date: Tue, 18 Feb 2014 11:08:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        Colin Cross <ccross@android.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [PATCH 12/14] staging: binder: Fix ABI for 64bit Android
+Message-ID: <20140218190828.GA10376@kroah.com>
+References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
+ <1392674322-9036-13-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20140218185323.GB5744@linux.intel.com>
-References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
-	<53035FE2.4080300@redhat.com>
-	<100D68C7BA14664A8938383216E40DE04062DEA1@FMSMSX114.amr.corp.intel.com>
-	<CA+55aFzqZ2S==NyWG67hNV1YsY-oXLjLvCR0JeiHGJOfnoGJBg@mail.gmail.com>
-	<20140218185323.GB5744@linux.intel.com>
-Date: Tue, 18 Feb 2014 11:07:09 -0800
-X-Google-Sender-Auth: MdcnV4nvKJkDW0Ffn2PX1ld7cj4
-Message-ID: <CA+55aFySHoOkTUDVpWPxq9PZtwXKxhS=Wz757fM7oyQazfKpfw@mail.gmail.com>
-Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if they
- are in page cache
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392674322-9036-13-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 10:53 AM, Matthew Wilcox <willy@linux.intel.com> wrote:
->
-> Yes, I did mean "holepunches and page faults".  But here's the race I see:
+On Mon, Feb 17, 2014 at 01:58:40PM -0800, John Stultz wrote:
+> From: Serban Constantinescu <serban.constantinescu@arm.com>
+> 
+> This patch fixes the ABI for 64bit Android userspace.
+> BC_REQUEST_DEATH_NOTIFICATION and BC_CLEAR_DEATH_NOTIFICATION claim
+> to be using struct binder_ptr_cookie, but they are using a 32bit handle
+> and a pointer.
+> 
+> On 32bit systems the payload size is the same as the size of struct
+> binder_ptr_cookie, however for 64bit systems this will differ. This
+> patch adds struct binder_handle_cookie that fixes this issue for 64bit
+> Android.
+> 
+> Since there are no 64bit users of this interface that we know of this
+> change should not affect any existing systems.
 
-Hmm. With truncate, we should be protected by i_size being changed
-first (iirc - I didn't actually check), but I think you're right that
-hole punching might race with a page being mapped at the same time.
+But you are changing the ioctl structures here, what is that going to
+cause with old programs?
 
-> What I'm suggesting is going back to Kirill's earlier patch, but only
-> locking the page with the highest index instead of all of the pages.
-> truncate() will block on that page and then we'll notice that some or
-> all of the other pages are also now past i_size and give up.
+> 
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Arve Hjønnevåg <arve@android.com>
+> Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+> Cc: Android Kernel Team <kernel-team@android.com>
 
-Actually, Kirill's latest patch seems to solve the problem with
-locking - by simply never locking more than one page at a time. So I
-guess it's all moot at least wrt the page preload..
+I am going to require Acks from someone on the Android team to accept
+this, or any other 64bit binder patch, given all the back-and-forth that
+has happened with the different patch sets here over the past year or
+so.
 
-          Linus
+Until then, I can't take this (and I think this patch is still
+broken...)
+
+> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+> [jstultz: Minor commit tweaks, few 80+ col fixes for checkpatch]
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  drivers/staging/android/uapi/binder.h | 15 +++++++++++----
+>  1 file changed, 11 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
+> index 2b1eb81..4071fcf 100644
+> --- a/drivers/staging/android/uapi/binder.h
+> +++ b/drivers/staging/android/uapi/binder.h
+> @@ -152,6 +152,11 @@ struct binder_ptr_cookie {
+>  	void *cookie;
+>  };
+>  
+> +struct binder_handle_cookie {
+> +	__u32 handle;
+> +	void *cookie;
+> +} __attribute__((packed));
+
+Are you sure this isn't supposed to be a union?
+
+> +
+>  struct binder_pri_desc {
+>  	__s32 priority;
+>  	__u32 desc;
+> @@ -308,15 +313,17 @@ enum binder_driver_command_protocol {
+>  	 * of looping threads it has available.
+>  	 */
+>  
+> -	BC_REQUEST_DEATH_NOTIFICATION = _IOW('c', 14, struct binder_ptr_cookie),
+> +	BC_REQUEST_DEATH_NOTIFICATION = _IOW('c', 14,
+> +						struct binder_handle_cookie),
+>  	/*
+> -	 * void *: ptr to binder
+> +	 * int: handle
+>  	 * void *: cookie
+
+How does this not break existing user/kernel code if only one of them
+gets rebuilt with this new header file?  You just changed the ABI here,
+not nice...
+
+greg k-h
