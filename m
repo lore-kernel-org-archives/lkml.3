@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607AbaBRWrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:47:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51262 "EHLO
+	id S1753904AbaBRWvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:51:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51276 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532AbaBRWrd (ORCPT
+	with ESMTP id S1753591AbaBRWrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:33 -0500
+	Tue, 18 Feb 2014 17:47:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.13 08/40] regulator: core: Correct default return value for full constraints
-Date: Tue, 18 Feb 2014 14:47:09 -0800
-Message-Id: <20140218224433.571761686@linuxfoundation.org>
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.13 33/40] pinctrl: at91: use locked variant of irq_set_handler
+Date: Tue, 18 Feb 2014 14:47:34 -0800
+Message-Id: <20140218224434.267173197@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -28,61 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-commit 317b5684d52269b75b4ec6480f9dac056d0d4ba8 upstream.
+commit b0dcfd87323ea86501e93d0fa2a98d2fd3579bcf upstream.
 
-Once we have full constraints then all supply mappings should be known to
-the regulator API. This means that we should treat failed lookups as fatal
-rather than deferring in the hope of further registrations but this was
-broken by commit 9b92da1f1205bd25 "regulator: core: Fix default return
-value for _get()" which was targeted at DT systems but unintentionally
-broke non-DT systems by changing the default return value.
+When setting the gpio irq type, use the __irq_set_handler_locked()
+variant instead of the irq_set_handler() to prevent false
+spinlock recursion warning.
 
-Fix this by explicitly returning -EPROBE_DEFER from the DT lookup if we
-find a property but no corresponding regulator and by having the non-DT
-case default to -ENODEV when we have full constraints.
-
-Fixes: 9b92da1f1205bd25 "regulator: core: Fix default return value for _get()"
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Tested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/core.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/pinctrl/pinctrl-at91.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1272,6 +1272,8 @@ static struct regulator_dev *regulator_d
- 				if (r->dev.parent &&
- 					node == r->dev.of_node)
- 					return r;
-+			*ret = -EPROBE_DEFER;
-+			return NULL;
- 		} else {
- 			/*
- 			 * If we couldn't even get the node then it's
-@@ -1312,7 +1314,7 @@ static struct regulator *_regulator_get(
- 	struct regulator_dev *rdev;
- 	struct regulator *regulator = ERR_PTR(-EPROBE_DEFER);
- 	const char *devname = NULL;
--	int ret = -EPROBE_DEFER;
-+	int ret;
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -1260,22 +1260,22 @@ static int alt_gpio_irq_type(struct irq_
  
- 	if (id == NULL) {
- 		pr_err("get() with no identifier\n");
-@@ -1322,6 +1324,11 @@ static struct regulator *_regulator_get(
- 	if (dev)
- 		devname = dev_name(dev);
- 
-+	if (have_full_constraints())
-+		ret = -ENODEV;
-+	else
-+		ret = -EPROBE_DEFER;
-+
- 	mutex_lock(&regulator_list_mutex);
- 
- 	rdev = regulator_dev_lookup(dev, id, &ret);
+ 	switch (type) {
+ 	case IRQ_TYPE_EDGE_RISING:
+-		irq_set_handler(d->irq, handle_simple_irq);
++		__irq_set_handler_locked(d->irq, handle_simple_irq);
+ 		writel_relaxed(mask, pio + PIO_ESR);
+ 		writel_relaxed(mask, pio + PIO_REHLSR);
+ 		break;
+ 	case IRQ_TYPE_EDGE_FALLING:
+-		irq_set_handler(d->irq, handle_simple_irq);
++		__irq_set_handler_locked(d->irq, handle_simple_irq);
+ 		writel_relaxed(mask, pio + PIO_ESR);
+ 		writel_relaxed(mask, pio + PIO_FELLSR);
+ 		break;
+ 	case IRQ_TYPE_LEVEL_LOW:
+-		irq_set_handler(d->irq, handle_level_irq);
++		__irq_set_handler_locked(d->irq, handle_level_irq);
+ 		writel_relaxed(mask, pio + PIO_LSR);
+ 		writel_relaxed(mask, pio + PIO_FELLSR);
+ 		break;
+ 	case IRQ_TYPE_LEVEL_HIGH:
+-		irq_set_handler(d->irq, handle_level_irq);
++		__irq_set_handler_locked(d->irq, handle_level_irq);
+ 		writel_relaxed(mask, pio + PIO_LSR);
+ 		writel_relaxed(mask, pio + PIO_REHLSR);
+ 		break;
+@@ -1284,7 +1284,7 @@ static int alt_gpio_irq_type(struct irq_
+ 		 * disable additional interrupt modes:
+ 		 * fall back to default behavior
+ 		 */
+-		irq_set_handler(d->irq, handle_simple_irq);
++		__irq_set_handler_locked(d->irq, handle_simple_irq);
+ 		writel_relaxed(mask, pio + PIO_AIMDR);
+ 		return 0;
+ 	case IRQ_TYPE_NONE:
 
 
