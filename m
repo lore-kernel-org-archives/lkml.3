@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869AbaBROGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:06:20 -0500
-Received: from smtprelay0019.hostedemail.com ([216.40.44.19]:50402 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755565AbaBROGQ (ORCPT
+	id S1755587AbaBROKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:10:06 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:45217 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755128AbaBROKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:06:16 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:421:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3872:4321:4605:5007:7652:7974:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cakes21_365832af6b552
-X-Filterd-Recvd-Size: 2023
-Message-ID: <1392732373.22752.22.camel@joe-AO722>
-Subject: Re: [PATCH v4 5/5] ACPI: Replace printk with pr_* in tables.c
-From: Joe Perches <joe@perches.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lan Tianyu <tianyu.lan@intel.com>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Date: Tue, 18 Feb 2014 06:06:13 -0800
-In-Reply-To: <1392731700-10992-6-git-send-email-hanjun.guo@linaro.org>
-References: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org>
-	 <1392731700-10992-6-git-send-email-hanjun.guo@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Feb 2014 09:10:04 -0500
+Date: Tue, 18 Feb 2014 15:05:16 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: David =?iso-8859-1?Q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
+Cc: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 1/8] clk: sunxi: factors: automatic reparenting support
+Message-ID: <20140218140516.GG3142@lukather>
+References: <20140217095907.15040.81893.stgit@pagira.o2s.ch>
+ <20140217100215.15040.63745.stgit@pagira.o2s.ch>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AGZzQgpsuUlWC1xT"
+Content-Disposition: inline
+In-Reply-To: <20140217100215.15040.63745.stgit@pagira.o2s.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-18 at 21:55 +0800, Hanjun Guo wrote:
-> This patch just do some clean up to replace printk with pr_*,
-> no functional change.
 
-trivial note:
+--AGZzQgpsuUlWC1xT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-[]
-> @@ -55,8 +55,7 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
->  		{
->  			struct acpi_madt_local_apic *p =
->  			    (struct acpi_madt_local_apic *)header;
-> -			printk(KERN_INFO PREFIX
-> -			       "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
-> +			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
->  			       p->processor_id, p->id,
->  			       (p->lapic_flags & ACPI_MADT_ENABLED) ? "enabled" : "disabled");
+On Mon, Feb 17, 2014 at 11:02:15AM +0100, David Lanzend=F6rfer wrote:
+> From: Emilio L=F3pez <emilio@elopez.com.ar>
+>=20
+> This commit implements .determine_rate, so that our factor clocks can be
+> reparented when needed.
+>=20
+> Signed-off-by: Emilio L=F3pez <emilio@elopez.com.ar>
 
-It'd be nice to realign the additional lines to the open
-parenthesis, here and everywhere else in this patch
+Your signed-off-by is missing here.
 
-			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
-				p->processor_id, p->id,
-				(p->lapic_flags & ACPI_MADT_ENABLED) ? "enabled" : "disabled");
+Once you added it, you can add my Acked-by
 
+Maxime
 
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--AGZzQgpsuUlWC1xT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTA2icAAoJEBx+YmzsjxAg5XcP/RzuL8bgLRMimiNCl1CyFMld
+lvpOZG6xCaov8c9kC+BafPfxdlyT1lmZTUS0bfqE2lMhQ7s5GhC81wT+9ZCGN9Gn
+iubRJkBUO5YDui3IEQSbeTBgiA9r73n+DYP47AzwidVaJmIKDbBev4JKnIYFx+yD
+yEyqluPHP7j0vj8LQOis9LmsEiDWvpBggcYTRHoI5JdFYleNGv+7mfeSZgQfZm7c
+ACv1hGS2QC3e+Rz32PzUGbLJyTVrSehIsK3Z158WVVY8iTkeXvDm/zlUuolSCg6P
+SwCFxF0TSqgNXPFHy2YjVm/P1S6b4Dc3ZOZOJ0paQNEMbVcBKWNq/4Gr/L1OHBQC
+Cbal0P3NUyEH+NAryTnJUMzCAvQqCGy39NlSeOyb8Rk4AIHXV6kJ7OV9fnredsUK
+E9AaovmlyuDwEr9o+wQz8LkMtF+QJsO9016LtbEUHHTu9sgZhudP3f/COmi8YNob
+Nvo+9mL83OmP3UjpGoEJh5mzBn90qz9umlwBZ/JCDjwRHiTsxlpvUlpNkbVR/LtO
+8ggkDwy9j0+E6LT0DvTSD4bKAuSd5uqBld/Dc7sQ9L6jTz4IjiPX0glHj2mDloA4
+cbi2AY04KPqoUov1bobfjTlOAe6VI7ECZzUBMQmuucxTtj6YCs18+JaYObcjBekZ
+SzG9uXbSlbT4q1mzGyFU
+=rAhV
+-----END PGP SIGNATURE-----
+
+--AGZzQgpsuUlWC1xT--
