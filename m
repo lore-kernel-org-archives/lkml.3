@@ -1,84 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247AbaBRN4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 08:56:35 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:43311 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932234AbaBRN41 (ORCPT
+	id S932157AbaBRNz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 08:55:26 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:48398 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474AbaBRNty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 08:56:27 -0500
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v4 4/5] ACPI: Move BAD_MADT_ENTRY() to linux/acpi.h
-Date: Tue, 18 Feb 2014 21:54:59 +0800
-Message-Id: <1392731700-10992-5-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org>
-References: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org>
+	Tue, 18 Feb 2014 08:49:54 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1IDnr7v029296, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 02/14] r8152: add three functions
+Date: Tue, 18 Feb 2014 21:48:59 +0800
+Message-ID: <1392731351-25502-3-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1392731351-25502-1-git-send-email-hayeswang@realtek.com>
+References: <1392731351-25502-1-git-send-email-hayeswang@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.218]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BAD_MADT_ENTRY() is arch independent and will be used for all
-archs which parsing MADT table, so move it to linux/acpi.h to
-simply the code.
+Replace some codes with the following three functions.
+ - rtl_drop_queued_tx
+ - rxdy_gated_en
+ - r8152_power_cut_en
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- arch/ia64/kernel/acpi.c     |    4 ----
- arch/x86/kernel/acpi/boot.c |    4 ----
- include/linux/acpi.h        |    4 ++++
- 3 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/net/usb/r8152.c | 99 +++++++++++++++++++++++++------------------------
+ 1 file changed, 51 insertions(+), 48 deletions(-)
 
-diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
-index af9d9e4..f7bd074 100644
---- a/arch/ia64/kernel/acpi.c
-+++ b/arch/ia64/kernel/acpi.c
-@@ -54,10 +54,6 @@
- #include <asm/sal.h>
- #include <asm/cyclone.h>
- 
--#define BAD_MADT_ENTRY(entry, end) (                                        \
--		(!entry) || (unsigned long)entry + sizeof(*entry) > end ||  \
--		((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
--
- #define PREFIX			"ACPI: "
- 
- unsigned int acpi_cpei_override;
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 1dac942..123f9e3 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -53,10 +53,6 @@ EXPORT_SYMBOL(acpi_disabled);
- # include <asm/proto.h>
- #endif				/* X86 */
- 
--#define BAD_MADT_ENTRY(entry, end) (					    \
--		(!entry) || (unsigned long)entry + sizeof(*entry) > end ||  \
--		((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
--
- #define PREFIX			"ACPI: "
- 
- int acpi_noirq;				/* skip ACPI IRQ initialization */
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 1151a1d..6a15ddd 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -108,6 +108,10 @@ static inline void acpi_initrd_override(void *data, size_t size)
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index f042a85..2d5e761 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -1478,6 +1478,17 @@ int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
+ 	return usb_submit_urb(agg->urb, mem_flags);
  }
- #endif
  
-+#define BAD_MADT_ENTRY(entry, end) (					    \
-+		(!entry) || (unsigned long)entry + sizeof(*entry) > end ||  \
-+		((struct acpi_subtable_header *)entry)->length < sizeof(*entry))
++static void rtl_drop_queued_tx(struct r8152 *tp)
++{
++	struct net_device_stats *stats = &tp->netdev->stats;
++	struct sk_buff *skb;
 +
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
- void __acpi_unmap_table(char *map, unsigned long size);
- int early_acpi_boot_init(void);
++	while ((skb = skb_dequeue(&tp->tx_queue))) {
++		dev_kfree_skb(skb);
++		stats->tx_dropped++;
++	}
++}
++
+ static void rtl8152_tx_timeout(struct net_device *netdev)
+ {
+ 	struct r8152 *tp = netdev_priv(netdev);
+@@ -1613,6 +1624,18 @@ static void rtl_set_eee_plus(struct r8152 *tp)
+ 	}
+ }
+ 
++static void rxdy_gated_en(struct r8152 *tp, bool enable)
++{
++	u32 ocp_data;
++
++	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_MISC_1);
++	if (enable)
++		ocp_data |= RXDY_GATED_EN;
++	else
++		ocp_data &= ~RXDY_GATED_EN;
++	ocp_write_word(tp, MCU_TYPE_PLA, PLA_MISC_1, ocp_data);
++}
++
+ static int rtl_enable(struct r8152 *tp)
+ {
+ 	u32 ocp_data;
+@@ -1624,9 +1647,7 @@ static int rtl_enable(struct r8152 *tp)
+ 	ocp_data |= CR_RE | CR_TE;
+ 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CR, ocp_data);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_MISC_1);
+-	ocp_data &= ~RXDY_GATED_EN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_MISC_1, ocp_data);
++	rxdy_gated_en(tp, false);
+ 
+ 	INIT_LIST_HEAD(&tp->rx_done);
+ 	ret = 0;
+@@ -1681,8 +1702,6 @@ static int rtl8153_enable(struct r8152 *tp)
+ 
+ static void rtl8152_disable(struct r8152 *tp)
+ {
+-	struct net_device_stats *stats = rtl8152_get_stats(tp->netdev);
+-	struct sk_buff *skb;
+ 	u32 ocp_data;
+ 	int i;
+ 
+@@ -1690,17 +1709,12 @@ static void rtl8152_disable(struct r8152 *tp)
+ 	ocp_data &= ~RCR_ACPT_ALL;
+ 	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_RCR, ocp_data);
+ 
+-	while ((skb = skb_dequeue(&tp->tx_queue))) {
+-		dev_kfree_skb(skb);
+-		stats->tx_dropped++;
+-	}
++	rtl_drop_queued_tx(tp);
+ 
+ 	for (i = 0; i < RTL8152_MAX_TX; i++)
+ 		usb_kill_urb(tp->tx_info[i].urb);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_MISC_1);
+-	ocp_data |= RXDY_GATED_EN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_MISC_1, ocp_data);
++	rxdy_gated_en(tp, true);
+ 
+ 	for (i = 0; i < 1000; i++) {
+ 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
+@@ -1721,6 +1735,23 @@ static void rtl8152_disable(struct r8152 *tp)
+ 	rtl8152_nic_reset(tp);
+ }
+ 
++static void r8152_power_cut_en(struct r8152 *tp, bool enable)
++{
++	u32 ocp_data;
++
++	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_UPS_CTRL);
++	if (enable)
++		ocp_data |= POWER_CUT;
++	else
++		ocp_data &= ~POWER_CUT;
++	ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
++
++	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
++	ocp_data &= ~RESUME_INDICATE;
++	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
++
++}
++
+ static void rtl_clear_bp(struct r8152 *tp)
+ {
+ 	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_BP_0, 0);
+@@ -1783,9 +1814,7 @@ static void r8152b_exit_oob(struct r8152 *tp)
+ 	ocp_data &= ~RCR_ACPT_ALL;
+ 	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_RCR, ocp_data);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_MISC_1);
+-	ocp_data |= RXDY_GATED_EN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_MISC_1, ocp_data);
++	rxdy_gated_en(tp, true);
+ 
+ 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_NORAML);
+ 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CR, 0x00);
+@@ -1909,9 +1938,7 @@ static void r8152b_enter_oob(struct r8152 *tp)
+ 
+ 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CONFIG5, LAN_WAKE_EN);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_MISC_1);
+-	ocp_data &= ~RXDY_GATED_EN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_MISC_1, ocp_data);
++	rxdy_gated_en(tp, false);
+ 
+ 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
+ 	ocp_data |= RCR_APM | RCR_AM | RCR_AB;
+@@ -2007,10 +2034,7 @@ static void r8153_first_init(struct r8152 *tp)
+ 	u32 ocp_data;
+ 	int i;
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_MISC_1);
+-	ocp_data |= RXDY_GATED_EN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_MISC_1, ocp_data);
+-
++	rxdy_gated_en(tp, true);
+ 	r8153_teredo_off(tp);
+ 
+ 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
+@@ -2125,9 +2149,7 @@ static void r8153_enter_oob(struct r8152 *tp)
+ 
+ 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CONFIG5, LAN_WAKE_EN);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_MISC_1);
+-	ocp_data &= ~RXDY_GATED_EN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_MISC_1, ocp_data);
++	rxdy_gated_en(tp, false);
+ 
+ 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
+ 	ocp_data |= RCR_APM | RCR_AM | RCR_AB;
+@@ -2231,12 +2253,7 @@ out:
+ 
+ static void rtl8152_down(struct r8152 *tp)
+ {
+-	u32	ocp_data;
+-
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_UPS_CTRL);
+-	ocp_data &= ~POWER_CUT;
+-	ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
+-
++	r8152_power_cut_en(tp, false);
+ 	r8152b_disable_aldps(tp);
+ 	r8152b_enter_oob(tp);
+ 	r8152b_enable_aldps(tp);
+@@ -2399,13 +2416,8 @@ static void r8152b_init(struct r8152 *tp)
+ 
+ 	r8152b_hw_phy_cfg(tp);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_UPS_CTRL);
+-	ocp_data &= ~POWER_CUT;
+-	ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
++	r8152_power_cut_en(tp, false);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
+-	ocp_data &= ~RESUME_INDICATE;
+-	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
+ 
+ 	r8152b_exit_oob(tp);
+ 
+@@ -2659,17 +2671,8 @@ static void r8152b_get_version(struct r8152 *tp)
+ 
+ static void rtl8152_unload(struct r8152 *tp)
+ {
+-	u32	ocp_data;
+-
+-	if (tp->version != RTL_VER_01) {
+-		ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_UPS_CTRL);
+-		ocp_data |= POWER_CUT;
+-		ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
+-	}
+-
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
+-	ocp_data &= ~RESUME_INDICATE;
+-	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
++	if (tp->version != RTL_VER_01)
++		r8152_power_cut_en(tp, true);
+ }
+ 
+ static void rtl8153_unload(struct r8152 *tp)
 -- 
-1.7.9.5
+1.8.4.2
 
