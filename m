@@ -1,154 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477AbaBRNNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 08:13:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:59882 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755251AbaBRNNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 08:13:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,501,1389772800"; 
-   d="scan'208";a="483401336"
-Date: Tue, 18 Feb 2014 15:13:33 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: sagar.a.kamble@intel.com
-Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        "G, Pallavi" <pallavi.g@intel.com>
-Subject: Re: [PATCH 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB Cursor
- Support
-Message-ID: <20140218131333.GR3852@intel.com>
-References: <1392718186-12453-1-git-send-email-sagar.a.kamble@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392718186-12453-1-git-send-email-sagar.a.kamble@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755525AbaBRNOB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 08:14:01 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:63142 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755157AbaBRNOA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 08:14:00 -0500
+Message-ID: <1392729238.5144.14.camel@x220>
+Subject: Re: [PATCH v2] xen: remove XEN_PRIVILEGED_GUEST
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Richard Weinberger <richard@nod.at>, x86@kernel.org,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Date: Tue, 18 Feb 2014 14:13:58 +0100
+In-Reply-To: <1392728861.5144.10.camel@x220>
+References: <201402171223.s1HCNG0S023567@userz7022.oracle.com>
+	 <1392642197.13000.20.camel@x220>
+	 <20140217144307.GB28658@localhost.localdomain>
+	 <1392718467.30073.12.camel@x220> <1392728861.5144.10.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Feb 2014 13:13:58.0607 (UTC) FILETIME=[48994DF0:01CF2CAB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 03:39:46PM +0530, sagar.a.kamble@intel.com wrote:
-> From: Sagar Kamble <sagar.a.kamble@intel.com>
+Here I should have added:
+
+From:  Michael Opdenacker <michael.opdenacker@free-electrons.com>
+
+in order for Michael to show up as author of the patch. 
+
+On Tue, 2014-02-18 at 14:07 +0100, Paul Bolle wrote:
+> This patch removes the Kconfig symbol XEN_PRIVILEGED_GUEST which is
+> used nowhere in the tree.
 > 
-> With this patch we allow larger cursor planes of sizes 128x128
-> and 256x256. Planning to extend kms_cursor_crc test for verifying
-> these larger planes.
+> We do know grub2 has a script that greps kernel configuration files for
+> its macro. It shouldn't do that. As Linus summarized:
+>     This is a grub bug. It really is that simple. Treat it as one.
 > 
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Jani Nikula <jani.nikula@linux.intel.com>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
-
-Let's not spam everyone. Just intel-gfx is enough for such patches.
-Well, maybe keep dri-devel too since cursor size seems to be a hot
-topic across other drivers currently.
-
-> Signed-off-by: G, Pallavi <pallavi.g@intel.com>
-> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
-> ---
->  drivers/gpu/drm/i915/i915_reg.h      |  4 ++++
->  drivers/gpu/drm/i915/intel_display.c | 25 ++++++++++++++++++++-----
->  2 files changed, 24 insertions(+), 5 deletions(-)
+> Besides, grub2's grepping for that macro is actually superfluous. See,
+> that script currently contains this test (simplified):
+>     grep -x CONFIG_XEN_DOM0=y $config || grep -x CONFIG_XEN_PRIVILEGED_GUEST=y $config
 > 
-> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-> index 2f564ce..2fee3a2 100644
-> --- a/drivers/gpu/drm/i915/i915_reg.h
-> +++ b/drivers/gpu/drm/i915/i915_reg.h
-> @@ -3522,7 +3522,11 @@
->  /* New style CUR*CNTR flags */
->  #define   CURSOR_MODE		0x27
->  #define   CURSOR_MODE_DISABLE   0x00
-> +#define   CURSOR_MODE_128_32B_AX 0x02
-> +#define   CURSOR_MODE_256_32B_AX 0x03
->  #define   CURSOR_MODE_64_32B_AX 0x07
-> +#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
-> +#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
->  #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
->  #define   MCURSOR_PIPE_SELECT	(1 << 28)
->  #define   MCURSOR_PIPE_A	0x00
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index f19e6ea..00b51f3 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -7411,10 +7411,18 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
->  	bool visible = base != 0;
->  
->  	if (intel_crtc->cursor_visible != visible) {
-> +		int16_t width = intel_crtc->cursor_width;
->  		uint32_t cntl = I915_READ(CURCNTR(pipe));
->  		if (base) {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
-> -			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +
-> +			if (width == 64)
-> +				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +			else if (width == 128)
-> +				cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +			else if (width == 256)
-> +				cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +
->  			cntl |= pipe << 28; /* Connect to correct pipe */
->  		} else {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
-> @@ -7439,10 +7447,17 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
->  	bool visible = base != 0;
->  
->  	if (intel_crtc->cursor_visible != visible) {
-> +		int16_t width = intel_crtc->cursor_width;
->  		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
->  		if (base) {
->  			cntl &= ~CURSOR_MODE;
-> -			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +
-> +			if (width == 64)
-> +				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +			else if (width == 128)
-> +				cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +			else if (width == 256)
-> +				cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
->  		} else {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
->  			cntl |= CURSOR_MODE_DISABLE;
-> @@ -7538,9 +7553,9 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
->  		goto finish;
->  	}
->  
-> -	/* Currently we only support 64x64 cursors */
-> -	if (width != 64 || height != 64) {
-> -		DRM_ERROR("we currently only support 64x64 cursors\n");
-> +	/* Check for which cursor types we support */
-> +	if (width > 256 || height > 256) {
-
-This has to check explicitly for 64x64, 128x128, or 256x256. Any other
-combination of width and height is illegal.
-
-Additionally gen2 supports only 64x64, so that has to be checked also.
-
-Another issue is how to tell userspace about the cursor size. There was
-a patch on dri-devel recently adding cursor width/height capability
-queries to drm. I guess that should be enough for xorg since AFAICS it
-only uses a single fixed cursor size. The downside is that if the actual
-cursor image would fit one of the smaller sizes, we end up doing needless
-memory fetches for the extra pixels.
-
-Once we have drm_planes for cursors, I was thinking we might add some kind
-of enum property that lists all the supported sizes for the plane.
-
-> +		DRM_ERROR("We currently only support 64x64, 128x128, 256x256 cursors\n");
->  		return -EINVAL;
->  	}
->  
-> -- 
-> 1.8.5
+> But since XEN_DOM0 and XEN_PRIVILEGED_GUEST are by definition equal,
+> removing XEN_PRIVILEGED_GUEST cannot influence this test.
 > 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> So there's no reason to not remove this symbol, like we do with all
+> unused Kconfig symbols.
+> 
+> [pebolle@tiscali.nl: rewrote commit explanation.]
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
--- 
-Ville Syrjälä
-Intel OTC
+
+Paul Bolle
+
