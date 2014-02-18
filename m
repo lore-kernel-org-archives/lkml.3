@@ -1,50 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaBRUem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 15:34:42 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:35567 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbaBRUek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 15:34:40 -0500
-Date: Tue, 18 Feb 2014 15:34:34 -0500 (EST)
-Message-Id: <20140218.153434.1953797715072458396.davem@davemloft.net>
-To: agordeev@redhat.com
-Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-driver@qlogic.com, linux-net-drivers@solarflare.com,
-        linux-pci@vger.kernel.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org, pv-drivers@vmware.com,
-        wil6210@qca.qualcomm.com
-Subject: Re: [PATCH net-next 00/35] net: Use pci_enable_msix_range()
- instead of pci_enable_msix()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
-References: <cover.1392717502.git.agordeev@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 18 Feb 2014 12:34:40 -0800 (PST)
+	id S1752804AbaBRUfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 15:35:08 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47417 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751709AbaBRUdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 15:33:17 -0500
+From: Nishanth Menon <nm@ti.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [RFC PATCH 1/6] PM / Voltagedomain: Add generic clk notifier handler for regulator based dynamic voltage scaling
+Date: Tue, 18 Feb 2014 14:32:18 -0600
+Message-ID: <1392755543-28335-2-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392755543-28335-1-git-send-email-nm@ti.com>
+References: <1392755543-28335-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Gordeev <agordeev@redhat.com>
-Date: Tue, 18 Feb 2014 11:07:52 +0100
+From: Mike Turquette <mturquette@linaro.org>
 
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
-> 
-> Cc: e1000-devel@lists.sourceforge.net
-> Cc: linux-driver@qlogic.com
-> Cc: linux-net-drivers@solarflare.com
-> Cc: linux-pci@vger.kernel.org
-> Cc: linux-rdma@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Cc: pv-drivers@vmware.com
-> Cc: wil6210@qca.qualcomm.com
+This patch provides helper functions for drivers that wish to scale
+voltage through the clock rate-change notifiers. The approach taken
+is that the user-driver(cpufreq/devfreq) do not care about the
+details of the OPP table, nor does it care about handling the voltage
+regulator directly.
 
-Series applied, thanks.
+By using the clk notifier flags, we are able to sequence the operations
+in the right order. The current logic is heavily influenced by
+implementation done in cpufreq-cpu0.
+
+[nm@ti.com: Fixes in logic, and broken out from clk to allow building
+a generic voltagedomain solution independent of cpufreq]
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+---
+ drivers/power/Kconfig             |    1 +
+ drivers/power/Makefile            |    1 +
+ drivers/power/voltdm/Kconfig      |    7 ++
+ drivers/power/voltdm/Makefile     |    2 +
+ drivers/power/voltdm/core.c       |  195 +++++++++++++++++++++++++++++++++++++
+ include/linux/pm_voltage_domain.h |   47 +++++++++
+ 6 files changed, 253 insertions(+)
+ create mode 100644 drivers/power/voltdm/Kconfig
+ create mode 100644 drivers/power/voltdm/Makefile
+ create mode 100644 drivers/power/voltdm/core.c
+ create mode 100644 include/linux/pm_voltage_domain.h
+
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index ba69751..5c4fe16 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -394,3 +394,4 @@ source "drivers/power/reset/Kconfig"
+ endif # POWER_SUPPLY
+ 
+ source "drivers/power/avs/Kconfig"
++source "drivers/power/voltdm/Kconfig"
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index ee54a3e..3d47072 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -58,3 +58,4 @@ obj-$(CONFIG_POWER_AVS)		+= avs/
+ obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
+ obj-$(CONFIG_CHARGER_TPS65090)	+= tps65090-charger.o
+ obj-$(CONFIG_POWER_RESET)	+= reset/
++obj-$(CONFIG_VOLTAGE_DOMAIN)	+= voltdm/
+diff --git a/drivers/power/voltdm/Kconfig b/drivers/power/voltdm/Kconfig
+new file mode 100644
+index 0000000..c5353bd
+--- /dev/null
++++ b/drivers/power/voltdm/Kconfig
+@@ -0,0 +1,7 @@
++config VOLTAGE_DOMAIN
++	bool
++	depends on COMMON_CLK && OF && PM_OPP
++	default y if COMMON_CLK
++	---help---
++	  Core voltage domain framework using common clock framework's
++	  notifier mechanism.
+diff --git a/drivers/power/voltdm/Makefile b/drivers/power/voltdm/Makefile
+new file mode 100644
+index 0000000..3fa4408
+--- /dev/null
++++ b/drivers/power/voltdm/Makefile
+@@ -0,0 +1,2 @@
++# Generic voltage domain
++obj-$(CONFIG_VOLTAGE_DOMAIN)	+= core.o
+diff --git a/drivers/power/voltdm/core.c b/drivers/power/voltdm/core.c
+new file mode 100644
+index 0000000..d0ed27e
+--- /dev/null
++++ b/drivers/power/voltdm/core.c
+@@ -0,0 +1,195 @@
++/*
++ * Copyright (C) 2013 Linaro Ltd <mturquette@linaro.org>
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Helper functions for registering clock rate-change notifier handlers
++ * that scale voltage when a clock changes its output frequency.
++ */
++#include <linux/device.h>
++#include <linux/of.h>
++#include <linux/pm_opp.h>
++#include <linux/pm_voltage_domain.h>
++#include <linux/regulator/consumer.h>
++#include <linux/slab.h>
++
++/**
++ * struct volt_scale_data - Internal structure to maintain notifier information
++ * @dev:	device on behalf of which we register the notifier
++ * @clk:	clk on which we registered the notifier
++ * @reg:	regulator if any which is used for scaling voltage
++ * @tol:	voltage tolerance in %
++ * @nb:		notifier block pointer
++ */
++struct volt_scale_data {
++	struct device *dev;
++	struct clk *clk;
++	struct regulator *reg;
++	int tol;
++	struct notifier_block nb;
++};
++
++#define to_volt_scale_data(_nb) container_of(_nb, \
++		struct volt_scale_data, nb)
++
++static int clk_volt_notifier_handler(struct notifier_block *nb,
++				     unsigned long flags, void *data)
++{
++	struct clk_notifier_data *cnd = data;
++	struct volt_scale_data *vsd = to_volt_scale_data(nb);
++	int ret, volt, tol;
++	struct dev_pm_opp *opp;
++	unsigned long old_rate = cnd->old_rate;
++	unsigned long new_rate = cnd->new_rate;
++
++	if ((new_rate < old_rate && flags == PRE_RATE_CHANGE) ||
++	    (new_rate > old_rate && flags == POST_RATE_CHANGE))
++		return NOTIFY_OK;
++
++	rcu_read_lock();
++	if (flags != ABORT_RATE_CHANGE)
++		opp = dev_pm_opp_find_freq_ceil(vsd->dev, &new_rate);
++	else
++		opp = dev_pm_opp_find_freq_ceil(vsd->dev, &old_rate);
++	if (IS_ERR(opp)) {
++		rcu_read_unlock();
++		dev_err(vsd->dev, "%s: Failed to find OPP for %lu\n",
++			__func__, new_rate);
++		return notifier_from_errno(PTR_ERR(opp));
++	}
++
++	volt = dev_pm_opp_get_voltage(opp);
++	rcu_read_unlock();
++
++	tol = volt * vsd->tol / 100;
++
++	dev_dbg(vsd->dev, "%s: %lu -> %lu, V=%d, tol=%d, clk_flag=%lu\n",
++		__func__, old_rate, new_rate, volt, tol, flags);
++
++	ret = regulator_set_voltage_tol(vsd->reg, volt, tol);
++	if (ret) {
++		dev_err(vsd->dev,
++			"%s: Failed to scale voltage(%u): %d\n", __func__,
++			volt, ret);
++		return notifier_from_errno(ret);
++	}
++
++	return NOTIFY_OK;
++}
++
++/**
++ * of_pm_voltdm_notifier_register() - register voltage domain notifier
++ * @dev:	device for which to register notifier for
++ * @np:		node pointer of the device for which we register
++ * @clk:	clk pointer around which the notifier is expected to trigger
++ * @supply:	default regulator supply name(regulator id string)
++ * @voltage_latency:	returns the latency for the voltage domain
++ *
++ * Return: notifier block which is registered with the common clock framework's
++ * notifier for the clk node requested.
++ */
++struct notifier_block *of_pm_voltdm_notifier_register(struct device *dev,
++						      struct device_node *np,
++						      struct clk *clk,
++						      const char *supply,
++						      int *voltage_latency)
++{
++	struct volt_scale_data *vsd;
++	struct dev_pm_opp *opp;
++	unsigned long min, max, freq;
++	int ret;
++
++	vsd = kzalloc(sizeof(*vsd), GFP_KERNEL);
++	if (!vsd)
++		return ERR_PTR(-ENOMEM);
++
++	vsd->dev = dev;
++	vsd->clk = clk;
++	vsd->nb.notifier_call = clk_volt_notifier_handler;
++	vsd->reg = regulator_get_optional(dev, supply);
++	ret = 0;
++	if (IS_ERR(vsd->reg))
++		ret = PTR_ERR(vsd->reg);
++	/* regulator is not mandatory */
++	if (ret != -EPROBE_DEFER) {
++		dev_warn(dev, "%s: Failed to get %s regulator:%d\n",
++			 __func__, supply, ret);
++		ret = 0;
++		goto err_free_vsd;
++	}
++	/* For devices that are not ready.... */
++	if (ret)
++		goto err_free_vsd;
++
++	rcu_read_lock();
++	freq = 0;
++	opp = dev_pm_opp_find_freq_ceil(dev, &freq);
++	if (IS_ERR(opp))
++		goto err_bad_opp;
++	min = dev_pm_opp_get_voltage(opp);
++
++	freq = ULONG_MAX;
++	opp = dev_pm_opp_find_freq_floor(dev, &freq);
++	if (IS_ERR(opp))
++		goto err_bad_opp;
++	max = dev_pm_opp_get_voltage(opp);
++	rcu_read_unlock();
++
++	*voltage_latency = regulator_set_voltage_time(vsd->reg, min, max);
++	if (*voltage_latency < 0) {
++		dev_warn(dev,
++			 "%s: Fail calculating voltage latency[%ld<->%ld]:%d\n",
++			 __func__, min, max, *voltage_latency);
++	}
++
++	of_property_read_u32(np, "voltage-tolerance", &vsd->tol);
++
++	ret = clk_notifier_register(clk, &vsd->nb);
++
++	if (ret) {
++		dev_err(dev, "%s: Failed to Register Notifier, %d\n", __func__,
++			ret);
++		goto err_free_reg;
++	}
++
++	return &vsd->nb;
++
++err_bad_opp:
++	rcu_read_unlock();
++	ret = PTR_ERR(opp);
++	dev_err(dev, "%s: failed to get OPP, %d\n", __func__, ret);
++
++err_free_reg:
++	regulator_put(vsd->reg);
++
++err_free_vsd:
++	kfree(vsd);
++	return ERR_PTR(ret);
++}
++EXPORT_SYMBOL_GPL(of_pm_voltdm_notifier_register);
++
++/**
++ * of_pm_voltdm_notifier_unregister() - unregister notifier for volt domain
++ * @nb:	notifier block returned by of_pm_voltdm_notifier_register
++ */
++void of_pm_voltdm_notifier_unregister(struct notifier_block *nb)
++{
++	struct volt_scale_data *vsd;
++	struct clk *clk;
++
++	/* if caller send us back error value */
++	if (IS_ERR(nb))
++		return;
++
++	vsd = to_volt_scale_data(nb);
++	clk = vsd->clk;
++	clk_notifier_unregister(clk, nb);
++	if (!IS_ERR(vsd->reg))
++		regulator_put(vsd->reg);
++
++	kfree(vsd);
++}
++EXPORT_SYMBOL_GPL(of_pm_voltdm_notifier_unregister);
+diff --git a/include/linux/pm_voltage_domain.h b/include/linux/pm_voltage_domain.h
+new file mode 100644
+index 0000000..1ee7343
+--- /dev/null
++++ b/include/linux/pm_voltage_domain.h
+@@ -0,0 +1,47 @@
++/*
++ * Voltage Domain header for users of voltage domain interface
++ *
++ * Copyright (C) 2013 Linaro Ltd <mturquette@linaro.org>
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __PM_VOLTAGE_DOMAIN__
++#define __PM_VOLTAGE_DOMAIN__
++
++#include <linux/clk.h>
++
++#if defined(CONFIG_VOLTAGE_DOMAIN)
++struct notifier_block *of_pm_voltdm_notifier_register(struct device *dev,
++						      struct device_node *np,
++						      struct clk *clk,
++						      const char *supply,
++						      int *voltage_latency);
++void of_pm_voltdm_notifier_unregister(struct notifier_block *nb);
++
++#else
++static inline struct notifier_block *of_pm_voltdm_notifier_register(
++						      struct device *dev,
++						      struct device_node *np,
++						      struct clk *clk,
++						      const char *supply,
++						      int *voltage_latency);
++{
++	return ERR_PTR(-ENODEV);
++}
++
++static inline void of_pm_voltdm_notifier_unregister(struct notifier_block *nb)
++{
++}
++
++#endif				/* VOLTAGE_DOMAIN */
++
++#endif				/* __PM_VOLTAGE_DOMAIN__ */
+-- 
+1.7.9.5
+
