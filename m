@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaBRVQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:16:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35705 "EHLO
+	id S1753226AbaBRVQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:16:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35688 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaBRVJJ (ORCPT
+	with ESMTP id S1752128AbaBRVJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Feb 2014 16:09:09 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/32] perf callchain: Separate perf_reg_value function in perf_regs object
-Date: Tue, 18 Feb 2014 18:08:36 -0300
-Message-Id: <1392757731-32619-18-git-send-email-acme@infradead.org>
+Subject: [PATCH 20/32] perf tools: Drop prefetch.h
+Date: Tue, 18 Feb 2014 18:08:39 -0300
+Message-Id: <1392757731-32619-21-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
 References: <1392757731-32619-1-git-send-email-acme@infradead.org>
@@ -29,217 +27,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Borislav Petkov <bp@suse.de>
 
-Making perf_reg_value function global (formely reg_value), because it's
-going to be used globaly across all code providing the dwarf post unwind
-feature.
+This was needed at the time before e66eed651fd1 ("list: remove
+prefetching from regular list iterators") where the list iterators did
+prefetch elements. This turned out to be counter-productive and hurt
+performance and they were removed. Which makes the prefetch.h header
+unused so drop it.
 
-Changing its prototype to be generic:
-
-  -int reg_value(unw_word_t *valp, struct regs_dump *regs, int id)
-  +int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
-
-Changing the valp type from libunwind specific 'unw_word_t' to u64.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1389098853-14466-13-git-send-email-jolsa@redhat.com
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <rric@kernel.org>
+Link: http://lkml.kernel.org/r/1391611914-26054-4-git-send-email-bp@alien8.de
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf           |  1 +
- tools/perf/util/perf_regs.c        | 19 +++++++++++++++++++
- tools/perf/util/perf_regs.h        | 13 +++++++++++++
- tools/perf/util/unwind-libunwind.c | 38 ++++++++++++--------------------------
- 4 files changed, 45 insertions(+), 26 deletions(-)
- create mode 100644 tools/perf/util/perf_regs.c
+ tools/perf/Makefile.perf                 | 1 -
+ tools/perf/util/include/linux/list.h     | 1 -
+ tools/perf/util/include/linux/prefetch.h | 6 ------
+ 3 files changed, 8 deletions(-)
+ delete mode 100644 tools/perf/util/include/linux/prefetch.h
 
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 9ef6b33bcfe3..f99a392d20be 100644
+index 496871ae4590..77b153fa23a5 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -538,6 +538,7 @@ ifeq ($(NO_PERF_REGS),0)
-   ifeq ($(ARCH),x86)
-     LIB_H += arch/x86/include/perf_regs.h
-   endif
-+  LIB_OBJS += $(OUTPUT)util/perf_regs.o
- endif
+@@ -219,7 +219,6 @@ LIB_H += util/include/linux/kernel.h
+ LIB_H += util/include/linux/list.h
+ LIB_H += util/include/linux/export.h
+ LIB_H += util/include/linux/poison.h
+-LIB_H += util/include/linux/prefetch.h
+ LIB_H += util/include/linux/rbtree.h
+ LIB_H += util/include/linux/rbtree_augmented.h
+ LIB_H += util/include/linux/string.h
+diff --git a/tools/perf/util/include/linux/list.h b/tools/perf/util/include/linux/list.h
+index 1d928a0ce997..bfe0a2afd0d2 100644
+--- a/tools/perf/util/include/linux/list.h
++++ b/tools/perf/util/include/linux/list.h
+@@ -1,5 +1,4 @@
+ #include <linux/kernel.h>
+-#include <linux/prefetch.h>
  
- ifndef NO_LIBNUMA
-diff --git a/tools/perf/util/perf_regs.c b/tools/perf/util/perf_regs.c
-new file mode 100644
-index 000000000000..a3539ef30b15
---- /dev/null
-+++ b/tools/perf/util/perf_regs.c
-@@ -0,0 +1,19 @@
-+#include <errno.h>
-+#include "perf_regs.h"
-+
-+int perf_reg_value(u64 *valp, struct regs_dump *regs, int id)
-+{
-+	int i, idx = 0;
-+	u64 mask = regs->mask;
-+
-+	if (!(mask & (1 << id)))
-+		return -EINVAL;
-+
-+	for (i = 0; i < id; i++) {
-+		if (mask & (1 << i))
-+			idx++;
-+	}
-+
-+	*valp = regs->regs[idx];
-+	return 0;
-+}
-diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
-index a3d42cd74919..d6e8b6a8d7f3 100644
---- a/tools/perf/util/perf_regs.h
-+++ b/tools/perf/util/perf_regs.h
-@@ -1,8 +1,14 @@
- #ifndef __PERF_REGS_H
- #define __PERF_REGS_H
+ #include "../../../../include/linux/list.h"
  
-+#include "types.h"
-+#include "event.h"
-+
- #ifdef HAVE_PERF_REGS_SUPPORT
- #include <perf_regs.h>
-+
-+int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
-+
- #else
- #define PERF_REGS_MASK	0
- 
-@@ -10,5 +16,12 @@ static inline const char *perf_reg_name(int id __maybe_unused)
- {
- 	return NULL;
- }
-+
-+static inline int perf_reg_value(u64 *valp __maybe_unused,
-+				 struct regs_dump *regs __maybe_unused,
-+				 int id __maybe_unused)
-+{
-+	return 0;
-+}
- #endif /* HAVE_PERF_REGS_SUPPORT */
- #endif /* __PERF_REGS_H */
-diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-index 79dbfbbeb5ed..bd5768d74f01 100644
---- a/tools/perf/util/unwind-libunwind.c
-+++ b/tools/perf/util/unwind-libunwind.c
-@@ -390,30 +390,13 @@ static int access_dso_mem(struct unwind_info *ui, unw_word_t addr,
- 	return !(size == sizeof(*data));
- }
- 
--static int reg_value(unw_word_t *valp, struct regs_dump *regs, int id)
--{
--	int i, idx = 0;
--	u64 mask = regs->mask;
+diff --git a/tools/perf/util/include/linux/prefetch.h b/tools/perf/util/include/linux/prefetch.h
+deleted file mode 100644
+index 7841e485d8c3..000000000000
+--- a/tools/perf/util/include/linux/prefetch.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef PERF_LINUX_PREFETCH_H
+-#define PERF_LINUX_PREFETCH_H
 -
--	if (!(mask & (1 << id)))
--		return -EINVAL;
+-static inline void prefetch(void *a __attribute__((unused))) { }
 -
--	for (i = 0; i < id; i++) {
--		if (mask & (1 << i))
--			idx++;
--	}
--
--	*valp = regs->regs[idx];
--	return 0;
--}
--
- static int access_mem(unw_addr_space_t __maybe_unused as,
- 		      unw_word_t addr, unw_word_t *valp,
- 		      int __write, void *arg)
- {
- 	struct unwind_info *ui = arg;
- 	struct stack_dump *stack = &ui->sample->user_stack;
--	unw_word_t start, end;
-+	u64 start, end;
- 	int offset;
- 	int ret;
- 
-@@ -423,7 +406,7 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
- 		return 0;
- 	}
- 
--	ret = reg_value(&start, &ui->sample->user_regs, PERF_REG_SP);
-+	ret = perf_reg_value(&start, &ui->sample->user_regs, PERF_REG_SP);
- 	if (ret)
- 		return ret;
- 
-@@ -436,8 +419,9 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
- 	if (addr < start || addr + sizeof(unw_word_t) >= end) {
- 		ret = access_dso_mem(ui, addr, valp);
- 		if (ret) {
--			pr_debug("unwind: access_mem %p not inside range %p-%p\n",
--				(void *)addr, (void *)start, (void *)end);
-+			pr_debug("unwind: access_mem %p not inside range"
-+				 " 0x%" PRIx64 "-0x%" PRIx64 "\n",
-+				 (void *) addr, start, end);
- 			*valp = 0;
- 			return ret;
- 		}
-@@ -446,8 +430,8 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
- 
- 	offset = addr - start;
- 	*valp  = *(unw_word_t *)&stack->data[offset];
--	pr_debug("unwind: access_mem addr %p, val %lx, offset %d\n",
--		 (void *)addr, (unsigned long)*valp, offset);
-+	pr_debug("unwind: access_mem addr %p val %lx, offset %d\n",
-+		 (void *) addr, (unsigned long)*valp, offset);
- 	return 0;
- }
- 
-@@ -457,6 +441,7 @@ static int access_reg(unw_addr_space_t __maybe_unused as,
- {
- 	struct unwind_info *ui = arg;
- 	int id, ret;
-+	u64 val;
- 
- 	/* Don't support write, I suspect we don't need it. */
- 	if (__write) {
-@@ -473,12 +458,13 @@ static int access_reg(unw_addr_space_t __maybe_unused as,
- 	if (id < 0)
- 		return -EINVAL;
- 
--	ret = reg_value(valp, &ui->sample->user_regs, id);
-+	ret = perf_reg_value(&val, &ui->sample->user_regs, id);
- 	if (ret) {
- 		pr_err("unwind: can't read reg %d\n", regnum);
- 		return ret;
- 	}
- 
-+	*valp = (unw_word_t) val;
- 	pr_debug("unwind: reg %d, val %lx\n", regnum, (unsigned long)*valp);
- 	return 0;
- }
-@@ -572,7 +558,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
- 			struct machine *machine, struct thread *thread,
- 			struct perf_sample *data, int max_stack)
- {
--	unw_word_t ip;
-+	u64 ip;
- 	struct unwind_info ui = {
- 		.sample       = data,
- 		.thread       = thread,
-@@ -583,7 +569,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
- 	if (!data->user_regs.regs)
- 		return -EINVAL;
- 
--	ret = reg_value(&ip, &data->user_regs, PERF_REG_IP);
-+	ret = perf_reg_value(&ip, &data->user_regs, PERF_REG_IP);
- 	if (ret)
- 		return ret;
- 
+-#endif
 -- 
 1.8.1.4
 
