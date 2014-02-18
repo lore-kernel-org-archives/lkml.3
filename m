@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaBRAmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:42:01 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53146 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaBRAmA (ORCPT
+	id S1753948AbaBRApZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:45:25 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:52078 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaBRApY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:42:00 -0500
+	Mon, 17 Feb 2014 19:45:24 -0500
 X-Originating-IP: 50.43.14.201
-Date: Mon, 17 Feb 2014 16:41:46 -0800
+Date: Mon, 17 Feb 2014 16:45:11 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
@@ -17,88 +17,76 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 0/55] Torture-test changes for 3.15
-Message-ID: <20140218004145.GJ19929@thin>
-References: <20140217221231.GA8419@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
+ barriers() for some control dependencies
+Message-ID: <20140218004510.GK19929@thin>
+References: <20140217212625.GA4083@linux.vnet.ibm.com>
+ <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140217214606.GC7941@thin>
+ <20140217225816.GN4250@linux.vnet.ibm.com>
+ <20140218000246.GA19929@thin>
+ <20140218001740.GT4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140217221231.GA8419@linux.vnet.ibm.com>
+In-Reply-To: <20140218001740.GT4250@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 02:12:31PM -0800, Paul E. McKenney wrote:
-> Hello!
+On Mon, Feb 17, 2014 at 04:17:40PM -0800, Paul E. McKenney wrote:
+> On Mon, Feb 17, 2014 at 04:02:47PM -0800, Josh Triplett wrote:
+> > On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
+> > > On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
+> > > > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
+> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > > 
+> > > > > Current compilers can "speculate" stores in the case where both legs
+> > > > > of the "if" statement start with identical stores.  Because the stores
+> > > > > are identical, the compiler knows that the store will unconditionally
+> > > > > execute regardless of the "if" condition, and so the compiler is within
+> > > > > its rights to hoist the store to precede the condition.  Such hoisting
+> > > > > destroys the control-dependency ordering.  This ordering can be restored
+> > > > > by placing a barrier() at the beginning of each leg of the "if" statement.
+> > > > > This commit adds this requirement to the control-dependencies section.
+> > > > > 
+> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > This is starting to become a rather unreasonable level of fighting the
+> > > > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
+> > > > doesn't seem like a reasonable thing to require users to do.  Is there
+> > > > really no other way to cope with this particular bit of "help" from the
+> > > > compiler?
+> > > 
+> > > Well, we could use smp_mb() instead of barrier(), but that was the
+> > > sort of thing that Peter Zijlstra was trying to avoid.
+> > 
+> > Yeah, that's not an improvement.  The goal would be to make the code no
+> > more complex than it already needs to be with ACCESS_ONCE; changing
+> > "barrier()" to something else doesn't help (quite apart from smp_mb()
+> > being suboptimal).
+> > 
+> > > That said, I do sympathize completely with your position here -- it is
+> > > just that it is better to have our compiler-fights documented that
+> > > not, right?
+> > 
+> > Sure, better to document them, but better still to not have them.  Is
+> > there some other way we could avoid this one entirely?
 > 
-> This series contains rcutorture changes, including adding a simple
-> locktorture.  Creating this locktorture while sharing the rcutorture
-> infrastructure was the main point of this patch, but this effort
-> uncovered a number of shortcomings in rcutorture, which this series
-> also fixes.
-> 
-> 1-6.	Usability improvements in rcutorture scripting.
-> 
-> 7-13.	Enable concurrent rcutorture runs on systems with sufficient
-> 	numbers of CPUs.
-> 
-> 14.	Print the results directory at the end of the test.
-> 
-> 15,17-25,27-28,30,32,37-41,46-48.
-> 	Abstract facilities from rcutorture module and scripting for later
-> 	use by locktorture.
-> 
-> 16.	Don't create a results directory for dryruns.
-> 
-> 26.	Print date and time of each phase of torturing.
-> 
-> 29.	Issue a diagnostic if something does a system shutdown while
-> 	rcutorture is running.
-> 
-> 31.	Apply ACCESS_ONCE() to racy fullstop accesses.
-> 
-> 33.	Clean up rcu_torture_init() error handling.
-> 
-> 34.	Announce kthread creation.
-> 
-> 35.	Clean up a number of rcutorture shutdown races, unifying the
-> 	required shutdown actions into a new torture_kthread_stopping()
-> 	function.
-> 
-> 36.	Add a missing return statement in rcu_torture_barrier_init().
-> 
-> 42.	Create a minimal locktorture module.
-> 
-> 43-44.	Add an on-purpose buggy RCU implementation to rcutorture to help
-> 	test the tests.
-> 
-> 45.	Create a file for Kconfig parameters that are commmon across all
-> 	rcutorture tests.
-> 
-> 49.	Add beginning set of config files for locktorture.
-> 
-> 50.	Avoid SEGV when cleanup-hooks function pointer is NULL.
-> 
-> 51.	Add locktorture plugin for kvm_recheck.sh.
-> 
-> 52.	Rename TREE_RCU-Kconfig.txt to avoid confusing scripts that
-> 	look for Kconfig files, courtesy of Paul Bolle.
-> 
-> 53.	Retain output from kvm-test-1-run.sh script.
-> 
-> 54.	Add an on-purpose buggy lock implementation to locktorture to
-> 	help test the tests.
-> 
-> 55.	Save kvm.sh progress messages to log so that they can be used
-> 	for later timing analysis.
+> We could try change the standard so as to outlaw pulling common code from
+> both legs of an "if" statement, but that will be a serious uphill battle.
 
-I replied with comments on 15, 17, 19, 21, 35, and 37.
+And insufficient given widespread use of existing compilers.
 
-This series also appears to be missing patches numbered 12, 16, 18, 26,
-38, 39, 43, and 53.  (In some cases those patch numbers appear above but
-the corresponding patches don't appear in subsequent mails; in other
-cases those numbers appear missing above as well.)
+> Or perhaps do something to warn the developer about the possibility of
+> this happening.
+> 
+> Other thoughts?
 
-For the remaining patches:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Might be worth bringing this up with the GCC folks to find out if
+there's something obvious we're missing.  (For non-obvious values of
+"obvious".)
+
+- Josh Triplett
