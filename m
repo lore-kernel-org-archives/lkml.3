@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaBRWra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:47:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51237 "EHLO
+	id S1753972AbaBRWxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:53:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51248 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463AbaBRWr2 (ORCPT
+	with ESMTP id S1753548AbaBRWr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:28 -0500
+	Tue, 18 Feb 2014 17:47:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Shyti <andi@etezian.org>, Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.13 30/40] [media] cx24117: use a valid dev pointer for dev_err printout
-Date: Tue, 18 Feb 2014 14:47:31 -0800
-Message-Id: <20140218224434.185360256@linuxfoundation.org>
+        Harald Freudenberger <freude@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.13 04/40] crypto: s390 - fix des and des3_ede cbc concurrency issue
+Date: Tue, 18 Feb 2014 14:47:05 -0800
+Message-Id: <20140218224433.462039950@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
 References: <20140218224433.337299968@linuxfoundation.org>
@@ -29,34 +29,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Shyti <andi@etezian.org>
+From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-commit a33dd5171d141c378df498aba3fa3c9a573cacb6 upstream.
+commit adc3fcf1552b6e406d172fd9690bbd1395053d13 upstream.
 
-Don't use '&state->priv->i2c->dev' reference to device because
-state is still 'NULL'. Use '&i2c->dev' instead.
+In s390 des and des3_ede cbc mode the iv value is not protected
+against concurrency access and modifications from another running
+en/decrypt operation which is using the very same tfm struct
+instance. This fix copies the iv to the local stack before
+the crypto operation and stores the value back when done.
 
-This bug has been reported by scan.coverity.com
-
-Signed-off-by: Andi Shyti <andi@etezian.org>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/cx24117.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/crypto/des_s390.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
---- a/drivers/media/dvb-frontends/cx24117.c
-+++ b/drivers/media/dvb-frontends/cx24117.c
-@@ -1166,7 +1166,7 @@ struct dvb_frontend *cx24117_attach(cons
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -105,29 +105,35 @@ static int ecb_desall_crypt(struct blkci
+ }
  
- 	switch (demod) {
- 	case 0:
--		dev_err(&state->priv->i2c->dev,
-+		dev_err(&i2c->dev,
- 			"%s: Error attaching frontend %d\n",
- 			KBUILD_MODNAME, demod);
- 		goto error1;
+ static int cbc_desall_crypt(struct blkcipher_desc *desc, long func,
+-			    u8 *iv, struct blkcipher_walk *walk)
++			    struct blkcipher_walk *walk)
+ {
++	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	int ret = blkcipher_walk_virt(desc, walk);
+ 	unsigned int nbytes = walk->nbytes;
++	struct {
++		u8 iv[DES_BLOCK_SIZE];
++		u8 key[DES3_KEY_SIZE];
++	} param;
+ 
+ 	if (!nbytes)
+ 		goto out;
+ 
+-	memcpy(iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.key, ctx->key, DES3_KEY_SIZE);
+ 	do {
+ 		/* only use complete blocks */
+ 		unsigned int n = nbytes & ~(DES_BLOCK_SIZE - 1);
+ 		u8 *out = walk->dst.virt.addr;
+ 		u8 *in = walk->src.virt.addr;
+ 
+-		ret = crypt_s390_kmc(func, iv, out, in, n);
++		ret = crypt_s390_kmc(func, &param, out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
+ 		nbytes &= DES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	} while ((nbytes = walk->nbytes));
+-	memcpy(walk->iv, iv, DES_BLOCK_SIZE);
++	memcpy(walk->iv, param.iv, DES_BLOCK_SIZE);
+ 
+ out:
+ 	return ret;
+@@ -179,22 +185,20 @@ static int cbc_des_encrypt(struct blkcip
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, &walk);
+ }
+ 
+ static int cbc_des_decrypt(struct blkcipher_desc *desc,
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des_alg = {
+@@ -327,22 +331,20 @@ static int cbc_des3_encrypt(struct blkci
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, &walk);
+ }
+ 
+ static int cbc_des3_decrypt(struct blkcipher_desc *desc,
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des3_alg = {
 
 
