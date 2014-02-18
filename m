@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343AbaBROh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:37:29 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63510 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346AbaBROhZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:37:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6cnT6JDh0rj_3TCjw8vkLbM0ztzES0Qh1R=wUCp0PfTw@mail.gmail.com>
-References: <1390773698.3450.12.camel@artifact> <CAE9FiQVD=oVHM5WJgSJ5cNpXZ1NYy9E_pcGWfjKnmD9OZoHHsw@mail.gmail.com>
- <1391643656.1067.1.camel@artifact> <CAE9FiQV8jutRhaBicL4kjqVYd07FzHmNoSN3NxdA2TYvOc_KUg@mail.gmail.com>
- <z9zi9m.n0zpxd.1hgeaud-qmf@mail.snewbury.org.uk> <i9nn22.n0zs79.1hgeaud-qmf@mail.snewbury.org.uk>
- <1392392764.3520.11.camel@devel-n900> <CAE9FiQV3H_nxH0gxcM0kW4uLm6b_qmHT9hRQUVY_4xPqjpvMtA@mail.gmail.com>
- <1392718107.15829.12.camel@artifact> <CAErSpo6cnT6JDh0rj_3TCjw8vkLbM0ztzES0Qh1R=wUCp0PfTw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 18 Feb 2014 07:37:04 -0700
-Message-ID: <CAErSpo4CLB7G5DHpdr69t+wZjywuOXKXsvS6W3eTMJgU5Xpycg@mail.gmail.com>
-Subject: Re: pci-3.14 resource alloc
-To: Steven Newbury <steve@snewbury.org.uk>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932087AbaBROh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:37:27 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2070 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755992AbaBRO3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 09:29:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
+   d="scan'208";a="485209694"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 10/20] Kbuild, lto: add ld-version and ld-ifversion macros
+Date: Tue, 18 Feb 2014 15:28:48 +0100
+Message-Id: <1392733738-8290-11-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
+References: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 6:59 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Feb 18, 2014 at 3:08 AM, Steven Newbury <steve@snewbury.org.uk> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
->> No, the only unusual option is I use pci=nocrs since the bios is
->> completely ignorant of support for 64bit BARs.
->
-> Hi Steven, this is a tangent, but can you collect the complete dmesg
-> log with "pci=nocrs" and let me know what happens when you *don't* use
-> "pci=nocrs" (a complete dmesg log there would be useful too, but I
-> don't know if you can boot without it)?  I think Linux *should* be
-> able to handle 64bit BARs even if the BIOS doesn't.
->
-> Please post these as a separate thread so we don't muddle this
-> conversation with Yinghai.
+To check the linker version. Used by the LTO makefile.
 
-Oh, never mind.  I think I remember now.  I think the problem is not
-so much that the BIOS doesn't handle 64bit *BARs*, but that your BIOS
-doesn't report 64bit host bridge *apertures*, and you want to use
-space above 4G for a graphics card or something.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ Documentation/kbuild/makefiles.txt | 10 ++++++++++
+ scripts/Kbuild.include             |  9 +++++++++
+ scripts/ld-version.sh              |  8 ++++++++
+ 3 files changed, 27 insertions(+)
+ create mode 100755 scripts/ld-version.sh
 
-That's not really anything we can fix in PCI because PCI doesn't
-discover those apertures.  Host bridge drivers like the generic ACPI
-pci_root.c or the native amd_bus.c discover them.  If those drivers
-don't discover them, PCI can't just make them up.
+diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+index d567a7c..40d51f3 100644
+--- a/Documentation/kbuild/makefiles.txt
++++ b/Documentation/kbuild/makefiles.txt
+@@ -595,6 +595,16 @@ more details, with real examples.
+ 		#Makefile
+ 		LDFLAGS_vmlinux += $(call ld-option, -X)
+ 
++    ld-version
++	ld-version returns the full version number of $(LD), for three
++	number binutils versions, like the Linux binutils
++
++    ld-ifversion
++	Check the version number of the $(LD) linker in an if.
++
++	Example:
++		#Makefile.lto
++		ifeq ($(call ld-ifversion,-ge,22710001,y),y)
+ 
+ === 4 Host Program support
+ 
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index 547e15d..93a0da2 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -155,6 +155,15 @@ ld-option = $(call try-run,\
+ # Important: no spaces around options
+ ar-option = $(call try-run, $(AR) rc$(1) "$$TMP",$(1),$(2))
+ 
++# ld-version
++# Usage: $(call ld-version)
++# Note this is mainly for HJ Lu's 3 number binutil versions
++ld-version = $(shell $(LD) --version | $(srctree)/scripts/ld-version.sh)
++
++# ld-ifversion
++# Usage:  $(call ld-ifversion, -ge, 22252, y)
++ld-ifversion = $(shell [ $(call ld-version) $(1) $(2) ] && echo $(3))
++
+ ######
+ 
+ ###
+diff --git a/scripts/ld-version.sh b/scripts/ld-version.sh
+new file mode 100755
+index 0000000..198580d
+--- /dev/null
++++ b/scripts/ld-version.sh
+@@ -0,0 +1,8 @@
++#!/usr/bin/awk -f
++# extract linker version number from stdin and turn into single number
++	{
++	gsub(".*)", "");
++	split($1,a, ".");
++	print a[1]*10000000 + a[2]*100000 + a[3]*10000 + a[4]*100 + a[5];
++	exit
++	}
+-- 
+1.8.5.2
 
-It might be nice if we had cleaner kernel options to say "assume a
-host bridge window here" and "put this device here," so you didn't
-have to use the big hammer of "pci=nocrs".  It's sort of a pain to
-figure out how to attach info like that to the correct device (there
-might be several host bridges, so how do you specify which one you
-care about?), but maybe it could be done.
-
-Bjorn
