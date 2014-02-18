@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948AbaBRApZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:45:25 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:52078 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaBRApY (ORCPT
+	id S1752847AbaBRArz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:47:55 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48840 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaBRArx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:45:24 -0500
-X-Originating-IP: 50.43.14.201
-Date: Mon, 17 Feb 2014 16:45:11 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
- barriers() for some control dependencies
-Message-ID: <20140218004510.GK19929@thin>
-References: <20140217212625.GA4083@linux.vnet.ibm.com>
- <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140217214606.GC7941@thin>
- <20140217225816.GN4250@linux.vnet.ibm.com>
- <20140218000246.GA19929@thin>
- <20140218001740.GT4250@linux.vnet.ibm.com>
+	Mon, 17 Feb 2014 19:47:53 -0500
+Date: Tue, 18 Feb 2014 09:47:29 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
+        lgirdwood@gmail.com, lars@metafoo.de, peter.ujfalusi@ti.com,
+        jarkko.nikula@bitmer.com, eric.y.miao@gmail.com,
+        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux@arm.linux.org.uk
+Message-ID: <20140218004729.GK2669@sirena.org.uk>
+References: <1392655903-24537-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1392655903-24537-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwbb4r/vLufKlfJs"
 Content-Disposition: inline
-In-Reply-To: <20140218001740.GT4250@linux.vnet.ibm.com>
+In-Reply-To: <1392655903-24537-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.99.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 04/15] ASoC: wm5100: Update locking around use of DAPM
+ pin API
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:17:40PM -0800, Paul E. McKenney wrote:
-> On Mon, Feb 17, 2014 at 04:02:47PM -0800, Josh Triplett wrote:
-> > On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
-> > > On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
-> > > > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
-> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > 
-> > > > > Current compilers can "speculate" stores in the case where both legs
-> > > > > of the "if" statement start with identical stores.  Because the stores
-> > > > > are identical, the compiler knows that the store will unconditionally
-> > > > > execute regardless of the "if" condition, and so the compiler is within
-> > > > > its rights to hoist the store to precede the condition.  Such hoisting
-> > > > > destroys the control-dependency ordering.  This ordering can be restored
-> > > > > by placing a barrier() at the beginning of each leg of the "if" statement.
-> > > > > This commit adds this requirement to the control-dependencies section.
-> > > > > 
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > This is starting to become a rather unreasonable level of fighting the
-> > > > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
-> > > > doesn't seem like a reasonable thing to require users to do.  Is there
-> > > > really no other way to cope with this particular bit of "help" from the
-> > > > compiler?
-> > > 
-> > > Well, we could use smp_mb() instead of barrier(), but that was the
-> > > sort of thing that Peter Zijlstra was trying to avoid.
-> > 
-> > Yeah, that's not an improvement.  The goal would be to make the code no
-> > more complex than it already needs to be with ACCESS_ONCE; changing
-> > "barrier()" to something else doesn't help (quite apart from smp_mb()
-> > being suboptimal).
-> > 
-> > > That said, I do sympathize completely with your position here -- it is
-> > > just that it is better to have our compiler-fights documented that
-> > > not, right?
-> > 
-> > Sure, better to document them, but better still to not have them.  Is
-> > there some other way we could avoid this one entirely?
-> 
-> We could try change the standard so as to outlaw pulling common code from
-> both legs of an "if" statement, but that will be a serious uphill battle.
 
-And insufficient given widespread use of existing compilers.
+--rwbb4r/vLufKlfJs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Or perhaps do something to warn the developer about the possibility of
-> this happening.
-> 
-> Other thoughts?
+On Mon, Feb 17, 2014 at 04:51:32PM +0000, Charles Keepax wrote:
 
-Might be worth bringing this up with the GCC folks to find out if
-there's something obvious we're missing.  (For non-obvious values of
-"obvious".)
+> +		snd_soc_dapm_force_enable_pin_locked(&codec->dapm, "CP2");
+> +		snd_soc_dapm_force_enable_pin_locked(&codec->dapm, "SYSCLK");
+> +
+> +		mutex_unlock(&codec->dapm.card->dapm_mutex);
+> +
+>  		snd_soc_dapm_sync(&codec->dapm);
 
-- Josh Triplett
+With all these patches it seems weird that we have to drop the lock to
+do the sync which will immediately retake it.  It's not broken but it
+looks off - it would be better to have a version of _sync() that we can
+call within the lock.
+
+Regarding the naming issue that Lars mentioned I think the current
+operations are probably fine but calling them _unlocked() meaning they
+don't do any locking (as distinct from the existing _locked() which take
+locks) might be OK.
+
+--rwbb4r/vLufKlfJs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTAq2eAAoJELSic+t+oim9HiQP/2sz66TMg6Ccj16U26xSuj9k
+AUvoqERSgUkYX1MNjja4GEJQd3J5ZW+HUZ4bDbDzgksX3SEqHtrDAbGYAE/7s5Os
+gfTG2Rkp4iDwHevcLUsbdLvoOdCRzakSqnU15I8kzg1+0UpK7EfLP7RgXtUELl5O
+LkXD7aJD+DhrYsflJYd/L6DWwltgJRUpN8k8W28eN9vcx3RHPUY5pTLhrQNGgzwJ
+HFV14sAfhdBRHoRa6ZDy/j2AOkbz/Ni9vMWH4kd5N0iBtjhcgniibjm7mRu2yxZq
+LeNEz8wh3qPGI2Dh8QmIdqeYA3ZkNDieO6yJw3u63kJ0HO6Oz6gm7iB07xuJ4Snf
+PHcGW5Tx0yjT0RgZ8rqVs+muJW3Eq1FQxNgzW7PvwBkJ27I4Wgu0mjSA7qBxO7PY
+0UoJMijOdDAUZeWChuw91lcWXPvgcnt/9ETG484YbH8fqJs5/4pITyt6ubhZxQpt
+O7k9kRZZEEp90zj6dBnBb5OfF4yDkV0KfKTm5vCR1v567nq/kxzUQqhhSb01wwjH
+RFEDDtPYd3I2sNulG3CgXt9S4+ydjX+JmqcvIXuWJ8c69idS8Jry6aNA3du7IhPJ
+LuumBKIQWrTg6FfGXg2EuiKhn8i8OIbE2awlRaQl3iFXwbK4FDahwW2ViSLOaf7a
+Qz40S43vBBjnjPkyknaZ
+=o9sN
+-----END PGP SIGNATURE-----
+
+--rwbb4r/vLufKlfJs--
