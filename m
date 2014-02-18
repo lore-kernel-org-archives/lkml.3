@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaBRX5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:57:35 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:36279 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832AbaBRX5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 18:57:33 -0500
-Date: Wed, 19 Feb 2014 01:57:14 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC, PATCHv2 0/2] mm: map few pages around fault address if
- they are in page cache
-Message-ID: <20140218235714.GA16064@node.dhcp.inet.fi>
-References: <1392662333-25470-1-git-send-email-kirill.shutemov@linux.intel.com>
- <CA+55aFwz+36NOk=uanDvii7zn46-s1kpMT1Lt=C0hhhn9v6w-Q@mail.gmail.com>
- <20140218175900.8CF90E0090@blue.fi.intel.com>
- <20140218180730.C2552E0090@blue.fi.intel.com>
- <CA+55aFwEAYhhUijNUf1dRppzh=+5QfXTAdGQe8D_mJH77tPHug@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwEAYhhUijNUf1dRppzh=+5QfXTAdGQe8D_mJH77tPHug@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+	id S1752758AbaBRX56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 18:57:58 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:55466 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537AbaBRX5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 18:57:53 -0500
+From: George McCollister <george.mccollister@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] sched: fix double normalization of vruntime
+Date: Tue, 18 Feb 2014 17:56:51 -0600
+Message-Id: <1392767811-28916-1-git-send-email-george.mccollister@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 10:28:11AM -0800, Linus Torvalds wrote:
-> On Tue, Feb 18, 2014 at 10:07 AM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> >
-> > Patch is wrong. Correct one is below.
-> 
-> Hmm. I don't hate this. Looking through it, it's fairly simple
-> conceptually, and the code isn't that complex either. I can live with
-> this.
-> 
-> I think it's a bit odd how you pass both "max_pgoff" and "nr_pages" to
-> the fault-around function, though. In fact, I'd consider that a bug.
-> Passing in "FAULT_AROUND_PAGES" is just wrong, since the code cannot -
-> and in fact *must* not - actually fault in that many pages, since the
-> starting/ending address can be limited by other things.
-> 
-> So I think that part of the code is bogus. You need to remove
-> nr_pages, because any use of it is just incorrect. I don't think it
-> can actually matter, since the max_pgoff checks are more restrictive,
-> but if you think it can matter please explain how and why it wouldn't
-> be a major bug?
+dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
+which appears to guarentee that the !se->on_rq condition is met.
+If the task has done set_current_state(TASK_INTERRUPTIBLE) without
+schedule() the second condition will be met and vruntime will be
+incorrectly adjusted twice.
 
-I don't like this too...
+In certain cases this can result in the task's vruntime never increasing
+past the vruntime of other tasks on the CFS' run queue, starving them of
+CPU time.
 
-Current max_pgoff is end of page table (or end of vma, if it ends before).
+This patch changes switched_from_fair() to use !p->on_rq instead of
+!se->on_rq.
 
-If we drop nr_pages but keep current max_pgoff, we will potentially setup
-PTRS_PER_PTE pages a time: i.e. page fault to first page of page table and
-all pages are ready. nr_pages limits the number.
+I'm able to cause a task with a priority of 120 to starve all other
+tasks with the same priority on an ARM platform running 3.2.51-rt72
+PREEMPT RT by writing one character at time to a serial tty (16550 UART)
+in a tight loop. I'm also able to verify making this change corrects the
+problem on that platform and kernel version.
 
-It's not necessary bad idea to populate whole page table at once. I need
-to measure how much latency we will add by doing that.
+I haven't and not sure I will have an opportunity to get a newer kernel
+version running on the platform mentioned above and have yet to
+reproduce the problem on another platform.
+---
+ kernel/sched/fair.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-The only problem I see is that we take ptl for a bit too long. But with
-split ptl it will affect only page table we populate.
-
-Other approach is too limit ourself to FAULT_AROUND_PAGES from start_addr.
-In this case sometimes we will do useless radix-tree lookup even if we had
-chance to populated pages further in the page table.
-
-> Apart from that, I'd really like to see numbers for different ranges
-> of FAULT_AROUND_ORDER, because I think 5 is pretty high, but on the
-> whole I don't find this horrible, and you still lock the page so it
-> doesn't involve any new rules. I'm not hugely happy with another raw
-> radix-tree user, but it's not horrible.
-> 
-> Btw, is the "radix_tree_deref_retry(page) -> goto restart" really
-> necessary? I'd be almost more inclined to just make it just do a
-> "break;" to break out of the loop and stop doing anything clever at
-> all.
-
-The code has not ready yet. I'll rework it. It just what I had by the end
-of the day. I wanted to know if setup pte directly from ->fault_nonblock()
-is okayish approach or considered layering violation.
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 966cc2b..fa1c6df 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6999,15 +6999,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+ 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+ 	/*
+-	 * Ensure the task's vruntime is normalized, so that when its
++	 * Ensure the task's vruntime is normalized, so that when it's
+ 	 * switched back to the fair class the enqueue_entity(.flags=0) will
+ 	 * do the right thing.
+ 	 *
+-	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
+-	 * have normalized the vruntime, if it was !on_rq, then only when
++	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
++	 * have normalized the vruntime, if it's !on_rq, then only when
+ 	 * the task is sleeping will it still have non-normalized vruntime.
+ 	 */
+-	if (!se->on_rq && p->state != TASK_RUNNING) {
++	if (!p->on_rq && p->state != TASK_RUNNING) {
+ 		/*
+ 		 * Fix up our vruntime so that the current sleep doesn't
+ 		 * cause 'unlimited' sleep bonus.
 -- 
- Kirill A. Shutemov
+1.8.2.1
+
