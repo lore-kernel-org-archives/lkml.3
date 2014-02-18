@@ -1,99 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaBRFrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 00:47:41 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:23132 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaBRFrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 00:47:40 -0500
-Message-ID: <1392702456.2468.4.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, mtosatti@redhat.com,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Mon, 17 Feb 2014 21:47:36 -0800
-In-Reply-To: <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
-References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
-	 <1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
-	 <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
-	 <20140214225810.57e854cb@redhat.com>
-	 <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1753901AbaBRFyO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 00:54:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:9597 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101AbaBRFyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 00:54:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,500,1389772800"; 
+   d="scan'208";a="457208107"
+Message-ID: <5302F58C.1080001@intel.com>
+Date: Tue, 18 Feb 2014 13:54:20 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Takashi Iwai <tiwai@suse.de>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Theodore Tso <tytso@mit.edu>, Peter Weber <bugs@ttyhoney.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kevin Smith <thirdwiggin@gmail.com>,
+        Rinat Ibragimov <ibragimovrinat@mail.ru>, sov.info@mail.ru,
+        Thomas Christensen <christensenthomas@gmail.com>,
+        Vladimir Sherenkov <a_12300@mail.ru>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Daniel Vetter <daniel@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>
+Subject: [PATCH v4] ACPI / video: Add systems that should favour native backlight
+ interface
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-15 at 02:06 -0800, David Rientjes wrote:
-> On Fri, 14 Feb 2014, Luiz Capitulino wrote:
-> 
-> > > Again, I think this syntax is horrendous and doesn't couple well with the 
-> > > other hugepage-related kernel command line options.  We already have 
-> > > hugepages= and hugepagesz= which you can interleave on the command line to 
-> > > get 100 2M hugepages and 10 1GB hugepages, for example.
-> > > 
-> > > This patchset is simply introducing another variable to the matter: the 
-> > > node that the hugepages should be allocated on.  So just introduce a 
-> > > hugepagesnode= parameter to couple with the others so you can do
-> > > 
-> > > 	hugepagesz=<size> hugepagesnode=<nid> hugepages=<#>
-> > 
-> > That was my first try but it turned out really bad. First, for every node
-> > you specify you need three options.
-> 
-> Just like you need two options today to specify a number of hugepages of a 
-> particular non-default size.  You only need to use hugepagesz= or 
-> hugepagenode= if you want a non-default size or a specify a particular 
-> node.
-> 
-> > So, if you want to setup memory for
-> > three nodes you'll need to specify nine options.
-> 
-> And you currently need six if you want to specify three different hugepage 
-> sizes (?).  But who really specifies three different hugepage sizes on the 
-> command line that are needed to be reserved at boot?
-> 
-> If that's really the usecase, it seems like you want the old 
-> CONFIG_PAGE_SHIFT patch.
-> 
-> > And it gets worse, because
-> > hugepagesz= and hugepages= have strict ordering (which is a mistake, IMHO) so
-> > you have to specify them in the right order otherwise things don't work as
-> > expected and you have no idea why (have been there myself).
-> > 
-> 
-> How is that difficult?  hugepages= is the "noun", hugepagesz= is the 
-> "adjective".  hugepages=100 hugepagesz=1G hugepages=4 makes perfect sense 
-> to me, and I actually don't allocate hugepages on the command line, nor 
-> have I looked at Documentation/kernel-parameters.txt to check if I'm 
-> constructing it correctly.  It just makes sense and once you learn it it's 
-> just natural.
+Some system's ACPI video backlight control interface is broken and the
+native backlight control interface should be used by default. This patch
+sets the use_native_backlight parameter to true for those systems so
+that video backlight control interface will not be created. For detailed
+models that are added here, reference the following list.
 
-This can get annoying _really_ fast for larger systems.
+Note that the user specified kernel cmdline option will always have the
+highest priority, i.e. if use_native_backlight=0 is specified and the
+system is in the DMI table, the video module will not skip registering
+backlight interface for it.
 
-> > IMO, hugepages_node=<nid>:<nr_pages>:<size>,... is good enough. It's concise,
-> > and don't depend on any other option to function. Also, there are lots of other
-> > kernel command-line options that require you to specify multiple fields, so
-> > it's not like hugepages_node= is totally different in that regard.
-> > 
+Thinkpad T430s:
+Reported-by: Theodore Tso <tytso@mit.edu>
+Reported-and-tested-by: Peter Weber <bugs@ttyhoney.com>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=51231
+Thinkpad X230:
+Reported-and-tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=51231
+ThinkPad X1 Carbon:
+Reported-and-tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Lenovo Yoga 13:
+Reported-by: Lennart Poettering <lennart@poettering.net>
+Reported-and-tested-by: Kevin Smith <thirdwiggin@gmail.com>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=63811
+Dell Inspiron 7520:
+Reported-by: Rinat Ibragimov <ibragimovrinat@mail.ru>
+Acer Aspire 5733Z:
+Reported-by: <sov.info@mail.ru>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=62941
+Acer Aspire V5-431:
+Reported-by: Thomas Christensen <christensenthomas@gmail.com>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=68751
+HP ProBook 4340s:
+Reported-and-tested-by: Vladimir Sherenkov <a_12300@mail.ru>
+Reference: http://redmine.russianfedora.pro/issues/1258
+HP EliteBook/ProBook 2013 models, ZBook and some others:
+Provided-by: Takashi Iwai <tiwai@suse.de>
 
-Agreed.
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+---
+ drivers/acpi/blacklist.c    |   8 ---
+ drivers/acpi/video.c        | 139 ++++++++++++++++++++++++++++++++++++++++++--
+ drivers/acpi/video_detect.c |  16 -----
+ 3 files changed, 134 insertions(+), 29 deletions(-)
 
-> 
-> I doubt Andrew is going to want a completely different format for hugepage 
-> allocations that want to specify a node and have to deal with people who 
-> say hugepages_node=2:1:1G and constantly have to lookup if it's 2 
-> hugepages on node 1 or 1 hugepage on node 2.
-
-I guess most users won't even be aware of this new parameter and those
-who really care will have the choice.
-
+diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+index 10e4964d051a..e8e4c3dfaff7 100644
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -260,14 +260,6 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+ 	},
+ 	{
+ 	.callback = dmi_disable_osi_win8,
+-	.ident = "Dell Inspiron 15R SE",
+-	.matches = {
+-		     DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-		     DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 7520"),
+-		},
+-	},
+-	{
+-	.callback = dmi_disable_osi_win8,
+ 	.ident = "ThinkPad Edge E530",
+ 	.matches = {
+ 		     DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index ea9d914d937a..b6ba88ed31ae 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -81,11 +81,12 @@ static bool allow_duplicates;
+ module_param(allow_duplicates, bool, 0644);
+ 
+ /*
+- * For Windows 8 systems: if set ture and the GPU driver has
+- * registered a backlight interface, skip registering ACPI video's.
++ * For Windows 8 systems: used to decide if video module
++ * should skip registering backlight interface of its own.
+  */
+-static bool use_native_backlight = false;
+-module_param(use_native_backlight, bool, 0644);
++static int use_native_backlight_param = -1;
++module_param_named(use_native_backlight, use_native_backlight_param, int, 0444);
++static bool use_native_backlight_dmi = false;
+ 
+ static int register_count;
+ static struct mutex video_list_lock;
+@@ -231,9 +232,17 @@ static int acpi_video_get_next_level(struct acpi_video_device *device,
+ static int acpi_video_switch_brightness(struct acpi_video_device *device,
+ 					 int event);
+ 
++static bool acpi_video_use_native_backlight(void)
++{
++	if (use_native_backlight_param != -1)
++		return use_native_backlight_param;
++	else
++		return use_native_backlight_dmi;
++}
++
+ static bool acpi_video_verify_backlight_support(void)
+ {
+-	if (acpi_osi_is_win8() && use_native_backlight &&
++	if (acpi_osi_is_win8() && acpi_video_use_native_backlight() &&
+ 	    backlight_device_registered(BACKLIGHT_RAW))
+ 		return false;
+ 	return acpi_video_backlight_support();
+@@ -398,6 +407,12 @@ static int __init video_set_bqc_offset(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
++static int __init video_set_use_native_backlight(const struct dmi_system_id *d)
++{
++	use_native_backlight_dmi = true;
++	return 0;
++}
++
+ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 	/*
+ 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
+@@ -442,6 +457,120 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
+ 		},
+ 	},
++	{
++	 .callback = video_set_use_native_backlight,
++	 .ident = "ThinkPad T430s",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T430s"),
++		},
++	},
++	{
++	 .callback = video_set_use_native_backlight,
++	 .ident = "ThinkPad X230",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X230"),
++		},
++	},
++	{
++	.callback = video_set_use_native_backlight,
++	.ident = "ThinkPad X1 Carbon",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X1 Carbon"),
++		},
++	},
++	{
++	 .callback = video_set_use_native_backlight,
++	 .ident = "Lenovo Yoga 13",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Yoga 13"),
++		},
++	},
++	{
++	 .callback = video_set_use_native_backlight,
++	 .ident = "Dell Inspiron 7520",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "Inspiron 7520"),
++		},
++	},
++	{
++	 .callback = video_set_use_native_backlight,
++	 .ident = "Acer Aspire 5733Z",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5733Z"),
++		},
++	},
++	{
++	 .callback = video_set_use_native_backlight,
++	 .ident = "Acer Aspire V5-431",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire V5-431"),
++		},
++	},
++	{
++	.callback = video_set_use_native_backlight,
++	.ident = "HP ProBook 4340s",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "HP ProBook 4340s"),
++		},
++	},
++	{
++	.callback = video_set_use_native_backlight,
++	.ident = "HP ProBook 2013 models",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP ProBook "),
++		DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
++		},
++	},
++	{
++	.callback = video_set_use_native_backlight,
++	.ident = "HP EliteBook 2013 models",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook "),
++		DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
++		},
++	},
++	{
++	.callback = video_set_use_native_backlight,
++	.ident = "HP ZBook 14",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 14"),
++		},
++	},
++	{
++	.callback = video_set_use_native_backlight,
++	.ident = "HP ZBook 15",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 15"),
++		},
++	},
++	{
++	.callback = video_set_use_native_backlight,
++	.ident = "HP ZBook 17",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 17"),
++		},
++	},
++	{
++	.callback = video_set_use_native_backlight,
++	.ident = "HP EliteBook 8780w",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook 8780w"),
++		},
++	},
+ 	{}
+ };
+ 
+diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+index a697b77b8865..19080c8e2f2a 100644
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -168,22 +168,6 @@ static struct dmi_system_id video_detect_dmi_table[] = {
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "UL30A"),
+ 		},
+ 	},
+-	{
+-	.callback = video_detect_force_vendor,
+-	.ident = "HP EliteBook Revolve 810",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Revolve 810 G1"),
+-		},
+-	},
+-	{
+-	.callback = video_detect_force_vendor,
+-	.ident = "Lenovo Yoga 13",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Yoga 13"),
+-		},
+-	},
+ 	{ },
+ };
+ 
+-- 
+1.8.5.3
 
