@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676AbaBRRQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 12:16:18 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34056 "EHLO
+	id S1754747AbaBRRRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 12:17:55 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34964 "EHLO
 	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587AbaBRRQO (ORCPT
+	with ESMTP id S1752209AbaBRRRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 12:16:14 -0500
-Date: Tue, 18 Feb 2014 09:16:09 -0800
+	Tue, 18 Feb 2014 12:17:52 -0500
+Date: Tue, 18 Feb 2014 09:17:46 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Alec Teal <a.teal@warwick.ac.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+To: Mark Batty <Mark.Batty@cl.cam.ac.uk>
+Cc: Peter Sewell <Peter.Sewell@cl.cam.ac.uk>, peterz@infradead.org,
+        Torvald Riegel <triegel@redhat.com>, torvalds@linux-foundation.org,
+        Will Deacon <will.deacon@arm.com>, Ramana.Radhakrishnan@arm.com,
+        dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mingo@kernel.org, gcc@gcc.gnu.org
 Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140218171609.GP4250@linux.vnet.ibm.com>
+Message-ID: <20140218171746.GQ4250@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
- <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
- <1392486310.18779.6447.camel@triegel.csb>
- <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
- <1392666947.18779.6838.camel@triegel.csb>
- <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
- <530296CD.5050503@warwick.ac.uk>
- <CA+55aFyi8QWge7QR0M+ABH-kEiwvoEyMhK6GWRvN1YNKJAFuSQ@mail.gmail.com>
- <1392737465.18779.7644.camel@triegel.csb>
- <CA+55aFxn2KRXDQ91xRs=bO_6d_nA_PSQvoY1_=OxyJ86+KOO9Q@mail.gmail.com>
+References: <CAHWkzRQSaKOM23yg1LbCO=uWremNzwnXUCUJF2H-+z_Xhmp79g@mail.gmail.com>
+ <20140218145645.GK4250@linux.vnet.ibm.com>
+ <CAKKQTT0Z4220G34_PB_iW74UtEsgo3nt3Rbv3nPy0m6Mbwg+9g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxn2KRXDQ91xRs=bO_6d_nA_PSQvoY1_=OxyJ86+KOO9Q@mail.gmail.com>
+In-Reply-To: <CAKKQTT0Z4220G34_PB_iW74UtEsgo3nt3Rbv3nPy0m6Mbwg+9g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021817-7164-0000-0000-0000062E5422
+x-cbid: 14021817-7164-0000-0000-0000062E57F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 08:49:13AM -0800, Linus Torvalds wrote:
-> On Tue, Feb 18, 2014 at 7:31 AM, Torvald Riegel <triegel@redhat.com> wrote:
-> > On Mon, 2014-02-17 at 16:05 -0800, Linus Torvalds wrote:
-> >> And exactly because I know enough, I would *really* like atomics to be
-> >> well-defined, and have very clear - and *local* - rules about how they
-> >> can be combined and optimized.
-> >
-> > "Local"?
+On Tue, Feb 18, 2014 at 03:16:33PM +0000, Mark Batty wrote:
+> Hi Paul,
 > 
-> Yes.
+> Thanks for the document. I'm looking forward to reading the bits about
+> dependency chains in Linux.
+
+And I am looking forward to your thoughts on those bits!
+
+> > One point of confusion for me...  Example 4 says "language must allow".
+> > Shouldn't that be "language is permitted to allow"?
 > 
-> So I think that one of the big advantages of atomics over volatile is
-> that they *can* be optimized, and as such I'm not at all against
-> trying to generate much better code than for volatile accesses.
-> 
-> But at the same time, that can go too far. For example, one of the
-> things we'd want to use atomics for is page table accesses, where it
-> is very important that we don't generate multiple accesses to the
-> values, because parts of the values can be change *by*hardware* (ie
-> accessed and dirty bits).
-> 
-> So imagine that you have some clever global optimizer that sees that
-> the program never ever actually sets the dirty bit at all in any
-> thread, and then uses that kind of non-local knowledge to make
-> optimization decisions. THAT WOULD BE BAD.
+> When we say "allow", we mean that the optimised execution should be
+> allowed by the specification, and Implicitly, the unoptimised
+> execution should remain allowed too. We want to be concrete about what
+> the language specification allows, and that's why we say "must". It is
+> not to disallow the unoptimised execution.
 
-Might as well list other reasons why value proofs via whole-program
-analysis are unreliable for the Linux kernel:
-
-1.	As Linus said, changes from hardware.
-
-2.	Assembly code that is not visible to the compiler.
-	Inline asms will -normally- let the compiler know what
-	memory they change, but some just use the "memory" tag.
-	Worse yet, I suspect that most compilers don't look all
-	that carefully at .S files.
-
-	Any number of other programs contain assembly files.
-
-3.	Kernel modules that have not yet been written.  Now, the
-	compiler could refrain from trying to prove anything about
-	an EXPORT_SYMBOL() or EXPORT_SYMBOL_GPL() variable, but there
-	is currently no way to communicate this information to the
-	compiler other than marking the variable "volatile".
-
-	Other programs have similar issues, e.g., via dlopen().
-
-4.	Some drivers allow user-mode code to mmap() some of their
-	state.  Any changes undertaken by the user-mode code would
-	be invisible to the compiler.
-
-5.	JITed code produced based on BPF: https://lwn.net/Articles/437981/
-
-And probably other stuff as well.
+OK, got it!
 
 							Thanx, Paul
+
+> > Seems like an
+> > implementation is always within its rights to avoid an optimization if
+> > its implementation prevents it from safely detecting the oppportunity
+> > for that optimization.
+> 
+> That's right.
+> 
+> - Mark
+> 
+> 
+> > Or am I missing something here?
+> >
+> >                                                         Thanx, Paul
+> >
+> 
 
