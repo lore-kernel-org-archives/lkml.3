@@ -1,113 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502AbaBRNKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 08:10:54 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53631 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755484AbaBRNKx (ORCPT
+	id S1755511AbaBRNL7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 08:11:59 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:47530 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039AbaBRNL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 08:10:53 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PM / sleep: New flag to speed up suspend-resume of suspended devices
-Date: Tue, 18 Feb 2014 14:25:42 +0100
-Message-ID: <1916955.HdCFyzXUXW@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAPDyKFps5hr0L9OzK-Lgfm4EWUdkaK_PLf8JWu15x-MQy3s2cQ@mail.gmail.com>
-References: <5420830.W4laSGaAU9@vostro.rjw.lan> <21442757.ztmIxNHa8O@vostro.rjw.lan> <CAPDyKFps5hr0L9OzK-Lgfm4EWUdkaK_PLf8JWu15x-MQy3s2cQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 18 Feb 2014 08:11:58 -0500
+Message-ID: <1392729108.18579.1.camel@phoenix>
+Subject: [PATCH RFT] regulator: tps65910: Allow missing init_data for
+ diagnostics
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Markus Pargmann <mpa@pengutronix.de>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 18 Feb 2014 21:11:48 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 18, 2014 01:59:36 PM Ulf Hansson wrote:
-> On 17 February 2014 00:50, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> > resume all runtime-suspended devices during system suspend, mostly
-> > because those devices may need to be reprogrammed due to different
-> > wakeup settings for system sleep and for runtime PM.  However, at
-> > least in some cases, that isn't really necessary, because the wakeup
-> > settings may not be really different.
-> >
-> > The idea here is that subsystems should know whether or not it is
-> > necessary to reprogram a given device during system suspend and they
-> > should be able to tell the PM core about that.  For this reason,
-> > modify the PM core so that if the .prepare() callback returns a
-> > positive value for certain device, the core will set a new
-> > power.fast_suspend flag for it.  Then, if that flag is set, the core
-> > will skip all of the subsequent suspend callbacks for that device.
-> > It also will skip all of the system resume callbacks for the device
-> > during the subsequent system resume and pm_request_resume() will be
-> > executed to trigger a runtime PM resume of the device after the
-> > system device resume sequence has been finished.
-> >
-> > However, since parents may need to be resumed so that their children
-> > can be reprogrammed, make the PM core clear power.fast_suspend for
-> > devices whose children don't have power.fast_suspend set (the
-> > power.ignore_children flag doesn't matter here, because a parent
-> > whose children are normally ignored for runtime PM may still need to
-> > be accessible for their children to be prepare for system suspend
-> > properly).
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/base/power/main.c |   49 +++++++++++++++++++++++++++++++---------------
-> >  include/linux/pm.h        |    1
-> >  2 files changed, 35 insertions(+), 15 deletions(-)
-> >
-> > Index: linux-pm/drivers/base/power/main.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/base/power/main.c
-> > +++ linux-pm/drivers/base/power/main.c
-> > @@ -478,7 +478,7 @@ static int device_resume_noirq(struct de
-> >         TRACE_DEVICE(dev);
-> >         TRACE_RESUME(0);
-> >
-> > -       if (dev->power.syscore)
-> > +       if (dev->power.syscore || dev->power.fast_suspend)
-> >                 goto Out;
-> >
-> >         if (!dev->power.is_noirq_suspended)
-> > @@ -599,7 +599,7 @@ static int device_resume_early(struct de
-> >         TRACE_DEVICE(dev);
-> >         TRACE_RESUME(0);
-> >
-> > -       if (dev->power.syscore)
-> > +       if (dev->power.syscore || dev->power.fast_suspend)
-> >                 goto Out;
-> >
-> >         if (!dev->power.is_late_suspended)
-> > @@ -724,6 +724,11 @@ static int device_resume(struct device *
-> >         if (dev->power.syscore)
-> >                 goto Complete;
-> >
-> > +       if (dev->power.fast_suspend) {
-> > +               pm_request_resume(dev);
-> > +               goto Complete;
-> 
-> So, this will trigger an async request to runtime resume the device.
-> 
-> At device_complete(), we do pm_runtime_put() to return the reference
-> we fetched at device_prepare(), thus likely causing the device to be
-> runtime suspended again. Is that the expected sequence you need? Could
-> you elaborate why?
+The regulator core supports this to allow the configuration to be inspected
+at runtime even if no software management is enabled.
 
-That pm_runtime_put() will not cause the device to be re-suspended,
-because it will be executed before the resume scheduled by the
-pm_request_resume() above.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/tps65910-regulator.c | 13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-Thanks!
-
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index f50dd84..3c8bd34 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -1050,7 +1050,7 @@ static struct tps65910_board *tps65910_parse_dt_reg_data(
+ 	*tps65910_reg_matches = matches;
+ 
+ 	for (idx = 0; idx < count; idx++) {
+-		if (!matches[idx].init_data || !matches[idx].of_node)
++		if (!matches[idx].of_node)
+ 			continue;
+ 
+ 		pmic_plat_data->tps65910_pmic_init_data[idx] =
+@@ -1080,7 +1080,6 @@ static int tps65910_probe(struct platform_device *pdev)
+ 	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
+ 	struct regulator_config config = { };
+ 	struct tps_info *info;
+-	struct regulator_init_data *reg_data;
+ 	struct regulator_dev *rdev;
+ 	struct tps65910_reg *pmic;
+ 	struct tps65910_board *pmic_plat_data;
+@@ -1151,14 +1150,6 @@ static int tps65910_probe(struct platform_device *pdev)
+ 
+ 	for (i = 0; i < pmic->num_regulators && i < TPS65910_NUM_REGS;
+ 			i++, info++) {
+-
+-		reg_data = pmic_plat_data->tps65910_pmic_init_data[i];
+-
+-		/* Regulator API handles empty constraints but not NULL
+-		 * constraints */
+-		if (!reg_data)
+-			continue;
+-
+ 		/* Register the regulators */
+ 		pmic->info[i] = info;
+ 
+@@ -1210,7 +1201,7 @@ static int tps65910_probe(struct platform_device *pdev)
+ 		pmic->desc[i].enable_mask = TPS65910_SUPPLY_STATE_ENABLED;
+ 
+ 		config.dev = tps65910->dev;
+-		config.init_data = reg_data;
++		config.init_data = pmic_plat_data->tps65910_pmic_init_data[i];
+ 		config.driver_data = pmic;
+ 		config.regmap = tps65910->regmap;
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.2
+
+
+
