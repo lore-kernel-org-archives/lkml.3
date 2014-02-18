@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066AbaBRO34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:29:56 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12903 "EHLO mga11.intel.com"
+	id S1756053AbaBRO3z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:29:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60260 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755977AbaBRO3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755980AbaBRO3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Feb 2014 09:29:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="483436677"
+   d="scan'208";a="483436684"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 04/20] lto, workaround: Add workaround for initcall reordering
-Date: Tue, 18 Feb 2014 15:28:42 +0100
-Message-Id: <1392733738-8290-5-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 06/20] lto: Disable LTO for sys_ni
+Date: Tue, 18 Feb 2014 15:28:44 +0100
+Message-Id: <1392733738-8290-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
 References: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
@@ -25,59 +25,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Work around a LTO gcc problem: when there is no reference to a variable
-in a module it will be moved to the end of the program. This causes
-reordering of initcalls which the kernel does not like.
-Add a dummy reference function to avoid this. The function is
-deleted by the linker.
-
-This replaces a previous much slower workaround.
-
-Thanks to Honza Hubicka for suggesting this technique.
+The assembler alias code in cond_syscall does not work
+when compiled for LTO. Just disable LTO for that file.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/init.h | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ kernel/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index e168880..a3ba270 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -163,6 +163,23 @@ extern bool initcall_debug;
+diff --git a/kernel/Makefile b/kernel/Makefile
+index bc010ee..31c26c6 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -18,6 +18,9 @@ CFLAGS_REMOVE_cgroup-debug.o = -pg
+ CFLAGS_REMOVE_irq_work.o = -pg
+ endif
  
- #ifndef __ASSEMBLY__
- 
-+#ifdef CONFIG_LTO
-+/* Work around a LTO gcc problem: when there is no reference to a variable
-+ * in a module it will be moved to the end of the program. This causes
-+ * reordering of initcalls which the kernel does not like.
-+ * Add a dummy reference function to avoid this. The function is
-+ * deleted by the linker.
-+ */
-+#define LTO_REFERENCE_INITCALL(x) \
-+	; /* yes this is needed */			\
-+	static __used __exit void *reference_##x(void)	\
-+	{						\
-+		return &x;				\
-+	}
-+#else
-+#define LTO_REFERENCE_INITCALL(x)
-+#endif
++# cond_syscall is currently not LTO compatible
++CFLAGS_sys_ni.o = $(DISABLE_LTO)
 +
- /* initcalls are now grouped by functionality into separate 
-  * subsections. Ordering inside the subsections is determined
-  * by link order. 
-@@ -175,7 +192,8 @@ extern bool initcall_debug;
- 
- #define __define_initcall(fn, id) \
- 	static initcall_t __initcall_##fn##id __used \
--	__attribute__((__section__(".initcall" #id ".init"))) = fn
-+	__attribute__((__section__(".initcall" #id ".init"))) = fn; \
-+	LTO_REFERENCE_INITCALL(__initcall_##fn##id)
- 
- /*
-  * Early initcalls run before initializing SMP.
+ obj-y += sched/
+ obj-y += locking/
+ obj-y += power/
 -- 
 1.8.5.2
 
