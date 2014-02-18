@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275AbaBRO5X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:57:23 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:55811 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932204AbaBRO5N (ORCPT
+	id S932255AbaBRO5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:57:20 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:60074 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932173AbaBRO5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:57:13 -0500
+	Tue, 18 Feb 2014 09:57:16 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, DCG_UPD_stlinux_kernel@list.st.com,
         dwmw2@infradead.org, linux-mtd@lists.infradead.org,
         computersforpeace@gmail.com, Angus.Clark@st.com
-Subject: [PATCH 17/35] mtd: st_spi_fsm: Prepare read/write sequences according to configuration
-Date: Tue, 18 Feb 2014 14:55:44 +0000
-Message-Id: <1392735362-1245-18-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 18/35] mtd: st_spi_fsm: Add a check to if the chip can handle an SoC reset
+Date: Tue, 18 Feb 2014 14:55:45 +0000
+Message-Id: <1392735362-1245-19-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
 References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
@@ -22,44 +22,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Firstly we search for our preference read/write configuration based on a
-given chip's capabilities. Then we actually set up the message sequence
-accordingly.
+Based on information we can obtain though platform specific data and/or
+chip capabilities we are able to determine whether or not we can handle
+a SoC reset or not. To find out why this is important please read the
+comment provided in the patch.
 
 Acked-by Angus Clark <angus.clark@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 94b0cb4..3f5603c 100644
+index 3f5603c..b9e7061 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -618,6 +618,23 @@ static void stfsm_prepare_rw_seq(struct stfsm *fsm,
- 	seq->seq[i++] = STFSM_INST_STOP;
+@@ -210,6 +210,8 @@ struct stfsm {
+ 
+ 	uint32_t                fifo_dir_delay;
+ 	bool                    booted_from_spi;
++	bool                    reset_signal;
++	bool                    reset_por;
+ };
+ 
+ struct stfsm_seq {
+@@ -521,6 +523,40 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
+ 	}
  }
  
-+static int stfsm_search_prepare_rw_seq(struct stfsm *fsm,
-+				       struct stfsm_seq *seq,
-+				       struct seq_rw_config *cfgs)
++/*
++ * SoC reset on 'boot-from-spi' systems
++ *
++ * Certain modes of operation cause the Flash device to enter a particular state
++ * for a period of time (e.g. 'Erase Sector', 'Quad Enable', and 'Enter 32-bit
++ * Addr' commands).  On boot-from-spi systems, it is important to consider what
++ * happens if a warm reset occurs during this period.  The SPIBoot controller
++ * assumes that Flash device is in its default reset state, 24-bit address mode,
++ * and ready to accept commands.  This can be achieved using some form of
++ * on-board logic/controller to force a device POR in response to a SoC-level
++ * reset or by making use of the device reset signal if available (limited
++ * number of devices only).
++ *
++ * Failure to take such precautions can cause problems following a warm reset.
++ * For some operations (e.g. ERASE), there is little that can be done.  For
++ * other modes of operation (e.g. 32-bit addressing), options are often
++ * available that can help minimise the window in which a reset could cause a
++ * problem.
++ *
++ */
++static bool stfsm_can_handle_soc_reset(struct stfsm *fsm)
 +{
-+	struct seq_rw_config *config;
++	/* Reset signal is available on the board and supported by the device */
++	if (fsm->reset_signal && fsm->info->flags & FLASH_FLAG_RESET)
++		return true;
 +
-+	config = stfsm_search_seq_rw_configs(fsm, cfgs);
-+	if (!config) {
-+		dev_err(fsm->dev, "failed to find suitable config\n");
-+		return -EINVAL;
-+	}
++	/* Board-level logic forces a power-on-reset */
++	if (fsm->reset_por)
++		return true;
 +
-+	stfsm_prepare_rw_seq(fsm, seq, config);
-+
-+	return 0;
++	/* Reset is not properly handled and may result in failure to reboot */
++	return false;
 +}
 +
- static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
- {
- 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
+ /* Configure 'addr_cfg' according to addressing mode */
+ static void stfsm_prepare_erasesec_seq(struct stfsm *fsm,
+ 				       struct stfsm_seq *seq)
+@@ -786,6 +822,10 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
+ 	if (IS_ERR(regmap))
+ 		goto boot_device_fail;
+ 
++	fsm->reset_signal = of_property_read_bool(np, "st,reset-signal");
++
++	fsm->reset_por = of_property_read_bool(np, "st,reset-por");
++
+ 	/* Where in the syscon the boot device information lives */
+ 	ret = of_property_read_u32(np, "st,boot-device-reg", &boot_device_reg);
+ 	if (ret)
 -- 
 1.8.3.2
 
