@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705AbaBRJFC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 04:05:02 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51186 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754184AbaBRJE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 04:04:58 -0500
-Date: Tue, 18 Feb 2014 09:04:54 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, eric.y.miao@gmail.com,
-        dmitry.torokhov@gmail.com, lgirdwood@gmail.com,
-        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
-        peter.ujfalusi@ti.com, cw00.choi@samsung.com, myungjoo.ham@samsung.com,
-        linux@arm.linux.org.uk, jarkko.nikula@bitmer.com
-Subject: Re: [alsa-devel] [PATCH 02/15] ASoC: dapm: Add locked version of
-	snd_soc_dapm_xxxx_pin functions
-Message-ID: <20140218090454.GA18502@opensource.wolfsonmicro.com>
-References: <1392655903-24537-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1392655903-24537-3-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5302417B.3070408@metafoo.de> <20140218003030.GH2669@sirena.org.uk>
+	id S1754653AbaBRJGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 04:06:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3016 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754135AbaBRJGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 04:06:08 -0500
+Date: Tue, 18 Feb 2014 10:05:49 +0100 (CET)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Namjae Jeon <linkinjeon@gmail.com>
+cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH RESEND 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE
+ for fallocate
+In-Reply-To: <CAKYAXd-bD6ZZgpc9E8V1kD9Dj2wrCkbi1i6drNBdUAwsMiv5gg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1402181001530.2216@localhost.localdomain>
+References: <1391319874-3203-1-git-send-email-linkinjeon@gmail.com> <alpine.LFD.2.00.1402111209450.2225@localhost.localdomain> <CAKYAXd-bD6ZZgpc9E8V1kD9Dj2wrCkbi1i6drNBdUAwsMiv5gg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218003030.GH2669@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1913822621-1392714354=:2216"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 09:30:30AM +0900, Mark Brown wrote:
-> On Mon, Feb 17, 2014 at 06:06:03PM +0100, Lars-Peter Clausen wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-1913822621-1392714354=:2216
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 12 Feb 2014, Namjae Jeon wrote:
+
+> Date: Wed, 12 Feb 2014 11:28:35 +0900
+> From: Namjae Jeon <linkinjeon@gmail.com>
+> To: Lukáš Czerner <lczerner@redhat.com>
+> Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
+>     adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+>     linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+>     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+>     Namjae Jeon <namjae.jeon@samsung.com>,
+>     Ashish Sangwan <a.sangwan@samsung.com>
+> Subject: Re: [PATCH RESEND 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE
+>     for fallocate
 > 
-> > Hm, this is a bit confusing. For other functions in ASoC when we
-> > have a pair of functions with the _locked suffix and without the one
-> > with _locked takes the lock, the other one doesn't. E.g.
-> > snd_soc_update_bits_locked. Here we do it the other way around.
-> 
-> Yes, this is definitely confusing.  The existing naming might not be the
-> best but making things inconsistent isn't going to help the situation
-> either.
+> 2014-02-11 20:59 GMT+09:00, Lukáš Czerner <lczerner@redhat.com>:
+> > On Sun, 2 Feb 2014, Namjae Jeon wrote:
+> >
+> >> Date: Sun,  2 Feb 2014 14:44:34 +0900
+> >> From: Namjae Jeon <linkinjeon@gmail.com>
+> >> To: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com,
+> >> tytso@mit.edu,
+> >>     adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com
+> >> Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+> >>     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+> >>     Namjae Jeon <linkinjeon@gmail.com>, Namjae Jeon
+> >> <namjae.jeon@samsung.com>,
+> >>     Ashish Sangwan <a.sangwan@samsung.com>
+> >> Subject: [PATCH RESEND 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE
+> >> for
+> >>     fallocate
+> >>
+> >> From: Namjae Jeon <namjae.jeon@samsung.com>
+> >>
+> >> Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+> Hi Lukas.
+> >
+> > Description is missing here, please provide FALLOC_FL_COLLAPSE_RANGE
+> > description so people know what it's supposed to be doing.
+> >
+> > more comments bellow.
+> Okay, I will udpate.
+> >
+> > Thanks!
+> > -Lukas
 
-Oops... sorry that was not intentional I will respin to correct
-this.
+Hi,
 
-Thanks,
-Charles
+you may have noticed my patches for new FALLOC_FL_ZERO_RANGE
+fallocate flag. This changes things around the same area as your
+patches does so we should probably figure out which are going to
+land in first and then rebase the other on top of that.
 
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+One concern I have is that I have not seen any tests provided to
+verify the feature. But I just may have missed it. Do you have any
+xfstests test or at least fsx and fsstress patches to provide
+support for testing FALLOC_FL_COLLAPSE_RANGE ? Patches for
+util_linux might also be handy.
 
+Thanks!
+-Lukas
+--8323328-1913822621-1392714354=:2216--
