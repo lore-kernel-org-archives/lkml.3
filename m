@@ -1,165 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaBRCjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 21:39:33 -0500
-Received: from mga03.intel.com ([143.182.124.21]:4127 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754545AbaBRCj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 21:39:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,864,1389772800"; 
-   d="scan'208";a="476798988"
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: rjw@rjwysocki.net, gregkh@linuxfoundation.org, len.brown@intel.com,
-        pavel@ucw.cz
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhuangzhi.li@intel.com, chuansheng.liu@intel.com
-Subject: [PATCH v4 5/5] PM / sleep: Asynchronous threads for suspend_late
-Date: Tue, 18 Feb 2014 10:28:48 +0800
-Message-Id: <1392690528-10024-6-git-send-email-chuansheng.liu@intel.com>
-X-Mailer: git-send-email 1.9.rc0
-In-Reply-To: <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
-References: <y>
- <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
+	id S1754592AbaBRCkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 21:40:43 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:17643 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbaBRCkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 21:40:41 -0500
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: akpm@linux-foundation.org, manfred@colorfullife.com
+Cc: linux-kernel@vger.kernel.org, davidlohr@hp.com
+Subject: [PATCH 1/2] ipc,compat: remove sc_semopm macro
+Date: Mon, 17 Feb 2014 18:40:29 -0800
+Message-Id: <1392691230-16394-1-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In analogy with commits 5af84b82701a and 97df8c12995, using
-asynchronous threads can improve the overall suspend_late
-time significantly.
+This macro appears to have been introduced back in the 2.5 era for
+semtimedop32 backward compatibility on ia32:
 
-This patch is for suspend_late phase.
+https://lkml.org/lkml/2003/4/28/78
 
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Nowadays, this syscall in compat just defaults back to the code found in
+sem.c, so it is no longer used and can thus be removed:
+
+long compat_sys_semtimedop(int semid, struct sembuf __user *tsems,
+		unsigned nsops, const struct compat_timespec __user *timeout)
+{
+	struct timespec __user *ts64;
+	if (compat_convert_timespec(&ts64, timeout))
+		return -EFAULT;
+	return sys_semtimedop(semid, tsems, nsops, ts64);
+}
+
+Furthermore, there are no users in compat.c.  After this change, kernel
+builds just fine with both CONFIG_SYSVIPC_COMPAT and CONFIG_SYSVIPC.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- drivers/base/power/main.c | 66 ++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 54 insertions(+), 12 deletions(-)
+ ipc/compat.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 9335b32..42355e4 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -1127,16 +1127,26 @@ static int dpm_suspend_noirq(pm_message_t state)
-  *
-  * Runtime PM is disabled for @dev while this function is being executed.
-  */
--static int device_suspend_late(struct device *dev, pm_message_t state)
-+static int __device_suspend_late(struct device *dev, pm_message_t state, bool async)
- {
- 	pm_callback_t callback = NULL;
- 	char *info = NULL;
--	int error;
-+	int error = 0;
+diff --git a/ipc/compat.c b/ipc/compat.c
+index 1048522..8e27104 100644
+--- a/ipc/compat.c
++++ b/ipc/compat.c
+@@ -113,9 +113,6 @@ struct compat_shm_info {
+ 	compat_ulong_t swap_attempts, swap_successes;
+ };
  
- 	__pm_runtime_disable(dev, false);
- 
-+	if (async_error)
-+		goto Complete;
-+
-+	if (pm_wakeup_pending()) {
-+		async_error = -EBUSY;
-+		goto Complete;
-+	}
-+
- 	if (dev->power.syscore)
--		return 0;
-+		goto Complete;
-+
-+	dpm_wait_for_children(dev, async);
- 
- 	if (dev->pm_domain) {
- 		info = "late power domain ";
-@@ -1160,10 +1170,40 @@ static int device_suspend_late(struct device *dev, pm_message_t state)
- 	error = dpm_run_callback(callback, dev, state, info);
- 	if (!error)
- 		dev->power.is_late_suspended = true;
-+	else
-+		async_error = error;
- 
-+Complete:
-+	complete_all(&dev->power.completion);
- 	return error;
- }
- 
-+static void async_suspend_late(void *data, async_cookie_t cookie)
-+{
-+	struct device *dev = (struct device *)data;
-+	int error;
-+
-+	error = __device_suspend_late(dev, pm_transition, true);
-+	if (error) {
-+		dpm_save_failed_dev(dev_name(dev));
-+		pm_dev_err(dev, pm_transition, " async", error);
-+	}
-+	put_device(dev);
-+}
-+
-+static int device_suspend_late(struct device *dev)
-+{
-+	reinit_completion(&dev->power.completion);
-+
-+	if (pm_async_enabled && dev->power.async_suspend) {
-+		get_device(dev);
-+		async_schedule(async_suspend_late, dev);
-+		return 0;
-+	}
-+
-+	return __device_suspend_late(dev, pm_transition, false);
-+}
-+
- /**
-  * dpm_suspend_late - Execute "late suspend" callbacks for all devices.
-  * @state: PM transition of the system being carried out.
-@@ -1174,19 +1214,20 @@ static int dpm_suspend_late(pm_message_t state)
- 	int error = 0;
- 
- 	mutex_lock(&dpm_list_mtx);
-+	pm_transition = state;
-+	async_error = 0;
-+
- 	while (!list_empty(&dpm_suspended_list)) {
- 		struct device *dev = to_device(dpm_suspended_list.prev);
- 
- 		get_device(dev);
- 		mutex_unlock(&dpm_list_mtx);
- 
--		error = device_suspend_late(dev, state);
-+		error = device_suspend_late(dev);
- 
- 		mutex_lock(&dpm_list_mtx);
- 		if (error) {
- 			pm_dev_err(dev, state, " late", error);
--			suspend_stats.failed_suspend_late++;
--			dpm_save_failed_step(SUSPEND_SUSPEND_LATE);
- 			dpm_save_failed_dev(dev_name(dev));
- 			put_device(dev);
- 			break;
-@@ -1195,17 +1236,18 @@ static int dpm_suspend_late(pm_message_t state)
- 			list_move(&dev->power.entry, &dpm_late_early_list);
- 		put_device(dev);
- 
--		if (pm_wakeup_pending()) {
--			error = -EBUSY;
-+		if (async_error)
- 			break;
--		}
- 	}
- 	mutex_unlock(&dpm_list_mtx);
--	if (error)
-+	async_synchronize_full();
-+	if (error) {
-+		suspend_stats.failed_suspend_late++;
-+		dpm_save_failed_step(SUSPEND_SUSPEND_LATE);
- 		dpm_resume_early(resume_event(state));
--	else
-+	} else {
- 		dpm_show_time(starttime, state, "late");
+-extern int sem_ctls[];
+-#define sc_semopm	(sem_ctls[2])
 -
-+	}
- 	return error;
- }
- 
+ static inline int compat_ipc_parse_version(int *cmd)
+ {
+ #ifdef	CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION
 -- 
-1.9.rc0
+1.8.1.4
 
