@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbaBRWqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 17:46:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50969 "EHLO
+	id S1753280AbaBRWrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:47:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51081 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062AbaBRWqg (ORCPT
+	with ESMTP id S1753267AbaBRWq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:46:36 -0500
+	Tue, 18 Feb 2014 17:46:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Nathan Lynch <nathan_lynch@mentor.com>,
         Will Deacon <will.deacon@arm.com>,
         Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.10 07/26] arm64: vdso: update wtm fields for CLOCK_MONOTONIC_COARSE
-Date: Tue, 18 Feb 2014 14:47:03 -0800
-Message-Id: <20140218224530.619195831@linuxfoundation.org>
+Subject: [PATCH 3.12 09/32] arm64: vdso: update wtm fields for CLOCK_MONOTONIC_COARSE
+Date: Tue, 18 Feb 2014 14:47:09 -0800
+Message-Id: <20140218224500.370289159@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224530.398913499@linuxfoundation.org>
-References: <20140218224530.398913499@linuxfoundation.org>
+In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
+References: <20140218224500.101465031@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
