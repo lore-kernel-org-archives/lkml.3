@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231AbaBRMbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 07:31:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2505 "EHLO mx1.redhat.com"
+	id S1755294AbaBRMcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 07:32:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:65178 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754298AbaBRMa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 07:30:59 -0500
-Date: Tue, 18 Feb 2014 09:30:13 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-ID: <20140218123013.GA20609@amt.cnet>
-References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
- <1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
- <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
- <20140214225810.57e854cb@redhat.com>
- <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
- <20140217085622.39b39cac@redhat.com>
- <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754892AbaBRMcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 07:32:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,501,1389772800"; 
+   d="scan'208";a="477007935"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [char-misc-next 2/2] mei: txe: put pm callbacks under PM_SLEEP ifdef
+Date: Tue, 18 Feb 2014 14:31:09 +0200
+Message-Id: <1392726669-14724-2-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392726669-14724-1-git-send-email-tomas.winkler@intel.com>
+References: <1392726669-14724-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 03:23:16PM -0800, David Rientjes wrote:
-> On Mon, 17 Feb 2014, Luiz Capitulino wrote:
-> 
-> > hugepages= and hugepages_node= are similar, but have different semantics.
-> > 
-> > hugepagesz= and hugepages= create a pool of huge pages of the specified size.
-> > This means that the number of times you specify those options are limited by
-> > the number of different huge pages sizes an arch supports. For x86_64 for
-> > example, this limit is two so one would not specify those options more than
-> > two times. And this doesn't count default_hugepagesz=, which allows you to
-> > drop one hugepagesz= option.
-> > 
-> > hugepages_node= allows you to allocate huge pages per node, so the number of
-> > times you can specify this option is limited by the number of nodes. Also,
-> > hugepages_node= create the pools, if necessary (at least one will be). For
-> > this reason I think it makes a lot of sense to have different options.
-> > 
-> 
-> I understand you may want to add as much code as you can to the boot code 
-> so that you can parse all this information in short-form, and it's 
-> understood that it's possible to specify a different number of varying 
-> hugepage sizes on individual nodes, but let's come back down to reality 
-> here.
-> 
-> Lacking from your entire patchset is a specific example of what you want 
-> to do.  So I think we're all guessing what exactly your usecase is and we 
-> aren't getting any help.  Are you really suggesting that a customer wants 
-> to allocate 4 1GB hugepages on node 0, 12 2MB hugepages on node 0, 6 1GB 
-> hugepages on node 1, 24 2MB hugepages on node 1, 2 1GB hugepages on node 
-> 2, 100 2MB hugepages on node 3, etc?  Please.
+PCI suspend resume callbacks should be defined
+under CONFIG_PM_SLEEP
 
-Customer has 32GB machine. He wants 8 1GB pages for his performance
-critical application on node0 (KVM guest), and other guests and
-pagecache etc. using the remaining 26GB of memory.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+---
+ drivers/misc/mei/pci-txe.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> If that's actually the usecase then I'll renew my objection to the entire 
-> patchset and say you want to add the ability to dynamically allocate 1GB 
-> pages and free them at runtime early in initscripts.  If something is 
-> going to be added to init code in the kernel then it better be trivial 
-> since all this can be duplicated in userspace if you really want to be 
-> fussy about it.
-
-Not sure what is the point here. The command line interface addition
-being proposed is simple, is it not?
+diff --git a/drivers/misc/mei/pci-txe.c b/drivers/misc/mei/pci-txe.c
+index af4412c..a5bf39a 100644
+--- a/drivers/misc/mei/pci-txe.c
++++ b/drivers/misc/mei/pci-txe.c
+@@ -209,7 +209,7 @@ static void mei_txe_remove(struct pci_dev *pdev)
+ }
+ 
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int mei_txe_pci_suspend(struct device *device)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(device);
+@@ -273,7 +273,7 @@ static SIMPLE_DEV_PM_OPS(mei_txe_pm_ops,
+ #define MEI_TXE_PM_OPS	(&mei_txe_pm_ops)
+ #else
+ #define MEI_TXE_PM_OPS	NULL
+-#endif /* CONFIG_PM */
++#endif /* CONFIG_PM_SLEEP */
+ /*
+  *  PCI driver structure
+  */
+-- 
+1.8.5.3
 
