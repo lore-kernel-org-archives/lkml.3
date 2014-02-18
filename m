@@ -1,65 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaBRCiR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 21:38:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:19699 "EHLO mga01.intel.com"
+	id S1754445AbaBRCil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 21:38:41 -0500
+Received: from mga14.intel.com ([143.182.124.37]:4738 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754287AbaBRCiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 21:38:15 -0500
+	id S1754400AbaBRCij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Feb 2014 21:38:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,864,1389772800"; 
-   d="scan'208";a="476798706"
+   d="scan'208";a="476798800"
 From: Chuansheng Liu <chuansheng.liu@intel.com>
 To: rjw@rjwysocki.net, gregkh@linuxfoundation.org, len.brown@intel.com,
         pavel@ucw.cz
 Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         zhuangzhi.li@intel.com, chuansheng.liu@intel.com
-Subject: [PATCH v4 0/5] Enabling the asynchronous threads for other phases
-Date: Tue, 18 Feb 2014 10:28:43 +0800
-Message-Id: <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
+Subject: [PATCH v4 1/5] PM / sleep: Two flags for async suspend_noirq and suspend_late
+Date: Tue, 18 Feb 2014 10:28:44 +0800
+Message-Id: <1392690528-10024-2-git-send-email-chuansheng.liu@intel.com>
 X-Mailer: git-send-email 1.9.rc0
-In-Reply-To: <y>
+In-Reply-To: <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
 References: <y>
+ <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The patch is a helper adding two new flags for implementing
+async threads for suspend_noirq and suspend_late.
 
-This patch series are for enabling the asynchronous threads for the phases
-resume_noirq, resume_early, suspend_noirq and suspend_late.
-
-Just like commit 5af84b82701a and 97df8c12995, with async threads it will
-reduce the system suspending and resuming time significantly.
-
-With these patches, in my test platform, it saved 80% time in resume_noirq
-phase.
-
-Best Regards,
-
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 ---
-V2:
- -- Based on Rafael's minor changes related to coding style, white space etc;
- -- Rafael pointed out the v1 series break the device parent-children
-    suspending/resuming order when enabling asyncing, here using the
-    dev completion to sync parent-children order;
+ drivers/base/power/main.c | 24 ++++++++++++++++++++++--
+ include/linux/pm.h        |  2 ++
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
-V3:
- -- In patch v2 5/5, there is one missing "dpm_wait_for_children";
-
-V4:
- -- Rafael pointed out that dpm_wait_for_children()/dpm_wait()
-    should be put after some simple returning statement;
-
----
-
-[PATCH v4 1/5] PM / sleep: Two flags for async suspend_noirq and
-[PATCH v4 2/5] PM / sleep: Asynchronous threads for resume_noirq
-[PATCH v4 3/5] PM / sleep: Asynchronous threads for resume_early
-[PATCH v4 4/5] PM / sleep: Asynchronous threads for suspend_noirq
-[PATCH v4 5/5] PM / sleep: Asynchronous threads for suspend_late
-
- drivers/base/power/main.c | 275 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------
- include/linux/pm.h        |   2 ++
- 2 files changed, 227 insertions(+), 50 deletions(-)
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 1b41fca..00c53eb 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -91,6 +91,8 @@ void device_pm_sleep_init(struct device *dev)
+ {
+ 	dev->power.is_prepared = false;
+ 	dev->power.is_suspended = false;
++	dev->power.is_noirq_suspended = false;
++	dev->power.is_late_suspended = false;
+ 	init_completion(&dev->power.completion);
+ 	complete_all(&dev->power.completion);
+ 	dev->power.wakeup = NULL;
+@@ -479,6 +481,9 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
+ 	if (dev->power.syscore)
+ 		goto Out;
+ 
++	if (!dev->power.is_noirq_suspended)
++		goto Out;
++
+ 	if (dev->pm_domain) {
+ 		info = "noirq power domain ";
+ 		callback = pm_noirq_op(&dev->pm_domain->ops, state);
+@@ -499,6 +504,7 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
+ 	}
+ 
+ 	error = dpm_run_callback(callback, dev, state, info);
++	dev->power.is_noirq_suspended = false;
+ 
+  Out:
+ 	TRACE_RESUME(error);
+@@ -561,6 +567,9 @@ static int device_resume_early(struct device *dev, pm_message_t state)
+ 	if (dev->power.syscore)
+ 		goto Out;
+ 
++	if (!dev->power.is_late_suspended)
++		goto Out;
++
+ 	if (dev->pm_domain) {
+ 		info = "early power domain ";
+ 		callback = pm_late_early_op(&dev->pm_domain->ops, state);
+@@ -581,6 +590,7 @@ static int device_resume_early(struct device *dev, pm_message_t state)
+ 	}
+ 
+ 	error = dpm_run_callback(callback, dev, state, info);
++	dev->power.is_late_suspended = false;
+ 
+  Out:
+ 	TRACE_RESUME(error);
+@@ -917,6 +927,7 @@ static int device_suspend_noirq(struct device *dev, pm_message_t state)
+ {
+ 	pm_callback_t callback = NULL;
+ 	char *info = NULL;
++	int error;
+ 
+ 	if (dev->power.syscore)
+ 		return 0;
+@@ -940,7 +951,11 @@ static int device_suspend_noirq(struct device *dev, pm_message_t state)
+ 		callback = pm_noirq_op(dev->driver->pm, state);
+ 	}
+ 
+-	return dpm_run_callback(callback, dev, state, info);
++	error = dpm_run_callback(callback, dev, state, info);
++	if (!error)
++		dev->power.is_noirq_suspended = true;
++
++	return error;
+ }
+ 
+ /**
+@@ -1003,6 +1018,7 @@ static int device_suspend_late(struct device *dev, pm_message_t state)
+ {
+ 	pm_callback_t callback = NULL;
+ 	char *info = NULL;
++	int error;
+ 
+ 	__pm_runtime_disable(dev, false);
+ 
+@@ -1028,7 +1044,11 @@ static int device_suspend_late(struct device *dev, pm_message_t state)
+ 		callback = pm_late_early_op(dev->driver->pm, state);
+ 	}
+ 
+-	return dpm_run_callback(callback, dev, state, info);
++	error = dpm_run_callback(callback, dev, state, info);
++	if (!error)
++		dev->power.is_late_suspended = true;
++
++	return error;
+ }
+ 
+ /**
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index 8c6583a..f23a4f1 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -542,6 +542,8 @@ struct dev_pm_info {
+ 	unsigned int		async_suspend:1;
+ 	bool			is_prepared:1;	/* Owned by the PM core */
+ 	bool			is_suspended:1;	/* Ditto */
++	bool			is_noirq_suspended:1;
++	bool			is_late_suspended:1;
+ 	bool			ignore_children:1;
+ 	bool			early_init:1;	/* Owned by the PM core */
+ 	spinlock_t		lock;
+-- 
+1.9.rc0
 
