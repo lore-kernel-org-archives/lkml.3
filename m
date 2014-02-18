@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413AbaBRKLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 05:11:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31997 "EHLO mx1.redhat.com"
+	id S1755440AbaBRKLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 05:11:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62665 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754715AbaBRKLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 05:11:18 -0500
+	id S1754135AbaBRKLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 05:11:44 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Shradha Shah <sshah@solarflare.com>, linux-net-drivers@solarflare.com,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>, wil6210@qca.qualcomm.com,
         netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH net-next 31/35] sfc: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 18 Feb 2014 11:12:00 +0100
-Message-Id: <ee04d8c3b86765cbfd0f5ea7ce2e79db34113401.1392717503.git.agordeev@redhat.com>
+Subject: [PATCH net-next 35/35] wil6210: Use pci_enable_msi_range() instead of pci_enable_msi_block()
+Date: Tue, 18 Feb 2014 11:12:04 +0100
+Message-Id: <2dd74b72b819405a2810664c4fd47f541047b856.1392717503.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392717502.git.agordeev@redhat.com>
 References: <cover.1392717502.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,61 +28,66 @@ new pci_enable_msi_range() and pci_enable_msix_range()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Shradha Shah <sshah@solarflare.com>
-Cc: linux-net-drivers@solarflare.com
+Cc: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: wil6210@qca.qualcomm.com
 Cc: netdev@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
-Acked-by: Shradha Shah <sshah@solarflare.com>
+Acked-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
 ---
- drivers/net/ethernet/sfc/efx.c |   20 +++++++++-----------
- 1 files changed, 9 insertions(+), 11 deletions(-)
+ drivers/net/wireless/ath/wil6210/pcie_bus.c |   32 ++++++++++++--------------
+ 1 files changed, 15 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
-index 62d1a78..d72e003 100644
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -1344,20 +1344,23 @@ static int efx_probe_interrupts(struct efx_nic *efx)
- 
- 		for (i = 0; i < n_channels; i++)
- 			xentries[i].entry = i;
--		rc = pci_enable_msix(efx->pci_dev, xentries, n_channels);
--		if (rc > 0) {
-+		rc = pci_enable_msix_range(efx->pci_dev,
-+					   xentries, 1, n_channels);
-+		if (rc < 0) {
-+			/* Fall back to single channel MSI */
-+			efx->interrupt_mode = EFX_INT_MODE_MSI;
-+			netif_err(efx, drv, efx->net_dev,
-+				  "could not enable MSI-X\n");
-+		} else if (rc < n_channels) {
- 			netif_err(efx, drv, efx->net_dev,
- 				  "WARNING: Insufficient MSI-X vectors"
- 				  " available (%d < %u).\n", rc, n_channels);
- 			netif_err(efx, drv, efx->net_dev,
- 				  "WARNING: Performance may be reduced.\n");
--			EFX_BUG_ON_PARANOID(rc >= n_channels);
- 			n_channels = rc;
--			rc = pci_enable_msix(efx->pci_dev, xentries,
--					     n_channels);
- 		}
- 
--		if (rc == 0) {
-+		if (rc > 0) {
- 			efx->n_channels = n_channels;
- 			if (n_channels > extra_channels)
- 				n_channels -= extra_channels;
-@@ -1373,11 +1376,6 @@ static int efx_probe_interrupts(struct efx_nic *efx)
- 			for (i = 0; i < efx->n_channels; i++)
- 				efx_get_channel(efx, i)->irq =
- 					xentries[i].vector;
--		} else {
--			/* Fall back to single channel MSI */
--			efx->interrupt_mode = EFX_INT_MODE_MSI;
--			netif_err(efx, drv, efx->net_dev,
--				  "could not enable MSI-X\n");
- 		}
+diff --git a/drivers/net/wireless/ath/wil6210/pcie_bus.c b/drivers/net/wireless/ath/wil6210/pcie_bus.c
+index eeceab3..e1c8cc4 100644
+--- a/drivers/net/wireless/ath/wil6210/pcie_bus.c
++++ b/drivers/net/wireless/ath/wil6210/pcie_bus.c
+@@ -41,30 +41,28 @@ static int wil_if_pcie_enable(struct wil6210_priv *wil)
+ 	switch (use_msi) {
+ 	case 3:
+ 	case 1:
++		wil_dbg_misc(wil, "Setup %d MSI interrupts\n", use_msi);
++		break;
+ 	case 0:
++		wil_dbg_misc(wil, "MSI interrupts disabled, use INTx\n");
+ 		break;
+ 	default:
+-		wil_err(wil, "Invalid use_msi=%d, default to 1\n",
+-			use_msi);
++		wil_err(wil, "Invalid use_msi=%d, default to 1\n", use_msi);
+ 		use_msi = 1;
+ 	}
+-	wil->n_msi = use_msi;
+-	if (wil->n_msi) {
+-		wil_dbg_misc(wil, "Setup %d MSI interrupts\n", use_msi);
+-		rc = pci_enable_msi_block(pdev, wil->n_msi);
+-		if (rc && (wil->n_msi == 3)) {
+-			wil_err(wil, "3 MSI mode failed, try 1 MSI\n");
+-			wil->n_msi = 1;
+-			rc = pci_enable_msi_block(pdev, wil->n_msi);
+-		}
+-		if (rc) {
+-			wil_err(wil, "pci_enable_msi failed, use INTx\n");
+-			wil->n_msi = 0;
+-		}
+-	} else {
+-		wil_dbg_misc(wil, "MSI interrupts disabled, use INTx\n");
++
++	if (use_msi == 3 && pci_enable_msi_range(pdev, 3, 3) < 0) {
++		wil_err(wil, "3 MSI mode failed, try 1 MSI\n");
++		use_msi = 1;
++	}
++
++	if (use_msi == 1 && pci_enable_msi(pdev)) {
++		wil_err(wil, "pci_enable_msi failed, use INTx\n");
++		use_msi = 0;
  	}
  
++	wil->n_msi = use_msi;
++
+ 	rc = wil6210_init_irq(wil, pdev->irq);
+ 	if (rc)
+ 		goto stop_master;
 -- 
 1.7.7.6
 
