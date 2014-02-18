@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253AbaBROf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 09:35:58 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2070 "EHLO mga02.intel.com"
+	id S1756291AbaBROgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:36:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42189 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756003AbaBRO3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 09:29:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,502,1389772800"; 
-   d="scan'208";a="457420305"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
+	id S1756276AbaBROg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 09:36:27 -0500
+Message-ID: <53036FBD.8030307@zytor.com>
+Date: Tue, 18 Feb 2014 06:35:41 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+CC: sam@ravnborg.org, x86@kernel.org, linux-kbuild@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 12/20] Kbuild, lto: Disable LTO for asm-offsets.c
-Date: Tue, 18 Feb 2014 15:28:50 +0100
-Message-Id: <1392733738-8290-13-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
-References: <1392733738-8290-1-git-send-email-andi@firstfloor.org>
+Subject: Re: [PATCH 13/20] Kbuild, lto: Set TMPDIR for LTO v2
+References: <1392733738-8290-1-git-send-email-andi@firstfloor.org> <1392733738-8290-14-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1392733738-8290-14-git-send-email-andi@firstfloor.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 02/18/2014 06:28 AM, Andi Kleen wrote:
+>  
+> +ifdef CONFIG_LTO
+> +# LTO gcc creates a lot of files in TMPDIR, and with /tmp as tmpfs
+> +# it's easy to drive the machine OOM. Use the object directory
+> +# instead
+> +TMPDIR ?= ${objtree}
+> +export TMPDIR
+> +endif
+> +
 
-The asm-offset.c technique to fish data out of the assembler file
-does not work with LTO. Just disable for the asm-offset.c build.
+We still prefer $(...) in Makefiles, no?
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- scripts/Makefile.build | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+	-hpa
 
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index d5d859c..9f0ee22 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -198,7 +198,7 @@ $(multi-objs-y:.o=.s)   : modname = $(modname-multi)
- $(multi-objs-y:.o=.lst) : modname = $(modname-multi)
- 
- quiet_cmd_cc_s_c = CC $(quiet_modtag)  $@
--cmd_cc_s_c       = $(CC) $(c_flags) -fverbose-asm -S -o $@ $<
-+cmd_cc_s_c       = $(CC) $(c_flags) $(DISABLE_LTO) -fverbose-asm -S -o $@ $<
- 
- $(obj)/%.s: $(src)/%.c FORCE
- 	$(call if_changed_dep,cc_s_c)
--- 
-1.8.5.2
 
