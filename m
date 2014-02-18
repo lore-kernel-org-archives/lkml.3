@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaBRAWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 19:22:55 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59348 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893AbaBRAWx (ORCPT
+	id S1754153AbaBRAXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:23:17 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46628 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880AbaBRAXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 19:22:53 -0500
-Date: Mon, 17 Feb 2014 16:22:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
+	Mon, 17 Feb 2014 19:23:15 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 17 Feb 2014 16:23:01 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         dipankar@in.ibm.com, akpm@linux-foundation.org,
         mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, linux@horizon.com
-Subject: Re: [PATCH tip/core/rcu 15/55] rcutorture: Abstract
- rcu_torture_random()
-Message-ID: <20140218002248.GU4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 17/55] rcutorture: Abstract torture_param()
+Message-ID: <20140218002301.GD19929@thin>
 References: <20140217221231.GA8419@linux.vnet.ibm.com>
  <1392675179-11560-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1392675179-11560-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140218001137.GC19929@thin>
+ <1392675179-11560-17-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140218001137.GC19929@thin>
+In-Reply-To: <1392675179-11560-17-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021800-9332-0000-0000-000003234105
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 04:11:37PM -0800, Josh Triplett wrote:
-> On Mon, Feb 17, 2014 at 02:12:19PM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > Because rcu_torture_random() will be used by the locking equivalent to
-> > rcutorture, pull it out into its own module.
-> > 
-> > Suggested-by: Rusty Russell <rusty@rustcorp.com.au>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Mon, Feb 17, 2014 at 02:12:21PM -0800, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> I'd suggest making CONFIG_TORTURE_TEST a completely invisible option,
-> with no description; it should only be brought in via "select".
+> Create a torture_param() macro and apply it to rcutorture in order to
+> save a few lines of code.  This same macro may be applied to other
+> torture frameworks.
 > 
-> Also, it doesn't need most of the headers it currently includes.
-> 
-> Have you considered moving it into the existing random generation
-> infrastructure, as something like "fast_insecure_nonblocking_random"?
-> That seems more generally useful.
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-George Spelvin was also advising me on random-number generation in
-rcutorture, so I added him on CC.  In any case, I would not be adverse
-to using some other random-number service, as long as it is fast enough.
-(George suggested some optimizations that I have not yet tried out.)
+Your commit message says "torture_param", but your code says
+"torture_parm".  Let's go with the former, please; no need to creat more
+disemvoweled abbreviations.
 
-							Thanx, Paul
+Also, this seems rather generally useful.  A quick check with "git grep
+-B2 MODULE_PARM_DESC" turns up numerous instances of the pattern.  You
+might consider adding this as a helper DECLARE_MODULE_PARAM_RO in
+include/linux/moduleparam.h (possibly calling a generalized version that
+takes the mode as another parameter).
 
+- Josh Triplett
