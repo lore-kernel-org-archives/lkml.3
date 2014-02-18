@@ -1,85 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaBQXuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Feb 2014 18:50:44 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52810 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaBQXul (ORCPT
+	id S1752831AbaBRADE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Feb 2014 19:03:04 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45108 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaBRADD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Feb 2014 18:50:41 -0500
-Date: Tue, 18 Feb 2014 08:50:13 +0900
-From: Mark Brown <broonie@kernel.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk
-Message-ID: <20140217235013.GD2669@sirena.org.uk>
-References: <20140120100415.GX15937@n2100.arm.linux.org.uk>
- <20140213181216.GB24155@kroah.com>
- <20140213181559.GB30257@n2100.arm.linux.org.uk>
- <20140213182701.GA32578@kroah.com>
- <20140213184249.GC30257@n2100.arm.linux.org.uk>
- <20140213232606.GA27372@kroah.com>
- <20140214000717.GG30257@n2100.arm.linux.org.uk>
- <20140214001436.GA16287@kroah.com>
- <20140214003834.GH30257@n2100.arm.linux.org.uk>
- <20140217153518.30891455@alan.etchedpixels.co.uk>
+	Mon, 17 Feb 2014 19:03:03 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 17 Feb 2014 16:02:47 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 5/6] Documentation/memory-barriers.txt: Need
+ barriers() for some control dependencies
+Message-ID: <20140218000246.GA19929@thin>
+References: <20140217212625.GA4083@linux.vnet.ibm.com>
+ <1392672413-5114-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1392672413-5114-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140217214606.GC7941@thin>
+ <20140217225816.GN4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C+ts3FVlLX8+P6JN"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140217153518.30891455@alan.etchedpixels.co.uk>
-X-Cookie: Don't read everything you believe.
+In-Reply-To: <20140217225816.GN4250@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.99.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
- device probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 17, 2014 at 02:58:16PM -0800, Paul E. McKenney wrote:
+> On Mon, Feb 17, 2014 at 01:46:06PM -0800, Josh Triplett wrote:
+> > On Mon, Feb 17, 2014 at 01:26:52PM -0800, Paul E. McKenney wrote:
+> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > Current compilers can "speculate" stores in the case where both legs
+> > > of the "if" statement start with identical stores.  Because the stores
+> > > are identical, the compiler knows that the store will unconditionally
+> > > execute regardless of the "if" condition, and so the compiler is within
+> > > its rights to hoist the store to precede the condition.  Such hoisting
+> > > destroys the control-dependency ordering.  This ordering can be restored
+> > > by placing a barrier() at the beginning of each leg of the "if" statement.
+> > > This commit adds this requirement to the control-dependencies section.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > This is starting to become a rather unreasonable level of fighting the
+> > compiler.  ("Threads cannot be implemented as a library" indeed.)  This
+> > doesn't seem like a reasonable thing to require users to do.  Is there
+> > really no other way to cope with this particular bit of "help" from the
+> > compiler?
+> 
+> Well, we could use smp_mb() instead of barrier(), but that was the
+> sort of thing that Peter Zijlstra was trying to avoid.
 
---C+ts3FVlLX8+P6JN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yeah, that's not an improvement.  The goal would be to make the code no
+more complex than it already needs to be with ACCESS_ONCE; changing
+"barrier()" to something else doesn't help (quite apart from smp_mb()
+being suboptimal).
 
-On Mon, Feb 17, 2014 at 03:35:18PM +0000, One Thousand Gnomes wrote:
+> That said, I do sympathize completely with your position here -- it is
+> just that it is better to have our compiler-fights documented that
+> not, right?
 
-> We've identified a correct working approach which is to simply add a
-> CONFIG entry to the ARM tree and a few ifdefs to the problem drivers to
-> make the "problem" (in fact a complete fictional non-problem) go away and
-> to get rid of the mess over time completely as the drivers are set
-> dynamic and it turns out that all the userspace happens to already handle
-> this just fine.
+Sure, better to document them, but better still to not have them.  Is
+there some other way we could avoid this one entirely?
 
-It's a very real problem which affects actual kernels that distro style
-users are building.
+- Josh Triplett
 
---C+ts3FVlLX8+P6JN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTAqAyAAoJELSic+t+oim92UwP/0m0dRoUHXGOGX5r1ff+rubV
-ZY50YbYvRmLF9X2UUYw4V1+eg0Sb0iKZMQZ2MBddZH04A2OY6YEZ/mqbUwHtJKBz
-tLJjmoitQbZfUdenDPer2Sl9uxquyHdr5EMdQCO3qI0AQvVtA5tNRMszopRJTU7o
-/sE+j4HI4tIdsyC7CAms3Upsn1Q6CTvH5w00CfxTlniaomk0dHj1HxKfVVXR9XZ5
-WBYbkTG+1iTMpTD8pdgBKrQzhESaxiBPBEKQIjFyp7xyOFF7l8NUi2rRF0f/Dc4x
-QVT3kz4uLO4C2mICqy8UcNxGpU/OLyqhix/CMP7JVNotqcQ9b1+WYQ1O/c4nx94C
-UI9L2jBRxqTw8rsSYp+Gg+uJVjWKv2IYtrQOxaRFoyiQyGnNwh0XAFaPdpf4uZgg
-ORT6fywjFRdPI9DshWSo8TnpnU+UchEBUNP7oOV1BBz+eOsPVt4KZYc81Hh+sFsK
-JfCUExznM6p2hlxsSoVbgRS6xNxFHit98cmsv7xk2C59wCN3Zlej2Uad4ISIhyJL
-OiJPVEb19w0xP/g8WYB1DcP8n0OMrp+4HtW/MjVON0rCa3tWdaiaiu4GBr/MeTXP
-sswnTBHioiy3CQdQs5aerrSaHd1GoqtdWt+Q7u/9Lkv3LT1ViE/bn6I4IK+57bVy
-OLbyJj69YT3nQts5tFNp
-=lMha
------END PGP SIGNATURE-----
-
---C+ts3FVlLX8+P6JN--
+> > >  Documentation/memory-barriers.txt | 26 +++++++++++++++++++-------
+> > >  1 file changed, 19 insertions(+), 7 deletions(-)
+> > > 
+> > > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> > > index f2668c19807e..adfaca831a90 100644
+> > > --- a/Documentation/memory-barriers.txt
+> > > +++ b/Documentation/memory-barriers.txt
+> > > @@ -608,26 +608,30 @@ as follows:
+> > >  	b = p;  /* BUG: Compiler can reorder!!! */
+> > >  	do_something();
+> > >  
+> > > -The solution is again ACCESS_ONCE(), which preserves the ordering between
+> > > -the load from variable 'a' and the store to variable 'b':
+> > > +The solution is again ACCESS_ONCE() and barrier(), which preserves the
+> > > +ordering between the load from variable 'a' and the store to variable 'b':
+> > >  
+> > >  	q = ACCESS_ONCE(a);
+> > >  	if (q) {
+> > > +		barrier();
+> > >  		ACCESS_ONCE(b) = p;
+> > >  		do_something();
+> > >  	} else {
+> > > +		barrier();
+> > >  		ACCESS_ONCE(b) = p;
+> > >  		do_something_else();
+> > >  	}
+> > >  
+> > > -You could also use barrier() to prevent the compiler from moving
+> > > -the stores to variable 'b', but barrier() would not prevent the
+> > > -compiler from proving to itself that a==1 always, so ACCESS_ONCE()
+> > > -is also needed.
+> > > +The initial ACCESS_ONCE() is required to prevent the compiler from
+> > > +proving the value of 'a', and the pair of barrier() invocations are
+> > > +required to prevent the compiler from pulling the two identical stores
+> > > +to 'b' out from the legs of the "if" statement.
+> > >  
+> > >  It is important to note that control dependencies absolutely require a
+> > >  a conditional.  For example, the following "optimized" version of
+> > > -the above example breaks ordering:
+> > > +the above example breaks ordering, which is why the barrier() invocations
+> > > +are absolutely required if you have identical stores in both legs of
+> > > +the "if" statement:
+> > >  
+> > >  	q = ACCESS_ONCE(a);
+> > >  	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
+> > > @@ -643,9 +647,11 @@ It is of course legal for the prior load to be part of the conditional,
+> > >  for example, as follows:
+> > >  
+> > >  	if (ACCESS_ONCE(a) > 0) {
+> > > +		barrier();
+> > >  		ACCESS_ONCE(b) = q / 2;
+> > >  		do_something();
+> > >  	} else {
+> > > +		barrier();
+> > >  		ACCESS_ONCE(b) = q / 3;
+> > >  		do_something_else();
+> > >  	}
+> > > @@ -659,9 +665,11 @@ the needed conditional.  For example:
+> > >  
+> > >  	q = ACCESS_ONCE(a);
+> > >  	if (q % MAX) {
+> > > +		barrier();
+> > >  		ACCESS_ONCE(b) = p;
+> > >  		do_something();
+> > >  	} else {
+> > > +		barrier();
+> > >  		ACCESS_ONCE(b) = p;
+> > >  		do_something_else();
+> > >  	}
+> > > @@ -723,6 +731,10 @@ In summary:
+> > >        use smb_rmb(), smp_wmb(), or, in the case of prior stores and
+> > >        later loads, smp_mb().
+> > >  
+> > > +  (*) If both legs of the "if" statement begin with identical stores
+> > > +      to the same variable, a barrier() statement is required at the
+> > > +      beginning of each leg of the "if" statement.
+> > > +
+> > >    (*) Control dependencies require at least one run-time conditional
+> > >        between the prior load and the subsequent store, and this
+> > >        conditional must involve the prior load.  If the compiler
+> > > -- 
+> > > 1.8.1.5
+> > > 
+> > 
+> 
