@@ -1,123 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585AbaBRPIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 10:08:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756224AbaBRPHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 10:07:20 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Mike Marciniszyn <infinipath@intel.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH 2/2] qib: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 18 Feb 2014 16:09:02 +0100
-Message-Id: <f0eabd77b96e0d679ce6c2e2e544c73063c508ee.1392733151.git.agordeev@redhat.com>
-In-Reply-To: <cover.1392733151.git.agordeev@redhat.com>
-References: <cover.1392733151.git.agordeev@redhat.com>
+	id S1755779AbaBRO4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 09:56:33 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56331 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191AbaBRO4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 09:56:30 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, DCG_UPD_stlinux_kernel@list.st.com,
+        dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        computersforpeace@gmail.com, Angus.Clark@st.com
+Subject: [PATCH 01/35] mtd: st_spi_fsm: Allocate resources and register with MTD framework
+Date: Tue, 18 Feb 2014 14:55:28 +0000
+Message-Id: <1392735362-1245-2-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
+References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+This is a new driver. It's used to communicate with a special type of
+optimised Serial Flash Controller called the FSM. The FSM uses a subset
+of the SPI protocol to communicate with supported NOR-Flash devices.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Mike Marciniszyn <infinipath@intel.com>
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Sean Hefty <sean.hefty@intel.com>
-Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
-Cc: linux-rdma@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
+Acked-by Angus Clark <angus.clark@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/infiniband/hw/qib/qib_pcie.c |   55 +++++++++++++++++----------------
- 1 files changed, 28 insertions(+), 27 deletions(-)
+ drivers/mtd/devices/Kconfig      |   8 ++++
+ drivers/mtd/devices/Makefile     |   1 +
+ drivers/mtd/devices/st_spi_fsm.c | 101 +++++++++++++++++++++++++++++++++++++++
+ drivers/mtd/devices/st_spi_fsm.h |  27 +++++++++++
+ 4 files changed, 137 insertions(+)
+ create mode 100644 drivers/mtd/devices/st_spi_fsm.c
+ create mode 100644 drivers/mtd/devices/st_spi_fsm.h
 
-diff --git a/drivers/infiniband/hw/qib/qib_pcie.c b/drivers/infiniband/hw/qib/qib_pcie.c
-index c8d9c4a..61a0046 100644
---- a/drivers/infiniband/hw/qib/qib_pcie.c
-+++ b/drivers/infiniband/hw/qib/qib_pcie.c
-@@ -197,46 +197,47 @@ static void qib_msix_setup(struct qib_devdata *dd, int pos, u32 *msixcnt,
- 			   struct qib_msix_entry *qib_msix_entry)
- {
- 	int ret;
--	u32 tabsize = 0;
--	u16 msix_flags;
-+	int nvec = *msixcnt;
- 	struct msix_entry *msix_entry;
- 	int i;
+diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
+index 74ab4b7..0cf48ac 100644
+--- a/drivers/mtd/devices/Kconfig
++++ b/drivers/mtd/devices/Kconfig
+@@ -217,6 +217,14 @@ config MTD_DOCG3
+ 	  M-Systems and now Sandisk. The support is very experimental,
+ 	  and doesn't give access to any write operations.
  
-+	ret = pci_msix_vec_count(dd->pcidev);
-+	if (ret < 0)
-+		goto do_intx;
++config MTD_ST_SPI_FSM
++	tristate "ST Microelectronics SPI FSM Serial Flash Controller"
++	depends on ARM || SH
++	help
++	  This provides an MTD device driver for the ST Microelectronics
++	  SPI FSM Serial Flash Controller and support for a subset of
++	  connected Serial Flash devices.
 +
-+	nvec = min(nvec, ret);
-+
- 	/* We can't pass qib_msix_entry array to qib_msix_setup
- 	 * so use a dummy msix_entry array and copy the allocated
- 	 * irq back to the qib_msix_entry array. */
--	msix_entry = kmalloc(*msixcnt * sizeof(*msix_entry), GFP_KERNEL);
--	if (!msix_entry) {
--		ret = -ENOMEM;
-+	msix_entry = kmalloc(nvec * sizeof(*msix_entry), GFP_KERNEL);
-+	if (!msix_entry)
- 		goto do_intx;
--	}
--	for (i = 0; i < *msixcnt; i++)
-+
-+	for (i = 0; i < nvec; i++)
- 		msix_entry[i] = qib_msix_entry[i].msix;
+ if MTD_DOCG3
+ config BCH_CONST_M
+ 	default 14
+diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
+index d83bd73..c68868f 100644
+--- a/drivers/mtd/devices/Makefile
++++ b/drivers/mtd/devices/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
+ obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
+ obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
+ obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
++obj-$(CONFIG_MTD_ST_SPI_FSM)    += st_spi_fsm.o
  
--	pci_read_config_word(dd->pcidev, pos + PCI_MSIX_FLAGS, &msix_flags);
--	tabsize = 1 + (msix_flags & PCI_MSIX_FLAGS_QSIZE);
--	if (tabsize > *msixcnt)
--		tabsize = *msixcnt;
--	ret = pci_enable_msix(dd->pcidev, msix_entry, tabsize);
--	if (ret > 0) {
--		tabsize = ret;
--		ret = pci_enable_msix(dd->pcidev, msix_entry, tabsize);
--	}
--do_intx:
--	if (ret) {
--		qib_dev_err(dd,
--			"pci_enable_msix %d vectors failed: %d, falling back to INTx\n",
--			tabsize, ret);
--		tabsize = 0;
--	}
--	for (i = 0; i < tabsize; i++)
-+	ret = pci_enable_msix_range(dd->pcidev, msix_entry, 1, nvec);
-+	if (ret < 0)
-+		goto free_msix_entry;
-+	else
-+		nvec = ret;
+ 
+ CFLAGS_docg3.o			+= -I$(src)
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+new file mode 100644
+index 0000000..2f4ebb4
+--- /dev/null
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -0,0 +1,101 @@
++/*
++ * st_spi_fsm.c	Support for ST Serial Flash Controller
++ *
++ * Author: Angus Clark <angus.clark@st.com>
++ *
++ * Copyright (C) 2010-2013 STicroelectronics Limited
++ *
++ * JEDEC probe based on drivers/mtd/devices/m25p80.c
++ *
++ * This code is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/mtd/mtd.h>
++#include <linux/sched.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/of.h>
 +
-+	for (i = 0; i < nvec; i++)
- 		qib_msix_entry[i].msix = msix_entry[i];
++#include "st_spi_fsm.h"
 +
- 	kfree(msix_entry);
--	*msixcnt = tabsize;
-+	*msixcnt = nvec;
-+	return;
- 
--	if (ret)
--		qib_enable_intx(dd->pcidev);
-+free_msix_entry:
-+	kfree(msix_entry);
- 
-+do_intx:
-+	qib_dev_err(dd, "pci_enable_msix_range %d vectors failed: %d, "
-+			"falling back to INTx\n", nvec, ret);
-+	*msixcnt = 0;
-+	qib_enable_intx(dd->pcidev);
- }
- 
- /**
++static int stfsm_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct resource *res;
++	struct stfsm *fsm;
++
++	if (!np) {
++		dev_err(&pdev->dev, "No DT found\n");
++		return -EINVAL;
++	}
++
++	fsm = devm_kzalloc(&pdev->dev, sizeof(*fsm), GFP_KERNEL);
++	if (!fsm)
++		return -ENOMEM;
++
++	fsm->dev = &pdev->dev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "Resource not found\n");
++		return -ENODEV;
++	}
++
++	fsm->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(fsm->base)) {
++		dev_err(&pdev->dev,
++			"Failed to reserve memory region [0x%08x-0x%08x]\n",
++			res->start, res->end);
++		return PTR_ERR(fsm->base);
++	}
++
++	mutex_init(&fsm->lock);
++
++	platform_set_drvdata(pdev, fsm);
++
++	fsm->mtd.dev.parent	= &pdev->dev;
++	fsm->mtd.type		= MTD_NORFLASH;
++	fsm->mtd.writesize	= 4;
++	fsm->mtd.writebufsize	= fsm->mtd.writesize;
++	fsm->mtd.flags		= MTD_CAP_NORFLASH;
++
++	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
++}
++
++static int stfsm_remove(struct platform_device *pdev)
++{
++	struct stfsm *fsm = platform_get_drvdata(pdev);
++	int err;
++
++	err = mtd_device_unregister(&fsm->mtd);
++	if (err)
++		return err;
++
++	return 0;
++}
++
++static struct of_device_id stfsm_match[] = {
++	{ .compatible = "st,spi-fsm", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, stfsm_match);
++
++static struct platform_driver stfsm_driver = {
++	.probe		= stfsm_probe,
++	.remove		= stfsm_remove,
++	.driver		= {
++		.name	= "st-spi-fsm",
++		.owner	= THIS_MODULE,
++		.of_match_table = stfsm_match,
++	},
++};
++module_platform_driver(stfsm_driver);
++
++MODULE_AUTHOR("Angus Clark <angus.clark@st.com>");
++MODULE_DESCRIPTION("ST SPI FSM driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
+new file mode 100644
+index 0000000..df45e1a
+--- /dev/null
++++ b/drivers/mtd/devices/st_spi_fsm.h
+@@ -0,0 +1,27 @@
++/*
++ * st_spi_fsm.c	Support for ST Serial Flash Controller
++ *
++ * Author: Angus Clark <angus.clark@st.com>
++ *
++ * Copyright (C) 2010-2013 STicroelectronics Limited
++ *
++ * JEDEC probe based on drivers/mtd/devices/m25p80.c
++ *
++ * This code is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef ST_SPI_FSM_H
++#define ST_SPI_FSM_H
++
++struct stfsm {
++	struct device		*dev;
++	void __iomem		*base;
++	struct resource		*region;
++	struct mtd_info		mtd;
++	struct mutex		lock;
++};
++
++#endif	/* ST_SPI_FSM_H */
 -- 
-1.7.7.6
+1.8.3.2
 
