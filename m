@@ -1,98 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544AbaBRHkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 02:40:06 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:43003 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753976AbaBRHkE (ORCPT
+	id S1754576AbaBRHkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 02:40:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36511 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135AbaBRHkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 02:40:04 -0500
-Date: Tue, 18 Feb 2014 08:37:12 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] spi: core: Fix Oops in spi_pump_messages error path
-Message-ID: <20140218073712.GA3142@lukather>
-References: <1392657637-5297-1-git-send-email-maxime.ripard@free-electrons.com>
- <CAMuHMdXc5zyd1aBigrisvx43VVjStCMgtCcHmefdK-n5shTTmA@mail.gmail.com>
+	Tue, 18 Feb 2014 02:40:10 -0500
+Date: Tue, 18 Feb 2014 08:39:51 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 1/3] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+Message-ID: <20140218073951.GZ27965@twins.programming.kicks-ass.net>
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
+ <1392669684-4807-2-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdXc5zyd1aBigrisvx43VVjStCMgtCcHmefdK-n5shTTmA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392669684-4807-2-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 17, 2014 at 03:41:22PM -0500, Waiman Long wrote:
+> +void queue_spin_lock_slowpath(struct qspinlock *lock, int qsval)
+> +{
+> +	unsigned int cpu_nr, qn_idx;
+> +	struct qnode *node, *next;
+> +	u32 prev_qcode, my_qcode;
+> +
+> +#ifdef queue_spin_trylock_quick
+> +	/*
+> +	 * Try the quick spinning code path
+> +	 */
+> +	if (queue_spin_trylock_quick(lock, qsval))
+> +		return;
+> +#endif
 
---h31gzZEtNLTqOjlF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+why oh why?
 
-Hi Geert,
+> +	/*
+> +	 * Get the queue node
+> +	 */
+> +	cpu_nr = smp_processor_id();
+> +	node   = get_qnode(&qn_idx);
+> +
+> +	if (unlikely(!node)) {
+> +		/*
+> +		 * This shouldn't happen, print a warning message
+> +		 * & busy spinning on the lock.
+> +		 */
+> +		printk_sched(
+> +		  "qspinlock: queue node table exhausted at cpu %d!\n",
+> +		  cpu_nr);
+> +		while (!queue_spin_trylock_unfair(lock))
+> +			arch_mutex_cpu_relax();
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * Set up the new cpu code to be exchanged
+> +	 */
+> +	my_qcode = _SET_QCODE(cpu_nr, qn_idx);
+> +
+> +	/*
+> +	 * Initialize the queue node
+> +	 */
+> +	node->wait = true;
+> +	node->next = NULL;
+> +
+> +	/*
+> +	 * The lock may be available at this point, try again if no task was
+> +	 * waiting in the queue.
+> +	 */
+> +	if (!(qsval >> _QCODE_OFFSET) && queue_spin_trylock(lock)) {
+> +		put_qnode();
+> +		return;
+> +	}
+> +
+> +#ifdef queue_code_xchg
+> +	prev_qcode = queue_code_xchg(lock, my_qcode);
+> +#else
+> +	/*
+> +	 * Exchange current copy of the queue node code
+> +	 */
+> +	prev_qcode = atomic_xchg(&lock->qlcode, my_qcode);
+> +	/*
+> +	 * It is possible that we may accidentally steal the lock. If this is
+> +	 * the case, we need to either release it if not the head of the queue
+> +	 * or get the lock and be done with it.
+> +	 */
+> +	if (unlikely(!(prev_qcode & _QSPINLOCK_LOCKED))) {
+> +		if (prev_qcode == 0) {
+> +			/*
+> +			 * Got the lock since it is at the head of the queue
+> +			 * Now try to atomically clear the queue code.
+> +			 */
+> +			if (atomic_cmpxchg(&lock->qlcode, my_qcode,
+> +					  _QSPINLOCK_LOCKED) == my_qcode)
+> +				goto release_node;
+> +			/*
+> +			 * The cmpxchg fails only if one or more tasks
+> +			 * are added to the queue. In this case, we need to
+> +			 * notify the next one to be the head of the queue.
+> +			 */
+> +			goto notify_next;
+> +		}
+> +		/*
+> +		 * Accidentally steal the lock, release the lock and
+> +		 * let the queue head get it.
+> +		 */
+> +		queue_spin_unlock(lock);
+> +	} else
+> +		prev_qcode &= ~_QSPINLOCK_LOCKED;	/* Clear the lock bit */
+> +	my_qcode &= ~_QSPINLOCK_LOCKED;
+> +#endif /* queue_code_xchg */
 
-On Mon, Feb 17, 2014 at 07:02:09PM +0100, Geert Uytterhoeven wrote:
-> On Mon, Feb 17, 2014 at 6:20 PM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
-> > When the generic implementation of the transfer_one_message callback wa=
-s called
-> > by the spi_pump_messages function, if that transfer was to fail, the
-> > spi_finalize_current_message was called twice, once in
-> > spi_transfer_one_message, and one in spi_pump_messages.
-> >
-> > This was causing a null pointer dereference in the second call, because=
- the
-> > first one set the ->cur_msg field to NULL.
-> >
-> > Since the SPI framework expect the transfer_one_message callback to call
-> > spi_finalize_current_message, we can remove it from spi_pump_messages, =
-together
-> > with any dereference of the ->cur_msg pointer.
-> >
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > Cc: stable@vger.kernel.org
->=20
-> Already fixed in v3.14-rc3 in 1f802f8249a0da536877842c43c7204064c4de8b
-> ("spi: Fix crash with double message finalisation on error handling").
->=20
-> There's no need to inform stable, as the problem was introduced in v3.14-=
-rc1.
+WTF is this #ifdef for?
 
-Oops, totally missed that. Thanks!
+> +	if (prev_qcode) {
+> +		/*
+> +		 * Not at the queue head, get the address of the previous node
+> +		 * and set up the "next" fields of the that node.
+> +		 */
+> +		struct qnode *prev = xlate_qcode(prev_qcode);
+> +
+> +		ACCESS_ONCE(prev->next) = node;
+> +		/*
+> +		 * Wait until the waiting flag is off
+> +		 */
+> +		while (smp_load_acquire(&node->wait))
+> +			arch_mutex_cpu_relax();
+> +	}
+> +
+> +	/*
+> +	 * At the head of the wait queue now
+> +	 */
+> +	while (true) {
+> +		u32 qcode;
+> +		int retval;
+> +
+> +		retval = queue_get_lock_qcode(lock, &qcode, my_qcode);
+> +		if (retval > 0)
+> +			;	/* Lock not available yet */
+> +		else if (retval < 0)
+> +			/* Lock taken, can release the node & return */
+> +			goto release_node;
+> +		else if (qcode != my_qcode) {
+> +			/*
+> +			 * Just get the lock with other spinners waiting
+> +			 * in the queue.
+> +			 */
+> +			if (queue_spin_trylock_unfair(lock))
+> +				goto notify_next;
 
-Maxime
+Why is this an option at all?
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---h31gzZEtNLTqOjlF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTAw2oAAoJEBx+YmzsjxAgqnEP/0MA+WMXdo6HdFZ60Ee18VlV
-SQN7h1/UJkHm6c1lZ89AJcvHbrP3w/kLepBQ+/fqqZjkjzsT18rJgXHt4QxxU7B0
-Pi4T1knNQZ9/P3yUF5Q/cAvqOBBbJu6P5ox0yS79VSEppq4bGkw9h108V778pFIP
-J947jBp+zvmQPcjbpeiKr2Wkji9XrBmLC2D3Y2cQJqLCZNOaGkwez9C4sIuAK906
-ksVOysPYOufkNL3P8DZ6kGAHmIPcVJjYOoITGQ9aIRwkkdiQRpwt6YXtAvgnGz3B
-dWGwdExWGopp5vwxEnf/9McGAK408krH2Z5Jowj/Do2XuOq13uPrJcsObKFyH7on
-9hCl4mnr+Ah9xLj6KI3tlESHD+HvzAkNrrzCCO5ev6naIrSulNJ8XDTIx9b8eBjc
-2XBEWAdlIcJK3Ued3Cs+U8+X6+SlkKxlLYmbnvTEMcOjga0MAKOEVlaVfHl7eDDf
-paLhrda1fVCe5ToqxTwZFx8R0vlYtN3yiEkLdfv1EiyHGWjBsXZXQ/GcbaadwDRY
-EbBcEY8p+hocvjySdtpi579mtcRewHRdSt6+z4sK5pafuPYuzfBpao/UJFJi3Meq
-G3VtHd9MQ+j0JZL9A2yuZfrwMfyX4zCLY1gLM1SY6W9hAuACzY4z9gilVN2IQpys
-d0ZIRrwpnCGawT1h+ntT
-=5Aey
------END PGP SIGNATURE-----
-
---h31gzZEtNLTqOjlF--
+> +		} else {
+> +			/*
+> +			 * Get the lock & clear the queue code simultaneously
+> +			 */
+> +			if (queue_spin_trylock_and_clr_qcode(lock, qcode))
+> +				/* No need to notify the next one */
+> +				goto release_node;
+> +		}
+> +		arch_mutex_cpu_relax();
+> +	}
+> +
+> +notify_next:
+> +	/*
+> +	 * Wait, if needed, until the next one in queue set up the next field
+> +	 */
+> +	while (!(next = ACCESS_ONCE(node->next)))
+> +		arch_mutex_cpu_relax();
+> +	/*
+> +	 * The next one in queue is now at the head
+> +	 */
+> +	smp_store_release(&next->wait, false);
+> +
+> +release_node:
+> +	put_qnode();
+> +}
+> +EXPORT_SYMBOL(queue_spin_lock_slowpath);
+> -- 
+> 1.7.1
+> 
