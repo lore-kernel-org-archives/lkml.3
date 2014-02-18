@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaBRXBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 18:01:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51132 "EHLO
+	id S1753308AbaBRWrE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 17:47:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51093 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339AbaBRWrH (ORCPT
+	with ESMTP id S1751741AbaBRWrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 17:47:07 -0500
+	Tue, 18 Feb 2014 17:47:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Thode <mthode@mthode.org>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.13 01/40] SELinux:  Fix kernel BUG on empty security contexts.
-Date: Tue, 18 Feb 2014 14:47:02 -0800
-Message-Id: <20140218224433.380444896@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Pete Eberlein <pete@sensoray.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.12 26/32] [media] Revert "[media] videobuf_vm_{open,close} race fixes"
+Date: Tue, 18 Feb 2014 14:47:26 -0800
+Message-Id: <20140218224500.842380550@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140218224433.337299968@linuxfoundation.org>
-References: <20140218224433.337299968@linuxfoundation.org>
+In-Reply-To: <20140218224500.101465031@linuxfoundation.org>
+References: <20140218224500.101465031@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,120 +26,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stephen Smalley <sds@tycho.nsa.gov>
+From: Hans Verkuil <hverkuil@xs4all.nl>
 
-commit 2172fa709ab32ca60e86179dc67d0857be8e2c98 upstream.
+commit cca36e2eecec2b8fc869a50ffd3bd0adeed92b8b upstream.
 
-Setting an empty security context (length=0) on a file will
-lead to incorrectly dereferencing the type and other fields
-of the security context structure, yielding a kernel BUG.
-As a zero-length security context is never valid, just reject
-all such security contexts whether coming from userspace
-via setxattr or coming from the filesystem upon a getxattr
-request by SELinux.
+This reverts commit a242f426108c284049a69710f871cc9f11b13e61.
 
-Setting a security context value (empty or otherwise) unknown to
-SELinux in the first place is only possible for a root process
-(CAP_MAC_ADMIN), and, if running SELinux in enforcing mode, only
-if the corresponding SELinux mac_admin permission is also granted
-to the domain by policy.  In Fedora policies, this is only allowed for
-specific domains such as livecd for setting down security contexts
-that are not defined in the build host policy.
+That commit actually caused deadlocks, rather then fixing them.
 
-Reproducer:
-su
-setenforce 0
-touch foo
-setfattr -n security.selinux foo
+If ext_lock is set to NULL (otherwise videobuf_queue_lock doesn't do
+anything), then you get this deadlock:
 
-Caveat:
-Relabeling or removing foo after doing the above may not be possible
-without booting with SELinux disabled.  Any subsequent access to foo
-after doing the above will also trigger the BUG.
+The driver's mmap function calls videobuf_mmap_mapper which calls
+videobuf_queue_lock on q. videobuf_mmap_mapper calls  __videobuf_mmap_mapper,
+__videobuf_mmap_mapper calls videobuf_vm_open and videobuf_vm_open
+calls videobuf_queue_lock on q (introduced by above patch): deadlocked.
 
-BUG output from Matthew Thode:
-[  473.893141] ------------[ cut here ]------------
-[  473.962110] kernel BUG at security/selinux/ss/services.c:654!
-[  473.995314] invalid opcode: 0000 [#6] SMP
-[  474.027196] Modules linked in:
-[  474.058118] CPU: 0 PID: 8138 Comm: ls Tainted: G      D   I
-3.13.0-grsec #1
-[  474.116637] Hardware name: Supermicro X8ST3/X8ST3, BIOS 2.0
-07/29/10
-[  474.149768] task: ffff8805f50cd010 ti: ffff8805f50cd488 task.ti:
-ffff8805f50cd488
-[  474.183707] RIP: 0010:[<ffffffff814681c7>]  [<ffffffff814681c7>]
-context_struct_compute_av+0xce/0x308
-[  474.219954] RSP: 0018:ffff8805c0ac3c38  EFLAGS: 00010246
-[  474.252253] RAX: 0000000000000000 RBX: ffff8805c0ac3d94 RCX:
-0000000000000100
-[  474.287018] RDX: ffff8805e8aac000 RSI: 00000000ffffffff RDI:
-ffff8805e8aaa000
-[  474.321199] RBP: ffff8805c0ac3cb8 R08: 0000000000000010 R09:
-0000000000000006
-[  474.357446] R10: 0000000000000000 R11: ffff8805c567a000 R12:
-0000000000000006
-[  474.419191] R13: ffff8805c2b74e88 R14: 00000000000001da R15:
-0000000000000000
-[  474.453816] FS:  00007f2e75220800(0000) GS:ffff88061fc00000(0000)
-knlGS:0000000000000000
-[  474.489254] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  474.522215] CR2: 00007f2e74716090 CR3: 00000005c085e000 CR4:
-00000000000207f0
-[  474.556058] Stack:
-[  474.584325]  ffff8805c0ac3c98 ffffffff811b549b ffff8805c0ac3c98
-ffff8805f1190a40
-[  474.618913]  ffff8805a6202f08 ffff8805c2b74e88 00068800d0464990
-ffff8805e8aac860
-[  474.653955]  ffff8805c0ac3cb8 000700068113833a ffff880606c75060
-ffff8805c0ac3d94
-[  474.690461] Call Trace:
-[  474.723779]  [<ffffffff811b549b>] ? lookup_fast+0x1cd/0x22a
-[  474.778049]  [<ffffffff81468824>] security_compute_av+0xf4/0x20b
-[  474.811398]  [<ffffffff8196f419>] avc_compute_av+0x2a/0x179
-[  474.843813]  [<ffffffff8145727b>] avc_has_perm+0x45/0xf4
-[  474.875694]  [<ffffffff81457d0e>] inode_has_perm+0x2a/0x31
-[  474.907370]  [<ffffffff81457e76>] selinux_inode_getattr+0x3c/0x3e
-[  474.938726]  [<ffffffff81455cf6>] security_inode_getattr+0x1b/0x22
-[  474.970036]  [<ffffffff811b057d>] vfs_getattr+0x19/0x2d
-[  475.000618]  [<ffffffff811b05e5>] vfs_fstatat+0x54/0x91
-[  475.030402]  [<ffffffff811b063b>] vfs_lstat+0x19/0x1b
-[  475.061097]  [<ffffffff811b077e>] SyS_newlstat+0x15/0x30
-[  475.094595]  [<ffffffff8113c5c1>] ? __audit_syscall_entry+0xa1/0xc3
-[  475.148405]  [<ffffffff8197791e>] system_call_fastpath+0x16/0x1b
-[  475.179201] Code: 00 48 85 c0 48 89 45 b8 75 02 0f 0b 48 8b 45 a0 48
-8b 3d 45 d0 b6 00 8b 40 08 89 c6 ff ce e8 d1 b0 06 00 48 85 c0 49 89 c7
-75 02 <0f> 0b 48 8b 45 b8 4c 8b 28 eb 1e 49 8d 7d 08 be 80 01 00 00 e8
-[  475.255884] RIP  [<ffffffff814681c7>]
-context_struct_compute_av+0xce/0x308
-[  475.296120]  RSP <ffff8805c0ac3c38>
-[  475.328734] ---[ end trace f076482e9d754adc ]---
+This affects drivers using dma-contig and dma-vmalloc. Only dma-sg is
+not affected since it doesn't call videobuf_vm_open from __videobuf_mmap_mapper.
 
-Reported-by:  Matthew Thode <mthode@mthode.org>
-Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Most drivers these days have a non-NULL ext_lock. Those that still use
+NULL there are all fairly obscure drivers, which is why this hasn't been
+seen earlier.
+
+Since everything worked perfectly fine for many years I prefer to just
+revert this patch rather than trying to fix it. videobuf is quite fragile
+and I rather not touch it too much. Work is (slowly) progressing to move
+everything over to vb2 or at the very least use non-NULL ext_lock in
+videobuf.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Reported-by: Pete Eberlein <pete@sensoray.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/ss/services.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/media/v4l2-core/videobuf-dma-contig.c |   12 +++++-------
+ drivers/media/v4l2-core/videobuf-dma-sg.c     |   10 ++++------
+ drivers/media/v4l2-core/videobuf-vmalloc.c    |   10 ++++------
+ 3 files changed, 13 insertions(+), 19 deletions(-)
 
---- a/security/selinux/ss/services.c
-+++ b/security/selinux/ss/services.c
-@@ -1232,6 +1232,10 @@ static int security_context_to_sid_core(
- 	struct context context;
- 	int rc = 0;
+--- a/drivers/media/v4l2-core/videobuf-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
+@@ -66,14 +66,11 @@ static void __videobuf_dc_free(struct de
+ static void videobuf_vm_open(struct vm_area_struct *vma)
+ {
+ 	struct videobuf_mapping *map = vma->vm_private_data;
+-	struct videobuf_queue *q = map->q;
  
-+	/* An empty security context is never valid. */
-+	if (!scontext_len)
-+		return -EINVAL;
-+
- 	if (!ss_initialized) {
- 		int i;
+-	dev_dbg(q->dev, "vm_open %p [count=%u,vma=%08lx-%08lx]\n",
++	dev_dbg(map->q->dev, "vm_open %p [count=%u,vma=%08lx-%08lx]\n",
+ 		map, map->count, vma->vm_start, vma->vm_end);
  
+-	videobuf_queue_lock(q);
+ 	map->count++;
+-	videobuf_queue_unlock(q);
+ }
+ 
+ static void videobuf_vm_close(struct vm_area_struct *vma)
+@@ -85,11 +82,12 @@ static void videobuf_vm_close(struct vm_
+ 	dev_dbg(q->dev, "vm_close %p [count=%u,vma=%08lx-%08lx]\n",
+ 		map, map->count, vma->vm_start, vma->vm_end);
+ 
+-	videobuf_queue_lock(q);
+-	if (!--map->count) {
++	map->count--;
++	if (0 == map->count) {
+ 		struct videobuf_dma_contig_memory *mem;
+ 
+ 		dev_dbg(q->dev, "munmap %p q=%p\n", map, q);
++		videobuf_queue_lock(q);
+ 
+ 		/* We need first to cancel streams, before unmapping */
+ 		if (q->streaming)
+@@ -128,8 +126,8 @@ static void videobuf_vm_close(struct vm_
+ 
+ 		kfree(map);
+ 
++		videobuf_queue_unlock(q);
+ 	}
+-	videobuf_queue_unlock(q);
+ }
+ 
+ static const struct vm_operations_struct videobuf_vm_ops = {
+--- a/drivers/media/v4l2-core/videobuf-dma-sg.c
++++ b/drivers/media/v4l2-core/videobuf-dma-sg.c
+@@ -338,14 +338,11 @@ EXPORT_SYMBOL_GPL(videobuf_dma_free);
+ static void videobuf_vm_open(struct vm_area_struct *vma)
+ {
+ 	struct videobuf_mapping *map = vma->vm_private_data;
+-	struct videobuf_queue *q = map->q;
+ 
+ 	dprintk(2, "vm_open %p [count=%d,vma=%08lx-%08lx]\n", map,
+ 		map->count, vma->vm_start, vma->vm_end);
+ 
+-	videobuf_queue_lock(q);
+ 	map->count++;
+-	videobuf_queue_unlock(q);
+ }
+ 
+ static void videobuf_vm_close(struct vm_area_struct *vma)
+@@ -358,9 +355,10 @@ static void videobuf_vm_close(struct vm_
+ 	dprintk(2, "vm_close %p [count=%d,vma=%08lx-%08lx]\n", map,
+ 		map->count, vma->vm_start, vma->vm_end);
+ 
+-	videobuf_queue_lock(q);
+-	if (!--map->count) {
++	map->count--;
++	if (0 == map->count) {
+ 		dprintk(1, "munmap %p q=%p\n", map, q);
++		videobuf_queue_lock(q);
+ 		for (i = 0; i < VIDEO_MAX_FRAME; i++) {
+ 			if (NULL == q->bufs[i])
+ 				continue;
+@@ -376,9 +374,9 @@ static void videobuf_vm_close(struct vm_
+ 			q->bufs[i]->baddr = 0;
+ 			q->ops->buf_release(q, q->bufs[i]);
+ 		}
++		videobuf_queue_unlock(q);
+ 		kfree(map);
+ 	}
+-	videobuf_queue_unlock(q);
+ 	return;
+ }
+ 
+--- a/drivers/media/v4l2-core/videobuf-vmalloc.c
++++ b/drivers/media/v4l2-core/videobuf-vmalloc.c
+@@ -54,14 +54,11 @@ MODULE_LICENSE("GPL");
+ static void videobuf_vm_open(struct vm_area_struct *vma)
+ {
+ 	struct videobuf_mapping *map = vma->vm_private_data;
+-	struct videobuf_queue *q = map->q;
+ 
+ 	dprintk(2, "vm_open %p [count=%u,vma=%08lx-%08lx]\n", map,
+ 		map->count, vma->vm_start, vma->vm_end);
+ 
+-	videobuf_queue_lock(q);
+ 	map->count++;
+-	videobuf_queue_unlock(q);
+ }
+ 
+ static void videobuf_vm_close(struct vm_area_struct *vma)
+@@ -73,11 +70,12 @@ static void videobuf_vm_close(struct vm_
+ 	dprintk(2, "vm_close %p [count=%u,vma=%08lx-%08lx]\n", map,
+ 		map->count, vma->vm_start, vma->vm_end);
+ 
+-	videobuf_queue_lock(q);
+-	if (!--map->count) {
++	map->count--;
++	if (0 == map->count) {
+ 		struct videobuf_vmalloc_memory *mem;
+ 
+ 		dprintk(1, "munmap %p q=%p\n", map, q);
++		videobuf_queue_lock(q);
+ 
+ 		/* We need first to cancel streams, before unmapping */
+ 		if (q->streaming)
+@@ -116,8 +114,8 @@ static void videobuf_vm_close(struct vm_
+ 
+ 		kfree(map);
+ 
++		videobuf_queue_unlock(q);
+ 	}
+-	videobuf_queue_unlock(q);
+ 
+ 	return;
+ }
 
 
