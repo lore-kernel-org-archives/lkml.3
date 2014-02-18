@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaBRVJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 16:09:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35646 "EHLO
+	id S1752936AbaBRVM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 16:12:57 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35727 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaBRVJH (ORCPT
+	with ESMTP id S1751959AbaBRVJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 16:09:07 -0500
+	Tue, 18 Feb 2014 16:09:12 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/32] perf callchain: Do not report zero address in unwind
-Date: Tue, 18 Feb 2014 18:08:31 -0300
-Message-Id: <1392757731-32619-13-git-send-email-acme@infradead.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 21/32] perf symbols: No need to export dso__first_symbol
+Date: Tue, 18 Feb 2014 18:08:40 -0300
+Message-Id: <1392757731-32619-22-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1392757731-32619-1-git-send-email-acme@infradead.org>
 References: <1392757731-32619-1-git-send-email-acme@infradead.org>
@@ -29,40 +29,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We are not interested in zero addresses in callchain, do not report
-them.
+There are no users outside the file that defines it.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1389098853-14466-8-git-send-email-jolsa@redhat.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-sybihqycxrmssa4df9516jib@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/unwind.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/symbol.c | 2 +-
+ tools/perf/util/symbol.h | 1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-index bff3209305e1..3b7018102dfb 100644
---- a/tools/perf/util/unwind.c
-+++ b/tools/perf/util/unwind.c
-@@ -563,7 +563,7 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- 		unw_word_t ip;
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index a9d758a3b371..46e2ede12c51 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -410,7 +410,7 @@ struct symbol *dso__find_symbol(struct dso *dso,
+ 	return symbols__find(&dso->symbols[type], addr);
+ }
  
- 		unw_get_reg(&c, UNW_REG_IP, &ip);
--		ret = entry(ip, ui->thread, ui->machine, cb, arg);
-+		ret = ip ? entry(ip, ui->thread, ui->machine, cb, arg) : 0;
- 	}
+-struct symbol *dso__first_symbol(struct dso *dso, enum map_type type)
++static struct symbol *dso__first_symbol(struct dso *dso, enum map_type type)
+ {
+ 	return symbols__first(&dso->symbols[type]);
+ }
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index fffe2888a1c7..538d484fa6c5 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -223,7 +223,6 @@ struct symbol *dso__find_symbol(struct dso *dso, enum map_type type,
+ 				u64 addr);
+ struct symbol *dso__find_symbol_by_name(struct dso *dso, enum map_type type,
+ 					const char *name);
+-struct symbol *dso__first_symbol(struct dso *dso, enum map_type type);
  
- 	unw_destroy_addr_space(addr_space);
+ int filename__read_build_id(const char *filename, void *bf, size_t size);
+ int sysfs__read_build_id(const char *filename, void *bf, size_t size);
 -- 
 1.8.1.4
 
