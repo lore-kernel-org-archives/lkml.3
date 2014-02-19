@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaBSJKr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 04:10:47 -0500
-Received: from www84.your-server.de ([213.133.104.84]:60110 "EHLO
+	id S1753165AbaBSJKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 04:10:42 -0500
+Received: from www84.your-server.de ([213.133.104.84]:60112 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696AbaBSJIh (ORCPT
+	with ESMTP id S1752751AbaBSJIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 04:08:37 -0500
+	Wed, 19 Feb 2014 04:08:38 -0500
 From: Stefani Seibold <stefani@seibold.net>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
@@ -15,9 +15,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
         Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v20 02/10] Add new func _install_special_mapping() to mmap.c
-Date: Wed, 19 Feb 2014 10:09:03 +0100
-Message-Id: <1392800951-2683-3-git-send-email-stefani@seibold.net>
+Subject: [PATCH v20 06/10] cleanup __vdso_gettimeofday
+Date: Wed, 19 Feb 2014 10:09:07 +0100
+Message-Id: <1392800951-2683-7-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1392800951-2683-1-git-send-email-stefani@seibold.net>
 References: <1392800951-2683-1-git-send-email-stefani@seibold.net>
@@ -26,82 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The _install_special_mapping() is the new base function for
-install_special_mapping(). This function will return a pointer of the
-created VMA or a error code in an ERR_PTR()
+This patch do a little cleanup for the __vdso_gettimeofday() function.
 
-This new function will be needed by the for the vdso 32 bit support to map the
-additonal vvar and hpet pages into the 32 bit address space. This will be done
-with io_remap_pfn_range() and remap_pfn_range, which requieres a vm_area_struct.
+It kick out an unneeded ret local variable and makes the code faster if
+only the timezone is needed.
 
 Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- include/linux/mm.h |  3 +++
- mm/mmap.c          | 20 ++++++++++++++++----
- 2 files changed, 19 insertions(+), 4 deletions(-)
+ arch/x86/vdso/vclock_gettime.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f28f46e..55342aa 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1740,6 +1740,9 @@ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
- extern struct file *get_mm_exe_file(struct mm_struct *mm);
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index 743f277..09dae4a 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -259,13 +259,12 @@ int clock_gettime(clockid_t, struct timespec *)
  
- extern int may_expand_vm(struct mm_struct *mm, unsigned long npages);
-+extern struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
-+				   unsigned long addr, unsigned long len,
-+				   unsigned long flags, struct page **pages);
- extern int install_special_mapping(struct mm_struct *mm,
- 				   unsigned long addr, unsigned long len,
- 				   unsigned long flags, struct page **pages);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 20ff0c3..81ba54f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2918,7 +2918,7 @@ static const struct vm_operations_struct special_mapping_vmops = {
-  * The array pointer and the pages it points to are assumed to stay alive
-  * for as long as this mapping might exist.
-  */
--int install_special_mapping(struct mm_struct *mm,
-+struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
- 			    unsigned long addr, unsigned long len,
- 			    unsigned long vm_flags, struct page **pages)
+ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
  {
-@@ -2927,7 +2927,7 @@ int install_special_mapping(struct mm_struct *mm,
+-	long ret = VCLOCK_NONE;
+-
+ 	if (likely(tv != NULL)) {
+ 		BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
+ 			     offsetof(struct timespec, tv_nsec) ||
+ 			     sizeof(*tv) != sizeof(struct timespec));
+-		ret = do_realtime((struct timespec *)tv);
++		if (unlikely(do_realtime((struct timespec *)tv) == VCLOCK_NONE))
++			return vdso_fallback_gtod(tv, tz);
+ 		tv->tv_usec /= 1000;
+ 	}
+ 	if (unlikely(tz != NULL)) {
+@@ -274,8 +273,6 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ 		tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
+ 	}
  
- 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
- 	if (unlikely(vma == NULL))
--		return -ENOMEM;
-+		return ERR_PTR(-ENOMEM);
- 
- 	INIT_LIST_HEAD(&vma->anon_vma_chain);
- 	vma->vm_mm = mm;
-@@ -2948,11 +2948,23 @@ int install_special_mapping(struct mm_struct *mm,
- 
- 	perf_event_mmap(vma);
- 
--	return 0;
-+	return vma;
- 
- out:
- 	kmem_cache_free(vm_area_cachep, vma);
--	return ret;
-+	return ERR_PTR(ret);
-+}
-+
-+int install_special_mapping(struct mm_struct *mm,
-+			    unsigned long addr, unsigned long len,
-+			    unsigned long vm_flags, struct page **pages)
-+{
-+	struct vm_area_struct *vma = _install_special_mapping(mm,
-+			    addr, len, vm_flags, pages);
-+
-+	if (IS_ERR(vma))
-+		return PTR_ERR(vma);
-+	return 0;
+-	if (ret == VCLOCK_NONE)
+-		return vdso_fallback_gtod(tv, tz);
+ 	return 0;
  }
- 
- static DEFINE_MUTEX(mm_all_locks_mutex);
+ int gettimeofday(struct timeval *, struct timezone *)
 -- 
 1.8.5.5
 
