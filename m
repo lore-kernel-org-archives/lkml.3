@@ -1,106 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaBSAid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 19:38:33 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60940 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752235AbaBSAic (ORCPT
+	id S1752279AbaBSAlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 19:41:05 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:44893 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaBSAlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 19:38:32 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] intel_pstate updates for v3.14-rcX
-Date: Wed, 19 Feb 2014 01:53:22 +0100
-Message-ID: <2254366.ixXkMqbYNC@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5303FC4E.7040305@gmail.com>
-References: <1392228067-14817-1-git-send-email-dirk.j.brandewie@intel.com> <1862084.mmnlZ4yS6m@vostro.rjw.lan> <5303FC4E.7040305@gmail.com>
+	Tue, 18 Feb 2014 19:41:03 -0500
+Date: Tue, 18 Feb 2014 16:40:54 -0800
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        Anton Blanchard <anton@samba.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ppc: RECLAIM_DISTANCE 10?
+Message-ID: <20140219004053.GA27108@linux.vnet.ibm.com>
+References: <20140218090658.GA28130@dhcp22.suse.cz>
+ <20140218233404.GB10844@linux.vnet.ibm.com>
+ <20140218235800.GC10844@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218235800.GC10844@linux.vnet.ibm.com>
+X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021900-0928-0000-0000-00000691C513
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 18, 2014 04:35:26 PM Dirk Brandewie wrote:
-> On 02/18/2014 04:43 PM, Rafael J. Wysocki wrote:
-> > On Tuesday, February 18, 2014 04:24:02 PM Dirk Brandewie wrote:
-> >> On Tuesday, February 18, 2014, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >>
-> >>> On Tuesday, February 18, 2014 03:53:48 PM Dirk Brandewie wrote:
-> >>>> On 02/18/2014 02:27 PM, Rafael J. Wysocki wrote:
-> >>>>> On Tuesday, February 18, 2014 12:29:54 PM Dirk Brandewie wrote:
-> >>>>>> Hi Rafael,
-> >>>>>
-> >>>>> Hi,
-> >>>>>
-> >>>>>> On 02/12/2014 10:01 AM, dirk.brandewie@gmail.com <javascript:;>wrote:
-> >>>>>>> From: Dirk Brandewie <dirk.j.brandewie@intel.com <javascript:;>>
-> >>>>>>>
-> >>>>>>> Based on v3.14-rc2
-> >>>>>>>
-> >>>>>>> Patch 1 removes energy reporting the patch from Maurizio Lambardi
-> >>>>>>>     intel_pstate: fix race condition in intel_pstate_init() can be
-> >>> dropped.
-> >>>>>>>
-> >>>>>>
-> >>>>>> Any reason why patches 2-5 did not make rc3 other than timing?
-> >>>>>>
-> >>>>>> Patches 2/3 can easily wait for v3.15.x
-> >>>>>>
-> >>>>>> Patches 4/5 fix bugs that are in the wild.
-> >>>>>
-> >>>>> I asked you about them, but you didn't reply:
-> >>>>>
-> >>>>> http://marc.info/?l=linux-pm&m=139225158531023&w=4
-> >>>>>
-> >>>>> Again, do patches [4-5/5] depend on [2-3/5]?
-> >>>>>
-> >>>>> If not, I can queue them up for -rc4.
-> >>>>
-> >>>> All the patches are independent of one another.
-> >>>>
-> >>>> Patch 2 is straight cleanup no functional change but reduces the memory
-> >>>> footprint slightly.
-> >>>>
-> >>>> Patch 3 is a bug that will only be seen when the PID is reset at init
-> >>> time
-> >>>> or when a change is made to PID params via debugfs.  The problem will
-> >>> only
-> >>>> exist for one sample time since it is setting last_err in the PID.
-> >>>>
-> >>>> Patch 4-5 are bugs found during Baytrail-T testing
-> >>>
-> >>> Are there any pointers to bug reports that may be included in the
-> >>> changelogs
-> >>> of these?
-> >>
-> >>
-> >> No.  I got the reports via email.  I could probably get the reporters to
-> >> file bugzillas.
-> >
-> > It would be good to add information about what machines are affected
-> > and what the user-visible problems are to the changelogs for future
-> > reference.
-> >
-> > And do we want these two patches in -stable?  If so, what -stable series should
-> > they go into?
+On 18.02.2014 [15:58:00 -0800], Nishanth Aravamudan wrote:
+> On 18.02.2014 [15:34:05 -0800], Nishanth Aravamudan wrote:
+> > Hi Michal,
+> > 
+> > On 18.02.2014 [10:06:58 +0100], Michal Hocko wrote:
+> > > Hi,
+> > > I have just noticed that ppc has RECLAIM_DISTANCE reduced to 10 set by
+> > > 56608209d34b (powerpc/numa: Set a smaller value for RECLAIM_DISTANCE to
+> > > enable zone reclaim). The commit message suggests that the zone reclaim
+> > > is desirable for all NUMA configurations.
+> > > 
+> > > History has shown that the zone reclaim is more often harmful than
+> > > helpful and leads to performance problems. The default RECLAIM_DISTANCE
+> > > for generic case has been increased from 20 to 30 around 3.0
+> > > (32e45ff43eaf mm: increase RECLAIM_DISTANCE to 30).
+> > 
+> > Interesting.
+> > 
+> > > I strongly suspect that the patch is incorrect and it should be
+> > > reverted. Before I will send a revert I would like to understand what
+> > > led to the patch in the first place. I do not see why would PPC use only
+> > > LOCAL_DISTANCE and REMOTE_DISTANCE distances and in fact machines I have
+> > > seen use different values.
+> > > 
+> > > Anton, could you comment please?
+> > 
+> > I'll let Anton comment here, but in looking into this issue in working
+> > on CONFIG_HAVE_MEMORYLESS_NODE support, I realized that any LPAR with
+> > memoryless nodes will set zone_reclaim_mode to 1. I think we want to
+> > ignore memoryless nodes when we set up the reclaim mode like the
+> > following? I'll send it as a proper patch if you agree?
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 5de4337..4f6ff6f 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1853,8 +1853,9 @@ static void __paginginit init_zone_allows_reclaim(int nid)
+> >  {
+> >         int i;
+> > 
+> > -       for_each_online_node(i)
+> > -               if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+> > +       for_each_online_node(i) {
+> > +               if (node_distance(nid, i) <= RECLAIM_DISTANCE ||
+> > +                                       local_memory_node(nid) != nid)
+> >                         node_set(i, NODE_DATA(nid)->reclaim_nodes);
+> >                 else
+> >                         zone_reclaim_mode = 1;
+> > 
+> > Note, this won't actually do anything if CONFIG_HAVE_MEMORYLESS_NODES is
+> > not set, but if it is, I think semantically it will indicate that
+> > memoryless nodes *have* to reclaim remotely.
+> > 
+> > And actually the above won't work, because the callpath is
+> > 
+> > start_kernel -> setup_arch -> paging_init [-> free_area_init_nodes ->
+> > free_area_init_node -> init_zone_allows_reclaim] which is called before
+> > build_all_zonelists. This is a similar ordering problem as I'm having
+> > with the MEMORYLESS_NODE support, will work on it.
 > 
-> Patch 2 v3.10+
+> How about the following?
 > 
-> Patch 3 v3.12+
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 5de4337..1a0eced 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1854,7 +1854,8 @@ static void __paginginit init_zone_allows_reclaim(int nid)
+>         int i;
+>  
+>         for_each_online_node(i)
+> -               if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+> +               if (node_distance(nid, i) <= RECLAIM_DISTANCE ||
+> +                                       !NODE_DATA(nid)->node_present_pages)
 
-You said [2-3/5] were cleanups, so why do you think they are -stable material?
+err s/nid/i/ above.
 
-> Patch 4/5 v3.13+
-
-OK
-
-What about the bug information?  Can you please point me to the e-mail threads
-where the bugs were discussed at least?
-
-Rafael
+-Nish
 
