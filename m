@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaBSHDk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 02:03:40 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55972 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaBSHDh (ORCPT
+	id S1751550AbaBSHGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 02:06:53 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:45236
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750940AbaBSHGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 02:03:37 -0500
-Message-ID: <530458A9.1090603@linux.vnet.ibm.com>
-Date: Wed, 19 Feb 2014 12:39:29 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 19 Feb 2014 02:06:51 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(z579eh551biz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 19 Feb 2014 15:06:32 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] ARM: dts: Enable SAI ALSA SoC DAI device for Vybrid
+ VF610 TOWER board.
+Message-ID: <20140219070630.GE3010@S2101-09.ap.freescale.net>
+References: <1392788323-6092-1-git-send-email-Li.Xiubo@freescale.com>
+ <1392788323-6092-3-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: Waiman Long <waiman.long@hp.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com> <20140218073111.GW27965@twins.programming.kicks-ass.net> <5303B4C4.2040907@hp.com> <20140218212827.GR14089@laptop.programming.kicks-ass.net> <5303FDEC.9060001@hp.com>
-In-Reply-To: <5303FDEC.9060001@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021907-1618-0000-0000-0000057A673D
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1392788323-6092-3-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 06:12 AM, Waiman Long wrote:
-> On 02/18/2014 04:28 PM, Peter Zijlstra wrote:
->> On Tue, Feb 18, 2014 at 02:30:12PM -0500, Waiman Long wrote:
->>> I will start looking at how to make it work with paravirt. Hopefully, it
->>> won't take too long.
->> The cheap way out is to simply switch to the test-and-set spinlock on
->> whatever X86_FEATURE_ indicates a guest I suppose.
->
-> I don't think there is X86_FEATURE flag that indicates running in a
-> guest. In fact, a guest should never find out if it is running virtualized.
->
-> After reading the current PV ticketlock implementation, I have a rough
-> idea of what I need to do to implement PV support in qspinlock. A large
-> portion of PV ticketlock code is find out the CPU number of the next one
-> to get the lock. The current qspinlock implementation has already
-> included CPU number of the previous member in the queue and it should be
-> pretty easy to store CPU number of the next one in the queue node
-> structure. These CPU numbers can then be supplied to the kick_cpu()
-> function to schedule in the require the CPU to make sure that progress
-> can be made.
+On Wed, Feb 19, 2014 at 01:38:41PM +0800, Xiubo Li wrote:
+> This patch adds and enables the SAI device.
+> 
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  arch/arm/boot/dts/vf610-twr.dts | 18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
+> index e3a3805..8217854 100644
+> --- a/arch/arm/boot/dts/vf610-twr.dts
+> +++ b/arch/arm/boot/dts/vf610-twr.dts
+> @@ -127,9 +127,27 @@
+>  				VF610_PAD_PTB5__UART1_RX		0x21a1
+>  			>;
+>  		};
+> +
+> +		pinctrl_sai2: sai2grp {
 
-That is correct.
-Strict serialization of the lock is usually a headache for virtualized
-guest (especially when overcommitted). I am eager to test the next
-version.
+To sort it alphabetically, the entry should be added before
+pinctrl_uart1.
+
+> +		      fsl,pins = <
+> +			      VF610_PAD_PTA16__SAI2_TX_BCLK   0x02ed
+> +			      VF610_PAD_PTA18__SAI2_TX_DATA   0x02ee
+> +			      VF610_PAD_PTA19__SAI2_TX_SYNC   0x02ed
+> +			      VF610_PAD_PTA21__SAI2_RX_BCLK   0x02ed
+> +			      VF610_PAD_PTA22__SAI2_RX_DATA   0x02ed
+> +			      VF610_PAD_PTA23__SAI2_RX_SYNC   0x02ed
+> +			      VF610_PAD_PTB18__EXT_AUDIO_MCLK 0x02ed
+
+Use tabs instead of spaces.
+
+Shawn
+
+> +			>;
+> +		};
+>  	};
+>  };
+>  
+> +&sai2 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&pinctrl_sai2>;
+> +	status = "okay";
+> +};
+> +
+>  &uart1 {
+>  	pinctrl-names = "default";
+>  	pinctrl-0 = <&pinctrl_uart1>;
+> -- 
+> 1.8.4
+> 
+> 
 
