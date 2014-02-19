@@ -1,82 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719AbaBSRsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 12:48:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45674 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968AbaBSRsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 12:48:13 -0500
-Date: Wed, 19 Feb 2014 18:47:45 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: akpm@linux-foundation.org, eparis@redhat.com, sgrubb@redhat.com,
-        peterz@infradead.org, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7][RFC] pid: changes to support audit
-Message-ID: <20140219174745.GA9784@redhat.com>
-References: <20131220140417.GE14884@madcap2.tricolour.ca> <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com> <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com> <20131217095801.GF21999@twins.programming.kicks-ass.net> <20131220044826.GF14944@madcap2.tricolour.ca> <20131220085846.GA21999@twins.programming.kicks-ass.net> <cover.1390495874.git.rgb@redhat.com> <20140219161858.GN16640@madcap2.tricolour.ca>
+	id S1754780AbaBSRud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 12:50:33 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43666 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510AbaBSRub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 12:50:31 -0500
+Date: Wed, 19 Feb 2014 09:49:41 -0800
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] mm: exclude memory less nodes from zone_reclaim
+Message-ID: <20140219174940.GF27108@linux.vnet.ibm.com>
+References: <20140219082313.GB14783@dhcp22.suse.cz>
+ <1392829383-4125-1-git-send-email-mhocko@suse.cz>
+ <20140219171628.GE27108@linux.vnet.ibm.com>
+ <20140219173259.GA5041@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140219161858.GN16640@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140219173259.GA5041@dhcp22.suse.cz>
+X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021917-6688-0000-0000-000006C3A5FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard,
+On 19.02.2014 [18:32:59 +0100], Michal Hocko wrote:
+> On Wed 19-02-14 09:16:28, Nishanth Aravamudan wrote:
+> > On 19.02.2014 [18:03:03 +0100], Michal Hocko wrote:
+> > > We had a report about strange OOM killer strikes on a PPC machine
+> > > although there was a lot of swap free and a tons of anonymous memory
+> > > which could be swapped out. In the end it turned out that the OOM was
+> > > a side effect of zone reclaim which wasn't doesn't unmap and swapp out
+> > > and so the system was pushed to the OOM. Although this sounds like a bug
+> > > somewhere in the kswapd vs. zone reclaim vs. direct reclaim interaction
+> > > numactl on the said hardware suggests that the zone reclaim should
+> > > have been set in the first place:
+> > > node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+> > > node 0 size: 0 MB
+> > > node 0 free: 0 MB
+> > > node 2 cpus:
+> > > node 2 size: 7168 MB
+> > > node 2 free: 6019 MB
+> > > node distances:
+> > > node   0   2
+> > > 0:  10  40
+> > > 2:  40  10
+> > > 
+> > > So all the CPUs are associated with Node0 which doesn't have any memory
+> > > while Node2 contains all the available memory. Node distances cause an
+> > > automatic zone_reclaim_mode enabling.
+> > > 
+> > > Zone reclaim is intended to keep the allocations local but this doesn't
+> > > make any sense on the memory less nodes. So let's exlcude such nodes
+> > > for init_zone_allows_reclaim which evaluates zone reclaim behavior and
+> > > suitable reclaim_nodes.
+> > > 
+> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > > ---
+> > > I haven't got to testing this so I am sending this as an RFC for now.
+> > > But does this look reasonable?
+> > > 
+> > >  mm/page_alloc.c | 5 +++--
+> > >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 3e953f07edb0..4a44bdc7a8cf 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -1855,7 +1855,7 @@ static void __paginginit init_zone_allows_reclaim(int nid)
+> > >  {
+> > >  	int i;
+> > > 
+> > > -	for_each_online_node(i)
+> > > +	for_each_node_state(i, N_HIGH_MEMORY)
+> > >  		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+> > >  			node_set(i, NODE_DATA(nid)->reclaim_nodes);
+> > >  		else
+> > > @@ -4901,7 +4901,8 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
+> > > 
+> > >  	pgdat->node_id = nid;
+> > >  	pgdat->node_start_pfn = node_start_pfn;
+> > > -	init_zone_allows_reclaim(nid);
+> > > +	if (node_state(nid, N_HIGH_MEMORY))
+> > > +		init_zone_allows_reclaim(nid);
+> > 
+> > I don't think this will work, because what sets N_HIGH_MEMORY (and
+> > shouldn't it be N_MEMORY?)
+> 
+> This should be the same thing AFAIU.
 
-I am sorry for delay, I'll try to review this series tomorrow.
+I don't think they are guaranteed to be? And, in any case, semantically,
+we care if a node has MEMORY, not if it has HIGH_MEMORY?
 
-But at first glance, can't you send 2/7 first and join 1/7 and 3/7?
+> > is check_for_memory() (free_area_init_nodes() for N_MEMORY), which is
+> > run *after* init_zone_allows_reclaim().
+> 
+> early_calculate_totalpages sets the memory state before we get here.
 
-And since you change is_global_init() perhaps you can also fix it?
-It actually needs tgid.
+Ah, I did not see this, thanks! But that does only
 
-On 02/19, Richard Guy Briggs wrote:
->
-> Andrew,
->
-> Are you willing to shepherd this patchset?
->
-> On 14/01/23, Richard Guy Briggs wrote:
-> > These are a number of patches inspired by ebiederman's container work that were
-> > included by me 2013-08-20 as the patchset:
-> > 	RFC: steps to make audit pid namespace-safe
-> >
-> > They have been seperated out for the pid maintainer since there are no direct
-> > dependencies from the audit pid namespace patchset with the exception of:
-> > 	pid: get pid_t ppid of task in init_pid_ns
-> >
-> > Andrew, are you willing to adopt these?
-> >
-> > In particular, there is discussion around read-only task_struct::pid here:
-> > 	https://lkml.org/lkml/2013/12/16/552
-> >
-> > Richard Guy Briggs (7):
-> >   pid: change task_struct::pid to read-only
-> >   compiler: CONST_CAST makes writing const vars easier and obvious
-> >   pid: use the CONST_CAST macro instead to write to const
-> >     task_struct::pid
-> >   pid: modify task_tgid_nr to work without task->tgid.
-> >   pid: rewrite task helper function is_global_init() avoiding task->pid
-> >   pid: mark struct task const in helper functions
-> >   pid: get pid_t ppid of task in init_pid_ns
-> >
-> >  arch/x86/kernel/process.c |    2 +-
-> >  fs/exec.c                 |    2 +-
-> >  include/linux/compiler.h  |    8 ++++++
-> >  include/linux/sched.h     |   60 +++++++++++++++++++++++++++++---------------
-> >  kernel/fork.c             |    5 ++-
-> >  kernel/pid.c              |    4 +-
-> >  6 files changed, 54 insertions(+), 27 deletions(-)
-> >
->
-> - RGB
->
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+                        node_set_state(nid, N_MEMORY);
+
+which to me means we should only rely on that being set in the
+afore-mentioned loop.
+
+> > Further, the for_each_node_state() loop doesn't make sense at this
+> > point, becuase we are actually setting up the nids as we go. So node
+> > 0, will only see node 0 in the N_HIGH_MEMORY mask (if any). Node 1,
+> > will only see nodes 0 and 1, etc.
+> 
+> I am not sure I understand what you are saying here. Why would se
+> consider distance to a memoryless node in the first place.
+> for_each_node_state just makes sure we are comparing only to a node
+> which has some memory.
+
+I apologize, I missed the call to early_calculate_totalpages(), so I was
+simply saying that looping over the N_MEMORY/N_HIGH_MEMORY mask wouldn't
+necessarily be right if we are setting up that mask on a node-by-node
+basis. But early_calculate_totalpages ensures the N_MEMORY iteration
+will be fine.
+
+> 
+> > I'm working on testing a patch that reorders some of this in hopefully a
+> > safe way.
+> 
+> Although it might make some sense to reorganize the code (it's a mess if
+> you ask me), but I do not think it is necessary.
+
+Agreed.
+
+Thanks,
+Nish
 
