@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaBSW4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 17:56:15 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:54460 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029AbaBSW4O (ORCPT
+	id S1751838AbaBSW40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 17:56:26 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:35940 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675AbaBSW4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 17:56:14 -0500
-Message-ID: <1392850749.22195.1.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH] target_core_alua: silence GCC warning
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        scsi <linux-scsi@vger.kernel.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 19 Feb 2014 14:59:09 -0800
-In-Reply-To: <1392804347.27558.20.camel@x220>
-References: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
-	 <1392803546.27558.16.camel@x220>
-	 <CAMuHMdXZrw7oU=n60+PNNQftU6Su=mBf2V75TCO8Ws1pS5z+6Q@mail.gmail.com>
-	 <1392804347.27558.20.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Feb 2014 17:56:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140219215805.GA1714@gmail.com>
+References: <1392741489-20097-1-git-send-email-linkinjeon@gmail.com>
+	<20140219215805.GA1714@gmail.com>
+Date: Thu, 20 Feb 2014 07:56:21 +0900
+Message-ID: <CAKYAXd_OhFBAt39Wf5XnOY4VhcNtQPCEV-OMYQcUd8j+LbF=9g@mail.gmail.com>
+Subject: Re: [PATCH v5 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Dongsu Park <dongsu.park@profitbricks.com>
+Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        lczerner@redhat.com, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-19 at 11:05 +0100, Paul Bolle wrote:
-> On Wed, 2014-02-19 at 10:59 +0100, Geert Uytterhoeven wrote:
-> > On Wed, Feb 19, 2014 at 10:52 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > > -               ret = core_alua_state_nonoptimized(cmd, cdb,
-> > > -                                       nonop_delay_msecs, &alua_ascq);
-> > > +               core_alua_state_nonoptimized(cmd, cdb, nonop_delay_msecs);
-> > 
-> > I suggest making core_alua_state_nonoptimized()  return void, too.
-> > Currently it always returns zero.
-> 
-> Good catch. Not sure how I missed that, since I deliberately ignore its
-> return value here.
-> 
-> I'll wait with sending a v2 until after Nicholas or the other target
-> developers have given their feedback.
-> 
-> 
-
-Hi Paul,
-
-The patch is fine with me..  Feel free to post a -v2.
-
-Thanks,
-
---nab
-
+2014-02-20 6:58 GMT+09:00, Dongsu Park <dongsu.park@profitbricks.com>:
+> Hi Namjae,
+> see below:
+Hi Dongsu.
+>
+> On 19.02.2014 01:38, Namjae Jeon wrote:
+>> This patch implements fallocate's FALLOC_FL_COLLAPSE_RANGE for Ext4.
+> ...<snip>...
+>> +	/*
+>> +	 * Don't start shifting extents until we make sure the hole is big
+>> +	 * enough to accomodate the shift.
+>> +	 */
+>> +	path = ext4_ext_find_extent(inode, start - 1, NULL, 0);
+>> +	depth = path->p_depth;
+>> +	extent =  path[depth].p_ext;
+>> +	ex_start = extent->ee_block;
+>> +	ex_end = extent->ee_block + ext4_ext_get_actual_len(extent);
+>> +	ext4_ext_drop_refs(path);
+>> +	kfree(path);
+>> +
+>> +	if ((start == ex_start && shift > ex_start) ||
+>> +	    (shift > start - ex_end)) {
+>
+> This line causes a compile error. So the fix would be like that:
+Oops.. I made a stupid mistake when creating the patch at dawn..
+Thanks for your pointing.
+>
+> -	    (shift > start - ex_end)) {
+> +	    (shift > start - ex_end))
+>
+>> +		return -EINVAL;
+>> +
+>> +	/* Its safe to start updating extents */
+Yes, Right.
+> ...<snip>...
+>
+> Apart from that, the whole patchset seems to work without error,
+> both on xfs and on ext4.
+> Of course I had to remove Lukas' patches before testing collapse-range.
+> So it would be excellent if two patch series could get somehow merged.
+>
+> Tested-by: Dongsu Park <dongsu.park@profitbricks.com>
+Thank you so much for your testing!
+>
+> Regards,
+> Dongsu
+>
