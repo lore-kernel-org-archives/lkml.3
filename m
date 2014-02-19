@@ -1,112 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757AbaBSS07 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 13:26:59 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51733 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532AbaBSS06 (ORCPT
+	id S1754802AbaBSS3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 13:29:04 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:59562 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407AbaBSS3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 13:26:58 -0500
-Message-ID: <5304F76C.1070500@intel.com>
-Date: Wed, 19 Feb 2014 10:26:52 -0800
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Feb 2014 13:29:02 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: dirk.j.brandewie@intel.com,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] intel_pstate updates for v3.14-rcX
-References: <1392228067-14817-1-git-send-email-dirk.j.brandewie@intel.com> <1862084.mmnlZ4yS6m@vostro.rjw.lan> <5303FC4E.7040305@gmail.com> <2254366.ixXkMqbYNC@vostro.rjw.lan>
-In-Reply-To: <2254366.ixXkMqbYNC@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AF74107@HASMSX106.ger.corp.intel.com>
+References: <20140218205925.11014.14973.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140218205946.11014.13654.stgit@bhelgaas-glaptop.roam.corp.google.com> <5B8DA87D05A7694D9FA63FD143655C1B1AF74107@HASMSX106.ger.corp.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 19 Feb 2014 11:28:39 -0700
+Message-ID: <CAErSpo4k9xhDr=NFQdVAvDBtJEMHTKbMqC58iDCVPH5C3tAq=Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] mei: Add include of <linux/irqreturn.h>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        Joerg Roedel <joro@8bytes.org>, "Dutt, Sudeep" <sudeep.dutt@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "Brown, Aaron F" <aaron.f.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 04:53 PM, Rafael J. Wysocki wrote:
-> On Tuesday, February 18, 2014 04:35:26 PM Dirk Brandewie wrote:
->> On 02/18/2014 04:43 PM, Rafael J. Wysocki wrote:
->>> On Tuesday, February 18, 2014 04:24:02 PM Dirk Brandewie wrote:
->>>> On Tuesday, February 18, 2014, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->>>>
->>>>> On Tuesday, February 18, 2014 03:53:48 PM Dirk Brandewie wrote:
->>>>>> On 02/18/2014 02:27 PM, Rafael J. Wysocki wrote:
->>>>>>> On Tuesday, February 18, 2014 12:29:54 PM Dirk Brandewie wrote:
->>>>>>>> Hi Rafael,
->>>>>>>
->>>>>>> Hi,
->>>>>>>
->>>>>>>> On 02/12/2014 10:01 AM, dirk.brandewie@gmail.com <javascript:;>wrote:
->>>>>>>>> From: Dirk Brandewie <dirk.j.brandewie@intel.com <javascript:;>>
->>>>>>>>>
->>>>>>>>> Based on v3.14-rc2
->>>>>>>>>
->>>>>>>>> Patch 1 removes energy reporting the patch from Maurizio Lambardi
->>>>>>>>>      intel_pstate: fix race condition in intel_pstate_init() can be
->>>>> dropped.
->>>>>>>>>
->>>>>>>>
->>>>>>>> Any reason why patches 2-5 did not make rc3 other than timing?
->>>>>>>>
->>>>>>>> Patches 2/3 can easily wait for v3.15.x
->>>>>>>>
->>>>>>>> Patches 4/5 fix bugs that are in the wild.
->>>>>>>
->>>>>>> I asked you about them, but you didn't reply:
->>>>>>>
->>>>>>> http://marc.info/?l=linux-pm&m=139225158531023&w=4
->>>>>>>
->>>>>>> Again, do patches [4-5/5] depend on [2-3/5]?
->>>>>>>
->>>>>>> If not, I can queue them up for -rc4.
->>>>>>
->>>>>> All the patches are independent of one another.
->>>>>>
->>>>>> Patch 2 is straight cleanup no functional change but reduces the memory
->>>>>> footprint slightly.
->>>>>>
->>>>>> Patch 3 is a bug that will only be seen when the PID is reset at init
->>>>> time
->>>>>> or when a change is made to PID params via debugfs.  The problem will
->>>>> only
->>>>>> exist for one sample time since it is setting last_err in the PID.
->>>>>>
->>>>>> Patch 4-5 are bugs found during Baytrail-T testing
->>>>>
->>>>> Are there any pointers to bug reports that may be included in the
->>>>> changelogs
->>>>> of these?
->>>>
->>>>
->>>> No.  I got the reports via email.  I could probably get the reporters to
->>>> file bugzillas.
->>>
->>> It would be good to add information about what machines are affected
->>> and what the user-visible problems are to the changelogs for future
->>> reference.
->>>
->>> And do we want these two patches in -stable?  If so, what -stable series should
->>> they go into?
+On Wed, Feb 19, 2014 at 1:29 AM, Winkler, Tomas <tomas.winkler@intel.com> wrote:
+>
+>
 >>
->> Patch 2 v3.10+
+>> We currently include <linux/irqreturn.h> in <linux/pci.h>, but I'm about to
+>> remove that from linux/pci.h, so add explicit includes where needed.
 >>
->> Patch 3 v3.12+
+>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>> ---
+>>  drivers/misc/mei/hw-me.h |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/misc/mei/hw-me.h b/drivers/misc/mei/hw-me.h
+>> index 80bd829fbd9a..893d5119fa9b 100644
+>> --- a/drivers/misc/mei/hw-me.h
+>> +++ b/drivers/misc/mei/hw-me.h
+>> @@ -20,6 +20,7 @@
+>>  #define _MEI_INTERFACE_H_
+>>
+>>  #include <linux/mei.h>
+>> +#include <linux/irqreturn.h>
+>>  #include "mei_dev.h"
+>>  #include "client.h"
 >
-> You said [2-3/5] were cleanups, so why do you think they are -stable material?
+>
+> Okay.
 
-I misspoke these are not stable material
+Thanks, I added this ack:
 
->
->> Patch 4/5 v3.13+
->
-> OK
->
-> What about the bug information?  Can you please point me to the e-mail threads
-> where the bugs were discussed at least?
->
-> Rafael
->
-
+Acked-by: Tomas Winkler <tomas.winkler@intel.com>
