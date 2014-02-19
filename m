@@ -1,69 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaBSOyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:54:31 -0500
-Received: from smtprelay0055.hostedemail.com ([216.40.44.55]:35449 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752376AbaBSOya (ORCPT
+	id S1753936AbaBSOzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:55:00 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:52753 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667AbaBSOy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:54:30 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,-8,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1719:1730:1747:1777:1792:2393:2525:2568:2628:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3865:3866:3867:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:5007:6119:7652:8599:9025:9388:9562:10004:10049:10400:10848:11257:11658:11914:12043:12379:12517:12519:12555:12679:13069:13072:13221:13229:13311:13357:13437:13846:13868:14094:14106,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fall54_613b5a9a8482e
-X-Filterd-Recvd-Size: 2155
-Message-ID: <1392821667.24844.10.camel@joe-AO722>
-Subject: [PATCH] MAINTAINERS: Update L: misuses
-From: Joe Perches <joe@perches.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Oliver Neukum <oliver@neukum.org>, Ali Akcaagac <aliakc@web.de>,
-        JamieLenehan <lenehan@twibble.org>
-Date: Wed, 19 Feb 2014 06:54:27 -0800
-In-Reply-To: <1392820997.24844.5.camel@joe-AO722>
-References: <1392805582.27558.30.camel@x220>
-	 <1392820997.24844.5.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Feb 2014 09:54:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392819290-1044-3-git-send-email-grant.likely@linaro.org>
+References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
+	<1392819290-1044-3-git-send-email-grant.likely@linaro.org>
+Date: Wed, 19 Feb 2014 08:54:57 -0600
+Message-ID: <CAL_JsqLbjK02Z1qzfP9K+Grp2WwAth8rMctK9myf8ZwJA6PUGQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/4] of: reimplement the matching method for __of_match_node()
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-L: lines are for the email addresses of traditional mailing lists.
-W: lines are for URLs.
+On Wed, Feb 19, 2014 at 8:14 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> From: Kevin Hao <haokexin@gmail.com>
+>
+> In the current implementation of __of_match_node(), it will compare
+> each given match entry against all the node's compatible strings
+> with of_device_is_compatible().
+>
+> To achieve multiple compatible strings per node with ordering from
+> specific to generic, this requires given matches to be ordered from
+> specific to generic. For most of the drivers this is not true and
+> also an alphabetical ordering is more sane there.
+>
+> Therefore, we define a following priority order for the match, and
+> then scan all the entries to find the best match.
+>   1. specific compatible && type && name
+>   2. specific compatible && type
+>   3. specific compatible && name
+>   4. specific compatible
+>   5. general compatible && type && name
+>   6. general compatible && type
+>   7. general compatible && name
+>   8. general compatible
+>   9. type && name
+>   10. type
+>   11. name
 
-Convert two L: misuses to W: links.
+While I agree this should be the right order, I worry that this may be
+changing the matching in some case as all previous attempts have done.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
----
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 60a5f85..adfbf3f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2625,9 +2625,9 @@ DC395x SCSI driver
- M:	Oliver Neukum <oliver@neukum.org>
- M:	Ali Akcaagac <aliakc@web.de>
- M:	Jamie Lenehan <lenehan@twibble.org>
--W:	http://twibble.org/dist/dc395x/
- L:	dc395x@twibble.org
--L:	http://lists.twibble.org/mailman/listinfo/dc395x/
-+W:	http://twibble.org/dist/dc395x/
-+W:	http://lists.twibble.org/mailman/listinfo/dc395x/
- S:	Maintained
- F:	Documentation/scsi/dc395x.txt
- F:	drivers/scsi/dc395x.*
-@@ -8465,8 +8465,8 @@ TARGET SUBSYSTEM
- M:	Nicholas A. Bellinger <nab@linux-iscsi.org>
- L:	linux-scsi@vger.kernel.org
- L:	target-devel@vger.kernel.org
--L:	http://groups.google.com/group/linux-iscsi-target-dev
- W:	http://www.linux-iscsi.org
-+W:	http://groups.google.com/group/linux-iscsi-target-dev
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
- S:	Supported
- F:	drivers/target/
+>
+> v4: Short-circuit failure cases instead of mucking with score, and
+>     remove extra __of_device_is_compatible() wrapper stub.
+>     Move scoring logic directly into __of_device_is_compatible()
+>
+> v3: Also need to bail out when there does have a compatible member in match
+>     entry, but it doesn't match with the device node's compatible.
+>
+> v2: Fix the bug such as we get the same score for the following two match
+>     entries with the empty node 'name2 { };'
+>         struct of_device_id matches[] = {
+>                 {.name = "name2", },
+>                 {.name = "name2", .type = "type1", },
+>                 {}
+>         };
+>
+> Signed-off-by: Kevin Hao <haokexin@gmail.com>
+> [grant.likely: added v4 changes]
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> ---
+>  drivers/of/base.c | 108 +++++++++++++++++++++++++++++++++++++-----------------
+>  1 file changed, 74 insertions(+), 34 deletions(-)
+>
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index ba195fbce4c6..30ffc291d0a0 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -342,27 +342,73 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
+>  }
+>  EXPORT_SYMBOL(of_get_cpu_node);
+>
+> -/** Checks if the given "compat" string matches one of the strings in
+> - * the device's "compatible" property
+> +/**
+> + * __of_device_is_compatible() - Check if the node matches given constraints
+> + * @device: pointer to node
+> + * @compat: required compatible string, NULL or "" for any match
+> + * @type: required device_type value, NULL or "" for any match
+> + * @name: required node name, NULL or "" for any match
+> + *
+> + * Checks if the given @compat, @type and @name strings match the
+> + * properties of the given @device. A constraints can be skipped by
+> + * passing NULL or an empty string as the constraint.
+> + *
+> + * Returns 0 for no match, and a positive integer on match. The return
+> + * value is a relative score with larger values indicating better
+> + * matches. The score is weighted for the most specific compatible value
+> + * to get the highest score. Matching type is next, followed by matching
+> + * name. Practically speaking, this results in the following priority
+> + * order for matches:
+> + *
+> + * 1. specific compatible && type && name
+> + * 2. specific compatible && type
+> + * 3. specific compatible && name
+> + * 4. specific compatible
+> + * 5. general compatible && type && name
+> + * 6. general compatible && type
+> + * 7. general compatible && name
+> + * 8. general compatible
+> + * 9. type && name
+> + * 10. type
+> + * 11. name
+>   */
+>  static int __of_device_is_compatible(const struct device_node *device,
+> -                                    const char *compat)
+> +                                    const char *compat, const char *type, const char *name)
+>  {
+>         const char* cp;
+> -       int cplen, l;
+> +       int cplen, l, index, score = 0;
+>
+> -       cp = __of_get_property(device, "compatible", &cplen);
+> -       if (cp == NULL)
+> -               return 0;
+> -       while (cplen > 0) {
+> -               if (of_compat_cmp(cp, compat, strlen(compat)) == 0)
+> -                       return 1;
+> -               l = strlen(cp) + 1;
+> -               cp += l;
+> -               cplen -= l;
+> +       /* Compatible match has highest priority */
+> +       if (compat && compat[0]) {
+> +               cp = __of_get_property(device, "compatible", &cplen);
+> +               if (!cp)
+> +                       return 0;
+> +               for (index = 0; cplen > 0; index++, cp += l, cplen -= l) {
+> +                       l = strlen(cp) + 1;
 
+This could use of_property_for_each_string.
 
+> +                       if (of_compat_cmp(cp, compat, strlen(compat)) == 0) {
+> +                               score = INT_MAX/2 - (index << 2);
+> +                               break;
+> +                       }
+> +               }
+> +               if (!score)
+> +                       return 0;
+>         }
+>
+> -       return 0;
+> +       /* Matching type is better than matching name */
+> +       if (type && type[0]) {
+> +               if (!device->type || of_node_cmp(type, device->type))
+> +                       return 0;
+> +               score += 2;
+> +       }
+> +
+> +       /* Matching name is a bit better than not */
+> +       if (name && name[0]) {
+> +               if (!device->name || of_node_cmp(name, device->name))
+> +                       return 0;
+> +               score++;
+> +       }
+> +
+> +       return score;
+>  }
+>
+>  /** Checks if the given "compat" string matches one of the strings in
+> @@ -375,7 +421,7 @@ int of_device_is_compatible(const struct device_node *device,
+>         int res;
+>
+>         raw_spin_lock_irqsave(&devtree_lock, flags);
+> -       res = __of_device_is_compatible(device, compat);
+> +       res = __of_device_is_compatible(device, compat, NULL, NULL);
+>         raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>         return res;
+>  }
+> @@ -681,10 +727,7 @@ struct device_node *of_find_compatible_node(struct device_node *from,
+>         raw_spin_lock_irqsave(&devtree_lock, flags);
+>         np = from ? from->allnext : of_allnodes;
+>         for (; np; np = np->allnext) {
+> -               if (type
+> -                   && !(np->type && (of_node_cmp(np->type, type) == 0)))
+> -                       continue;
+> -               if (__of_device_is_compatible(np, compatible) &&
+> +               if (__of_device_is_compatible(np, compatible, type, NULL) &&
+>                     of_node_get(np))
+>                         break;
+>         }
+> @@ -734,25 +777,22 @@ static
+>  const struct of_device_id *__of_match_node(const struct of_device_id *matches,
+>                                            const struct device_node *node)
+>  {
+> +       const struct of_device_id *best_match = NULL;
+> +       int score, best_score = 0;
+> +
+>         if (!matches)
+>                 return NULL;
+>
+> -       while (matches->name[0] || matches->type[0] || matches->compatible[0]) {
+> -               int match = 1;
+> -               if (matches->name[0])
+> -                       match &= node->name
+> -                               && !strcmp(matches->name, node->name);
+> -               if (matches->type[0])
+> -                       match &= node->type
+> -                               && !strcmp(matches->type, node->type);
+> -               if (matches->compatible[0])
+> -                       match &= __of_device_is_compatible(node,
+> -                                                          matches->compatible);
+> -               if (match)
+> -                       return matches;
+> -               matches++;
+> +       for (; matches->name[0] || matches->type[0] || matches->compatible[0]; matches++) {
+> +               score = __of_device_is_compatible(node, matches->compatible,
+> +                                                 matches->type, matches->name);
+> +               if (score > best_score) {
+> +                       best_match = matches;
+> +                       best_score = score;
+> +               }
+>         }
+> -       return NULL;
+> +
+> +       return best_match;
+>  }
+>
+>  /**
+> --
+> 1.8.3.2
+>
