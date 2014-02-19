@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaBSGmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 01:42:40 -0500
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:1059 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750843AbaBSGmj (ORCPT
+	id S1752074AbaBSGnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 01:43:12 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:21245
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750843AbaBSGnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 01:42:39 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0hALZRBFNbskPZ/2dsb2JhbABZKIJeOKkUmAYCAoEVF3SCJQEBBAEnExwjBQsIAw4KLjkeBhOHfQwBzScXjmQHhDgBA4lGhHqJbwGBMpBygzov
-Date: Wed, 19 Feb 2014 06:43:46 +0800
-From: Fabian Frederick <fabf@skynet.be>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] fs: xattr: Don't display attributes without read
- access
-Message-Id: <20140219064346.368926eb15e42d461720817c@skynet.be>
-In-Reply-To: <20140218151650.02fb2d6034deb2d3d11ccc7a@linux-foundation.org>
-References: <20140216203101.bf432a8b7b40703197a91462@skynet.be>
-	<20140218151650.02fb2d6034deb2d3d11ccc7a@linux-foundation.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Feb 2014 01:43:10 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <linux-arm-kernel@lists.infradead.org>, <shawn.guo@linaro.org>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH 0/4] Add audio card support for Vybird-TWR board
+Date: Wed, 19 Feb 2014 13:38:39 +0800
+Message-ID: <1392788323-6092-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Feb 2014 15:16:50 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> On Sun, 16 Feb 2014 20:31:01 +0800 Fabian Frederick <fabf@skynet.be> wrote:
-> 
-> > Any user can display extented attribute names without read
-> > access.
-> > 
-> > eg: attr -l <filename>
-> > 
-> > This patch checks inode_permission in listxattr common
-> > function before executing vfs_listxattr.
-> > 
-> > ...
-> >
-> > --- a/fs/xattr.c
-> > +++ b/fs/xattr.c
-> > @@ -543,6 +543,10 @@ listxattr(struct dentry *d, char __user *list, size_t size)
-> >  	char *klist = NULL;
-> >  	char *vlist = NULL;	/* If non-NULL, we used vmalloc() */
-> >  
-> > +	error = inode_permission(d->d_inode, MAY_READ);
-> > +	if (error)
-> > +		return error;
-> > +
-> >  	if (size) {
-> >  		if (size > XATTR_LIST_MAX)
-> >  			size = XATTR_LIST_MAX;
-> 
-> erk.  Doesn't this mean that if existing userspace is relying on the
-> current behaviour, this patch will cause breakage?
-> 
-IMHO userspace applications already receive weird results in that case.
+Add audio card support for Vybird-TWR board
 
-Without read permission, attr -l receives attribute names which means
-it tries lgetxattr on those attributes where result is EACCESS :
-"Attribute <attribute name> has -1 byte" !!!
 
-Besides, is it semantically correct for a user to have access to
- a part of "file content" without read access ?
- 
-With that patch, attr -l <filename> displays
+Xiubo Li (4):
+  ARM: dts: Add Freescale SAI ALSA SoC Digital Audio Interface node for
+    VF610.
+  ARM: dts: Enable SAI ALSA SoC DAI device for Vybrid VF610 TOWER board.
+  ARM: dts: Enable SGTL5000 codec based audio driver node for VF610
+    TOWER.
+  ARM: dts: Add simple-card support for Vybird-TWR board
 
-attr_list: Permission denied
-Could not list "(null)" for <filename>
+ arch/arm/boot/dts/vf610-twr.dts | 68 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/vf610.dtsi    |  3 ++
+ 2 files changed, 71 insertions(+)
 
-On the other hand, when stracing that situation, 
-I do see attr making more noise than usual ie it's opening all attr.mo 
-twice so I guess I should return something else than "permission denied" to avoid problems in userspace ...
+-- 
+1.8.4
 
-Fabian
 
