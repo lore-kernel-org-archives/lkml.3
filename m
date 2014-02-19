@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988AbaBSOPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:15:16 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:35783 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753926AbaBSOPE (ORCPT
+	id S1753972AbaBSOPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:15:13 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56255 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929AbaBSOPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:15:04 -0500
+	Wed, 19 Feb 2014 09:15:05 -0500
 From: Grant Likely <grant.likely@linaro.org>
 To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH v4 3/4] of: Move testcase FDT data into drivers/of
-Date: Wed, 19 Feb 2014 14:14:49 +0000
-Message-Id: <1392819290-1044-4-git-send-email-grant.likely@linaro.org>
+Subject: [PATCH v4 2/4] of: reimplement the matching method for __of_match_node()
+Date: Wed, 19 Feb 2014 14:14:48 +0000
+Message-Id: <1392819290-1044-3-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
 References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
@@ -22,294 +22,204 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The testcase data is usable by any platform. This patch moves it into
-the drivers/of directory so it can be included by any architecture.
+From: Kevin Hao <haokexin@gmail.com>
 
-Using the test cases requires manually adding #include <testcases.dtsi>
-to the end of the boards .dtsi file and enabling CONFIG_OF_SELFTEST. Not
-pretty though. A useful project would be to make the testcase code
-easier to execute.
+In the current implementation of __of_match_node(), it will compare
+each given match entry against all the node's compatible strings
+with of_device_is_compatible().
 
+To achieve multiple compatible strings per node with ordering from
+specific to generic, this requires given matches to be ordered from
+specific to generic. For most of the drivers this is not true and
+also an alphabetical ordering is more sane there.
+
+Therefore, we define a following priority order for the match, and
+then scan all the entries to find the best match.
+  1. specific compatible && type && name
+  2. specific compatible && type
+  3. specific compatible && name
+  4. specific compatible
+  5. general compatible && type && name
+  6. general compatible && type
+  7. general compatible && name
+  8. general compatible
+  9. type && name
+  10. type
+  11. name
+
+v4: Short-circuit failure cases instead of mucking with score, and
+    remove extra __of_device_is_compatible() wrapper stub.
+    Move scoring logic directly into __of_device_is_compatible()
+
+v3: Also need to bail out when there does have a compatible member in match
+    entry, but it doesn't match with the device node's compatible.
+
+v2: Fix the bug such as we get the same score for the following two match
+    entries with the empty node 'name2 { };'
+	struct of_device_id matches[] = {
+		{.name = "name2", },
+		{.name = "name2", .type = "type1", },
+		{}
+	};
+
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+[grant.likely: added v4 changes]
 Signed-off-by: Grant Likely <grant.likely@linaro.org>
 ---
- arch/arm/boot/dts/testcases/tests-interrupts.dtsi | 58 -----------------------
- arch/arm/boot/dts/testcases/tests-phandle.dtsi    | 39 ---------------
- arch/arm/boot/dts/testcases/tests.dtsi            |  2 -
- arch/arm/boot/dts/versatile-pb.dts                |  4 +-
- drivers/of/testcase-data/testcases.dtsi           |  2 +
- drivers/of/testcase-data/tests-interrupts.dtsi    | 58 +++++++++++++++++++++++
- drivers/of/testcase-data/tests-phandle.dtsi       | 39 +++++++++++++++
- scripts/Makefile.lib                              |  1 +
- 8 files changed, 102 insertions(+), 101 deletions(-)
- delete mode 100644 arch/arm/boot/dts/testcases/tests-interrupts.dtsi
- delete mode 100644 arch/arm/boot/dts/testcases/tests-phandle.dtsi
- delete mode 100644 arch/arm/boot/dts/testcases/tests.dtsi
- create mode 100644 drivers/of/testcase-data/testcases.dtsi
- create mode 100644 drivers/of/testcase-data/tests-interrupts.dtsi
- create mode 100644 drivers/of/testcase-data/tests-phandle.dtsi
+ drivers/of/base.c | 108 +++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 74 insertions(+), 34 deletions(-)
 
-diff --git a/arch/arm/boot/dts/testcases/tests-interrupts.dtsi b/arch/arm/boot/dts/testcases/tests-interrupts.dtsi
-deleted file mode 100644
-index c843720bd3e5..000000000000
---- a/arch/arm/boot/dts/testcases/tests-interrupts.dtsi
-+++ /dev/null
-@@ -1,58 +0,0 @@
--
--/ {
--	testcase-data {
--		interrupts {
--			#address-cells = <1>;
--			#size-cells = <1>;
--			test_intc0: intc0 {
--				interrupt-controller;
--				#interrupt-cells = <1>;
--			};
--
--			test_intc1: intc1 {
--				interrupt-controller;
--				#interrupt-cells = <3>;
--			};
--
--			test_intc2: intc2 {
--				interrupt-controller;
--				#interrupt-cells = <2>;
--			};
--
--			test_intmap0: intmap0 {
--				#interrupt-cells = <1>;
--				#address-cells = <0>;
--				interrupt-map = <1 &test_intc0 9>,
--						<2 &test_intc1 10 11 12>,
--						<3 &test_intc2 13 14>,
--						<4 &test_intc2 15 16>;
--			};
--
--			test_intmap1: intmap1 {
--				#interrupt-cells = <2>;
--				interrupt-map = <0x5000 1 2 &test_intc0 15>;
--			};
--
--			interrupts0 {
--				interrupt-parent = <&test_intc0>;
--				interrupts = <1>, <2>, <3>, <4>;
--			};
--
--			interrupts1 {
--				interrupt-parent = <&test_intmap0>;
--				interrupts = <1>, <2>, <3>, <4>;
--			};
--
--			interrupts-extended0 {
--				reg = <0x5000 0x100>;
--				interrupts-extended = <&test_intc0 1>,
--						      <&test_intc1 2 3 4>,
--						      <&test_intc2 5 6>,
--						      <&test_intmap0 1>,
--						      <&test_intmap0 2>,
--						      <&test_intmap0 3>,
--						      <&test_intmap1 1 2>;
--			};
--		};
--	};
--};
-diff --git a/arch/arm/boot/dts/testcases/tests-phandle.dtsi b/arch/arm/boot/dts/testcases/tests-phandle.dtsi
-deleted file mode 100644
-index 0007d3cd7dc2..000000000000
---- a/arch/arm/boot/dts/testcases/tests-phandle.dtsi
-+++ /dev/null
-@@ -1,39 +0,0 @@
--
--/ {
--	testcase-data {
--		phandle-tests {
--			provider0: provider0 {
--				#phandle-cells = <0>;
--			};
--
--			provider1: provider1 {
--				#phandle-cells = <1>;
--			};
--
--			provider2: provider2 {
--				#phandle-cells = <2>;
--			};
--
--			provider3: provider3 {
--				#phandle-cells = <3>;
--			};
--
--			consumer-a {
--				phandle-list =	<&provider1 1>,
--						<&provider2 2 0>,
--						<0>,
--						<&provider3 4 4 3>,
--						<&provider2 5 100>,
--						<&provider0>,
--						<&provider1 7>;
--				phandle-list-names = "first", "second", "third";
--
--				phandle-list-bad-phandle = <12345678 0 0>;
--				phandle-list-bad-args = <&provider2 1 0>,
--							<&provider3 0>;
--				empty-property;
--				unterminated-string = [40 41 42 43];
--			};
--		};
--	};
--};
-diff --git a/arch/arm/boot/dts/testcases/tests.dtsi b/arch/arm/boot/dts/testcases/tests.dtsi
-deleted file mode 100644
-index 3f123ecc9dd7..000000000000
---- a/arch/arm/boot/dts/testcases/tests.dtsi
-+++ /dev/null
-@@ -1,2 +0,0 @@
--/include/ "tests-phandle.dtsi"
--/include/ "tests-interrupts.dtsi"
-diff --git a/arch/arm/boot/dts/versatile-pb.dts b/arch/arm/boot/dts/versatile-pb.dts
-index f43907c40c93..65f657711323 100644
---- a/arch/arm/boot/dts/versatile-pb.dts
-+++ b/arch/arm/boot/dts/versatile-pb.dts
-@@ -1,4 +1,4 @@
--/include/ "versatile-ab.dts"
-+#include <versatile-ab.dts>
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index ba195fbce4c6..30ffc291d0a0 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -342,27 +342,73 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
+ }
+ EXPORT_SYMBOL(of_get_cpu_node);
  
- / {
- 	model = "ARM Versatile PB";
-@@ -47,4 +47,4 @@
- 	};
- };
+-/** Checks if the given "compat" string matches one of the strings in
+- * the device's "compatible" property
++/**
++ * __of_device_is_compatible() - Check if the node matches given constraints
++ * @device: pointer to node
++ * @compat: required compatible string, NULL or "" for any match
++ * @type: required device_type value, NULL or "" for any match
++ * @name: required node name, NULL or "" for any match
++ *
++ * Checks if the given @compat, @type and @name strings match the
++ * properties of the given @device. A constraints can be skipped by
++ * passing NULL or an empty string as the constraint.
++ *
++ * Returns 0 for no match, and a positive integer on match. The return
++ * value is a relative score with larger values indicating better
++ * matches. The score is weighted for the most specific compatible value
++ * to get the highest score. Matching type is next, followed by matching
++ * name. Practically speaking, this results in the following priority
++ * order for matches:
++ *
++ * 1. specific compatible && type && name
++ * 2. specific compatible && type
++ * 3. specific compatible && name
++ * 4. specific compatible
++ * 5. general compatible && type && name
++ * 6. general compatible && type
++ * 7. general compatible && name
++ * 8. general compatible
++ * 9. type && name
++ * 10. type
++ * 11. name
+  */
+ static int __of_device_is_compatible(const struct device_node *device,
+-				     const char *compat)
++				     const char *compat, const char *type, const char *name)
+ {
+ 	const char* cp;
+-	int cplen, l;
++	int cplen, l, index, score = 0;
  
--/include/ "testcases/tests.dtsi"
-+#include <testcases.dtsi>
-diff --git a/drivers/of/testcase-data/testcases.dtsi b/drivers/of/testcase-data/testcases.dtsi
-new file mode 100644
-index 000000000000..3cc2f55534ac
---- /dev/null
-+++ b/drivers/of/testcase-data/testcases.dtsi
-@@ -0,0 +1,2 @@
-+#include "tests-phandle.dtsi"
-+#include "tests-interrupts.dtsi"
-diff --git a/drivers/of/testcase-data/tests-interrupts.dtsi b/drivers/of/testcase-data/tests-interrupts.dtsi
-new file mode 100644
-index 000000000000..c843720bd3e5
---- /dev/null
-+++ b/drivers/of/testcase-data/tests-interrupts.dtsi
-@@ -0,0 +1,58 @@
-+
-+/ {
-+	testcase-data {
-+		interrupts {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			test_intc0: intc0 {
-+				interrupt-controller;
-+				#interrupt-cells = <1>;
-+			};
-+
-+			test_intc1: intc1 {
-+				interrupt-controller;
-+				#interrupt-cells = <3>;
-+			};
-+
-+			test_intc2: intc2 {
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
-+			};
-+
-+			test_intmap0: intmap0 {
-+				#interrupt-cells = <1>;
-+				#address-cells = <0>;
-+				interrupt-map = <1 &test_intc0 9>,
-+						<2 &test_intc1 10 11 12>,
-+						<3 &test_intc2 13 14>,
-+						<4 &test_intc2 15 16>;
-+			};
-+
-+			test_intmap1: intmap1 {
-+				#interrupt-cells = <2>;
-+				interrupt-map = <0x5000 1 2 &test_intc0 15>;
-+			};
-+
-+			interrupts0 {
-+				interrupt-parent = <&test_intc0>;
-+				interrupts = <1>, <2>, <3>, <4>;
-+			};
-+
-+			interrupts1 {
-+				interrupt-parent = <&test_intmap0>;
-+				interrupts = <1>, <2>, <3>, <4>;
-+			};
-+
-+			interrupts-extended0 {
-+				reg = <0x5000 0x100>;
-+				interrupts-extended = <&test_intc0 1>,
-+						      <&test_intc1 2 3 4>,
-+						      <&test_intc2 5 6>,
-+						      <&test_intmap0 1>,
-+						      <&test_intmap0 2>,
-+						      <&test_intmap0 3>,
-+						      <&test_intmap1 1 2>;
-+			};
-+		};
-+	};
-+};
-diff --git a/drivers/of/testcase-data/tests-phandle.dtsi b/drivers/of/testcase-data/tests-phandle.dtsi
-new file mode 100644
-index 000000000000..0007d3cd7dc2
---- /dev/null
-+++ b/drivers/of/testcase-data/tests-phandle.dtsi
-@@ -0,0 +1,39 @@
-+
-+/ {
-+	testcase-data {
-+		phandle-tests {
-+			provider0: provider0 {
-+				#phandle-cells = <0>;
-+			};
-+
-+			provider1: provider1 {
-+				#phandle-cells = <1>;
-+			};
-+
-+			provider2: provider2 {
-+				#phandle-cells = <2>;
-+			};
-+
-+			provider3: provider3 {
-+				#phandle-cells = <3>;
-+			};
-+
-+			consumer-a {
-+				phandle-list =	<&provider1 1>,
-+						<&provider2 2 0>,
-+						<0>,
-+						<&provider3 4 4 3>,
-+						<&provider2 5 100>,
-+						<&provider0>,
-+						<&provider1 7>;
-+				phandle-list-names = "first", "second", "third";
-+
-+				phandle-list-bad-phandle = <12345678 0 0>;
-+				phandle-list-bad-args = <&provider2 1 0>,
-+							<&provider3 0>;
-+				empty-property;
-+				unterminated-string = [40 41 42 43];
-+			};
-+		};
-+	};
-+};
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 49392ecbef17..79c059e70860 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -152,6 +152,7 @@ ld_flags       = $(LDFLAGS) $(ldflags-y)
- dtc_cpp_flags  = -Wp,-MD,$(depfile).pre.tmp -nostdinc                    \
- 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
- 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
-+		 -I$(srctree)/drivers/of/testcase-data                   \
- 		 -undef -D__DTS__
+-	cp = __of_get_property(device, "compatible", &cplen);
+-	if (cp == NULL)
+-		return 0;
+-	while (cplen > 0) {
+-		if (of_compat_cmp(cp, compat, strlen(compat)) == 0)
+-			return 1;
+-		l = strlen(cp) + 1;
+-		cp += l;
+-		cplen -= l;
++	/* Compatible match has highest priority */
++	if (compat && compat[0]) {
++		cp = __of_get_property(device, "compatible", &cplen);
++		if (!cp)
++			return 0;
++		for (index = 0; cplen > 0; index++, cp += l, cplen -= l) {
++			l = strlen(cp) + 1;
++			if (of_compat_cmp(cp, compat, strlen(compat)) == 0) {
++				score = INT_MAX/2 - (index << 2);
++				break;
++			}
++		}
++		if (!score)
++			return 0;
+ 	}
  
- # Finds the multi-part object the current object will be linked into
+-	return 0;
++	/* Matching type is better than matching name */
++	if (type && type[0]) {
++		if (!device->type || of_node_cmp(type, device->type))
++			return 0;
++		score += 2;
++	}
++
++	/* Matching name is a bit better than not */
++	if (name && name[0]) {
++		if (!device->name || of_node_cmp(name, device->name))
++			return 0;
++		score++;
++	}
++
++	return score;
+ }
+ 
+ /** Checks if the given "compat" string matches one of the strings in
+@@ -375,7 +421,7 @@ int of_device_is_compatible(const struct device_node *device,
+ 	int res;
+ 
+ 	raw_spin_lock_irqsave(&devtree_lock, flags);
+-	res = __of_device_is_compatible(device, compat);
++	res = __of_device_is_compatible(device, compat, NULL, NULL);
+ 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+ 	return res;
+ }
+@@ -681,10 +727,7 @@ struct device_node *of_find_compatible_node(struct device_node *from,
+ 	raw_spin_lock_irqsave(&devtree_lock, flags);
+ 	np = from ? from->allnext : of_allnodes;
+ 	for (; np; np = np->allnext) {
+-		if (type
+-		    && !(np->type && (of_node_cmp(np->type, type) == 0)))
+-			continue;
+-		if (__of_device_is_compatible(np, compatible) &&
++		if (__of_device_is_compatible(np, compatible, type, NULL) &&
+ 		    of_node_get(np))
+ 			break;
+ 	}
+@@ -734,25 +777,22 @@ static
+ const struct of_device_id *__of_match_node(const struct of_device_id *matches,
+ 					   const struct device_node *node)
+ {
++	const struct of_device_id *best_match = NULL;
++	int score, best_score = 0;
++
+ 	if (!matches)
+ 		return NULL;
+ 
+-	while (matches->name[0] || matches->type[0] || matches->compatible[0]) {
+-		int match = 1;
+-		if (matches->name[0])
+-			match &= node->name
+-				&& !strcmp(matches->name, node->name);
+-		if (matches->type[0])
+-			match &= node->type
+-				&& !strcmp(matches->type, node->type);
+-		if (matches->compatible[0])
+-			match &= __of_device_is_compatible(node,
+-							   matches->compatible);
+-		if (match)
+-			return matches;
+-		matches++;
++	for (; matches->name[0] || matches->type[0] || matches->compatible[0]; matches++) {
++		score = __of_device_is_compatible(node, matches->compatible,
++						  matches->type, matches->name);
++		if (score > best_score) {
++			best_match = matches;
++			best_score = score;
++		}
+ 	}
+-	return NULL;
++
++	return best_match;
+ }
+ 
+ /**
 -- 
 1.8.3.2
 
