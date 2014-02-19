@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915AbaBSTkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:40:45 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:38830 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127AbaBSTkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:40:43 -0500
-Date: Wed, 19 Feb 2014 20:40:39 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] mm: exclude memory less nodes from zone_reclaim
-Message-ID: <20140219194039.GA5825@dhcp22.suse.cz>
-References: <20140219082313.GB14783@dhcp22.suse.cz>
- <1392829383-4125-1-git-send-email-mhocko@suse.cz>
- <20140219171628.GE27108@linux.vnet.ibm.com>
- <20140219173259.GA5041@dhcp22.suse.cz>
- <20140219174940.GF27108@linux.vnet.ibm.com>
+	id S1755025AbaBSTlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:41:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60814 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754895AbaBSTlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 14:41:35 -0500
+Date: Wed, 19 Feb 2014 14:41:31 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: netdev@oss.sgi.com, davem@davemloft.net, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, Steve Grubb <sgrubb@redhat.com>
+Subject: Re: [PATCH 3/5] audit: add netlink audit protocol bind to check
+ capabilities on multicast join
+Message-ID: <20140219194131.GQ16640@madcap2.tricolour.ca>
+References: <cover.1392831003.git.rgb@redhat.com>
+ <2ead1dbcbb241075feafb2d88656b48761168491.1392831003.git.rgb@redhat.com>
+ <1392837336.2165.51.camel@flatline.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140219174940.GF27108@linux.vnet.ibm.com>
+In-Reply-To: <1392837336.2165.51.camel@flatline.rdu.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 19-02-14 09:49:41, Nishanth Aravamudan wrote:
-> On 19.02.2014 [18:32:59 +0100], Michal Hocko wrote:
-> > On Wed 19-02-14 09:16:28, Nishanth Aravamudan wrote:
-[...]
-> > > I don't think this will work, because what sets N_HIGH_MEMORY (and
-> > > shouldn't it be N_MEMORY?)
+On 14/02/19, Eric Paris wrote:
+> On Wed, 2014-02-19 at 13:08 -0500, Richard Guy Briggs wrote:
+> > Register a netlink per-protocol bind fuction for audit to check userspace
+> > process capabilities before allowing a multicast group connection.
 > > 
-> > This should be the same thing AFAIU.
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  kernel/audit.c |   10 ++++++++++
+> >  1 files changed, 10 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/audit.c b/kernel/audit.c
+> > index b5b2f72..f2d2d61 100644
+> > --- a/kernel/audit.c
+> > +++ b/kernel/audit.c
+> > @@ -1050,10 +1050,20 @@ static void audit_receive(struct sk_buff  *skb)
+> >  	mutex_unlock(&audit_cmd_mutex);
+> >  }
+> >  
+> > +/* Run custom bind function on netlink socket group connect or bind requests. */
+> > +static int audit_bind(int group)
+> > +{
+> > +	if (!capable(CAP_AUDIT_READ))
 > 
-> I don't think they are guaranteed to be? And, in any case, semantically,
-> we care if a node has MEMORY, not if it has HIGH_MEMORY?
+> Not a great idea to use CAP_AUDIT_READ before you define it in patch4
 
-I don't know. The whole MEMORY vs HIGH_MEMORY thing is really
-confusing. But my understanding was that HIGH_MEMORY is superset of the
-other one. But now that I look at the code again it seems that N_MEMORY
-is the right thing to use here. I will repost the patch tomorrow if
-other parts are good.
+<blush>
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+> > +		return -EPERM;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> >  static int __net_init audit_net_init(struct net *net)
+> >  {
+> >  	struct netlink_kernel_cfg cfg = {
+> >  		.input	= audit_receive,
+> > +		.bind	= audit_bind,
+> >  	};
+> >  
+> >  	struct audit_net *aunet = net_generic(net, audit_net_id);
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
