@@ -1,100 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355AbaBSPir (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:38:47 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50110 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754180AbaBSPip (ORCPT
+	id S1754381AbaBSPiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:38:52 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64171 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754360AbaBSPis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:38:45 -0500
-Message-ID: <5304D063.90000@oracle.com>
-Date: Wed, 19 Feb 2014 10:40:19 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Wed, 19 Feb 2014 10:38:48 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>,
+        Robert Moore <robert.moore@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@acpica.org
+Subject: Re: [RFC Patch v1 2/6] ACPI: rename acpi_evaluate_hotplug_ost to acpi_evaluate_ost for reuse
+Date: Wed, 19 Feb 2014 16:53:39 +0100
+Message-ID: <18853631.7tB2OTjZFf@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5304453F.1050104@linux.intel.com>
+References: <1392613271-10912-1-git-send-email-jiang.liu@linux.intel.com> <6382282.2gCVKeUJUt@vostro.rjw.lan> <5304453F.1050104@linux.intel.com>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] xen-pciback: Use pci_enable_msix_range() instead of pci_enable_msix()
-References: <1392804931-30671-10-git-send-email-agordeev@redhat.com> <5304CC49.7020000@oracle.com>
-In-Reply-To: <5304CC49.7020000@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 10:22 AM, Boris Ostrovsky wrote:
-> On 02/19/2014 05:15 AM, Alexander Gordeev wrote:
->> As result of deprecation of MSI-X/MSI enablement functions
->> pci_enable_msix() and pci_enable_msi_block() all drivers
->> using these two interfaces need to be updated to use the
->> new pci_enable_msi_range() and pci_enable_msix_range()
->> interfaces.
->>
->> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> Cc: David Vrabel <david.vrabel@citrix.com>
->> Cc: linux-pci@vger.kernel.org
->> ---
->>   drivers/xen/xen-pciback/pciback_ops.c |   16 ++++++++++------
->>   1 files changed, 10 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/xen/xen-pciback/pciback_ops.c 
->> b/drivers/xen/xen-pciback/pciback_ops.c
->> index 64eb0cd..f5b4c3e 100644
->> --- a/drivers/xen/xen-pciback/pciback_ops.c
->> +++ b/drivers/xen/xen-pciback/pciback_ops.c
->> @@ -213,9 +213,15 @@ int xen_pcibk_enable_msix(struct 
->> xen_pcibk_device *pdev,
->>           entries[i].vector = op->msix_entries[i].vector;
->>       }
->>   -    result = pci_enable_msix(dev, entries, op->value);
->> +    result = pci_enable_msix_range(dev, entries, op->value, op->value);
->> +    if (result < op->value) {
->
->
-> I think it would be better to have 'if (result != op->value)', in case 
-> op->value is negative (which presumably it should never be).
+On Wednesday, February 19, 2014 01:46:39 PM Jiang Liu wrote:
+> Hi Rafael,
+> 	We have following code to deal with existing users.
+> +#ifdef ACPI_HOTPLUG_OST
+> +#define	acpi_evaluate_hotplug_ost	acpi_evaluate_ost
 
+Well, I'd very much prefer the users to be updated.
 
-Better yet, at the top of the routine we check 'if (op->value > 
-SH_INFO_MAX_VEC)'. If you add '|| op->value < 0' we'd be all set.
+> +#else
+> +static inline acpi_status
+>  acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> -			u32 status_code, struct acpi_buffer *status_buf);
+> +			u32 status_code, struct acpi_buffer *status_buf)
+> +{ return AE_OK; }
+> +#endif
+> 
+> Thanks!
+> 
+> On 2014/2/18 9:06, Rafael J. Wysocki wrote:
+> > On Monday, February 17, 2014 01:02:49 PM Jiang Liu wrote:
+> >> Rename acpi_evaluate_hotplug_ost() to acpi_evaluate_ost() for later resue.
+> >>
+> >> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> >> ---
+> >>  drivers/acpi/utils.c    |   14 ++++----------
+> >>  include/acpi/acpi_bus.h |   10 +++++++++-
+> >>  2 files changed, 13 insertions(+), 11 deletions(-)
+> >>
+> >> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+> >> index 85e3b61..19d0169 100644
+> >> --- a/drivers/acpi/utils.c
+> >> +++ b/drivers/acpi/utils.c
+> >> @@ -433,17 +433,15 @@ EXPORT_SYMBOL(acpi_get_physical_device_location);
+> >>   * When the platform does not support _OST, this function has no effect.
+> >>   */
+> >>  acpi_status
+> >> -acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> >> -		u32 status_code, struct acpi_buffer *status_buf)
+> > 
+> > There are users of this, what about updating them?
+> > 
+> >> +acpi_evaluate_ost(acpi_handle handle, u32 source_event, u32 status_code,
+> >> +		  struct acpi_buffer *status_buf)
+> >>  {
+> >> -#ifdef ACPI_HOTPLUG_OST
+> >>  	union acpi_object params[3] = {
+> >>  		{.type = ACPI_TYPE_INTEGER,},
+> >>  		{.type = ACPI_TYPE_INTEGER,},
+> >>  		{.type = ACPI_TYPE_BUFFER,}
+> >>  	};
+> >>  	struct acpi_object_list arg_list = {3, params};
+> >> -	acpi_status status;
+> >>  
+> >>  	params[0].integer.value = source_event;
+> >>  	params[1].integer.value = status_code;
+> >> @@ -455,13 +453,9 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> >>  		params[2].buffer.length = 0;
+> >>  	}
+> >>  
+> >> -	status = acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
+> >> -	return status;
+> >> -#else
+> >> -	return AE_OK;
+> >> -#endif
+> >> +	return acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
+> >>  }
+> >> -EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
+> >> +EXPORT_SYMBOL(acpi_evaluate_ost);
+> >>  
+> >>  /**
+> >>   * acpi_handle_printk: Print message with ACPI prefix and object path
+> >> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> >> index 8256eb4..adef502 100644
+> >> --- a/include/acpi/acpi_bus.h
+> >> +++ b/include/acpi/acpi_bus.h
+> >> @@ -49,8 +49,16 @@ acpi_evaluate_reference(acpi_handle handle,
+> >>  			struct acpi_object_list *arguments,
+> >>  			struct acpi_handle_list *list);
+> >>  acpi_status
+> >> +acpi_evaluate_ost(acpi_handle handle, u32 source_event, u32 status_code,
+> >> +		  struct acpi_buffer *status_buf);
+> >> +#ifdef ACPI_HOTPLUG_OST
+> >> +#define	acpi_evaluate_hotplug_ost	acpi_evaluate_ost
+> >> +#else
+> >> +static inline acpi_status
+> >>  acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> >> -			u32 status_code, struct acpi_buffer *status_buf);
+> >> +			u32 status_code, struct acpi_buffer *status_buf)
+> >> +{ return AE_OK; }
+> >> +#endif
+> >>  
+> >>  acpi_status
+> >>  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
+> >>
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
--boris
-
->
->
-> -boris
->
->
->> +        if (result > 0)
->> +            pci_disable_msix(dev);
->>   -    if (result == 0) {
->> +        pr_warn_ratelimited("%s: error enabling MSI-X for guest %u: 
->> err %d!\n",
->> +                    pci_name(dev), pdev->xdev->otherend_id,
->> +                    result);
->> +    } else {
->>           for (i = 0; i < op->value; i++) {
->>               op->msix_entries[i].entry = entries[i].entry;
->>               if (entries[i].vector)
->> @@ -227,10 +233,8 @@ int xen_pcibk_enable_msix(struct 
->> xen_pcibk_device *pdev,
->>                           pci_name(dev), i,
->>                           op->msix_entries[i].vector);
->>           }
->> -    } else
->> -        pr_warn_ratelimited("%s: error enabling MSI-X for guest %u: 
->> err %d!\n",
->> -                    pci_name(dev), pdev->xdev->otherend_id,
->> -                    result);
->> +    }
->> +
->>       kfree(entries);
->>         op->value = result;
->
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
