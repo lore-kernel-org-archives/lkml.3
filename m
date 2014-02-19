@@ -1,81 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963AbaBSPRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:17:50 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:45360 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408AbaBSPRs (ORCPT
+	id S1754044AbaBSPTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:19:08 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16351 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751621AbaBSPTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:17:48 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-c2-5304cb194be6
-Message-id: <5304CB17.6060807@samsung.com>
-Date: Wed, 19 Feb 2014 16:17:43 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v3 15/15] mfd: max14577: Add device tree bindings document
-References: <1392627950-26927-1-git-send-email-k.kozlowski@samsung.com>
- <1392627950-26927-16-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1392627950-26927-16-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t/xa7pSp1mCDeZtYbTYOGM9q8XUh0/Y
-	LK5/ec5qMenJe2aL+UfOsVpMXDmZ2eL1C0OLs01v2C3ufz3KaLHp8TVWi8u75rBZrD1yl91i
-	6fWLTBa3G1ewWUyYvpbFonXvEXaL092sDoIea+atYfTYOesuu8fmFVoem1Z1snncubaHzWPe
-	yUCPzUvqPfq2rGL0+LxJLoAzissmJTUnsyy1SN8ugStj3cRvjAWf2CvWvJJsYLzC1sXIySEh
-	YCJx5t5LJghbTOLCvfVAcS4OIYGljBL7/l9kB0kICXxmlJhzLL2LkYODV0BL4tXHUJAwi4Cq
-	xOXLb8FK2ATUJD43PAKbKSoQIfF33npGEJtXQFDix+R7LCAzRQS2MklsuXODCcRhFvjOJHF+
-	7XsWkKHCAn4SDb8TIXa1MUoc3lYHYnMKeEq0NzWBLWAWsJZYOWkbI4QtL7F5zVvmCYwCs5Ds
-	mIWkbBaSsgWMzKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcxQqLs6w7GpcesDjEKcDAq8fB6
-	vGAOFmJNLCuuzD3EKMHBrCTCG7qMJViINyWxsiq1KD++qDQntfgQIxMHp1QDo+5pqZsv9A5s
-	yJt5888OK2Ee/dS3h1nfxCvwMHv4eb0/uXvO65oCnvCfz5iq1b4/7y9bWymf+WpqXdTUqaKM
-	piu1e58GlopN/bOE/8E/htDgM//uBx/6vbzLILNvW5/QZAmbtCmt0x58DN7YX3n8qm7eU6UH
-	WxvXx/yW2qrqt6XmfKTebybrfCWW4oxEQy3mouJEAAM3GzmQAgAA
+	Wed, 19 Feb 2014 10:19:05 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+ZPO1hUynnNmyrNs3vhBYg1XlQmhOwTng=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 8C62152CC31
+Date: Wed, 19 Feb 2014 10:18:46 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] irqchip: dove: drivers for v3.14
+Message-ID: <20140219151846.GH7862@titan.lakedaemon.net>
+References: <20131201172914.GV2879@titan.lakedaemon.net>
+ <20131211175037.GY10053@titan.lakedaemon.net>
+ <20140110183430.GO19878@titan.lakedaemon.net>
+ <20140128173531.GT29184@titan.lakedaemon.net>
+ <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
+ <20140204211219.GK8533@titan.lakedaemon.net>
+ <alpine.DEB.2.02.1402042230230.24986@ionos.tec.linutronix.de>
+ <20140207180836.GE8533@titan.lakedaemon.net>
+ <20140217193230.GW7862@titan.lakedaemon.net>
+ <alpine.DEB.2.02.1402182124480.4468@ionos.tec.linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402182124480.4468@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Thomas!  Hi!
 
-On 17.02.2014 10:05, Krzysztof Kozlowski wrote:
-> Add document describing device tree bindings for MAX14577 MFD
-> drivers: MFD core, extcon, regulator and charger.
->
-> Both MAX14577 and MAX77836 chipsets are documented.
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> ---
->   Documentation/devicetree/bindings/mfd/max14577.txt |  149 ++++++++++++++++++++
->   1 file changed, 149 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+On Tue, Feb 18, 2014 at 09:51:31PM +0100, Thomas Gleixner wrote:
+> On Mon, 17 Feb 2014, Jason Cooper wrote:
+> > On Fri, Feb 07, 2014 at 01:08:36PM -0500, Jason Cooper wrote:
+> > > On Tue, Feb 04, 2014 at 10:30:53PM +0100, Thomas Gleixner wrote:
+> > > > On Tue, 4 Feb 2014, Jason Cooper wrote:
+> > > > 
+> > > > > On Tue, Feb 04, 2014 at 07:59:58PM +0100, Thomas Gleixner wrote:
+> > > > > > On Tue, 28 Jan 2014, Jason Cooper wrote:
+> > > > > > > I see you pulled in mvebu/irqchip-fixes.  Thanks for that.  It's getting
+> > > > > > > near to the end of the merge window and there's been no activity on this
+> > > > > > > pull request.
+> > > > > > > 
+> > > > > > > Please let us know if there's anything we can do to assist.
+> > > > > > 
+> > > > > > Nah. I simply forgot about it. About to send a pull request to Linus.
+> > > > > 
+> > > > > hmmm.  I see the pull request contains the patches from
+> > > > > mvebu/irqchip-fixes (armada), but not the patches from mvebu/irqchip
+> > > > > (dove):
+> > > > > 
+> > > > >   40b367d95fb3 irqchip: irq-dove: Add PMU interrupt controller.
+> > > > > 
+> > > > > which is what this thread was originally a pull request for.
+> > > > > 
+> > > > > 
+> > > > > Are you planning to send a second pull request to Linus?
+> > > > 
+> > > > Duh. I'll pick that up tomorrow
+> > > 
+> > > Ping?
+> > 
+> > I think it's safe to say that the Dove PMU interrupt controller isn't
+> > going to make it in to v3.14.  I've posted a patch to remove the DT node
+> > for v3.14.
+> 
+> Yes, sorry. I messed that one up.
 
-OK, so the "maxim,max14577" compatible string somehow showed up in the 
-kernel without any documentation, interesting...
+No problem, I just wasn't sure how hard to push and didn't want to be a
+d*ck.
 
-Anyway:
+> > If you don't mind, I'll go ahead and take this pull request through the
+> > mvebu tree for v3.15.  So that way it's off your plate and you don't
+> > have to worry about it.
+> 
+> I pushed it out to tip/irq/core now.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Ok, great!
 
-Best regards,
-Tomasz
+> > There's more mvebu irqchip stuff on the way :)
+> 
+> You have an entry in my mail filter rules now, so you'll end up in the
+> priority queue with your pull requests :)
+
+Ahhh... That's the magic sauce. :)
+
+> Btw, I just looked at that dove driver and if you look at the other
+> drivers/irqchip variants which use the generic irq domain/chip stuff,
+> then the code in the init functions +/- some minimalistic fixes is
+> just the same boiler plate except for quirks or a few register writes.
+
+Yes, thanks for not insisting on this cleanup/consolidation right now.
+:)  In this window we're currently adding three new SoCs to mach-mvebu
+(Armada 375, 380, and 385), the associated drivers, and we're finally
+migrating the DT enabled kirkwood from mach-kirkwood into mach-mvebu.
+And it looks like mach-dove might be ready to migrate in as well this
+window.
+
+Once the dust settles next window, I'll keep this consolidation on our
+radar.  We've already done the same for other drivers (watchdog jumps
+out).
+
+thx,
+
+Jason.
