@@ -1,337 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbaBSQ22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:28:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35023 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369AbaBSQ2Z (ORCPT
+	id S1754517AbaBSQ3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:29:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56621 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395AbaBSQ21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:28:25 -0500
-Date: Wed, 19 Feb 2014 17:28:19 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Drew Richardson <drew.richardson@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo <acme@redhat.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Wade Cherry <Wade.Cherry@arm.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: Perf Oops on 3.14-rc2
-Message-ID: <20140219162819.GP15586@twins.programming.kicks-ass.net>
-References: <20140210221758.GB11542@dreric01-Precision-T1600>
- <20140218101831.GB4178@mudshark.cambridge.arm.com>
+	Wed, 19 Feb 2014 11:28:27 -0500
+Date: Wed, 19 Feb 2014 08:27:41 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-a92444c6b2225a9115d661c950cb48a22aeace20@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        linux@arm.linux.org.uk, peterz@infradead.org, chris@printf.net,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, chris@printf.net, peterz@infradead.org,
+        tglx@linutronix.de
+In-Reply-To: <20140215003823.772565780@linutronix.de>
+References: <20140215003823.772565780@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Provide irq_wake_thread()
+Git-Commit-ID: a92444c6b2225a9115d661c950cb48a22aeace20
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140218101831.GB4178@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 10:18:31AM +0000, Will Deacon wrote:
-> On Mon, Feb 10, 2014 at 10:17:59PM +0000, Drew Richardson wrote:
-> > While adding CPU on/offlining support during perf captures I get an
-> > Oops both on ARM as well as my desktop x86_64. Below is a small
-> > program that duplicates the issue.
-> 
-> [...]
-> 
-> FWIW I can reproduce this easily with -rc3 on my x86 laptop running
-> hackbench in parallel with a tweaked version of your test (using
-> _SC_NPROCESSORS_ONLN instead of _SC_NPROCESSORS_CONF and hotplugging off
-> both CPU2 and CPU3).
-> 
+Commit-ID:  a92444c6b2225a9115d661c950cb48a22aeace20
+Gitweb:     http://git.kernel.org/tip/a92444c6b2225a9115d661c950cb48a22aeace20
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Sat, 15 Feb 2014 00:55:19 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 19 Feb 2014 17:22:44 +0100
 
-OK; found it, or at least, I stopped being able to make my box explode.
+genirq: Provide irq_wake_thread()
 
-Drew, can you try the below and confirm? Its still got all the debug goo
-in too, but *shees* took me long enough.
+In course of the sdhci/sdio discussion with Russell about killing the
+sdio kthread hackery we discovered the need to be able to wake an
+interrupt thread from software.
 
-Stephane, there's two task_function_call()s in the CGROUP_PERF code that
-don't check return codes; can you please audit those?
+The rationale for this is, that sdio hardware can lack proper
+interrupt support for certain features. So the driver needs to poll
+the status registers, but at the same time it needs to be woken up by
+an hardware interrupt.
+
+To be able to get rid of the home brewn kthread construct of sdio we
+need a way to wake an irq thread independent of an actual hardware
+interrupt.
+
+Provide an irq_wake_thread() function which wakes up the thread which
+is associated to a given dev_id. This allows sdio to invoke the irq
+thread from the hardware irq handler via the IRQ_WAKE_THREAD return
+value and provides a possibility to wake it via a timer for the
+polling scenarios. That allows to simplify the sdio logic
+significantly.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Chris Ball <chris@printf.net>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140215003823.772565780@linutronix.de
 
 ---
- kernel/events/core.c | 128 ++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 101 insertions(+), 27 deletions(-)
+ include/linux/interrupt.h |  1 +
+ kernel/irq/handle.c       |  4 ++--
+ kernel/irq/internals.h    |  1 +
+ kernel/irq/manage.c       | 27 +++++++++++++++++++++++++++
+ 4 files changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2067cbb378eb..7c378fc21bff 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -78,7 +78,7 @@ static void remote_function(void *data)
-  *	    -ESRCH  - when the process isn't running
-  *	    -EAGAIN - when the process moved away
-  */
--static int
-+static int __must_check
- task_function_call(struct task_struct *p, int (*func) (void *info), void *info)
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index a2678d3..c7bfac1 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -188,6 +188,7 @@ extern void disable_irq(unsigned int irq);
+ extern void disable_percpu_irq(unsigned int irq);
+ extern void enable_irq(unsigned int irq);
+ extern void enable_percpu_irq(unsigned int irq, unsigned int type);
++extern void irq_wake_thread(unsigned int irq, void *dev_id);
+ 
+ /* The following three functions are for the core kernel use only. */
+ extern void suspend_device_irqs(void);
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index 131ca17..bfec453 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -51,7 +51,7 @@ static void warn_no_thread(unsigned int irq, struct irqaction *action)
+ 	       "but no thread function available.", irq, action->name);
+ }
+ 
+-static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
++void __irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
  {
- 	struct remote_function_call data = {
-@@ -103,7 +103,8 @@ task_function_call(struct task_struct *p, int (*func) (void *info), void *info)
-  *
-  * returns: @func return value or -ENXIO when the cpu is offline
-  */
--static int cpu_function_call(int cpu, int (*func) (void *info), void *info)
-+static int __must_check
-+cpu_function_call(int cpu, int (*func) (void *info), void *info)
- {
- 	struct remote_function_call data = {
- 		.p	= NULL,
-@@ -1500,14 +1501,23 @@ static void perf_remove_from_context(struct perf_event *event)
- 
- 	if (!task) {
- 		/*
--		 * Per cpu events are removed via an smp call and
--		 * the removal is always successful.
-+		 * Per cpu events are removed via an smp call.
- 		 */
--		cpu_function_call(event->cpu, __perf_remove_from_context, event);
-+retry1:
-+		if (!cpu_function_call(event->cpu, __perf_remove_from_context, event))
-+			return;
-+
-+		raw_spin_lock_irq(&ctx->lock);
-+		if (ctx->is_active) {
-+			raw_spin_unlock_irq(&ctx->lock);
-+			goto retry1;
-+		}
-+		list_del_event(event, ctx);
-+		raw_spin_unlock_irq(&ctx->lock);
- 		return;
- 	}
- 
--retry:
-+retry2:
- 	if (!task_function_call(task, __perf_remove_from_context, event))
- 		return;
- 
-@@ -1518,7 +1528,7 @@ static void perf_remove_from_context(struct perf_event *event)
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
--		goto retry;
-+		goto retry2;
- 	}
- 
  	/*
-@@ -1592,11 +1602,24 @@ void perf_event_disable(struct perf_event *event)
- 		/*
- 		 * Disable the event on the cpu that it's on
- 		 */
--		cpu_function_call(event->cpu, __perf_event_disable, event);
-+retry1:
-+		if (!cpu_function_call(event->cpu, __perf_event_disable, event))
-+			return;
-+
-+		raw_spin_lock_irq(&ctx->lock);
-+		if (event->state == PERF_EVENT_STATE_ACTIVE) {
-+			raw_spin_unlock_irq(&ctx->lock);
-+			goto retry1;
-+		}
-+		if (event->state == PERF_EVENT_STATE_INACTIVE) {
-+			update_group_times(event);
-+			event->state = PERF_EVENT_STATE_OFF;
-+		}
-+		raw_spin_unlock_irq(&ctx->lock);
- 		return;
- 	}
+ 	 * In case the thread crashed and was killed we just pretend that
+@@ -157,7 +157,7 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ 				break;
+ 			}
  
--retry:
-+retry2:
- 	if (!task_function_call(task, __perf_event_disable, event))
- 		return;
+-			irq_wake_thread(desc, action);
++			__irq_wake_thread(desc, action);
  
-@@ -1611,7 +1634,7 @@ void perf_event_disable(struct perf_event *event)
- 		 * a concurrent perf_event_context_sched_out().
- 		 */
- 		task = ctx->task;
--		goto retry;
-+		goto retry2;
- 	}
+ 			/* Fall through to add to randomness */
+ 		case IRQ_HANDLED:
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index 001fa5b..d61ac29 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -82,6 +82,7 @@ irqreturn_t handle_irq_event(struct irq_desc *desc);
+ /* Resending of interrupts :*/
+ void check_irq_resend(struct irq_desc *desc, unsigned int irq);
+ bool irq_wait_for_poll(struct irq_desc *desc);
++void __irq_wake_thread(struct irq_desc *desc, struct irqaction *action);
  
- 	/*
-@@ -1939,14 +1962,22 @@ perf_install_in_context(struct perf_event_context *ctx,
- 
- 	if (!task) {
- 		/*
--		 * Per cpu events are installed via an smp call and
--		 * the install is always successful.
-+		 * Per cpu events are installed via an smp call.
- 		 */
--		cpu_function_call(cpu, __perf_install_in_context, event);
-+retry1:
-+		if (!cpu_function_call(cpu, __perf_install_in_context, event))
-+			return;
-+		raw_spin_lock_irq(&ctx->lock);
-+		if (ctx->is_active) {
-+			raw_spin_unlock_irq(&ctx->lock);
-+			goto retry1;
-+		}
-+		add_event_to_ctx(event, ctx);
-+		raw_spin_unlock_irq(&ctx->lock);
- 		return;
- 	}
- 
--retry:
-+retry2:
- 	if (!task_function_call(task, __perf_install_in_context, event))
- 		return;
- 
-@@ -1957,7 +1988,7 @@ perf_install_in_context(struct perf_event_context *ctx,
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
--		goto retry;
-+		goto retry2;
- 	}
- 
- 	/*
-@@ -2086,7 +2117,15 @@ void perf_event_enable(struct perf_event *event)
- 		/*
- 		 * Enable the event on the cpu that it's on
- 		 */
--		cpu_function_call(event->cpu, __perf_event_enable, event);
-+retry1:
-+		if (!cpu_function_call(event->cpu, __perf_event_enable, event))
-+			return;
-+		raw_spin_lock_irq(&ctx->lock);
-+		if (ctx->is_active && event->state == PERF_EVENT_STATE_OFF) {
-+			raw_spin_unlock_irq(&ctx->lock);
-+			goto retry1;
-+		}
-+		raw_spin_unlock_irq(&ctx->lock);
- 		return;
- 	}
- 
-@@ -2104,7 +2143,7 @@ void perf_event_enable(struct perf_event *event)
- 	if (event->state == PERF_EVENT_STATE_ERROR)
- 		event->state = PERF_EVENT_STATE_OFF;
- 
--retry:
-+retry2:
- 	if (!ctx->is_active) {
- 		__perf_event_mark_enabled(event);
- 		goto out;
-@@ -2127,7 +2166,7 @@ void perf_event_enable(struct perf_event *event)
- 		 * perf_event_context_sched_out()
- 		 */
- 		task = ctx->task;
--		goto retry;
-+		goto retry2;
- 	}
- 
- out:
-@@ -3243,6 +3282,7 @@ static void __free_event(struct perf_event *event)
- 
- 	call_rcu(&event->rcu_head, free_event_rcu);
- }
-+
- static void free_event(struct perf_event *event)
- {
- 	irq_work_sync(&event->pending);
-@@ -3271,6 +3311,8 @@ static void free_event(struct perf_event *event)
- 	if (is_cgroup_event(event))
- 		perf_detach_cgroup(event);
- 
-+	printk("destroying event (%p) : %d:%lx for cpu: %d\n",
-+			event, event->attr.type, event->attr.config, event->cpu);
- 
- 	__free_event(event);
- }
-@@ -4831,6 +4873,28 @@ perf_event_aux_ctx(struct perf_event_context *ctx,
- 	struct perf_event *event;
- 
- 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
-+		if (!event) {
-+			struct perf_event *tmp;
-+			printk("on cpu: %d, %p:(%p,%p)\n", smp_processor_id(),
-+					&ctx->event_list,
-+					ctx->event_list.prev,
-+					ctx->event_list.next);
-+
-+			tmp = ctx->event_list.next;
-+			while (tmp) {
-+				printk("%02d: event(%p): %d:%lx %d %d\n", 
-+						smp_processor_id(), tmp, 
-+						tmp ? tmp->attr.type : -1, 
-+						tmp ? tmp->attr.config : 0,
-+						tmp ? tmp->state : 0,
-+						tmp ? tmp->cpu : 0);
-+				printk("%02d:  ->next (%p)\n", 
-+						smp_processor_id(),
-+						tmp->event_entry.next);
-+				tmp = tmp->event_entry.next;
-+			}
-+		}
-+
- 		if (event->state < PERF_EVENT_STATE_INACTIVE)
- 			continue;
- 		if (!event_filter_match(event))
-@@ -6722,6 +6786,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 
- 	event->state		= PERF_EVENT_STATE_INACTIVE;
- 
-+	printk("creating event (%p) : %d:%lx for cpu: %d\n",
-+			event, attr->type, attr->config, cpu);
-+
- 	if (task) {
- 		event->attach_state = PERF_ATTACH_TASK;
- 
-@@ -7869,29 +7936,35 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
- 
- static void __perf_event_exit_context(void *__info)
- {
--	struct perf_event_context *ctx = __info;
--	struct perf_event *event, *tmp;
-+	struct perf_cpu_context *cpuctx = __info;
-+	struct perf_event_context *ctx = &cpuctx->ctx;
-+	struct perf_event *event;
- 
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
--	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
--		__perf_remove_from_context(event);
--	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
--		__perf_remove_from_context(event);
-+	raw_spin_lock(&ctx->lock);
-+	ctx_sched_out(ctx, cpuctx, EVENT_ALL);
-+
-+	list_for_each_entry(event, &ctx->event_list, event_entry)
-+		event->state = PERF_EVENT_STATE_off;
-+
-+	raw_spin_unlock(&ctx->lock);
+ #ifdef CONFIG_PROC_FS
+ extern void register_irq_proc(unsigned int irq, struct irq_desc *desc);
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 274ba92..54eb5c9 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -911,6 +911,33 @@ static int irq_thread(void *data)
+ 	return 0;
  }
  
- static void perf_event_exit_cpu_context(int cpu)
- {
-+	struct perf_cpu_context *cpuctx;
- 	struct perf_event_context *ctx;
- 	struct pmu *pmu;
- 	int idx;
- 
- 	idx = srcu_read_lock(&pmus_srcu);
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
--		ctx = &per_cpu_ptr(pmu->pmu_cpu_context, cpu)->ctx;
-+		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
-+		ctx = &cpuctx->ctx;
- 
- 		mutex_lock(&ctx->mutex);
--		smp_call_function_single(cpu, __perf_event_exit_context, ctx, 1);
-+		smp_call_function_single(cpu, __perf_event_exit_context, cpuctx, 1);
- 		mutex_unlock(&ctx->mutex);
- 	}
- 	srcu_read_unlock(&pmus_srcu, idx);
-@@ -7901,11 +7974,12 @@ static void perf_event_exit_cpu(int cpu)
- {
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
-+	perf_event_exit_cpu_context(cpu);
++/**
++ *	irq_wake_thread - wake the irq thread for the action identified by dev_id
++ *	@irq:		Interrupt line
++ *	@dev_id:	Device identity for which the thread should be woken
++ *
++ */
++void irq_wake_thread(unsigned int irq, void *dev_id)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct irqaction *action;
++	unsigned long flags;
 +
- 	mutex_lock(&swhash->hlist_mutex);
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
- 
--	perf_event_exit_cpu_context(cpu);
- }
- #else
- static inline void perf_event_exit_cpu(int cpu) { }
++	if (!desc || WARN_ON(irq_settings_is_per_cpu_devid(desc)))
++		return;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	for (action = desc->action; action; action = action->next) {
++		if (action->dev_id == dev_id) {
++			if (action->thread)
++				__irq_wake_thread(desc, action);
++			break;
++		}
++	}
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++}
++EXPORT_SYMBOL_GPL(irq_wake_thread);
++
+ static void irq_setup_forced_threading(struct irqaction *new)
+ {
+ 	if (!force_irqthreads)
