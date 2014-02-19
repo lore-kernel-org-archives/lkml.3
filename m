@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032AbaBSPQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:16:32 -0500
-Received: from sauhun.de ([89.238.76.85]:49910 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752AbaBSPQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:16:30 -0500
-Date: Wed, 19 Feb 2014 16:16:26 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rui Wang <ruiv.wang@gmail.com>
-Subject: Re: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
-Message-ID: <20140219151626.GA13973@katana>
-References: <cover.1387588711.git.luto@amacapital.net>
- <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-In-Reply-To: <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753963AbaBSPRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:17:50 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:45360 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408AbaBSPRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 10:17:48 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-c2-5304cb194be6
+Message-id: <5304CB17.6060807@samsung.com>
+Date: Wed, 19 Feb 2014 16:17:43 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v3 15/15] mfd: max14577: Add device tree bindings document
+References: <1392627950-26927-1-git-send-email-k.kozlowski@samsung.com>
+ <1392627950-26927-16-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1392627950-26927-16-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t/xa7pSp1mCDeZtYbTYOGM9q8XUh0/Y
+	LK5/ec5qMenJe2aL+UfOsVpMXDmZ2eL1C0OLs01v2C3ufz3KaLHp8TVWi8u75rBZrD1yl91i
+	6fWLTBa3G1ewWUyYvpbFonXvEXaL092sDoIea+atYfTYOesuu8fmFVoem1Z1snncubaHzWPe
+	yUCPzUvqPfq2rGL0+LxJLoAzissmJTUnsyy1SN8ugStj3cRvjAWf2CvWvJJsYLzC1sXIySEh
+	YCJx5t5LJghbTOLCvfVAcS4OIYGljBL7/l9kB0kICXxmlJhzLL2LkYODV0BL4tXHUJAwi4Cq
+	xOXLb8FK2ATUJD43PAKbKSoQIfF33npGEJtXQFDix+R7LCAzRQS2MklsuXODCcRhFvjOJHF+
+	7XsWkKHCAn4SDb8TIXa1MUoc3lYHYnMKeEq0NzWBLWAWsJZYOWkbI4QtL7F5zVvmCYwCs5Ds
+	mIWkbBaSsgWMzKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcxQqLs6w7GpcesDjEKcDAq8fB6
+	vGAOFmJNLCuuzD3EKMHBrCTCG7qMJViINyWxsiq1KD++qDQntfgQIxMHp1QDo+5pqZsv9A5s
+	yJt5888OK2Ee/dS3h1nfxCvwMHv4eb0/uXvO65oCnvCfz5iq1b4/7y9bWymf+WpqXdTUqaKM
+	piu1e58GlopN/bOE/8E/htDgM//uBx/6vbzLILNvW5/QZAmbtCmt0x58DN7YX3n8qm7eU6UH
+	WxvXx/yW2qrqt6XmfKTebybrfCWW4oxEQy3mouJEAAM3GzmQAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 17.02.2014 10:05, Krzysztof Kozlowski wrote:
+> Add document describing device tree bindings for MAX14577 MFD
+> drivers: MFD core, extcon, regulator and charger.
+>
+> Both MAX14577 and MAX77836 chipsets are documented.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Tomasz Figa <t.figa@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> ---
+>   Documentation/devicetree/bindings/mfd/max14577.txt |  149 ++++++++++++++++++++
+>   1 file changed, 149 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
 
-On Fri, Dec 20, 2013 at 05:45:13PM -0800, Andy Lutomirski wrote:
-> Add i2c_scan_dimm_bus to declare that a particular i2c_adapter
-> contains DIMMs.  This will probe (and autoload modules!) for useful
-> SMBUS devices that live on DIMMs.  i2c_imc calls it.
+OK, so the "maxim,max14577" compatible string somehow showed up in the 
+kernel without any documentation, interesting...
 
-Hmm, after thinking about it for a while and a couple of times, I get
-the impression that the functionality of i2c_scan_dimm_bus() should
-better be in userspace, i.e. a udev helper. I could imagine introducing
-a new functionality macro I2C_FUNC_DIMM_BUS which can be detected in
-userspace via i2c-dev. Based on that, the helper can do whatever
-necessary. What do you think?
+Anyway:
 
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTBMrKAAoJEBQN5MwUoCm2j/QP/RweNaFTpVw9nI/LU07tolwU
-/W202vUpU6lVGxLRS6WSDfjO4DvzAp7rXUdMWioxvfr3i8t+bCVkFDvm/dcpnToS
-ts67v5Wq5vPYEDxrBvsQ/+IHJmKc+i1hjE8FkD+iqUN+ri/c1Xvb6YaVNsVjZ0wK
-Tdm95w26cy7rcUyBvvJU8xjO0hE/T2N8mE/B7ZUpmhKEEONPv5LqEPGPPjGYJnXa
-KeoqdabLmdgrQa1GfAyZ99qklDWxZ6zs4IvjonaD3cJqLnRwa/dU/kRKFYtOewNA
-kUnlqSZ8Hf5F+nnBFL8Q949cv0SH5uK3WxK/0iaVMQyjJuk1bfHhIReuU2WSW1g6
-gg1ZCrTQbccBv/pj76u+4JbZ235lYmOXcj+QkptyAnrmnDIg/ZneH1FT5DumQzka
-VZ0WC071EmGfPGe2MZ3ZcMgzC0OzqbkaeHoVDAa+19YNjKQfKzdYxxv0kz4S/bKC
-+BEiAD/7u8yH6rKiN9A9KFhvNZo5iqfNJrO62l2xcnN+GVEfUFt3ZRKkOHBT2NBt
-ZLVcTEM+uAZsLPylr/hXhEQeML4qaolHiWbLalcgrmnTthiYRcktrht5MS5tsUBX
-+jT+MXE25YiqazfXQ1SX/jFi/34xfcE8dGKjw/TLNGil2j2mV+hXI6eyTBkWGQOl
-6zaBJWf4EhbrBLsaxnwX
-=wrrz
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
+Best regards,
+Tomasz
