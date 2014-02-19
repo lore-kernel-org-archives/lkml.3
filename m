@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaBSSIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 13:08:09 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:51850 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412AbaBSSIH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 13:08:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140219151040.GH2669@sirena.org.uk>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-	<1391529538-21685-7-git-send-email-ulf.hansson@linaro.org>
-	<CAPDyKFombL2-Rt46QpXPNWe5PeGQnOGmQQNfYd5MdYdEePn-4w@mail.gmail.com>
-	<20140219151040.GH2669@sirena.org.uk>
-Date: Wed, 19 Feb 2014 19:02:54 +0100
-Message-ID: <CAPDyKFqvdm73s9wDPA=z7LkiMmtLhGkcpwEdbS13zGHE5spQNw@mail.gmail.com>
-Subject: Re: [PATCH 06/17] spi: pl022: Let runtime PM callbacks be available
- for CONFIG_PM
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Russell King <linux@arm.linux.org.uk>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754868AbaBSSJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 13:09:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53864 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754412AbaBSSJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 13:09:12 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: netdev@oss.sgi.com, davem@davemloft.net, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>
+Subject: [PATCH 0/5] audit: add restricted capability read-only netlink multicast socket
+Date: Wed, 19 Feb 2014 13:08:18 -0500
+Message-Id: <cover.1392831003.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 February 2014 16:10, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Feb 19, 2014 at 03:20:07PM +0100, Ulf Hansson wrote:
->
->> Also note that, Russell has already applied the corresponding part in
->> the amba bus (patch 1)
->
-> Why would this depend on an AMBA patch and if it does surely the two
-> need to be merged together somehow?
+Hi, 
 
-There are no immediate dependency, sorry for confusion.
+This patch set adds a restricted capability read-only netlink multicast socket
+to kaudit to enable userspace clients such as systemd to consume audit logs, in
+addition to the existing bidirectional auditd userspace client. 
+    
+Currently, auditd has the CAP_AUDIT_CONTROL and CAP_AUDIT_WRITE capabilities
+(both use CAP_NET_ADMIN).  The CAP_AUDIT_READ capability will be added for use
+by read-only AUDIT_NLGRP_READLOG multicast group clients to the kaudit
+subsystem.
+  
+This is accomplished by modifying the optional netlink per-protocol bind
+function to return an error code.
 
-I just wanted to highlight that the amba has converted to the new
-SET_PM_RUNTIME_PM_OPS. It means the amba bus' runtime PM callbacks are
-available for CONFIG_PM.
+https://bugzilla.redhat.com/show_bug.cgi?id=887992 
 
-Kind regards
-Uffe
+It needs a bit of massage to get past checkpatch.pl...
+
+First posted:	https://www.redhat.com/archives/linux-audit/2013-January/msg00008.html
+		https://lkml.org/lkml/2013/1/27/279
+
+Richard Guy Briggs (5):
+  audit: move kaudit thread start from auditd registration to kaudit
+    init
+  netlink: have netlink per-protocol bind function return an error
+    code.
+  audit: add netlink audit protocol bind to check capabilities on
+    multicast join
+  audit: add netlink multicast group for log read
+  audit: send multicast messages only if there are listeners
+
+ include/linux/netlink.h             |    2 +-
+ include/uapi/linux/audit.h          |    8 ++++
+ include/uapi/linux/capability.h     |    7 +++-
+ kernel/audit.c                      |   66 +++++++++++++++++++++++++++++-----
+ net/netfilter/nfnetlink.c           |    6 ++-
+ net/netlink/af_netlink.c            |   30 +++++++++-------
+ net/netlink/af_netlink.h            |    4 +-
+ security/selinux/include/classmap.h |    2 +-
+ 8 files changed, 95 insertions(+), 30 deletions(-)
+
