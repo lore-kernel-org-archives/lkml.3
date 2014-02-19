@@ -1,102 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaBSM6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 07:58:07 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:38876 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053AbaBSM6E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 07:58:04 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 2/4] of: reimplement the matching method for __of_match_node()
-To: Kevin Hao <haokexin@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1392797745-7561-1-git-send-email-haokexin@gmail.com>
-References: <20140219075812.GE14031@pek-khao-d1.corp.ad.wrs.com> < 1392797745-7561-1-git-send-email-haokexin@gmail.com>
-Date: Wed, 19 Feb 2014 12:57:55 +0000
-Message-Id: <20140219125755.9FA9CC4088D@trevor.secretlab.ca>
+	id S1753541AbaBSNA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 08:00:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64882 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752036AbaBSNAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 08:00:54 -0500
+Date: Wed, 19 Feb 2014 14:03:09 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-rt-users@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
+Subject: Re: locking changes in tty broke low latency feature
+Message-ID: <20140219130308.GC1851@redhat.com>
+References: <20140218093829.GC1741@redhat.com>
+ <5303DABD.9000302@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5303DABD.9000302@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014 16:15:45 +0800, Kevin Hao <haokexin@gmail.com> wrote:
-> In the current implementation of __of_match_node(), it will compare
-> each given match entry against all the node's compatible strings
-> with of_device_is_compatible().
-> 
-> To achieve multiple compatible strings per node with ordering from
-> specific to generic, this requires given matches to be ordered from
-> specific to generic. For most of the drivers this is not true and
-> also an alphabetical ordering is more sane there.
-> 
-> Therefore, we define a following priority order for the match, and
-> then scan all the entries to find the best match.
->   1. specific compatible && type && name
->   2. specific compatible && type
->   3. specific compatible && name
->   4. specific compatible
->   5. general compatible && type && name
->   6. general compatible && type
->   7. general compatible && name
->   8. general compatible
->   9. type && name
->   10. type
->   11. name
-> 
-> This is based on some pseudo-codes provided by Grant Likely.
-> 
-> Signed-off-by: Kevin Hao <haokexin@gmail.com>
-> [grant.likely: Changed multiplier to 4 which makes more sense]
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> ---
-> v3: Also need to bail out when there does have a compatible member in match
->     entry, but it doesn't match with the device node's compatible.
->  
-> v2: Fix the bug such as we get the same score for the following two match
-> entries:
-> 	name2 { }
-> 
-> 	struct of_device_id matches[] = {
-> 		{.name = "name2", },
-> 		{.name = "name2", .type = "type1", },
-> 		{}
-> 	};
+Hello,
 
-BTW, I prefer patch version information like the above to appear before
-the '---' line so that it shows up in the final commit log. It is often
-useful to have the revision history in mainline.
-
+On Tue, Feb 18, 2014 at 05:12:13PM -0500, Peter Hurley wrote:
+> On 02/18/2014 04:38 AM, Stanislaw Gruszka wrote:
+> >Hi,
+> >
+> >setserial has low_latency option which should minimize receive latency
+> >(scheduler delay). AFAICT it is used if someone talk to external device
+> >via RS-485/RS-232 and need to have quick requests and responses . On
+> >kernel this feature was implemented by direct tty processing from
+> >interrupt context:
+> >
+> >void tty_flip_buffer_push(struct tty_port *port)
+> >{
+> >         struct tty_bufhead *buf = &port->buf;
+> >
+> >         buf->tail->commit = buf->tail->used;
+> >
+> >         if (port->low_latency)
+> >                 flush_to_ldisc(&buf->work);
+> >         else
+> >                 schedule_work(&buf->work);
+> >}
+> >
+> >But after 3.12 tty locking changes, calling flush_to_ldisc() from
+> >interrupt context is a bug (we got scheduling while atomic bug report
+> >here: https://bugzilla.redhat.com/show_bug.cgi?id=1065087 )
+> >
+> >I'm not sure how this should be solved. After Peter get rid all of those
+> >race condition in tty layer, we probably don't want go back to use
+> >spin_lock's there. Maybe we can create WQ_HIGHPRI workqueue and schedule
+> >flush_to_ldisc() work there. Or perhaps users that need to low latency,
+> >should switch to thread irq and prioritize serial irq to meat
+> >retirements. Anyway setserial low_latency is now broken and all who use
+> >this feature in the past can not do this any longer on 3.12+ kernels.
+> >
+> >Thoughts ?
 > 
->  drivers/of/base.c | 96 ++++++++++++++++++++++++++++++++++++++++++++-----------
->  1 file changed, 77 insertions(+), 19 deletions(-)
+> Can you give me an idea of your device's average and minimum required
+> latency (please be specific)?  Is your target arch x86 [so I can evaluate the
+> the impact of bus-locked instructions relative to your expected]?
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index ba195fbce4c6..8f79f006d86f 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -342,21 +342,28 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
->  }
->  EXPORT_SYMBOL(of_get_cpu_node);
->  
-> -/** Checks if the given "compat" string matches one of the strings in
-> - * the device's "compatible" property
-> +/*
-> + * Compare with the __of_device_is_compatible, this will return a score for the
-> + * matching strings. The smaller value indicates the match for the more specific
-> + * compatible string.
->   */
-> -static int __of_device_is_compatible(const struct device_node *device,
-> -				     const char *compat)
-> +static int __of_device_is_compatible_score(const struct device_node *device,
-> +				     const char *compat, int *pscore)
->  {
+> Also, how painful would it be if unsupported termios changes were rejected
+> if the port was in low_latency mode and/or if low_latency setting was
+> disallowed because of termios state?
+> 
+> It would be pointless to throttle low_latency, yes?
+> 
+> What would be an acceptable outcome of being unable to accept input?
+> Corrupted overrun? Dropped i/o? Queued for later? Please explain with
+> comparison to the outcome of missed minimum latency.
 
-Another note: I've removed this new function. There are only three users
-of __of_device_is_compatible, and they are all in this file. Adding a
-field is just fine. I'm also considering rolling the name and
-device_type checks into this function, but that goes beyond the bug fix
-so it will wait until the next merge window.
+I'm sorry, I can not answer your questions.
 
-g.
+For what I googled it looks like users wanted to get rid of 10ms jitter
+caused by scheduler. Unfortunately that is all I know. I'm not user of
+this feature and I don't know what are exact expectations. I'm adding Hal,
+who reported bug to RH bugzilla, perhaps he can tell more about what
+expectations are.
+
+For now, since issue is not easy fixable, perhaps we should just fix
+scheduling while atomic bug and add warning like on below patch ?
+
+Thanks
+Stanislaw
+
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 765125d..0fe6d65 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -504,9 +504,13 @@ void tty_flip_buffer_push(struct tty_port *port)
+ 
+ 	buf->tail->commit = buf->tail->used;
+ 
+-	if (port->low_latency)
+-		flush_to_ldisc(&buf->work);
+-	else
++	if (port->low_latency) {
++		if (WARN_ONCE(in_irq() || irqs_disabled(),
++			      "serial low_latency feature can not be used in interrupt context"))
++			schedule_work(&buf->work);
++		else
++			flush_to_ldisc(&buf->work);
++	} else
+ 		schedule_work(&buf->work);
+ }
+ EXPORT_SYMBOL(tty_flip_buffer_push);
