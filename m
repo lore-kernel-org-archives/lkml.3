@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305AbaBSCji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 21:39:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49731 "EHLO mail.zytor.com"
+	id S1752022AbaBSCk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 21:40:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41951 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694AbaBSCjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 21:39:37 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAC5e1FpChdyW9xzbwsyVx147hKrV0MxwkCMyKHR4ab5-Q=DyPg@mail.gmail.com>
-References: <CAC5e1FoLrHWSa_7BnRt-u451ZJOVqKhSpbyp8O_ExDbgcXtU+g@mail.gmail.com> <alpine.DEB.2.02.1402182101450.4468@ionos.tec.linutronix.de> <CAC5e1FpChdyW9xzbwsyVx147hKrV0MxwkCMyKHR4ab5-Q=DyPg@mail.gmail.com>
+	id S1750966AbaBSCk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 21:40:57 -0500
+Date: Tue, 18 Feb 2014 21:40:49 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, fowles@inreach.com, eranian@google.com
+Subject: Re: [PATCH 05/21] perf, session: Change header.misc dump from
+ decimal to hex
+Message-ID: <20140219024049.GJ25953@redhat.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+ <1392053356-23024-6-git-send-email-dzickus@redhat.com>
+ <20140218125644.GG4343@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: Does it need to implement irq_set_type method in the ioapic_chip?
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 18 Feb 2014 18:34:38 -0800
-To: carl peng <carlpeng008@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: mingo@redhat.com, x86@kernel.org, pingfank@linux.vnet.ibm.com,
-        yoshihiro.yunomae.ez@hitachi.com, linux-kernel@vger.kernel.org
-Message-ID: <fe0610e4-0073-42a7-803a-590de82e47ef@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218125644.GG4343@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an ACPI device connecting to an internal IOAPIC? If not, how is it connected?
+On Tue, Feb 18, 2014 at 01:56:44PM +0100, Jiri Olsa wrote:
+> On Mon, Feb 10, 2014 at 12:29:00PM -0500, Don Zickus wrote:
+> > When printing the raw dump of a data file, the header.misc is
+> > printed as a decimal.  Unfortunately, that field is a bit mask, so
+> > it is hard to interpret as a decimal.
+> > 
+> > Print in hex, so the user can easily see what bits are set and more
+> > importantly what type of info it is conveying.
+> > 
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > ---
+> >  tools/perf/util/session.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> > index 0b39a48..d1ad10f 100644
+> > --- a/tools/perf/util/session.c
+> > +++ b/tools/perf/util/session.c
+> > @@ -793,7 +793,7 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+> >  	if (!dump_trace)
+> >  		return;
+> >  
+> > -	printf("(IP, %d): %d/%d: %#" PRIx64 " period: %" PRIu64 " addr: %#" PRIx64 "\n",
+> > +	printf("(IP, %x): %d/%d: %#" PRIx64 " period: %" PRIu64 " addr: %#" PRIx64 "\n",
+> >  	       event->header.misc, sample->pid, sample->tid, sample->ip,
+> >  	       sample->period, sample->addr);
+> 
+> nit, maybe use '0x%x' ? hum, but probably nobody is actually parsing this..
 
-On February 18, 2014 6:32:44 PM PST, carl peng <carlpeng008@gmail.com> wrote:
->Hi Thomas,
->
->Thanks a lot for your help!
->
->But I still have some confusion. Could you please help to give some
->suggestions to me?
->
->1) This device is a ACPI device, the hardware engineer designed it as
->falling edge interrupt trigger
->mode, does it need to re-work the hardware and modify it as rising
->edge trigger mode to suit the
->Linux APIC driver architecture?
->2) Why does APIC driver not implement the irq_set_type method?  if
->implement it, will supply more
->free space for the device driver developer(they can set the interrupt
->trigger mode by calling request_irq).
->
->Thank you!
->Carl
->
->
->On Wed, Feb 19, 2014 at 4:13 AM, Thomas Gleixner <tglx@linutronix.de>
->wrote:
->> On Tue, 18 Feb 2014, carl peng wrote:
->>
->> Carl, sending the same mail twice within an hour does not speed up
->> things. It's quite likely that it gets ignored.
->>
->>> 1. Does it need to implement irq_set_type method in the ioapic_chip
->>> structure?
->>
->> No. The irq type is configured by the type of the interrupt or the
->> BIOS.
->>
->> ISA  interrupts are always polarity zero edge triggered (historic)
->>
->> PCI  interrupts are always polarity one level triggered
->>
->> PCIE interrupts are either legacy PCI or with MSI[X] always edge
->>      triggered
->>
->>> 2. if no need to implement it, how can device driver set the trigger
->mode
->>> of APIC interrupt controller pin?
->>
->> Not at all.
->>
->> The device which is connected to one of the busses must follow the
->> specification of the bus. There is no choice. Any additional
->> requirements of the device to deal with external signals must be
->> handled by the device itself and converted to the appropriate bus
->> requirement.
->>
->> This all is configured by the kernel automatically through bus
->> detection and BIOS tables.
->>
->> Thanks,
->>
->>         tglx
+Fair enough. :-)
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Cheers,
+Don
+
