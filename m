@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101AbaBSI4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:56:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19236 "EHLO mx1.redhat.com"
+	id S1753262AbaBSI4t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:56:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9998 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751375AbaBSI4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:56:32 -0500
+	id S1753238AbaBSI4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 03:56:46 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Mike Miller <mike.miller@hp.com>,
-        iss_storagedev@hp.com, linux-pci@vger.kernel.org
-Subject: [PATCH 1/9] cciss: Fallback to MSI rather than to INTx if MSI-X failed
-Date: Wed, 19 Feb 2014 09:58:13 +0100
-Message-Id: <2b4fbd561d282fb3301e2a72d8ebce9f35a81514.1392799751.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, linux-pci@vger.kernel.org
+Subject: [PATCH 8/9] skd: Use unified access to skdev->msix_entries throughout the code
+Date: Wed, 19 Feb 2014 09:58:20 +0100
+Message-Id: <57ee0dad76cc5b29c5ebba644971baedecc0c63c.1392799752.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392799751.git.agordeev@redhat.com>
 References: <cover.1392799751.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,34 +21,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Mike Miller <mike.miller@hp.com>
-Cc: iss_storagedev@hp.com
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/block/cciss.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/block/skd_main.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 036e8ab..fc5b0a4 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -4092,13 +4092,14 @@ static void cciss_interrupt_mode(ctlr_info_t *h)
- 		if (err > 0) {
- 			dev_warn(&h->pdev->dev,
- 				"only %d MSI-X vectors available\n", err);
--			goto default_int_mode;
-+			goto single_msi_mode;
- 		} else {
- 			dev_warn(&h->pdev->dev,
- 				"MSI-X init failed %d\n", err);
--			goto default_int_mode;
-+			goto single_msi_mode;
- 		}
+diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+index d0550ba..1cd1095 100644
+--- a/drivers/block/skd_main.c
++++ b/drivers/block/skd_main.c
+@@ -3977,8 +3977,8 @@ static int skd_acquire_msix(struct skd_device *skdev)
+ 		goto msix_out;
  	}
-+single_msi_mode:
- 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
- 		if (!pci_enable_msi(h->pdev))
- 			h->msi_vector = 1;
+ 
+-	qentry = skdev->msix_entries;
+ 	for (i = 0; i < skdev->msix_count; i++) {
++		qentry = &skdev->msix_entries[i];
+ 		qentry->vector = entries[i].vector;
+ 		qentry->entry = entries[i].entry;
+ 		qentry->rsp = NULL;
+@@ -3987,7 +3987,6 @@ static int skd_acquire_msix(struct skd_device *skdev)
+ 			 skdev->name, __func__, __LINE__,
+ 			 pci_name(pdev), skdev->name,
+ 			 i, qentry->vector, qentry->entry);
+-		qentry++;
+ 	}
+ 
+ 	/* Enable MSI-X vectors for the base queue */
 -- 
 1.7.7.6
 
