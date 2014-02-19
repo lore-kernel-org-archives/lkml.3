@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaBSIae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:30:34 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:65021 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886AbaBSIab (ORCPT
+	id S1752911AbaBSId3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:33:29 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:47798 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaBSId2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:30:31 -0500
-Date: Wed, 19 Feb 2014 08:30:25 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alexandre.torgue@st.com, linux-ide@vger.kernel.org,
-        hdegoede@redhat.com
-Subject: Re: [PATCH 3/3] ahci: st: Add support for ST's SATA IP
-Message-ID: <20140219083025.GB10504@lee--X1>
-References: <1392641818-23419-1-git-send-email-lee.jones@linaro.org>
- <1392641818-23419-3-git-send-email-lee.jones@linaro.org>
- <20140218233645.GP31892@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140218233645.GP31892@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 19 Feb 2014 03:33:28 -0500
+Message-ID: <1392798801.31957.3.camel@phoenix>
+Subject: [PATCH 1/3 v2] regulator: tps65218: Add terminate entry for
+ of_device_id table
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Keerthy <j-keerthy@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 19 Feb 2014 16:33:21 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: linux-ide@vger.kernel.org
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Please consider basing it on top of Hans' refactored ahci_platform.
-> 
->  http://www.spinics.net/lists/linux-ide/msg47628.html
+Fixes below build error:
+FATAL: drivers/regulator/tps65218-regulator: struct of_device_id is not terminated with a NULL entry!
 
-Okay, looks reasonable. I'm happy to do the extra work.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+I'm sorry that I just found I CC wrong developers in my previous mail.
+So here is a resend.
+ drivers/regulator/tps65218-regulator.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Can I do this as a subsequent patch though? The current patch fits
-neatly onto our internal stable kernel (currently v3.10). The added
-work will require back-porting Hans' patch-set, which has not yet
-reached Mainline.
-
+diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
+index 958276c..d1c7831 100644
+--- a/drivers/regulator/tps65218-regulator.c
++++ b/drivers/regulator/tps65218-regulator.c
+@@ -96,6 +96,7 @@ static const struct of_device_id tps65218_of_match[] = {
+ 	TPS65218_OF_MATCH("ti,tps65218-dcdc5", tps65218_pmic_regs[DCDC5]),
+ 	TPS65218_OF_MATCH("ti,tps65218-dcdc6", tps65218_pmic_regs[DCDC6]),
+ 	TPS65218_OF_MATCH("ti,tps65218-ldo1", tps65218_pmic_regs[LDO1]),
++	{ }
+ };
+ MODULE_DEVICE_TABLE(of, tps65218_of_match);
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.1.2
+
+
+
