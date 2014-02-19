@@ -1,70 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaBSHHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 02:07:52 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:32080 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751212AbaBSHHu (ORCPT
+	id S1752140AbaBSHJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 02:09:04 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:62886 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaBSHJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 02:07:50 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(z579eh551biz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 19 Feb 2014 15:07:39 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ARM: dts: Add Freescale SAI ALSA SoC Digital Audio
- Interface node for VF610.
-Message-ID: <20140219070737.GF3010@S2101-09.ap.freescale.net>
-References: <1392788323-6092-1-git-send-email-Li.Xiubo@freescale.com>
- <1392788323-6092-2-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1392788323-6092-2-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Wed, 19 Feb 2014 02:09:01 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-8b-5304588a1bac
+Message-id: <53045889.5010306@samsung.com>
+Date: Wed, 19 Feb 2014 11:08:57 +0400
+From: Alexey Perevalov <a.perevalov@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        anton@enomsg.org, kyungmin.park@samsung.com, akpm@linux-foundation.org,
+        cw00.choi@samsung.com
+Subject: Re: [PATCH v2 0/3] Deferrable timers support for timerfd API
+References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com>
+ <52DEC6A3.9020600@linaro.org> <52E606D8.6000401@samsung.com>
+ <alpine.DEB.2.02.1402041419420.24986@ionos.tec.linutronix.de>
+ <52F1DDA8.90605@samsung.com>
+ <alpine.DEB.2.02.1402051229260.24986@ionos.tec.linutronix.de>
+ <52F2B504.5010403@linaro.org>
+ <alpine.DEB.2.02.1402052306580.24986@ionos.tec.linutronix.de>
+ <52F3C8A5.708@samsung.com>
+ <alpine.DEB.2.02.1402062148440.21991@ionos.tec.linutronix.de>
+ <5300D752.5030403@samsung.com>
+ <alpine.DEB.2.02.1402161634590.21991@ionos.tec.linutronix.de>
+ <5303B910.5090009@samsung.com>
+ <alpine.DEB.2.02.1402182209500.4468@ionos.tec.linutronix.de>
+In-reply-to: <alpine.DEB.2.02.1402182209500.4468@ionos.tec.linutronix.de>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xK7pdESzBBttO6ljMWb+GzeLgVk2L
+	61+es1qc+a1rcbbpDbvF5V1z2Cw2b5rK7MDuMaH/E6PHnWt72DzenTvH7nFixm8Wj74tqxg9
+	Pm+SC2CL4rJJSc3JLEst0rdL4MrYMMu1YJ1Wxf+LrxgbGLcodjFyckgImEisfvGZHcIWk7hw
+	bz1bFyMXh5DAUkaJe51rWUASQgKfGSXuLOQBsXkFtCSe7XjGDGKzCKhKzNzxG6iGg4NNwEBi
+	3z1bEFNUIELi6HJNiGpBiR+T74FNERHQkNh46RYzyHhmgZWMEnO//QHbKyzgKnFi+3pWiL2L
+	WSWuLljEBpLgFPCU+LvjBCOIzSxgLbFy0jYoW15i85q3zBMYBWYhWTILSdksJGULGJlXMYqm
+	liYXFCel5xrqFSfmFpfmpesl5+duYoQE+pcdjIuPWR1iFOBgVOLh9XzBHCzEmlhWXJl7iFGC
+	g1lJhLfhOVCINyWxsiq1KD++qDQntfgQIxMHp1QDY9sSgYsh7Tta7p5fmH4k7K2/1UPZp1Hd
+	Bzl5BS/Vu2i/sUzov6c2y7Dmsd3Ss3WLHx44FP5XYP2FeR/3sMfOs79QHKXrbT3ju9Nx/4nW
+	TP/ajgUaNf14rVS1Wb1UVe6VUl245ZRZfK27wvlbWBcv9wpQ3c6+6q7l7ek5rJ7ZytefsVo6
+	PTq6QomlOCPRUIu5qDgRAKdKcQFSAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 01:38:40PM +0800, Xiubo Li wrote:
-> This patch adds the SAI's edma mux Tx and Rx support.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+On 02/19/2014 02:33 AM, Thomas Gleixner wrote:
+> On Tue, 18 Feb 2014, Alexey Perevalov wrote:
+>> On 02/16/2014 07:39 PM, Thomas Gleixner wrote:
+>> I figured out with deviation, I described before.
+> Which is wrong to begin with. Using the wrong method does not justify
+> the results. Are you actually trying to understand what I'm saying?
+>
+>> It was due expires and especially softexpires is fixed (don't base on delay).
+> That's how an interval timer is supposed to work by definition. End of
+> discussion.
+>
+>> For example if we have a timer like this:
+>> hrtimer_expire_entry: hrtimer=ffffffffa056f280 function=timerfd_tmrproc
+>> [hrtimers_mod] now=191450988244 expires=191400000000 softexpires=191400000000
+>> It was fired at 191450988244, but softexpire is  191400000000, 50ms delay, if
+>> I'm not wrong.
+>> Next trigger time is 191700000000, (hrtimer_start: hrtimer=ffffffffa056f280
+>> function=timerfd_tmrproc [hrtimers_mod] expires=191700000000
+>> softexpires=191700000000)
+>> and if there is no cpu idle at next time, we'll get 250ms interval for such
+>> timer.
+> This is complete nonsense. You schedule your hrtimer on an absolute
+> timeline:
+>
+> 191400000000
+> 191700000000
+> ...
+>
+> So it's supposed to fire every 300ms, but it is allowed to fire later
+> when the system is idle. And that's what it does. If the system would
+> be idle for 10.3 seconds from the point where the timer is started
+> then it would expire the first timer at
+>
+> 191400000000 + 10 sec = 201400000000
+>
+> and then schedule the next one at
+>
+> 201400000000 + 300ms = 201700000000
+>
+> So if your system is not idle the timer can be expired. That's the
+> same for deferrable timer list timers. We expire them when a non
+> deferrable timer fires.
+>
+> And you do the same for your timer list timer according to your trace:
+>
+> expires=4298169903
+> expires=4298169978
+> expires=4298170053
+> expires=4298170128
+> expires=4298170204
+> expires=4298170287
+> expires=4298170362
+> expires=4298170462
+> expires=4298170558
+> expires=4298170637
+> expires=4298170712
+> expires=4298170787
+> expires=4298170862
+>
+> The delta is always 75 ticks. And the expiry times are
+>
+> now=4298169903
+> now=4298169978
+> now=4298170053
+> now=4298170129
+> now=4298170212
+> now=4298170287
+> now=4298170387
+> now=4298170483
+> now=4298170562
+> now=4298170637
+> now=4298170712
+> now=4298170787
+>
+> Which results in the deferrements:
+>
+> Delta:   0.0ms
+> Delta:   0.0ms
+> Delta:   0.0ms
+> Delta:   1.0ms
+> Delta:   8.0ms
+> Delta:   0.0ms
+> Delta:  25.0ms
+> Delta:  21.0ms
+> Delta:   4.0ms
+> Delta:   0.0ms
+> Delta:   0.0ms
+> Delta:   0.0ms
+>
+> Avg:  	 4.0ms
+>
+> And why? Because you scheduled your timer along an absolute
+> timeline. And if you use an absolute timeline, then the deltas between
+> the actual timer events are completely irrelevant. The only thing what
+> matters is the delta between the expected and the real expiry time.
+>
+> Is it really that hard to understand?
+>
+>> But we want 300ms or more for DEFERRABLE timer.
+> And I want a pony!
+>
+> If you want that then simply setup the timer in relative oneshot mode,
+> i.e. interval = 0 and when it expires (deferred) rearm it relative to
+> now from user space. Then you get exactly the behaviour you want. It's
+> that simple, really.
+>
+>> Thomas what do you think about moving format expire/softexpire to _!now!_ in
+>> run_hrtimer, right before we
+>> invoke callback function? The prolongation of hrtimer usually comes from user
+>> timer functions by
+>> invoking hrtimer_forward, which moves expires/softexpires forward.
+> You really don't want to know what I think about that.
+>
+>> +       trace_hrtimer_expire_entry(timer, now, 0);
+>> +
+>> +       if (deferrable)
+>> +               hrtimer_set_expires(timer, *now);
+>>          restart = fn(timer);
+>>
+>>
+>> I got expected results (timer interval is 300ms):
+> So you got your pony. But it's your private pony and it stays that
+> way, because you made the timer interval relative. And you managed to
+> do that in the most disgusting way.
+>
+> In course of that you broke the behaviour of the existing user space
+> interfaces. You can do so in your own hackery, but it's not going to
+> go near mainline.
+>
+> Read and understand:
+>
+>     man timer_create
+>     man timerfd
+>
+> along with the relevant standards.
+>
+> And if you need further education feel free to get a lecture from
+> Linus about user space interfaces or google one if you really want to
+> know how that works out.
+>
+> We are not going to special case that deferrable stuff, simply because
+> it breaks the user space interfaces and you can solve your issue with
+> the existing user space interfaces already.
+>
+> There is a simple solution for the problem. You just need to
+> understand what you try to solve and use the proper mechanisms. And
+> don't tell me you can't do that, because you need to modify your user
+> space code anyway as CLOCK*DEFERRABLE does not exist yet.
+In that the whole point CLOCK*DEFERRABLE doesn't exist yet, and such
+reset of timer's expire didn't affect another clockids. Ok no problem, 
+to set new expire time based on _now_ from user space.
 
-'ARM: dts: vf610: ...' for patch prefix.
+>
+> Just because you can do it in the kernel does not mean that it is the
+> correct approach.
+>
+> Thanks,
+>
+> 	tglx
+>
 
-Shawn
 
-> ---
->  arch/arm/boot/dts/vf610.dtsi | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-> index 91a7757..f08df47 100644
-> --- a/arch/arm/boot/dts/vf610.dtsi
-> +++ b/arch/arm/boot/dts/vf610.dtsi
-> @@ -169,6 +169,9 @@
->  				interrupts = <0 86 IRQ_TYPE_LEVEL_HIGH>;
->  				clocks = <&clks VF610_CLK_SAI2>;
->  				clock-names = "sai";
-> +				dma-names = "tx", "rx";
-> +				dmas = <&edma0 0 21>,
-> +					<&edma0 0 20>;
->  				status = "disabled";
->  			};
->  
-> -- 
-> 1.8.4
-> 
-> 
-
+-- 
+Best regards,
+Alexey Perevalov
