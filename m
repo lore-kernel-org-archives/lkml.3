@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613AbaBSV6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 16:58:19 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:34140 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754428AbaBSV6O (ORCPT
+	id S1754328AbaBSV7C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 16:59:02 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:46245 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655AbaBSV7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 16:58:14 -0500
-Date: Wed, 19 Feb 2014 22:58:05 +0100
-From: Dongsu Park <dongsu.park@profitbricks.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
-        lczerner@redhat.com, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: Re: [PATCH v5 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE for
- fallocate
-Message-ID: <20140219215805.GA1714@gmail.com>
-References: <1392741489-20097-1-git-send-email-linkinjeon@gmail.com>
+	Wed, 19 Feb 2014 16:59:00 -0500
+X-Greylist: delayed 1145 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 16:59:00 EST
+Message-ID: <530524A3.6090700@surriel.com>
+Date: Wed, 19 Feb 2014 16:39:47 -0500
+From: Rik van Riel <riel@surriel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1392741489-20097-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Kelley Nielsen <kelleynnn@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        opw-kernel@googlegroups.com, jamieliu@google.com,
+        sjenning@linux.vnet.ibm.com, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC] mm:prototype for the updated swapoff implementation
+References: <20140219003522.GA8887@kelleynnn-virtual-machine> <20140219132757.58b61f07bad914b3848275e9@linux-foundation.org>
+In-Reply-To: <20140219132757.58b61f07bad914b3848275e9@linux-foundation.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namjae,
-see below:
+On 02/19/2014 04:27 PM, Andrew Morton wrote:
+> On Tue, 18 Feb 2014 16:35:22 -0800 Kelley Nielsen <kelleynnn@gmail.com> wrote:
+> 
+>> The function try_to_unuse() is of quadratic complexity, with a lot of
+>> wasted effort. It unuses swap entries one by one, potentially iterating
+>> over all the page tables for all the processes in the system for each
+>> one.
+>>
+>> This new proposed implementation of try_to_unuse simplifies its
+>> complexity to linear. It iterates over the system's mms once, unusing
+>> all the affected entries as it walks each set of page tables. It also
+>> makes similar changes to shmem_unuse.
+>>
+>> Improvement
+>>
+>> swapoff was called on a swap partition containing about 50M of data,
+>> and calls to the function unuse_pte_range were counted.
+>>
+>> Present implementation....about 22.5M calls.
+>> Prototype.................about  7.0K   calls.
+> 
+> Do you have situations in which swapoff is taking an unacceptable
+> amount of time?  If so, please update the changelog to provide full
+> details on this, with before-and-after timing measurements.
 
-On 19.02.2014 01:38, Namjae Jeon wrote:
-> This patch implements fallocate's FALLOC_FL_COLLAPSE_RANGE for Ext4.
-...<snip>...
-> +	/*
-> +	 * Don't start shifting extents until we make sure the hole is big
-> +	 * enough to accomodate the shift.
-> +	 */
-> +	path = ext4_ext_find_extent(inode, start - 1, NULL, 0);
-> +	depth = path->p_depth;
-> +	extent =  path[depth].p_ext;
-> +	ex_start = extent->ee_block;
-> +	ex_end = extent->ee_block + ext4_ext_get_actual_len(extent);
-> +	ext4_ext_drop_refs(path);
-> +	kfree(path);
-> +
-> +	if ((start == ex_start && shift > ex_start) ||
-> +	    (shift > start - ex_end)) {
+I have seen plenty of that.  With just a few GB in swap space in
+use, on a system with 24GB of RAM, and about a dozen GB in use
+by various processes, I have seen swapoff take several hours of
+CPU time.
 
-This line causes a compile error. So the fix would be like that:
-
--	    (shift > start - ex_end)) {
-+	    (shift > start - ex_end))
-
-> +		return -EINVAL;
-> +
-> +	/* Its safe to start updating extents */
-...<snip>...
-
-Apart from that, the whole patchset seems to work without error,
-both on xfs and on ext4.
-Of course I had to remove Lukas' patches before testing collapse-range.
-So it would be excellent if two patch series could get somehow merged.
-
-Tested-by: Dongsu Park <dongsu.park@profitbricks.com>
-
-Regards,
-Dongsu
+-- 
+All rights reversed.
