@@ -1,44 +1,601 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaBSIU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:20:28 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:64100 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836AbaBSIUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:20:23 -0500
-Date: Wed, 19 Feb 2014 00:20:21 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ppc: RECLAIM_DISTANCE 10?
-In-Reply-To: <20140219081644.GA14783@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1402190017480.7280@chino.kir.corp.google.com>
-References: <20140218090658.GA28130@dhcp22.suse.cz> <alpine.DEB.2.02.1402181424490.20772@chino.kir.corp.google.com> <20140219081644.GA14783@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752812AbaBSIVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:21:40 -0500
+Received: from mail-bn1lp0149.outbound.protection.outlook.com ([207.46.163.149]:44800
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752108AbaBSIVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 03:21:39 -0500
+X-Greylist: delayed 934 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 03:21:38 EST
+From: Yao Yuan <yao.yuan@freescale.com>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Subject: RE: [PATCHv9 1/4] pwm: Add Freescale FTM PWM driver support
+Thread-Topic: [PATCHv9 1/4] pwm: Add Freescale FTM PWM driver support
+Thread-Index: AQHPC4e1GDVpVtcTRUeKZ2/GEKbEDpq8evew
+Date: Wed, 19 Feb 2014 08:06:01 +0000
+Message-ID: <c90c5c017bbd4f66b8b3f35a07a287b1@BL2PR03MB338.namprd03.prod.outlook.com>
+References: <1389082148-2025-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1389082148-2025-1-git-send-email-Li.Xiubo@freescale.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-forefront-prvs: 012792EC17
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(979002)(6009001)(189002)(199002)(51704005)(94316002)(93136001)(74502001)(81816001)(59766001)(95666001)(77982001)(86362001)(33646001)(80976001)(74366001)(83322001)(74316001)(19580395003)(19580405001)(76786001)(94946001)(74662001)(2201001)(15975445006)(31966008)(92566001)(15202345003)(79102001)(81686001)(575784001)(56776001)(47446002)(95416001)(90146001)(47736001)(80022001)(4396001)(93516002)(49866001)(83072002)(63696002)(85852003)(76576001)(2656002)(47976001)(50986001)(56816005)(87936001)(76796001)(74706001)(65816001)(74876001)(46102001)(66066001)(54356001)(76482001)(53806001)(54316002)(85306002)(51856001)(69226001)(81342001)(87266001)(81542001)(2004002)(24736002)(217873001)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB497;H:BL2PR03MB338.namprd03.prod.outlook.com;CLIP:123.151.195.50;FPR:E011C9C3.23C89D4B.B2F45123.EE2FBB3.2077B;MLV:ovr;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1J8LjnK003832
 
-On Wed, 19 Feb 2014, Michal Hocko wrote:
-
-> > I strongly suspect that the patch is correct since powerpc node distances 
-> > are different than the architectures you're talking about and get doubled 
-> > for every NUMA domain that the hardware supports.
+> Subject: [PATCHv9 1/4] pwm: Add Freescale FTM PWM driver support
 > 
-> Even if the units of the distance is different on PPC should every NUMA
-> machine have zone_reclaim enabled? That doesn't right to me.
+> The FTM PWM device can be found on Vybrid VF610 Tower and Layerscape LS-1
+> SoCs.
+> 
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+
+For this patch series,
+Reviewed-by: Yuan Yao <yao.yuan@freescale.com>
+
+
+Thanks.
+
+
+> 
+> 
+> Hi Thierry,
+> 
+> For this version I just removed the big-endian mode support, and will add
+> it in later separate patches.
+> 
+> 
+> Changes in v9:
+> - Remove the big-endian mode support.
+> 
+> Changes in v7 ~ v8:
+> - Mainly about big-endian mode support.
+> 
+> [snip] v1~v6
+> 
+> 
+> 
+>  drivers/pwm/Kconfig       |  10 +
+>  drivers/pwm/Makefile      |   1 +
+>  drivers/pwm/pwm-fsl-ftm.c | 479
+> ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 490 insertions(+)
+>  create mode 100644 drivers/pwm/pwm-fsl-ftm.c
+> 
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig index
+> 6a2a1e0a..9a4c641 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -80,6 +80,16 @@ config PWM_EP93XX
+>  	  To compile this driver as a module, choose M here: the module
+>  	  will be called pwm-ep93xx.
+> 
+> +config PWM_FSL_FTM
+> +	tristate "Freescale FlexTimer Module (FTM) PWM support"
+> +	depends on OF
+> +	help
+> +	  Generic FTM PWM framework driver for Freescale VF610 and
+> +	  Layerscape LS-1 SoCs.
+> +
+> +	  To compile this driver as a module, choose M here: the module
+> +	  will be called pwm-fsl-ftm.
+> +
+>  config PWM_IMX
+>  	tristate "i.MX PWM support"
+>  	depends on ARCH_MXC
+> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile index
+> 1b99cfb..c22905c 100644
+> --- a/drivers/pwm/Makefile
+> +++ b/drivers/pwm/Makefile
+> @@ -5,6 +5,7 @@ obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
+>  obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+>  obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+>  obj-$(CONFIG_PWM_EP93XX)	+= pwm-ep93xx.o
+> +obj-$(CONFIG_PWM_FSL_FTM)	+= pwm-fsl-ftm.o
+>  obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+>  obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
+>  obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
+> diff --git a/drivers/pwm/pwm-fsl-ftm.c b/drivers/pwm/pwm-fsl-ftm.c new
+> file mode 100644 index 0000000..60467b3
+> --- /dev/null
+> +++ b/drivers/pwm/pwm-fsl-ftm.c
+> @@ -0,0 +1,479 @@
+> +/*
+> + *  Freescale FlexTimer Module (FTM) PWM Driver
+> + *
+> + *  Copyright 2012-2013 Freescale Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/of_address.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pwm.h>
+> +#include <linux/slab.h>
+> +
+> +#define FTM_SC		0x00
+> +#define FTM_SC_CLK_MASK	0x3
+> +#define FTM_SC_CLK_SHIFT	3
+> +#define FTM_SC_CLK(c)	(((c) + 1) << FTM_SC_CLK_SHIFT)
+> +#define FTM_SC_PS_MASK	0x7
+> +#define FTM_SC_PS_SHIFT	0
+> +
+> +#define FTM_CNT		0x04
+> +#define FTM_MOD		0x08
+> +
+> +#define FTM_CSC_BASE	0x0C
+> +#define FTM_CSC_MSB	BIT(5)
+> +#define FTM_CSC_MSA	BIT(4)
+> +#define FTM_CSC_ELSB	BIT(3)
+> +#define FTM_CSC_ELSA	BIT(2)
+> +#define FTM_CSC(_channel)	(FTM_CSC_BASE + ((_channel) * 8))
+> +
+> +#define FTM_CV_BASE	0x10
+> +#define FTM_CV(_channel)	(FTM_CV_BASE + ((_channel) * 8))
+> +
+> +#define FTM_CNTIN	0x4C
+> +#define FTM_STATUS	0x50
+> +
+> +#define FTM_MODE	0x54
+> +#define FTM_MODE_FTMEN	BIT(0)
+> +#define FTM_MODE_INIT	BIT(2)
+> +#define FTM_MODE_PWMSYNC	BIT(3)
+> +
+> +#define FTM_SYNC	0x58
+> +#define FTM_OUTINIT	0x5C
+> +#define FTM_OUTMASK	0x60
+> +#define FTM_COMBINE	0x64
+> +#define FTM_DEADTIME	0x68
+> +#define FTM_EXTTRIG	0x6C
+> +#define FTM_POL		0x70
+> +#define FTM_FMS		0x74
+> +#define FTM_FILTER	0x78
+> +#define FTM_FLTCTRL	0x7C
+> +#define FTM_QDCTRL	0x80
+> +#define FTM_CONF	0x84
+> +#define FTM_FLTPOL	0x88
+> +#define FTM_SYNCONF	0x8C
+> +#define FTM_INVCTRL	0x90
+> +#define FTM_SWOCTRL	0x94
+> +#define FTM_PWMLOAD	0x98
+> +
+> +enum fsl_pwm_clk {
+> +	FSL_PWM_CLK_SYS,
+> +	FSL_PWM_CLK_FIX,
+> +	FSL_PWM_CLK_EXT,
+> +};
+> +
+> +struct fsl_pwm_chip {
+> +	struct pwm_chip chip;
+> +
+> +	struct mutex lock;
+> +
+> +	struct clk *sys_clk;
+> +	struct clk *counter_clk;
+> +	struct clk *counter_clk_en;
+> +	unsigned int counter_clk_select;
+> +	unsigned int counter_clk_enable;
+> +	unsigned int clk_ps;
+> +
+> +	void __iomem *base;
+> +
+> +	int period_ns;
+> +};
+> +
+> +static inline struct fsl_pwm_chip *to_fsl_chip(struct pwm_chip *chip) {
+> +	return container_of(chip, struct fsl_pwm_chip, chip); }
+> +
+> +static int fsl_pwm_request(struct pwm_chip *chip, struct pwm_device
+> +*pwm) {
+> +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> +
+> +	return clk_prepare_enable(fpc->sys_clk); }
+> +
+> +static void fsl_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> +
+> +	clk_disable_unprepare(fpc->sys_clk);
+> +}
+> +
+> +static int fsl_pwm_calculate_default_ps(struct fsl_pwm_chip *fpc,
+> +					enum fsl_pwm_clk index)
+> +{
+> +	unsigned long sys_rate, cnt_rate;
+> +	unsigned long long ratio;
+> +
+> +	sys_rate = clk_get_rate(fpc->sys_clk);
+> +	if (!sys_rate)
+> +		return -EINVAL;
+> +
+> +	cnt_rate = clk_get_rate(fpc->counter_clk);
+> +	if (!cnt_rate)
+> +		return -EINVAL;
+> +
+> +	switch (index) {
+> +	case FSL_PWM_CLK_SYS:
+> +		fpc->clk_ps = 1;
+> +		break;
+> +	case FSL_PWM_CLK_FIX:
+> +		ratio = 2 * cnt_rate - 1;
+> +		do_div(ratio, sys_rate);
+> +		fpc->clk_ps = ratio;
+> +		break;
+> +	case FSL_PWM_CLK_EXT:
+> +		ratio = 4 * cnt_rate - 1;
+> +		do_div(ratio, sys_rate);
+> +		fpc->clk_ps = ratio;
+> +		break;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static unsigned long fsl_pwm_calculate_cycles(struct fsl_pwm_chip *fpc,
+> +					      unsigned long period_ns)
+> +{
+> +	unsigned long long c, c0;
+> +
+> +	c = clk_get_rate(fpc->counter_clk);
+> +	c = c * period_ns;
+> +	do_div(c, 1000000000UL);
+> +
+> +	do {
+> +		c0 = c;
+> +		do_div(c0, (1 << fpc->clk_ps));
+> +		if (c0 <= 0xFFFF)
+> +			return (unsigned long)c0;
+> +	} while (++fpc->clk_ps < 8);
+> +
+> +	return 0;
+> +}
+> +
+> +static unsigned long fsl_pwm_calculate_period_cycles(struct fsl_pwm_chip
+> *fpc,
+> +						     unsigned long period_ns,
+> +						     enum fsl_pwm_clk index)
+> +{
+> +	int ret;
+> +
+> +	fpc->counter_clk_select = FTM_SC_CLK(index);
+> +
+> +	ret = fsl_pwm_calculate_default_ps(fpc, index);
+> +	if (ret) {
+> +		dev_err(fpc->chip.dev, "failed to calculate default "
+> +				"prescaler: %d\n", ret);
+> +		return 0;
+> +	}
+> +
+> +	return fsl_pwm_calculate_cycles(fpc, period_ns); }
+> +
+> +static unsigned long fsl_pwm_calculate_period(struct fsl_pwm_chip *fpc,
+> +					      unsigned long period_ns)
+> +{
+> +	struct clk *cnt_clk[3];
+> +	enum fsl_pwm_clk m0, m1;
+> +	unsigned long fix_rate, ext_rate, cycles;
+> +
+> +	fpc->counter_clk = fpc->sys_clk;
+> +	cycles = fsl_pwm_calculate_period_cycles(fpc, period_ns,
+> +			FSL_PWM_CLK_SYS);
+> +	if (cycles)
+> +		return cycles;
+> +
+> +	cnt_clk[FSL_PWM_CLK_FIX] = devm_clk_get(fpc->chip.dev, "ftm_fix");
+> +	if (IS_ERR(cnt_clk[FSL_PWM_CLK_FIX]))
+> +		return PTR_ERR(cnt_clk[FSL_PWM_CLK_FIX]);
+> +
+> +	cnt_clk[FSL_PWM_CLK_EXT] = devm_clk_get(fpc->chip.dev, "ftm_ext");
+> +	if (IS_ERR(cnt_clk[FSL_PWM_CLK_EXT]))
+> +		return PTR_ERR(cnt_clk[FSL_PWM_CLK_EXT]);
+> +
+> +	fpc->counter_clk_en = devm_clk_get(fpc->chip.dev, "ftm_cnt_clk_en");
+> +	if (IS_ERR(fpc->counter_clk_en))
+> +		return PTR_ERR(fpc->counter_clk_en);
+> +
+> +	fix_rate = clk_get_rate(cnt_clk[FSL_PWM_CLK_FIX]);
+> +	ext_rate = clk_get_rate(cnt_clk[FSL_PWM_CLK_EXT]);
+> +
+> +	if (fix_rate > ext_rate) {
+> +		m0 = FSL_PWM_CLK_FIX;
+> +		m1 = FSL_PWM_CLK_EXT;
+> +	} else {
+> +		m0 = FSL_PWM_CLK_EXT;
+> +		m1 = FSL_PWM_CLK_FIX;
+> +	}
+> +
+> +	fpc->counter_clk = cnt_clk[m0];
+> +	cycles = fsl_pwm_calculate_period_cycles(fpc, period_ns, m0);
+> +	if (cycles)
+> +		return cycles;
+> +
+> +	fpc->counter_clk = cnt_clk[m1];
+> +
+> +	return fsl_pwm_calculate_period_cycles(fpc, period_ns, m0); }
+> +
+> +static unsigned long fsl_pwm_calculate_duty(struct fsl_pwm_chip *fpc,
+> +					    unsigned long period_ns,
+> +					    unsigned long duty_ns)
+> +{
+> +	unsigned long long val, duty;
+> +
+> +	val = readl(fpc->base + FTM_MOD);
+> +	duty = duty_ns * (val + 1);
+> +	do_div(duty, period_ns);
+> +
+> +	return (unsigned long)duty;
+> +}
+> +
+> +static int fsl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> +			  int duty_ns, int period_ns)
+> +{
+> +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> +	u32 val, period, duty;
+> +
+> +	mutex_lock(&fpc->lock);
+> +
+> +	/*
+> +	 * The Freescale FTM controller supports only a single period for
+> +	 * all PWM channels, therefore incompatible changes need to be
+> +	 * refused.
+> +	 */
+> +	if (fpc->period_ns && fpc->period_ns != period_ns) {
+> +		dev_err(fpc->chip.dev,
+> +				"conflicting period requested for PWM %u\n",
+> +				pwm->hwpwm);
+> +		mutex_unlock(&fpc->lock);
+> +		return -EBUSY;
+> +	}
+> +
+> +	if (!fpc->period_ns && duty_ns) {
+> +		period = fsl_pwm_calculate_period(fpc, period_ns);
+> +		if (!period) {
+> +			dev_err(fpc->chip.dev, "failed to calculate period\n");
+> +			mutex_unlock(&fpc->lock);
+> +			return -EINVAL;
+> +		}
+> +
+> +		val = readl(fpc->base + FTM_SC);
+> +		val &= ~(FTM_SC_PS_MASK << FTM_SC_PS_SHIFT);
+> +		val |= fpc->clk_ps;
+> +		writel(val, fpc->base + FTM_SC);
+> +		writel(period - 1, fpc->base + FTM_MOD);
+> +
+> +		fpc->period_ns = period_ns;
+> +	}
+> +
+> +	mutex_unlock(&fpc->lock);
+> +
+> +	duty = fsl_pwm_calculate_duty(fpc, period_ns, duty_ns);
+> +
+> +	writel(FTM_CSC_MSB | FTM_CSC_ELSB, fpc->base + FTM_CSC(pwm->hwpwm));
+> +	writel(duty, fpc->base + FTM_CV(pwm->hwpwm));
+> +
+> +	return 0;
+> +}
+> +
+> +static int fsl_pwm_set_polarity(struct pwm_chip *chip,
+> +				struct pwm_device *pwm,
+> +				enum pwm_polarity polarity)
+> +{
+> +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> +	u32 val;
+> +
+> +	val = readl(fpc->base + FTM_POL);
+> +
+> +	if (polarity == PWM_POLARITY_INVERSED)
+> +		val |= BIT(pwm->hwpwm);
+> +	else
+> +		val &= ~BIT(pwm->hwpwm);
+> +
+> +	writel(val, fpc->base + FTM_POL);
+> +
+> +	return 0;
+> +}
+> +
+> +static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc) {
+> +	u32 val;
+> +	int ret;
+> +
+> +	if (fpc->counter_clk_enable++)
+> +		return 0;
+> +
+> +	ret = clk_prepare_enable(fpc->counter_clk);
+> +	if (ret) {
+> +		fpc->counter_clk_enable--;
+> +		return ret;
+> +	}
+> +
+> +	ret = clk_prepare_enable(fpc->counter_clk_en);
+> +	if (ret) {
+> +		fpc->counter_clk_enable--;
+> +		return ret;
+> +	}
+> +
+> +	/* select counter clock source */
+> +	val = readl(fpc->base + FTM_SC);
+> +	val &= ~(FTM_SC_CLK_MASK << FTM_SC_CLK_SHIFT);
+> +	val |= fpc->counter_clk_select;
+> +	writel(val, fpc->base + FTM_SC);
+> +
+> +	return 0;
+> +}
+> +
+> +static int fsl_pwm_enable(struct pwm_chip *chip, struct pwm_device
+> +*pwm) {
+> +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> +	u32 val;
+> +	int ret;
+> +
+> +	val = readl(fpc->base + FTM_OUTMASK);
+> +	val &= ~BIT(pwm->hwpwm);
+> +	writel(val, fpc->base + FTM_OUTMASK);
+> +
+> +	mutex_lock(&fpc->lock);
+> +	ret = fsl_counter_clock_enable(fpc);
+> +	mutex_unlock(&fpc->lock);
+> +
+> +	return ret;
+> +}
+> +
+> +static void fsl_counter_clock_disable(struct fsl_pwm_chip *fpc) {
+> +	u32 val;
+> +
+> +	if (--fpc->counter_clk_enable)
+> +		return;
+> +
+> +	val = readl(fpc->base + FTM_SC);
+> +	val &= ~(FTM_SC_CLK_MASK << FTM_SC_CLK_SHIFT);
+> +	writel(val, fpc->base + FTM_SC);
+> +
+> +	clk_disable_unprepare(fpc->counter_clk_en);
+> +	clk_disable_unprepare(fpc->counter_clk);
+> +}
+> +
+> +static void fsl_pwm_disable(struct pwm_chip *chip, struct pwm_device
+> +*pwm) {
+> +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> +	u32 val;
+> +
+> +	val = readl(fpc->base + FTM_OUTMASK);
+> +	val |= BIT(pwm->hwpwm);
+> +	writel(val, fpc->base + FTM_OUTMASK);
+> +
+> +	mutex_lock(&fpc->lock);
+> +
+> +	fsl_counter_clock_disable(fpc);
+> +
+> +	val = readl(fpc->base + FTM_OUTMASK);
+> +
+> +	if ((val & 0xFF) == 0xFF) {
+> +		fpc->period_ns = 0;
+> +		fpc->counter_clk_en = NULL;
+> +	}
+> +
+> +	mutex_unlock(&fpc->lock);
+> +}
+> +
+> +static const struct pwm_ops fsl_pwm_ops = {
+> +	.request = fsl_pwm_request,
+> +	.free = fsl_pwm_free,
+> +	.config = fsl_pwm_config,
+> +	.set_polarity = fsl_pwm_set_polarity,
+> +	.enable = fsl_pwm_enable,
+> +	.disable = fsl_pwm_disable,
+> +	.owner = THIS_MODULE,
+> +};
+> +
+> +static int fsl_pwm_probe(struct platform_device *pdev) {
+> +	struct fsl_pwm_chip *fpc;
+> +	struct resource *res;
+> +	int ret;
+> +
+> +	fpc = devm_kzalloc(&pdev->dev, sizeof(*fpc), GFP_KERNEL);
+> +	if (!fpc)
+> +		return -ENOMEM;
+> +
+> +	mutex_init(&fpc->lock);
+> +
+> +	fpc->chip.dev = &pdev->dev;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	fpc->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(fpc->base))
+> +		return PTR_ERR(fpc->base);
+> +
+> +	fpc->sys_clk = devm_clk_get(&pdev->dev, "ftm_sys");
+> +	if (IS_ERR(fpc->sys_clk)) {
+> +		dev_err(&pdev->dev,
+> +				"failed to get \"ftm_sys\" clock\n");
+> +		return PTR_ERR(fpc->sys_clk);
+> +	}
+> +
+> +	ret = clk_prepare_enable(fpc->sys_clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	writel(0x00, fpc->base + FTM_CNTIN);
+> +	writel(0x00, fpc->base + FTM_OUTINIT);
+> +	writel(0xFF, fpc->base + FTM_OUTMASK);
+> +	clk_disable_unprepare(fpc->sys_clk);
+> +
+> +	fpc->chip.ops = &fsl_pwm_ops;
+> +	fpc->chip.of_xlate = of_pwm_xlate_with_flags;
+> +	fpc->chip.of_pwm_n_cells = 3;
+> +	fpc->chip.base = -1;
+> +	fpc->chip.npwm = 8;
+> +
+> +	ret = pwmchip_add(&fpc->chip);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed to add PWM chip : %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, fpc);
+> +
+> +	return 0;
+> +}
+> +
+> +static int fsl_pwm_remove(struct platform_device *pdev) {
+> +	struct fsl_pwm_chip *fpc = platform_get_drvdata(pdev);
+> +
+> +	return pwmchip_remove(&fpc->chip);
+> +}
+> +
+> +static const struct of_device_id fsl_pwm_dt_ids[] = {
+> +	{ .compatible = "fsl,vf610-ftm-pwm", },
+> +	{ /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, fsl_pwm_dt_ids);
+> +
+> +static struct platform_driver fsl_pwm_driver = {
+> +	.driver = {
+> +		.name = "fsl-ftm-pwm",
+> +		.of_match_table = fsl_pwm_dt_ids,
+> +	},
+> +	.probe = fsl_pwm_probe,
+> +	.remove = fsl_pwm_remove,
+> +};
+> +module_platform_driver(fsl_pwm_driver);
+> +
+> +MODULE_DESCRIPTION("Freescale FlexTimer Module PWM Driver");
+> +MODULE_AUTHOR("Xiubo Li <Li.Xiubo@freescale.com>");
+> +MODULE_ALIAS("platform:fsl-ftm-pwm");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.8.4
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-In my experience on powerpc it's very correct, there's typically a 
-significant latency in remote access and we don't have the benefit of a 
-SLIT that actually defines the locality between proximity domains like we 
-do on other architectures.  We have had significant issues with thp, for 
-example, being allocated remotely instead of pages locally, much more 
-drastic than on our x86 machines, particularly AMD machines.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
