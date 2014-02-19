@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaBTFlm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 00:41:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50451 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaBTFlj (ORCPT
+	id S1751882AbaBTFty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 00:49:54 -0500
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:1912 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750770AbaBTFtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 00:41:39 -0500
-Message-ID: <53059590.7040506@infradead.org>
-Date: Wed, 19 Feb 2014 21:41:36 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: mmotm 2014-02-19-16-07 uploaded (sound/soc/intel/sst-dsp.c)
-References: <20140220000827.17F275A42DC@corp2gmr1-2.hot.corp.google.com>
-In-Reply-To: <20140220000827.17F275A42DC@corp2gmr1-2.hot.corp.google.com>
-Content-Type: text/plain; charset=windows-1256
+	Thu, 20 Feb 2014 00:49:52 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AswVAKCWBVNXQzWw/2dsb2JhbABZKIJewQUCAoEUF3SCJQEBBAEnExwjBQsIAw4KLjkeBhOHfQwBzh8XjmQHhDgBA4lGhHqJbwGSJIM6Lw
+Date: Thu, 20 Feb 2014 05:51:15 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] fs: xattr: Don't display attributes without read
+ access
+Message-Id: <20140220055115.9cf0cf8200efa03f1136b642@skynet.be>
+In-Reply-To: <20140218151650.02fb2d6034deb2d3d11ccc7a@linux-foundation.org>
+References: <20140216203101.bf432a8b7b40703197a91462@skynet.be>
+	<20140218151650.02fb2d6034deb2d3d11ccc7a@linux-foundation.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/14 16:08, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2014-02-19-16-07 has been uploaded to
-> 
->    http://www.ozlabs.org/~akpm/mmotm/
-> 
-> mmotm-readme.txt says
-> 
-> README for mm-of-the-moment:
-> 
-> http://www.ozlabs.org/~akpm/mmotm/
-> 
-> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> more than once a week.
-> 
+On Tue, 18 Feb 2014 15:16:50 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-on i386:
-(from linux-next)
-
-  CC      sound/soc/intel/sst-dsp.o
-sound/soc/intel/sst-dsp.c: In function 'sst_dsp_outbox_write':
-sound/soc/intel/sst-dsp.c:218:2: error: implicit declaration of function 'memcpy_toio' [-Werror=implicit-function-declaration]
-sound/soc/intel/sst-dsp.c: In function 'sst_dsp_outbox_read':
-sound/soc/intel/sst-dsp.c:231:2: error: implicit declaration of function 'memcpy_fromio' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[4]: *** [sound/soc/intel/sst-dsp.o] Error 1
-
-
--- 
-~Randy
+> On Sun, 16 Feb 2014 20:31:01 +0800 Fabian Frederick <fabf@skynet.be> wrote:
+> 
+> > Any user can display extented attribute names without read
+> > access.
+> > 
+> > eg: attr -l <filename>
+> > 
+> > This patch checks inode_permission in listxattr common
+> > function before executing vfs_listxattr.
+> > 
+> > ...
+> >
+> > --- a/fs/xattr.c
+> > +++ b/fs/xattr.c
+> > @@ -543,6 +543,10 @@ listxattr(struct dentry *d, char __user *list, size_t size)
+> >  	char *klist = NULL;
+> >  	char *vlist = NULL;	/* If non-NULL, we used vmalloc() */
+> >  
+> > +	error = inode_permission(d->d_inode, MAY_READ);
+> > +	if (error)
+> > +		return error;
+> > +
+> >  	if (size) {
+> >  		if (size > XATTR_LIST_MAX)
+> >  			size = XATTR_LIST_MAX;
+> 
+> erk.  Doesn't this mean that if existing userspace is relying on the
+> current behaviour, this patch will cause breakage?
+> 
+FYI, I just noticed FreeBSD was giving the expected result : no attribute name revealed
+ without read access .... 
