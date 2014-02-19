@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaBSKoc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 05:44:32 -0500
-Received: from smtpbgsg2.qq.com ([54.254.200.128]:57619 "HELO smtpbgsg2.qq.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751854AbaBSKo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 05:44:27 -0500
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 05:44:26 EST
-X-QQ-SSF: 00000000000000F000000000000000J
-X-HAS-ATTACH: no
-X-QQ-BUSINESS-ORIGIN: 2
-X-Originating-IP: 162.105.200.145
-In-Reply-To: <530470E4.2040104@linux.vnet.ibm.com>
-References: <tencent_074552B42B4D25D2329613D8@qq.com>
-	<530470E4.2040104@linux.vnet.ibm.com>
-X-QQ-STYLE: 
-X-QQ-mid: webmail688t1392806326t671730
-From: "=?utf-8?B?WXVhbiBQZW5nZmVp?=" <coolypf@qq.com>
-To: "=?utf-8?B?UGV0ZXIgT2JlcnBhcmxlaXRlcg==?=" 
-	<oberpar@linux.vnet.ibm.com>
-Cc: "=?utf-8?B?bGludXgta2VybmVs?=" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gcov: fix memory allocation problem in gcov_info_dup
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Date: Wed, 19 Feb 2014 18:38:46 +0800
-X-Priority: 3
-Message-ID: <tencent_791B676E6E166A343D8CB154@qq.com>
-X-QQ-MIME: TCMime 1.0 by Tencent
-X-Mailer: QQMail 2.x
-X-QQ-Mailer: QQMail 2.x
-X-QQ-ReplyHash: 1227086896
-X-QQ-SENDSIZE: 520
-X-QQ-Bgrelay: 1
+	id S1753120AbaBSKpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 05:45:47 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:35667 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751986AbaBSKpp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 05:45:45 -0500
+From: Nenghua Cao <nhcao@marvell.com>
+To: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Nenghua Cao <nhcao@marvell.com>
+Subject: [PATCH 1/2] driver: regmap: add regmap_parse_val api
+Date: Wed, 19 Feb 2014 18:44:13 +0800
+Message-ID: <1392806653-29604-1-git-send-email-nhcao@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-19_02:2014-02-18,2014-02-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402190025
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1JAikB7005071
 
-Using -fprofile-values is one case that will cause the memory allocation
-problem. More changes are needed to fully support -fprofile-values. I
-submit this patch first because I think it is obvious and does no harm.
-> I'm unaware of any user of -fprofile-values in the kernel. Are you
-> trying to extend gcov-kernel to also support -fprofile-values? I would
-> expect that additional changes to the .gcda file creation logic are
-> required to fully support this GCC option.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+From: Nenghua Cao <nhcao@marvell.com>
+
+    In some cases, we need regmap's format parse_val function
+to do be/le translation according to the bus configuration.
+For example, snd_soc_bytes_put() uses regmap to write/read values,
+and use cpu_to_be() directly to covert MASK into big endian. This
+is a defect, and should use regmap's format function to do it according
+to bus configuration.
+
+Signed-off-by: Nenghua Cao <nhcao@marvell.com>
+---
+ drivers/base/regmap/regmap.c |   12 ++++++++++++
+ include/linux/regmap.h       |    9 +++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 6a19515..4b2ed0c 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -2240,6 +2240,18 @@ int regmap_get_val_bytes(struct regmap *map)
+ }
+ EXPORT_SYMBOL_GPL(regmap_get_val_bytes);
+ 
++int regmap_parse_val(struct regmap *map, const void *buf,
++			unsigned int *val)
++{
++	if (!map->format.parse_val)
++		return -EINVAL;
++
++	*val = map->format.parse_val(buf);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(regmap_parse_val);
++
+ static int __init regmap_initcall(void)
+ {
+ 	regmap_debugfs_initcall();
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 4149f1a..3e1a2e4 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -423,6 +423,8 @@ bool regmap_check_range_table(struct regmap *map, unsigned int reg,
+ 
+ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ 			  int num_regs);
++int regmap_parse_val(struct regmap *map, const void *buf,
++				unsigned int *val);
+ 
+ static inline bool regmap_reg_in_range(unsigned int reg,
+ 				       const struct regmap_range *range)
+@@ -695,6 +697,13 @@ static inline int regmap_register_patch(struct regmap *map,
+ 	return -EINVAL;
+ }
+ 
++static inline int regmap_parse_val(struct regmap *map, const void *buf,
++				unsigned int *val)
++{
++	WARN_ONCE(1, "regmap API is disabled");
++	return -EINVAL;
++}
++
+ static inline struct regmap *dev_get_regmap(struct device *dev,
+ 					    const char *name)
+ {
+-- 
+1.7.0.4
+
