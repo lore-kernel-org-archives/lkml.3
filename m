@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaBSINu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:13:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37998 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836AbaBSINt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:13:49 -0500
-Date: Wed, 19 Feb 2014 09:15:42 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>
-Cc: pv-drivers@vmware.com, iscsi-driver@qlogic.com,
-        qla2xxx-upstream@qlogic.com, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, intel-linux-scu@intel.com,
-        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 00/22] scsi: Use pci_enable_msix_range()
-Message-ID: <20140219081541.GA26928@dhcp-26-207.brq.redhat.com>
-References: <cover.1391512266.git.agordeev@redhat.com>
+	id S1752702AbaBSIOA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:14:00 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:59608 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640AbaBSIN5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 03:13:57 -0500
+Date: Wed, 19 Feb 2014 08:13:50 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Milo Kim <milo.kim@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 01/10] mfd: Add TI LMU driver
+Message-ID: <20140219081350.GA10504@lee--X1>
+References: <1392359450-6890-1-git-send-email-milo.kim@ti.com>
+ <20140217095734.GD17875@lee--X1>
+ <53030F9C.8000605@ti.com>
+ <20140218082127.GD20218@lee--X1>
+ <5303F3B5.6050806@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <cover.1391512266.git.agordeev@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5303F3B5.6050806@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 12:16:46PM +0100, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
+> >>>>+	pdata->en_gpio = of_get_named_gpio(node, "ti,enable-gpio", 0);
+> >>>
+> >>>There is a global DT property for this already.
+> >>
+> >>I've not found it yet, but I agree it looks like general property.
+> >>So I'll replace "ti,enable-gpio" with "ti,lmu-en-gpio".
+> >
+> >Just re-use "gpio-enable". No need for it to be vendor specific.
+> >
+> 
+> Got it. Thanks!
+> 
+> This GPIO is used for enabling the device. So, "enable-gpio" is more
+> appropriate name, isn't it?
 
-Hi James,
+Yes, I wrote it the wrong way round (typo).
 
-What is the process to get these patches accepted to scsi.git tree?
-Should I make some extra effort besides just posting the series this way?
-
-Thanks!
+Just grep for both, you will see which one to use.
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
