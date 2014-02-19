@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaBSIo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:44:28 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:20796 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaBSIo1 (ORCPT
+	id S1752960AbaBSIqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:46:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49468 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168AbaBSIqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:44:27 -0500
-Message-ID: <53046EE7.8060504@atmel.com>
-Date: Wed, 19 Feb 2014 09:44:23 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Feb 2014 03:46:24 -0500
+Date: Wed, 19 Feb 2014 09:46:18 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] sched/deadline: Fix bad accounting of nr_running
+Message-ID: <20140219084618.GF27965@twins.programming.kicks-ass.net>
+References: <20140214235946.60a89b65@gandalf.local.home>
+ <53022F2D.8040301@gmail.com>
+ <20140218215012.209059c0@gandalf.local.home>
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>, Felipe Balbi <balbi@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] USB: at91: using USBA_NR_DMAS for DMA channels
-References: <1392775664-16404-1-git-send-email-voice.shen@atmel.com> <1392775664-16404-2-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1392775664-16404-2-git-send-email-voice.shen@atmel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218215012.209059c0@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/02/2014 03:07, Bo Shen :
-> The SoCs earlier than sama5d3, they have the same number endpoints
-> and DMA channels. In driver code, they use the same definition
-> USBA_NR_ENDPOINTS for both endpoints and dma channels. However,
-> in sama5d3, it has different number for endpoints and DMA channels.
-> So, define a new micro USBA_NR_DMAs for DMA channels. And the
-
-s/micro/macro/
-
-> USBA_NR_ENDPOINS is not used anymore, remove it at the same time.
-> 
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> ---
-> Changes in v2:
->   - Make the commit message more clearer.
-> 
->  drivers/usb/gadget/atmel_usba_udc.c | 2 +-
->  drivers/usb/gadget/atmel_usba_udc.h | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
-> index 7e67a81..5cded1c 100644
-> --- a/drivers/usb/gadget/atmel_usba_udc.c
-> +++ b/drivers/usb/gadget/atmel_usba_udc.c
-> @@ -1661,7 +1661,7 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
->  	if (dma_status) {
->  		int i;
+On Tue, Feb 18, 2014 at 09:50:12PM -0500, Steven Rostedt wrote:
 >  
-> -		for (i = 1; i < USBA_NR_ENDPOINTS; i++)
-> +		for (i = 1; i < USBA_NR_DMAS; i++)
->  			if (dma_status & (1 << i))
->  				usba_dma_irq(udc, &udc->usba_ep[i]);
->  	}
-> diff --git a/drivers/usb/gadget/atmel_usba_udc.h b/drivers/usb/gadget/atmel_usba_udc.h
-> index 2922db5..a70706e 100644
-> --- a/drivers/usb/gadget/atmel_usba_udc.h
-> +++ b/drivers/usb/gadget/atmel_usba_udc.h
-> @@ -210,7 +210,7 @@
->  #define USBA_FIFO_BASE(x)	((x) << 16)
->  
->  /* Synth parameters */
-> -#define USBA_NR_ENDPOINTS	7
-> +#define USBA_NR_DMAS		7
->  
->  #define EP0_FIFO_SIZE		64
->  #define EP0_EPT_SIZE		USBA_EPT_SIZE_64
+> > Rationale for this odd behavior is that, when a task is throttled, it
+> > is removed only from the dl_rq, but we keep it on_rq (as this is not
+> > a "full dequeue", that is the task is not actually sleeping). But, it
+> > is also true that, while throttled a task behaves like it is sleeping
+> > (e.g., its timer will fire on a new CPU if the old one is dead). So,
+> > Steven's fix sounds also semantically correct.
 > 
+> Actually, it seems that I was hitting it again, but this time getting a
+> negative number. OK, after looking at the code a bit more, I think we
+> should update the runqueue nr_running only when the task is officially
+> enqueued and dequeued, and all accounting within, will not touch that
+> number.
 
-
--- 
-Nicolas Ferre
+But if the task is throttled it should still very much decrement the
+number. There's places that very much rely on nr_running be exactly the
+number of runnable tasks.
