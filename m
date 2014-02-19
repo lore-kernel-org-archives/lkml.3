@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaBSQhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:37:12 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:8665 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754501AbaBSQhJ (ORCPT
+	id S1754709AbaBSQjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:39:45 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:57643 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267AbaBSQjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:37:09 -0500
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-11.tower-178.messagelabs.com!1392827826!27197945!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201402191636.s1JGakB1017627@swsrvapps-02.lan>
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-Date: Wed, 19 Feb 2014 16:32:47 +0000
-Subject: [PATCH V1 0/3] da9052: Add new supported chip
-To: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-CC: David Jander <david@protonic.nl>, <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
+	Wed, 19 Feb 2014 11:39:43 -0500
+Date: Wed, 19 Feb 2014 16:39:37 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alexandre.torgue@st.com, linux-ide@vger.kernel.org,
+        hdegoede@redhat.com
+Subject: Re: [PATCH 3/3] ahci: st: Add support for ST's SATA IP
+Message-ID: <20140219163937.GI10504@lee--X1>
+References: <1392641818-23419-1-git-send-email-lee.jones@linaro.org>
+ <1392641818-23419-3-git-send-email-lee.jones@linaro.org>
+ <20140218233645.GP31892@mtj.dyndns.org>
+ <20140219083025.GB10504@lee--X1>
+ <20140219140458.GA10134@htj.dyndns.org>
+ <20140219150121.GG10504@lee--X1>
+ <20140219150654.GH10134@htj.dyndns.org>
+ <20140219152336.GH10504@lee--X1>
+ <20140219153624.GI10134@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140219153624.GI10134@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is submission attempt number 1 to have this patch sequence applied
-to the linux kernel source tree.
+> > Since when has maintaining core code been the responsibility of the
+> > leaf driver developers? If you're aware that the core code is
+> > sub-standard then it's you who should be fixing it.
+> 
+> No, there isn't this clear divide between core and the leaf
+> developers.  People working on the "core" don't just grow off the
+> ground.  You can't just go around piling mess around claiming that
+> it's not your responsbility and then expect someone else to clean up
+> after you.  How can that be *possibly* sustainable?
 
-The DA9052 and DA9053 are low power Power Management Integrated Circuits
-with extra functionality beyond the power regulators.
+That's not what I said was it? You're misinterpreting me.
 
-There is now a new variant of the DA9053 PMIC called BC, and this
-patch sequence provides for it's support.
+I'm more than happy to work on core code and have done in the past.
+However, if every subsystem maintainer I submit patches to forced me
+to undertake some API clean-ups/re-write or convert to another
+future/development API prior to acceptance I wouldn't be able to get
+any of my own work done.
 
-There is one difference between it and the AA, BA and BB variants.
+> > I think it's great that forward thinking developers like Hans take on
+> > challenges to improve subsystems which are lacking in one way or
+> 
+> Yeah, which happened only because I pushed back and Hans isn't even
+> paid to do it.  Doesn't that say something?
 
-There is also the correctiion of a typing mistake in one of the BA
-name strings that was erroneously typed as "ab".
+It tells me that Hans has more spare time than I do.
 
-This patch sequence depends on the first being applied first because
-it provides the hash definition of DA9053_BC
+This work would even be something I'd be interested in helping out
+with - even in my own time, but the way you speak to people doesn't
+exactly inspire them to go out of my way to work with you does it?
 
-Many thanks,
+> Nobody is actually helping Hans' work.  Not at all, nada, zilch.
+> Just complain when directed towards it.
 
-Anthony Olech, Dialog Semiconductor
+Again, that's not what I said. It's great that your subsystem is being
+improved, but insisting that anyone who submits new code to rebase
+on top of some development patches which only exist in mail form, and
+refusing to take patches until they do so doesn't seem right to me.
 
-Opensource [Anthony Olech] (3):
-  include/linux/mfd/da9052/da9052: Add new BC chip
-  MFD: da9052: Add new DA9053 BC chip variant
-  REGULATOR: da9052: Add new DA9053 BC chip variant
+> > another, but holding back other development while this process is
+> > ongoing is fundamentally wrong. Especially in this case where you're
+> > still actively reviewing/NACKing the core changes.
+> > 
+> > Changes to APIs should either support backward-capability or change all
+> > effected drivers. I haven't been able to apply the patches yet, so I
+> > can't tell which one of these holds true, but I believe it's the
+> > former. In which case any new driver using the _current_ (not old)
+> > API should fold neatly in. I've even offered to convert to the new API
+> > once it's Mainlined. How can I say fairer than that?
+> > 
+> > Finally, do try and stay at least a little bit professional on the
+> > MLs. That sort of disrespectful, rude behaviour may be how you guys do
+> > it at Redhat, but most will think it's nothing more than childish.
+> 
+> If you want me to be respectful towards you, don't be a crybaby
+> screaming "it's not fair".  It apparently isn't clear to you that you
+> have to chip in for the whole thing to be maintainable in the long
+> term.  Unfair... lol, that was a good one, really.
 
- drivers/mfd/da9052-i2c.c             |    5 ++++-
- drivers/mfd/da9052-spi.c             |    1 +
- drivers/regulator/da9052-regulator.c |    1 +
- include/linux/mfd/da9052/da9052.h    |    1 +
- 4 files changed, 7 insertions(+), 1 deletion(-)
+It appears you've just regressed into childhood again. Let's continue
+this when you are able to have an adult conversation which other
+grown-ups.
 
 -- 
-end-of-patch 0/3 for PATCH V1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
