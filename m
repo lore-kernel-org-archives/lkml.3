@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaBSPoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:44:46 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:55588 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753375AbaBSPoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:44:44 -0500
-Message-ID: <1392824602.17130.68.camel@iivanov-dev>
-Subject: Re: [PATCH v2 1/3] usb: chipidea: msm: Add device tree binding
- information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Brown <davidb@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Wed, 19 Feb 2014 17:43:22 +0200
-In-Reply-To: <20140218212659.GL1706@sonymobile.com>
-References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
-	 <1392729681-21022-2-git-send-email-iivanov@mm-sol.com>
-	 <20140218212659.GL1706@sonymobile.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1754058AbaBSPqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:46:50 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49013 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883AbaBSPqs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 10:46:48 -0500
+Message-ID: <5304D1E4.2070009@intel.com>
+Date: Wed, 19 Feb 2014 07:46:44 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: dirk.j.brandewie@intel.com,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [cpufreq/intel_pstate] 1abc4b20b85: +7.3% turbostat.Pkg_W
+References: <20140219140628.GA8097@localhost>
+In-Reply-To: <20140219140628.GA8097@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/19/2014 06:06 AM, Fengguang Wu wrote:
+> Hi Dirk,
+>
+> FYI, we noticed the below changes on commit 1abc4b20b85b42e8573957e54b193385cf48b0d6
+> ("cpufreq / intel_pstate: remove idle time and duration from sample and calculations"):
+>
 
-Hi, 
+This commit was a LONG time ago.  How does this compare to the current state of
+the driver?
 
-On Tue, 2014-02-18 at 13:26 -0800, Courtney Cavin wrote: 
-> On Tue, Feb 18, 2014 at 02:21:19PM +0100, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > Document device tree binding information as required by
-> > the Qualcomm USB controller.
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > ---
-> >  .../devicetree/bindings/usb/msm-hsusb.txt          |   17 +++++++++++++++++
-> 
-> Although you mentioned to Josh that this is intended for "non-standard"
-> Chipidea properties, I don't see any other than requiring that 'dr_mode'
-> must be "peripheral".  It would seem that this should all be integrated
-> into a ci3xxx.txt.
+This functionality was added back in commit fcb6a15c2e7e76
 
-Hm, there is no ci3xxx.txt. The closest match is ci-hdrc-imx.txt.
-So it could be ci-hdrc-qcom.txt or my preferred name qcom,ci-hdrc.txt?
+--Dirk
 
-> > +CI13xxx (Chipidea) USB controllers
-> > +
-> > +Required properties:
-> > +- compatible:   should contain "qcom,ci-hdrc"
-> 
-> Is there nothing more specific you could put here?  Maybe a hardware
-> revision, or something?
-> 
-
-I am not aware of any version numbers here, sorry.
-
-
-> > +- reg:          offset and length of the register set in the memory map
-> > +- interrupts:   interrupt-specifier for the controller interrupt.
-> > +- usb-phy:      phandle for the PHY device
-> > +- dr_mode:      Sould be "peripheral"
-> 
-> s/Sould/should/
-
-Thanks, 
-Ivan
-
-> 
-> -Courtney
-
+> test case: snb-drag/sysbench/fileio/600s-100%-1HDD-btrfs-64G-1024-seqrd-sync
+>
+> 559f56c70fc90bd  1abc4b20b85b42e8573957e54
+> ---------------  -------------------------
+>        1.61 ~ 0%     +32.2%       2.13 ~ 0%  TOTAL turbostat.GHz
+>        0.86 ~ 3%     +15.3%       0.99 ~ 1%  TOTAL turbostat.%pc3
+>       11.03 ~ 1%     -11.9%       9.72 ~ 1%  TOTAL turbostat.%c1
+>        5.36 ~ 0%     -21.8%       4.19 ~ 0%  TOTAL turbostat.%c0
+>        2.67 ~ 0%     +18.2%       3.15 ~ 0%  TOTAL turbostat.Cor_W
+>        6.66 ~ 0%      +7.3%       7.15 ~ 0%  TOTAL turbostat.Pkg_W
+>     1278688 ~ 4%     -16.6%    1066682 ~ 4%  TOTAL cpuidle.C1-SNB.usage
+>       70490 ~ 1%     -13.1%      61235 ~ 1%  TOTAL cpuidle.C3-SNB.usage
+>      472542 ~ 2%     -13.7%     408029 ~ 2%  TOTAL cpuidle.C1E-SNB.usage
+>   1.788e+08 ~ 5%     -15.4%  1.512e+08 ~ 5%  TOTAL cpuidle.C1-SNB.time
+>   3.777e+08 ~ 1%     -12.4%  3.311e+08 ~ 0%  TOTAL cpuidle.C1E-SNB.time
+>     2213808 ~ 1%     -14.6%    1890218 ~ 0%  TOTAL interrupts.RES
+>      920130 ~ 5%     -13.9%     791994 ~ 5%  TOTAL interrupts.LOC
+>       52713 ~ 0%     -14.9%      44878 ~ 0%  TOTAL softirqs.TIMER
+>
+> test case: hackbench, netperf and dbench
+>
+> 559f56c70fc90bd  1abc4b20b85b42e8573957e54
+> ---------------  -------------------------
+>      312046 ~ 1%     -47.3%     164399 ~ 0%  lkp-snb01/micro/hackbench/1600%-threads-pipe
+>      151815 ~ 0%      -0.8%     150593 ~ 0%  lkp-snb01/micro/hackbench/1600%-threads-socket
+>      463862 ~ 0%     -32.1%     314993 ~ 0%  TOTAL hackbench.throughput
+>
+> 559f56c70fc90bd  1abc4b20b85b42e8573957e54
+> ---------------  -------------------------
+>        2761 ~ 0%      -1.8%       2713 ~ 0%  lkp-a04/micro/netperf/120s-200%-UDP_RR
+>        2761 ~ 0%      -1.8%       2713 ~ 0%  TOTAL netperf.Throughput_tps
+>
+> 559f56c70fc90bd  1abc4b20b85b42e8573957e54
+> ---------------  -------------------------
+>        8276 ~ 0%      -0.3%       8247 ~ 0%  nhm8/micro/dbench/100%
+>        8276 ~ 0%      -0.3%       8247 ~ 0%  TOTAL dbench.throughput-MB/sec
+>
+> Thanks,
+> Fengguang
+>
 
