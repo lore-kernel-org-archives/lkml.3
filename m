@@ -1,146 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaBSRf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 12:35:29 -0500
-Received: from 1.mo68.mail-out.ovh.net ([46.105.41.146]:51098 "EHLO
-	mo68.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752090AbaBSRf2 (ORCPT
+	id S1754706AbaBSRii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 12:38:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20096 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123AbaBSRig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 12:35:28 -0500
-Message-ID: <5304E9D8.7090609@overkiz.com>
-Date: Wed, 19 Feb 2014 18:28:56 +0100
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Feb 2014 12:38:36 -0500
+Date: Wed, 19 Feb 2014 12:38:22 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [Patch v2 3/5] xen, acpi_pad: use acpi_evaluate_ost() to replace
+ open-coded version
+Message-ID: <20140219173822.GF11365@phenom.dumpdata.com>
+References: <1392789739-32317-1-git-send-email-jiang.liu@linux.intel.com>
+ <1392789739-32317-3-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 1/8] ARM: at91: Add at91sam9rl DT SoC support
-References: <1392823951-26053-1-git-send-email-alexandre.belloni@free-electrons.com> <1392823951-26053-2-git-send-email-alexandre.belloni@free-electrons.com> <20140219170020.GA25079@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140219170020.GA25079@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 16850499481515227361
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrleehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392789739-32317-3-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Wed, Feb 19, 2014 at 02:02:17PM +0800, Jiang Liu wrote:
+> Use public function acpi_evaluate_ost() to replace open-coded
+> version of evaluating ACPI _OST method.
+> 
 
-On 19/02/2014 18:00, Mark Rutland wrote:
-> On Wed, Feb 19, 2014 at 03:32:24PM +0000, Alexandre Belloni wrote:
->> This adds preliminary DT support for the at91sam9rl.
->>
->> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->> ---
->>   arch/arm/boot/dts/at91sam9rl.dtsi | 628 ++++++++++++++++++++++++++++++++++++++
->>   arch/arm/mach-at91/at91sam9rl.c   |  16 +
->>   2 files changed, 644 insertions(+)
->>   create mode 100644 arch/arm/boot/dts/at91sam9rl.dtsi
->   
-> [...]
->
->> +                       tcb0: timer@fffa0000 {
->> +                               compatible = "atmel,at91rm9200-tcb";
->> +                               reg = <0xfffa0000 0x100>;
->> +                               interrupts = <16 IRQ_TYPE_LEVEL_HIGH 0
->> +                                             17 IRQ_TYPE_LEVEL_HIGH 0
->> +                                             18 IRQ_TYPE_LEVEL_HIGH 0>;
->> +                       };
-> Nit: please bracket list entries individually. Also for other list
-> properties like reg and (*-)gpio(s).
->
-> [...]
->
->> +                       adc0: adc@fffd0000 {
->> +                               compatible = "atmel,at91sam9260-adc";
->> +                               reg = <0xfffd0000 0x100>;
->> +                               interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
->> +                               atmel,adc-use-external-triggers;
->> +                               atmel,adc-channels-used = <0xf>;
->> +                               atmel,adc-vref = <3300>;
->> +                               atmel,adc-num-channels = <4>;
->> +                               atmel,adc-startup-time = <15>;
->> +                               atmel,adc-channel-base = <0x30>;
->> +                               atmel,adc-drdy-mask = <0x10000>;
->> +                               atmel,adc-status-register = <0x1c>;
->> +                               atmel,adc-trigger-register = <0x04>;
->> +                               atmel,adc-res = <8 10>;
->> +                               atmel,adc-res-names = "lowres", "highres";
->> +                               atmel,adc-use-res = "highres";
->> +
->> +                               trigger@0 {
->> +                                       trigger-name = "timer-counter-0";
->> +                                       trigger-value = <0x1>;
->> +                               };
-> A unit-address should go with a reg value. Either this needs a reg and
-> the parent node needs #address-cells and #size-cells, or the
-> unit-address should go, and the names made unique through other means.
->
-> [...]
->
->> +                       pinctrl@fffff400 {
->> +                               #address-cells = <1>;
->> +                               #size-cells = <1>;
->> +                               compatible = "atmel,at91rm9200-pinctrl", "simple-bus";
-> NAK. Either this is a atmel,at91rm9200-pinctrl node or a simple-bus. Not
-> both; that doesn't make any sense.
->
->> diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
->> index 3651517abedf..d6ee8bb47213 100644
->> --- a/arch/arm/mach-at91/at91sam9rl.c
->> +++ b/arch/arm/mach-at91/at91sam9rl.c
->> @@ -196,6 +196,22 @@ static struct clk_lookup periph_clocks_lookups[] = {
->>          CLKDEV_CON_ID("pioB", &pioB_clk),
->>          CLKDEV_CON_ID("pioC", &pioC_clk),
->>          CLKDEV_CON_ID("pioD", &pioD_clk),
->> +       /* more lookup table for DT entries */
->> +       CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
->> +       CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
->> +       CLKDEV_CON_DEV_ID("usart", "ffffb400.serial", &usart1_clk),
->> +       CLKDEV_CON_DEV_ID("usart", "ffffb800.serial", &usart2_clk),
->> +       CLKDEV_CON_DEV_ID("usart", "ffffbc00.serial", &usart3_clk),
->> +       CLKDEV_CON_DEV_ID("t0_clk", "fffa0000.timer", &tc0_clk),
->> +       CLKDEV_CON_DEV_ID("t1_clk", "fffa0000.timer", &tc1_clk),
->> +       CLKDEV_CON_DEV_ID("t2_clk", "fffa0000.timer", &tc2_clk),
->> +       CLKDEV_CON_DEV_ID("mci_clk", "fffa4000.mmc", &mmc_clk),
->> +       CLKDEV_CON_DEV_ID(NULL, "fffa8000.i2c", &twi0_clk),
->> +       CLKDEV_CON_DEV_ID(NULL, "fffac000.i2c", &twi1_clk),
->> +       CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioA_clk),
->> +       CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioB_clk),
->> +       CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioC_clk),
->> +       CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioD_clk),
-> Why can't these clocks be described in the DT?
+Looks OK to me.
 
-They're described in the DT in patch 6/8, but we need these static 
-definitions
-in case the user wants to support both legacy and DT boards.
-
-The at91 CCF based implementation is only compatible with DT, and when 
-legacy
-board support is enabled this disables the CCF implementation in favor 
-of the
-old clk implementation.
-
-Best Regards,
-
-Boris
->
-> Cheers,
-> Mark.
-
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/xen/xen-acpi-pad.c |   26 +++++++-------------------
+>  1 file changed, 7 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/xen/xen-acpi-pad.c b/drivers/xen/xen-acpi-pad.c
+> index 40c4bc0..f83b754 100644
+> --- a/drivers/xen/xen-acpi-pad.c
+> +++ b/drivers/xen/xen-acpi-pad.c
+> @@ -77,27 +77,14 @@ static int acpi_pad_pur(acpi_handle handle)
+>  	return num;
+>  }
+>  
+> -/* Notify firmware how many CPUs are idle */
+> -static void acpi_pad_ost(acpi_handle handle, int stat,
+> -	uint32_t idle_nums)
+> -{
+> -	union acpi_object params[3] = {
+> -		{.type = ACPI_TYPE_INTEGER,},
+> -		{.type = ACPI_TYPE_INTEGER,},
+> -		{.type = ACPI_TYPE_BUFFER,},
+> -	};
+> -	struct acpi_object_list arg_list = {3, params};
+> -
+> -	params[0].integer.value = ACPI_PROCESSOR_AGGREGATOR_NOTIFY;
+> -	params[1].integer.value =  stat;
+> -	params[2].buffer.length = 4;
+> -	params[2].buffer.pointer = (void *)&idle_nums;
+> -	acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
+> -}
+> -
+>  static void acpi_pad_handle_notify(acpi_handle handle)
+>  {
+>  	int idle_nums;
+> +	struct acpi_buffer param = {
+> +		.length = 4,
+> +		.pointer = (void *)&idle_nums,
+> +	};
+> +
+>  
+>  	mutex_lock(&xen_cpu_lock);
+>  	idle_nums = acpi_pad_pur(handle);
+> @@ -109,7 +96,8 @@ static void acpi_pad_handle_notify(acpi_handle handle)
+>  	idle_nums = xen_acpi_pad_idle_cpus(idle_nums)
+>  		    ?: xen_acpi_pad_idle_cpus_num();
+>  	if (idle_nums >= 0)
+> -		acpi_pad_ost(handle, 0, idle_nums);
+> +		acpi_evaluate_ost(handle, ACPI_PROCESSOR_AGGREGATOR_NOTIFY,
+> +				  0, &param);
+>  	mutex_unlock(&xen_cpu_lock);
+>  }
+>  
+> -- 
+> 1.7.10.4
+> 
