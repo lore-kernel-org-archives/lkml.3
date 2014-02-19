@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaBSWAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 17:00:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33545 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655AbaBSWAW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 17:00:22 -0500
-Date: Wed, 19 Feb 2014 14:00:21 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: [PATCH] Set bounds on what /proc/self/make-it-fail accepts.
-Message-Id: <20140219140021.f187b2cdc396dab44e680078@linux-foundation.org>
-In-Reply-To: <20140219215505.GA28876@redhat.com>
-References: <20140218220606.GA9712@redhat.com>
-	<20140219134025.fcd70941e1ec98723a1bd230@linux-foundation.org>
-	<20140219215505.GA28876@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754345AbaBSWCj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 17:02:39 -0500
+Received: from mga02.intel.com ([134.134.136.20]:56601 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753829AbaBSWCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 17:02:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,508,1389772800"; 
+   d="scan'208";a="458418655"
+Message-ID: <530529FC.6080704@intel.com>
+Date: Wed, 19 Feb 2014 14:02:36 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com> <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com> <20140217143340.GR27965@twins.programming.kicks-ass.net>
+In-Reply-To: <20140217143340.GR27965@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014 16:55:05 -0500 Dave Jones <davej@redhat.com> wrote:
+On 02/17/2014 06:33 AM, Peter Zijlstra wrote:
+> Then write the PERF_RECORD_DATA structure into the normal ring-buffer
+> location; set data_offset to point to the first page boundary, data_size
+> to 1mb.
+> 
+> Then frob things such that perf_mmap_to_page() for the next 1mb of pages
+> points to your buffer pages and wipe the page-table entries.
 
-> On Wed, Feb 19, 2014 at 01:40:25PM -0800, Andrew Morton wrote:
->  
->  > Switching `make_it_fail' to unsigned makes the test simpler but it does
->  > rather muck up the typing in there.  task_struct.make_it_fail is still
->  > an int, we should now use simple_strtoul rather than simple_strtol,
->  > proc_fault_inject_read()'s snprintf() should now use %u, etc.  None of
->  > which actually matters, but still...
->  
-> I toyed with the idea of changing task_struct.make_it_fail to unsigned too,
-> but only realized I missed that after I'd sent out the diff.
-
-If we're touching the task_struct we could make it a bool.
-
-Or just a single bit(field).  task_struct already has a bunch of
-bitfields in it (strangely, they aren't contiguous).  But some locking
-would be needed if tasks-other-than-current can modify the bit.
-
+Wouldn't we have to teach a ton of code how to be IRQ safe for this to
+work?  Just step one: how do we go modifying page tables safely from an
+interrupt?  mm->page_table_lock is a plain non-irq spinlock.
