@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaBSAqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 19:46:08 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:63620 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaBSAqF (ORCPT
+	id S1752243AbaBSAsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 19:48:11 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60468 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600AbaBSAsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 19:46:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140202152106.GL20939@parisc-linux.org>
-References: <1391319694-3089-1-git-send-email-linkinjeon@gmail.com>
-	<20140202151624.GK20939@parisc-linux.org>
-	<20140202152106.GL20939@parisc-linux.org>
-Date: Wed, 19 Feb 2014 09:46:04 +0900
-Message-ID: <CAKYAXd9Q3Bj61hdHJNKvKX0j-=CT16irRUw9ZpqCh5wuZjnogQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
- for fallocate
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Feb 2014 19:48:09 -0500
+Date: Wed, 19 Feb 2014 00:47:36 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        jslaby@suse.cz, ben.dooks@codethink.co.uk, broonie@kernel.org
+Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
+ device probe
+Message-ID: <20140219004736.65beeb08@alan.etchedpixels.co.uk>
+In-Reply-To: <20140214001436.GA16287@kroah.com>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
+	<1390208555-27770-3-git-send-email-tushar.behera@linaro.org>
+	<20140120100415.GX15937@n2100.arm.linux.org.uk>
+	<20140213181216.GB24155@kroah.com>
+	<20140213181559.GB30257@n2100.arm.linux.org.uk>
+	<20140213182701.GA32578@kroah.com>
+	<20140213184249.GC30257@n2100.arm.linux.org.uk>
+	<20140213232606.GA27372@kroah.com>
+	<20140214000717.GG30257@n2100.arm.linux.org.uk>
+	<20140214001436.GA16287@kroah.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-03 0:21 GMT+09:00, Matthew Wilcox <matthew@wil.cx>:
-> On Sun, Feb 02, 2014 at 08:16:24AM -0700, Matthew Wilcox wrote:
->> On Sun, Feb 02, 2014 at 02:41:34PM +0900, Namjae Jeon wrote:
->> > The semantics of this flag are following:
->> > 1) It collapses the range lying between offset and length by removing
->> > any data
->> >    blocks which are present in this range and than updates all the
->> > logical
->> >    offsets of extents beyond "offset + len" to nullify the hole created
->> > by
->> >    removing blocks. In short, it does not leave a hole.
->> > 2) It should be used exclusively. No other fallocate flag in
->> > combination.
->> > 3) Offset and length supplied to fallocate should be fs block size
->> > aligned
->> >    in case of xfs and ext4.
->> > 4) Collaspe range does not work beyond i_size.
->>
->> What if the file is mmaped at the time somebody issues this command?
->> Seems to me we should drop pagecache pages that overlap with the
->> removed blocks.  If the removed range is not a multiple of PAGE_SIZE,
->> then we should also drop any pagecache pages after the removed range.
-Hi Matthew.
-Yes, right. So both xfs and ext4 call truncate_pagecache_range to drop
-page caches before removing blocks.
-truncate_pagecache_range(inode, offset, -1);
-and end offset is -1, which mean all page cache will be dropped from
-start offset to the end of file.
->
-> Oops, forgot to add "and if it is a multiple of page size, then we need
-> to update the offsets of any pages after the removed page".  We should
-> probably start easy though; just drop all pages that overlap the beginning
-> of the affected range to the end of the file.
-Yes, right. current implementation does exactly as you pointed
+> > The race isn't the uart code, it's the driver model.
+> > 
+> > Consider what happens when this happens:
+> > 
+> > * Two pl011 devices get registered at the same time by two different
+> >   threads.
+> 
+> How?  What two different busses will see this same device?  The amba bus
+> code should prevent that from happening, right?  If not, there's bigger
+> problems in that bus code :)
+> 
+> That's where this problem should be fixed, if there is one, otherwise
+> this same issue would be there for any type of driver that calles into
+> the uart core, right?
 
->  At some later point,
-> if there's demand, we can add the optimisation to adjust the offsets of
-> pages still in the cache.
--> Yes, Right. But if we consider that fs block size can be less than
-page cache size,(512B, 1K, 2K)
-I thought that it is proper to drop all pages from the start offset to
-the end of the file.
+I did some more digging into this the problem goes beyond the uart and
+driver model code. Even if you serialize every bus and you serialize
+every bus against every other bus (which you can't do btw as we get
+recursive probes of one bus from a device probe of another) it's still
+racy. We have non bus registering paths for some drivers and those could
+be user triggered.
 
-Thanks for your reply.
->
-> --
-> Matthew Wilcox				Intel Open Source Technology Centre
-> "Bill, look, we understand that you're interested in selling us this
-> operating system, but compare it to ours.  We can't possibly take such
-> a retrograde step."
->
+An obvious example is 8250.
+
+If the 8250 driver is loaded on a platform where no device is
+autodetected (which is true on a few wackier PC laptops with touchscreens
+on an 8250) then you hae a race between say a PCMCIA card insertion of an
+8250 and a user who creates the first 8250 device using setserial at the
+same moment.
+
+There are similar races between the various directly created devices on
+some of the serial ports and bus probed ones where the driver mixes bus
+probing with olde worlde straight forward hardcoding.
+
+Alan
