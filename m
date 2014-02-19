@@ -1,36 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375AbaBSV6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 16:58:09 -0500
-Received: from 118-163-83-13.HINET-IP.hinet.net ([118.163.83.13]:11983 "EHLO
-	mail.dongjyu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956AbaBSV6H convert rfc822-to-8bit (ORCPT
+	id S1754613AbaBSV6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 16:58:19 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:34140 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754428AbaBSV6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 16:58:07 -0500
-X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 16:58:07 EST
-Message-Id: <201402171825.s1HIM8iL025641@mail.dongjyu.com>
-Content-Type: text/plain; charset="iso-8859-1"
+	Wed, 19 Feb 2014 16:58:14 -0500
+Date: Wed, 19 Feb 2014 22:58:05 +0100
+From: Dongsu Park <dongsu.park@profitbricks.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        lczerner@redhat.com, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH v5 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE for
+ fallocate
+Message-ID: <20140219215805.GA1714@gmail.com>
+References: <1392741489-20097-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Our Donation.
-To: Recipients <RobertErb@foxmail.com>
-From: "Mr. X" <RobertErb@foxmail.com>
-Date: Mon, 17 Feb 2014 19:25:13 +0100
-Reply-To: RobertErb@foxmail.com
-X-DONGJYU-MailScanner-Information: Please contact the ISP for more information
-X-DONGJYU-MailScanner-ID: s1HIM8iL025641
-X-DONGJYU-MailScanner: Found to be clean
-X-DONGJYU-MailScanner-From: roberterb@foxmail.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1392741489-20097-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Beneficiary
+Hi Namjae,
+see below:
 
-My family and I are donating $450,000 to you from our achievements,
-Contact us via email at (RobertErb@foxmail.com) for further details.
+On 19.02.2014 01:38, Namjae Jeon wrote:
+> This patch implements fallocate's FALLOC_FL_COLLAPSE_RANGE for Ext4.
+...<snip>...
+> +	/*
+> +	 * Don't start shifting extents until we make sure the hole is big
+> +	 * enough to accomodate the shift.
+> +	 */
+> +	path = ext4_ext_find_extent(inode, start - 1, NULL, 0);
+> +	depth = path->p_depth;
+> +	extent =  path[depth].p_ext;
+> +	ex_start = extent->ee_block;
+> +	ex_end = extent->ee_block + ext4_ext_get_actual_len(extent);
+> +	ext4_ext_drop_refs(path);
+> +	kfree(path);
+> +
+> +	if ((start == ex_start && shift > ex_start) ||
+> +	    (shift > start - ex_end)) {
 
-Best Regards,
-Robert Erb.
-Copyright ©2014. The Robert Erb Foundation. All Rights Reserve.
+This line causes a compile error. So the fix would be like that:
+
+-	    (shift > start - ex_end)) {
++	    (shift > start - ex_end))
+
+> +		return -EINVAL;
+> +
+> +	/* Its safe to start updating extents */
+...<snip>...
+
+Apart from that, the whole patchset seems to work without error,
+both on xfs and on ext4.
+Of course I had to remove Lukas' patches before testing collapse-range.
+So it would be excellent if two patch series could get somehow merged.
+
+Tested-by: Dongsu Park <dongsu.park@profitbricks.com>
+
+Regards,
+Dongsu
