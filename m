@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911AbaBSId3 (ORCPT <rfc822;w@1wt.eu>);
+	id S1752939AbaBSIdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:33:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50920 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752511AbaBSId3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Feb 2014 03:33:29 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:47798 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064AbaBSId2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:33:28 -0500
-Message-ID: <1392798801.31957.3.camel@phoenix>
-Subject: [PATCH 1/3 v2] regulator: tps65218: Add terminate entry for
- of_device_id table
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Keerthy <j-keerthy@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 19 Feb 2014 16:33:21 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Wed, 19 Feb 2014 09:33:27 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, Anton Blanchard <anton@samba.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ppc: RECLAIM_DISTANCE 10?
+Message-ID: <20140219083327.GC14783@dhcp22.suse.cz>
+References: <20140218090658.GA28130@dhcp22.suse.cz>
+ <20140218233404.GB10844@linux.vnet.ibm.com>
+ <20140218235800.GC10844@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402181737530.17521@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402181737530.17521@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes below build error:
-FATAL: drivers/regulator/tps65218-regulator: struct of_device_id is not terminated with a NULL entry!
+On Tue 18-02-14 17:43:38, David Rientjes wrote:
+> On Tue, 18 Feb 2014, Nishanth Aravamudan wrote:
+> 
+> > How about the following?
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 5de4337..1a0eced 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1854,7 +1854,8 @@ static void __paginginit init_zone_allows_reclaim(int nid)
+> >         int i;
+> >  
+> >         for_each_online_node(i)
+> > -               if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+> > +               if (node_distance(nid, i) <= RECLAIM_DISTANCE ||
+> > +                                       !NODE_DATA(i)->node_present_pages)
+> >                         node_set(i, NODE_DATA(nid)->reclaim_nodes);
+> >                 else
+> >                         zone_reclaim_mode = 1;
+> 
+>  [ I changed the above from NODE_DATA(nid) -> NODE_DATA(i) as you caught 
+>    so we're looking at the right code. ]
+> 
+> That can't be right, it would allow reclaiming from a memoryless node.  I 
+> think what you want is
+> 
+> 	for_each_online_node(i) {
+> 		if (!node_present_pages(i))
+> 			continue;
+> 		if (node_distance(nid, i) <= RECLAIM_DISTANCE) {
+> 			node_set(i, NODE_DATA(nid)->reclaim_nodes);
+> 			continue;
+> 		}
+> 		/* Always try to reclaim locally */
+> 		zone_reclaim_mode = 1;
+> 	}
+> 
+> but we really should be able to do for_each_node_state(i, N_MEMORY) here 
+> and memoryless nodes should already be excluded from that mask.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-I'm sorry that I just found I CC wrong developers in my previous mail.
-So here is a resend.
- drivers/regulator/tps65218-regulator.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
-index 958276c..d1c7831 100644
---- a/drivers/regulator/tps65218-regulator.c
-+++ b/drivers/regulator/tps65218-regulator.c
-@@ -96,6 +96,7 @@ static const struct of_device_id tps65218_of_match[] = {
- 	TPS65218_OF_MATCH("ti,tps65218-dcdc5", tps65218_pmic_regs[DCDC5]),
- 	TPS65218_OF_MATCH("ti,tps65218-dcdc6", tps65218_pmic_regs[DCDC6]),
- 	TPS65218_OF_MATCH("ti,tps65218-ldo1", tps65218_pmic_regs[LDO1]),
-+	{ }
- };
- MODULE_DEVICE_TABLE(of, tps65218_of_match);
- 
+Agreed! Actually the code I am currently interested in is based on 3.0
+kernel where zone_reclaim_mode is set in build_zonelists which relies on
+find_next_best_node which iterates only N_HIGH_MEMORY nodes which should
+have non 0 present pages.
+[...]
 -- 
-1.8.1.2
-
-
-
+Michal Hocko
+SUSE Labs
