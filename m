@@ -1,115 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627AbaBSRUg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 12:20:36 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:38236 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123AbaBSRUf (ORCPT
+	id S1754450AbaBSRYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 12:24:52 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:56667 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930AbaBSRYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 12:20:35 -0500
+	Wed, 19 Feb 2014 12:24:50 -0500
+Date: Wed, 19 Feb 2014 17:24:43 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alexandre.torgue@st.com, linux-ide@vger.kernel.org,
+        hdegoede@redhat.com
+Subject: Re: [PATCH 3/3] ahci: st: Add support for ST's SATA IP
+Message-ID: <20140219172443.GJ10504@lee--X1>
+References: <1392641818-23419-3-git-send-email-lee.jones@linaro.org>
+ <20140218233645.GP31892@mtj.dyndns.org>
+ <20140219083025.GB10504@lee--X1>
+ <20140219140458.GA10134@htj.dyndns.org>
+ <20140219150121.GG10504@lee--X1>
+ <20140219150654.GH10134@htj.dyndns.org>
+ <20140219152336.GH10504@lee--X1>
+ <20140219153624.GI10134@htj.dyndns.org>
+ <20140219163937.GI10504@lee--X1>
+ <20140219170037.GK10134@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1392828325.21976.6.camel@dcbw.local>
-References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
- <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com>
- <1392668638.21106.5.camel@dcbw.local> <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
- <1392828325.21976.6.camel@dcbw.local>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Wed, 19 Feb 2014 09:20:12 -0800
-X-Google-Sender-Auth: QZP8mEwLEjoaVd71dj1hVNM6nv0
-Message-ID: <CAB=NE6VpUqwNNY4pgbS6du2VsZ6dH0TzQYXmiw6GGN-EiOsV6g@mail.gmail.com>
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
-To: Dan Williams <dcbw@redhat.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140219170037.GK10134@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 8:45 AM, Dan Williams <dcbw@redhat.com> wrote:
-> On Tue, 2014-02-18 at 13:19 -0800, Luis R. Rodriguez wrote:
->> On Mon, Feb 17, 2014 at 12:23 PM, Dan Williams <dcbw@redhat.com> wrote:
->> > On Fri, 2014-02-14 at 18:59 -0800, Luis R. Rodriguez wrote:
->> >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->> >>
->> >> Some interfaces do not need to have any IPv4 or IPv6
->> >> addresses, so enable an option to specify this. One
->> >> example where this is observed are virtualization
->> >> backend interfaces which just use the net_device
->> >> constructs to help with their respective frontends.
->> >>
->> >> This should optimize boot time and complexity on
->> >> virtualization environments for each backend interface
->> >> while also avoiding triggering SLAAC and DAD, which is
->> >> simply pointless for these type of interfaces.
->> >
->> > Would it not be better/cleaner to use disable_ipv6 and then add a
->> > disable_ipv4 sysctl, then use those with that interface?
->>
->> Sure, but note that the both disable_ipv6 and accept_dada sysctl
->> parameters are global. ipv4 and ipv6 interfaces are created upon
->> NETDEVICE_REGISTER, which will get triggered when a driver calls
->> register_netdev(). The goal of this patch was to enable an early
->> optimization for drivers that have no need ever for ipv4 or ipv6
->> interfaces.
+> > Again, that's not what I said. It's great that your subsystem is being
+> > improved, but insisting that anyone who submits new code to rebase
+> > on top of some development patches which only exist in mail form, and
+> > refusing to take patches until they do so doesn't seem right to me.
+> 
+> No policy is perfect and nothing can be decided solely on single
+> policy.  There of course are trade-offs to make depending on the
+> specific circumstances.  The problem, here, is that what has been
+> going on is skewed towards one extreme and has potential to develop
+> into a fairly large mess if left uncorrected.
+> 
+> The message I've been sending out has been pretty clear.  There are
+> multiple people duplicating about the same thing in their drivers.
+> Fortunately, Hans' refactoring is pretty close to completion and
+> should help simplifying most of them.  I'm not even asking you to do
+> the bulk of work.  Just take a look at it and help / push if you can.
+> It may be unfortunate that the circumstances haven't been completely
+> aligned for your convenience but that's what needs to be done to keep
+> things sustainable.
+
+I understand this. Thanks for taking the time to explain properly.
+
+FWIW, I have now managed to rebase the driver on top of Hans' work and
+I am now in the process of converting it to the new way of working.
+
+> This is a collaborative work and what I asked you isn't some
+> insurmountable amount of extra work.  It's just beyond me that your
+> response is "it's not fair".  No wonder the whole thing has been
+> drifting towards mess.  That's not how this works.  Judging from your
+> linaro address, I assume you have been involved with some upstream
+> work, how can this possibly be your response?  Such attitude is
+> actively harmful and has no place in upstream development.
 >
-> Each interface gets override sysctls too though, eg:
->
-> /proc/sys/net/ipv6/conf/enp0s25/disable_ipv6
+> Again, of course, there can be trade-offs.  We sometimes do need to
+> take termporal hits in maintainability for faster hardware enablement
+> or whatnot; however, we can't do that without trust that the people
+> dumping stuff which needs later cleanups would actually help.
+> Unfortnately, I have close to zero trust given the recent developments
+> and your "it's not fair, that's not my responsibility" attitude
+> clearly confirms the conclusion.
+> 
+> So, please take long look at how you perceive upstream development.
+> It's a collaborative process.  Other people don't owe you by default.
 
-I hadn't seen those, thanks!
+Please refrain from adding quotation marks around things I didn't
+actually say. I didn't say that this whole process was unfair. I was
+pertaining to the fact that requesting that a driver is converted to a
+non-existing API was wrong. As it currently stands the driver uses the
+correct one. I also said that I'd happily convert it over when the
+clean-ups are actually applied.
 
-> which is the one I meant; you're obviously right that the global ones
-> aren't what you want here.  But the specific ones should be suitable?
-
-Under the approach Stephen mentioned by first ensuring the interface
-is down yes. There's one use case I can consider to still want the
-patch though, more on that below.
-
-> If you set that on a per-interface basis, then you'll get EPERM or
-> something whenever you try to add IPv6 addresses or do IPv6 routing.
-
-Neat, thanks.
-
->> Zoltan has noted though some use cases of IPv4 or IPv6 addresses on
->> backends though, as such this is no longer applicable as a
->> requirement. The ipv4 sysctl however still seems like a reasonable
->> approach to enable optimizations of the network in topologies where
->> its known we won't need them but -- we'd need to consider a much more
->> granular solution, not just global as it is now for disable_ipv6, and
->> we'd also have to figure out a clean way to do this to not incur the
->> cost of early address interface addition upon register_netdev().
->>
->> Given that we have a use case for ipv4 and ipv6 addresses on
->> xen-netback we no longer have an immediate use case for such early
->> optimization primitives though, so I'll drop this.
->>
->> > The IFF_SKIP_IP seems to duplicate at least part of what disable_ipv6 is
->> > already doing.
->>
->> disable_ipv6 is global, the goal was to make this granular and skip
->> the cost upon early boot, but its been clarified we don't need this.
->
-> Like Stephen says, you need to make sure you set them before IFF_UP, but
-> beyond that, wouldn't the interface-specific sysctls work?
-
-Yeah that'll do it, unless there is a measurable run time benefit cost
-to never even add these in the first place. Consider a host with tons
-of guests, not sure how many is 'a lot' these days. One would have to
-measure the cost of reducing the amount of time it takes to boot these
-up. As discussed in the other threads though there *is* some use cases
-of assigning IPv4 or IPv6 addresses to the backend interfaces though:
-routing them (although its unclear to me if iptables can be used
-instead, Zoltan?). So at least now there no clear requirement to
-remove these interfaces or not have them at all. The boot time cost
-savings should be considered though if this is ultimately desirable. I
-saw tons of timers and events that'd get triggered with any IPv4 or
-IPv6 interface laying around.
-
-  Luis
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
