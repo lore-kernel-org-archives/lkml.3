@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaBSJ7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 04:59:12 -0500
-Received: from mail09.linbit.com ([212.69.161.110]:43618 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809AbaBSJ7I (ORCPT
+	id S1751784AbaBSKE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 05:04:28 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:46789 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750921AbaBSKEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 04:59:08 -0500
-X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 04:59:08 EST
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] drbd: Fix future possible NULL pointer dereference
-Date: Wed, 19 Feb 2014 10:49:07 +0100
-Message-Id: <1392803347-6075-2-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392803347-6075-1-git-send-email-philipp.reisner@linbit.com>
-References: <20140218202054.GD25515@kernel.dk>
- <1392803347-6075-1-git-send-email-philipp.reisner@linbit.com>
+	Wed, 19 Feb 2014 05:04:24 -0500
+Date: Wed, 19 Feb 2014 10:04:16 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Wang YanQing <udknight@gmail.com>, rob@landley.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: update kmemleak.txt
+Message-ID: <20140219100415.GB30457@arm.com>
+References: <20140216164205.GA5941@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140216164205.GA5941@udknight>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+On Sun, Feb 16, 2014 at 04:42:05PM +0000, Wang YanQing wrote:
+> Update Documentatin/kmemleak.txt to
+> reflect the following changes:
+> 
+> Commit b69ec42b1b194cc88f04b3fbcda8d3f93182d6c3
+> ("Kconfig: clean up the long arch list for the DEBUG_KMEMLEAK config option")
+> make we can't check supported architectures by read Kconfig.debug.
+> 
+> Commit 85d3a316c714197f94e75c1e5b2d37607d66e5de
+> ("kmemleak: use rbtree instead of prio tree")
+> convert kmemleak to use rbtree instead of prio tree.
+> 
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
 
-Right now every resource has exactly one connection. But we are preparing
-for dynamic connections. I.e. in the future thre can be resources without
-connections.
+Since it looks like akpm is picking this patch:
 
-However smatch points this out as 'variable dereferenced before check',
-which is correct.
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-This issue was introduced in
-drbd: get_one_status(): Iterate over resource->devices instead of connection->peer_devices
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
----
- drivers/block/drbd/drbd_nl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 2086b12..526414b 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -2776,7 +2776,7 @@ static int nla_put_drbd_cfg_context(struct sk_buff *skb,
- 	if (device &&
- 	    nla_put_u32(skb, T_ctx_volume, device->vnr))
- 		goto nla_put_failure;
--	if (nla_put_string(skb, T_ctx_resource_name, connection->resource->name))
-+	if (nla_put_string(skb, T_ctx_resource_name, resource->name))
- 		goto nla_put_failure;
- 	if (connection) {
- 		if (connection->my_addr_len &&
--- 
-1.7.9.5
-
+Thanks.
