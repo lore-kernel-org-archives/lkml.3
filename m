@@ -1,105 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121AbaBSTaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:30:55 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:7374 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012AbaBSTaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:30:52 -0500
-Message-ID: <53050657.1030306@hp.com>
-Date: Wed, 19 Feb 2014 14:30:31 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1754988AbaBSTh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:37:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9437 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671AbaBSThy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 14:37:54 -0500
+Date: Wed, 19 Feb 2014 14:37:51 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] audit: add arch field to seccomp event log
+Message-ID: <20140219193751.GP16640@madcap2.tricolour.ca>
+References: <4bc8c03bda84e004c331546e228b334811b03254.1392409147.git.rgb@redhat.com>
+ <1392412322.2760.21.camel@localhost>
+ <20140218205044.GL16640@madcap2.tricolour.ca>
+ <1455468.M1LNEKA0EJ@x2>
+ <20140219031519.GM16640@madcap2.tricolour.ca>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v4 1/3] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <1392669684-4807-2-git-send-email-Waiman.Long@hp.com> <20140218073951.GZ27965@twins.programming.kicks-ass.net> <5303B6F3.9090001@hp.com> <20140218213748.GT14089@laptop.programming.kicks-ass.net> <530401C9.4090100@hp.com> <20140219085512.GI27965@twins.programming.kicks-ass.net>
-In-Reply-To: <20140219085512.GI27965@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140219031519.GM16640@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 03:55 AM, Peter Zijlstra wrote:
-> On Tue, Feb 18, 2014 at 07:58:49PM -0500, Waiman Long wrote:
->> On 02/18/2014 04:37 PM, Peter Zijlstra wrote:
->>> On Tue, Feb 18, 2014 at 02:39:31PM -0500, Waiman Long wrote:
->>>>>> +	/*
->>>>>> +	 * At the head of the wait queue now
->>>>>> +	 */
->>>>>> +	while (true) {
->>>>>> +		u32 qcode;
->>>>>> +		int retval;
->>>>>> +
->>>>>> +		retval = queue_get_lock_qcode(lock,&qcode, my_qcode);
->>>>>> +		if (retval>    0)
->>>>>> +			;	/* Lock not available yet */
->>>>>> +		else if (retval<    0)
->>>>>> +			/* Lock taken, can release the node&    return */
->>>>>> +			goto release_node;
->>>>>> +		else if (qcode != my_qcode) {
->>>>>> +			/*
->>>>>> +			 * Just get the lock with other spinners waiting
->>>>>> +			 * in the queue.
->>>>>> +			 */
->>>>>> +			if (queue_spin_trylock_unfair(lock))
->>>>>> +				goto notify_next;
->>>>> Why is this an option at all?
->>>>>
->>>>>
->>>> Are you referring to the case (qcode != my_qcode)? This condition will be
->>>> true if more than one tasks have queued up.
->>> But in no case should we revert to unfair spinning or stealing. We
->>> should always respect the queueing order.
->>>
->>> If the lock tail no longer points to us, then there's further waiters
->>> and we should wait for ->next and unlock it -- after we've taken the
->>> lock.
->>>
->> A task will be in this loop when it is already the head of a queue and is
->> entitled to take the lock. The condition (qcode != my_qcode) is to decide
->> whether it should just take the lock or take the lock&  clear the code
->> simultaneously. I am a bit cautious to use queue_spin_trylock_unfair() as
->> there is a possibility that a CPU may run out of the queue node and need to
->> do unfair busy spinning.
-> No; there is no such possibility. Add BUG_ON(idx>=4) and make sure of
-> it.
+On 14/02/18, Richard Guy Briggs wrote:
+> On 14/02/18, Steve Grubb wrote:
+> > On Tuesday, February 18, 2014 03:50:44 PM Richard Guy Briggs wrote:
+> > > > missing '='   but this isn't what audit_get_context() does...   it's
+> > > > crappy naming...    I'd think a combo of audit_dummy_context() and
+> > > > current->audit_context would be most appropriate.
+> > > 
+> > > Ok.  I think I finally understand audit_dummy_context().  Thanks for the
+> > > hint.  However, it appears it is not useful in this sitation, since if
+> > > there is an audit_context, even a dummy context, it appears arch is
+> > > filled in.
+> > > 
+> > > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> > > @@ -2406,12 +2406,18 @@ void audit_core_dumps(long signr)
+> > >  void __audit_seccomp(unsigned long syscall, long signr, int code)
+> > >  {
+> > >         struct audit_buffer *ab;
+> > > +       struct audit_context *context = current->audit_context;
+> > >  
+> > >         ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
+> > >         if (unlikely(!ab))
+> > >                 return;
+> > >         audit_log_task(ab);
+> > >         audit_log_format(ab, " sig=%ld", signr);
+> > > +       audit_log_format(ab, " arch=");
+> > > +       if (context)
+> > > +               audit_log_format(ab, "%x", context->arch);
+> > > +       else
+> > > +               audit_log_format(ab, "(null)");
+> > >         audit_log_format(ab, " syscall=%ld", syscall);
+> > >         audit_log_format(ab, " compat=%d", is_compat_task());
+> > >         audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
+> > 
+> > Is there anything that could be passed by the caller that might identify the 
+> > syscall ABI when this call was blocked? '(null)' still makes syscall number 
+> > uninterpretable.
+> 
+> This is the way it is done in the existing record that prints a syscall
+> record in audit_log_exit().
+> 
+> It is set by the arch-dependent assembler linkage for
+> __audit_syscall_entry() or set by the arch-dependent ptrace code that
+> calls audit_syscall_entry().  In some arches there are a couple of
+> choices.
+> 
+> 
+> To pass this in to __audit_seccomp() as an arg, I'd have to add that arg
+> to:
+> 	__audit_seccomp()
+> 	audit_seccomp()
+> 	__secure_computing()
+> 	secure_computing()
+> 
+> 
+> As you've pointed out in IRC, there is a syscall_get_arch(current, regs)
+> that could be used to get the arch when an audit context is not yet created.
 
-Yes, I could do that.
+s390x architecture doesn't have it defined.  :(
 
-However in the generic implementation, I still need some kind of atomic 
-cmpxchg to set the lock bit. I could probably just do a simple 
-assignment of 1 to the lock byte in x86.
+> I was just looking for something like that...  I am noticing that all
+> arches call a variant of syscall_trace_enter() which first calls
+> secure_computing() [which eventually calls __audit_seccomp()] *before*
+> calling audit_syscall_entry() [which eventually sets context->arch].  So
+> I'm not sure how task->audit_context->arch got set...  Perhaps
+> __audit_syscall_entry() should just call syscall_get_arch() instead of
+> lugging it through the stack like it presently does.
+> 
+> Is this going to give the same information?  (I guess I should be able
+> to answer that question...)
+> 
+> > -Steve
+> 
+> - RGB
 
-> There's simply no more than 4 contexts what can nest at any one time:
->
->    task context
->    softirq context
->    hardirq context
->    nmi context
->
-> And someone contending a spinlock from NMI context should be shot
-> anyway.
->
-> Getting more nested spinlocks is an absolute hard fail.
+- RGB
 
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
