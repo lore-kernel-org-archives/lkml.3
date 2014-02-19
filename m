@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbaBSTlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:41:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754895AbaBSTlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:41:35 -0500
-Date: Wed, 19 Feb 2014 14:41:31 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: netdev@oss.sgi.com, davem@davemloft.net, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, Steve Grubb <sgrubb@redhat.com>
-Subject: Re: [PATCH 3/5] audit: add netlink audit protocol bind to check
- capabilities on multicast join
-Message-ID: <20140219194131.GQ16640@madcap2.tricolour.ca>
-References: <cover.1392831003.git.rgb@redhat.com>
- <2ead1dbcbb241075feafb2d88656b48761168491.1392831003.git.rgb@redhat.com>
- <1392837336.2165.51.camel@flatline.rdu.redhat.com>
+	id S1753913AbaBSTqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:46:24 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:47118 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaBSTqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 14:46:23 -0500
+Date: Wed, 19 Feb 2014 20:43:55 +0100
+From: Henrik Austad <henrik@austad.us>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH Resend] Expose do_timer CPU via sysctl to userspace as R/W
+Message-ID: <20140219194355.GA23228@austad.us>
+References: <1392813178-25095-1-git-send-email-henrik@austad.us>
+ <alpine.DEB.2.02.1402191730590.4468@ionos.tec.linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392837336.2165.51.camel@flatline.rdu.redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1402191730590.4468@ionos.tec.linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/19, Eric Paris wrote:
-> On Wed, 2014-02-19 at 13:08 -0500, Richard Guy Briggs wrote:
-> > Register a netlink per-protocol bind fuction for audit to check userspace
-> > process capabilities before allowing a multicast group connection.
+On Wed, Feb 19, 2014 at 05:42:07PM +0100, Thomas Gleixner wrote:
+> On Wed, 19 Feb 2014, henrik@austad.us wrote:
+> > From: Henrik Austad <haustad@cisco.com>
 > > 
-> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> > ---
-> >  kernel/audit.c |   10 ++++++++++
-> >  1 files changed, 10 insertions(+), 0 deletions(-)
+> > Looks like this got dropped by vger a few days ago, resending.
 > > 
-> > diff --git a/kernel/audit.c b/kernel/audit.c
-> > index b5b2f72..f2d2d61 100644
-> > --- a/kernel/audit.c
-> > +++ b/kernel/audit.c
-> > @@ -1050,10 +1050,20 @@ static void audit_receive(struct sk_buff  *skb)
-> >  	mutex_unlock(&audit_cmd_mutex);
-> >  }
-> >  
-> > +/* Run custom bind function on netlink socket group connect or bind requests. */
-> > +static int audit_bind(int group)
-> > +{
-> > +	if (!capable(CAP_AUDIT_READ))
+> > This allows everybody in a system to read which core is currently
+> > running do_timer() as well as letting root change this.
+> > 
+> > A few things to keep in mind
+> > 
+> > - This is intended as a debug-feature, except for testing whether or not
+> >   the target CPU is present or not, the logic will not care -one- bit if
+> >   moving the do_timer to that particular CPU is a good idea.
 > 
-> Not a great idea to use CAP_AUDIT_READ before you define it in patch4
+> Well at least it must check that the cpu is online and neither in
+> nohz idle nor nohz full mode.
 
-<blush>
+The online-part should be taken care of by the cpu_present(), no?
 
-> > +		return -EPERM;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> >  static int __net_init audit_net_init(struct net *net)
-> >  {
-> >  	struct netlink_kernel_cfg cfg = {
-> >  		.input	= audit_receive,
-> > +		.bind	= audit_bind,
-> >  	};
-> >  
-> >  	struct audit_net *aunet = net_generic(net, audit_net_id);
+But the nohz idle/nohz full should be checked, I agree.
 
-- RGB
+> And we probably want to have that in sysfs with two files:
+> 
+>     timekeeping/current_cpu
+>     timekeeping/forced_cpu
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Fair enough, I can add that
+
+> The latter contains -1 when the system boots and if you write to it,
+> the duty gets hard assigned to that core, which in turn makes it
+> blocked from NOHZ idle and NOHZ full modes. If the core goes offline,
+> then the value must got back to -1. Writing -1 to it undoes the hard
+> assignment.
+
+Yeah, sounds like a good approach.
+
+> > - It introduces more ifdeffery in the kernel.
+> 
+> There is no reason to do that.
+
+probably not, as you can see, I wrapped everything in 
+CONFIG_EXPOSE_TICK_CPU and added an option in Kconfig. Just drop all of 
+that?
+
+Thanks for the feedback! :)
+
+-- 
+Henrik Austad
