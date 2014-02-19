@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaBSB5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 20:57:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871AbaBSB5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 20:57:18 -0500
-Date: Tue, 18 Feb 2014 20:57:11 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lisa Du <chunlingdu1@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: work item migration bug when a CPU is disabled
-Message-ID: <alpine.LRH.2.02.1402182040100.28214@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752220AbaBSB6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 20:58:11 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:34790 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaBSB6K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 20:58:10 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kay.sievers@vrfy.org,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 0/2] Fix missing misc nodes
+In-Reply-To: Your message of "Tue, 18 Feb 2014 02:27:23 -0300."
+             <1392701245-4645-1-git-send-email-lucas.demarchi@intel.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1392701245-4645-1-git-send-email-lucas.demarchi@intel.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1392774991_4248P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 18 Feb 2014 20:56:31 -0500
+Message-ID: <9687.1392774991@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun
+--==_Exmh_1392774991_4248P
+Content-Type: text/plain; charset=us-ascii
 
-Two years ago, I reported a bug in workqueues - a work item that is 
-supposed to be bound to a specific CPU can be migrated to a different CPU 
-when the origianl CPU is disabled by writing zero to 
-/sys/devices/system/cpu/cpu*/online
+On Tue, 18 Feb 2014 02:27:23 -0300, Lucas De Marchi said:
 
-This causes crashes in dm-crypt, because it assumes that a work item stays 
-on the same CPU.
+> These patches are not intended for merging as is... clearly we have at least
+> one problem: fram's minor is clashing with logibm's. I don't know what to do
+> here.
 
-There was some discussion (see here 
-http://www.redhat.com/archives/dm-devel/2012-March/msg00034.html ), but 
-the bug is still unfixed and I've just got another bug report about 
-dm-crypt crashing because of it.
+They both look like obscure devices to me. Are there any architectures where
+both devices could conceivably exist on the same system at the same time?
+If not, it may not be a problem at all...
 
-I'd like to ask - are you going to fix the workqueue code so that work 
-item migrations can't happen? - or are you going to specify that work item 
-migration can happen and do you require that all code that relies on the 
-fact that a work item executes on a single CPU be fixed?
+--==_Exmh_1392774991_4248P
+Content-Type: application/pgp-signature
 
-Here I'm sending a simple kernel module that shows the bug.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-Mikulas
+iQIVAwUBUwQPTwdmEQWDXROgAQJVlw//ZT5ImZwqwpYgzx//h8ELPQwgAOqCLp/d
+K9pAIYKgX1I7ewAx2MppNipqchnajF93lHGIdcVHPxH4Fuwf+tVeUP7TBx6RKm9B
+pFpEIMH5HumIgECdbL+ZHFEWq5L5vLENB0kDAJIiWhWXlmxzLR2kVG8XzKJfqZkE
+qF4rxqZuRPTpliH2PCRTfMi0lUO7un8izPikJZCA06OqemfchmU+hwIIhdYAd9Ob
+2CaPTX6wufixMXtbhYR4ZluqRmrTWD7Wsz1f3QrqbnM9bDLdPOJ65OenszIkltJg
+lyesbXgAQkktljCJ+xPTZl+0syKF574RKVXoFtcbEVpHJK99x2e1a2oE8kxZLypO
+e9PcYoAH+KRDqSM6xHn7tiVhYrrTk59BZxfOEOrX1LPb9hu4fI7FGAxVh/HkGtPY
+JtywNAd0c4JYXgsFIDQQ1+yKMFgTk8TM4qGpQJJVqQXWmJbZ+2B2fsTEXaFmGjyz
+Hy8NI190T3n6/FEcmdrLAbI7fdyXg+VNydu2wPzDHSYipfOmKCnAxpg4JaWRRfQm
+ZmPYr08IzHRmWshxx6Ce1Q0LVEwc4/sb8/jJ/LCAhsLPp/eSS2k5pJhfNl2zyO1V
+onpVMDbkRYF3EPv+qch7nvq9XD2e2pyGnFBJJtesHkiNc+UcxaedHFCRKrvmxS/M
+RTFTk0A3hHE=
+=GLQa
+-----END PGP SIGNATURE-----
 
-
-
-/*
- * A proof of concept that a work item executed on a workqueue may change CPU
- * when CPU hot-unplugging is used.
- * Compile this as a module and run:
- * insmod test.ko; sleep 1; echo 0 >/sys/devices/system/cpu/cpu1/online
- * You see that the work item starts executing on CPU 1 and ends up executing
- * on different CPU, usually 0.
- */
-
-#include <linux/module.h>
-#include <linux/delay.h>
-
-static struct workqueue_struct *wq;
-static struct work_struct work;
-
-static void do_work(struct work_struct *w)
-{
-        printk("starting work on cpu %d\n", smp_processor_id());
-        msleep(10000);
-        printk("finishing work on cpu %d\n", smp_processor_id());
-}
-
-static int __init test_init(void)
-{
-        printk("module init\n");
-        wq = alloc_workqueue("testd", WQ_MEM_RECLAIM | WQ_CPU_INTENSIVE, 
-1);
-        if (!wq) {
-                printk("alloc_workqueue failed\n");
-                return -ENOMEM;
-        }
-        INIT_WORK(&work, do_work);
-        queue_work_on(1, wq, &work);
-        return 0;
-}
-
-static void __exit test_exit(void)
-{
-        destroy_workqueue(wq);
-        printk("module exit\n");
-}
-
-module_init(test_init)
-module_exit(test_exit)
-MODULE_LICENSE("GPL");
-
+--==_Exmh_1392774991_4248P--
