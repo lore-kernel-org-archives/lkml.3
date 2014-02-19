@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294AbaBSPhz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:37:55 -0500
+	id S1754332AbaBSPi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:38:28 -0500
 Received: from mga02.intel.com ([134.134.136.20]:15745 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754229AbaBSPhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:37:07 -0500
+	id S1754006AbaBSPhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 10:37:03 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,506,1389772800"; 
-   d="scan'208";a="485868926"
+   d="scan'208";a="485868882"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc-next 4/5 RESEND] mei: wd: simplify wd_send command
-Date: Wed, 19 Feb 2014 17:35:50 +0200
-Message-Id: <1392824151-5886-4-git-send-email-tomas.winkler@intel.com>
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 2/5 RESEND] mei: revamp writing slot counting
+Date: Wed, 19 Feb 2014 17:35:48 +0200
+Message-Id: <1392824151-5886-2-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392824151-5886-1-git-send-email-tomas.winkler@intel.com>
 References: <1392824151-5886-1-git-send-email-tomas.winkler@intel.com>
@@ -24,126 +23,471 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add reduce credits to wd_send to remove code
-repetition and simplify error handling
+Since txe use doorbell and not circular buffer
+we have to cheat in write slot counting, txe always consume all the
+slots upon write. In order for it to work we need to track
+slots using mei_hbuf_empty_slots() instead of tracking it in mei layer
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 ---
- drivers/misc/mei/interrupt.c |  7 +++---
- drivers/misc/mei/wd.c        | 52 +++++++++++++++++++++++---------------------
- 2 files changed, 30 insertions(+), 29 deletions(-)
+ drivers/misc/mei/amthif.c    | 19 ++++++-----
+ drivers/misc/mei/client.c    | 19 +++++------
+ drivers/misc/mei/client.h    |  4 +--
+ drivers/misc/mei/hw-me.c     |  2 +-
+ drivers/misc/mei/hw-txe.c    | 21 +++++++-----
+ drivers/misc/mei/hw-txe.h    |  1 +
+ drivers/misc/mei/interrupt.c | 78 +++++++++++++++++---------------------------
+ drivers/misc/mei/mei_dev.h   |  4 +--
+ 8 files changed, 68 insertions(+), 80 deletions(-)
 
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 31cb345..834220a 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -480,10 +480,9 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- 	if (mei_cl_is_connected(&dev->wd_cl)) {
- 		if (dev->wd_pending &&
- 		    mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
--			if (mei_wd_send(dev))
--				dev_dbg(&dev->pdev->dev, "wd send failed.\n");
--			else if (mei_cl_flow_ctrl_reduce(&dev->wd_cl))
--				return -EIO;
-+			ret = mei_wd_send(dev);
-+			if (ret)
-+				return ret;
- 			dev->wd_pending = false;
- 		}
- 	}
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index 4644b62..13bb7a9 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -111,13 +111,16 @@ int mei_wd_host_init(struct mei_device *dev)
-  * returns 0 if success,
-  *	-EIO when message send fails
-  *	-EINVAL when invalid message is to be sent
-+ *	-ENODEV on flow control failure
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index e7ba880..bff9a07 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -436,23 +436,23 @@ unsigned int mei_amthif_poll(struct mei_device *dev,
+ 
+ 
+ /**
+- * mei_amthif_irq_write_completed - processes completed iamthif operation.
++ * mei_amthif_irq_write - write iamthif command in irq thread context.
+  *
+  * @dev: the device structure.
+- * @slots: free slots.
+  * @cb_pos: callback block.
+  * @cl: private data of the file object.
+  * @cmpl_list: complete list.
+  *
+  * returns 0, OK; otherwise, error.
   */
- int mei_wd_send(struct mei_device *dev)
+-int mei_amthif_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+-				  s32 *slots, struct mei_cl_cb *cmpl_list)
++int mei_amthif_irq_write(struct mei_cl *cl, struct mei_cl_cb *cb,
++			 struct mei_cl_cb *cmpl_list)
  {
-+	struct mei_cl *cl = &dev->wd_cl;
- 	struct mei_msg_hdr hdr;
-+	int ret;
+ 	struct mei_device *dev = cl->dev;
+ 	struct mei_msg_hdr mei_hdr;
+ 	size_t len = dev->iamthif_msg_buf_size - dev->iamthif_msg_buf_index;
+ 	u32 msg_slots = mei_data2slots(len);
++	int slots;
+ 	int rets;
  
--	hdr.host_addr = dev->wd_cl.host_client_id;
--	hdr.me_addr = dev->wd_cl.me_client_id;
-+	hdr.host_addr = cl->host_client_id;
-+	hdr.me_addr = cl->me_client_id;
- 	hdr.msg_complete = 1;
- 	hdr.reserved = 0;
- 	hdr.internal = 0;
-@@ -126,10 +129,24 @@ int mei_wd_send(struct mei_device *dev)
- 		hdr.length = MEI_WD_START_MSG_SIZE;
- 	else if (!memcmp(dev->wd_data, mei_stop_wd_params, MEI_WD_HDR_SIZE))
- 		hdr.length = MEI_WD_STOP_MSG_SIZE;
--	else
-+	else {
-+		dev_err(&dev->pdev->dev, "wd: invalid message is to be sent, aborting\n");
- 		return -EINVAL;
-+	}
-+
-+	ret = mei_write_message(dev, &hdr, dev->wd_data);
-+	if (ret) {
-+		dev_err(&dev->pdev->dev, "wd: write message failed\n");
-+		return ret;
-+	}
+ 	rets = mei_cl_flow_ctrl_creds(cl);
+@@ -469,13 +469,15 @@ int mei_amthif_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+ 	mei_hdr.reserved = 0;
+ 	mei_hdr.internal = 0;
  
--	return mei_write_message(dev, &hdr, dev->wd_data);
-+	ret = mei_cl_flow_ctrl_reduce(cl);
-+	if (ret) {
-+		dev_err(&dev->pdev->dev, "wd: flow_ctrl_reduce failed.\n");
-+		return ret;
-+	}
+-	if (*slots >= msg_slots) {
++	slots = mei_hbuf_empty_slots(dev);
 +
-+	return 0;
++	if (slots >= msg_slots) {
+ 		mei_hdr.length = len;
+ 		mei_hdr.msg_complete = 1;
+ 	/* Split the message only if we can write the whole host buffer */
+-	} else if (*slots == dev->hbuf_depth) {
+-		msg_slots = *slots;
+-		len = (*slots * sizeof(u32)) - sizeof(struct mei_msg_hdr);
++	} else if (slots == dev->hbuf_depth) {
++		msg_slots = slots;
++		len = (slots * sizeof(u32)) - sizeof(struct mei_msg_hdr);
+ 		mei_hdr.length = len;
+ 		mei_hdr.msg_complete = 0;
+ 	} else {
+@@ -485,7 +487,6 @@ int mei_amthif_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+ 
+ 	dev_dbg(&dev->pdev->dev, MEI_HDR_FMT,  MEI_HDR_PRM(&mei_hdr));
+ 
+-	*slots -=  msg_slots;
+ 	rets = mei_write_message(dev, &mei_hdr,
+ 			dev->iamthif_msg_buf + dev->iamthif_msg_buf_index);
+ 	if (rets) {
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index 286bc57..d3653dc 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -698,27 +698,26 @@ err:
  }
  
  /**
-@@ -159,16 +176,9 @@ int mei_wd_stop(struct mei_device *dev)
- 		goto out;
+- * mei_cl_irq_write_complete - write a message to device
++ * mei_cl_irq_write - write a message to device
+  *	from the interrupt thread context
+  *
+  * @cl: client
+  * @cb: callback block.
+- * @slots: free slots.
+  * @cmpl_list: complete list.
+  *
+  * returns 0, OK; otherwise error.
+  */
+-int mei_cl_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+-				     s32 *slots, struct mei_cl_cb *cmpl_list)
++int mei_cl_irq_write(struct mei_cl *cl, struct mei_cl_cb *cb,
++		     struct mei_cl_cb *cmpl_list)
+ {
+ 	struct mei_device *dev;
+ 	struct mei_msg_data *buf;
+ 	struct mei_msg_hdr mei_hdr;
+ 	size_t len;
+ 	u32 msg_slots;
++	int slots;
+ 	int rets;
  
- 	if (ret && mei_hbuf_acquire(dev)) {
--		ret = 0;
 -
--		if (!mei_wd_send(dev)) {
--			ret = mei_cl_flow_ctrl_reduce(&dev->wd_cl);
--			if (ret)
--				goto out;
--		} else {
--			dev_err(&dev->pdev->dev, "wd: send stop failed\n");
--		}
--
-+		ret = mei_wd_send(dev);
-+		if (ret)
-+			goto out;
- 		dev->wd_pending = false;
- 	} else {
- 		dev->wd_pending = true;
-@@ -289,18 +299,10 @@ static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
+ 	if (WARN_ON(!cl || !cl->dev))
+ 		return -ENODEV;
  
- 		dev_dbg(&dev->pdev->dev, "wd: sending ping\n");
- 
--		if (mei_wd_send(dev)) {
--			dev_err(&dev->pdev->dev, "wd: send failed.\n");
--			ret = -EIO;
-+		ret = mei_wd_send(dev);
-+		if (ret)
- 			goto end;
--		}
--
--		if (mei_cl_flow_ctrl_reduce(&dev->wd_cl)) {
--			dev_err(&dev->pdev->dev, "wd: mei_cl_flow_ctrl_reduce() failed.\n");
--			ret = -EIO;
--			goto end;
--		}
--
-+		dev->wd_pending = false;
- 	} else {
- 		dev->wd_pending = true;
+@@ -735,6 +734,7 @@ int mei_cl_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+ 		return 0;
  	}
+ 
++	slots = mei_hbuf_empty_slots(dev);
+ 	len = buf->size - cb->buf_idx;
+ 	msg_slots = mei_data2slots(len);
+ 
+@@ -743,13 +743,13 @@ int mei_cl_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+ 	mei_hdr.reserved = 0;
+ 	mei_hdr.internal = cb->internal;
+ 
+-	if (*slots >= msg_slots) {
++	if (slots >= msg_slots) {
+ 		mei_hdr.length = len;
+ 		mei_hdr.msg_complete = 1;
+ 	/* Split the message only if we can write the whole host buffer */
+-	} else if (*slots == dev->hbuf_depth) {
+-		msg_slots = *slots;
+-		len = (*slots * sizeof(u32)) - sizeof(struct mei_msg_hdr);
++	} else if (slots == dev->hbuf_depth) {
++		msg_slots = slots;
++		len = (slots * sizeof(u32)) - sizeof(struct mei_msg_hdr);
+ 		mei_hdr.length = len;
+ 		mei_hdr.msg_complete = 0;
+ 	} else {
+@@ -760,7 +760,6 @@ int mei_cl_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+ 	cl_dbg(dev, cl, "buf: size = %d idx = %lu\n",
+ 			cb->request_buffer.size, cb->buf_idx);
+ 
+-	*slots -=  msg_slots;
+ 	rets = mei_write_message(dev, &mei_hdr, buf->data + cb->buf_idx);
+ 	if (rets) {
+ 		cl->status = rets;
+diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+index c8396e5..c11b663 100644
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -102,8 +102,8 @@ int mei_cl_disconnect(struct mei_cl *cl);
+ int mei_cl_connect(struct mei_cl *cl, struct file *file);
+ int mei_cl_read_start(struct mei_cl *cl, size_t length);
+ int mei_cl_write(struct mei_cl *cl, struct mei_cl_cb *cb, bool blocking);
+-int mei_cl_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+-				s32 *slots, struct mei_cl_cb *cmpl_list);
++int mei_cl_irq_write(struct mei_cl *cl, struct mei_cl_cb *cb,
++		     struct mei_cl_cb *cmpl_list);
+ 
+ void mei_cl_complete(struct mei_cl *cl, struct mei_cl_cb *cb);
+ 
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index b0c42d6..84165cc 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -354,7 +354,7 @@ static int mei_me_write_message(struct mei_device *dev,
+ 
+ 	dw_cnt = mei_data2slots(length);
+ 	if (empty_slots < 0 || dw_cnt > empty_slots)
+-		return -EIO;
++		return -EMSGSIZE;
+ 
+ 	mei_me_reg_write(hw, H_CB_WW, *((u32 *) header));
+ 
+diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
+index ab0442e..69a5ce7 100644
+--- a/drivers/misc/mei/hw-txe.c
++++ b/drivers/misc/mei/hw-txe.c
+@@ -565,7 +565,9 @@ static int mei_txe_write(struct mei_device *dev,
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
+ 	unsigned long rem;
+ 	unsigned long length;
++	int slots = dev->hbuf_depth;
+ 	u32 *reg_buf = (u32 *)buf;
++	u32 dw_cnt;
+ 	int i;
+ 
+ 	if (WARN_ON(!header || !buf))
+@@ -575,11 +577,9 @@ static int mei_txe_write(struct mei_device *dev,
+ 
+ 	dev_dbg(&dev->pdev->dev, MEI_HDR_FMT, MEI_HDR_PRM(header));
+ 
+-	if ((length + sizeof(struct mei_msg_hdr)) > PAYLOAD_SIZE) {
+-		dev_err(&dev->pdev->dev, "write length exceeded = %ld > %d\n",
+-			length + sizeof(struct mei_msg_hdr), PAYLOAD_SIZE);
+-		return -ERANGE;
+-	}
++	dw_cnt = mei_data2slots(length);
++	if (dw_cnt > slots)
++		return -EMSGSIZE;
+ 
+ 	if (WARN(!hw->aliveness, "txe write: aliveness not asserted\n"))
+ 		return -EAGAIN;
+@@ -604,6 +604,9 @@ static int mei_txe_write(struct mei_device *dev,
+ 		mei_txe_input_payload_write(dev, i + 1, reg);
+ 	}
+ 
++	/* after each write the whole buffer is consumed */
++	hw->slots = 0;
++
+ 	/* Set Input-Doorbell */
+ 	mei_txe_input_doorbell_set(hw);
+ 
+@@ -631,7 +634,8 @@ static size_t mei_txe_hbuf_max_len(const struct mei_device *dev)
+  */
+ static int mei_txe_hbuf_empty_slots(struct mei_device *dev)
+ {
+-	return dev->hbuf_depth;
++	struct mei_txe_hw *hw = to_txe_hw(dev);
++	return hw->slots;
+ }
+ 
+ /**
+@@ -977,11 +981,12 @@ irqreturn_t mei_txe_irq_thread_handler(int irq, void *dev_id)
+ 		}
+ 	}
+ 	/* Input Ready: Detection if host can write to SeC */
+-	if (test_and_clear_bit(TXE_INTR_IN_READY_BIT, &hw->intr_cause))
++	if (test_and_clear_bit(TXE_INTR_IN_READY_BIT, &hw->intr_cause)) {
+ 		dev->hbuf_is_ready = true;
++		hw->slots = dev->hbuf_depth;
++	}
+ 
+ 	if (hw->aliveness && dev->hbuf_is_ready) {
+-
+ 		/* get the real register value */
+ 		dev->hbuf_is_ready = mei_hbuf_is_ready(dev);
+ 		rets = mei_irq_write_handler(dev, &complete_list);
+diff --git a/drivers/misc/mei/hw-txe.h b/drivers/misc/mei/hw-txe.h
+index 857d88c..3d8d6e5 100644
+--- a/drivers/misc/mei/hw-txe.h
++++ b/drivers/misc/mei/hw-txe.h
+@@ -44,6 +44,7 @@ struct mei_txe_hw {
+ 	void __iomem *mem_addr[NUM_OF_MEM_BARS];
+ 	u32 aliveness;
+ 	u32 readiness;
++	u32 slots;
+ 
+ 	wait_queue_head_t wait_aliveness;
+ 	bool recvd_aliveness;
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index aed03ef..e6151e2 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -165,25 +165,24 @@ static int mei_cl_irq_read_msg(struct mei_device *dev,
+  *
+  * @cl: client
+  * @cb: callback block.
+- * @slots: free slots.
+  * @cmpl_list: complete list.
+  *
+  * returns 0, OK; otherwise, error.
+  */
+ static int mei_cl_irq_disconnect_rsp(struct mei_cl *cl, struct mei_cl_cb *cb,
+-			s32 *slots, struct mei_cl_cb *cmpl_list)
++				     struct mei_cl_cb *cmpl_list)
+ {
+ 	struct mei_device *dev = cl->dev;
++	u32 msg_slots;
++	int slots;
+ 	int ret;
+ 
+-	u32 msg_slots =
+-		mei_data2slots(sizeof(struct hbm_client_connect_response));
++	slots = mei_hbuf_empty_slots(dev);
++	msg_slots = mei_data2slots(sizeof(struct hbm_client_connect_response));
+ 
+-	if (*slots < msg_slots)
++	if (slots < msg_slots)
+ 		return -EMSGSIZE;
+ 
+-	*slots -= msg_slots;
+-
+ 	ret = mei_hbm_cl_disconnect_rsp(dev, cl);
+ 
+ 	cl->state = MEI_FILE_DISCONNECTED;
+@@ -201,24 +200,23 @@ static int mei_cl_irq_disconnect_rsp(struct mei_cl *cl, struct mei_cl_cb *cb,
+  *
+  * @cl: client
+  * @cb: callback block.
+- * @slots: free slots.
+  * @cmpl_list: complete list.
+  *
+  * returns 0, OK; otherwise, error.
+  */
+ static int mei_cl_irq_close(struct mei_cl *cl, struct mei_cl_cb *cb,
+-			s32 *slots, struct mei_cl_cb *cmpl_list)
++			    struct mei_cl_cb *cmpl_list)
+ {
+ 	struct mei_device *dev = cl->dev;
++	u32 msg_slots;
++	int slots;
+ 
+-	u32 msg_slots =
+-		mei_data2slots(sizeof(struct hbm_client_connect_request));
++	msg_slots = mei_data2slots(sizeof(struct hbm_client_connect_request));
++	slots = mei_hbuf_empty_slots(dev);
+ 
+-	if (*slots < msg_slots)
++	if (slots < msg_slots)
+ 		return -EMSGSIZE;
+ 
+-	*slots -= msg_slots;
+-
+ 	if (mei_hbm_cl_disconnect_req(dev, cl)) {
+ 		cl->status = 0;
+ 		cb->buf_idx = 0;
+@@ -242,27 +240,23 @@ static int mei_cl_irq_close(struct mei_cl *cl, struct mei_cl_cb *cb,
+  *
+  * @cl: client
+  * @cb: callback block.
+- * @slots: free slots.
+  * @cmpl_list: complete list.
+  *
+  * returns 0, OK; otherwise, error.
+  */
+ static int mei_cl_irq_read(struct mei_cl *cl, struct mei_cl_cb *cb,
+-			   s32 *slots, struct mei_cl_cb *cmpl_list)
++			   struct mei_cl_cb *cmpl_list)
+ {
+ 	struct mei_device *dev = cl->dev;
+-	u32 msg_slots = mei_data2slots(sizeof(struct hbm_flow_control));
+-
++	u32 msg_slots;
++	int slots;
+ 	int ret;
+ 
++	msg_slots = mei_data2slots(sizeof(struct hbm_flow_control));
++	slots = mei_hbuf_empty_slots(dev);
+ 
+-	if (*slots < msg_slots) {
+-		/* return the cancel routine */
+-		list_del(&cb->list);
++	if (slots < msg_slots)
+ 		return -EMSGSIZE;
+-	}
+-
+-	*slots -= msg_slots;
+ 
+ 	ret = mei_hbm_cl_flow_control_req(dev, cl);
+ 	if (ret) {
+@@ -283,30 +277,26 @@ static int mei_cl_irq_read(struct mei_cl *cl, struct mei_cl_cb *cb,
+  *
+  * @cl: client
+  * @cb: callback block.
+- * @slots: free slots.
+  * @cmpl_list: complete list.
+  *
+  * returns 0, OK; otherwise, error.
+  */
+ static int mei_cl_irq_connect(struct mei_cl *cl, struct mei_cl_cb *cb,
+-			   s32 *slots, struct mei_cl_cb *cmpl_list)
++			      struct mei_cl_cb *cmpl_list)
+ {
+ 	struct mei_device *dev = cl->dev;
++	u32 msg_slots;
++	int slots;
+ 	int ret;
+ 
+-	u32 msg_slots =
+-		mei_data2slots(sizeof(struct hbm_client_connect_request));
++	msg_slots = mei_data2slots(sizeof(struct hbm_client_connect_request));
++	slots = mei_hbuf_empty_slots(dev);
+ 
+ 	if (mei_cl_is_other_connecting(cl))
+ 		return 0;
+ 
+-	if (*slots < msg_slots) {
+-		/* return the cancel routine */
+-		list_del(&cb->list);
++	if (slots < msg_slots)
+ 		return -EMSGSIZE;
+-	}
+-
+-	*slots -=  msg_slots;
+ 
+ 	cl->state = MEI_FILE_CONNECTING;
+ 
+@@ -494,13 +484,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 				dev_dbg(&dev->pdev->dev, "wd send failed.\n");
+ 			else if (mei_cl_flow_ctrl_reduce(&dev->wd_cl))
+ 				return -ENODEV;
+-
+ 			dev->wd_pending = false;
+-
+-			if (dev->wd_state == MEI_WD_RUNNING)
+-				slots -= mei_data2slots(MEI_WD_START_MSG_SIZE);
+-			else
+-				slots -= mei_data2slots(MEI_WD_STOP_MSG_SIZE);
+ 		}
+ 	}
+ 
+@@ -515,28 +499,28 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 		switch (cb->fop_type) {
+ 		case MEI_FOP_CLOSE:
+ 			/* send disconnect message */
+-			ret = mei_cl_irq_close(cl, cb, &slots, cmpl_list);
++			ret = mei_cl_irq_close(cl, cb, cmpl_list);
+ 			if (ret)
+ 				return ret;
+ 
+ 			break;
+ 		case MEI_FOP_READ:
+ 			/* send flow control message */
+-			ret = mei_cl_irq_read(cl, cb, &slots, cmpl_list);
++			ret = mei_cl_irq_read(cl, cb, cmpl_list);
+ 			if (ret)
+ 				return ret;
+ 
+ 			break;
+ 		case MEI_FOP_CONNECT:
+ 			/* connect message */
+-			ret = mei_cl_irq_connect(cl, cb, &slots, cmpl_list);
++			ret = mei_cl_irq_connect(cl, cb, cmpl_list);
+ 			if (ret)
+ 				return ret;
+ 
+ 			break;
+ 		case MEI_FOP_DISCONNECT_RSP:
+ 			/* send disconnect resp */
+-			ret = mei_cl_irq_disconnect_rsp(cl, cb, &slots, cmpl_list);
++			ret = mei_cl_irq_disconnect_rsp(cl, cb, cmpl_list);
+ 			if (ret)
+ 				return ret;
+ 		default:
+@@ -551,11 +535,9 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 		if (cl == NULL)
+ 			continue;
+ 		if (cl == &dev->iamthif_cl)
+-			ret = mei_amthif_irq_write_complete(cl, cb,
+-						&slots, cmpl_list);
++			ret = mei_amthif_irq_write(cl, cb, cmpl_list);
+ 		else
+-			ret = mei_cl_irq_write_complete(cl, cb,
+-						&slots, cmpl_list);
++			ret = mei_cl_irq_write(cl, cb, cmpl_list);
+ 		if (ret)
+ 			return ret;
+ 	}
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 52499bc..36640b9 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -515,8 +515,8 @@ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
+ 
+ void mei_amthif_run_next_cmd(struct mei_device *dev);
+ 
+-int mei_amthif_irq_write_complete(struct mei_cl *cl, struct mei_cl_cb *cb,
+-				  s32 *slots, struct mei_cl_cb *cmpl_list);
++int mei_amthif_irq_write(struct mei_cl *cl, struct mei_cl_cb *cb,
++			struct mei_cl_cb *cmpl_list);
+ 
+ void mei_amthif_complete(struct mei_device *dev, struct mei_cl_cb *cb);
+ int mei_amthif_irq_read_msg(struct mei_device *dev,
 -- 
 1.8.5.3
 
