@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaBSHtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 02:49:46 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:55064 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763AbaBSHtp (ORCPT
+	id S1752646AbaBSHux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 02:50:53 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60809 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504AbaBSHuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 02:49:45 -0500
-Date: Tue, 18 Feb 2014 23:49:42 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Xishi Qiu <qiuxishi@huawei.com>
-cc: Vegard Nossum <vegard.nossum@gmail.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: OS boot failed when set command-line kmemcheck=1
-In-Reply-To: <5304558F.9050605@huawei.com>
-Message-ID: <alpine.DEB.2.02.1402182344001.3551@chino.kir.corp.google.com>
-References: <5304558F.9050605@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 19 Feb 2014 02:50:52 -0500
+Date: Wed, 19 Feb 2014 16:50:15 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Nenghua Cao <nhcao@marvell.com>
+Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140219075015.GF2669@sirena.org.uk>
+References: <1392787197-29411-1-git-send-email-nhcao@marvell.com>
+ <5304410B.9010207@marvell.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EhL9IO3QiJLbitD/"
+Content-Disposition: inline
+In-Reply-To: <5304410B.9010207@marvell.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.145.86
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] driver: regmap: add regmap_parse_val api
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014, Xishi Qiu wrote:
 
-> Hi all,
-> 
-> CONFIG_KMEMCHECK=y and set command-line "kmemcheck=1", I find OS 
-> boot failed. The kernel is v3.14.0-rc3
-> 
-> If set "kmemcheck=1 nowatchdog", OS will boot successfully.
-> 
+--EhL9IO3QiJLbitD/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I have automated kernel boots that have both "kmemcheck=0" and 
-"kmemcheck=1" as the last parameter in the kernel command line every 
-night and I've never seen it fail on tip or linux-next before.
+On Wed, Feb 19, 2014 at 01:28:43PM +0800, Nenghua Cao wrote:
+>    Update Liam and Mark's mail.
 
-So I'm sure I won't be able to reproduce your issue, but it may have 
-something to do with your bootloader that isn't described above.  The 
-sscanf() really wants to be replaced with kstrtoint().
+I can't do anything useful with patches that are quoted, sorry.  None of
+the tools know how to strip out quotes.
 
-Could you try this out?
+--EhL9IO3QiJLbitD/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/arch/x86/mm/kmemcheck/kmemcheck.c b/arch/x86/mm/kmemcheck/kmemcheck.c
---- a/arch/x86/mm/kmemcheck/kmemcheck.c
-+++ b/arch/x86/mm/kmemcheck/kmemcheck.c
-@@ -78,10 +78,16 @@ early_initcall(kmemcheck_init);
-  */
- static int __init param_kmemcheck(char *str)
- {
-+	int val;
-+	int ret;
-+
- 	if (!str)
- 		return -EINVAL;
- 
--	sscanf(str, "%d", &kmemcheck_enabled);
-+	ret = kstrtoint(str, 0, &val);
-+	if (ret)
-+		return ret;
-+	kmemcheck_enabled = val;
- 	return 0;
- }
- 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBGIvAAoJELSic+t+oim9Fg0P/0T9NBbIkaMnzaLxOe7h2D9a
+AvGpo0+Do2L8PajZRcl8faR8uZmC9bSrCozU3Z+CtiGm8vwByxVFSrbJbM79eTFk
+HqjU0llq5eqMIX3WfHKyXQVIF78RMDcu+RPmcHl9O1Ch7RhVXEt40y2RtHqP8jG6
+Iop0TlGz3wDYUEV6OYtyIdDaRTq04Y71+bcGGRnt0jiTe3WCBBMIxHRSg2BedMsE
+0wO00vs20UgNBCHKa3ZrURO5IBvjGF2FO959AFC1mrBXHxNprFhpd96eMl7AxGVz
+S5Hsh6zFQ07w9GxJTlntYzEbVDm09WfbgwW60C3kQtzexJ181yYbuhaFuKWhEZQ4
+nGSQpr7mn7p8cnv9gOAFoXATUJq5OU1wTf8LYG0KPtJZqmikibWXvmpBOMwZFPUq
+w/XAEDQ98X1gk3OUkD+/pURJUChAjFAkBYfhpFA5iMKKJN32GLj221bdWIWpjepZ
+kagTanLGe5S0vvc0zCy43iesNwp/V9lshN7z3yuK/hs65viPnYeRNysxjYNLiHXd
+6sctOL5564uDMNIVuLN1dUA4NX716unh8DDeik2IJNVFevCU60OL5xVsj92UFUyI
+Rmzc9IBN+Kgnm2xYpaLht47SDWqInoqde2LcgpIJ+4kdMno6bdhdDL99tL8XlhXx
+o84dva8rmjXOQj8hkK9s
+=ucCG
+-----END PGP SIGNATURE-----
+
+--EhL9IO3QiJLbitD/--
