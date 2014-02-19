@@ -1,104 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaBSDPa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 22:15:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7203 "EHLO mx1.redhat.com"
+	id S1752286AbaBSDTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 22:19:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27609 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833AbaBSDP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 22:15:29 -0500
-Date: Tue, 18 Feb 2014 22:15:19 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] audit: add arch field to seccomp event log
-Message-ID: <20140219031519.GM16640@madcap2.tricolour.ca>
-References: <4bc8c03bda84e004c331546e228b334811b03254.1392409147.git.rgb@redhat.com>
- <1392412322.2760.21.camel@localhost>
- <20140218205044.GL16640@madcap2.tricolour.ca>
- <1455468.M1LNEKA0EJ@x2>
+	id S1751267AbaBSDTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 22:19:08 -0500
+Date: Tue, 18 Feb 2014 22:18:37 -0500
+From: Rik van Riel <riel@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, linux-mm@kvack.org,
+        peterz@infradead.org, chegu_vinod@hp.com, aarcange@redhat.com,
+        akpm@linux-foundation.org
+Subject: [PATCH -mm v2 3/3] move mmu notifier call from change_protection to
+ change_pmd_range
+Message-ID: <20140218221837.6126ae74@annuminas.surriel.com>
+In-Reply-To: <alpine.DEB.2.02.1402181823420.20791@chino.kir.corp.google.com>
+References: <1392761566-24834-1-git-send-email-riel@redhat.com>
+	<1392761566-24834-4-git-send-email-riel@redhat.com>
+	<alpine.DEB.2.02.1402181823420.20791@chino.kir.corp.google.com>
+Organization: Red Hat, Inc.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1455468.M1LNEKA0EJ@x2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/18, Steve Grubb wrote:
-> On Tuesday, February 18, 2014 03:50:44 PM Richard Guy Briggs wrote:
-> > > missing '='   but this isn't what audit_get_context() does...   it's
-> > > crappy naming...    I'd think a combo of audit_dummy_context() and
-> > > current->audit_context would be most appropriate.
-> > 
-> > Ok.  I think I finally understand audit_dummy_context().  Thanks for the
-> > hint.  However, it appears it is not useful in this sitation, since if
-> > there is an audit_context, even a dummy context, it appears arch is
-> > filled in.
-> > 
-> > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> > @@ -2406,12 +2406,18 @@ void audit_core_dumps(long signr)
-> >  void __audit_seccomp(unsigned long syscall, long signr, int code)
-> >  {
-> >         struct audit_buffer *ab;
-> > +       struct audit_context *context = current->audit_context;
-> >  
-> >         ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
-> >         if (unlikely(!ab))
-> >                 return;
-> >         audit_log_task(ab);
-> >         audit_log_format(ab, " sig=%ld", signr);
-> > +       audit_log_format(ab, " arch=");
-> > +       if (context)
-> > +               audit_log_format(ab, "%x", context->arch);
-> > +       else
-> > +               audit_log_format(ab, "(null)");
-> >         audit_log_format(ab, " syscall=%ld", syscall);
-> >         audit_log_format(ab, " compat=%d", is_compat_task());
-> >         audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
+On Tue, 18 Feb 2014 18:24:36 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
+
+> Acked-by: David Rientjes <rientjes@google.com>
 > 
-> Is there anything that could be passed by the caller that might identify the 
-> syscall ABI when this call was blocked? '(null)' still makes syscall number 
-> uninterpretable.
+> Might have been cleaner to move the 
+> mmu_notifier_invalidate_range_{start,end}() to hugetlb_change_protection() 
+> as well, though.
 
-This is the way it is done in the existing record that prints a syscall
-record in audit_log_exit().
+Way cleaner!  Second version attached :)
 
-It is set by the arch-dependent assembler linkage for
-__audit_syscall_entry() or set by the arch-dependent ptrace code that
-calls audit_syscall_entry().  In some arches there are a couple of
-choices.
+Thanks, David.
 
+---8<---
 
-To pass this in to __audit_seccomp() as an arg, I'd have to add that arg
-to:
-	__audit_seccomp()
-	audit_seccomp()
-	__secure_computing()
-	secure_computing()
+Subject: move mmu notifier call from change_protection to change_pmd_range
 
+The NUMA scanning code can end up iterating over many gigabytes
+of unpopulated memory, especially in the case of a freshly started
+KVM guest with lots of memory.
 
-As you've pointed out in IRC, there is a syscall_get_arch(current, regs)
-that could be used to get the arch when an audit context is not yet created.
+This results in the mmu notifier code being called even when
+there are no mapped pages in a virtual address range. The amount
+of time wasted can be enough to trigger soft lockup warnings
+with very large KVM guests.
 
-I was just looking for something like that...  I am noticing that all
-arches call a variant of syscall_trace_enter() which first calls
-secure_computing() [which eventually calls __audit_seccomp()] *before*
-calling audit_syscall_entry() [which eventually sets context->arch].  So
-I'm not sure how task->audit_context->arch got set...  Perhaps
-__audit_syscall_entry() should just call syscall_get_arch() instead of
-lugging it through the stack like it presently does.
+This patch moves the mmu notifier call to the pmd level, which
+represents 1GB areas of memory on x86-64. Furthermore, the mmu
+notifier code is only called from the address in the PMD where
+present mappings are first encountered.
 
-Is this going to give the same information?  (I guess I should be able
-to answer that question...)
+The hugetlbfs code is left alone for now; hugetlb mappings are
+not relocatable, and as such are left alone by the NUMA code,
+and should never trigger this problem to begin with.
 
-> -Steve
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ mm/hugetlb.c  |  2 ++
+ mm/mprotect.c | 15 ++++++++++++---
+ 2 files changed, 14 insertions(+), 3 deletions(-)
 
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c0d930f..f0c5dfb 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -3065,6 +3065,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 	BUG_ON(address >= end);
+ 	flush_cache_range(vma, address, end);
+ 
++	mmu_notifier_invalidate_range_start(mm, start, end);
+ 	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+ 	for (; address < end; address += huge_page_size(h)) {
+ 		spinlock_t *ptl;
+@@ -3094,6 +3095,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 	 */
+ 	flush_tlb_range(vma, start, end);
+ 	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
++	mmu_notifier_invalidate_range_end(mm, start, end);
+ 
+ 	return pages << h->order;
+ }
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index d790166..76146fa 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -115,9 +115,11 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 		pgprot_t newprot, int dirty_accountable, int prot_numa)
+ {
+ 	pmd_t *pmd;
++	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long next;
+ 	unsigned long pages = 0;
+ 	unsigned long nr_huge_updates = 0;
++	unsigned long mni_start = 0;
+ 
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
+@@ -126,6 +128,13 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 		next = pmd_addr_end(addr, end);
+ 		if (!pmd_trans_huge(*pmd) && pmd_none_or_clear_bad(pmd))
+ 				continue;
++
++		/* invoke the mmu notifier if the pmd is populated */
++		if (!mni_start) {
++			mni_start = addr;
++			mmu_notifier_invalidate_range_start(mm, mni_start, end);
++		}
++
+ 		if (pmd_trans_huge(*pmd)) {
+ 			if (next - addr != HPAGE_PMD_SIZE)
+ 				split_huge_page_pmd(vma, addr, pmd);
+@@ -149,6 +158,9 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 		pages += this_pages;
+ 	} while (pmd++, addr = next, addr != end);
+ 
++	if (mni_start)
++		mmu_notifier_invalidate_range_end(mm, mni_start, end);
++
+ 	if (nr_huge_updates)
+ 		count_vm_numa_events(NUMA_HUGE_PTE_UPDATES, nr_huge_updates);
+ 	return pages;
+@@ -208,15 +220,12 @@ unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
+ 		       unsigned long end, pgprot_t newprot,
+ 		       int dirty_accountable, int prot_numa)
+ {
+-	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long pages;
+ 
+-	mmu_notifier_invalidate_range_start(mm, start, end);
+ 	if (is_vm_hugetlb_page(vma))
+ 		pages = hugetlb_change_protection(vma, start, end, newprot);
+ 	else
+ 		pages = change_protection_range(vma, start, end, newprot, dirty_accountable, prot_numa);
+-	mmu_notifier_invalidate_range_end(mm, start, end);
+ 
+ 	return pages;
+ }
