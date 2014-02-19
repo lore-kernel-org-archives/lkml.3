@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777AbaBSWMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 17:12:44 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:34924 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015AbaBSWMf (ORCPT
+	id S1754926AbaBSWOE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 17:14:04 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:42562 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868AbaBSWOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 17:12:35 -0500
+	Wed, 19 Feb 2014 17:14:03 -0500
+From: stefan.seyfried@googlemail.com
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>,
+        Stefan Seyfried <seife+kernel@b1-systems.com>
+Subject: [PATCH] Makefile: fix syntax error in warning message
+Date: Wed, 19 Feb 2014 23:13:39 +0100
+Message-Id: <1392848019-24114-1-git-send-email-stefan.seyfried@googlemail.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-In-Reply-To: <CAEPRUYr8_qpL65Q0jCnLXHsZpb27DxuiF6JsZb6eRb4JOX2evg@mail.gmail.com>
-References: <1392845512-31333-1-git-send-email-mporter@linaro.org>
-	<CAEPRUYr8_qpL65Q0jCnLXHsZpb27DxuiF6JsZb6eRb4JOX2evg@mail.gmail.com>
-Date: Wed, 19 Feb 2014 14:12:34 -0800
-Message-ID: <CAPdLdqkLV+NODgGS5NxvHaD1P_zpoeEhTnZunEGsR9OZXhWFSw@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: dts: remove bcm11351-brt.dts
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Christian Daudt <bcm@fixthebug.org>
-Cc: Matt Porter <mporter@linaro.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tim Kryger <tim.kryger@linaro.org>, Alex Elder <elder@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 February 2014 13:37, Christian Daudt <bcm@fixthebug.org> wrote:
-> On Wed, Feb 19, 2014 at 1:31 PM, Matt Porter <mporter@linaro.org> wrote:
->> The BCM11351 BRT board will never see the light of day. Remove the BRT
->> dts since it is not maintainable.
->>
->> Reviewed-by: Alex Elder <elder@linaro.org>
->> Signed-off-by: Matt Porter <mporter@linaro.org>
->> ---
->> Changes since v1:
->>         - remove bcm11351-brt from Makefile
->>
->>  arch/arm/boot/dts/Makefile         |  3 +--
->>  arch/arm/boot/dts/bcm11351-brt.dts | 54 --------------------------------------
->>  2 files changed, 1 insertion(+), 56 deletions(-)
->>  delete mode 100644 arch/arm/boot/dts/bcm11351-brt.dts
->>
->
-> R.I.P bcm11351...
->
-> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+From: Stefan Seyfried <seife+kernel@b1-systems.com>
 
-There goes our original guinea pig.
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-
+diff --git a/Makefile b/Makefile
+index 893d6f0..eeaf3e7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -606,7 +606,7 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
+   stackp-flag := -fstack-protector
+   ifeq ($(call cc-option, $(stackp-flag)),)
+     $(warning Cannot use CONFIG_CC_STACKPROTECTOR: \
+-	      -fstack-protector not supported by compiler))
++	      -fstack-protector not supported by compiler)
+   endif
+ else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
+   stackp-flag := -fstack-protector-strong
 -- 
-Markus Mayer
-Broadcom Landing Team
+1.8.5.2
+
+
+Stefan Seyfried
+Linux Consultant & Developer -- GPG Key: 0x731B665B
+
+B1 Systems GmbH
+Osterfeldstraße 7 / 85088 Vohburg / http://www.b1-systems.de
+GF: Ralph Dehner / Unternehmenssitz: Vohburg / AG: Ingolstadt,HRB 3537
