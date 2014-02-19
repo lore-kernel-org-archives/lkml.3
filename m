@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaBSPgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:36:04 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57372 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753962AbaBSPgC (ORCPT
+	id S1754214AbaBSPg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:36:29 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:33782 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbaBSPg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:36:02 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18MzuZnQa6Sz88BYvWbGNn593MMITjjSvg=
-X-DKIM: OpenDKIM Filter v2.0.1 titan A520652CCD0
-Date: Wed, 19 Feb 2014 10:35:44 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] irqchip: mvebu fixes for v3.14
-Message-ID: <20140219153544.GI7862@titan.lakedaemon.net>
-References: <20140218162210.GU7862@titan.lakedaemon.net>
- <alpine.DEB.2.02.1402182122010.4468@ionos.tec.linutronix.de>
+	Wed, 19 Feb 2014 10:36:28 -0500
+Date: Wed, 19 Feb 2014 10:36:24 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alexandre.torgue@st.com, linux-ide@vger.kernel.org,
+        hdegoede@redhat.com
+Subject: Re: [PATCH 3/3] ahci: st: Add support for ST's SATA IP
+Message-ID: <20140219153624.GI10134@htj.dyndns.org>
+References: <1392641818-23419-1-git-send-email-lee.jones@linaro.org>
+ <1392641818-23419-3-git-send-email-lee.jones@linaro.org>
+ <20140218233645.GP31892@mtj.dyndns.org>
+ <20140219083025.GB10504@lee--X1>
+ <20140219140458.GA10134@htj.dyndns.org>
+ <20140219150121.GG10504@lee--X1>
+ <20140219150654.GH10134@htj.dyndns.org>
+ <20140219152336.GH10504@lee--X1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402182122010.4468@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140219152336.GH10504@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 09:23:29PM +0100, Thomas Gleixner wrote:
-> On Tue, 18 Feb 2014, Jason Cooper wrote:
+On Wed, Feb 19, 2014 at 03:23:36PM +0000, Lee Jones wrote:
+> Since when has maintaining core code been the responsibility of the
+> leaf driver developers? If you're aware that the core code is
+> sub-standard then it's you who should be fixing it.
+
+No, there isn't this clear divide between core and the leaf
+developers.  People working on the "core" don't just grow off the
+ground.  You can't just go around piling mess around claiming that
+it's not your responsbility and then expect someone else to clean up
+after you.  How can that be *possibly* sustainable?
+
+> I think it's great that forward thinking developers like Hans take on
+> challenges to improve subsystems which are lacking in one way or
+
+Yeah, which happened only because I pushed back and Hans isn't even
+paid to do it.  Doesn't that say something?  Nobody is actually
+helping Hans' work.  Not at all, nada, zilch.  Just complain when
+directed towards it.
+
+> another, but holding back other development while this process is
+> ongoing is fundamentally wrong. Especially in this case where you're
+> still actively reviewing/NACKing the core changes.
 > 
-> > Thomas,
-> > 
-> > Here is a small round of fixes for irq-orion.c.  They've been in -next
-> > for over a week.  Please pull.
-> > 
-> > We have a set of watchdog changes depending on this that are going
-> > through mvebu/arm-soc.  So please don't rebase, just let me know if
-> > there's something that isn't right.  I'll fix it up and resend.
+> Changes to APIs should either support backward-capability or change all
+> effected drivers. I haven't been able to apply the patches yet, so I
+> can't tell which one of these holds true, but I believe it's the
+> former. In which case any new driver using the _current_ (not old)
+> API should fold neatly in. I've even offered to convert to the new API
+> once it's Mainlined. How can I say fairer than that?
 > 
-> Just a nit:
-> 
-> 12bd4f7: IRQ: Orion: Fix getting generic chip pointer.
-> e0318ec: irqchip: orion: clear stale interrupts in irq_startup
-> 5f40067: irqchip: orion: use handle_edge_irq on bridge irqs
-> 7b119fd: irqchip: orion: clear bridge cause register on init
+> Finally, do try and stay at least a little bit professional on the
+> MLs. That sort of disrespectful, rude behaviour may be how you guys do
+> it at Redhat, but most will think it's nothing more than childish.
 
-<looks at feet, kicks stones>
+If you want me to be respectful towards you, don't be a crybaby
+screaming "it's not fair".  It apparently isn't clear to you that you
+have to chip in for the whole thing to be maintainable in the long
+term.  Unfair... lol, that was a good one, really.
 
-v2 on it's way.
-
-thx,
-
-Jason.
+-- 
+tejun
