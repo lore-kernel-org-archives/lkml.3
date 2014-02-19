@@ -1,199 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278AbaBSQPz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:15:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56474 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992AbaBSQPu (ORCPT
+	id S1754480AbaBSQRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:17:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34628 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804AbaBSQRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:15:50 -0500
-Date: Wed, 19 Feb 2014 08:15:27 -0800
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-5f0e030930d715920be4de638084aaf8653867e8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk, hpa@zytor.com,
-        mingo@kernel.org, mika.westerberg@linux.intel.com, tglx@linutronix.de,
-        bin.gao@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, gnomes@lxorguk.ukuu.org.uk,
-        linux-kernel@vger.kernel.org, mika.westerberg@linux.intel.com,
-        tglx@linutronix.de, bin.gao@linux.intel.com
-In-Reply-To: <1392810750-18660-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1392810750-18660-1-git-send-email-mika.westerberg@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, tsc:
-  Fallback to normal calibration if fast MSR calibration fails
-Git-Commit-ID: 5f0e030930d715920be4de638084aaf8653867e8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Feb 2014 11:17:06 -0500
+Date: Wed, 19 Feb 2014 17:16:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: fair: NULL ptr deref in check_preempt_wakeup
+Message-ID: <20140219161657.GO15586@twins.programming.kicks-ass.net>
+References: <52FFF7F8.2070801@oracle.com>
+ <5301C41D.5000009@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <5301C41D.5000009@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5f0e030930d715920be4de638084aaf8653867e8
-Gitweb:     http://git.kernel.org/tip/5f0e030930d715920be4de638084aaf8653867e8
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 19 Feb 2014 13:52:29 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 19 Feb 2014 17:12:24 +0100
+On Mon, Feb 17, 2014 at 04:11:09PM +0800, Michael wang wrote:
+> > While fuzzing with trinity inside a KVM tools guest running latest -next
+> > kernel, I've
+> > stumbled on the following:
+> 
+> I've reproduced the same issue with tip/master, and below patch fixed the
+> problem on my box along with some rcu stall info disappeared, would you
+> like to have a try?
+> 
+> BTW, I reproduced it by steps:
+> 1. change current to RT
+> 2. move to a different depth cpu-cgroup
+> 3. change it back to FAIR
+> 
+> Seems like it was caused by that RT has no task_move_group() implemented
+> which could maintain depth, and that lead to a wrong depth after switched
+> back to FAIR...
+> 
+> Regards,
+> Michael Wang
+> 
+> 
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 235cfa7..4445e56 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -7317,7 +7317,11 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+>   */
+>  static void switched_to_fair(struct rq *rq, struct task_struct *p)
+>  {
+> -	if (!p->se.on_rq)
+> +	struct sched_entity *se = &p->se;
+> +#ifdef CONFIG_FAIR_GROUP_SCHED
+> +	se->depth = se->parent ? se->parent->depth + 1 : 0;
+> +#endif
+> +	if (!se->on_rq)
+>  		return;
+>  
+>  	/*
 
-x86, tsc: Fallback to normal calibration if fast MSR calibration fails
 
-If we cannot calibrate TSC via MSR based calibration
-try_msr_calibrate_tsc() stores zero to fast_calibrate and returns that
-to the caller. This value gets then propagated further to clockevents
-code resulting division by zero oops like the one below:
-
- divide error: 0000 [#1] PREEMPT SMP
- Modules linked in:
- CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W    3.13.0+ #47
- task: ffff880075508000 ti: ffff880075506000 task.ti: ffff880075506000
- RIP: 0010:[<ffffffff810aec14>]  [<ffffffff810aec14>] clockevents_config.part.3+0x24/0xa0
- RSP: 0000:ffff880075507e58  EFLAGS: 00010246
- RAX: ffffffffffffffff RBX: ffff880079c0cd80 RCX: 0000000000000000
- RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffffffffffff
- RBP: ffff880075507e70 R08: 0000000000000001 R09: 00000000000000be
- R10: 00000000000000bd R11: 0000000000000003 R12: 000000000000b008
- R13: 0000000000000008 R14: 000000000000b010 R15: 0000000000000000
- FS:  0000000000000000(0000) GS:ffff880079c00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: ffff880079fff000 CR3: 0000000001c0b000 CR4: 00000000001006f0
- Stack:
-  ffff880079c0cd80 000000000000b008 0000000000000008 ffff880075507e88
-  ffffffff810aecb0 ffff880079c0cd80 ffff880075507e98 ffffffff81030168
-  ffff880075507ed8 ffffffff81d1104f 00000000000000c3 0000000000000000
- Call Trace:
-  [<ffffffff810aecb0>] clockevents_config_and_register+0x20/0x30
-  [<ffffffff81030168>] setup_APIC_timer+0xc8/0xd0
-  [<ffffffff81d1104f>] setup_boot_APIC_clock+0x4cc/0x4d8
-  [<ffffffff81d0f5de>] native_smp_prepare_cpus+0x3dd/0x3f0
-  [<ffffffff81d02ee9>] kernel_init_freeable+0xc3/0x205
-  [<ffffffff8177c910>] ? rest_init+0x90/0x90
-  [<ffffffff8177c91e>] kernel_init+0xe/0x120
-  [<ffffffff8178deec>] ret_from_fork+0x7c/0xb0
-  [<ffffffff8177c910>] ? rest_init+0x90/0x90
-
-Prevent this from happening by:
- 1) Modifying try_msr_calibrate_tsc() to return calibration value or zero
-    if it fails.
- 2) Check this return value in native_calibrate_tsc() and in case of zero
-    fallback to use normal non-MSR based calibration.
-
-[mw: Added subject and changelog]
-
-Reported-and-tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Bin Gao <bin.gao@linux.intel.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/1392810750-18660-1-git-send-email-mika.westerberg@linux.intel.com
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/tsc.h |  2 +-
- arch/x86/kernel/tsc.c      |  7 ++-----
- arch/x86/kernel/tsc_msr.c  | 28 ++++++++++++++--------------
- 3 files changed, 17 insertions(+), 20 deletions(-)
-
-diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
-index 57ae63c..94605c0 100644
---- a/arch/x86/include/asm/tsc.h
-+++ b/arch/x86/include/asm/tsc.h
-@@ -66,6 +66,6 @@ extern void tsc_save_sched_clock_state(void);
- extern void tsc_restore_sched_clock_state(void);
- 
- /* MSR based TSC calibration for Intel Atom SoC platforms */
--int try_msr_calibrate_tsc(unsigned long *fast_calibrate);
-+unsigned long try_msr_calibrate_tsc(void);
- 
- #endif /* _ASM_X86_TSC_H */
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index acb3b60..cfbe99f 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -653,13 +653,10 @@ unsigned long native_calibrate_tsc(void)
- 
- 	/* Calibrate TSC using MSR for Intel Atom SoCs */
- 	local_irq_save(flags);
--	i = try_msr_calibrate_tsc(&fast_calibrate);
-+	fast_calibrate = try_msr_calibrate_tsc();
- 	local_irq_restore(flags);
--	if (i >= 0) {
--		if (i == 0)
--			pr_warn("Fast TSC calibration using MSR failed\n");
-+	if (fast_calibrate)
- 		return fast_calibrate;
--	}
- 
- 	local_irq_save(flags);
- 	fast_calibrate = quick_pit_calibrate();
-diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
-index 8b5434f..5dfff58 100644
---- a/arch/x86/kernel/tsc_msr.c
-+++ b/arch/x86/kernel/tsc_msr.c
-@@ -77,21 +77,18 @@ static int match_cpu(u8 family, u8 model)
- 
- /*
-  * Do MSR calibration only for known/supported CPUs.
-- * Return values:
-- * -1: CPU is unknown/unsupported for MSR based calibration
-- *  0: CPU is known/supported, but calibration failed
-- *  1: CPU is known/supported, and calibration succeeded
-+ *
-+ * Returns the calibration value or 0 if MSR calibration failed.
-  */
--int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
-+unsigned long try_msr_calibrate_tsc(void)
- {
--	int cpu_index;
- 	u32 lo, hi, ratio, freq_id, freq;
-+	unsigned long res;
-+	int cpu_index;
- 
- 	cpu_index = match_cpu(boot_cpu_data.x86, boot_cpu_data.x86_model);
- 	if (cpu_index < 0)
--		return -1;
--
--	*fast_calibrate = 0;
-+		return 0;
- 
- 	if (freq_desc_tables[cpu_index].msr_plat) {
- 		rdmsr(MSR_PLATFORM_INFO, lo, hi);
-@@ -103,7 +100,7 @@ int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
- 	pr_info("Maximum core-clock to bus-clock ratio: 0x%x\n", ratio);
- 
- 	if (!ratio)
--		return 0;
-+		goto fail;
- 
- 	/* Get FSB FREQ ID */
- 	rdmsr(MSR_FSB_FREQ, lo, hi);
-@@ -112,16 +109,19 @@ int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
- 	pr_info("Resolved frequency ID: %u, frequency: %u KHz\n",
- 				freq_id, freq);
- 	if (!freq)
--		return 0;
-+		goto fail;
- 
- 	/* TSC frequency = maximum resolved freq * maximum resolved bus ratio */
--	*fast_calibrate = freq * ratio;
--	pr_info("TSC runs at %lu KHz\n", *fast_calibrate);
-+	res = freq * ratio;
-+	pr_info("TSC runs at %lu KHz\n", res);
- 
- #ifdef CONFIG_X86_LOCAL_APIC
- 	lapic_timer_frequency = (freq * 1000) / HZ;
- 	pr_info("lapic_timer_frequency = %d\n", lapic_timer_frequency);
- #endif
-+	return res;
- 
--	return 1;
-+fail:
-+	pr_warn("Fast TSC calibration using MSR failed\n");
-+	return 0;
- }
+Michael, do you think you can send a proper patch for this?
