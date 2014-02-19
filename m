@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853AbaBSN7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 08:59:32 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:37112 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753743AbaBSN7a (ORCPT
+	id S1753864AbaBSOAK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:00:10 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44029 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaBSOAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 08:59:30 -0500
-Message-ID: <5304B849.2080806@st.com>
-Date: Wed, 19 Feb 2014 14:57:29 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Feb 2014 09:00:08 -0500
+Date: Wed, 19 Feb 2014 22:59:38 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Lee Jones <lee.jones@linaro.org>, Michal Simek <michal.simek@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140219135938.GY2669@sirena.org.uk>
+References: <cover.1392807832.git.michal.simek@xilinx.com>
+ <fa3178534fcf4488fc45a9a24e44b2588acb38c6.1392807832.git.michal.simek@xilinx.com>
+ <20140219114132.GC10504@lee--X1>
+ <53049932.8020901@monstr.eu>
+ <20140219121756.GM2669@sirena.org.uk>
+ <5304B6E8.1090508@monstr.eu>
 MIME-Version: 1.0
-To: srinivas kandagatla <srinivas.kandagatla@st.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, <kernel@stlinux.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Olof Johansson <olof@lixom.net>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <stephen.gallimore@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 0/6] ARM: STi reset controller support
-References: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>		<1391437665-11913-1-git-send-email-srinivas.kandagatla@st.com>	<1391592486.11239.4.camel@pizza.hi.pengutronix.de> <52F4D76F.8070301@st.com>
-In-Reply-To: <52F4D76F.8070301@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NYU3Joii+X7L5SBl"
+Content-Disposition: inline
+In-Reply-To: <5304B6E8.1090508@monstr.eu>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.144.10
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH v2 1/2] mfd: syscon: Support early initialization
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
 
-On 02/07/2014 01:54 PM, srinivas kandagatla wrote:
-> Hi Philipp,
-> Thankyou for looking at the patches.
->
->
-> On 05/02/14 09:28, Philipp Zabel wrote:
->> Hi Srinivas,
->>
-> ...
->>
->> the patchset looks good to me for the soft resets. But for the powerdown
->> bits I am wondering whether the reset controller API is the right
->> abstraction. Depending on whether those bits really just put the IPs
->> into reset or there is some power gating / sequencing involved,
->> shouldn't this rather be handled as a set of pm domains?
->
-> The hardware name of these control signals into the devices is
-> slightly unfortunate and a bit misleading. We do not generally
-> have separate power domains for peripheral devices in our
-> current STB SoCs, in the sense that the voltage cannot actually be
-> removed from individual devices. In the USB case we believe the
-> powerdown signals internally gate off two of the three
-> incoming clocks to most of the USB controller's logic blocks,
-> essentially holding the device in a disabled (enable/disable
-> might have been a better name for the signal) state.
->
-> The primary requirement to manipulate these signals is to bring
-> the device out of its cold boot default powerdown/disabled/reset
-> (whatever you want to call it) state when the device is probed or
-> after a SoC wide power loss when resuming from PM_SUSPEND_MEM.
->
->
->> I see that for example on STiH415 there are both soft resets and
->> powerdown bits for USB[012].
->
-> Our IPs typically have two or sometimes three signals going into
-> them, controlled from outside of the IP block itself (typically using
-> SoC global system configuration registers) that you could view
-> as "reset-a-like"; that is toggling each of the signals puts the IP
-> into a state where it is in some way unusable and then back to
-> being useable again. The reset controller API appeared to be the
-> natural abstraction for the drivers to be given access to such control
-> signals, regardless of the precise effect the signals have on the
-> device's internal state.
->
-> With regards to sequencing between these signals; it is the case that
-> there is a likely sequencing because at least in the USB case it is
-> thought that the "powerdown" stops the clock going to the reset chain
-> logic. But we did not see that as an issue as the reset controller
-> framework allows for multiple named "reset" lines being defined for
-> a device through its DT attributes. The driver knows which signal
-> is which and what each does, because it asks for them by name;
-> therefore, it knows how to impose any required ordering when changing
-> the state of those signals.
->
+--NYU3Joii+X7L5SBl
+Content-Type: text/plain; charset=us-ascii
+Content-Description: e
+Content-Disposition: inline
 
-Did Srini's explanations convinced you?
+On Wed, Feb 19, 2014 at 02:51:36PM +0100, Michal Simek wrote:
+> On 02/19/2014 01:17 PM, Mark Brown wrote:
 
-If so, could you queue the series for v3.15?
+> > Like I said I've never seen the user you're adding for the regmap API so
+> > I've no particular opinion on it.
 
-Thanks,
-Maxime
+> 2/2 is the code where I would like to use this when clk subsystem
+> start to use better io helper functions then just static inline
+> clk_readl/clk_writel.
 
->
-> Thanks,
-> srini
->
->
-> _______________________________________________
+> Then my 2/2 driver will be just nicer than current implementation.
+
+OK, but I still haven't seen the code (or Lee's concerns for that
+matter).
+
+--NYU3Joii+X7L5SBl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBLjGAAoJELSic+t+oim9uBMP/j5NhqgXiHdtu2xRMzpqHjfg
+hA09jRgIijyW7jgy/1Zp2YRtuI7ryNNrQqfvwVdix+svmgEjcu8Nahvlh4+f7PDm
+yIZrYIJNDP86HsOYKiRG0FgXhUY+EOl/cyp3SS4Id5767aruyrR/e8N0WOE/3iFL
+b369/XKMr7h1s6n495pE3af3o69CifzUd+Agc6CtTpwrhuBoV01poDj7lObXx7wf
+Ig/y/BwnY7qHcP4+k9aRB91K1tavybldXNGWvFjr8AP6Y51YCZk+aCDLQrmqK98h
+19YayNhTnQ8Wt2s14FHuzER4fbTWyrAG73jlx44oiwhqPFu0PYBivgKE9HoYHqJP
+tDsIXicfCMgrDoIXwxOqPeK5MuVw0V3y8ITqwnJ09Lgb1xFP5PSa4hP/JdpG3F+x
+HhAPsFoXSN0l0Ac/fqRBKoICsEzWXJjusny/EiunuqDPGHgqhY/9JtjvecBmX20V
+Cs4As2kaLY7/Wvx4zuaMlrC2ezE4ID5XfVKeL/+u/DqP2bw7w7CVGo56dQJh4ew8
+esCKx62wDwYAW/zLMOJJdddVRMEFZvb5h2Y7nlpTtdydp6c2QOjSsZKjKniisJqA
+6z1BoG2KmM4gNVrS7RKImH4fv48EKZ3cTn009DEp4iRcIp+Z7ihkyQpOb+pXXpr/
+rmnDYL21HRb1M1jpVi7h
+=KpQZ
+-----END PGP SIGNATURE-----
+
+--NYU3Joii+X7L5SBl--
