@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbaBSC5A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 21:57:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaBSC46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 21:56:58 -0500
-Date: Tue, 18 Feb 2014 21:56:52 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, fowles@inreach.com, eranian@google.com
-Subject: Re: [PATCH 17/21] perf, c2c: Add symbol count table
-Message-ID: <20140219025652.GP25953@redhat.com>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <1392053356-23024-18-git-send-email-dzickus@redhat.com>
- <20140218130929.GL4343@krava.brq.redhat.com>
+	id S1752817AbaBSC5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 21:57:08 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:7506 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751796AbaBSC5C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 21:57:02 -0500
+Date: Tue, 18 Feb 2014 21:56:59 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] sched/deadline: Update total bandwidth when adding new task
+Message-ID: <20140218215659.2a3ddd8f@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218130929.GL4343@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 02:09:29PM +0100, Jiri Olsa wrote:
-> On Mon, Feb 10, 2014 at 12:29:12PM -0500, Don Zickus wrote:
-> > Just another table that displays the referenced symbols in the analysis
-> > report.  The table lists the most frequently used symbols first.
-> > 
-> > It is just another way to look at similar data to figure out who
-> > is causing the most contention (based on the workload used).
-> > 
-> > Originally done by Dick Fowles and ported by me.
-> > 
-> > Suggested-by: Joe Mario <jmario@redhat.com>
-> > Original-by: Dick Fowles <rfowles@redhat.com>
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > ---
-> >  tools/perf/builtin-c2c.c | 99 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 99 insertions(+)
-> > 
-> > diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-> > index 32c2319..979187f 100644
-> > --- a/tools/perf/builtin-c2c.c
-> > +++ b/tools/perf/builtin-c2c.c
-> > @@ -950,6 +950,104 @@ static void c2c_hit__update_stats(struct c2c_stats *new,
-> >  	new->total_period	+= old->total_period;
-> >  }
-> >  
-> > +LIST_HEAD(ref_tree);
-> > +LIST_HEAD(ref_tree_sorted);
-> > +struct refs {
-> > +	struct list_head	list;
-> > +	int			nr;
-> > +	const char		*name;
-> > +	char			*long_name;
-> > +};
-> > +
-> > +static int update_ref_tree(struct c2c_entry *entry)
-> > +{
-> > +	struct refs *p;
-> > +	struct dso *dso = entry->mi->iaddr.map->dso;
-> > +	const char *name = dso->short_name;
-> > +
-> > +	list_for_each_entry(p, &ref_tree, list) {
-> > +		if (!strcmp(p->name, name))
-> > +			goto found;
-> > +	}
-> > +
-> > +	p = zalloc(sizeof(struct refs));
-> > +	if (!p)
-> > +		return -1;
-> > +	p->name = name;
-> > +	p->long_name = dso->long_name;
-> > +	list_add_tail(&p->list, &ref_tree);
-> 
-> so this is a tree, which is actually a list ;-)
+While debugging the crash with the bad nr_running accounting, I hit
+another bug where, after running my sched deadline test, I was getting
+failures to take a CPU offline. It was giving me a -EBUSY error.
 
-It used to be a tree, now it is a stick. :-)
+Adding a bunch of trace_printk()s around, I found that the cpu
+notifier that called sched_cpu_inactive() was returning a failure. The
+overflow value was coming up negative?
 
-Old code that needs to be renamed.  I can update that.
+Adding more trace_printk()s, I found that task_dead_dl() function was
+subtracting the exact amount that was keeping the CPU from going
+offline. I then realized that the task_dead_dl() was updating the
+total_bw for the task that was going away, but there was nothing that
+added to the total_bw when the task came alive. If total_bw is not
+zero for a CPU, it will keep that CPU from going offline.
 
-Cheers,
-Don
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b46131e..17f4830 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3178,6 +3178,7 @@ static void
+ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
+ {
+ 	struct sched_dl_entity *dl_se = &p->dl;
++	struct dl_bw *dl_b = dl_bw_of(task_cpu(p));
+ 
+ 	init_dl_task_timer(dl_se);
+ 	dl_se->dl_runtime = attr->sched_runtime;
+@@ -3187,6 +3188,7 @@ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
+ 	dl_se->dl_bw = to_ratio(dl_se->dl_period, dl_se->dl_runtime);
+ 	dl_se->dl_throttled = 0;
+ 	dl_se->dl_new = 1;
++	__dl_add(dl_b, dl_se->dl_bw);
+ }
+ 
+ /* Actually do priority change: must hold pi & rq lock. */
