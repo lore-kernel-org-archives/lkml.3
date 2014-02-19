@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643AbaBSQqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:46:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17067 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754021AbaBSQqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:46:12 -0500
-Message-ID: <1392828325.21976.6.camel@dcbw.local>
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
-From: Dan Williams <dcbw@redhat.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Date: Wed, 19 Feb 2014 10:45:25 -0600
-In-Reply-To: <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
+	id S1754743AbaBSQqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:46:22 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:49004 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653AbaBSQqR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 11:46:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <53024C58.4010900@citrix.com>
 References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com>
-	 <1392668638.21106.5.camel@dcbw.local>
-	 <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com> <53024C58.4010900@citrix.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 19 Feb 2014 08:45:55 -0800
+X-Google-Sender-Auth: nVz7ZkgNI_FPFikfUmhYK_ZNeNk
+Message-ID: <CAB=NE6XYjOd2vRpQCZOG-S5ZW4xjam+FOPAYzribNQpb50Q5pg@mail.gmail.com>
+Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
+ from becoming the root bridge
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>, kvm@vger.kernel.org,
+        bridge@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        xen-devel@lists.xenproject.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-18 at 13:19 -0800, Luis R. Rodriguez wrote:
-> On Mon, Feb 17, 2014 at 12:23 PM, Dan Williams <dcbw@redhat.com> wrote:
-> > On Fri, 2014-02-14 at 18:59 -0800, Luis R. Rodriguez wrote:
-> >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> >>
-> >> Some interfaces do not need to have any IPv4 or IPv6
-> >> addresses, so enable an option to specify this. One
-> >> example where this is observed are virtualization
-> >> backend interfaces which just use the net_device
-> >> constructs to help with their respective frontends.
-> >>
-> >> This should optimize boot time and complexity on
-> >> virtualization environments for each backend interface
-> >> while also avoiding triggering SLAAC and DAD, which is
-> >> simply pointless for these type of interfaces.
-> >
-> > Would it not be better/cleaner to use disable_ipv6 and then add a
-> > disable_ipv4 sysctl, then use those with that interface?
-> 
-> Sure, but note that the both disable_ipv6 and accept_dada sysctl
-> parameters are global. ipv4 and ipv6 interfaces are created upon
-> NETDEVICE_REGISTER, which will get triggered when a driver calls
-> register_netdev(). The goal of this patch was to enable an early
-> optimization for drivers that have no need ever for ipv4 or ipv6
-> interfaces.
+On Mon, Feb 17, 2014 at 9:52 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
+> On 15/02/14 02:59, Luis R. Rodriguez wrote:
+>>
+>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>
+>> It doesn't make sense for some interfaces to become a root bridge
+>> at any point in time. One example is virtual backend interfaces
+>> which rely on other entities on the bridge for actual physical
+>> connectivity. They only provide virtual access.
+>
+> It is possible that a guest bridge together to VIF, either from the same
+> Dom0 bridge or from different ones. In that case using STP on VIFs sound
+> sensible to me.
 
-Each interface gets override sysctls too though, eg:
+You seem to describe a case whereby it can make sense for xen-netback
+interfaces to end up becoming the root port of a bridge. Can you
+elaborate a little more on that as it was unclear the use case.
 
-/proc/sys/net/ipv6/conf/enp0s25/disable_ipv6
+Additionally if such cases exist then under the current upstream
+implementation one would simply need to change the MAC address in
+order to enable a vif to become the root port.  Stephen noted there is
+a way to avoid nominating an interface for a root port through the
+root block flag. We should use that instead of the MAC address hacks.
+Let's keep in mind that part of the motivation for this series is to
+avoid a duplicate IPv6 address left in place by use cases whereby the
+MAC address of the backend vif was left static. The use case your are
+explaining likely describes the more prevalent use case where address
+conflicts can occur, perhaps when administrators for got to change the
+backend MAC address. If we embrace a random MAC address we'd avoid
+that issue, and but we'd need to update userspace to use the root
+block on topologies where desired.
 
-which is the one I meant; you're obviously right that the global ones
-aren't what you want here.  But the specific ones should be suitable?
-If you set that on a per-interface basis, then you'll get EPERM or
-something whenever you try to add IPv6 addresses or do IPv6 routing.
-
-> Zoltan has noted though some use cases of IPv4 or IPv6 addresses on
-> backends though, as such this is no longer applicable as a
-> requirement. The ipv4 sysctl however still seems like a reasonable
-> approach to enable optimizations of the network in topologies where
-> its known we won't need them but -- we'd need to consider a much more
-> granular solution, not just global as it is now for disable_ipv6, and
-> we'd also have to figure out a clean way to do this to not incur the
-> cost of early address interface addition upon register_netdev().
-> 
-> Given that we have a use case for ipv4 and ipv6 addresses on
-> xen-netback we no longer have an immediate use case for such early
-> optimization primitives though, so I'll drop this.
-> 
-> > The IFF_SKIP_IP seems to duplicate at least part of what disable_ipv6 is
-> > already doing.
-> 
-> disable_ipv6 is global, the goal was to make this granular and skip
-> the cost upon early boot, but its been clarified we don't need this.
-
-Like Stephen says, you need to make sure you set them before IFF_UP, but
-beyond that, wouldn't the interface-specific sysctls work?
-
-Dan
-
+  Luis
