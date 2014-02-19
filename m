@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199AbaBST2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:28:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60835 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748AbaBST2F (ORCPT
+	id S1755010AbaBSTaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:30:52 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47520 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604AbaBSTav convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:28:05 -0500
-Date: Wed, 19 Feb 2014 11:28:03 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: riel@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-mm@kvack.org, chegu_vinod@hp.com, aarcange@redhat.com
-Subject: Re: [PATCH -mm 0/3] fix numa vs kvm scalability issue
-Message-Id: <20140219112803.75c6daf470dad88eb10f5dab@linux-foundation.org>
-In-Reply-To: <20140219085917.GJ27965@twins.programming.kicks-ass.net>
-References: <1392761566-24834-1-git-send-email-riel@redhat.com>
-	<20140219085917.GJ27965@twins.programming.kicks-ass.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Wed, 19 Feb 2014 14:30:51 -0500
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [GIT PULL] qcom cleanups for v3.15
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <5304FE4B.1020408@codeaurora.org>
+Date: Wed, 19 Feb 2014 13:30:45 -0600
+Cc: arm@kernel.org, David Brown <davidb@codeaurora.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kevin Hilman <khilman@linaro.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <E25A5939-BFC3-44AF-9A7D-C7E8013720A6@codeaurora.org>
+References: <alpine.DEB.2.00.1402101722170.12284@galak-ubuntu.qualcomm.com> <5303F56A.9010107@codeaurora.org> <FE60A8A0-B1C4-46F2-96E8-95FE25503DAF@codeaurora.org> <5304FE4B.1020408@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014 09:59:17 +0100 Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Tue, Feb 18, 2014 at 05:12:43PM -0500, riel@redhat.com wrote:
-> > The NUMA scanning code can end up iterating over many gigabytes
-> > of unpopulated memory, especially in the case of a freshly started
-> > KVM guest with lots of memory.
-> > 
-> > This results in the mmu notifier code being called even when
-> > there are no mapped pages in a virtual address range. The amount
-> > of time wasted can be enough to trigger soft lockup warnings
-> > with very large (>2TB) KVM guests.
-> > 
-> > This patch moves the mmu notifier call to the pmd level, which
-> > represents 1GB areas of memory on x86-64. Furthermore, the mmu
-> > notifier code is only called from the address in the PMD where
-> > present mappings are first encountered.
-> > 
-> > The hugetlbfs code is left alone for now; hugetlb mappings are
-> > not relocatable, and as such are left alone by the NUMA code,
-> > and should never trigger this problem to begin with.
-> > 
-> > The series also adds a cond_resched to task_numa_work, to
-> > fix another potential latency issue.
+On Feb 19, 2014, at 12:56 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+
+> On 02/19/14 07:20, Kumar Gala wrote:
+>> On Feb 18, 2014, at 6:06 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> 
+>>> On 02/10/14 15:23, Kumar Gala wrote:
+>>>> Kumar Gala (6):
+>>>>     ARM: dts: msm: split out msm8660 and msm8960 soc into dts include
+>>>>     ARM: msm: kill off hotplug.c
+>>>>     clocksource: qcom: Move clocksource code out of mach-msm
+>>>>     ARM: qcom: Split Qualcomm support into legacy and multiplatform
+>>> Sorry to nag, but can you please address my comment on this patch?
+>> Which comment?  The copyright one or something else?
+>> 
 > 
-> Andrew, I'll pick up the first kernel/sched/ patch; do you want the
-> other two mm/ patches?
+> Yes the copyright one.
 
-That works, thanks.
+Was going to send that as a separate patch.  So no reason to hold up this pull request on it.
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
