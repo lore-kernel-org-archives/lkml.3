@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaBSLXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 06:23:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55242 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126AbaBSLXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 06:23:01 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, devel@acpica.org,
-        mingo@redhat.com, ck@conrad-kostecki.de, tglx@linutronix.de,
-        rjw@rjwysocki.net
-Subject: Re: [PATCH 1/4] ACPI: Provide support for ACPI table adding via OS
-Date: Wed, 19 Feb 2014 12:22:58 +0100
-Message-ID: <3327021.IBYDWO02Gb@skinner>
-User-Agent: KMail/4.11.4 (Linux/3.11.6-4-desktop; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <5303C7BB.4020803@zytor.com>
-References: <530265A3.3020302@zytor.com> <1568883.1dLS7uNIC1@skinner> <5303C7BB.4020803@zytor.com>
+	id S1751854AbaBSLjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 06:39:17 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:58012 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaBSLjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 06:39:16 -0500
+Message-ID: <530497DD.2020806@linaro.org>
+Date: Wed, 19 Feb 2014 20:39:09 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "wad@chromium.org" <wad@chromium.org>, Will Deacon <Will.Deacon@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH 1/2] arm64: Add seccomp support
+References: <1391767892-5395-1-git-send-email-takahiro.akashi@linaro.org> <1391767892-5395-2-git-send-email-takahiro.akashi@linaro.org> <20140218153856.GB904@localhost>
+In-Reply-To: <20140218153856.GB904@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 18, 2014 12:51:07 PM H. Peter Anvin wrote:
-> On 02/18/2014 10:44 AM, Thomas Renninger wrote:
-> > On Tuesday, February 18, 2014 10:27:23 AM H. Peter Anvin wrote:
-> >> Why can't you add SSDTs? It would be particularly useful.
-> > 
-> > There are 2 ways how ACPI tables get added:
-> >    - Via pointer from a root table (XSDT or RSDT iirc)
-> >    - Via load statement inside of ACPI context when ACPI BIOS
-> >    
-> >      code gets executed (iirc the physical address is passed).
-> > 
-> > The latter is only for SSDTs.
-> > The problem is that you if you add an SSDT early, it might
-> > have been intended for overriding when an SSDT gets dynamically
-> > loaded later when the system is up which is particular useful as
-> > well if you want to debug this specific BIOS table.
-> > 
-> > This could be workarounded via a boot param:
-> > acpi=allow_ssdt_adding
-> > But this is not nice. Maybe someone has a more elegant idea.
-> > Something could still be added if someone is really needing this.
-> 
-> Since adding SSDTs is one of the things I really can imagine one would
-> do, I think we need to figure out how to do that.  I would think that
-> overriding would be the exception case.
+On 02/19/2014 12:38 AM, Catalin Marinas wrote:
+> On Fri, Feb 07, 2014 at 10:11:31AM +0000, AKASHI Takahiro wrote:
+>> --- a/arch/arm64/kernel/ptrace.c
+>> +++ b/arch/arm64/kernel/ptrace.c
+>> @@ -26,6 +26,7 @@
+>>   #include <linux/smp.h>
+>>   #include <linux/ptrace.h>
+>>   #include <linux/user.h>
+>> +#include <linux/seccomp.h>
+>>   #include <linux/security.h>
+>>   #include <linux/init.h>
+>>   #include <linux/signal.h>
+>> @@ -1064,6 +1065,10 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+>>   {
+>>   	unsigned long saved_reg;
+>>
+>> +	if (!dir && secure_computing((int)regs->syscallno))
+>> +		/* seccomp failures shouldn't expose any additional code. */
+>> +		return -1;
+>
+> That's only restricted to the arm64 code but could we use a more
+> meaningful error number?
 
-You can always paste new code into the DSDT. It is effectively the same
-than adding a new SSDT table.
-The other way around, modifying or deleting broken code in a BIOS
-provided SSDT needs overriding.
+Other architectures, including arm, also return just -1 in syscall_trace_enter(),
+but of course, we can use another value, say, -EPERM or -ENOSYS?
 
-So in fact adding SSDTs is not necessary at all.
-It would be a nice add-on, but it's not even worth introducing
-an extra boot param or whatever confusion.
-A hint in Documentation that adding additional ASL (ACPI Source Language)
-code to the DSDT would be the same than creating and adding a new
-SSDT table which is not possible should be enough.
-
-The whole thing will always taint the kernel and is meant for
-debugging only anyway.
-
-   Thomas
+-Takahiro AKASHI
