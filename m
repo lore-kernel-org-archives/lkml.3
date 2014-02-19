@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702AbaBSQir (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:38:47 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57927 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaBSQiq (ORCPT
+	id S1754607AbaBSQhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:37:12 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:8665 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754501AbaBSQhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:38:46 -0500
-Date: Thu, 20 Feb 2014 01:38:28 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20140219163828.GX2669@sirena.org.uk>
-References: <1392720071-13503-1-git-send-email-sachin.kamat@linaro.org>
- <1392720071-13503-14-git-send-email-sachin.kamat@linaro.org>
+	Wed, 19 Feb 2014 11:37:09 -0500
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-11.tower-178.messagelabs.com!1392827826!27197945!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201402191636.s1JGakB1017627@swsrvapps-02.lan>
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Date: Wed, 19 Feb 2014 16:32:47 +0000
+Subject: [PATCH V1 0/3] da9052: Add new supported chip
+To: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
+CC: David Jander <david@protonic.nl>, <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wG4uuBIBs7ARbQp1"
-Content-Disposition: inline
-In-Reply-To: <1392720071-13503-14-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.144.10
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 14/15] regulator: arizona-micsupp: Remove redundant error
- message
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is submission attempt number 1 to have this patch sequence applied
+to the linux kernel source tree.
 
---wG4uuBIBs7ARbQp1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The DA9052 and DA9053 are low power Power Management Integrated Circuits
+with extra functionality beyond the power regulators.
 
-On Tue, Feb 18, 2014 at 04:11:10PM +0530, Sachin Kamat wrote:
-> kzalloc prints its own OOM message upon failure.
+There is now a new variant of the DA9053 PMIC called BC, and this
+patch sequence provides for it's support.
 
-Applied, thanks.
+There is one difference between it and the AA, BA and BB variants.
 
---wG4uuBIBs7ARbQp1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+There is also the correctiion of a typing mistake in one of the BA
+name strings that was erroneously typed as "ab".
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+This patch sequence depends on the first being applied first because
+it provides the hash definition of DA9053_BC
 
-iQIcBAEBAgAGBQJTBN4BAAoJELSic+t+oim9XXYP/2Yhuw39ClwyIJpM50042s/g
-6UxtlQJ5NzC/KDgNIjf4yKrQ+58atyfktavP52fAKlbUQ1C79H7SsxWDhZfZKU5n
-nMdtSE5qmWwyOE9wrmMLxwz4t5nngT1EV1t5hyCMtIMW++LhenAoJdg2LJzmMb8s
-yBVvwiNpeL/sJhZhStUT7NON1CPmeUt+oh/nj9fAJUsXfhde6RKi/QlxeZdxH6Je
-C1XpTO2jwl62BTTThqB6VOs6xWc3bO626PDfKXYeplGl2oo+I+eTwXI4zT+6LmIH
-nh6NK9tSNDhCsHjkscu1JGYPHWe/wcrusJ0MM/5kb+HTqgZ0s5gP7DEeOfzovfsL
-+I74V3zgCXw2EI49OtAS6GNxOcIUtToepAmaJlUUkbrM0HaeFBDnaGf+/Zs+OC5N
-7Ugt0yDWfwPjjSoLKaQourex0HCaQDtiUmaEx85HWUaVPiZ/UH5xa9UgflCgr9Qs
-dXodqLpfuVrQe684dRxJgGAr5b3Qe0/nIDHtKVXrq8fW3FDDF+baV8n4hcaVve+p
-8yUQuixPjQmPoKl4NJWxEIfBLZdS4o90xf5nP5BJl3lKDH4prx1FPSzvIiRT1iK8
-3hsqJxEzZ8pcB11qrQPlcNKPpj7IGZainXUQfdQLeVK99MYYRDdVTNhjgH0OPMw7
-bY5hMcuUfDUJkRj8dLD+
-=cLx5
------END PGP SIGNATURE-----
+Many thanks,
 
---wG4uuBIBs7ARbQp1--
+Anthony Olech, Dialog Semiconductor
+
+Opensource [Anthony Olech] (3):
+  include/linux/mfd/da9052/da9052: Add new BC chip
+  MFD: da9052: Add new DA9053 BC chip variant
+  REGULATOR: da9052: Add new DA9053 BC chip variant
+
+ drivers/mfd/da9052-i2c.c             |    5 ++++-
+ drivers/mfd/da9052-spi.c             |    1 +
+ drivers/regulator/da9052-regulator.c |    1 +
+ include/linux/mfd/da9052/da9052.h    |    1 +
+ 4 files changed, 7 insertions(+), 1 deletion(-)
+
+-- 
+end-of-patch 0/3 for PATCH V1
+
