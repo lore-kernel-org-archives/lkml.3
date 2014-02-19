@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaBSQgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:36:10 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51830 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaBSQgI (ORCPT
+	id S1754457AbaBSQhN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:37:13 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.150]:60657 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754542AbaBSQhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:36:08 -0500
-Date: Thu, 20 Feb 2014 01:35:53 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20140219163553.GU2669@sirena.org.uk>
-References: <1392720071-13503-1-git-send-email-sachin.kamat@linaro.org>
- <1392720071-13503-12-git-send-email-sachin.kamat@linaro.org>
+	Wed, 19 Feb 2014 11:37:09 -0500
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-11.tower-178.messagelabs.com!1392827826!27197945!2
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201402191636.s1JGarhP017640@swsrvapps-02.lan>
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Date: Wed, 19 Feb 2014 16:32:46 +0000
+Subject: [PATCH V1 1/3] include/linux/mfd/da9052/da9052: Add new BC chip
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+CC: David Jander <david@protonic.nl>, Liam Girdwood <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Mark Brown <broonie@kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TWZuhs/Hf4wAGqVJ"
-Content-Disposition: inline
-In-Reply-To: <1392720071-13503-12-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.144.10
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 12/15] regulator: act8865: Remove redundant error message
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add the hash define for the new variant of the DA9053 PMIC called BC.
 
---TWZuhs/Hf4wAGqVJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+---
 
-On Tue, Feb 18, 2014 at 04:11:08PM +0530, Sachin Kamat wrote:
-> kzalloc prints its own OOM message upon failure.
+This patch is relative to linux-next repository tag next-20140219
 
-Applied, thanks
+This patch must be applied before the others in this patch series
+or the drivers that the other patches modify will not compile.
 
---TWZuhs/Hf4wAGqVJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ include/linux/mfd/da9052/da9052.h |    1 +
+ 1 file changed, 1 insertion(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
+index 21e21b8..bba65f5 100644
+--- a/include/linux/mfd/da9052/da9052.h
++++ b/include/linux/mfd/da9052/da9052.h
+@@ -83,6 +83,7 @@ enum da9052_chip_id {
+ 	DA9053_AA,
+ 	DA9053_BA,
+ 	DA9053_BB,
++	DA9053_BC,
+ };
+ 
+ struct da9052_pdata;
+-- 
+end-of-patch 1/3 for PATCH V1
 
-iQIcBAEBAgAGBQJTBN1mAAoJELSic+t+oim9JhoP/jI/S35XfkESpygnPZ1uIKKz
-MprCLm923Ls9OpNvId0KLh3k/AGMxLWjDL509EN9O7Z63ozM+JEubMotExrW3oEI
-NTRaJJwWgns5CPDlMgFM7E8BKdu/+cfp18LAx9BdAOfKoGDmibEXggBX8tXZfgIF
-ldFv5YMD+DZmwepOuAssaoDJf8+ZORBfYCVEakwnzpMq6wQZBOvydbgaPxSSiCme
-d1iEhwvQva5niFePc8i/oYHiYQeYta00Zfl3bEG66MXzg2D/f7jl5wu4qPxxjEz6
-4YfmHsv48Gp6x/D/zvY4qoTX3mSlmri4WrkxCE8YnwtRoFzCMe4zJhtKXNC3muna
-VFWzqo0kAs8/43pC4ROUd5ZpX7+LaxdFMb2n5n1qs24sKfsYnw05/g4MAhDFoR49
-seC+9jUYPXJOk05+DbUULZ0W/gW8FQ/IC5PDydVRWJKL3ehZZn2LK5BEYPJbjaCs
-csCTGYHFXqyH8UHFQnLo0uM6KAS/gb682IJyd8cGUmtwIsxoohDVI+mdYJJgkhvx
-agIFeTqQ77lYTblaC/2gMHm5PmAyFNfnY4KThGjsiGL0VB2Fh5S2LC8LNkcGopy8
-qtyKDTGsLokWup0LHXGmzUyqSan++eFdgSjqsvHZ3Xn0c5xn4VwyH0eyRfU31pA1
-KgEQDl3xQmpS1vjA6UHD
-=577B
------END PGP SIGNATURE-----
-
---TWZuhs/Hf4wAGqVJ--
