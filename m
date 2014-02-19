@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaBSPLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:11:07 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49021 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337AbaBSPLF (ORCPT
+	id S1754018AbaBSPMp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:12:45 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:33241 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771AbaBSPMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:11:05 -0500
-Date: Thu, 20 Feb 2014 00:10:40 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Russell King <linux@arm.linux.org.uk>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Message-ID: <20140219151040.GH2669@sirena.org.uk>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
- <1391529538-21685-7-git-send-email-ulf.hansson@linaro.org>
- <CAPDyKFombL2-Rt46QpXPNWe5PeGQnOGmQQNfYd5MdYdEePn-4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4FPEP2OQoJToMU+c"
-Content-Disposition: inline
-In-Reply-To: <CAPDyKFombL2-Rt46QpXPNWe5PeGQnOGmQQNfYd5MdYdEePn-4w@mail.gmail.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.144.10
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 06/17] spi: pl022: Let runtime PM callbacks be available
- for CONFIG_PM
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 19 Feb 2014 10:12:43 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-2b-5304c9e89e5d
+Message-id: <5304C9E6.9060705@samsung.com>
+Date: Wed, 19 Feb 2014 16:12:38 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v3 15/15] mfd: max14577: Add device tree bindings document
+References: <1392627950-26927-1-git-send-email-k.kozlowski@samsung.com>
+ <1392627950-26927-16-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1392627950-26927-16-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Vd0XJ1mCDSa8NbfYOGM9q8XUh0/Y
+	LK5/ec5qMenJe2aL+UfOsVpMXDmZ2eL1C0OLs01v2C3ufz3KaLHp8TVWi8u75rBZrD1yl91i
+	6fWLTBa3G1ewWUyYvpbFonXvEXaL092sDoIea+atYfTYOesuu8fmFVoem1Z1snncubaHzWPe
+	yUCPzUvqPfq2rGL0+LxJLoAzissmJTUnsyy1SN8ugSuj7/tP1oJXbBWLOxawNDA+Ze1i5OSQ
+	EDCReH11PhuELSZx4d56IJuLQ0hgKaPEns0fWSCcz4wSM2c/YAGp4hXQklh15CdYN4uAqsTZ
+	HxPZQWw2ATWJzw2PwCaJCkRI/J23nhGiXlDix+R7YINEBLYySWy5c4MJxGEW+M4kcX7te6AM
+	B4ewgJ9Ew+9EkAYhgTZGicPb6kBsTgFPifamJrAFzALWEisnbWOEsOUlNq95yzyBUWAWkh2z
+	kJTNQlK2gJF5FaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZIrH3dwbj0mNUhRgEORiUeXo8X
+	zMFCrIllxZW5hxglOJiVRHhDl7EEC/GmJFZWpRblxxeV5qQWH2Jk4uCUamDkMxZzNdH5MbVd
+	ImKLeXjo54CYIKG7ry0XTRJP3LJomeDy5Vf51h+O9e+Y9om3oHfZ8vtnCtNnLq5Wjz8tPkXf
+	5N/Uh1PNo9+4itcrXw/WNLp5fgerRIfubkGf696LYm973u9gYEkp5VY0aju+ZLvQ87AKIRXz
+	W2fK7j98teNbSHVK72ynOVxKLMUZiYZazEXFiQCgVaVzkwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---4FPEP2OQoJToMU+c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 17.02.2014 10:05, Krzysztof Kozlowski wrote:
+> Add document describing device tree bindings for MAX14577 MFD
+> drivers: MFD core, extcon, regulator and charger.
+>
+> Both MAX14577 and MAX77836 chipsets are documented.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Tomasz Figa <t.figa@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> ---
+>   Documentation/devicetree/bindings/mfd/max14577.txt |  149 ++++++++++++++++++++
+>   1 file changed, 149 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
 
-On Wed, Feb 19, 2014 at 03:20:07PM +0100, Ulf Hansson wrote:
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-> Also note that, Russell has already applied the corresponding part in
-> the amba bus (patch 1)
-
-Why would this depend on an AMBA patch and if it does surely the two
-need to be merged together somehow?
-
---4FPEP2OQoJToMU+c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTBMltAAoJELSic+t+oim99zkP/j/xXWSCyg6KeVYXGT17LNZl
-Ahj9b7lhCX9OQ+Ck3pUTLZPIcna7v/6nTjYRh1cW/nPj6vyjqmidlATEQqy6Lz+n
-TmfxUIPy9pVFYfHF+nJTZa2LJa57COlwShCOwTqiws3H+zaX8+VBNRC72ockUoH/
-6t58ir29hbingGybeKL9K/cM3Gq4juAQ9BsJhGuUrntNRSdQfeNpYJZc6igmz6TD
-rw/uQ0uaHDleSs+LlRf87VqxfRYYXFEIAKunHctLV61PQoKcWxGMgOIKwBcA+gVh
-MBji3dJS2zT5OhokKd51y+e8E2a9mFeohudxHBHFSk4lAXLGTRMf5GcnlsySuHud
-8RkyH2B/fwVdmVjF7x4qlhPfQs5MvDhghPXpTYyB4kOurtJ01qrXW7lj6Nos6Yfn
-4LZqjwoQRmyjdWXVFjXq5bc2CHzM096PYuqsR5m85aYHKwyMCWFbHx/MEgsfeKcr
-jLD3RYaxMVHCUhy7wzSi+FONpawa0YW7WXPsdIWiwW/ei7jzZNJENNVtAX5QBT1g
-WLOShXyX6npWKTgvR4ektWEAWlMFiZeYJIq7s9Kwz+v8bhXVTcTTAQhKZKl5U8gi
-3DUvUZR6ml/l4dB82NU6j3zN0kiKwJJM9cza0tu+5EBP//J8h6y+KlVAdBYOYfSi
-ULKfGg33W/QJxcFMkVpt
-=Cboj
------END PGP SIGNATURE-----
-
---4FPEP2OQoJToMU+c--
+Best regards,
+Tomasz
