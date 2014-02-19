@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaBSQep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:34:45 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57663 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754464AbaBSQeo (ORCPT
+	id S1754598AbaBSQfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:35:17 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51803 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804AbaBSQfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:34:44 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Sudeep Holla <Sudeep.Holla@arm.com>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>, Lan Tianyu <tianyu.lan@intel.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [PATCH v4 5/5] ACPI: Replace printk with pr_* in tables.c
-Date: Wed, 19 Feb 2014 17:49:35 +0100
-Message-ID: <2341500.Z47JjkFCMP@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5304DCA2.5080906@arm.com>
-References: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org> <1392731700-10992-6-git-send-email-hanjun.guo@linaro.org> <5304DCA2.5080906@arm.com>
+	Wed, 19 Feb 2014 11:35:15 -0500
+Date: Thu, 20 Feb 2014 01:34:59 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140219163459.GT2669@sirena.org.uk>
+References: <1392720071-13503-1-git-send-email-sachin.kamat@linaro.org>
+ <1392720071-13503-11-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="39xYMTWOygaV/wdi"
+Content-Disposition: inline
+In-Reply-To: <1392720071-13503-11-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.144.10
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 11/15] regulator: 88pm800: Remove redundant error message
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 19, 2014 04:32:34 PM Sudeep Holla wrote:
-> On 18/02/14 13:55, Hanjun Guo wrote:
-> > This patch just do some clean up to replace printk with pr_*,
-> > no functional change.
-> > 
-> Any particular reason for choosing just this file in this series ?
-> It seems but off-topic in this series. The printk format is same in almost all
-> other acpi files and it's better to change all or none for consistency.
 
-Well, it's fine, I can put it into a different branch in any case. :-)
+--39xYMTWOygaV/wdi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> > ---
-> >  drivers/acpi/tables.c |   51 +++++++++++++++++++------------------------------
-> >  1 file changed, 20 insertions(+), 31 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-> > index 5837f85..97bc6df 100644
-> > --- a/drivers/acpi/tables.c
-> > +++ b/drivers/acpi/tables.c
-> > @@ -55,8 +55,7 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
-> >  		{
-> >  			struct acpi_madt_local_apic *p =
-> >  			    (struct acpi_madt_local_apic *)header;
-> > -			printk(KERN_INFO PREFIX
-> > -			       "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
-> > +			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
-> 
-> You can even get rid of PREFIX by defining pr_fmt instead.
+On Tue, Feb 18, 2014 at 04:11:07PM +0530, Sachin Kamat wrote:
+> kzalloc prints its own OOM message upon failure.
 
-But this is a good point.
+Applied, thansk.
 
-> If the intention is to move to pr_* format it's better to have this as separate
-> patch and convert all of them.
+--39xYMTWOygaV/wdi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Well, not really.  One file at a time is OK too.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Thanks!
+iQIcBAEBAgAGBQJTBN0wAAoJELSic+t+oim9xRgQAJ3AjWB8vRDvnfCousvHj6nf
+PqFXbNvWY2g8aHPZGQdKtIctkbOil1EgRkddLI1k2hdU07Mn/J4QJbA3SLN7zmsg
+g9e2PwyjOYROoCo6JXAmlJ1rrgcQ3sXCyceUaGxuSEdO8XB6G6DAOBduoLA1vpHA
+fvv519PdnKnB2tyhOssTyMOuzRZ8kWUt48VLY2opfEb1J7wIkqw4H3JV/WhgHQ5H
+mj35OO7oKlopSY7p9QDs6Xre0IPW0J4N0k9LJ8pGOAgSwYi3k/PZ1hb3hdCELio9
+5MFr3A7KUqCtvJgO2yJ+T1IymhA613nokdXChin1MR91IiLevQfQv1GJhc66IZGX
+D5PVTGavA3Vp1ylxvtXoq8g6WSntX1dtsigZ/iss8xOQlq2RdauzDGHsbDH7R6T4
+C7UVc0VcAjVGQ96dck3LzxkDPV5hrJ17Cpw1zRsQAnbbzIjIzTgaBsWeO6LZoQzR
+0IBe9lakX5b8kXBbEDDEBa2PHn3QVyAtyO+KhNlDM5NxC+4D65VbZnF5VGfQ5Igj
+4yOyb5RYs3OOiDSdPMtZQo8G0Ve5VotO+fGYQT8az85W3QjrH+WGB0dKYzfYCAAQ
+VKksOmAOV6sq/d+eIGsA3YxJJCRsGPPChBVvdQCMwZ03MbwBRdNOlnLU6w9LG03R
+95S/zwJVZCdlDzbLoESM
+=EEiu
+-----END PGP SIGNATURE-----
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--39xYMTWOygaV/wdi--
