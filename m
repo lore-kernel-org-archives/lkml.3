@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011AbaBSUlo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 15:41:44 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54506 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaBSUln (ORCPT
+	id S1754950AbaBSUs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 15:48:29 -0500
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:14802 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752687AbaBSUs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 15:41:43 -0500
-From: Kumar Gala <galak@codeaurora.org>
-To: linux-arm-msm@vger.kernel.org
-Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: qcom: Copyright marking changes
-Date: Wed, 19 Feb 2014 14:41:39 -0600
-Message-Id: <1392842499-11200-1-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 19 Feb 2014 15:48:28 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AswVAFMYBVNbsmOW/2dsb2JhbABZKIJewRICAoEbF3SCJQEBBAE6HBUOBQsIAw4KLjkeBhOHfQwBzi8XjmQHhDgBA4lGhHqJbwGKT4dVgzov
+Date: Wed, 19 Feb 2014 20:49:50 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        rdunlap <rdunlap@infradead.org>, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/1] sys_sysfs: Add CONFIG_SYSFS_SYSCALL
+Message-Id: <20140219204950.f88f409e2bb5a590b1183724@skynet.be>
+In-Reply-To: <20140213144319.3b6f4de46b3a067c3ea53ad3@linux-foundation.org>
+References: <20140213220942.ff2ebaeff3876b7136fa4b10@skynet.be>
+	<20140213223141.GA1232@redhat.com>
+	<20140213144319.3b6f4de46b3a067c3ea53ad3@linux-foundation.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code Aurora Forum (CAF) is part of Linux Foundation Labs.
+On Thu, 13 Feb 2014 14:43:19 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
- arch/arm/mach-qcom/platsmp.c  | 3 +--
- arch/arm/mach-qcom/scm-boot.c | 2 +-
- arch/arm/mach-qcom/scm-boot.h | 2 +-
- arch/arm/mach-qcom/scm.c      | 2 +-
- arch/arm/mach-qcom/scm.h      | 2 +-
- 5 files changed, 5 insertions(+), 6 deletions(-)
+> On Thu, 13 Feb 2014 17:31:41 -0500 Dave Jones <davej@redhat.com> wrote:
+> 
+> > On Thu, Feb 13, 2014 at 10:09:42PM +0800, Fabian Frederick wrote:
+> >  > sys_sysfs is an obsolete system call no longer supported by libc ...
+> >  > -This patch adds a default CONFIG_SYSFS_SYSCALL=y
+> >  > -Option can be turned off in expert mode.
+> >  > -cond_syscall added to kernel/sys_ni.c
+> >  > 
+> >  > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> >  > ---
+> >  >  fs/filesystems.c |  2 ++
+> >  >  init/Kconfig     | 10 ++++++++++
+> >  >  kernel/sys_ni.c  |  1 +
+> >  >  3 files changed, 13 insertions(+)
+> > 
+> > did anyone ever ship userspace that actually used that syscall ?
+> > Some ancient version of udev that probably doesn't work on a modern kernel anyway maybe ?
+> > 
+> > I wonder if it's something we can make -ENOSYS unconditionally at some point,
+> > and remove all that code entirely.
+> 
+> Perhaps we could make it `default n' now and see if we receive nastygrams?
 
-diff --git a/arch/arm/mach-qcom/platsmp.c b/arch/arm/mach-qcom/platsmp.c
-index 9c53ea7..ede7f53 100644
---- a/arch/arm/mach-qcom/platsmp.c
-+++ b/arch/arm/mach-qcom/platsmp.c
-@@ -1,8 +1,7 @@
- /*
-  *  Copyright (C) 2002 ARM Ltd.
-  *  All Rights Reserved
-- *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-- *  Copyright (c) 2014 The Linux Foundation. All rights reserved.
-+ *  Copyright (c) 2010, 2014 The Linux Foundation. All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-diff --git a/arch/arm/mach-qcom/scm-boot.c b/arch/arm/mach-qcom/scm-boot.c
-index 45cee3e..4f0e1fa 100644
---- a/arch/arm/mach-qcom/scm-boot.c
-+++ b/arch/arm/mach-qcom/scm-boot.c
-@@ -1,4 +1,4 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+/* Copyright (c) 2010, The Linux Foundation. All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 and
-diff --git a/arch/arm/mach-qcom/scm-boot.h b/arch/arm/mach-qcom/scm-boot.h
-index 7be32ff..b8a1aba 100644
---- a/arch/arm/mach-qcom/scm-boot.h
-+++ b/arch/arm/mach-qcom/scm-boot.h
-@@ -1,4 +1,4 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+/* Copyright (c) 2010, The Linux Foundation. All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 and
-diff --git a/arch/arm/mach-qcom/scm.c b/arch/arm/mach-qcom/scm.c
-index c536fd6..21d69c1 100644
---- a/arch/arm/mach-qcom/scm.c
-+++ b/arch/arm/mach-qcom/scm.c
-@@ -1,4 +1,4 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+/* Copyright (c) 2010, The Linux Foundation. All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 and
-diff --git a/arch/arm/mach-qcom/scm.h b/arch/arm/mach-qcom/scm.h
-index 00b31ea..979f549 100644
---- a/arch/arm/mach-qcom/scm.h
-+++ b/arch/arm/mach-qcom/scm.h
-@@ -1,4 +1,4 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+/* Copyright (c) 2010, The Linux Foundation. All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 and
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+As it seems very old, maybe we wouldn't have any trouble for users in linux-next but it could break something when going in stable (?).Having that patch with functions enabled by default will give us time to test it and have a pointer to it to remove later...
 
+Fabian
