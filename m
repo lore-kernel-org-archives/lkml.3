@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaBSIrd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:47:33 -0500
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:7448 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753106AbaBSIrb (ORCPT
+	id S1752712AbaBSIvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:51:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49666 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097AbaBSIvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:47:31 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh8275dh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <linux-arm-kernel@lists.infradead.org>, <shawn.guo@linaro.org>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH v2 3/4] ARM: dts: vf610-twr: Enable SGTL5000 codec.
-Date: Wed, 19 Feb 2014 15:42:30 +0800
-Message-ID: <1392795751-13351-4-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1392795751-13351-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1392795751-13351-1-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 19 Feb 2014 03:51:36 -0500
+Date: Wed, 19 Feb 2014 09:51:07 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
+Message-ID: <20140219085107.GG27965@twins.programming.kicks-ass.net>
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
+ <53029167.4060109@zytor.com>
+ <20140218073111.GW27965@twins.programming.kicks-ass.net>
+ <5303B4C4.2040907@hp.com>
+ <20140218212827.GR14089@laptop.programming.kicks-ass.net>
+ <5303FDEC.9060001@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5303FDEC.9060001@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds and enables SGTL5000 codec support.
+On Tue, Feb 18, 2014 at 07:42:20PM -0500, Waiman Long wrote:
+> On 02/18/2014 04:28 PM, Peter Zijlstra wrote:
+> >On Tue, Feb 18, 2014 at 02:30:12PM -0500, Waiman Long wrote:
+> >>I will start looking at how to make it work with paravirt. Hopefully, it
+> >>won't take too long.
+> >The cheap way out is to simply switch to the test-and-set spinlock on
+> >whatever X86_FEATURE_ indicates a guest I suppose.
+> 
+> I don't think there is X86_FEATURE flag that indicates running in a guest.
+> In fact, a guest should never find out if it is running virtualized.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
----
- arch/arm/boot/dts/vf610-twr.dts | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
-
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index bcee3bb..0f4bff5 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -34,6 +34,20 @@
- 		};
- 	};
- 
-+	regulators {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		reg_3p3v: regulator@0 {
-+			compatible = "regulator-fixed";
-+			reg = <0>;
-+			regulator-name = "3P3V";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-always-on;
-+		};
-+	};
- };
- 
- &dspi0 {
-@@ -72,6 +86,14 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_i2c0>;
- 	status = "okay";
-+
-+	codec: sgtl5000@0a {
-+	       compatible = "fsl,sgtl5000";
-+	       reg = <0x0a>;
-+	       VDDA-supply = <&reg_3p3v>;
-+	       VDDIO-supply = <&reg_3p3v>;
-+	       clocks = <&clks VF610_CLK_SAI2>;
-+       };
- };
- 
- &iomuxc {
--- 
-1.8.4
-
-
+No it very much should; how else is paravirt ever going to work?
