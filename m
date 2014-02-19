@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaBSR0M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 12:26:12 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:50118 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090AbaBSR0I (ORCPT
+	id S1754661AbaBSR00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 12:26:26 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44601 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090AbaBSR0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 12:26:08 -0500
-Date: Wed, 19 Feb 2014 12:26:02 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alexandre.torgue@st.com, linux-ide@vger.kernel.org,
-        hdegoede@redhat.com
-Subject: Re: [PATCH 3/3] ahci: st: Add support for ST's SATA IP
-Message-ID: <20140219172602.GL10134@htj.dyndns.org>
-References: <1392641818-23419-1-git-send-email-lee.jones@linaro.org>
- <1392641818-23419-3-git-send-email-lee.jones@linaro.org>
- <20140218233645.GP31892@mtj.dyndns.org>
- <20140219083025.GB10504@lee--X1>
- <20140219140458.GA10134@htj.dyndns.org>
- <20140219150121.GG10504@lee--X1>
- <20140219150654.GH10134@htj.dyndns.org>
- <20140219152336.GH10504@lee--X1>
- <20140219153624.GI10134@htj.dyndns.org>
- <20140219163937.GI10504@lee--X1>
+	Wed, 19 Feb 2014 12:26:24 -0500
+Message-ID: <5304E93C.9000104@wwwdotorg.org>
+Date: Wed, 19 Feb 2014 10:26:20 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140219163937.GI10504@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
+        jinchoi@broadcom.com, Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+References: <cover.1392273722.git.viresh.kumar@linaro.org>	<52FE71BD.3020103@wwwdotorg.org>	<2869027.iYHxWOSS2C@vostro.rjw.lan>	<52FEAECA.5080905@wwwdotorg.org>	<CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com>	<5303C018.1020707@wwwdotorg.org> <CAKohponF7ag-tfv77JK0pDVukS6v3QeSY+G_br3FJGskMDCvVw@mail.gmail.com>
+In-Reply-To: <CAKohponF7ag-tfv77JK0pDVukS6v3QeSY+G_br3FJGskMDCvVw@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few more things just in case.
+On 02/18/2014 09:15 PM, Viresh Kumar wrote:
+> On 19-Feb-2014 1:48 AM, "Stephen Warren" <swarren@wwwdotorg.org> wrote:
+>>
+>> On 02/17/2014 02:20 AM, Viresh Kumar wrote:
+>>> On 15 February 2014 05:33, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>>> On 02/14/2014 03:23 PM, Rafael J. Wysocki wrote:
+>>>
+>>>>> Well, it would be good to verify which part, then.
+>>>>
+>>>> Patch 2/7 appears to stop that message from being printed during
+>>>> suspend, and perhaps reduce the number of times it's printed during
+>>>> resume. Patch 7/7 stops the message being printed at all.
+>>>>
+>>>> Looking at patch 7, I wonder if it's simply because tegra_target() was
+>>>> modified never to return -EBUSY, so the bug is still there, but it's
+>>>> just been hidden.
+>>>
+>>> No, the bug is removed now. Its hidden in current linus/master :)
+>>
+>> I'm not sure what that means; I still see the message:
+> 
+> I have given a better reply in one of the earlier mails in this thread.
+> And skipped a more elaborative reply now.
+> 
+> So this failure was always there since long time, as you disable your
+> target() fn early in suspend. But the message wasn't printed earlier.
+> 
+> A recently added core patch started printing this, so not a new bug.
+> But this series fixes suspend resume completely and you wouldn't see it
+> anymore.
 
-On Wed, Feb 19, 2014 at 04:39:37PM +0000, Lee Jones wrote:
-> It tells me that Hans has more spare time than I do.
+OK, so I suppose we have two options:
 
-This is the crux of the problem, isn't it?  The party who is creating
-load should also partake in and invest resource into making the
-infrastructure for it.  What I can't understand is how one can claim
-"unfairness" at having to contribute to such effort when that is
-clearly the party which is the primary beneficiary of the added load.
-If you have *any* mature sense of fairness, not this childish "it's
-not going my way", the irony should be clear to you.
+a) Just ignore the kernel error spew since it's a known issue.
 
-> This work would even be something I'd be interested in helping out
-> with - even in my own time, but the way you speak to people doesn't
-> exactly inspire them to go out of my way to work with you does it?
-
-Given the circumstances, I don't think depending on good wills of the
-involved parties is a viable strategy and wanted to make it clear that
-the responsibility of chipping in for long term maintainability is on
-everyone who wants to make use of the code base.  This is beyond good
-will.  It's the fundamental sharing of responsibility for
-sustainability.  I'd love to have good will but I can't build that on
-top of a notion as rotten as "it's not fair, it's not my
-responsibility".
-
-> Again, that's not what I said. It's great that your subsystem is being
-> improved, but insisting that anyone who submits new code to rebase
-> on top of some development patches which only exist in mail form, and
-> refusing to take patches until they do so doesn't seem right to me.
-
-If I apply your patch now, Hans has one more driver to worry about in
-doing the work that he himself isn't directly benefiting from but
-everybody needs.  In what world is that fair?
-
-So, sorry about going f bomb on you, but you shouldn't be thinking
-what you're thinking.  There's some serious misguidance going on
-there.
-
--- 
-tejun
+b) If I make the Tegra driver return 0 rather than -EBUSY, would that
+work? It would certainly silence the error. However, I wonder if it
+would cause the cpufreq core to get out of sync with HW; the core would
+think that it'd set some frequency, which the driver ignored, and if it
+later wanted to switch frequency, the call might get skipped because the
+core thought the HW was already set to that frequency?
