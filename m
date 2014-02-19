@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaBSGKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 01:10:55 -0500
+	id S1752837AbaBSGLY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 01:11:24 -0500
 Received: from mga09.intel.com ([134.134.136.24]:18482 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314AbaBSGH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 01:07:27 -0500
+	id S1752266AbaBSGHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 01:07:20 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,504,1389772800"; 
-   d="scan'208";a="485626551"
+   d="scan'208";a="485626511"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -19,9 +19,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part2 V2 08/17] iommu/vt-d: reduce duplicated code to handle virtual machine domains
-Date: Wed, 19 Feb 2014 14:07:28 +0800
-Message-Id: <1392790057-32434-9-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part2 V2 06/17] iommu/vt-d: simplify function get_domain_for_dev()
+Date: Wed, 19 Feb 2014 14:07:26 +0800
+Message-Id: <1392790057-32434-7-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
@@ -29,364 +29,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce duplicated code to handle virtual machine domains, there's no
-functionality changes. It also improves code readability.
+Function get_domain_for_dev() is a little complex, simplify it
+by factoring out dmar_search_domain_by_dev_info() and
+dmar_insert_dev_info().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/intel-iommu.c |  177 +++++++++++--------------------------------
- 1 file changed, 45 insertions(+), 132 deletions(-)
+ drivers/iommu/intel-iommu.c |  142 ++++++++++++++++++++-----------------------
+ 1 file changed, 66 insertions(+), 76 deletions(-)
 
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 503cc73..6724772 100644
+index fffe3d1..67b114e 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -425,9 +425,12 @@ static LIST_HEAD(unmaps_to_do);
- static int timer_on;
- static long list_size;
- 
-+static void domain_exit(struct dmar_domain *domain);
- static void domain_remove_dev_info(struct dmar_domain *domain);
- static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 				       struct pci_dev *pdev);
-+static void iommu_detach_dependent_devices(struct intel_iommu *iommu,
-+					   struct pci_dev *pdev);
- 
- #ifdef CONFIG_INTEL_IOMMU_DEFAULT_ON
- int dmar_disabled = 0;
-@@ -1286,10 +1289,6 @@ static int iommu_init_domains(struct intel_iommu *iommu)
- 	return 0;
+@@ -1957,18 +1957,71 @@ find_domain(struct pci_dev *pdev)
+ 	return NULL;
  }
  
--
--static void domain_exit(struct dmar_domain *domain);
--static void vm_domain_exit(struct dmar_domain *domain);
--
- static void free_dmar_iommu(struct intel_iommu *iommu)
- {
- 	struct dmar_domain *domain;
-@@ -1304,12 +1303,8 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
- 			spin_lock_irqsave(&domain->iommu_lock, flags);
- 			count = --domain->iommu_count;
- 			spin_unlock_irqrestore(&domain->iommu_lock, flags);
--			if (count == 0) {
--				if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE)
--					vm_domain_exit(domain);
--				else
--					domain_exit(domain);
--			}
-+			if (count == 0)
-+				domain_exit(domain);
- 		}
- 	}
- 
-@@ -1327,8 +1322,10 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
- 	free_context_table(iommu);
- }
- 
--static struct dmar_domain *alloc_domain(void)
-+static struct dmar_domain *alloc_domain(bool vm)
- {
-+	/* domain id for virtual machine, it won't be set in context */
-+	static atomic_t vm_domid = ATOMIC_INIT(0);
- 	struct dmar_domain *domain;
- 
- 	domain = alloc_domain_mem();
-@@ -1336,8 +1333,15 @@ static struct dmar_domain *alloc_domain(void)
- 		return NULL;
- 
- 	domain->nid = -1;
-+	domain->iommu_count = 0;
- 	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
- 	domain->flags = 0;
-+	spin_lock_init(&domain->iommu_lock);
-+	INIT_LIST_HEAD(&domain->devices);
-+	if (vm) {
-+		domain->id = atomic_inc_return(&vm_domid);
-+		domain->flags = DOMAIN_FLAG_VIRTUAL_MACHINE;
-+	}
- 
- 	return domain;
- }
-@@ -1374,22 +1378,16 @@ static void iommu_detach_domain(struct dmar_domain *domain,
- {
- 	unsigned long flags;
- 	int num, ndomains;
--	int found = 0;
- 
- 	spin_lock_irqsave(&iommu->lock, flags);
- 	ndomains = cap_ndoms(iommu->cap);
- 	for_each_set_bit(num, iommu->domain_ids, ndomains) {
- 		if (iommu->domains[num] == domain) {
--			found = 1;
-+			clear_bit(num, iommu->domain_ids);
-+			iommu->domains[num] = NULL;
- 			break;
- 		}
- 	}
--
--	if (found) {
--		clear_bit(num, iommu->domain_ids);
--		clear_bit(iommu->seq_id, domain->iommu_bmp);
--		iommu->domains[num] = NULL;
--	}
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- }
- 
-@@ -1461,8 +1459,6 @@ static int domain_init(struct dmar_domain *domain, int guest_width)
- 	unsigned long sagaw;
- 
- 	init_iova_domain(&domain->iovad, DMA_32BIT_PFN);
--	spin_lock_init(&domain->iommu_lock);
--
- 	domain_reserve_special_ranges(domain);
- 
- 	/* calculate AGAW */
-@@ -1481,7 +1477,6 @@ static int domain_init(struct dmar_domain *domain, int guest_width)
- 			return -ENODEV;
- 	}
- 	domain->agaw = agaw;
--	INIT_LIST_HEAD(&domain->devices);
- 
- 	if (ecap_coherent(iommu->ecap))
- 		domain->iommu_coherency = 1;
-@@ -1518,7 +1513,9 @@ static void domain_exit(struct dmar_domain *domain)
- 	if (!intel_iommu_strict)
- 		flush_unmaps_timeout(0);
- 
-+	/* remove associated devices */
- 	domain_remove_dev_info(domain);
++static inline struct dmar_domain *
++dmar_search_domain_by_dev_info(int segment, int bus, int devfn)
++{
++	struct device_domain_info *info;
 +
- 	/* destroy iovas */
- 	put_iova_domain(&domain->iovad);
- 
-@@ -1528,8 +1525,10 @@ static void domain_exit(struct dmar_domain *domain)
- 	/* free page tables */
- 	dma_pte_free_pagetable(domain, 0, DOMAIN_MAX_PFN(domain->gaw));
- 
-+	/* clear attached or cached domains */
- 	for_each_active_iommu(iommu, drhd)
--		if (test_bit(iommu->seq_id, domain->iommu_bmp))
-+		if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE ||
-+		    test_bit(iommu->seq_id, domain->iommu_bmp))
- 			iommu_detach_domain(domain, iommu);
- 
- 	free_domain_mem(domain);
-@@ -1921,7 +1920,7 @@ static inline void unlink_domain_info(struct device_domain_info *info)
- static void domain_remove_dev_info(struct dmar_domain *domain)
- {
- 	struct device_domain_info *info;
--	unsigned long flags;
-+	unsigned long flags, flags2;
- 	struct intel_iommu *iommu;
- 
- 	spin_lock_irqsave(&device_domain_lock, flags);
-@@ -1934,8 +1933,22 @@ static void domain_remove_dev_info(struct dmar_domain *domain)
- 		iommu_disable_dev_iotlb(info);
- 		iommu = device_to_iommu(info->segment, info->bus, info->devfn);
- 		iommu_detach_dev(iommu, info->bus, info->devfn);
--		free_devinfo_mem(info);
- 
-+		if (domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) {
-+			iommu_detach_dependent_devices(iommu, info->dev);
-+			/* clear this iommu in iommu_bmp, update iommu count
-+			 * and capabilities
-+			 */
-+			spin_lock_irqsave(&domain->iommu_lock, flags2);
-+			if (test_and_clear_bit(iommu->seq_id,
-+					       domain->iommu_bmp)) {
-+				domain->iommu_count--;
-+				domain_update_iommu_cap(domain);
-+			}
-+			spin_unlock_irqrestore(&domain->iommu_lock, flags2);
-+		}
++	list_for_each_entry(info, &device_domain_list, global)
++		if (info->segment == segment && info->bus == bus &&
++		    info->devfn == devfn)
++			return info->domain;
 +
++	return NULL;
++}
++
++static int dmar_insert_dev_info(int segment, int bus, int devfn,
++				struct pci_dev *dev, struct dmar_domain **domp)
++{
++	struct dmar_domain *found, *domain = *domp;
++	struct device_domain_info *info;
++	unsigned long flags;
++
++	info = alloc_devinfo_mem();
++	if (!info)
++		return -ENOMEM;
++
++	info->segment = segment;
++	info->bus = bus;
++	info->devfn = devfn;
++	info->dev = dev;
++	info->domain = domain;
++	if (!dev)
++		domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
++
++	spin_lock_irqsave(&device_domain_lock, flags);
++	if (dev)
++		found = find_domain(dev);
++	else
++		found = dmar_search_domain_by_dev_info(segment, bus, devfn);
++	if (found) {
++		spin_unlock_irqrestore(&device_domain_lock, flags);
 +		free_devinfo_mem(info);
- 		spin_lock_irqsave(&device_domain_lock, flags);
- 	}
- 	spin_unlock_irqrestore(&device_domain_lock, flags);
-@@ -2055,7 +2068,7 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
- 	iommu = drhd->iommu;
- 
- 	/* Allocate and intialize new domain for the device */
--	domain = alloc_domain();
-+	domain = alloc_domain(false);
- 	if (!domain)
- 		goto error;
- 	if (iommu_attach_domain(domain, iommu)) {
-@@ -2220,10 +2233,12 @@ static int __init si_domain_init(int hw)
- 	struct intel_iommu *iommu;
- 	int nid, ret = 0;
- 
--	si_domain = alloc_domain();
-+	si_domain = alloc_domain(false);
- 	if (!si_domain)
- 		return -EFAULT;
- 
-+	si_domain->flags = DOMAIN_FLAG_STATIC_IDENTITY;
++		if (found != domain) {
++			domain_exit(domain);
++			*domp = found;
++		}
++	} else {
++		list_add(&info->link, &domain->devices);
++		list_add(&info->global, &device_domain_list);
++		if (dev)
++			dev->dev.archdata.iommu = info;
++		spin_unlock_irqrestore(&device_domain_lock, flags);
++	}
 +
- 	for_each_active_iommu(iommu, drhd) {
- 		ret = iommu_attach_domain(si_domain, iommu);
- 		if (ret) {
-@@ -2237,7 +2252,6 @@ static int __init si_domain_init(int hw)
- 		return -EFAULT;
- 	}
- 
--	si_domain->flags = DOMAIN_FLAG_STATIC_IDENTITY;
- 	pr_debug("IOMMU: identity mapping domain is domain %d\n",
- 		 si_domain->id);
- 
-@@ -3810,67 +3824,11 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 	}
- }
- 
--static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
--{
--	struct device_domain_info *info;
--	struct intel_iommu *iommu;
--	unsigned long flags1, flags2;
--
--	spin_lock_irqsave(&device_domain_lock, flags1);
--	while (!list_empty(&domain->devices)) {
--		info = list_entry(domain->devices.next,
--			struct device_domain_info, link);
--		unlink_domain_info(info);
--		spin_unlock_irqrestore(&device_domain_lock, flags1);
--
--		iommu_disable_dev_iotlb(info);
--		iommu = device_to_iommu(info->segment, info->bus, info->devfn);
--		iommu_detach_dev(iommu, info->bus, info->devfn);
--		iommu_detach_dependent_devices(iommu, info->dev);
--
--		/* clear this iommu in iommu_bmp, update iommu count
--		 * and capabilities
--		 */
--		spin_lock_irqsave(&domain->iommu_lock, flags2);
--		if (test_and_clear_bit(iommu->seq_id,
--				       domain->iommu_bmp)) {
--			domain->iommu_count--;
--			domain_update_iommu_cap(domain);
--		}
--		spin_unlock_irqrestore(&domain->iommu_lock, flags2);
--
--		free_devinfo_mem(info);
--		spin_lock_irqsave(&device_domain_lock, flags1);
--	}
--	spin_unlock_irqrestore(&device_domain_lock, flags1);
--}
--
--/* domain id for virtual machine, it won't be set in context */
--static atomic_t vm_domid = ATOMIC_INIT(0);
--
--static struct dmar_domain *iommu_alloc_vm_domain(void)
--{
--	struct dmar_domain *domain;
--
--	domain = alloc_domain_mem();
--	if (!domain)
--		return NULL;
--
--	domain->id = atomic_inc_return(&vm_domid);
--	domain->nid = -1;
--	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
--	domain->flags = DOMAIN_FLAG_VIRTUAL_MACHINE;
--
--	return domain;
--}
--
- static int md_domain_init(struct dmar_domain *domain, int guest_width)
++	return 0;
++}
++
+ /* domain is initialized */
+ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
  {
- 	int adjust_width;
+-	struct dmar_domain *domain, *found = NULL;
++	struct dmar_domain *domain;
+ 	struct intel_iommu *iommu;
+ 	struct dmar_drhd_unit *drhd;
+-	struct device_domain_info *info, *tmp;
+ 	struct pci_dev *dev_tmp;
+ 	unsigned long flags;
+ 	int bus = 0, devfn = 0;
+ 	int segment;
+-	int ret;
  
- 	init_iova_domain(&domain->iovad, DMA_32BIT_PFN);
--	spin_lock_init(&domain->iommu_lock);
--
- 	domain_reserve_special_ranges(domain);
- 
- 	/* calculate AGAW */
-@@ -3878,9 +3836,6 @@ static int md_domain_init(struct dmar_domain *domain, int guest_width)
- 	adjust_width = guestwidth_to_adjustwidth(guest_width);
- 	domain->agaw = width_to_agaw(adjust_width);
- 
--	INIT_LIST_HEAD(&domain->devices);
--
--	domain->iommu_count = 0;
- 	domain->iommu_coherency = 0;
- 	domain->iommu_snooping = 0;
- 	domain->iommu_superpage = 0;
-@@ -3895,53 +3850,11 @@ static int md_domain_init(struct dmar_domain *domain, int guest_width)
- 	return 0;
- }
- 
--static void iommu_free_vm_domain(struct dmar_domain *domain)
--{
--	unsigned long flags;
--	struct dmar_drhd_unit *drhd;
--	struct intel_iommu *iommu;
--	unsigned long i;
--	unsigned long ndomains;
--
--	for_each_active_iommu(iommu, drhd) {
--		ndomains = cap_ndoms(iommu->cap);
--		for_each_set_bit(i, iommu->domain_ids, ndomains) {
--			if (iommu->domains[i] == domain) {
--				spin_lock_irqsave(&iommu->lock, flags);
--				clear_bit(i, iommu->domain_ids);
--				iommu->domains[i] = NULL;
--				spin_unlock_irqrestore(&iommu->lock, flags);
+ 	domain = find_domain(pdev);
+ 	if (domain)
+@@ -1986,41 +2039,29 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
+ 			devfn = dev_tmp->devfn;
+ 		}
+ 		spin_lock_irqsave(&device_domain_lock, flags);
+-		list_for_each_entry(info, &device_domain_list, global) {
+-			if (info->segment == segment &&
+-			    info->bus == bus && info->devfn == devfn) {
+-				found = info->domain;
 -				break;
 -			}
 -		}
--	}
--}
--
--static void vm_domain_exit(struct dmar_domain *domain)
--{
--	/* Domain 0 is reserved, so dont process it */
--	if (!domain)
--		return;
--
--	vm_domain_remove_all_dev_info(domain);
--	/* destroy iovas */
--	put_iova_domain(&domain->iovad);
--
--	/* clear ptes */
--	dma_pte_clear_range(domain, 0, DOMAIN_MAX_PFN(domain->gaw));
--
--	/* free page tables */
--	dma_pte_free_pagetable(domain, 0, DOMAIN_MAX_PFN(domain->gaw));
--
--	iommu_free_vm_domain(domain);
--	free_domain_mem(domain);
--}
--
- static int intel_iommu_domain_init(struct iommu_domain *domain)
- {
- 	struct dmar_domain *dmar_domain;
- 
--	dmar_domain = iommu_alloc_vm_domain();
-+	dmar_domain = alloc_domain(true);
- 	if (!dmar_domain) {
- 		printk(KERN_ERR
- 			"intel_iommu_domain_init: dmar_domain == NULL\n");
-@@ -3950,7 +3863,7 @@ static int intel_iommu_domain_init(struct iommu_domain *domain)
- 	if (md_domain_init(dmar_domain, DEFAULT_DOMAIN_ADDRESS_WIDTH)) {
- 		printk(KERN_ERR
- 			"intel_iommu_domain_init() failed\n");
--		vm_domain_exit(dmar_domain);
-+		domain_exit(dmar_domain);
- 		return -ENOMEM;
++		domain = dmar_search_domain_by_dev_info(segment, bus, devfn);
+ 		spin_unlock_irqrestore(&device_domain_lock, flags);
+ 		/* pcie-pci bridge already has a domain, uses it */
+-		if (found) {
+-			domain = found;
++		if (domain)
+ 			goto found_domain;
+-		}
  	}
- 	domain_update_iommu_cap(dmar_domain);
-@@ -3968,7 +3881,7 @@ static void intel_iommu_domain_destroy(struct iommu_domain *domain)
- 	struct dmar_domain *dmar_domain = domain->priv;
  
- 	domain->priv = NULL;
--	vm_domain_exit(dmar_domain);
-+	domain_exit(dmar_domain);
- }
+-	domain = alloc_domain();
+-	if (!domain)
+-		goto error;
+-
+-	/* Allocate new domain for the device */
+ 	drhd = dmar_find_matched_drhd_unit(pdev);
+ 	if (!drhd) {
+ 		printk(KERN_ERR "IOMMU: can't find DMAR for device %s\n",
+ 			pci_name(pdev));
+-		free_domain_mem(domain);
+ 		return NULL;
+ 	}
+ 	iommu = drhd->iommu;
  
- static int intel_iommu_attach_device(struct iommu_domain *domain,
+-	ret = iommu_attach_domain(domain, iommu);
+-	if (ret) {
++	/* Allocate and intialize new domain for the device */
++	domain = alloc_domain();
++	if (!domain)
++		goto error;
++	if (iommu_attach_domain(domain, iommu)) {
+ 		free_domain_mem(domain);
+ 		goto error;
+ 	}
+-
+ 	if (domain_init(domain, gaw)) {
+ 		domain_exit(domain);
+ 		goto error;
+@@ -2028,67 +2069,16 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
+ 
+ 	/* register pcie-to-pci device */
+ 	if (dev_tmp) {
+-		info = alloc_devinfo_mem();
+-		if (!info) {
++		if (dmar_insert_dev_info(segment, bus, devfn, NULL, &domain)) {
+ 			domain_exit(domain);
+ 			goto error;
+ 		}
+-		info->segment = segment;
+-		info->bus = bus;
+-		info->devfn = devfn;
+-		info->dev = NULL;
+-		info->domain = domain;
+-		/* This domain is shared by devices under p2p bridge */
+-		domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
+-
+-		/* pcie-to-pci bridge already has a domain, uses it */
+-		found = NULL;
+-		spin_lock_irqsave(&device_domain_lock, flags);
+-		list_for_each_entry(tmp, &device_domain_list, global) {
+-			if (tmp->segment == segment &&
+-			    tmp->bus == bus && tmp->devfn == devfn) {
+-				found = tmp->domain;
+-				break;
+-			}
+-		}
+-		if (found) {
+-			spin_unlock_irqrestore(&device_domain_lock, flags);
+-			free_devinfo_mem(info);
+-			domain_exit(domain);
+-			domain = found;
+-		} else {
+-			list_add(&info->link, &domain->devices);
+-			list_add(&info->global, &device_domain_list);
+-			spin_unlock_irqrestore(&device_domain_lock, flags);
+-		}
+ 	}
+ 
+ found_domain:
+-	info = alloc_devinfo_mem();
+-	if (!info)
+-		goto error;
+-	info->segment = segment;
+-	info->bus = pdev->bus->number;
+-	info->devfn = pdev->devfn;
+-	info->dev = pdev;
+-	info->domain = domain;
+-	spin_lock_irqsave(&device_domain_lock, flags);
+-	/* somebody is fast */
+-	found = find_domain(pdev);
+-	if (found != NULL) {
+-		spin_unlock_irqrestore(&device_domain_lock, flags);
+-		if (found != domain) {
+-			domain_exit(domain);
+-			domain = found;
+-		}
+-		free_devinfo_mem(info);
++	if (dmar_insert_dev_info(segment, pdev->bus->number, pdev->devfn,
++				 pdev, &domain) == 0)
+ 		return domain;
+-	}
+-	list_add(&info->link, &domain->devices);
+-	list_add(&info->global, &device_domain_list);
+-	pdev->dev.archdata.iommu = info;
+-	spin_unlock_irqrestore(&device_domain_lock, flags);
+-	return domain;
+ error:
+ 	/* recheck it here, maybe others set it */
+ 	return find_domain(pdev);
 -- 
 1.7.10.4
 
