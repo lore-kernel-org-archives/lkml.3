@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaBSN1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 08:27:38 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:56221 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511AbaBSN1g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 08:27:36 -0500
-Message-ID: <5304B14B.2070402@cogentembedded.com>
-Date: Wed, 19 Feb 2014 17:27:39 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753706AbaBSN3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 08:29:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54767 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752701AbaBSN3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 08:29:05 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.02.1402191259590.4468@ionos.tec.linutronix.de>
+References: <CAC5e1FoLrHWSa_7BnRt-u451ZJOVqKhSpbyp8O_ExDbgcXtU+g@mail.gmail.com> <alpine.DEB.2.02.1402182101450.4468@ionos.tec.linutronix.de> <CAC5e1FpChdyW9xzbwsyVx147hKrV0MxwkCMyKHR4ab5-Q=DyPg@mail.gmail.com> <fe0610e4-0073-42a7-803a-590de82e47ef@email.android.com> <CAC5e1FobNkgWuvk=F=fPfZiyd-r=TFRV6Lg9BTSLsLP6i_T7JA@mail.gmail.com> <alpine.DEB.2.02.1402191259590.4468@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, grant.likely@linaro.org
-CC: ben.dooks@codethink.co.uk, linux-kernel@lists.codethink.co.uk,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2] of_mdio: fix phy interrupt passing
-References: <1392725818-558-1-git-send-email-ben.dooks@codethink.co.uk>	<20140218161551.44A52C40517@trevor.secretlab.ca> <20140218.181317.1712776234149210938.davem@davemloft.net>
-In-Reply-To: <20140218.181317.1712776234149210938.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: Does it need to implement irq_set_type method in the ioapic_chip?
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 19 Feb 2014 05:28:15 -0800
+To: Thomas Gleixner <tglx@linutronix.de>, carl peng <carlpeng008@gmail.com>
+CC: mingo@redhat.com, x86@kernel.org, pingfank@linux.vnet.ibm.com,
+        yoshihiro.yunomae.ez@hitachi.com, linux-kernel@vger.kernel.org
+Message-ID: <5e7b7684-2f67-4dca-b889-94b942cc72dd@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+In the casee of your ACPI-enabled AMBA device I believe the BIOS, which provides the ACPI tables, is expected to set the interrupt type.
 
-On 19-02-2014 3:13, David Miller wrote:
+On February 19, 2014 4:07:09 AM PST, Thomas Gleixner <tglx@linutronix.de> wrote:
+>On Wed, 19 Feb 2014, carl peng wrote:
+>> At last, the device will be connected to AMBA bus, so the interrupt
+>> pin will be connected to IOAPIC through AMBA bus. The device now
+>> is in the pre-silicon verification stage.
+>> 
+>> So my question is the same:
+>> Why does APIC driver not implement the irq_set_type method?  if
+>
+>Because we do not need it. All devices are properly connected and
+>configured by the BIOS and bus discovery.
+>
+>> implement it, will supply more free space for the device driver
+>> developer(they can set the interrupttrigger mode by calling
+>request_irq).
+>
+>There are 3 different mechanisms already to tell the kernel to
+>configure a particular irq line: ACPI, MP Tables and SFI.
+>
+>That's the way x86 does its interrupt configuration and there is no
+>need to provide another one.
+>
+>Thanks,
+>
+>	tglx
 
->>> The of_mdiobus_register_phy() is not setting phy->irq thus causing
->>> some drivers to incorrectly assume that the PHY does not have an
->>> IRQ associated with it. Not only do some drivers report no IRQ
->>> they do not install an interrupt handler for the PHY.
-
->>> Simplify the code setting irq and set the phy->irq at the same
->>> time so that we cover the following issues, which should cover
->>> all the cases the code will find:
-
->>> - Set phy->irq if node has irq property and mdio->irq is NULL
->>> - Set phy->irq if node has no irq and mdio->irq is not NULL
->>> - Leave phy->irq as PHY_POLL default if none of the above
-
->>> This fixes the issue:
->>>   net eth0: attached PHY 1 (IRQ -1) to driver Micrel KSZ8041RNLI
-
->>> to the correct:
->>>   net eth0: attached PHY 1 (IRQ 416) to driver Micrel KSZ8041RNLI
-
->>> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-
->> Looks okay to me
-
->> Reviewed-by: Grant Likely <grant.likely@linaro.org>
-
-> Applied, thanks.
-
-    So, you decided to ignore my comment about unneeded *else* branch?
-
-WBR, Sergei
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
