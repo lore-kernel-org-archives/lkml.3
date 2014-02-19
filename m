@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaBSN0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 08:26:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33129 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531AbaBSN0C (ORCPT
+	id S1753708AbaBSN1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 08:27:38 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:56221 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511AbaBSN1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 08:26:02 -0500
-Message-ID: <5304B0E7.4000802@canonical.com>
-Date: Wed, 19 Feb 2014 14:25:59 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Feb 2014 08:27:36 -0500
+Message-ID: <5304B14B.2070402@cogentembedded.com>
+Date: Wed, 19 Feb 2014 17:27:39 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
-        Rob Clark <robdclark@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Colin Cross <ccross@google.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH 2/6] seqno-fence: Hardware dma-buf implementation of fencing
- (v4)
-References: <20140217155056.20337.25254.stgit@patser>	<20140217155556.20337.37589.stgit@patser>	<53023F3E.3080107@vodafone.de>	<CAF6AEGtHSg=qESbGE8LZsQPrRfHnrSQOjpEAVKeZ5o9k07ZNcA@mail.gmail.com>	<530248B1.2090405@vodafone.de> <CAF6AEGtk1dGdFg2wk-ofRQmaxEnnEOQBOg=JNaPRVapQqsML+w@mail.gmail.com> <530257E3.2060508@vodafone.de>
-In-Reply-To: <530257E3.2060508@vodafone.de>
+To: David Miller <davem@davemloft.net>, grant.likely@linaro.org
+CC: ben.dooks@codethink.co.uk, linux-kernel@lists.codethink.co.uk,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] of_mdio: fix phy interrupt passing
+References: <1392725818-558-1-git-send-email-ben.dooks@codethink.co.uk>	<20140218161551.44A52C40517@trevor.secretlab.ca> <20140218.181317.1712776234149210938.davem@davemloft.net>
+In-Reply-To: <20140218.181317.1712776234149210938.davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 17-02-14 19:41, Christian König schreef:
-> Am 17.02.2014 19:24, schrieb Rob Clark:
->> On Mon, Feb 17, 2014 at 12:36 PM, Christian König
->> <deathsimple@vodafone.de> wrote:
->>> Am 17.02.2014 18:27, schrieb Rob Clark:
->>>
->>>> On Mon, Feb 17, 2014 at 11:56 AM, Christian König
->>>> <deathsimple@vodafone.de> wrote:
->>>>> Am 17.02.2014 16:56, schrieb Maarten Lankhorst:
->>>>>
->>>>>> This type of fence can be used with hardware synchronization for simple
->>>>>> hardware that can block execution until the condition
->>>>>> (dma_buf[offset] - value) >= 0 has been met.
->>>>>
->>>>> Can't we make that just "dma_buf[offset] != 0" instead? As far as I know
->>>>> this way it would match the definition M$ uses in their WDDM
->>>>> specification
->>>>> and so make it much more likely that hardware supports it.
->>>> well 'buf[offset] >= value' at least means the same slot can be used
->>>> for multiple operations (with increasing values of 'value').. not sure
->>>> if that is something people care about.
->>>>
->>>>> =value seems to be possible with adreno and radeon.  I'm not really sure
->>>>> about others (although I presume it as least supported for nv desktop
->>>>> stuff).  For hw that cannot do >=value, we can either have a different fence
->>>>> implementation which uses the !=0 approach.  Or change seqno-fence
->>>>> implementation later if needed.  But if someone has hw that can do !=0 but
->>>>> not >=value, speak up now ;-)
->>>
->>> Here! Radeon can only do >=value on the DMA and 3D engine, but not with UVD
->>> or VCE. And for the 3D engine it means draining the pipe, which isn't really
->>> a good idea.
->> hmm, ok.. forgot you have a few extra rings compared to me.  Is UVD
->> re-ordering from decode-order to display-order for you in hw? If not,
->> I guess you need sw intervention anyways when a frame is done for
->> frame re-ordering, so maybe hw->hw sync doesn't really matter as much
->> as compared to gpu/3d->display.  For dma<->3d interactions, seems like
->> you would care more about hw<->hw sync, but I guess you aren't likely
->> to use GPU A to do a resolve blit for GPU B..
->
-> No UVD isn't reordering, but since frame reordering is predictable you usually end up with pipelining everything to the hardware. E.g. you send the decode commands in decode order to the UVD block and if you have overlay active one of the frames are going to be the first to display and then you want to wait for it on the display side.
->
->> For 3D ring, I assume you probably want a CP_WAIT_FOR_IDLE before a
->> CP_MEM_WRITE to update fence value in memory (for the one signalling
->> the fence).  But why would you need that before a CP_WAIT_REG_MEM (for
->> the one waiting for the fence)?  I don't exactly have documentation
->> for adreno version of CP_WAIT_REG_{MEM,EQ,GTE}..  but PFP and ME
->> appear to be same instruction set as r600, so I'm pretty sure they
->> should have similar capabilities.. CP_WAIT_REG_MEM appears to be same
->> but with 32bit gpu addresses vs 64b.
->
-> You shouldn't use any of the CP commands for engine synchronization (neither for wait nor for signal). The PFP and ME are just the top of a quite deep pipeline and when you use any of the CP_WAIT functions you block them for something and that's draining the pipeline.
->
-> With the semaphore and fence commands the values are just attached as prerequisite to the draw command, e.g. the CP setups the draw environment and issues the command, but the actual execution of it is delayed until the "!= 0" condition hits. And in the meantime the CP already prepares the next draw operation.
->
-> But at least for compute queues wait semaphore aren't the perfect solution either. What you need then is a GPU scheduler that uses a kernel task for setting up the command submission for you when all prerequisites are meet.
-nouveau has sort of a scheduler in hardware. It can yield when waiting on a semaphore. And each process gets their own context and the timeslices can be adjusted. ;-) But I don't mind changing this patch when an actual user pops up. Nouveau can do a  wait for (*sema & mask) != 0 only on nvc0 and newer, where mask can be chosen. But it can do == somevalue and >= somevalue on older relevant optimus hardware, so if we know that it was zero before and we know the sign of the new value that could work too.
+Hello.
 
-Adding ops and a separate mask later on when users pop up is fine with me, the original design here was chosen so I could map the intel status page read-only into the process specific nvidia vm.
+On 19-02-2014 3:13, David Miller wrote:
 
-~Maarten
+>>> The of_mdiobus_register_phy() is not setting phy->irq thus causing
+>>> some drivers to incorrectly assume that the PHY does not have an
+>>> IRQ associated with it. Not only do some drivers report no IRQ
+>>> they do not install an interrupt handler for the PHY.
+
+>>> Simplify the code setting irq and set the phy->irq at the same
+>>> time so that we cover the following issues, which should cover
+>>> all the cases the code will find:
+
+>>> - Set phy->irq if node has irq property and mdio->irq is NULL
+>>> - Set phy->irq if node has no irq and mdio->irq is not NULL
+>>> - Leave phy->irq as PHY_POLL default if none of the above
+
+>>> This fixes the issue:
+>>>   net eth0: attached PHY 1 (IRQ -1) to driver Micrel KSZ8041RNLI
+
+>>> to the correct:
+>>>   net eth0: attached PHY 1 (IRQ 416) to driver Micrel KSZ8041RNLI
+
+>>> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+
+>> Looks okay to me
+
+>> Reviewed-by: Grant Likely <grant.likely@linaro.org>
+
+> Applied, thanks.
+
+    So, you decided to ignore my comment about unneeded *else* branch?
+
+WBR, Sergei
 
