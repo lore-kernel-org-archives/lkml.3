@@ -1,123 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690AbaBSREe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 12:04:34 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55454 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754189AbaBSREd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 12:04:33 -0500
-Date: Wed, 19 Feb 2014 17:00:20 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "b.brezillon@overkiz.com" <b.brezillon@overkiz.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 1/8] ARM: at91: Add at91sam9rl DT SoC support
-Message-ID: <20140219170020.GA25079@e106331-lin.cambridge.arm.com>
-References: <1392823951-26053-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1392823951-26053-2-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1754701AbaBSRFs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 12:05:48 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38343 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753977AbaBSRFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 12:05:46 -0500
+Message-ID: <5304E41F.4080205@ti.com>
+Date: Wed, 19 Feb 2014 19:04:31 +0200
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392823951-26053-2-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <santosh.shilimkar@ti.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <galak@kernel.crashing.org>, <devicetree@vger.kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <rob.herring@calxeda.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <dwmw2@infradead.org>, <nsekhar@ti.com>,
+        "[initial author] Murali Karicheri" <m-karicheri2@ti.com>
+Subject: Re: [PATCH v4 1/2] memory: ti-aemif: introduce AEMIF driver
+References: <1391629574-18955-1-git-send-email-ivan.khoronzhuk@ti.com> <1391629574-18955-2-git-send-email-ivan.khoronzhuk@ti.com> <20140218203049.GA18647@kroah.com> <53048822.2080307@ti.com> <20140219143403.GA31063@kroah.com>
+In-Reply-To: <20140219143403.GA31063@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 03:32:24PM +0000, Alexandre Belloni wrote:
-> This adds preliminary DT support for the at91sam9rl.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/boot/dts/at91sam9rl.dtsi | 628 ++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-at91/at91sam9rl.c   |  16 +
->  2 files changed, 644 insertions(+)
->  create mode 100644 arch/arm/boot/dts/at91sam9rl.dtsi
- 
-[...]
 
-> +                       tcb0: timer@fffa0000 {
-> +                               compatible = "atmel,at91rm9200-tcb";
-> +                               reg = <0xfffa0000 0x100>;
-> +                               interrupts = <16 IRQ_TYPE_LEVEL_HIGH 0
-> +                                             17 IRQ_TYPE_LEVEL_HIGH 0
-> +                                             18 IRQ_TYPE_LEVEL_HIGH 0>;
-> +                       };
+On 02/19/2014 04:34 PM, Greg KH wrote:
+> On Wed, Feb 19, 2014 at 12:32:02PM +0200, Ivan Khoronzhuk wrote:
+>>>> +	aemif->clk = devm_clk_get(dev, NULL);
+>>>> +	if (IS_ERR(aemif->clk)) {
+>>>> +		dev_err(dev, "cannot get clock 'aemif'\n");
+>>>> +		return PTR_ERR(aemif->clk);
+>>> No freeing memory?
+>> There is no need to free memory explicitly.
+>> devm_kzalloc is used instead of kzalloc.
+> Yes, but where does the device on the error path get removed?
 
-Nit: please bracket list entries individually. Also for other list
-properties like reg and (*-)gpio(s).
+Why these functions are needed in that case...
 
-[...]
+As I see, memory allocated with these functions
+are automatically freed on driver detach.
 
-> +                       adc0: adc@fffd0000 {
-> +                               compatible = "atmel,at91sam9260-adc";
-> +                               reg = <0xfffd0000 0x100>;
-> +                               interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
-> +                               atmel,adc-use-external-triggers;
-> +                               atmel,adc-channels-used = <0xf>;
-> +                               atmel,adc-vref = <3300>;
-> +                               atmel,adc-num-channels = <4>;
-> +                               atmel,adc-startup-time = <15>;
-> +                               atmel,adc-channel-base = <0x30>;
-> +                               atmel,adc-drdy-mask = <0x10000>;
-> +                               atmel,adc-status-register = <0x1c>;
-> +                               atmel,adc-trigger-register = <0x04>;
-> +                               atmel,adc-res = <8 10>;
-> +                               atmel,adc-res-names = "lowres", "highres";
-> +                               atmel,adc-use-res = "highres";
-> +
-> +                               trigger@0 {
-> +                                       trigger-name = "timer-counter-0";
-> +                                       trigger-value = <0x1>;
-> +                               };
+Additionally I've checked if resources are released after
+AEMIF driver probe error.
+And they're released completely in case of probe error.
 
-A unit-address should go with a reg value. Either this needs a reg and
-the parent node needs #address-cells and #size-cells, or the
-unit-address should go, and the names made unique through other means.
+:-\
 
-[...]
+-- 
+Regards,
+Ivan Khoronzhuk
 
-> +                       pinctrl@fffff400 {
-> +                               #address-cells = <1>;
-> +                               #size-cells = <1>;
-> +                               compatible = "atmel,at91rm9200-pinctrl", "simple-bus";
-
-NAK. Either this is a atmel,at91rm9200-pinctrl node or a simple-bus. Not
-both; that doesn't make any sense.
-
-> diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-> index 3651517abedf..d6ee8bb47213 100644
-> --- a/arch/arm/mach-at91/at91sam9rl.c
-> +++ b/arch/arm/mach-at91/at91sam9rl.c
-> @@ -196,6 +196,22 @@ static struct clk_lookup periph_clocks_lookups[] = {
->         CLKDEV_CON_ID("pioB", &pioB_clk),
->         CLKDEV_CON_ID("pioC", &pioC_clk),
->         CLKDEV_CON_ID("pioD", &pioD_clk),
-> +       /* more lookup table for DT entries */
-> +       CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
-> +       CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
-> +       CLKDEV_CON_DEV_ID("usart", "ffffb400.serial", &usart1_clk),
-> +       CLKDEV_CON_DEV_ID("usart", "ffffb800.serial", &usart2_clk),
-> +       CLKDEV_CON_DEV_ID("usart", "ffffbc00.serial", &usart3_clk),
-> +       CLKDEV_CON_DEV_ID("t0_clk", "fffa0000.timer", &tc0_clk),
-> +       CLKDEV_CON_DEV_ID("t1_clk", "fffa0000.timer", &tc1_clk),
-> +       CLKDEV_CON_DEV_ID("t2_clk", "fffa0000.timer", &tc2_clk),
-> +       CLKDEV_CON_DEV_ID("mci_clk", "fffa4000.mmc", &mmc_clk),
-> +       CLKDEV_CON_DEV_ID(NULL, "fffa8000.i2c", &twi0_clk),
-> +       CLKDEV_CON_DEV_ID(NULL, "fffac000.i2c", &twi1_clk),
-> +       CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioA_clk),
-> +       CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioB_clk),
-> +       CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioC_clk),
-> +       CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioD_clk),
-
-Why can't these clocks be described in the DT?
-
-Cheers,
-Mark.
