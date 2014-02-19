@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaBSDpc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 22:45:32 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:42437 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751005AbaBSDpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 22:45:31 -0500
-X-IronPort-AV: E=Sophos;i="4.97,503,1389715200"; 
-   d="scan'208";a="9557253"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] workqueue: Fix possible unexpectedly worker wakeup before started
-Date: Wed, 19 Feb 2014 11:47:58 +0800
-Message-Id: <1392781678-31952-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/19 11:43:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/19 11:43:21,
-	Serialize complete at 2014/02/19 11:43:21
+	id S1752192AbaBSDsf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 22:48:35 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:64524 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaBSDse (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 22:48:34 -0500
+From: SeongJae Park <sj38.park@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: sachin.kamat@linaro.org, swetland@google.com, devel@driverdev.osusl.org,
+        linux-kernel@vger.kernel.org, SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] staging: android: binder: convert commented messages to pr_debug
+Date: Wed, 19 Feb 2014 12:49:33 +0900
+Message-Id: <1392781773-1941-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a worker is wokenup unexpectedly, it will start to work incorretly.
-Although it hardly happen, we should catch it and wait for being started
-if it does happen.
+2 debugging messages were just commented out for normal case. Let them
+be activated on debug mode without explicit code modification.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
 ---
- kernel/workqueue.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/staging/android/binder.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 82ef9f3..bee5fe1 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2284,6 +2284,12 @@ static int worker_thread(void *__worker)
- 	struct worker *worker = __worker;
- 	struct worker_pool *pool = worker->pool;
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index eaec1da..a56f941 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -2553,7 +2553,8 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	unsigned int size = _IOC_SIZE(cmd);
+ 	void __user *ubuf = (void __user *)arg;
  
-+	if (WARN_ON_ONCE(!(worker->flags & WORKER_STARTED))) {
-+		/* The worker is wokenup unexpectedly before started */
-+		mutex_lock(&pool->manager_mutex);
-+		mutex_unlock(&pool->manager_mutex);
-+	}
-+
- 	/* tell the scheduler that this is a workqueue worker */
- 	worker->task->flags |= PF_WQ_WORKER;
- woke_up:
+-	/*pr_info("binder_ioctl: %d:%d %x %lx\n", proc->pid, current->pid, cmd, arg);*/
++	pr_debug("binder_ioctl: %d:%d %x %lx\n",
++		 proc->pid, current->pid, cmd, arg);
+ 
+ 	trace_binder_ioctl(cmd, arg);
+ 
+@@ -2787,8 +2788,8 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
+ 	proc->vma = vma;
+ 	proc->vma_vm_mm = vma->vm_mm;
+ 
+-	/*pr_info("binder_mmap: %d %lx-%lx maps %p\n",
+-		 proc->pid, vma->vm_start, vma->vm_end, proc->buffer);*/
++	pr_debug("binder_mmap: %d %lx-%lx maps %p\n",
++		 proc->pid, vma->vm_start, vma->vm_end, proc->buffer);
+ 	return 0;
+ 
+ err_alloc_small_buf_failed:
 -- 
-1.7.4.4
+1.8.3.2
 
