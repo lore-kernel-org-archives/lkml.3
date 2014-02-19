@@ -1,122 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaBSRyn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 12:54:43 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56429 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753968AbaBSRyj (ORCPT
+	id S1754845AbaBSR4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 12:56:36 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:58510 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570AbaBSR4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 12:54:39 -0500
-Date: Wed, 19 Feb 2014 17:54:09 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "b.brezillon@overkiz.com" <b.brezillon@overkiz.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 1/8] ARM: at91: Add at91sam9rl DT SoC support
-Message-ID: <20140219175409.GF25079@e106331-lin.cambridge.arm.com>
-References: <1392823951-26053-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1392823951-26053-2-git-send-email-alexandre.belloni@free-electrons.com>
- <20140219170020.GA25079@e106331-lin.cambridge.arm.com>
- <20140219173141.GB3038@piout.net>
+	Wed, 19 Feb 2014 12:56:32 -0500
+Date: Wed, 19 Feb 2014 09:53:39 -0800
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] mm: exclude memory less nodes from zone_reclaim
+Message-ID: <20140219175339.GG27108@linux.vnet.ibm.com>
+References: <20140219082313.GB14783@dhcp22.suse.cz>
+ <1392829383-4125-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140219173141.GB3038@piout.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1392829383-4125-1-git-send-email-mhocko@suse.cz>
+X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021917-8236-0000-0000-00000767B2F6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 05:31:42PM +0000, Alexandre Belloni wrote:
-> On 19/02/2014 at 17:00:20 +0000, Mark Rutland wrote :
-> > On Wed, Feb 19, 2014 at 03:32:24PM +0000, Alexandre Belloni wrote:
-> > > This adds preliminary DT support for the at91sam9rl.
-> > > 
-> > > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > > ---
-> > >  arch/arm/boot/dts/at91sam9rl.dtsi | 628 ++++++++++++++++++++++++++++++++++++++
-> > >  arch/arm/mach-at91/at91sam9rl.c   |  16 +
-> > >  2 files changed, 644 insertions(+)
-> > >  create mode 100644 arch/arm/boot/dts/at91sam9rl.dtsi
-> >  
-> > [...]
-> > 
-> > > +                       tcb0: timer@fffa0000 {
-> > > +                               compatible = "atmel,at91rm9200-tcb";
-> > > +                               reg = <0xfffa0000 0x100>;
-> > > +                               interrupts = <16 IRQ_TYPE_LEVEL_HIGH 0
-> > > +                                             17 IRQ_TYPE_LEVEL_HIGH 0
-> > > +                                             18 IRQ_TYPE_LEVEL_HIGH 0>;
-> > > +                       };
-> > 
-> > Nit: please bracket list entries individually. Also for other list
-> > properties like reg and (*-)gpio(s).
-> > 
+On 19.02.2014 [18:03:03 +0100], Michal Hocko wrote:
+> We had a report about strange OOM killer strikes on a PPC machine
+> although there was a lot of swap free and a tons of anonymous memory
+> which could be swapped out. In the end it turned out that the OOM was
+> a side effect of zone reclaim which wasn't doesn't unmap and swapp out
+> and so the system was pushed to the OOM. Although this sounds like a bug
+> somewhere in the kswapd vs. zone reclaim vs. direct reclaim interaction
+> numactl on the said hardware suggests that the zone reclaim should
+> have been set in the first place:
+> node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+> node 0 size: 0 MB
+> node 0 free: 0 MB
+> node 2 cpus:
+> node 2 size: 7168 MB
+> node 2 free: 6019 MB
+> node distances:
+> node   0   2
+> 0:  10  40
+> 2:  40  10
 > 
-> OK.
+> So all the CPUs are associated with Node0 which doesn't have any memory
+> while Node2 contains all the available memory. Node distances cause an
+> automatic zone_reclaim_mode enabling.
 > 
-> > [...]
-> > 
-> > > +                       adc0: adc@fffd0000 {
-> > > +                               compatible = "atmel,at91sam9260-adc";
-> > > +                               reg = <0xfffd0000 0x100>;
-> > > +                               interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
-> > > +                               atmel,adc-use-external-triggers;
-> > > +                               atmel,adc-channels-used = <0xf>;
-> > > +                               atmel,adc-vref = <3300>;
-> > > +                               atmel,adc-num-channels = <4>;
-> > > +                               atmel,adc-startup-time = <15>;
-> > > +                               atmel,adc-channel-base = <0x30>;
-> > > +                               atmel,adc-drdy-mask = <0x10000>;
-> > > +                               atmel,adc-status-register = <0x1c>;
-> > > +                               atmel,adc-trigger-register = <0x04>;
-> > > +                               atmel,adc-res = <8 10>;
-> > > +                               atmel,adc-res-names = "lowres", "highres";
-> > > +                               atmel,adc-use-res = "highres";
-> > > +
-> > > +                               trigger@0 {
-> > > +                                       trigger-name = "timer-counter-0";
-> > > +                                       trigger-value = <0x1>;
-> > > +                               };
-> > 
-> > A unit-address should go with a reg value. Either this needs a reg and
-> > the parent node needs #address-cells and #size-cells, or the
-> > unit-address should go, and the names made unique through other means.
-> > 
+> Zone reclaim is intended to keep the allocations local but this doesn't
+> make any sense on the memory less nodes. So let's exlcude such nodes
+> for init_zone_allows_reclaim which evaluates zone reclaim behavior and
+> suitable reclaim_nodes.
 > 
-> OK, I guess I'll have to fix
-> Documentation/devicetree/bindings/arm/atmel-adc.txt too.
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+> I haven't got to testing this so I am sending this as an RFC for now.
+> But does this look reasonable?
+> 
+>  mm/page_alloc.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 3e953f07edb0..4a44bdc7a8cf 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1855,7 +1855,7 @@ static void __paginginit init_zone_allows_reclaim(int nid)
+>  {
+>  	int i;
+> 
+> -	for_each_online_node(i)
+> +	for_each_node_state(i, N_HIGH_MEMORY)
+>  		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+>  			node_set(i, NODE_DATA(nid)->reclaim_nodes);
+>  		else
+> @@ -4901,7 +4901,8 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
+> 
+>  	pgdat->node_id = nid;
+>  	pgdat->node_start_pfn = node_start_pfn;
+> -	init_zone_allows_reclaim(nid);
+> +	if (node_state(nid, N_HIGH_MEMORY))
+> +		init_zone_allows_reclaim(nid);
 
-Yes please.
+I'm still new to this code, but isn't this saying that if a node has no
+memory, then it shouldn't reclaim from any node? But, for a memoryless
+node to ensure progress later if reclaim is necessary, it *must* reclaim
+from other nodes? So wouldn't we want to set reclaim_nodes() in that
+case to node_states[N_MEMORY]?
 
-> 
-> > [...]
-> > 
-> > > +                       pinctrl@fffff400 {
-> > > +                               #address-cells = <1>;
-> > > +                               #size-cells = <1>;
-> > > +                               compatible = "atmel,at91rm9200-pinctrl", "simple-bus";
-> > 
-> > NAK. Either this is a atmel,at91rm9200-pinctrl node or a simple-bus. Not
-> > both; that doesn't make any sense.
-> > 
-> 
-> Simply a copy paste, I'll fix that here and also the 6 other atmel
-> dtsi includes.
-> 
-> What is your preference for those using:
-> compatible = "atmel,at91sam9x5-pinctrl", "atmel,at91rm9200-pinctrl", "simple-bus"; ?
+Thanks,
+Nish
 
-A node should by either a bus or a pinctrl node.
-
-If it has chidren then the simple-bus should be separated out into a
-separate node. If there are no children simple-bus should go.
-
-Cheers,
-Mark.
