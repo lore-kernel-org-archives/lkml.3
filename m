@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaBSI5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:57:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52384 "EHLO mx1.redhat.com"
+	id S1753196AbaBSI4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:56:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13509 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752871AbaBSI4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:56:42 -0500
+	id S1753142AbaBSI4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 03:56:37 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-pci@vger.kernel.org
-Subject: [PATCH 6/9] skd: Fix out of array boundary access
-Date: Wed, 19 Feb 2014 09:58:18 +0100
-Message-Id: <06ae7409fef678184a982ace652a299c0018dab8.1392799751.git.agordeev@redhat.com>
+        Asai Thambi S P <asamymuthupa@micron.com>, linux-pci@vger.kernel.org
+Subject: [PATCH 3/9] mtip32xx: Remove superfluous call to pci_disable_msi()
+Date: Wed, 19 Feb 2014 09:58:15 +0100
+Message-Id: <eb0c7ed053e6e047d0d09ea7e803dd39a1ef71ed.1392799751.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392799751.git.agordeev@redhat.com>
 References: <cover.1392799751.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When enabling MSI-X, interrupts are requested for SKD_MAX_MSIX_COUNT
-entries in skdev->msix_entries array, while the number of actually
-allocated entries is skdev->msix_count. This might lead to an out of
-boundary access in case number of allocated entries is less than
-SKD_MAX_MSIX_COUNT. This update fixes the described misbehaviour.
+There is no need to call pci_disable_msi() in case
+the previous call to pci_enable_msi() failed
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/block/skd_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
-index eb6e1e0..3fa0918 100644
---- a/drivers/block/skd_main.c
-+++ b/drivers/block/skd_main.c
-@@ -3989,7 +3989,7 @@ static int skd_acquire_msix(struct skd_device *skdev)
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 5160269..5299a65 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -4615,7 +4615,7 @@ static int mtip_pci_probe(struct pci_dev *pdev,
+ 	if (rv) {
+ 		dev_warn(&pdev->dev,
+ 			"Unable to enable MSI interrupt.\n");
+-		goto block_initialize_err;
++		goto msi_initialize_err;
  	}
  
- 	/* Enable MSI-X vectors for the base queue */
--	for (i = 0; i < SKD_MAX_MSIX_COUNT; i++) {
-+	for (i = 0; i < skdev->msix_count; i++) {
- 		qentry = &skdev->msix_entries[i];
- 		snprintf(qentry->isr_name, sizeof(qentry->isr_name),
- 			 "%s%d-msix %s", DRV_NAME, skdev->devno,
+ 	/* Initialize the block layer. */
+@@ -4645,6 +4645,8 @@ static int mtip_pci_probe(struct pci_dev *pdev,
+ 
+ block_initialize_err:
+ 	pci_disable_msi(pdev);
++
++msi_initialize_err:
+ 	if (dd->isr_workq) {
+ 		flush_workqueue(dd->isr_workq);
+ 		destroy_workqueue(dd->isr_workq);
 -- 
 1.7.7.6
 
