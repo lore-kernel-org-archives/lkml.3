@@ -1,59 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaBSIQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:16:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50499 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480AbaBSIQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:16:46 -0500
-Date: Wed, 19 Feb 2014 09:16:44 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ppc: RECLAIM_DISTANCE 10?
-Message-ID: <20140219081644.GA14783@dhcp22.suse.cz>
-References: <20140218090658.GA28130@dhcp22.suse.cz>
- <alpine.DEB.2.02.1402181424490.20772@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402181424490.20772@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752759AbaBSIQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:16:50 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:56705 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712AbaBSIQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 03:16:48 -0500
+From: Kevin Hao <haokexin@gmail.com>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH v3 2/4] of: reimplement the matching method for __of_match_node()
+Date: Wed, 19 Feb 2014 16:15:45 +0800
+Message-Id: <1392797745-7561-1-git-send-email-haokexin@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <20140219075812.GE14031@pek-khao-d1.corp.ad.wrs.com>
+References: <20140219075812.GE14031@pek-khao-d1.corp.ad.wrs.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-02-14 14:27:11, David Rientjes wrote:
-> On Tue, 18 Feb 2014, Michal Hocko wrote:
-> 
-> > Hi,
-> > I have just noticed that ppc has RECLAIM_DISTANCE reduced to 10 set by
-> > 56608209d34b (powerpc/numa: Set a smaller value for RECLAIM_DISTANCE to
-> > enable zone reclaim). The commit message suggests that the zone reclaim
-> > is desirable for all NUMA configurations.
-> > 
-> > History has shown that the zone reclaim is more often harmful than
-> > helpful and leads to performance problems. The default RECLAIM_DISTANCE
-> > for generic case has been increased from 20 to 30 around 3.0
-> > (32e45ff43eaf mm: increase RECLAIM_DISTANCE to 30).
-> > 
-> > I strongly suspect that the patch is incorrect and it should be
-> > reverted. Before I will send a revert I would like to understand what
-> > led to the patch in the first place. I do not see why would PPC use only
-> > LOCAL_DISTANCE and REMOTE_DISTANCE distances and in fact machines I have
-> > seen use different values.
-> > 
-> 
-> I strongly suspect that the patch is correct since powerpc node distances 
-> are different than the architectures you're talking about and get doubled 
-> for every NUMA domain that the hardware supports.
+In the current implementation of __of_match_node(), it will compare
+each given match entry against all the node's compatible strings
+with of_device_is_compatible().
 
-Even if the units of the distance is different on PPC should every NUMA
-machine have zone_reclaim enabled? That doesn't right to me.
+To achieve multiple compatible strings per node with ordering from
+specific to generic, this requires given matches to be ordered from
+specific to generic. For most of the drivers this is not true and
+also an alphabetical ordering is more sane there.
 
+Therefore, we define a following priority order for the match, and
+then scan all the entries to find the best match.
+  1. specific compatible && type && name
+  2. specific compatible && type
+  3. specific compatible && name
+  4. specific compatible
+  5. general compatible && type && name
+  6. general compatible && type
+  7. general compatible && name
+  8. general compatible
+  9. type && name
+  10. type
+  11. name
+
+This is based on some pseudo-codes provided by Grant Likely.
+
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+[grant.likely: Changed multiplier to 4 which makes more sense]
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
+v3: Also need to bail out when there does have a compatible member in match
+    entry, but it doesn't match with the device node's compatible.
+ 
+v2: Fix the bug such as we get the same score for the following two match
+entries:
+	name2 { }
+
+	struct of_device_id matches[] = {
+		{.name = "name2", },
+		{.name = "name2", .type = "type1", },
+		{}
+	};
+
+ drivers/of/base.c | 96 ++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 77 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index ba195fbce4c6..8f79f006d86f 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -342,21 +342,28 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
+ }
+ EXPORT_SYMBOL(of_get_cpu_node);
+ 
+-/** Checks if the given "compat" string matches one of the strings in
+- * the device's "compatible" property
++/*
++ * Compare with the __of_device_is_compatible, this will return a score for the
++ * matching strings. The smaller value indicates the match for the more specific
++ * compatible string.
+  */
+-static int __of_device_is_compatible(const struct device_node *device,
+-				     const char *compat)
++static int __of_device_is_compatible_score(const struct device_node *device,
++				     const char *compat, int *pscore)
+ {
+ 	const char* cp;
+ 	int cplen, l;
++	int score = 0;
+ 
+ 	cp = __of_get_property(device, "compatible", &cplen);
+ 	if (cp == NULL)
+ 		return 0;
+ 	while (cplen > 0) {
+-		if (of_compat_cmp(cp, compat, strlen(compat)) == 0)
++		score++;
++		if (of_compat_cmp(cp, compat, strlen(compat)) == 0) {
++			if (pscore)
++				*pscore = score;
+ 			return 1;
++		}
+ 		l = strlen(cp) + 1;
+ 		cp += l;
+ 		cplen -= l;
+@@ -368,6 +375,15 @@ static int __of_device_is_compatible(const struct device_node *device,
+ /** Checks if the given "compat" string matches one of the strings in
+  * the device's "compatible" property
+  */
++static int __of_device_is_compatible(const struct device_node *device,
++				     const char *compat)
++{
++	return __of_device_is_compatible_score(device, compat, NULL);
++}
++
++/** Checks if the given "compat" string matches one of the strings in
++ * the device's "compatible" property
++ */
+ int of_device_is_compatible(const struct device_node *device,
+ 		const char *compat)
+ {
+@@ -734,25 +750,55 @@ static
+ const struct of_device_id *__of_match_node(const struct of_device_id *matches,
+ 					   const struct device_node *node)
+ {
++	const struct of_device_id *best_match = NULL;
++	int best_score = 0;
++
+ 	if (!matches)
+ 		return NULL;
+ 
+ 	while (matches->name[0] || matches->type[0] || matches->compatible[0]) {
+-		int match = 1;
+-		if (matches->name[0])
+-			match &= node->name
+-				&& !strcmp(matches->name, node->name);
+-		if (matches->type[0])
+-			match &= node->type
+-				&& !strcmp(matches->type, node->type);
+-		if (matches->compatible[0])
+-			match &= __of_device_is_compatible(node,
+-							   matches->compatible);
+-		if (match)
+-			return matches;
++		int score = 0;
++
++		/*
++		 * Matching compatible is better than matching type and name,
++		 * and the specific compatible is better than the general.
++		 */
++		if (matches->compatible[0]) {
++			if (__of_device_is_compatible_score(node,
++						matches->compatible, &score))
++				score = INT_MAX - 4 * score;
++			else
++				score = INT_MIN;
++		}
++
++		/*
++		 * Matching type is better than matching name, but matching
++		 * both is even better than that.
++		 */
++		if (matches->type[0]) {
++			if (node->type && !strcmp(matches->type, node->type))
++				score += 2;
++			else
++				score = INT_MIN;
++		}
++
++		/* Matching name is a bit better than not */
++		if (matches->name[0]) {
++			if (node->name && !strcmp(matches->name, node->name))
++				score++;
++			else
++				score = INT_MIN;
++		}
++
++		if (score > best_score) {
++			best_match = matches;
++			best_score = score;
++		}
++
+ 		matches++;
+ 	}
+-	return NULL;
++
++	return best_match;
+ }
+ 
+ /**
+@@ -760,7 +806,19 @@ const struct of_device_id *__of_match_node(const struct of_device_id *matches,
+  *	@matches:	array of of device match structures to search in
+  *	@node:		the of device structure to match against
+  *
+- *	Low level utility function used by device matching.
++ *	Low level utility function used by device matching. The priority order
++ *	for the matching is:
++ *	  1. specific compatible && type && name
++ *	  2. specific compatible && type
++ *	  3. specific compatible && name
++ *	  4. specific compatible
++ *	  5. general compatible && type && name
++ *	  6. general compatible && type
++ *	  7. general compatible && name
++ *	  8. general compatible
++ *	  9. type && name
++ *	  10. type
++ *	  11. name
+  */
+ const struct of_device_id *of_match_node(const struct of_device_id *matches,
+ 					 const struct device_node *node)
 -- 
-Michal Hocko
-SUSE Labs
+1.8.5.3
+
