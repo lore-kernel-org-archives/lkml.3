@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaBSJKf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 04:10:35 -0500
-Received: from www84.your-server.de ([213.133.104.84]:60115 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758AbaBSJIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 04:08:38 -0500
-From: Stefani Seibold <stefani@seibold.net>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v20 04/10] vclock_gettime.c __vdso_clock_gettime cleanup
-Date: Wed, 19 Feb 2014 10:09:05 +0100
-Message-Id: <1392800951-2683-5-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1392800951-2683-1-git-send-email-stefani@seibold.net>
-References: <1392800951-2683-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	id S1753223AbaBSJL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 04:11:57 -0500
+Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:53127
+	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752758AbaBSJLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 04:11:51 -0500
+X-Originating-IP: [81.99.114.138]
+X-Spam: 0
+X-Authority: v=2.1 cv=Qfbov6rv c=1 sm=1 tr=0 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
+ a=rTb9Q+mClrhkGV9Ah9iRIA==:17 a=N1CowNylAAAA:8 a=IkcTkHD0fZMA:10
+ a=o3pxq7NaF3wA:10 a=yxE7Le_3lCs2UivTqn4A:9 a=QEXdDO2ut3YA:10
+Message-ID: <1392801107.15829.36.camel@artifact>
+Subject: Re: pci-3.14 resource alloc
+From: Steven Newbury <steve@snewbury.org.uk>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 19 Feb 2014 09:11:47 +0000
+In-Reply-To: <7133100.UJBc8oSLiz@vostro.rjw.lan>
+References: <1390773698.3450.12.camel@artifact>
+	 <1392718107.15829.12.camel@artifact>
+	 <CAE9FiQXUhvG2Jub3sbBxyCERVbt-L22+O+mcZ_HWEVQ_QaRawA@mail.gmail.com>
+	 <7133100.UJBc8oSLiz@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a small code cleanup for the __vdso_clock_gettime() function.
+On Tue, 2014-02-18 at 23:29 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, February 18, 2014 10:52:54 AM Yinghai Lu wrote:
+> > On Tue, Feb 18, 2014 at 2:08 AM, Steven Newbury <steve@snewbury.org.uk> wrote:
+> > >> >
+> > >> > There's no pci bridge/bus hotplug though. Docking doesn't reveal the
+> > >> > pci-e->pci bridge or the (radeon) devices on the other side.
+> > >>
+> > >> oh, no. could be other regression in linus tree or pci/next.
+> > >>
+> > >
+> > > Previously I needed the busn work to get it working, this was included
+> > > in the resource-alloc branch.  It never worked on mainline, the bridge
+> > > used to show up but never get scanned.  Now it's not showing up at all
+> > > on hotplug.  It could be a dock driver regression.
+> > 
+> > I had the busn_res_alloc patches in the branch.
+> > 
+> > There is some changes about acpi dock driver from Rafael in recent
+> > kernels. Maybe Rafael could suggest which commit could cause problem,
+> > then you could try revert them on top of branch.
+> 
+> I kind of suspect what might have caused them, but that particular thing
+> would not be easy to revert.
+> 
+> Steven, what was the last kernel in which the bridge showed up?
+> 
+> Did you test 3.14-rc3?
+> 
+> Rafael
+> 
 
-It removes the unneeded return values from do_monotonic_coarse() and
-do_realtime_coarse() and add a fallback label for doing the kernel
-gettimeofday() system call.
+I'll try a few different kernels today and see when it last worked.  I
+hadn't updated the machine since some 3.12-rc + my local patches so I've
+no idea at the moment when it stopped working...
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/vdso/vclock_gettime.c | 27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index bbc8065..fd074dd 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -209,7 +209,7 @@ notrace static int do_monotonic(struct timespec *ts)
- 	return mode;
- }
- 
--notrace static int do_realtime_coarse(struct timespec *ts)
-+notrace static void do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -217,10 +217,9 @@ notrace static int do_realtime_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--	return 0;
- }
- 
--notrace static int do_monotonic_coarse(struct timespec *ts)
-+notrace static void do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -228,30 +227,32 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--
--	return 0;
- }
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- {
--	int ret = VCLOCK_NONE;
--
- 	switch (clock) {
- 	case CLOCK_REALTIME:
--		ret = do_realtime(ts);
-+		if (do_realtime(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_MONOTONIC:
--		ret = do_monotonic(ts);
-+		if (do_monotonic(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_REALTIME_COARSE:
--		return do_realtime_coarse(ts);
-+		do_realtime_coarse(ts);
-+		break;
- 	case CLOCK_MONOTONIC_COARSE:
--		return do_monotonic_coarse(ts);
-+		do_monotonic_coarse(ts);
-+		break;
-+	default:
-+		goto fallback;
- 	}
- 
--	if (ret == VCLOCK_NONE)
--		return vdso_fallback_gettime(clock, ts);
- 	return 0;
-+fallback:
-+	return vdso_fallback_gettime(clock, ts);
- }
- int clock_gettime(clockid_t, struct timespec *)
- 	__attribute__((weak, alias("__vdso_clock_gettime")));
--- 
-1.8.5.5
 
