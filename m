@@ -1,85 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680AbaBSRD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 12:03:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34301 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654AbaBSRD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 12:03:26 -0500
-From: Michal Hocko <mhocko@suse.cz>
-To: <linux-mm@kvack.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] mm: exclude memory less nodes from zone_reclaim
-Date: Wed, 19 Feb 2014 18:03:03 +0100
-Message-Id: <1392829383-4125-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.9.0.rc3
-In-Reply-To: <20140219082313.GB14783@dhcp22.suse.cz>
-References: <20140219082313.GB14783@dhcp22.suse.cz>
+	id S1754690AbaBSREe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 12:04:34 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55454 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754189AbaBSREd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 12:04:33 -0500
+Date: Wed, 19 Feb 2014 17:00:20 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "b.brezillon@overkiz.com" <b.brezillon@overkiz.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv2 1/8] ARM: at91: Add at91sam9rl DT SoC support
+Message-ID: <20140219170020.GA25079@e106331-lin.cambridge.arm.com>
+References: <1392823951-26053-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1392823951-26053-2-git-send-email-alexandre.belloni@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392823951-26053-2-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had a report about strange OOM killer strikes on a PPC machine
-although there was a lot of swap free and a tons of anonymous memory
-which could be swapped out. In the end it turned out that the OOM was
-a side effect of zone reclaim which wasn't doesn't unmap and swapp out
-and so the system was pushed to the OOM. Although this sounds like a bug
-somewhere in the kswapd vs. zone reclaim vs. direct reclaim interaction
-numactl on the said hardware suggests that the zone reclaim should
-have been set in the first place:
-node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
-node 0 size: 0 MB
-node 0 free: 0 MB
-node 2 cpus:
-node 2 size: 7168 MB
-node 2 free: 6019 MB
-node distances:
-node   0   2
-0:  10  40
-2:  40  10
-
-So all the CPUs are associated with Node0 which doesn't have any memory
-while Node2 contains all the available memory. Node distances cause an
-automatic zone_reclaim_mode enabling.
-
-Zone reclaim is intended to keep the allocations local but this doesn't
-make any sense on the memory less nodes. So let's exlcude such nodes
-for init_zone_allows_reclaim which evaluates zone reclaim behavior and
-suitable reclaim_nodes.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
-I haven't got to testing this so I am sending this as an RFC for now.
-But does this look reasonable?
-
- mm/page_alloc.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 3e953f07edb0..4a44bdc7a8cf 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1855,7 +1855,7 @@ static void __paginginit init_zone_allows_reclaim(int nid)
- {
- 	int i;
+On Wed, Feb 19, 2014 at 03:32:24PM +0000, Alexandre Belloni wrote:
+> This adds preliminary DT support for the at91sam9rl.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/at91sam9rl.dtsi | 628 ++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-at91/at91sam9rl.c   |  16 +
+>  2 files changed, 644 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/at91sam9rl.dtsi
  
--	for_each_online_node(i)
-+	for_each_node_state(i, N_HIGH_MEMORY)
- 		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
- 			node_set(i, NODE_DATA(nid)->reclaim_nodes);
- 		else
-@@ -4901,7 +4901,8 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
- 
- 	pgdat->node_id = nid;
- 	pgdat->node_start_pfn = node_start_pfn;
--	init_zone_allows_reclaim(nid);
-+	if (node_state(nid, N_HIGH_MEMORY))
-+		init_zone_allows_reclaim(nid);
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
- #endif
--- 
-1.9.0.rc3
+[...]
 
+> +                       tcb0: timer@fffa0000 {
+> +                               compatible = "atmel,at91rm9200-tcb";
+> +                               reg = <0xfffa0000 0x100>;
+> +                               interrupts = <16 IRQ_TYPE_LEVEL_HIGH 0
+> +                                             17 IRQ_TYPE_LEVEL_HIGH 0
+> +                                             18 IRQ_TYPE_LEVEL_HIGH 0>;
+> +                       };
+
+Nit: please bracket list entries individually. Also for other list
+properties like reg and (*-)gpio(s).
+
+[...]
+
+> +                       adc0: adc@fffd0000 {
+> +                               compatible = "atmel,at91sam9260-adc";
+> +                               reg = <0xfffd0000 0x100>;
+> +                               interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
+> +                               atmel,adc-use-external-triggers;
+> +                               atmel,adc-channels-used = <0xf>;
+> +                               atmel,adc-vref = <3300>;
+> +                               atmel,adc-num-channels = <4>;
+> +                               atmel,adc-startup-time = <15>;
+> +                               atmel,adc-channel-base = <0x30>;
+> +                               atmel,adc-drdy-mask = <0x10000>;
+> +                               atmel,adc-status-register = <0x1c>;
+> +                               atmel,adc-trigger-register = <0x04>;
+> +                               atmel,adc-res = <8 10>;
+> +                               atmel,adc-res-names = "lowres", "highres";
+> +                               atmel,adc-use-res = "highres";
+> +
+> +                               trigger@0 {
+> +                                       trigger-name = "timer-counter-0";
+> +                                       trigger-value = <0x1>;
+> +                               };
+
+A unit-address should go with a reg value. Either this needs a reg and
+the parent node needs #address-cells and #size-cells, or the
+unit-address should go, and the names made unique through other means.
+
+[...]
+
+> +                       pinctrl@fffff400 {
+> +                               #address-cells = <1>;
+> +                               #size-cells = <1>;
+> +                               compatible = "atmel,at91rm9200-pinctrl", "simple-bus";
+
+NAK. Either this is a atmel,at91rm9200-pinctrl node or a simple-bus. Not
+both; that doesn't make any sense.
+
+> diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+> index 3651517abedf..d6ee8bb47213 100644
+> --- a/arch/arm/mach-at91/at91sam9rl.c
+> +++ b/arch/arm/mach-at91/at91sam9rl.c
+> @@ -196,6 +196,22 @@ static struct clk_lookup periph_clocks_lookups[] = {
+>         CLKDEV_CON_ID("pioB", &pioB_clk),
+>         CLKDEV_CON_ID("pioC", &pioC_clk),
+>         CLKDEV_CON_ID("pioD", &pioD_clk),
+> +       /* more lookup table for DT entries */
+> +       CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
+> +       CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
+> +       CLKDEV_CON_DEV_ID("usart", "ffffb400.serial", &usart1_clk),
+> +       CLKDEV_CON_DEV_ID("usart", "ffffb800.serial", &usart2_clk),
+> +       CLKDEV_CON_DEV_ID("usart", "ffffbc00.serial", &usart3_clk),
+> +       CLKDEV_CON_DEV_ID("t0_clk", "fffa0000.timer", &tc0_clk),
+> +       CLKDEV_CON_DEV_ID("t1_clk", "fffa0000.timer", &tc1_clk),
+> +       CLKDEV_CON_DEV_ID("t2_clk", "fffa0000.timer", &tc2_clk),
+> +       CLKDEV_CON_DEV_ID("mci_clk", "fffa4000.mmc", &mmc_clk),
+> +       CLKDEV_CON_DEV_ID(NULL, "fffa8000.i2c", &twi0_clk),
+> +       CLKDEV_CON_DEV_ID(NULL, "fffac000.i2c", &twi1_clk),
+> +       CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioA_clk),
+> +       CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioB_clk),
+> +       CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioC_clk),
+> +       CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioD_clk),
+
+Why can't these clocks be described in the DT?
+
+Cheers,
+Mark.
