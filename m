@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432AbaBSK2D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 05:28:03 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:53697 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090AbaBSK2A (ORCPT
+	id S1751982AbaBSKcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 05:32:33 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33810 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaBSKcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 05:28:00 -0500
-Message-ID: <53048736.7020106@linaro.org>
-Date: Wed, 19 Feb 2014 11:28:06 +0100
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+	Wed, 19 Feb 2014 05:32:31 -0500
+Message-ID: <53048849.3000601@gmail.com>
+Date: Wed, 19 Feb 2014 11:32:41 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ACPI, PCI, ISA: Call ISA-specific code only for architectures
- which support ISA.
-References: <1392037211-29349-1-git-send-email-tomasz.nowicki@linaro.org> <1463162.p1Ukb4737y@vostro.rjw.lan>
-In-Reply-To: <1463162.p1Ukb4737y@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] sched/deadline: Fix bad accounting of nr_running
+References: <20140214235946.60a89b65@gandalf.local.home> <53022F2D.8040301@gmail.com> <20140218215012.209059c0@gandalf.local.home> <20140219084618.GF27965@twins.programming.kicks-ass.net>
+In-Reply-To: <20140219084618.GF27965@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/19/2014 09:46 AM, Peter Zijlstra wrote:
+> On Tue, Feb 18, 2014 at 09:50:12PM -0500, Steven Rostedt wrote:
+>>  
+>>> Rationale for this odd behavior is that, when a task is throttled, it
+>>> is removed only from the dl_rq, but we keep it on_rq (as this is not
+>>> a "full dequeue", that is the task is not actually sleeping). But, it
+>>> is also true that, while throttled a task behaves like it is sleeping
+>>> (e.g., its timer will fire on a new CPU if the old one is dead). So,
+>>> Steven's fix sounds also semantically correct.
+>>
+>> Actually, it seems that I was hitting it again, but this time getting a
+>> negative number. OK, after looking at the code a bit more, I think we
+>> should update the runqueue nr_running only when the task is officially
+>> enqueued and dequeued, and all accounting within, will not touch that
+>> number.
 
+This is a different way to get the same result (mildly tested on my box):
 
-On 15.02.2014 02:05, Rafael J. Wysocki wrote:
-> On Monday, February 10, 2014 02:00:10 PM Tomasz Nowicki wrote:
->> This commit enables ISA-specific code if and only if CONFIG_{E}ISA is set
->> in the kernel configuration so that we do not have to maintain
->> acpi_isa_irq_to_gsi() function for architectures which do not support ISA.
->>
->> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
->> ---
->>   drivers/acpi/pci_irq.c |    8 ++++----
->>   1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
->> index 41c5e1b..b0e31b6 100644
->> --- a/drivers/acpi/pci_irq.c
->> +++ b/drivers/acpi/pci_irq.c
->> @@ -418,6 +418,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
->>   	 * driver reported one, then use it. Exit in any case.
->>   	 */
->>   	if (gsi < 0) {
->> +#if IS_ENABLED(CONFIG_ISA) || IS_ENABLED(CONFIG_EISA)
->
-> Can you please move the code in question into a separate function and make
-> that function depend on the above (with an empty stub for when they are not
-> enabled)?
-Thanks for suggestion, I will resend as next version.
->
->>   		u32 dev_gsi;
->>   		/* Interrupt Line values above 0xF are forbidden */
->>   		if (dev->irq > 0 && (dev->irq <= 0xF) &&
->> @@ -427,10 +428,9 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
->>   			acpi_register_gsi(&dev->dev, dev_gsi,
->>   					  ACPI_LEVEL_SENSITIVE,
->>   					  ACPI_ACTIVE_LOW);
->> -		} else {
->> -			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
->> -				 pin_name(pin));
->> -		}
->> +		} else
->> +#endif
->> +		dev_warn(&dev->dev, "PCI INT %c: no GSI\n", pin_name(pin));
->>
->>   		return 0;
->>   	}
->>
->
+---
+ kernel/sched/deadline.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 0dd5e09..675dad3 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -837,7 +837,8 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+        if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
+                enqueue_pushable_dl_task(rq, p);
+
+-       inc_nr_running(rq);
++       if (!(flags & ENQUEUE_REPLENISH))
++               inc_nr_running(rq);
+ }
+
+ static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+--
+
+We touch nr_running only when we don't enqueue back as a consequence
+of a replenishment.
+
+> 
+> But if the task is throttled it should still very much decrement the
+> number. There's places that very much rely on nr_running be exactly the
+> number of runnable tasks.
+> 
+
+This is a different thing, and V2 seemed to implement this behavior
+(that's why I said it looked semantically correct).
+
+Thanks,
+
+- Juri
