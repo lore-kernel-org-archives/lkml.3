@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaBSPUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:20:20 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49539 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbaBSPUS convert rfc822-to-8bit (ORCPT
+	id S1754055AbaBSPVZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:21:25 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:39115 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbaBSPVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:20:18 -0500
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [GIT PULL] qcom cleanups for v3.15
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <5303F56A.9010107@codeaurora.org>
-Date: Wed, 19 Feb 2014 09:20:11 -0600
-Cc: arm@kernel.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@linaro.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <FE60A8A0-B1C4-46F2-96E8-95FE25503DAF@codeaurora.org>
-References: <alpine.DEB.2.00.1402101722170.12284@galak-ubuntu.qualcomm.com> <5303F56A.9010107@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1827)
+	Wed, 19 Feb 2014 10:21:23 -0500
+Message-ID: <5304CC49.7020000@oracle.com>
+Date: Wed, 19 Feb 2014 10:22:49 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] xen-pciback: Use pci_enable_msix_range() instead of pci_enable_msix()
+References: <1392804931-30671-10-git-send-email-agordeev@redhat.com>
+In-Reply-To: <1392804931-30671-10-git-send-email-agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/19/2014 05:15 AM, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range() and pci_enable_msix_range()
+> interfaces.
+>
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: linux-pci@vger.kernel.org
+> ---
+>   drivers/xen/xen-pciback/pciback_ops.c |   16 ++++++++++------
+>   1 files changed, 10 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
+> index 64eb0cd..f5b4c3e 100644
+> --- a/drivers/xen/xen-pciback/pciback_ops.c
+> +++ b/drivers/xen/xen-pciback/pciback_ops.c
+> @@ -213,9 +213,15 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
+>   		entries[i].vector = op->msix_entries[i].vector;
+>   	}
+>   
+> -	result = pci_enable_msix(dev, entries, op->value);
+> +	result = pci_enable_msix_range(dev, entries, op->value, op->value);
+> +	if (result < op->value) {
 
-On Feb 18, 2014, at 6:06 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-> On 02/10/14 15:23, Kumar Gala wrote:
->> 
->> Kumar Gala (6):
->>      ARM: dts: msm: split out msm8660 and msm8960 soc into dts include
->>      ARM: msm: kill off hotplug.c
->>      clocksource: qcom: Move clocksource code out of mach-msm
->>      ARM: qcom: Split Qualcomm support into legacy and multiplatform
-> 
-> Sorry to nag, but can you please address my comment on this patch?
+I think it would be better to have 'if (result != op->value)', in case 
+op->value is negative (which presumably it should never be).
 
-Which comment?  The copyright one or something else?
 
-- k
+-boris
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
+> +		if (result > 0)
+> +			pci_disable_msix(dev);
+>   
+> -	if (result == 0) {
+> +		pr_warn_ratelimited("%s: error enabling MSI-X for guest %u: err %d!\n",
+> +				    pci_name(dev), pdev->xdev->otherend_id,
+> +				    result);
+> +	} else {
+>   		for (i = 0; i < op->value; i++) {
+>   			op->msix_entries[i].entry = entries[i].entry;
+>   			if (entries[i].vector)
+> @@ -227,10 +233,8 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
+>   						pci_name(dev), i,
+>   						op->msix_entries[i].vector);
+>   		}
+> -	} else
+> -		pr_warn_ratelimited("%s: error enabling MSI-X for guest %u: err %d!\n",
+> -				    pci_name(dev), pdev->xdev->otherend_id,
+> -				    result);
+> +	}
+> +
+>   	kfree(entries);
+>   
+>   	op->value = result;
 
