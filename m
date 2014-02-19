@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577AbaBSQp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:45:57 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:58838 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021AbaBSQpy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:45:54 -0500
-Message-ID: <5304DFDB.6020202@arm.com>
-Date: Wed, 19 Feb 2014 16:46:19 +0000
-From: Sudeep Holla <Sudeep.Holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Sudeep.Holla@arm.com, Hanjun Guo <hanjun.guo@linaro.org>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
+	id S1754643AbaBSQqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:46:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754021AbaBSQqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 11:46:12 -0500
+Message-ID: <1392828325.21976.6.camel@dcbw.local>
+Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
+From: Dan Williams <dcbw@redhat.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [PATCH v4 5/5] ACPI: Replace printk with pr_* in
- tables.c
-References: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org> <1392731700-10992-6-git-send-email-hanjun.guo@linaro.org> <5304DCA2.5080906@arm.com> <2341500.Z47JjkFCMP@vostro.rjw.lan>
-In-Reply-To: <2341500.Z47JjkFCMP@vostro.rjw.lan>
-X-OriginalArrivalTime: 19 Feb 2014 16:45:54.0993 (UTC) FILETIME=[0E919210:01CF2D92]
-X-MC-Unique: 114021916455202101
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Date: Wed, 19 Feb 2014 10:45:25 -0600
+In-Reply-To: <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com>
+	 <1392668638.21106.5.camel@dcbw.local>
+	 <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/02/14 16:49, Rafael J. Wysocki wrote:
-> On Wednesday, February 19, 2014 04:32:34 PM Sudeep Holla wrote:
->> On 18/02/14 13:55, Hanjun Guo wrote:
->>> This patch just do some clean up to replace printk with pr_*,
->>> no functional change.
->>>
->> Any particular reason for choosing just this file in this series ?
->> It seems but off-topic in this series. The printk format is same in almost all
->> other acpi files and it's better to change all or none for consistency.
+On Tue, 2014-02-18 at 13:19 -0800, Luis R. Rodriguez wrote:
+> On Mon, Feb 17, 2014 at 12:23 PM, Dan Williams <dcbw@redhat.com> wrote:
+> > On Fri, 2014-02-14 at 18:59 -0800, Luis R. Rodriguez wrote:
+> >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> >>
+> >> Some interfaces do not need to have any IPv4 or IPv6
+> >> addresses, so enable an option to specify this. One
+> >> example where this is observed are virtualization
+> >> backend interfaces which just use the net_device
+> >> constructs to help with their respective frontends.
+> >>
+> >> This should optimize boot time and complexity on
+> >> virtualization environments for each backend interface
+> >> while also avoiding triggering SLAAC and DAD, which is
+> >> simply pointless for these type of interfaces.
+> >
+> > Would it not be better/cleaner to use disable_ipv6 and then add a
+> > disable_ipv4 sysctl, then use those with that interface?
 > 
-> Well, it's fine, I can put it into a different branch in any case. :-)
-> 
->>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>> ---
->>>  drivers/acpi/tables.c |   51 +++++++++++++++++++------------------------------
->>>  1 file changed, 20 insertions(+), 31 deletions(-)
->>>
->>> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
->>> index 5837f85..97bc6df 100644
->>> --- a/drivers/acpi/tables.c
->>> +++ b/drivers/acpi/tables.c
->>> @@ -55,8 +55,7 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
->>>  		{
->>>  			struct acpi_madt_local_apic *p =
->>>  			    (struct acpi_madt_local_apic *)header;
->>> -			printk(KERN_INFO PREFIX
->>> -			       "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
->>> +			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
->>
->> You can even get rid of PREFIX by defining pr_fmt instead.
-> 
-> But this is a good point.
-> 
->> If the intention is to move to pr_* format it's better to have this as separate
->> patch and convert all of them.
-> 
-> Well, not really.  One file at a time is OK too.
-> 
-No what I meant was to convert all for consistency, not in a single patch.
-As I was playing with regex for few minutes, with few patterns was able to fix
-most(not all) of them. It even compiles :) for x86. But turns out to be a big
-churn :( [43 files changed, 253 insertions(+), 329 deletions(-)]
+> Sure, but note that the both disable_ipv6 and accept_dada sysctl
+> parameters are global. ipv4 and ipv6 interfaces are created upon
+> NETDEVICE_REGISTER, which will get triggered when a driver calls
+> register_netdev(). The goal of this patch was to enable an early
+> optimization for drivers that have no need ever for ipv4 or ipv6
+> interfaces.
 
-Regards,
-Sudeep
+Each interface gets override sysctls too though, eg:
 
+/proc/sys/net/ipv6/conf/enp0s25/disable_ipv6
+
+which is the one I meant; you're obviously right that the global ones
+aren't what you want here.  But the specific ones should be suitable?
+If you set that on a per-interface basis, then you'll get EPERM or
+something whenever you try to add IPv6 addresses or do IPv6 routing.
+
+> Zoltan has noted though some use cases of IPv4 or IPv6 addresses on
+> backends though, as such this is no longer applicable as a
+> requirement. The ipv4 sysctl however still seems like a reasonable
+> approach to enable optimizations of the network in topologies where
+> its known we won't need them but -- we'd need to consider a much more
+> granular solution, not just global as it is now for disable_ipv6, and
+> we'd also have to figure out a clean way to do this to not incur the
+> cost of early address interface addition upon register_netdev().
+> 
+> Given that we have a use case for ipv4 and ipv6 addresses on
+> xen-netback we no longer have an immediate use case for such early
+> optimization primitives though, so I'll drop this.
+> 
+> > The IFF_SKIP_IP seems to duplicate at least part of what disable_ipv6 is
+> > already doing.
+> 
+> disable_ipv6 is global, the goal was to make this granular and skip
+> the cost upon early boot, but its been clarified we don't need this.
+
+Like Stephen says, you need to make sure you set them before IFF_UP, but
+beyond that, wouldn't the interface-specific sysctls work?
+
+Dan
 
