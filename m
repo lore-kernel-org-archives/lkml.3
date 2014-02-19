@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaBSAbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 19:31:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64553 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752357AbaBSAbI (ORCPT
+	id S1752585AbaBSAbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 19:31:55 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:60526 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478AbaBSAby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 19:31:08 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "minyard@acm.org" <minyard@acm.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
-Date: Wed, 19 Feb 2014 01:45:58 +0100
-Message-ID: <2013495.SnSbjHoB2r@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1392765901.3488.4.camel@x230.lan>
-References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com> <1920764.8Poj9R8nZQ@vostro.rjw.lan> <1392765901.3488.4.camel@x230.lan>
+	Tue, 18 Feb 2014 19:31:54 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140218170730.GA32227@kroah.com>
+References: <1392722606-965-1-git-send-email-sj38.park@gmail.com>
+ <1392722606-965-2-git-send-email-sj38.park@gmail.com> <20140218170730.GA32227@kroah.com>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Wed, 19 Feb 2014 09:31:23 +0900
+Message-ID: <CAEjAshp__=_+zN-PoLE=LxOAvtmZ=czOMGXk6XO+03vPnEJ92Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] staging: android: binder: use stack for locally used variable
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 18, 2014 11:25:02 PM Matthew Garrett wrote:
-> On Wed, 2014-02-19 at 00:35 +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, February 18, 2014 11:15:08 PM Matthew Garrett wrote:
-> > > For example, if you load the ACPI power meter driver before you've
-> > > installed the ACPI IPMI driver you'll typically get failures (most
-> > > vendors implement it via IPMI).
-> > 
-> > Well, any specific machine from any specific vendor?
-> 
-> The Dell R720 and HP DL385 both seem to have this configuration. I
-> believe some Ciscos do, too.
+Hello,
 
-I've queued this up for 3.15 (with the above info added to the changelog).
+On Wed, Feb 19, 2014 at 2:07 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Feb 18, 2014 at 08:23:26PM +0900, SeongJae Park wrote:
+>> The variable `binder_debugfs_dir_entry_root` is declared as static
+>> global variable although it is accessed from init function only. Declare
+>> it as init function's local variable because it would be better to read
+>> and memory efficiency.
+>
+> Are you sure?  You now just lost that pointer and it can never be freed.
 
-Thanks!
+Oops, you are right.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>
+> Not that it ever was, but before it was obvious as to what would need to
+> be done if the module could ever be made to be unloaded...
+>
+> As it is, this code is fine, I can't take this patch.
+
+I agree. Thank you.
+
+>
+> greg k-h
