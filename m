@@ -1,166 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859AbaBSOvD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:51:03 -0500
-Received: from fieldses.org ([174.143.236.118]:36991 "EHLO fieldses.org"
+	id S1753888AbaBSOxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:53:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59826 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132AbaBSOvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:51:01 -0500
-Date: Wed, 19 Feb 2014 09:50:43 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>, greg@kroah.com,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd
- superblock's one
-Message-ID: <20140219145043.GC8401@fieldses.org>
-References: <20131230142339.16166.28243.stgit@localhost.localdomain>
- <20140103222226.GD5164@fieldses.org>
- <52FEC818.7030604@huawei.com>
- <20140217221900.GA8401@fieldses.org>
- <53037A03.4020603@parallels.com>
- <20140218154406.GD4319@fieldses.org>
- <530486D9.7010502@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <530486D9.7010502@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753562AbaBSOxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 09:53:20 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH -mm] memcg: reparent only LRUs during mem_cgroup_css_offline
+Date: Wed, 19 Feb 2014 15:51:49 +0100
+Message-Id: <1392821509-976-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.9.0.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 02:26:33PM +0400, Stanislav Kinsbursky wrote:
-> 18.02.2014 19:44, J. Bruce Fields пишет:
-> >On Tue, Feb 18, 2014 at 07:19:31PM +0400, Stanislav Kinsbursky wrote:
-> >>18.02.2014 02:19, J. Bruce Fields пишет:
-> >>>On Sat, Feb 15, 2014 at 09:51:20AM +0800, Weng Meiling wrote:
-> >>>>Hi Bruce,
-> >>>>
-> >>>>The upstream has merged your git tree for-3.14, but there is no this patch?
-> >>>>Do you forget this patch?
-> >>>
-> >>>Apologies, I'm not sure what happened.
-> >>>
-> >>>Looking back at it....  The patch causes all my pynfs reboot recovery
-> >>>tests to fail.  They're just doing a "systemctl restart
-> >>>nfs-server.service", and "systemctl status nfs-server.service" shows in
-> >>>part
-> >>>
-> >>>	ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS $RPCNFSDCOUNT (code=exited, status=1/FAILURE)
-> >>>
-> >>>So the patch is causing rpc.nfsd to fail?  No network namespaces should
-> >>>be involved.
-> >>>
-> >>>I haven't investigated any further.
-> >>>
-> >>
-> >>Hi Bruce,
-> >>Are you sure, that exactly this patch broke your pynfs tests?
-> >>BTW, systemd manipulates namespaces. Maybe the patch revealed some pynfs internal bugs?
-> >>What do you think?
-> >
-> >It's really just "systemctl restart nfs-server.service" that the patch
-> >breaks, pynfs isn't involved much.
-> >
-> >The patch I'm actually using follows, but I believe the only difference
-> >is in the printk message?
-> >
-> 
-> Yep, looks true.
-> That's strange: "systemctl restart nfs-server.service" works for me on Fedora 18 with kernel, based on your repo.
+css_offline callback exported by the cgroup core is not intended to get
+rid of all the charges but rather to get rid of cached charges for the
+soon destruction. For the memory controller we have 2 different types of
+"cached" charges which prevent from the memcg destruction (because they
+pin memcg by css reference). Swapped out pages (when swap accounting is
+enabled) and kmem charges. None of them are dealt with in the current
+code.
 
-OK, I'll take a closer look and let you know what I find.
+What we do instead is that we are reducing res counter charges (reduced
+by kmem charges) to 0. And this hard down-to-0 requirement has led to
+several issues in the past when the css_offline loops without any way
+out e.g. memcg: reparent charges of children before processing parent.
 
---b.
+The important thing is that we actually do not have to drop all the
+charges. Instead we want to reduce LRU pages (which do not pin memcg) as
+much as possible because they are not reachable by memcg iterators after
+css_offline code returns, thus they are not reclaimable anymore.
 
-> 
-> >--b
-> >
-> >commit e1f2922c12cb59baba0f2c7726bee992a0861310
-> >Author: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> >Date:   Mon Dec 30 17:23:59 2013 +0300
-> >
-> >     nfsd: check passed socket's net matches the NFSd superblock's
-> >
-> >     The file descriptor written to the nfsd/portlist file could be for a
-> >     socket in a different network namespace from the network namespace that
-> >     the nfsd filesystem was mounted in, and this can cause a crash.
-> >
-> >     For example: "ip netns exec" creates a new network and mount namespace,
-> >     which duplicates the nfsd mount point which was created in the init_net
-> >     context.  Thus NFS server stop in the nested network context leads to
-> >     RPCBIND client destruction in init_net.  Then, on nfsd start in the
-> >     nested network context, the rpc.nfsd process creates a socket in the
-> >     nested net and passes it into "write_ports", which leads to RPCBIND
-> >     socket creation in init_net context for the same reason (the nfsd mount
-> >     point was created in the init_net context). An attempt to register
-> >     passed socket in nested net leads to panic, because no RPCBIND client is
-> >     present in the nested network namespace.
-> >
-> >     This patch adds a check that the passed the socket's net matches the
-> >     nfsd superblock's net, and returns -EINVAL error to user space if not.
-> >
-> >     Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
-> >     Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> >     Cc: stable@vger.kernel.org
-> >     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> >
-> >diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> >index 7f55517..1331766 100644
-> >--- a/fs/nfsd/nfsctl.c
-> >+++ b/fs/nfsd/nfsctl.c
-> >@@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
-> >  	if (err != 0 || fd < 0)
-> >  		return -EINVAL;
-> >
-> >+	if (svc_alien_sock(net, fd)) {
-> >+		printk(KERN_ERR "%s: socket net is different from NFSd's\n", __func__);
-> >+		return -EINVAL;
-> >+	}
-> >+
-> >  	err = nfsd_create_serv(net);
-> >  	if (err != 0)
-> >  		return err;
-> >diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
-> >index 62fd1b7..947009e 100644
-> >--- a/include/linux/sunrpc/svcsock.h
-> >+++ b/include/linux/sunrpc/svcsock.h
-> >@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
-> >  int		svc_send(struct svc_rqst *);
-> >  void		svc_drop(struct svc_rqst *);
-> >  void		svc_sock_update_bufs(struct svc_serv *serv);
-> >+bool		svc_alien_sock(struct net *net, int fd);
-> >  int		svc_addsock(struct svc_serv *serv, const int fd,
-> >  					char *name_return, const size_t len);
-> >  void		svc_init_xprt_sock(void);
-> >diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-> >index b6e59f0..3ba5b87 100644
-> >--- a/net/sunrpc/svcsock.c
-> >+++ b/net/sunrpc/svcsock.c
-> >@@ -1397,6 +1397,17 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
-> >  	return svsk;
-> >  }
-> >
-> >+bool svc_alien_sock(struct net *net, int fd)
-> >+{
-> >+	int err;
-> >+	struct socket *sock = sockfd_lookup(fd, &err);
-> >+
-> >+	if (sock && (sock_net(sock->sk) != net))
-> >+		return true;
-> >+	return false;
-> >+}
-> >+EXPORT_SYMBOL_GPL(svc_alien_sock);
-> >+
-> >  /**
-> >   * svc_addsock - add a listener socket to an RPC service
-> >   * @serv: pointer to RPC service to which to add a new listener
-> >
-> 
-> 
-> -- 
-> Best regards,
-> Stanislav Kinsbursky
+This patch simply extracts LRU reparenting into mem_cgroup_reparent_lrus
+which doesn't care about charges and it is called from css_offline
+callback and the original mem_cgroup_reparent_charges stays in
+css_offline callback. The original workaround for the endless loop is no
+longer necessary because child vs. parent ordering is no longer and
+issue. The only requirement is that the parent has be still online at
+the time of css_offline.
+mem_cgroup_reparent_charges also doesn't have to exclude kmem charges
+because there shouldn't be any at the css_free stage. Let's add BUG_ON
+to make sure we haven't screwed anything.
+
+mem_cgroup_reparent_lrus is racy but this is tolerable as the inflight
+pages which will eventually get back to the memcg's LRU shouldn't
+constitute a lot of memory.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+This is on top of memcg-reparent-charges-of-children-before-processing-parent.patch
+and I am not suggesting to replace it (I think Filipe's patch is more
+appropriate for the stable tree).
+Nevertheless I find this approach slightly better because it makes
+semantical difference between offline and free more obvious and we can
+build on top of it later (when offlining is no longer synchronized by
+cgroup_mutex). But if you think that it is not worth touching this area
+until we find a good way to reparent swapped out and kmem pages then I
+am OK with it and stay with Filipe's patch.
+
+ mm/memcontrol.c | 102 ++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 55 insertions(+), 47 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 45c2a50954ac..9f8e54333b60 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3870,6 +3870,7 @@ out:
+  * @page: the page to move
+  * @pc: page_cgroup of the page
+  * @child: page's cgroup
++ * @parent: parent where to reparent
+  *
+  * move charges to its parent or the root cgroup if the group has no
+  * parent (aka use_hierarchy==0).
+@@ -3888,9 +3889,9 @@ out:
+  */
+ static int mem_cgroup_move_parent(struct page *page,
+ 				  struct page_cgroup *pc,
+-				  struct mem_cgroup *child)
++				  struct mem_cgroup *child,
++				  struct mem_cgroup *parent)
+ {
+-	struct mem_cgroup *parent;
+ 	unsigned int nr_pages;
+ 	unsigned long uninitialized_var(flags);
+ 	int ret;
+@@ -3905,13 +3906,6 @@ static int mem_cgroup_move_parent(struct page *page,
+ 
+ 	nr_pages = hpage_nr_pages(page);
+ 
+-	parent = parent_mem_cgroup(child);
+-	/*
+-	 * If no parent, move charges to root cgroup.
+-	 */
+-	if (!parent)
+-		parent = root_mem_cgroup;
+-
+ 	if (nr_pages > 1) {
+ 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+ 		flags = compound_lock_irqsave(page);
+@@ -4867,6 +4861,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ /**
+  * mem_cgroup_force_empty_list - clears LRU of a group
+  * @memcg: group to clear
++ * @parent: parent group where to reparent
+  * @node: NUMA node
+  * @zid: zone id
+  * @lru: lru to to clear
+@@ -4876,6 +4871,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+  * group.
+  */
+ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
++				struct mem_cgroup *parent,
+ 				int node, int zid, enum lru_list lru)
+ {
+ 	struct lruvec *lruvec;
+@@ -4909,7 +4905,7 @@ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 
+ 		pc = lookup_page_cgroup(page);
+ 
+-		if (mem_cgroup_move_parent(page, pc, memcg)) {
++		if (mem_cgroup_move_parent(page, pc, memcg, parent)) {
+ 			/* found lock contention or "pc" is obsolete. */
+ 			busy = page;
+ 			cond_resched();
+@@ -4918,6 +4914,28 @@ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 	} while (!list_empty(list));
+ }
+ 
++static void mem_cgroup_reparent_lrus(struct mem_cgroup *memcg,
++		struct mem_cgroup *parent)
++{
++	int node, zid;
++
++	/* This is for making all *used* pages to be on LRU. */
++	lru_add_drain_all();
++	drain_all_stock_sync(memcg);
++	mem_cgroup_start_move(memcg);
++	for_each_node_state(node, N_MEMORY) {
++		for (zid = 0; zid < MAX_NR_ZONES; zid++) {
++			enum lru_list lru;
++			for_each_lru(lru) {
++				mem_cgroup_force_empty_list(memcg, parent,
++						node, zid, lru);
++			}
++		}
++	}
++	mem_cgroup_end_move(memcg);
++	memcg_oom_recover(memcg);
++}
++
+ /*
+  * make mem_cgroup's charge to be 0 if there is no task by moving
+  * all the charges and pages to the parent.
+@@ -4927,42 +4945,25 @@ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+  */
+ static void mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+ {
+-	int node, zid;
+-	u64 usage;
++	struct mem_cgroup *parent;
++
++	/*
++	 * All the kmem charges have to be gone by now or we have
++	 * a css ref leak from the kmem code.
++	 */
++	BUG_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE));
++
++	parent = parent_mem_cgroup(memcg);
++	/*
++	 * If no parent, move charges to root cgroup.
++	 */
++	if (!parent)
++		parent = root_mem_cgroup;
+ 
+ 	do {
+-		/* This is for making all *used* pages to be on LRU. */
+-		lru_add_drain_all();
+-		drain_all_stock_sync(memcg);
+-		mem_cgroup_start_move(memcg);
+-		for_each_node_state(node, N_MEMORY) {
+-			for (zid = 0; zid < MAX_NR_ZONES; zid++) {
+-				enum lru_list lru;
+-				for_each_lru(lru) {
+-					mem_cgroup_force_empty_list(memcg,
+-							node, zid, lru);
+-				}
+-			}
+-		}
+-		mem_cgroup_end_move(memcg);
+-		memcg_oom_recover(memcg);
++		mem_cgroup_reparent_lrus(memcg, parent);
+ 		cond_resched();
+-
+-		/*
+-		 * Kernel memory may not necessarily be trackable to a specific
+-		 * process. So they are not migrated, and therefore we can't
+-		 * expect their value to drop to 0 here.
+-		 * Having res filled up with kmem only is enough.
+-		 *
+-		 * This is a safety check because mem_cgroup_force_empty_list
+-		 * could have raced with mem_cgroup_replace_page_cache callers
+-		 * so the lru seemed empty but the page could have been added
+-		 * right after the check. RES_USAGE should be safe as we always
+-		 * charge before adding to the LRU.
+-		 */
+-		usage = res_counter_read_u64(&memcg->res, RES_USAGE) -
+-			res_counter_read_u64(&memcg->kmem, RES_USAGE);
+-	} while (usage > 0);
++	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0);
+ }
+ 
+ static inline bool memcg_has_children(struct mem_cgroup *memcg)
+@@ -6595,8 +6596,8 @@ static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
+ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
++	struct mem_cgroup *parent = memcg;
+ 	struct mem_cgroup_event *event, *tmp;
+-	struct cgroup_subsys_state *iter;
+ 
+ 	/*
+ 	 * Unregister events and notify userspace.
+@@ -6613,13 +6614,20 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 	kmem_cgroup_css_offline(memcg);
+ 
+ 	mem_cgroup_invalidate_reclaim_iterators(memcg);
+-
+ 	/*
+ 	 * This requires that offlining is serialized.  Right now that is
+ 	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
+ 	 */
+-	css_for_each_descendant_post(iter, css)
+-		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
++	do {
++		parent = parent_mem_cgroup(parent);
++		/*
++		 * If no parent, move charges to root cgroup.
++		 */
++		if (!parent)
++			parent = root_mem_cgroup;
++	} while (!css_tryget(&parent->css));
++	mem_cgroup_reparent_lrus(memcg, parent);
++	css_put(&parent->css);
+ 
+ 	mem_cgroup_destroy_all_caches(memcg);
+ 	vmpressure_cleanup(&memcg->vmpressure);
+-- 
+1.9.0.rc3
+
