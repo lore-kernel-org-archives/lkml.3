@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331AbaBUPee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:34:34 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42568 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932278AbaBUPe3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:34:29 -0500
-Date: Fri, 21 Feb 2014 10:34:28 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Alistair Popple <alistair@popple.id.au>
-cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 3/7] IBM Akebono: Add support to the OHCI platform driver
- for PPC476GTR
-In-Reply-To: <1392964293-13687-4-git-send-email-alistair@popple.id.au>
-Message-ID: <Pine.LNX.4.44L0.1402211032080.1273-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932355AbaBUPeh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:34:37 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:33317 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932317AbaBUPef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 10:34:35 -0500
+X-Mailbox-Line: From 41aa7354a6883f31afa60c21c2e14ecbb3bbb7e9 Mon Sep 17 00:00:00 2001
+Message-Id: <41aa7354a6883f31afa60c21c2e14ecbb3bbb7e9.1392995566.git.moinejf@free.fr>
+In-Reply-To: <cover.1392995566.git.moinejf@free.fr>
+References: <cover.1392995566.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Wed, 19 Feb 2014 19:07:41 +0100
+Subject: [PATCH 2/4] ASoC: simple-card: dynamically allocate the DAI link
+ array
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel@vger.kernel.org, Xiubo Li <Li.Xiubo@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Feb 2014, Alistair Popple wrote:
+The DAI link array is hard-coded as a single CPU / CODEC DAIs link.
 
-> The IBM Akebono board uses the PPC476GTR SoC which has a OHCI
-> compliant USB host interface. This patch adds support for it to the
-> OHCI platform driver.
-> 
-> As we use device tree to pass platform specific data instead of
-> platform data we remove the check for platform data and instead
-> provide reasonable defaults if no platform data is present. This is
-> similar to what is currently done in ehci-platform.c.
-> 
-> Signed-off-by: Alistair Popple <alistair@popple.id.au>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+This patch allocates this array with the card definition and facilitates
+handling more links.
 
-As Arnd pointed out, this patch is out of date.  See
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+---
+ sound/soc/generic/simple-card.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/drivers/usb/host/ohci-platform.c?h=usb-next&id=ca52a17ba975dbf47e87c9bc63086aca0cf92806
-
-and
-
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/drivers/usb/host/ohci-platform.c?h=usb-next&id=ce149c30b9f89d0c9addd1d71ccdb57c1051553b
-
-Alan Stern
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index 8809ab4..a75a8bb 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -20,7 +20,6 @@ struct simple_card_data {
+ 	unsigned int daifmt;
+ 	struct asoc_simple_dai cpu_dai;
+ 	struct asoc_simple_dai codec_dai;
+-	struct snd_soc_dai_link snd_link;
+ };
+ 
+ static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
+@@ -246,7 +245,9 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	int ret;
+ 
+-	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
++	priv = devm_kzalloc(dev,
++			sizeof(*priv) + sizeof(*dai_link),
++			GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+@@ -255,7 +256,7 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
+ 	 */
+ 	priv->snd_card.owner = THIS_MODULE;
+ 	priv->snd_card.dev = dev;
+-	dai_link = &priv->snd_link;
++	dai_link = (struct snd_soc_dai_link *) (priv + 1);
+ 	priv->snd_card.dai_link = dai_link;
+ 	priv->snd_card.num_links = 1;
+ 
+-- 
+1.9.0
 
