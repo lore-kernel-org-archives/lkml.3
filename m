@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992AbaBSTPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:15:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754505AbaBSTPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:15:39 -0500
-Message-ID: <1392837336.2165.51.camel@flatline.rdu.redhat.com>
-Subject: Re: [PATCH 3/5] audit: add netlink audit protocol bind to check
- capabilities on multicast join
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: netdev@oss.sgi.com, davem@davemloft.net, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, Steve Grubb <sgrubb@redhat.com>
-Date: Wed, 19 Feb 2014 14:15:36 -0500
-In-Reply-To: <2ead1dbcbb241075feafb2d88656b48761168491.1392831003.git.rgb@redhat.com>
-References: <cover.1392831003.git.rgb@redhat.com>
-	 <2ead1dbcbb241075feafb2d88656b48761168491.1392831003.git.rgb@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1755017AbaBSTRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:17:37 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33380 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034AbaBSTRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 14:17:35 -0500
+Date: Wed, 19 Feb 2014 19:17:17 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Grant Edwards <grant.b.edwards@gmail.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: Re: locking changes in tty broke low latency feature
+Message-ID: <20140219191717.486ac4d0@alan.etchedpixels.co.uk>
+In-Reply-To: <5304EC33.5040502@hurleysoftware.com>
+References: <20140218093829.GC1741@redhat.com>
+	<5303DABD.9000302@hurleysoftware.com>
+	<20140219130308.GC1851@redhat.com>
+	<le2nmd$p1$1@ger.gmane.org>
+	<5304EC33.5040502@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-19 at 13:08 -0500, Richard Guy Briggs wrote:
-> Register a netlink per-protocol bind fuction for audit to check userspace
-> process capabilities before allowing a multicast group connection.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  kernel/audit.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index b5b2f72..f2d2d61 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1050,10 +1050,20 @@ static void audit_receive(struct sk_buff  *skb)
->  	mutex_unlock(&audit_cmd_mutex);
->  }
->  
-> +/* Run custom bind function on netlink socket group connect or bind requests. */
-> +static int audit_bind(int group)
-> +{
-> +	if (!capable(CAP_AUDIT_READ))
+> How can the requirement be for both must-handle-in-minimum-time data
+> (low_latency) and the-userspace-reader-isn't-reading-fast-enough-
+> so-its-ok-to-halt-transmission ?
 
-Not a great idea to use CAP_AUDIT_READ before you define it in patch4
+Because low latency is about *turn around* time. There are plenty of
+protocols that can flow control, do flow control and want low latency
+because they are not windowed. It's not mutually exclusive by any means.
 
-> +		return -EPERM;
-> +
-> +	return 0;
-> +}
-> +
->  static int __net_init audit_net_init(struct net *net)
->  {
->  	struct netlink_kernel_cfg cfg = {
->  		.input	= audit_receive,
-> +		.bind	= audit_bind,
->  	};
->  
->  	struct audit_net *aunet = net_generic(net, audit_net_id);
+> But first I'd like some hard data on whether or not a low latency
+> mode is even necessary (at least for user-space).
 
+The easy way to simulate the annoying as crap worst cases from dumbass
+firmware downloaders and the like is to set up a link between two PCs and
+time 2000+ repetitions of
+
+send 64 bytes
+wait for a Y
+send 64 bytes
+wait for a Y
+....
+
+and the matching far end being a box running an existing kernel or a PIC
+or something doing the responses.
+
+Historically we used to lose about 20mS per cycle which over 2000 got to
+be a bit of a PITA.
+
+Low latency goes back to the days of flip buffers, bottom halves an a
+100Hz clock. There are certainly better ways to do it now if its needed.
+
+Alan
 
