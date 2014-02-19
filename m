@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaBSL54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 06:57:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54070 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaBSL5z (ORCPT
+	id S1752097AbaBSMHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 07:07:23 -0500
+Received: from www.linutronix.de ([62.245.132.108]:50251 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaBSMHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 06:57:55 -0500
-Date: Wed, 19 Feb 2014 12:57:47 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: paulus@samba.org, Ingo Molnar <mingo@redhat.com>, acme@ghostprotocols.net,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] sched: tip/master show panic while booting/rebooting
-Message-ID: <20140219115747.GJ15586@twins.programming.kicks-ass.net>
-References: <5302EBA3.10909@linux.vnet.ibm.com>
- <20140218112230.GA27965@twins.programming.kicks-ass.net>
- <5304210B.9060604@linux.vnet.ibm.com>
+	Wed, 19 Feb 2014 07:07:21 -0500
+Date: Wed, 19 Feb 2014 13:07:09 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: carl peng <carlpeng008@gmail.com>
+cc: "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, x86@kernel.org,
+        pingfank@linux.vnet.ibm.com, yoshihiro.yunomae.ez@hitachi.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: Does it need to implement irq_set_type method in the
+ ioapic_chip?
+In-Reply-To: <CAC5e1FobNkgWuvk=F=fPfZiyd-r=TFRV6Lg9BTSLsLP6i_T7JA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402191259590.4468@ionos.tec.linutronix.de>
+References: <CAC5e1FoLrHWSa_7BnRt-u451ZJOVqKhSpbyp8O_ExDbgcXtU+g@mail.gmail.com> <alpine.DEB.2.02.1402182101450.4468@ionos.tec.linutronix.de> <CAC5e1FpChdyW9xzbwsyVx147hKrV0MxwkCMyKHR4ab5-Q=DyPg@mail.gmail.com> <fe0610e4-0073-42a7-803a-590de82e47ef@email.android.com>
+ <CAC5e1FobNkgWuvk=F=fPfZiyd-r=TFRV6Lg9BTSLsLP6i_T7JA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5304210B.9060604@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 11:12:11AM +0800, Michael wang wrote:
-> On 02/18/2014 07:22 PM, Peter Zijlstra wrote:
-> > On Tue, Feb 18, 2014 at 01:12:03PM +0800, Michael wang wrote:
-> >> Hi, Folks
-> >>
-> >> Got below panic while testing tip/master on x86 box, it randomly
-> >> occur while booting or rebooting, any ideas?
-> > 
-> > The obvious pick would be the relocation of the idle_balance call, but
-> > I'm not sure how that'll end up stalling.
+On Wed, 19 Feb 2014, carl peng wrote:
+> At last, the device will be connected to AMBA bus, so the interrupt
+> pin will be connected to IOAPIC through AMBA bus. The device now
+> is in the pre-silicon verification stage.
 > 
-> I've review the code again, seems like it was caused by the same issue
-> we discussed (RT/DL enqueued issue), I found that idle_balance() will
-> return 1 in such cases:
-> 
->         /*
->          * While browsing the domains, we released the rq lock.
->          * A task could have be enqueued in the meantime
->          */
->         if (this_rq->nr_running && !pulled_task)
->                 return 1;
-> 
-> And if no more fair task to be pulled, we will do balance again and
-> again in pick_next_task_fair() until panic in NMI...
-> 
-> The solution we discussed could solve the problem I suppose, it was
-> already in progress, correct?
-> 
-> Please let me know if there are any thing I could help with ;-)
+> So my question is the same:
+> Why does APIC driver not implement the irq_set_type method?  if
 
-Great, thanks!
+Because we do not need it. All devices are properly connected and
+configured by the BIOS and bus discovery.
 
-Right, I'm waiting for Ingo to appear and commit some patches into tip.
+> implement it, will supply more free space for the device driver
+> developer(they can set the interrupttrigger mode by calling request_irq).
+
+There are 3 different mechanisms already to tell the kernel to
+configure a particular irq line: ACPI, MP Tables and SFI.
+
+That's the way x86 does its interrupt configuration and there is no
+need to provide another one.
+
+Thanks,
+
+	tglx
