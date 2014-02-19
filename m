@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109AbaBSVh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 16:37:58 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:38195 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428AbaBSVh4 (ORCPT
+	id S1753723AbaBSVjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 16:39:45 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:47010 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaBSVjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 16:37:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392845512-31333-1-git-send-email-mporter@linaro.org>
-References: <1392845512-31333-1-git-send-email-mporter@linaro.org>
-Date: Wed, 19 Feb 2014 13:37:55 -0800
-Message-ID: <CAEPRUYr8_qpL65Q0jCnLXHsZpb27DxuiF6JsZb6eRb4JOX2evg@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: dts: remove bcm11351-brt.dts
-From: Christian Daudt <bcm@fixthebug.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Tim Kryger <tim.kryger@linaro.org>, Alex Elder <elder@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 Feb 2014 16:39:44 -0500
+Date: Wed, 19 Feb 2014 16:39:42 -0500 (EST)
+Message-Id: <20140219.163942.74432949275197405.davem@davemloft.net>
+To: daeseok.youn@gmail.com
+Cc: chas@cmf.nrl.navy.mil, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] atm: ambassador: use NULL instead of 0 for pointer
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4982315.WAlBt88ElR@daeseok-laptop.cloud.net>
+References: <4982315.WAlBt88ElR@daeseok-laptop.cloud.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Feb 2014 13:39:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 1:31 PM, Matt Porter <mporter@linaro.org> wrote:
-> The BCM11351 BRT board will never see the light of day. Remove the BRT
-> dts since it is not maintainable.
->
-> Reviewed-by: Alex Elder <elder@linaro.org>
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> ---
-> Changes since v1:
->         - remove bcm11351-brt from Makefile
->
->  arch/arm/boot/dts/Makefile         |  3 +--
->  arch/arm/boot/dts/bcm11351-brt.dts | 54 --------------------------------------
->  2 files changed, 1 insertion(+), 56 deletions(-)
->  delete mode 100644 arch/arm/boot/dts/bcm11351-brt.dts
->
+From: Daeseok Youn <daeseok.youn@gmail.com>
+Date: Wed, 19 Feb 2014 14:11:15 +0900
 
-R.I.P bcm11351...
+> From 932e928d53b1e588dc17019e7f9fa7a61b8b7468 Mon Sep 17 00:00:00 2001
+> From: Daeseok Youn <daeseok.youn@gmail.com>
+> Date: Wed, 19 Feb 2014 10:35:41 +0900
+> Subject: [PATCH] atm: ambassador: use NULL instead of 0 for pointer
+> 
+> sparse says:
+> 
+> drivers/atm/ambassador.c:1928:24: warning:
+>  Using plain integer as NULL pointer
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 
-Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+Applied.
