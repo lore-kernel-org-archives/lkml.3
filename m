@@ -1,165 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaBSIyp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:54:45 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:57688 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaBSIyn (ORCPT
+	id S1753024AbaBSIzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:55:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49775 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380AbaBSIzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:54:43 -0500
-Message-ID: <5304714E.7070900@monstr.eu>
-Date: Wed, 19 Feb 2014 09:54:38 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 19 Feb 2014 03:55:35 -0500
+Date: Wed, 19 Feb 2014 09:55:12 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 1/3] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+Message-ID: <20140219085512.GI27965@twins.programming.kicks-ass.net>
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
+ <1392669684-4807-2-git-send-email-Waiman.Long@hp.com>
+ <20140218073951.GZ27965@twins.programming.kicks-ass.net>
+ <5303B6F3.9090001@hp.com>
+ <20140218213748.GT14089@laptop.programming.kicks-ass.net>
+ <530401C9.4090100@hp.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Srikanth Thokala <sthokal@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] pcie: Add Xilinx PCIe Host Bridge IP driver
-References: <1392564830-5868-1-git-send-email-sthokal@xilinx.com> <CAErSpo5FGPhgnp8Gfy-1_Lk7ckCi7U5+z5pLnPU+jScPxD5yUQ@mail.gmail.com>
-In-Reply-To: <CAErSpo5FGPhgnp8Gfy-1_Lk7ckCi7U5+z5pLnPU+jScPxD5yUQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="7O64H635cPGwegCVRuKIhjmruOOXO9D80"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530401C9.4090100@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---7O64H635cPGwegCVRuKIhjmruOOXO9D80
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 18, 2014 at 07:58:49PM -0500, Waiman Long wrote:
+> On 02/18/2014 04:37 PM, Peter Zijlstra wrote:
+> >On Tue, Feb 18, 2014 at 02:39:31PM -0500, Waiman Long wrote:
+> >>>>+	/*
+> >>>>+	 * At the head of the wait queue now
+> >>>>+	 */
+> >>>>+	while (true) {
+> >>>>+		u32 qcode;
+> >>>>+		int retval;
+> >>>>+
+> >>>>+		retval = queue_get_lock_qcode(lock,&qcode, my_qcode);
+> >>>>+		if (retval>   0)
+> >>>>+			;	/* Lock not available yet */
+> >>>>+		else if (retval<   0)
+> >>>>+			/* Lock taken, can release the node&   return */
+> >>>>+			goto release_node;
+> >>>>+		else if (qcode != my_qcode) {
+> >>>>+			/*
+> >>>>+			 * Just get the lock with other spinners waiting
+> >>>>+			 * in the queue.
+> >>>>+			 */
+> >>>>+			if (queue_spin_trylock_unfair(lock))
+> >>>>+				goto notify_next;
+> >>>Why is this an option at all?
+> >>>
+> >>>
+> >>Are you referring to the case (qcode != my_qcode)? This condition will be
+> >>true if more than one tasks have queued up.
+> >But in no case should we revert to unfair spinning or stealing. We
+> >should always respect the queueing order.
+> >
+> >If the lock tail no longer points to us, then there's further waiters
+> >and we should wait for ->next and unlock it -- after we've taken the
+> >lock.
+> >
+> 
+> A task will be in this loop when it is already the head of a queue and is
+> entitled to take the lock. The condition (qcode != my_qcode) is to decide
+> whether it should just take the lock or take the lock & clear the code
+> simultaneously. I am a bit cautious to use queue_spin_trylock_unfair() as
+> there is a possibility that a CPU may run out of the queue node and need to
+> do unfair busy spinning.
 
-On 02/18/2014 10:32 PM, Bjorn Helgaas wrote:
-> [+cc Arnd]
->=20
-> On Sun, Feb 16, 2014 at 8:33 AM, Srikanth Thokala <sthokal@xilinx.com> =
-wrote:
->> This is the driver for Xilinx AXI PCIe Host Bridge Soft IP
->>
->> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
->> ---
->> - Rebased on v3.14.0-rc2
->> ---
->>  .../devicetree/bindings/pci/xilinx-pcie.txt        |   43 +
->>  drivers/pci/host/Kconfig                           |    7 +
->>  drivers/pci/host/Makefile                          |    1 +
->>  drivers/pci/host/pci-xilinx.c                      |  985 +++++++++++=
-+++++++++
->>  4 files changed, 1036 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/pci/xilinx-pcie.=
-txt
->>  create mode 100644 drivers/pci/host/pci-xilinx.c
->>
->> diff --git a/Documentation/devicetree/bindings/pci/xilinx-pcie.txt b/D=
-ocumentation/devicetree/bindings/pci/xilinx-pcie.txt
->> new file mode 100644
->> index 0000000..66a2487
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/pci/xilinx-pcie.txt
->> @@ -0,0 +1,43 @@
->> +* Xilinx AXI PCIe Root Port Bridge DT description
->> +
->> +Required properties:
->> +- #address-cells: Address representation for root ports, set to <3>
->> +- #size-cells: Size representation for root ports, set to <2>
->> +- compatible: Should contain "xlnx,axi-pcie-1.00.a"
->> +- reg: Should contain AXI PCIe registers location and length
->> +- interrupts: Should contain AXI PCIe interrupt
->> +- ranges: ranges for the PCI memory regions
->> +       Please refer to the standard PCI bus binding document for a mo=
-re
->> +       detailed explanation
->> +- xlnx,axibar-num: Number of memory regions configured in the hardwar=
-e,
->> +       maximum being three which is configurable in the hardware.
->> +- xlnx,include-rc: Root Port (=3D1) or End Point (=3D0)
->> +- xlnx,pciebar2axibar-0: Translation address from PCIe to AXI
->> +       Only one PCIe BAR is applicable in Root port mode, it can be
->> +       either 32/64-bit. If it is 64-bit BAR, lower 32 bits are prese=
-nt
->> +       in 'xlnx,pciebar2axibar-0' and Upper 32 bits in 'xlnx,pciebar2=
+No; there is no such possibility. Add BUG_ON(idx>=4) and make sure of
+it.
 
->> +       axibar-1'. And if it is 32-bit BAR, only 'xlnx,pciebar2axibar-=
-0'
->> +       is valid
->> +
->> +Optional properties
->> +- xlnx,pciebar-as: PCIe BAR aperture size is 32 (=3D0) or 64-bit (=3D=
-1).
->> +- xlnx,pciebar2axibar-1: Translation address from PCIe to AXI, contai=
-ns
->> +       upper 32 bits if PCIe BAR size is 64-bit. When xlnx,pciebar-as=
+There's simply no more than 4 contexts what can nest at any one time:
 
->> +       is set, this is a required property and should contain a valid=
+  task context
+  softirq context
+  hardirq context
+  nmi context
 
->> +       value (other than FF's)
->=20
-> I hardly know anything about DT, but xlnx,pciebar2axibar-0,
-> xlnx,pciebar-as, and xlnx,pciebar2axibar-1 look strange to me.  Is
-> that really the DT way of dealing with 32/64-bit BARs and host bridge
-> address translation?  I don't see similar things in the other files in
-> Documentation/devicetree/bindings/pci/, even though some of the other
-> drivers/pci/host/*.c files do use pci_add_resource_offset(), which
-> indicates that they support address translation.
+And someone contending a spinlock from NMI context should be shot
+anyway.
 
-This is how xilinx is describing hardware in design tools.
-And as Arnd already know this is full IP description with all options
-which can be selected.
-If there is any standard way how to describe it we can change it.
-
-> Please also include a MAINTAINERS update for drivers/pci/host/pci-xilin=
-x.c.
-
-This should be handle by our record that's why MAINTAINERS update is not =
-necessary.
-(N: xilinx below)
-
-ARM/ZYNQ ARCHITECTURE
-M:	Michal Simek <michal.simek@xilinx.com>
-L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-W:	http://wiki.xilinx.com
-T:	git git://git.xilinx.com/linux-xlnx.git
-S:	Supported
-F:	arch/arm/mach-zynq/
-F:	drivers/cpuidle/cpuidle-zynq.c
-N:	zynq
-N:	xilinx
-F:	drivers/clocksource/cadence_ttc_timer.c
-F:	drivers/mmc/host/sdhci-of-arasan.c
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---7O64H635cPGwegCVRuKIhjmruOOXO9D80
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMEcU4ACgkQykllyylKDCEccQCdEQSkF9ZrDs35bqMESeNhNz4i
-MY0An0IUGq1ZWFky3wyJaAjcAp/wSFKf
-=BGXE
------END PGP SIGNATURE-----
-
---7O64H635cPGwegCVRuKIhjmruOOXO9D80--
+Getting more nested spinlocks is an absolute hard fail.
