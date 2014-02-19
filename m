@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaBSQcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:32:13 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:34232 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122AbaBSQcL convert rfc822-to-8bit (ORCPT
+	id S1754574AbaBSQcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:32:18 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55408 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037AbaBSQcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:32:11 -0500
-Message-ID: <5304DCA2.5080906@arm.com>
-Date: Wed, 19 Feb 2014 16:32:34 +0000
-From: Sudeep Holla <Sudeep.Holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Feb 2014 11:32:16 -0500
+Date: Thu, 20 Feb 2014 01:31:59 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140219163159.GR2669@sirena.org.uk>
+References: <1392720071-13503-1-git-send-email-sachin.kamat@linaro.org>
+ <1392720071-13503-9-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Sudeep.Holla@arm.com, Lan Tianyu <tianyu.lan@intel.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [PATCH v4 5/5] ACPI: Replace printk with pr_* in
- tables.c
-References: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org> <1392731700-10992-6-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1392731700-10992-6-git-send-email-hanjun.guo@linaro.org>
-X-OriginalArrivalTime: 19 Feb 2014 16:32:09.0983 (UTC) FILETIME=[22D308F0:01CF2D90]
-X-MC-Unique: 114021916320905901
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QVnmAtMQlEIhp+F+"
+Content-Disposition: inline
+In-Reply-To: <1392720071-13503-9-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.144.10
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 09/15] regulator: da9063: Do not hardcode return values
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/02/14 13:55, Hanjun Guo wrote:
-> This patch just do some clean up to replace printk with pr_*,
-> no functional change.
-> 
-Any particular reason for choosing just this file in this series ?
-It seems but off-topic in this series. The printk format is same in almost all
-other acpi files and it's better to change all or none for consistency.
 
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  drivers/acpi/tables.c |   51 +++++++++++++++++++------------------------------
->  1 file changed, 20 insertions(+), 31 deletions(-)
-> 
-> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-> index 5837f85..97bc6df 100644
-> --- a/drivers/acpi/tables.c
-> +++ b/drivers/acpi/tables.c
-> @@ -55,8 +55,7 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
->  		{
->  			struct acpi_madt_local_apic *p =
->  			    (struct acpi_madt_local_apic *)header;
-> -			printk(KERN_INFO PREFIX
-> -			       "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
-> +			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+--QVnmAtMQlEIhp+F+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You can even get rid of PREFIX by defining pr_fmt instead.
+On Tue, Feb 18, 2014 at 04:11:05PM +0530, Sachin Kamat wrote:
+> Propagate the error values returned by the function instead.
 
-If the intention is to move to pr_* format it's better to have this as separate
-patch and convert all of them. Based on the grep patterns, regex should to
-helpful to find and replace them all :)
+Applied, thanks.
 
-Regards,
-Sudeep
+--QVnmAtMQlEIhp+F+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBNx8AAoJELSic+t+oim9nA0P/3N5Vn4WWQZ6prekqmbv43xj
+wY86o2Foyem1x4DfQ3wSH/blqWfoiaSAJUv7YVctxsj7n2DGwEtgp3sw6p+3tiA6
+NVfTY3N6gNIIDSUAnrVXB0BZ9N/rqk1DOkxKiuycWO/GrgFr23wLnwQXexSjT9VH
+0/VLNKD1lJDsUAr/wlrqBFkVHLZCdiw/spNHoEEKF+CXdfDM95+PD7ae6QwvJ4sM
+E8LqIFpCupv3GutZ46pZnUZYjfDDPXyCmib0hc3qjW4ElGXCTZpNfqHiTvDid0l8
+WSp2Io3Rdb+TKIFVFgTskqOFcUmknOJXiHOWLq+bOPoZk8lRBi1A7LvYj5RFdEOG
+G9+79vbQeTfKCxAzsI/ZlmBlVyvwoRkXLdBADDaEdupt2IItX0hqh8tcqwBaCzQu
+eCNnUk2yPKG8b8KnfA7sWZcwY1ORGl/Hn2flv4trIsCkIJH+ZsUT9M68r9CK6ecu
+hcnZsAg7dAgjXjNT1/DSc5UbCzXLsIlxGWAojSR0BxVQzYAByLn52icysX29rNuX
+8gzUCk50OcqH/v4mk2pwGlOiANJkK7bB1QFYXUfJ9MfHm3OZGzrqxo0po4Ca0bYp
+jE+VBjd7oAkKTOPDuPdJJj5HwvShutRIg8WTXtfGS/DcJOlE/nTvMOAYF3Ti470/
+Kuza/PxAtAP1B9sPRfCP
+=/mgs
+-----END PGP SIGNATURE-----
+
+--QVnmAtMQlEIhp+F+--
