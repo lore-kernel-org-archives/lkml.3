@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaBSPB3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:01:29 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:53097 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717AbaBSPB2 (ORCPT
+	id S1753880AbaBSPHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:07:00 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:58905 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667AbaBSPG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:01:28 -0500
-Date: Wed, 19 Feb 2014 15:01:21 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Tejun Heo <tj@kernel.org>
+	Wed, 19 Feb 2014 10:06:58 -0500
+Date: Wed, 19 Feb 2014 10:06:54 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         alexandre.torgue@st.com, linux-ide@vger.kernel.org,
         hdegoede@redhat.com
 Subject: Re: [PATCH 3/3] ahci: st: Add support for ST's SATA IP
-Message-ID: <20140219150121.GG10504@lee--X1>
+Message-ID: <20140219150654.GH10134@htj.dyndns.org>
 References: <1392641818-23419-1-git-send-email-lee.jones@linaro.org>
  <1392641818-23419-3-git-send-email-lee.jones@linaro.org>
  <20140218233645.GP31892@mtj.dyndns.org>
  <20140219083025.GB10504@lee--X1>
  <20140219140458.GA10134@htj.dyndns.org>
+ <20140219150121.GG10504@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140219140458.GA10134@htj.dyndns.org>
+In-Reply-To: <20140219150121.GG10504@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Can I do this as a subsequent patch though? The current patch fits
-> > neatly onto our internal stable kernel (currently v3.10). The added
-> > work will require back-porting Hans' patch-set, which has not yet
-> > reached Mainline.
-> 
-> Hmm.... I'll apply Hans' patchset pretty soon and we still have some
-> time in this devel cycle so I'd much prefer applying the final patch.
+Hello, Lee.
 
-I think that's a pretty unfair ask. I could understand if the
-patch(es) didn't apply, or were hindered by the new API change, but I
-do not believe that is the case?
+On Wed, Feb 19, 2014 at 03:01:21PM +0000, Lee Jones wrote:
+> I think that's a pretty unfair ask. I could understand if the
+> patch(es) didn't apply, or were hindered by the new API change, but I
+> do not believe that is the case?
 
-FWIW, I have tried to apply the patches Hans send me, but they don't
-seem to apply cleanly.
+Let me make it very clear to you.  If you want your code in, you help
+maintaining the larger code base.  I'm already extremely annoyed about
+the general behavior of embedded developers where the general attitude
+seems to be doing whatever to get *my* driver in the tree.  So, fuck
+you a little bit and if you want to make it happen faster, help Hans'
+patchset mature.  Unfair my ass.
 
-Base is v3.14-rc1:
-
-Applying: ahci-platform: Add support for devices with more then 1 clock
-fatal: sha1 information is lacking or useless (drivers/ata/ahci_platform.c).
-Repository lacks necessary blobs to fall back on 3-way merge.
-Cannot fall back to three-way merge.
-Patch failed at 0001 ahci-platform: Add support for devices with more then 1 clock
-The copy of the patch that failed is found in:
-   .git/rebase-apply/patch
-When you have resolved this problem, run "git am --resolved".
-If you prefer to skip this patch, run "git am --skip" instead.
-To restore the original branch and stop patching, run "git am --abort".
-
-Any ideas?
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
