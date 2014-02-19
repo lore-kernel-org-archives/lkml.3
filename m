@@ -1,66 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105AbaBSPuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:50:05 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:56042 "EHLO extserv.mm-sol.com"
+	id S1753981AbaBSPxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:53:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64858 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753565AbaBSPuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:50:01 -0500
-Message-ID: <1392824921.17130.71.camel@iivanov-dev>
-Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Peter Chen <Peter.Chen@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Wed, 19 Feb 2014 17:48:41 +0200
-In-Reply-To: <5303A71B.7060208@cogentembedded.com>
-References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
-		 <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>
-		 <53039E2E.2030503@cogentembedded.com>
-	 <1392743648.17130.17.camel@iivanov-dev>
-	 <5303A71B.7060208@cogentembedded.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753595AbaBSPx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 10:53:29 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH 2/6] perf tools: Add variable display for VF make output
+Date: Wed, 19 Feb 2014 16:52:55 +0100
+Message-Id: <1392825179-5228-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1392825179-5228-1-git-send-email-jolsa@redhat.com>
+References: <1392825179-5228-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adding dump of interesting build directories to the
+make VF=1 output.
 
-Hi,
+  $ make VF=1
+    BUILD:   Doing 'make -j4' parallel build
 
-On Tue, 2014-02-18 at 21:31 +0300, Sergei Shtylyov wrote: 
-> On 02/18/2014 08:14 PM, Ivan T. Ivanov wrote:
-> 
-> >>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> >>> Allows controller to be specified via device tree.
-> >>> Pass PHY phandle specified in DT to core driver.
-> 
-> >>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> >>> ---
-> >>>    drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
-> >>>    1 file changed, 22 insertions(+), 1 deletion(-)
-> 
-> >>      You also need to describe the binding you're creating in
-> >> Documentation/devicetree/bindings/usb/<file>.txt.
-> 
-> > Did you check "[PATCH v2 1/3]"?
-> 
->     Did you send it to 'linux-usb'?
+  Auto-detecting system features:
+  ...                         dwarf: [ on  ]
+  ...                         glibc: [ on  ]
+  ...                          gtk2: [ on  ]
+  ...                      libaudit: [ on  ]
+  ...                        libbfd: [ on  ]
+  ...                        libelf: [ on  ]
+  ...                       libnuma: [ on  ]
+  ...                       libperl: [ on  ]
+  ...                     libpython: [ on  ]
+  ...                      libslang: [ on  ]
+  ...                     libunwind: [ on  ]
+  ...                     backtrace: [ on  ]
+  ...                fortify-source: [ on  ]
+  ...                  gtk2-infobar: [ on  ]
+  ...             libelf-getphdrnum: [ on  ]
+  ...                   libelf-mmap: [ on  ]
+  ...             libpython-version: [ on  ]
+  ...                       on-exit: [ on  ]
+  ...            stackprotector-all: [ on  ]
+  ...                       timerfd: [ on  ]
+  ...         libunwind-debug-frame: [ OFF ]
+  ...                        bionic: [ OFF ]
 
-Opps, sorry. get_maintainer.pl did not list linux-usb and I forgot 
-to add it. Would like to resend it?
+  ...                        prefix: /home/jolsa
+  ...                        bindir: /home/jolsa/bin
+  ...                        libdir: /home/jolsa/lib64
+  ...                    sysconfdir: /home/jolsa/etc
 
-Regards,
-Ivan
+Adding functions to print variable/text in features
+display - feature_print_var/feature_print_text
+(feature_print_text is used in next patches).
 
-> 
-> WBR, Sergei
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+---
+ tools/perf/config/Makefile | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 39e6e6c..97a64c4 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -591,9 +591,9 @@ endif
+ #
+ # Print the result of the feature test:
+ #
+-feature_print = $(eval $(feature_print_code)) $(info $(MSG))
++feature_print_status = $(eval $(feature_print_status_code)) $(info $(MSG))
+ 
+-define feature_print_code
++define feature_print_status_code
+   ifeq ($(feature-$(1)), 1)
+     MSG = $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
+   else
+@@ -601,6 +601,16 @@ define feature_print_code
+   endif
+ endef
+ 
++feature_print_var = $(eval $(feature_print_var_code)) $(info $(MSG))
++define feature_print_var_code
++    MSG = $(shell printf '...%30s: %s' $(1) $($(1)))
++endef
++
++feature_print_text = $(eval $(feature_print_text_code)) $(info $(MSG))
++define feature_print_text_code
++    MSG = $(shell printf '...%30s: %s' $(1) $(2))
++endef
++
+ PERF_FEATURES := $(foreach feat,$(LIB_FEATURE_TESTS),feature-$(feat)($(feature-$(feat))))
+ PERF_FEATURES_FILE := $(shell touch $(OUTPUT)PERF-FEATURES; cat $(OUTPUT)PERF-FEATURES)
+ 
+@@ -633,11 +643,16 @@ endif
+ ifeq ($(display_lib),1)
+   $(info )
+   $(info Auto-detecting system features:)
+-  $(foreach feat,$(LIB_FEATURE_TESTS),$(call feature_print,$(feat),))
++  $(foreach feat,$(LIB_FEATURE_TESTS),$(call feature_print_status,$(feat),))
+ endif
+ 
+ ifeq ($(display_vf),1)
+-  $(foreach feat,$(VF_FEATURE_TESTS),$(call feature_print,$(feat),))
++  $(foreach feat,$(VF_FEATURE_TESTS),$(call feature_print_status,$(feat),))
++  $(info )
++  $(call feature_print_var,prefix)
++  $(call feature_print_var,bindir)
++  $(call feature_print_var,libdir)
++  $(call feature_print_var,sysconfdir)
+ endif
+ 
+ ifeq ($(display_lib),1)
+-- 
+1.8.3.1
 
