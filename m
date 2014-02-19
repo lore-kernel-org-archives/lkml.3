@@ -1,95 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbaBSTMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:12:05 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40900 "EHLO bear.ext.ti.com"
+	id S1754933AbaBSTNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:13:15 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:61094 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754367AbaBSTMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:12:03 -0500
-Message-ID: <530501A7.2030703@ti.com>
-Date: Wed, 19 Feb 2014 11:10:31 -0800
-From: Russ Dill <Russ.Dill@ti.com>
-Organization: Texas Instruments
+	id S1754034AbaBSTNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 14:13:13 -0500
+X-IronPort-AV: E=Sophos;i="4.97,507,1389744000"; 
+   d="scan'208";a="104016089"
+Message-ID: <53050244.1020106@citrix.com>
+Date: Wed, 19 Feb 2014 19:13:08 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
-References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org> <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org> <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
-In-Reply-To: <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="windows-1252"
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Dan Williams <dcbw@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>, <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com> <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com> <1392668638.21106.5.camel@dcbw.local> <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com> <1392828325.21976.6.camel@dcbw.local> <CAB=NE6VpUqwNNY4pgbS6du2VsZ6dH0TzQYXmiw6GGN-EiOsV6g@mail.gmail.com>
+In-Reply-To: <CAB=NE6VpUqwNNY4pgbS6du2VsZ6dH0TzQYXmiw6GGN-EiOsV6g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 19/02/14 17:20, Luis R. Rodriguez wrote:
+> On Wed, Feb 19, 2014 at 8:45 AM, Dan Williams <dcbw@redhat.com> wrote:
+>> On Tue, 2014-02-18 at 13:19 -0800, Luis R. Rodriguez wrote:
+>>> On Mon, Feb 17, 2014 at 12:23 PM, Dan Williams <dcbw@redhat.com> wrote:
+>>>> On Fri, 2014-02-14 at 18:59 -0800, Luis R. Rodriguez wrote:
+>>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>>>>
+>>>>> Some interfaces do not need to have any IPv4 or IPv6
+>>>>> addresses, so enable an option to specify this. One
+>>>>> example where this is observed are virtualization
+>>>>> backend interfaces which just use the net_device
+>>>>> constructs to help with their respective frontends.
+>>>>>
+>>>>> This should optimize boot time and complexity on
+>>>>> virtualization environments for each backend interface
+>>>>> while also avoiding triggering SLAAC and DAD, which is
+>>>>> simply pointless for these type of interfaces.
+>>>>
+>>>> Would it not be better/cleaner to use disable_ipv6 and then add a
+>>>> disable_ipv4 sysctl, then use those with that interface?
+>>>
+>>> Sure, but note that the both disable_ipv6 and accept_dada sysctl
+>>> parameters are global. ipv4 and ipv6 interfaces are created upon
+>>> NETDEVICE_REGISTER, which will get triggered when a driver calls
+>>> register_netdev(). The goal of this patch was to enable an early
+>>> optimization for drivers that have no need ever for ipv4 or ipv6
+>>> interfaces.
+>>
+>> Each interface gets override sysctls too though, eg:
+>>
+>> /proc/sys/net/ipv6/conf/enp0s25/disable_ipv6
+>
+> I hadn't seen those, thanks!
+>
+>> which is the one I meant; you're obviously right that the global ones
+>> aren't what you want here.  But the specific ones should be suitable?
+>
+> Under the approach Stephen mentioned by first ensuring the interface
+> is down yes. There's one use case I can consider to still want the
+> patch though, more on that below.
+>
+>> If you set that on a per-interface basis, then you'll get EPERM or
+>> something whenever you try to add IPv6 addresses or do IPv6 routing.
+>
+> Neat, thanks.
+>
+>>> Zoltan has noted though some use cases of IPv4 or IPv6 addresses on
+>>> backends though, as such this is no longer applicable as a
+>>> requirement. The ipv4 sysctl however still seems like a reasonable
+>>> approach to enable optimizations of the network in topologies where
+>>> its known we won't need them but -- we'd need to consider a much more
+>>> granular solution, not just global as it is now for disable_ipv6, and
+>>> we'd also have to figure out a clean way to do this to not incur the
+>>> cost of early address interface addition upon register_netdev().
+>>>
+>>> Given that we have a use case for ipv4 and ipv6 addresses on
+>>> xen-netback we no longer have an immediate use case for such early
+>>> optimization primitives though, so I'll drop this.
+>>>
+>>>> The IFF_SKIP_IP seems to duplicate at least part of what disable_ipv6 is
+>>>> already doing.
+>>>
+>>> disable_ipv6 is global, the goal was to make this granular and skip
+>>> the cost upon early boot, but its been clarified we don't need this.
+>>
+>> Like Stephen says, you need to make sure you set them before IFF_UP, but
+>> beyond that, wouldn't the interface-specific sysctls work?
+>
+> Yeah that'll do it, unless there is a measurable run time benefit cost
+> to never even add these in the first place. Consider a host with tons
+> of guests, not sure how many is 'a lot' these days. One would have to
+> measure the cost of reducing the amount of time it takes to boot these
+> up. As discussed in the other threads though there *is* some use cases
+> of assigning IPv4 or IPv6 addresses to the backend interfaces though:
+> routing them (although its unclear to me if iptables can be used
+> instead, Zoltan?).
 
-On 02/19/2014 08:12 AM, Lorenzo Pieralisi wrote:
+Not with OVS, it steals the packet before netfilter hooks.
 
-+ *  https://patchwork.kernel.org/patch/96442/
-
-
-I think the idea here is to get the CPU into a state so that later
-when we resume from the resume kernel, the actual CPU state matches
-the state we have in kernel. The main thing flush_thread does is clear
-out any and all FP state.
-
-The may be part of the patchset that is OBE.
-
-
-
-cpu_resume makes many assumptions about the state of the state of the
-CPU, the primary being that the MMU is disabled, but also that all
-caches and IRQs are disabled. soft_restart does all this for us.
-
-
-
-ah, you are saying just return from __swsusp_arch_save_image and allow
-cpu_suspend_abort to be called, placing the result of swsusp_save
-somewhere else. This may work and would reduce the complexity of the
-code slightly.
-
-
-
-This is taken from the previous iteration of the patchset, I think the
-comment is OBE.
-
-
-
-But this is still required to select the right mapping for our copying.
-
-
-
-I don't remember why I needed to prevent gcc from manipulating the
-stack here.
-
-
-
-This is another holdover from previous patch versions that may be OBE.
-
-
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMFAaYACgkQfNRrxBinbdsWTwCgowSU7VPqGcM4ks39FtAihsBe
-vfYAn3gxZEu753xyESuye0y1z+wbWJRp
-=JZ1s
------END PGP SIGNATURE-----
+Zoli
