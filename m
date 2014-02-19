@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaBSBUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 20:20:40 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56100 "HELO
+	id S1752711AbaBSBVC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 20:21:02 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58273 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751675AbaBSBSd (ORCPT
+	with SMTP id S1751845AbaBSBSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 20:18:33 -0500
+	Tue, 18 Feb 2014 20:18:31 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Linux PCI <linux-pci@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>,
         Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH 5/9] ACPI / dock: Add .uevent() callback to struct acpi_hotplug_context
-Date: Wed, 19 Feb 2014 02:30:02 +0100
-Message-ID: <1634069.8i1LGae7Tj@vostro.rjw.lan>
+Subject: [PATCH 6/9] ACPI / ATA: Add hotplug contexts to ACPI companions of SATA devices
+Date: Wed, 19 Feb 2014 02:30:58 +0100
+Message-ID: <1707532.0BItEHDuFB@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <3011875.q18rCmXyYX@vostro.rjw.lan>
 References: <3011875.q18rCmXyYX@vostro.rjw.lan>
@@ -28,140 +28,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-In order to avoid the need to register special ACPI dock
-operations for SATA devices add a .uevent() callback pointer to
-struct acpi_hotplug_context and make dock_hotplug_event() use that
-callback if available.  Also rename the existing .event() callback
-in struct acpi_hotplug_context to .notify() to avoid possible
-confusion in the future.
+Modify the SATA subsystem to add hotplug contexts to ACPI companions
+of SATA devices and ports instead of registering special ACPI dock
+operations using register_hotplug_dock_device().
+
+That change will allow the entire code handling those special ACPI
+dock operations to be dropped in the next commit.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/dock.c                |   11 ++++++++++-
- drivers/acpi/scan.c                |    8 ++++----
- drivers/pci/hotplug/acpiphp_glue.c |    8 ++++----
- include/acpi/acpi_bus.h            |    9 ++++++---
- 4 files changed, 24 insertions(+), 12 deletions(-)
+ drivers/ata/libata-acpi.c |   76 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 49 insertions(+), 27 deletions(-)
 
-Index: linux-pm/include/acpi/acpi_bus.h
+Index: linux-pm/drivers/ata/libata-acpi.c
 ===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -145,7 +145,8 @@ struct acpi_scan_handler {
- 
- struct acpi_hotplug_context {
- 	struct acpi_device *self;
--	int (*event)(struct acpi_device *, u32);
-+	int (*notify)(struct acpi_device *, u32);
-+	void (*uevent)(struct acpi_device *, u32);
- 	void (*fixup)(struct acpi_device *);
- };
- 
-@@ -369,11 +370,13 @@ static inline void acpi_set_device_statu
- 
- static inline void acpi_set_hp_context(struct acpi_device *adev,
- 				       struct acpi_hotplug_context *hp,
--				       int (*event)(struct acpi_device *, u32),
-+				       int (*notify)(struct acpi_device *, u32),
-+				       void (*uevent)(struct acpi_device *, u32),
- 				       void (*fixup)(struct acpi_device *))
- {
- 	hp->self = adev;
--	hp->event = event;
-+	hp->notify = notify;
-+	hp->uevent = uevent;
- 	hp->fixup = fixup;
- 	adev->hp = hp;
+--- linux-pm.orig/drivers/ata/libata-acpi.c
++++ linux-pm/drivers/ata/libata-acpi.c
+@@ -38,6 +38,16 @@ static void ata_acpi_clear_gtf(struct at
+ 	dev->gtf_cache = NULL;
  }
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -496,17 +496,17 @@ void acpi_device_hotplug(void *data, u32
- 			goto err_out;
- 		}
- 	} else {
--		int (*event)(struct acpi_device *, u32);
-+		int (*notify)(struct acpi_device *, u32);
  
- 		acpi_lock_hp_context();
--		event = adev->hp ? adev->hp->event : NULL;
-+		notify = adev->hp ? adev->hp->notify : NULL;
- 		acpi_unlock_hp_context();
- 		/*
- 		 * There may be additional notify handlers for device objects
- 		 * without the .event() callback, so ignore them here.
- 		 */
--		if (event)
--			error = event(adev, src);
-+		if (notify)
-+			error = notify(adev, src);
- 		else
- 			goto out;
- 	}
-Index: linux-pm/drivers/acpi/dock.c
-===================================================================
---- linux-pm.orig/drivers/acpi/dock.c
-+++ linux-pm/drivers/acpi/dock.c
-@@ -203,10 +203,19 @@ static void dock_hotplug_event(struct do
- 			fixup(adev);
- 			return;
- 		}
-+	} else if (cb_type == DOCK_CALL_UEVENT) {
-+		void (*uevent)(struct acpi_device *, u32);
++struct ata_acpi_hotplug_context {
++	struct acpi_hotplug_context hp;
++	union {
++		struct ata_port *ap;
++		struct ata_device *dev;
++	} data;
++};
 +
-+		uevent = adev->hp->uevent;
-+		if (uevent) {
-+			acpi_unlock_hp_context();
-+			uevent(adev, event);
-+			return;
-+		}
- 	} else {
- 		int (*notify)(struct acpi_device *, u32);
- 
--		notify = adev->hp->event;
-+		notify = adev->hp->notify;
- 		if (notify) {
- 			acpi_unlock_hp_context();
- 			notify(adev, event);
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -59,7 +59,7 @@
- static LIST_HEAD(bridge_list);
- static DEFINE_MUTEX(bridge_mutex);
- 
--static int acpiphp_hotplug_event(struct acpi_device *adev, u32 type);
-+static int acpiphp_hotplug_notify(struct acpi_device *adev, u32 type);
- static void acpiphp_post_dock_fixup(struct acpi_device *adev);
- static void acpiphp_sanitize_bus(struct pci_bus *bus);
- static void acpiphp_set_hpp_values(struct pci_bus *bus);
-@@ -81,7 +81,7 @@ static struct acpiphp_context *acpiphp_i
- 		return NULL;
- 
- 	context->refcount = 1;
--	acpi_set_hp_context(adev, &context->hp, acpiphp_hotplug_event,
-+	acpi_set_hp_context(adev, &context->hp, acpiphp_hotplug_notify, NULL,
- 			    acpiphp_post_dock_fixup);
- 	return context;
- }
-@@ -400,7 +400,7 @@ static void cleanup_bridge(struct acpiph
- 			struct acpi_device *adev = func_to_acpi_device(func);
- 
- 			acpi_lock_hp_context();
--			adev->hp->event = NULL;
-+			adev->hp->notify = NULL;
- 			adev->hp->fixup = NULL;
- 			acpi_unlock_hp_context();
- 		}
-@@ -833,7 +833,7 @@ static void hotplug_event(u32 type, stru
- 		put_bridge(bridge);
++#define ata_hotplug_data(context) (container_of((context), struct ata_acpi_hotplug_context, hp)->data)
++
+ /**
+  * ata_dev_acpi_handle - provide the acpi_handle for an ata_device
+  * @dev: the acpi_handle returned will correspond to this device
+@@ -121,18 +131,17 @@ static void ata_acpi_handle_hotplug(stru
+ 		ata_port_wait_eh(ap);
  }
  
--static int acpiphp_hotplug_event(struct acpi_device *adev, u32 type)
-+static int acpiphp_hotplug_notify(struct acpi_device *adev, u32 type)
+-static void ata_acpi_dev_notify_dock(acpi_handle handle, u32 event, void *data)
++static int ata_acpi_dev_notify_dock(struct acpi_device *adev, u32 event)
  {
- 	struct acpiphp_context *context;
+-	struct ata_device *dev = data;
+-
++	struct ata_device *dev = ata_hotplug_data(adev->hp).dev;
+ 	ata_acpi_handle_hotplug(dev->link->ap, dev, event);
++	return 0;
+ }
  
+-static void ata_acpi_ap_notify_dock(acpi_handle handle, u32 event, void *data)
++static int ata_acpi_ap_notify_dock(struct acpi_device *adev, u32 event)
+ {
+-	struct ata_port *ap = data;
+-
+-	ata_acpi_handle_hotplug(ap, NULL, event);
++	ata_acpi_handle_hotplug(ata_hotplug_data(adev->hp).ap, NULL, event);
++	return 0;
+ }
+ 
+ static void ata_acpi_uevent(struct ata_port *ap, struct ata_device *dev,
+@@ -154,31 +163,23 @@ static void ata_acpi_uevent(struct ata_p
+ 	}
+ }
+ 
+-static void ata_acpi_ap_uevent(acpi_handle handle, u32 event, void *data)
++static void ata_acpi_ap_uevent(struct acpi_device *adev, u32 event)
+ {
+-	ata_acpi_uevent(data, NULL, event);
++	ata_acpi_uevent(ata_hotplug_data(adev->hp).ap, NULL, event);
+ }
+ 
+-static void ata_acpi_dev_uevent(acpi_handle handle, u32 event, void *data)
++static void ata_acpi_dev_uevent(struct acpi_device *adev, u32 event)
+ {
+-	struct ata_device *dev = data;
++	struct ata_device *dev = ata_hotplug_data(adev->hp).dev;
+ 	ata_acpi_uevent(dev->link->ap, dev, event);
+ }
+ 
+-static const struct acpi_dock_ops ata_acpi_dev_dock_ops = {
+-	.handler = ata_acpi_dev_notify_dock,
+-	.uevent = ata_acpi_dev_uevent,
+-};
+-
+-static const struct acpi_dock_ops ata_acpi_ap_dock_ops = {
+-	.handler = ata_acpi_ap_notify_dock,
+-	.uevent = ata_acpi_ap_uevent,
+-};
+-
+ /* bind acpi handle to pata port */
+ void ata_acpi_bind_port(struct ata_port *ap)
+ {
+ 	struct acpi_device *host_companion = ACPI_COMPANION(ap->host->dev);
++	struct acpi_device *adev;
++	struct ata_acpi_hotplug_context *context;
+ 
+ 	if (libata_noacpi || ap->flags & ATA_FLAG_ACPI_SATA || !host_companion)
+ 		return;
+@@ -188,9 +189,19 @@ void ata_acpi_bind_port(struct ata_port
+ 	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
+ 		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
+ 
+-	/* we might be on a docking station */
+-	register_hotplug_dock_device(ACPI_HANDLE(&ap->tdev),
+-				     &ata_acpi_ap_dock_ops, ap, NULL, NULL);
++	adev = ACPI_COMPANION(&ap->tdev);
++	if (!adev)
++		return;
++
++	context = kzalloc(sizeof(*context), GFP_KERNEL);
++	if (!context)
++		return;
++
++	context->data.ap = ap;
++	acpi_lock_hp_context();
++	acpi_set_hp_context(adev, &context->hp, ata_acpi_ap_notify_dock,
++			    ata_acpi_ap_uevent, NULL);
++	acpi_unlock_hp_context();
+ }
+ 
+ void ata_acpi_bind_dev(struct ata_device *dev)
+@@ -198,7 +209,8 @@ void ata_acpi_bind_dev(struct ata_device
+ 	struct ata_port *ap = dev->link->ap;
+ 	struct acpi_device *port_companion = ACPI_COMPANION(&ap->tdev);
+ 	struct acpi_device *host_companion = ACPI_COMPANION(ap->host->dev);
+-	struct acpi_device *parent;
++	struct acpi_device *parent, *adev;
++	struct ata_acpi_hotplug_context *context;
+ 	u64 adr;
+ 
+ 	/*
+@@ -221,9 +233,19 @@ void ata_acpi_bind_dev(struct ata_device
+ 	}
+ 
+ 	acpi_preset_companion(&dev->tdev, parent, adr);
++	adev = ACPI_COMPANION(&dev->tdev);
++	if (!adev)
++		return;
++
++	context = kzalloc(sizeof(*context), GFP_KERNEL);
++	if (!context)
++		return;
+ 
+-	register_hotplug_dock_device(ata_dev_acpi_handle(dev),
+-				     &ata_acpi_dev_dock_ops, dev, NULL, NULL);
++	context->data.dev = dev;
++	acpi_lock_hp_context();
++	acpi_set_hp_context(adev, &context->hp, ata_acpi_dev_notify_dock,
++			    ata_acpi_dev_uevent, NULL);
++	acpi_unlock_hp_context();
+ }
+ 
+ /**
 
