@@ -1,72 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855AbaBSPew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:34:52 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:39589 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631AbaBSPet (ORCPT
+	id S1754096AbaBSPfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:35:22 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:50006 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753976AbaBSPdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:34:49 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 2/4] of: reimplement the matching method for __of_match_node()
-To: Rob Herring <robherring2@gmail.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-In-Reply-To: <CAL_JsqLbjK02Z1qzfP9K+Grp2WwAth8rMctK9myf8ZwJA6PUGQ@mail.gmail.com>
-References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org> < 1392819290-1044-3-git-send-email-grant.likely@linaro.org> < CAL_JsqLbjK02Z1qzfP9K+Grp2WwAth8rMctK9myf8ZwJA6PUGQ@mail.gmail.com>
-Date: Wed, 19 Feb 2014 15:34:41 +0000
-Message-Id: <20140219153441.5A271C4088D@trevor.secretlab.ca>
+	Wed, 19 Feb 2014 10:33:06 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        b.brezillon@overkiz.com,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 3/8] ARM: at91: dt: sam9rl: Device Tree for the at91sam9rlek
+Date: Wed, 19 Feb 2014 16:32:26 +0100
+Message-Id: <1392823951-26053-4-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392823951-26053-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1392823951-26053-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014 08:54:57 -0600, Rob Herring <robherring2@gmail.com> wrote:
-> On Wed, Feb 19, 2014 at 8:14 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> > From: Kevin Hao <haokexin@gmail.com>
-> >
-> > In the current implementation of __of_match_node(), it will compare
-> > each given match entry against all the node's compatible strings
-> > with of_device_is_compatible().
-> >
-> > To achieve multiple compatible strings per node with ordering from
-> > specific to generic, this requires given matches to be ordered from
-> > specific to generic. For most of the drivers this is not true and
-> > also an alphabetical ordering is more sane there.
-> >
-> > Therefore, we define a following priority order for the match, and
-> > then scan all the entries to find the best match.
-> >   1. specific compatible && type && name
-> >   2. specific compatible && type
-> >   3. specific compatible && name
-> >   4. specific compatible
-> >   5. general compatible && type && name
-> >   6. general compatible && type
-> >   7. general compatible && name
-> >   8. general compatible
-> >   9. type && name
-> >   10. type
-> >   11. name
-> 
-> While I agree this should be the right order, I worry that this may be
-> changing the matching in some case as all previous attempts have done.
+Add a device tree for the at91sam9rl-ek. For now it supports:
+ - MMC
+ - dbgu
+ - usart1
+ - watchdog
+ - nand
+ - leds
+ - buttons
 
-True, but they should be few and far between, and they can be
-fixed up with bugfixes in drivers. This time we actually have test cases
-that show the behaviour is correct. The previous versions failed the
-current test cases (I checked).
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/Makefile         |   2 +
+ arch/arm/boot/dts/at91sam9rlek.dts | 151 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 153 insertions(+)
+ create mode 100644 arch/arm/boot/dts/at91sam9rlek.dts
 
-> > +       /* Compatible match has highest priority */
-> > +       if (compat && compat[0]) {
-> > +               cp = __of_get_property(device, "compatible", &cplen);
-> > +               if (!cp)
-> > +                       return 0;
-> > +               for (index = 0; cplen > 0; index++, cp += l, cplen -= l) {
-> > +                       l = strlen(cp) + 1;
-> 
-> This could use of_property_for_each_string.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 6d1e43d46187..ce58477cfa33 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -29,6 +29,8 @@ dtb-$(CONFIG_ARCH_AT91) += at91sam9m10g45ek.dtb
+ dtb-$(CONFIG_ARCH_AT91) += pm9g45.dtb
+ # sam9n12
+ dtb-$(CONFIG_ARCH_AT91) += at91sam9n12ek.dtb
++# sam9rl
++dtb-$(CONFIG_ARCH_AT91) += at91sam9rlek.dtb
+ # sam9x5
+ dtb-$(CONFIG_ARCH_AT91) += at91-ariag25.dtb
+ dtb-$(CONFIG_ARCH_AT91) += at91-cosino_mega2560.dtb
+diff --git a/arch/arm/boot/dts/at91sam9rlek.dts b/arch/arm/boot/dts/at91sam9rlek.dts
+new file mode 100644
+index 000000000000..aa76b1d7285a
+--- /dev/null
++++ b/arch/arm/boot/dts/at91sam9rlek.dts
+@@ -0,0 +1,151 @@
++/*
++ * at91sam9rlek.dts - Device Tree file for Atmel at91sam9rl reference board
++ *
++ *  Copyright (C) 2014  Alexandre Belloni <alexandre.belloni@free-electrons.com>
++ *
++ * Licensed under GPLv2 only
++ */
++/dts-v1/;
++#include "at91sam9rl.dtsi"
++
++/ {
++	model = "Atmel at91sam9rlek";
++	compatible = "atmel,at91sam9rlek", "atmel,at91sam9rl", "atmel,at91sam9";
++
++	chosen {
++		bootargs = "console=ttyS0,115200 rootfstype=ubifs root=ubi0:rootfs ubi.mtd=5 rw";
++	};
++
++	memory {
++		reg = <0x20000000 0x4000000>;
++	};
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		main_clock: clock@0 {
++			compatible = "atmel,osc", "fixed-clock";
++			clock-frequency = <12000000>;
++		};
++	};
++
++	ahb {
++		apb {
++			mmc0: mmc@fffa4000 {
++				pinctrl-0 = <
++					&pinctrl_board_mmc0
++					&pinctrl_mmc0_clk
++					&pinctrl_mmc0_slot0_cmd_dat0
++					&pinctrl_mmc0_slot0_dat1_3>;
++				status = "okay";
++				slot@0 {
++					reg = <0>;
++					bus-width = <4>;
++					cd-gpios = <&pioA 15 GPIO_ACTIVE_HIGH>;
++				};
++			};
++
++			usart0: serial@fffb0000 {
++				pinctrl-0 = <
++					&pinctrl_usart0
++					&pinctrl_usart0_rts
++					&pinctrl_usart0_cts>;
++				status = "okay";
++			};
++
++			dbgu: serial@fffff200 {
++				status = "okay";
++			};
++
++			pinctrl@fffff400 {
++				mmc0 {
++					pinctrl_board_mmc0: mmc0-board {
++						atmel,pins =
++							<AT91_PIOA 15 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
++					};
++				};
++			};
++
++			watchdog@fffffd40 {
++				status = "okay";
++			};
++		};
++
++		nand0: nand@40000000 {
++			nand-bus-width = <8>;
++			nand-ecc-mode = "soft";
++			nand-on-flash-bbt = <1>;
++			status = "okay";
++
++			at91bootstrap@0 {
++				label = "at91bootstrap";
++				reg = <0x0 0x40000>;
++			};
++
++			bootloader@40000 {
++				label = "bootloader";
++				reg = <0x40000 0x80000>;
++			};
++
++			bootloaderenv@c0000 {
++				label = "bootloader env";
++				reg = <0xc0000 0xc0000>;
++			};
++
++			dtb@180000 {
++				label = "device tree";
++				reg = <0x180000 0x80000>;
++			};
++
++			kernel@200000 {
++				label = "kernel";
++				reg = <0x200000 0x600000>;
++			};
++
++			rootfs@800000 {
++				label = "rootfs";
++				reg = <0x800000 0x0f800000>;
++			};
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		ds1 {
++			label = "ds1";
++			gpios = <&pioD 15 GPIO_ACTIVE_LOW>;
++		};
++
++		ds2 {
++			label = "ds2";
++			gpios = <&pioD 16 GPIO_ACTIVE_LOW>;
++		};
++
++		ds3 {
++			label = "ds3";
++			gpios = <&pioD 14 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++	};
++
++	gpio_keys {
++		compatible = "gpio-keys";
++
++		right_click {
++			label = "right_click";
++			gpios = <&pioB 0 GPIO_ACTIVE_LOW>;
++			linux,code = <273>;
++			gpio-key,wakeup;
++		};
++
++		left_click {
++			label = "left_click";
++			gpios = <&pioB 1 GPIO_ACTIVE_LOW>;
++			linux,code = <272>;
++			gpio-key,wakeup;
++		};
++	};
++};
+-- 
+1.8.3.2
 
-Good point. Changed.
-
-g.
