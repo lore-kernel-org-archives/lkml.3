@@ -1,105 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806AbaBSOTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:19:06 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:34798 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483AbaBSOTE (ORCPT
+	id S1754014AbaBSOUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:20:12 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:43645 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbaBSOUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:19:04 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-9e-5304bd55675a
-Message-id: <1392819540.12624.14.camel@AMDC1943>
-Subject: Re: [PATCH v2 11/14] regulator: s2mps11: Add opmode for S2MPS14
- regulators
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+	Wed, 19 Feb 2014 09:20:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <1391529538-21685-7-git-send-email-ulf.hansson@linaro.org>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	<1391529538-21685-7-git-send-email-ulf.hansson@linaro.org>
+Date: Wed, 19 Feb 2014 15:20:07 +0100
+Message-ID: <CAPDyKFombL2-Rt46QpXPNWe5PeGQnOGmQQNfYd5MdYdEePn-4w@mail.gmail.com>
+Subject: Re: [PATCH 06/17] spi: pl022: Let runtime PM callbacks be available
+ for CONFIG_PM
+From: Ulf Hansson <ulf.hansson@linaro.org>
 To: Mark Brown <broonie@kernel.org>
-Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Tomasz Figa <t.figa@samsung.com>
-Date: Wed, 19 Feb 2014 15:19:00 +0100
-In-reply-to: <20140219040818.GQ2669@sirena.org.uk>
-References: <1392282847-25444-1-git-send-email-k.kozlowski@samsung.com>
- <1392282847-25444-12-git-send-email-k.kozlowski@samsung.com>
- <CAKew6eWcwVm1EAUAdFu48y_O5puu+eGvGW3k6923MdXfMa3UAw@mail.gmail.com>
- <1392383156.12506.20.camel@AMDC1943> <20140214210502.GX4451@sirena.org.uk>
- <1392624454.3755.12.camel@AMDC1943> <20140218003555.GJ2669@sirena.org.uk>
- <1392711129.14646.9.camel@AMDC1943> <20140219040818.GQ2669@sirena.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t/xK7qhe1mCDVYu0rTYOGM9q8XUh0/Y
-	LK5/ec5qcbbpDbvF/a9HGS2+Xelgsri8aw6bxYzz+5gs1h65y25xupvV4uKKL0wW62e8ZrGY
-	+7uR1YHXY+esu+wem1Z1snncubaHzWPeyUCPvi2rGD0+b5ILYIvisklJzcksSy3St0vgyui7
-	t4utoEWoYsJRiwbGk3xdjJwcEgImEvd+3WSCsMUkLtxbz9bFyMUhJLCUUaLz7QMmCOczo8S1
-	Rw9ZQap4BQwkTq24xwhiCwuESlxa94MFxGYTMJbYvHwJG4gtIqAscfX7XhaQZmaBbhaJz3+u
-	gTWwCKhKHJz/FayIU8BI4lj7BqgNm5glVi04yw6SYBZQl5g0bxEzxE1KErvbO6Hi8hKb17xl
-	hrhCUOLH5HssExgFZiFpmYWkbBaSsgWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQmLl
-	yw7GxcesDjEKcDAq8fB6vmAOFmJNLCuuzD3EKMHBrCTCG7qMJViINyWxsiq1KD++qDQntfgQ
-	IxMHp1QDo2TswY0r9O9NkhWMmOjJ0VWdekTr4WbPJ51LYpP9ztxbaZm/aN2atU/uVJcKCs25
-	k3NVpMLvDvusnY9lJtWZPFnktl3R/P2niTv/qxZMuzUj+Ltkgxif6dKl9r9uzd8y28b3ul/L
-	1ChblfcmUUFOHOVz6wwWbtmm8dVxT3CLo+b05R91uBeey1diKc5INNRiLipOBADt6kkYcwIA	AA==
+Cc: Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Russell King <linux@arm.linux.org.uk>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-19 at 13:08 +0900, Mark Brown wrote:
-> On Tue, Feb 18, 2014 at 09:12:09AM +0100, Krzysztof Kozlowski wrote:
-> > On Tue, 2014-02-18 at 09:35 +0900, Mark Brown wrote:
-> 
-> > > I don't understand the above?  Are you saying that suspend mode actually
-> > > turns off the regulator or something else? If it's a separate setting
-> > > for suspend mode then it should be using the core suspend mode stuff.
-> 
-> > No, it is similar to external control (by GPIO) except that regulator is
-> > controlled by PWREN pin. The PMIC's PWREN is not a GPIO, but instead it
-> > is directly connected to AP (for Exynos 4212: XPWRRGTON). In AP's normal
-> > mode the XPWRRGTON/PWREN is high. In sleep mode *AP* sets it low.
-> 
-> How is that different to suspend mode then?
+On 4 February 2014 16:58, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> Convert to the SET_PM_RUNTIME_PM macro while defining the runtime PM
+> callbacks. This means the callbacks becomes available for both
+> CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME, which is needed to handle the
+> combinations of these scenarios.
+>
+> Cc: Mark Brown <broonie@kernel.org>
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-I found two differences: performance (no need to send I2C commands) and
-possible issues during resume.
+Mark, any thoughts of this one?
 
-Example: regulator which should be disabled during suspend to memory and
-enabled for normal system operation.
+This will be needed no matter of patch 7.
 
-As I understand the suspend mode (correct me if I'm wrong), the
-regulator core during suspend to mem:
-1. Calls suspend_set_state().
-2. rstate->disabled is true so the ops->set_suspend_disable() is called.
-3. The ops->set_suspend_disable() function (implemented by the driver)
-disables the regulator (e.g. through I2C commands /regmap/).
-4. During resume the regulator is enabled normal way (ops->enable(), I2C
-again).
+Also note that, Russell has already applied the corresponding part in
+the amba bus (patch 1)
 
-Possible problems:
-A. What happens if some driver using this regulator resumes earlier then
-regulator_suspend_finish()?
-B. What happens if resuming regulator requires some other driver to be
-resumed earlier (e.g. I2C bus)? If regulator resumes before I2C bus then
-calling ops->enable() would fail.
+Kind regards
+Uffe
 
-
-The S5M8767 suspend mode (controlled by PWREN pin) works differently:
-1. To enable regulator set regulator mode to "On/Off controller by
-PWREN". During normal mode it will be enabled.
-2. During suspend the regulator won't be suspended or disabled by
-regulator core but instead the SoC will set PWREN to low and PMIC will
-disable the regulator. No need to send I2C commands.
-3. During resume the PWREN will be set to high and PMIC will enable the
-regulator before resuming other drivers. No need to send I2C commands as
-well.
-
-
-Best regards,
-Krzysztof
-
-
+> ---
+>  drivers/spi/spi-pl022.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+> index 2789b45..70fa907 100644
+> --- a/drivers/spi/spi-pl022.c
+> +++ b/drivers/spi/spi-pl022.c
+> @@ -2288,7 +2288,7 @@ pl022_remove(struct amba_device *adev)
+>         return 0;
+>  }
+>
+> -#if defined(CONFIG_SUSPEND) || defined(CONFIG_PM_RUNTIME)
+> +#ifdef CONFIG_PM
+>  /*
+>   * These two functions are used from both suspend/resume and
+>   * the runtime counterparts to handle external resources like
+> @@ -2354,7 +2354,7 @@ static int pl022_resume(struct device *dev)
+>  }
+>  #endif /* CONFIG_PM */
+>
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int pl022_runtime_suspend(struct device *dev)
+>  {
+>         struct pl022 *pl022 = dev_get_drvdata(dev);
+> @@ -2374,7 +2374,7 @@ static int pl022_runtime_resume(struct device *dev)
+>
+>  static const struct dev_pm_ops pl022_dev_pm_ops = {
+>         SET_SYSTEM_SLEEP_PM_OPS(pl022_suspend, pl022_resume)
+> -       SET_RUNTIME_PM_OPS(pl022_runtime_suspend, pl022_runtime_resume, NULL)
+> +       SET_PM_RUNTIME_PM_OPS(pl022_runtime_suspend, pl022_runtime_resume, NULL)
+>  };
+>
+>  static struct vendor_data vendor_arm = {
+> --
+> 1.7.9.5
+>
