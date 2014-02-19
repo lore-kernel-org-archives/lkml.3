@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbaBSPOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:14:39 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:41415 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaBSPOi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:14:38 -0500
-Message-ID: <5304CA61.3020400@cogentembedded.com>
-Date: Wed, 19 Feb 2014 19:14:41 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754032AbaBSPQc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:16:32 -0500
+Received: from sauhun.de ([89.238.76.85]:49910 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753752AbaBSPQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 10:16:30 -0500
+Date: Wed, 19 Feb 2014 16:16:26 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rui Wang <ruiv.wang@gmail.com>
+Subject: Re: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
+Message-ID: <20140219151626.GA13973@katana>
+References: <cover.1387588711.git.luto@amacapital.net>
+ <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-CC: Hyong-Youb Kim <hykim@myri.com>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH net-next 20/35] myri10ge: Use pci_enable_msix_range()
- instead of pci_enable_msix()
-References: <cover.1392717502.git.agordeev@redhat.com> <4174e05e893a4b62b9c39692691b926cec2dc2c3.1392717503.git.agordeev@redhat.com>
-In-Reply-To: <4174e05e893a4b62b9c39692691b926cec2dc2c3.1392717503.git.agordeev@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
+Content-Disposition: inline
+In-Reply-To: <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 18-02-2014 14:11, Alexander Gordeev wrote:
+--pf9I7BMVVzbSWLtt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
+On Fri, Dec 20, 2013 at 05:45:13PM -0800, Andy Lutomirski wrote:
+> Add i2c_scan_dimm_bus to declare that a particular i2c_adapter
+> contains DIMMs.  This will probe (and autoload modules!) for useful
+> SMBUS devices that live on DIMMs.  i2c_imc calls it.
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Hyong-Youb Kim <hykim@myri.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->   drivers/net/ethernet/myricom/myri10ge/myri10ge.c |   40 +++++++++++-----------
->   1 files changed, 20 insertions(+), 20 deletions(-)
+Hmm, after thinking about it for a while and a couple of times, I get
+the impression that the functionality of i2c_scan_dimm_bus() should
+better be in userspace, i.e. a udev helper. I could imagine introducing
+a new functionality macro I2C_FUNC_DIMM_BUS which can be detected in
+userspace via i2c-dev. Based on that, the helper can do whatever
+necessary. What do you think?
 
-> diff --git a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-> index 68026f7..130f6b2 100644
-> --- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-> +++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-> @@ -2329,16 +2329,14 @@ static int myri10ge_request_irq(struct myri10ge_priv *mgp)
->   	status = 0;
->   	if (myri10ge_msi) {
->   		if (mgp->num_slices > 1) {
-> -			status =
-> -			    pci_enable_msix(pdev, mgp->msix_vectors,
-> -					    mgp->num_slices);
-> -			if (status == 0) {
-> -				mgp->msix_enabled = 1;
-> -			} else {
-> +			status = pci_enable_msix_range(pdev, mgp->msix_vectors,
-> +					mgp->num_slices, mgp->num_slices);
 
-    Networking coding style assumes that you align the function call 
-continuation lines under the next character after (.
+--pf9I7BMVVzbSWLtt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[...]
-> @@ -3895,32 +3893,34 @@ static void myri10ge_probe_slices(struct myri10ge_priv *mgp)
-[...]
-> +			goto no_msix;
-> +		status = pci_enable_msix_range(pdev,
-> +					       mgp->msix_vectors,
-> +					       mgp->num_slices,
-> +					       mgp->num_slices);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-    Here you get this right.
+iQIcBAEBAgAGBQJTBMrKAAoJEBQN5MwUoCm2j/QP/RweNaFTpVw9nI/LU07tolwU
+/W202vUpU6lVGxLRS6WSDfjO4DvzAp7rXUdMWioxvfr3i8t+bCVkFDvm/dcpnToS
+ts67v5Wq5vPYEDxrBvsQ/+IHJmKc+i1hjE8FkD+iqUN+ri/c1Xvb6YaVNsVjZ0wK
+Tdm95w26cy7rcUyBvvJU8xjO0hE/T2N8mE/B7ZUpmhKEEONPv5LqEPGPPjGYJnXa
+KeoqdabLmdgrQa1GfAyZ99qklDWxZ6zs4IvjonaD3cJqLnRwa/dU/kRKFYtOewNA
+kUnlqSZ8Hf5F+nnBFL8Q949cv0SH5uK3WxK/0iaVMQyjJuk1bfHhIReuU2WSW1g6
+gg1ZCrTQbccBv/pj76u+4JbZ235lYmOXcj+QkptyAnrmnDIg/ZneH1FT5DumQzka
+VZ0WC071EmGfPGe2MZ3ZcMgzC0OzqbkaeHoVDAa+19YNjKQfKzdYxxv0kz4S/bKC
++BEiAD/7u8yH6rKiN9A9KFhvNZo5iqfNJrO62l2xcnN+GVEfUFt3ZRKkOHBT2NBt
+ZLVcTEM+uAZsLPylr/hXhEQeML4qaolHiWbLalcgrmnTthiYRcktrht5MS5tsUBX
++jT+MXE25YiqazfXQ1SX/jFi/34xfcE8dGKjw/TLNGil2j2mV+hXI6eyTBkWGQOl
+6zaBJWf4EhbrBLsaxnwX
+=wrrz
+-----END PGP SIGNATURE-----
 
-WBR, Sergei
-
+--pf9I7BMVVzbSWLtt--
