@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706AbaBSN3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 08:29:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54767 "EHLO mail.zytor.com"
+	id S1753376AbaBSNlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 08:41:31 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53843 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701AbaBSN3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 08:29:05 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.DEB.2.02.1402191259590.4468@ionos.tec.linutronix.de>
-References: <CAC5e1FoLrHWSa_7BnRt-u451ZJOVqKhSpbyp8O_ExDbgcXtU+g@mail.gmail.com> <alpine.DEB.2.02.1402182101450.4468@ionos.tec.linutronix.de> <CAC5e1FpChdyW9xzbwsyVx147hKrV0MxwkCMyKHR4ab5-Q=DyPg@mail.gmail.com> <fe0610e4-0073-42a7-803a-590de82e47ef@email.android.com> <CAC5e1FobNkgWuvk=F=fPfZiyd-r=TFRV6Lg9BTSLsLP6i_T7JA@mail.gmail.com> <alpine.DEB.2.02.1402191259590.4468@ionos.tec.linutronix.de>
+	id S1752883AbaBSNla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 08:41:30 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: <gregkh@linuxfoundation.org>, <santosh.shilimkar@ti.com>,
+        <galak@kernel.crashing.org>
+CC: <rob@landley.net>, <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <rob.herring@calxeda.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <dwmw2@infradead.org>, <nsekhar@ti.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v5 0/2] Introduce AEMIF driver for Davinci/Keystone archs
+Date: Wed, 19 Feb 2014 15:40:08 +0200
+Message-ID: <1392817210-14312-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: Does it need to implement irq_set_type method in the ioapic_chip?
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 19 Feb 2014 05:28:15 -0800
-To: Thomas Gleixner <tglx@linutronix.de>, carl peng <carlpeng008@gmail.com>
-CC: mingo@redhat.com, x86@kernel.org, pingfank@linux.vnet.ibm.com,
-        yoshihiro.yunomae.ez@hitachi.com, linux-kernel@vger.kernel.org
-Message-ID: <5e7b7684-2f67-4dca-b889-94b942cc72dd@email.android.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the casee of your ACPI-enabled AMBA device I believe the BIOS, which provides the ACPI tables, is expected to set the interrupt type.
+These patches introduce Async External Memory Interface (EMIF16/AEMIF)
+controller driver for Davinci/Keystone archs.
 
-On February 19, 2014 4:07:09 AM PST, Thomas Gleixner <tglx@linutronix.de> wrote:
->On Wed, 19 Feb 2014, carl peng wrote:
->> At last, the device will be connected to AMBA bus, so the interrupt
->> pin will be connected to IOAPIC through AMBA bus. The device now
->> is in the pre-silicon verification stage.
->> 
->> So my question is the same:
->> Why does APIC driver not implement the irq_set_type method?  if
->
->Because we do not need it. All devices are properly connected and
->configured by the BIOS and bus discovery.
->
->> implement it, will supply more free space for the device driver
->> developer(they can set the interrupttrigger mode by calling
->request_irq).
->
->There are 3 different mechanisms already to tell the kernel to
->configure a particular irq line: ACPI, MP Tables and SFI.
->
->That's the way x86 does its interrupt configuration and there is no
->need to provide another one.
->
->Thanks,
->
->	tglx
+For more informations see documentation:
+Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
+OMAP-L138 - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
+Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+
+Based on v3.14-rc3.
+
+v4..v5:
+- memory: ti-aemif: introduce AEMIF driver
+	deleted DRV_NAME in favour of KBUILD_MODNAME
+	deleted redundant err message in case of memory allocation
+	some cosmetic changes
+
+v3..v4:
+	rebased on latest of linux-keystone.git keystone/master
+
+v2..v3 (https://lkml.org/lkml/2013/12/11/148):
+- memory: ti-aemif: introduce AEMIF driver
+	changed to work with multiple AEMIF controllers
+	corrected "copyright" to "authors" in header
+	changed compatible "ti,omap-L138-aemif" to "ti,da850-aeimf"
+	used NULL in clk_get() instead of "aemif" name
+	driver can be build as loadable module
+	treat all child nodes as cs nodes, it makes code simpler
+
+- memory: ti-aemif: add bindings for AEMIF driver
+	deleted direct link driver/memory/ti-aemif.c
+	clarified description of controller ranges property
+	changed compatible "ti,omap-L138-aemif" to "ti,da850-aeimf"
+	added cs number information in commit log
+	removed compatible property from cs node, it makes code simpler
+
+v1..v2 (https://lkml.org/lkml/2013/11/21/170):
+- memory: ti-aemif: introduce AEMIF driver
+- memory: ti-aemif: add bindings for AEMIF driver
+	added ti.cs-chipselect property instead of representing chipselect
+	number in cs node name.
+
+Ivan Khoronzhuk (2):
+  memory: ti-aemif: introduce AEMIF driver
+  memory: ti-aemif: add bindings for AEMIF driver
+
+ .../bindings/memory-controllers/ti-aemif.txt       | 210 ++++++++++
+ drivers/memory/Kconfig                             |  11 +
+ drivers/memory/Makefile                            |   1 +
+ drivers/memory/ti-aemif.c                          | 427 +++++++++++++++++++++
+ 4 files changed, 649 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+ create mode 100644 drivers/memory/ti-aemif.c
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.8.3.2
+
