@@ -1,129 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaBSTxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:53:38 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63589 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaBSTxg (ORCPT
+	id S1755145AbaBSTyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:54:35 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:14751 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754884AbaBSTyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:53:36 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: Dipankar Sarma <dipankar@in.ibm.com>, <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used stand-alone
-Date: Wed, 19 Feb 2014 14:33:27 -0500
-Message-ID: <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <Message-ID: <20140219185850.GA23050@linux.vnet.ibm.com>
-References: <Message-ID: <20140219185850.GA23050@linux.vnet.ibm.com>
+	Wed, 19 Feb 2014 14:54:33 -0500
+X-IronPort-AV: E=Sophos;i="4.97,507,1389744000"; 
+   d="scan'208";a="102334593"
+Message-ID: <53050BF5.1060009@citrix.com>
+Date: Wed, 19 Feb 2014 19:54:29 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map definitions
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>		 <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>	 <1392743214.23084.38.camel@kazak.uk.xensource.com>	 <5303C44D.4070500@citrix.com> <1392804319.23084.109.camel@kazak.uk.xensource.com>
+In-Reply-To: <1392804319.23084.109.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kbuild test bot uncovered an implicit dependence on the
-trace header being present before rcu.h in ia64 allmodconfig
-that looks like this:
+On 19/02/14 10:05, Ian Campbell wrote:
+> On Tue, 2014-02-18 at 20:36 +0000, Zoltan Kiss wrote:
+>> On 18/02/14 17:06, Ian Campbell wrote:
+>>> On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
+>>>> This patch contains the new definitions necessary for grant mapping.
+>>>
+>>> Is this just adding a bunch of (currently) unused functions? That's a
+>>> slightly odd way to structure a series. They don't seem to be "generic
+>>> helpers" or anything so it would be more normal to introduce these as
+>>> they get used -- it's a bit hard to review them out of context.
+>> I've created two patches because they are quite huge even now,
+>> separately. Together they would be a ~500 line change. That was the best
+>> I could figure out keeping in mind that bisect should work. But as I
+>> wrote in the first email, I welcome other suggestions. If you and Wei
+>> prefer this two patch in one big one, I merge them in the next version.
+>
+> I suppose it is hard to split a change like this up in a sensible way,
+> but it is rather hard to review something which is split in two parts
+> sensibly.
+>
+> If the combined patch too large to fit on the lists?
+Well, it's ca. 30 kb, ~500 lines changed. I guess it's possible. It's up 
+to you and Wei, if you would like them to be merged, I can do that.
 
-In file included from kernel/ksysfs.c:22:0:
-kernel/rcu/rcu.h: In function '__rcu_reclaim':
-kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
-kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
+>>>
+>>>> +					  struct xenvif,
+>>>> +					  pending_tx_info[0]);
+>>>> +
+>>>> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
+>>>> +	do {
+>>>> +		pending_idx = ubuf->desc;
+>>>> +		ubuf = (struct ubuf_info *) ubuf->ctx;
+>>>> +		index = pending_index(vif->dealloc_prod);
+>>>> +		vif->dealloc_ring[index] = pending_idx;
+>>>> +		/* Sync with xenvif_tx_dealloc_action:
+>>>> +		 * insert idx then incr producer.
+>>>> +		 */
+>>>> +		smp_wmb();
+>>>
+>>> Is this really needed given that there is a lock held?
+>> Yes, as the comment right above explains.
+>
+> My question is why do you need this sync if you are holding a lock, the
+> comment doesn't tell me that. I suppose xenvif_tx_dealloc_action doesn't
+> hold the dealloc_lock, but that is non-obvious from the names.
+Ok, I'll clarify that in the comment.
 
-Looking at other rcu.h users, we can find that they all
-were sourcing the trace header in advance of rcu.h itself,
-as seen in the context of this diff.  There were also some
-inconsistencies as to whether it was or wasn't sourced based
-on the parent tracing Kconfig.
+>>>
+>>>> +		vif->dealloc_prod++;
+>>>
+>>> What happens if the dealloc ring becomes full, will this wrap and cause
+>>> havoc?
+>> Nope, if the dealloc ring is full, the value of the last increment won't
+>> be used to index the dealloc ring again until some space made available.
+>
+> I don't follow -- what makes this the case?
+The dealloc ring has the same size as the pending ring, and you can only 
+add slots to it which are already on the pending ring (the pending_idx 
+comes from ubuf->desc), as you are essentially free up slots here on the 
+pending ring.
+So if the dealloc ring becomes full, vif->dealloc_prod - 
+vif->dealloc_cons will be 256, which would be bad. But the while loop 
+should exit here, as we shouldn't have any more pending slots. And if we 
+dealloc and create free pending slots in dealloc_action, dealloc_cons 
+will also advance.
 
-Rather than "fix" it at each use site, and have inconsistent
-use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
-lets just source the trace header just once, in the actual consumer
-of it, which is rcu.h itself.  We include it unconditionally, as
-build testing shows us that is a hard requirement for some files.
+>> Of course if something broke and we have more pending slots than tx ring
+>> or dealloc slots then it can happen. Do you suggest a
+>> BUG_ON(vif->dealloc_prod - vif->dealloc_cons >= MAX_PENDING_REQS)?
+>
+> A
+>           BUG_ON(space in dealloc ring < number of slots needed to dealloc this skb)
+> would seem to be the right thing, if that really is the invariant the
+> code is supposed to be implementing.
+Not exactly, it means BUG_ON(number of slots to dealloc > 
+MAX_PENDING_REQS), and it should be at the end of the loop, without '='.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
+>>>> +static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+>>>> +{
+>>>> +	struct gnttab_unmap_grant_ref *gop;
+>>>> +	pending_ring_idx_t dc, dp;
+>>>> +	u16 pending_idx, pending_idx_release[MAX_PENDING_REQS];
+>>>> +	unsigned int i = 0;
+>>>> +
+>>>> +	dc = vif->dealloc_cons;
+>>>> +	gop = vif->tx_unmap_ops;
+>>>> +
+>>>> +	/* Free up any grants we have finished using */
+>>>> +	do {
+>>>> +		dp = vif->dealloc_prod;
+>>>> +
+>>>> +		/* Ensure we see all indices enqueued by all
+>>>> +		 * xenvif_zerocopy_callback().
+>>>> +		 */
+>>>> +		smp_rmb();
+>>>> +
+>>>> +		while (dc != dp) {
+>>>> +			pending_idx =
+>>>> +				vif->dealloc_ring[pending_index(dc++)];
+>>>> +
+>>>> +			/* Already unmapped? */
+>>>> +			if (vif->grant_tx_handle[pending_idx] ==
+>>>> +				NETBACK_INVALID_HANDLE) {
+>>>> +				netdev_err(vif->dev,
+>>>> +					   "Trying to unmap invalid handle! "
+>>>> +					   "pending_idx: %x\n", pending_idx);
+>>>> +				BUG();
+>>>> +			}
+>>>> +
+>>>> +			pending_idx_release[gop-vif->tx_unmap_ops] =
+>>>> +				pending_idx;
+>>>> +			vif->pages_to_unmap[gop-vif->tx_unmap_ops] =
+>>>> +				vif->mmap_pages[pending_idx];
+>>>> +			gnttab_set_unmap_op(gop,
+>>>> +					    idx_to_kaddr(vif, pending_idx),
+>>>> +					    GNTMAP_host_map,
+>>>> +					    vif->grant_tx_handle[pending_idx]);
+>>>> +			vif->grant_tx_handle[pending_idx] =
+>>>> +				NETBACK_INVALID_HANDLE;
+>>>> +			++gop;
+>>>
+>>> Can we run out of space in the gop array?
+>> No, unless the same thing happen as at my previous answer. BUG_ON() here
+>> as well?
+>
+> Yes, or at the very least a comment explaining how/why gop is bounded
+> elsewhere.
+Ok, I'll do that.
 
-[v2: move the #include <trace/events/rcu.h> outside of the scope
- of #ifdef CONFIG_RCU_TRACE so it is unconditionally included.]
+>
+>>>
+>>>> +		}
+>>>> +
+>>>> +	} while (dp != vif->dealloc_prod);
+>>>> +
+>>>> +	vif->dealloc_cons = dc;
+>>>
+>>> No barrier here?
+>> dealloc_cons only used in the dealloc_thread. dealloc_prod is used by
+>> the callback and the thread as well, that's why we need mb() in
+>> previous. Btw. this function comes from classic's net_tx_action_dealloc
+>
+> Is this code close enough to that code architecturally that you can
+> infer correctness due to that though?
+Nope, I've just mentioned it because knowing that old code can help to 
+understand this new, as their logic is very similar some places, like here.
 
- kernel/rcu/rcu.h    | 1 +
- kernel/rcu/srcu.c   | 2 --
- kernel/rcu/tiny.c   | 4 ----
- kernel/rcu/tree.c   | 2 --
- kernel/rcu/update.c | 1 -
- 5 files changed, 1 insertion(+), 9 deletions(-)
+> So long as you have considered the barrier semantics in the context of
+> the current code and you think it is correct to not have one here then
+> I'm ok. But if you have just assumed it is OK because some older code
+> didn't have it then I'll have to ask you to consider it again...
+Nope, as I mentioned above, dealloc_cons only accessed in that funcion, 
+from the same thread. Dealloc_prod is written in the callback and read 
+out here, that's why we need the barrier there.
 
-diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
-index 1bd787fddcb2..3d2a037332b2 100644
---- a/kernel/rcu/rcu.h
-+++ b/kernel/rcu/rcu.h
-@@ -23,6 +23,7 @@
- #ifndef __LINUX_RCU_H
- #define __LINUX_RCU_H
- 
-+#include <trace/events/rcu.h>
- #ifdef CONFIG_RCU_TRACE
- #define RCU_TRACE(stmt) stmt
- #else /* #ifdef CONFIG_RCU_TRACE */
-diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
-index 5db7e9272d37..8e66b05bfd82 100644
---- a/kernel/rcu/srcu.c
-+++ b/kernel/rcu/srcu.c
-@@ -36,8 +36,6 @@
- #include <linux/delay.h>
- #include <linux/srcu.h>
- 
--#include <trace/events/rcu.h>
--
- #include "rcu.h"
- 
- /*
-diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-index 53b95bbf4abb..d9efcc13008c 100644
---- a/kernel/rcu/tiny.c
-+++ b/kernel/rcu/tiny.c
-@@ -37,10 +37,6 @@
- #include <linux/prefetch.h>
- #include <linux/ftrace_event.h>
- 
--#ifdef CONFIG_RCU_TRACE
--#include <trace/events/rcu.h>
--#endif /* #else #ifdef CONFIG_RCU_TRACE */
--
- #include "rcu.h"
- 
- /* Forward declarations for tiny_plugin.h. */
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index c7a00dbe768b..351faba48b91 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -58,8 +58,6 @@
- #include <linux/suspend.h>
- 
- #include "tree.h"
--#include <trace/events/rcu.h>
--
- #include "rcu.h"
- 
- MODULE_ALIAS("rcutree");
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index fd0d5b5b8e7c..4c0a9b0af469 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -49,7 +49,6 @@
- #include <linux/module.h>
- 
- #define CREATE_TRACE_POINTS
--#include <trace/events/rcu.h>
- 
- #include "rcu.h"
- 
--- 
-1.8.5.2
+>
+>>>> +				netdev_err(vif->dev,
+>>>> +					   " host_addr: %llx handle: %x status: %d\n",
+>>>> +					   gop[i].host_addr,
+>>>> +					   gop[i].handle,
+>>>> +					   gop[i].status);
+>>>> +			}
+>>>> +			BUG();
+>>>> +		}
+>>>> +	}
+>>>> +
+>>>> +	for (i = 0; i < gop - vif->tx_unmap_ops; ++i)
+>>>> +		xenvif_idx_release(vif, pending_idx_release[i],
+>>>> +				   XEN_NETIF_RSP_OKAY);
+>>>> +}
+>>>> +
+>>>> +
+>>>>    /* Called after netfront has transmitted */
+>>>>    int xenvif_tx_action(struct xenvif *vif, int budget)
+>>>>    {
+>>>> @@ -1678,6 +1793,25 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
+>>>>    	vif->mmap_pages[pending_idx] = NULL;
+>>>>    }
+>>>>
+>>>> +void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+>>>
+>>> This is a single shot version of the batched xenvif_tx_dealloc_action
+>>> version? Why not just enqueue the idx to be unmapped later?
+>> This is called only from the NAPI instance. Using the dealloc ring
+>> require synchronization with the callback which can increase lock
+>> contention. On the other hand, if the guest sends small packets
+>> (<PAGE_SIZE), the TLB flushing can cause performance penalty.
+>
+> Right. When/How often is this called from the NAPI instance?
+When grant mapping error detected in xenvif_tx_check_gop, and if a 
+packet smaller than PKT_PROT_LEN is sent. The latter would be removed if 
+we will grant copy such packets entirely.
 
+> Is the locking contention from this case so severe that it out weighs
+> the benefits of batching the unmaps? That would surprise me. After all
+> the locking contention is there for the zerocopy_callback case too
+>
+>>   The above
+>> mentioned upcoming patch which gntcopy the header can prevent that
+>
+> So this is only called when doing the pull-up to the linear area?
+Yes, as mentioned above.
+
+Zoli
