@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaBSE0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 23:26:36 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:54376 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaBSE0e (ORCPT
+	id S1751763AbaBSE04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 23:26:56 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58047 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaBSE0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 23:26:34 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <53043277.5080807@roeck-us.net>
-Date: Tue, 18 Feb 2014 20:26:31 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Feb 2014 23:26:53 -0500
+Date: Wed, 19 Feb 2014 13:14:28 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Fabio Estevam <festevam@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Message-ID: <20140219041428.GS2669@sirena.org.uk>
+References: <1392777974-26254-1-git-send-email-festevam@gmail.com>
+ <CAK9yfHzaUhBTooqF8+ywGgAS4kob7MTxOv0ncLifmYws0crpAA@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH 3.4 00/24] 3.4.81-stable review
-References: <20140218224550.221535225@linuxfoundation.org>
-In-Reply-To: <20140218224550.221535225@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="V39eZ3eeYcE7QFDY"
+Content-Disposition: inline
+In-Reply-To: <CAK9yfHzaUhBTooqF8+ywGgAS4kob7MTxOv0ncLifmYws0crpAA@mail.gmail.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.132.247
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] pfuze100-regulator: Fix of_node_get() parameter
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 02:46 PM, Greg Kroah-Hartman wrote:
-> Many thanks to Li Zefan for digging up a bunch of these patches, that
-> work is much appreciated.
->
-> This is the start of the stable review cycle for the 3.4.81 release.
-> There are 24 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
 
-Build results:
-	total: 119 pass: 97 skipped: 18 fail: 4
+--V39eZ3eeYcE7QFDY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-qemu tests all passed.
+On Wed, Feb 19, 2014 at 09:02:52AM +0530, Sachin Kamat wrote:
 
-Details are available at http://server.roeck-us.net:8010/builders.
+> There are a few more instances that should be fixed like this one. How would you
+> prefer to handle them - Resend the complete patch or send just the
+> incremental fix?
 
-Results are as expected.
+Incremental fixes always.
 
-Guenter
+--V39eZ3eeYcE7QFDY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBC+gAAoJELSic+t+oim9g2EP/jGRXyKV82wM4d2kbkl2/aku
+Hi+UGC3EStOYAXgttWpCITulz1JNF+OsK+1tALwVdR9uSQ2XpIeANX8PaZxrTkaM
+Nnwf9T20wpNHeNFf+cENnFCulAuG6dJD6p24HzvVhPdUA7j45KmZoHEcAhCFT/Nr
+UfqZcR/BTRr/16fhk2nFnied06x+9MlwGkex2buJokc1DxMoG3RiLAzUFOrJnYx2
+yyeBm9q1GAMTFRwS7J7mllaY0wxVTv6uYZ0M7qS8B9K0Owhv7f+V4JZrjKXXP4l6
+u7bTspd0FlT1eC6lr+toWnf2pJYjqg3aVBMMbze7DiK60WSDwXDcIKanWZ3g1ECq
+E+rwdQK5OIrQZaRCo7QU5ffkgerQdoKnSlGCIImO4N5hzQm/cYh+m/2DjeDQ2DoT
+jML5d4TIUYBLYiVBwowBZGJWSuoT9uZzrjR+FqQWPmPZm6yOhSo8hf4AuzRZcvF1
+ab6nAAIYwJxCkdHROpSDisyO2E/gwrHaNxf7taHw0C0TGh6AE18X1ROzStdIg2cn
+ZjRc+U7OYM16FuPzwBhWLCyJ+F0Z1NEKpvEGKpHANGmYdhcDT9Rir4A5WzpnYMUn
+/w9xUhn+9t/yexCUJojF+Wqo3RrFrGgLq7asCq4cjPZmC+aPktPdIYqxJbufoLOq
+wYxgvpgu91/EVtZGnhwX
+=HLga
+-----END PGP SIGNATURE-----
+
+--V39eZ3eeYcE7QFDY--
