@@ -1,156 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaBSQZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:25:52 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51894 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754159AbaBSQZv (ORCPT
+	id S1754237AbaBSQ2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:28:04 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55313 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654AbaBSQ2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:25:51 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 6/9] ACPI / ATA: Add hotplug contexts to ACPI companions of SATA devices
-Date: Wed, 19 Feb 2014 17:40:41 +0100
-Message-ID: <5171255.VRC6s13geU@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53041A0C.4040306@intel.com>
-References: <3011875.q18rCmXyYX@vostro.rjw.lan> <1707532.0BItEHDuFB@vostro.rjw.lan> <53041A0C.4040306@intel.com>
+	Wed, 19 Feb 2014 11:28:02 -0500
+Date: Thu, 20 Feb 2014 01:27:44 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140219162744.GO2669@sirena.org.uk>
+References: <1392720071-13503-1-git-send-email-sachin.kamat@linaro.org>
+ <1392720071-13503-6-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YrHeAUbOAX9OMs3W"
+Content-Disposition: inline
+In-Reply-To: <1392720071-13503-6-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.144.10
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 06/15] regulator: lp872x: Do not hardcode return values
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 19, 2014 10:42:20 AM Aaron Lu wrote:
-> On 02/19/2014 09:30 AM, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Modify the SATA subsystem to add hotplug contexts to ACPI companions
-> > of SATA devices and ports instead of registering special ACPI dock
-> > operations using register_hotplug_dock_device().
-> > 
-> > That change will allow the entire code handling those special ACPI
-> > dock operations to be dropped in the next commit.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/ata/libata-acpi.c |   76 +++++++++++++++++++++++++++++-----------------
-> >  1 file changed, 49 insertions(+), 27 deletions(-)
-> > 
-> > Index: linux-pm/drivers/ata/libata-acpi.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/ata/libata-acpi.c
-> > +++ linux-pm/drivers/ata/libata-acpi.c
-> > @@ -38,6 +38,16 @@ static void ata_acpi_clear_gtf(struct at
-> >  	dev->gtf_cache = NULL;
-> >  }
-> >  
-> > +struct ata_acpi_hotplug_context {
-> > +	struct acpi_hotplug_context hp;
-> > +	union {
-> > +		struct ata_port *ap;
-> > +		struct ata_device *dev;
-> > +	} data;
-> > +};
-> > +
-> > +#define ata_hotplug_data(context) (container_of((context), struct ata_acpi_hotplug_context, hp)->data)
-> > +
-> >  /**
-> >   * ata_dev_acpi_handle - provide the acpi_handle for an ata_device
-> >   * @dev: the acpi_handle returned will correspond to this device
-> > @@ -121,18 +131,17 @@ static void ata_acpi_handle_hotplug(stru
-> >  		ata_port_wait_eh(ap);
-> >  }
-> >  
-> > -static void ata_acpi_dev_notify_dock(acpi_handle handle, u32 event, void *data)
-> > +static int ata_acpi_dev_notify_dock(struct acpi_device *adev, u32 event)
-> >  {
-> > -	struct ata_device *dev = data;
-> > -
-> > +	struct ata_device *dev = ata_hotplug_data(adev->hp).dev;
-> >  	ata_acpi_handle_hotplug(dev->link->ap, dev, event);
-> > +	return 0;
-> >  }
-> >  
-> > -static void ata_acpi_ap_notify_dock(acpi_handle handle, u32 event, void *data)
-> > +static int ata_acpi_ap_notify_dock(struct acpi_device *adev, u32 event)
-> >  {
-> > -	struct ata_port *ap = data;
-> > -
-> > -	ata_acpi_handle_hotplug(ap, NULL, event);
-> > +	ata_acpi_handle_hotplug(ata_hotplug_data(adev->hp).ap, NULL, event);
-> > +	return 0;
-> >  }
-> >  
-> >  static void ata_acpi_uevent(struct ata_port *ap, struct ata_device *dev,
-> > @@ -154,31 +163,23 @@ static void ata_acpi_uevent(struct ata_p
-> >  	}
-> >  }
-> >  
-> > -static void ata_acpi_ap_uevent(acpi_handle handle, u32 event, void *data)
-> > +static void ata_acpi_ap_uevent(struct acpi_device *adev, u32 event)
-> >  {
-> > -	ata_acpi_uevent(data, NULL, event);
-> > +	ata_acpi_uevent(ata_hotplug_data(adev->hp).ap, NULL, event);
-> >  }
-> >  
-> > -static void ata_acpi_dev_uevent(acpi_handle handle, u32 event, void *data)
-> > +static void ata_acpi_dev_uevent(struct acpi_device *adev, u32 event)
-> >  {
-> > -	struct ata_device *dev = data;
-> > +	struct ata_device *dev = ata_hotplug_data(adev->hp).dev;
-> >  	ata_acpi_uevent(dev->link->ap, dev, event);
-> >  }
-> >  
-> > -static const struct acpi_dock_ops ata_acpi_dev_dock_ops = {
-> > -	.handler = ata_acpi_dev_notify_dock,
-> > -	.uevent = ata_acpi_dev_uevent,
-> > -};
-> > -
-> > -static const struct acpi_dock_ops ata_acpi_ap_dock_ops = {
-> > -	.handler = ata_acpi_ap_notify_dock,
-> > -	.uevent = ata_acpi_ap_uevent,
-> > -};
-> > -
-> >  /* bind acpi handle to pata port */
-> >  void ata_acpi_bind_port(struct ata_port *ap)
-> >  {
-> >  	struct acpi_device *host_companion = ACPI_COMPANION(ap->host->dev);
-> > +	struct acpi_device *adev;
-> > +	struct ata_acpi_hotplug_context *context;
-> >  
-> >  	if (libata_noacpi || ap->flags & ATA_FLAG_ACPI_SATA || !host_companion)
-> >  		return;
-> > @@ -188,9 +189,19 @@ void ata_acpi_bind_port(struct ata_port
-> >  	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
-> >  		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
-> >  
-> > -	/* we might be on a docking station */
-> > -	register_hotplug_dock_device(ACPI_HANDLE(&ap->tdev),
-> > -				     &ata_acpi_ap_dock_ops, ap, NULL, NULL);
-> > +	adev = ACPI_COMPANION(&ap->tdev);
-> > +	if (!adev)
-> > +		return;
-> > +
-> > +	context = kzalloc(sizeof(*context), GFP_KERNEL);
-> > +	if (!context)
-> > +		return;
-> 
-> The context isn't freed on ATA driver detach, which doesn't normally
-> happen though.
 
-Yes, but it will happen for ATA devices in docks and bays.  However,
-the struct acpi_device objects won't go away then and we only need to initialize
-the contexts once, so it should be sufficient to simply return from here if
-the context is already there.
+--YrHeAUbOAX9OMs3W
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'll send an updated patch with that change later today.
+On Tue, Feb 18, 2014 at 04:11:02PM +0530, Sachin Kamat wrote:
+> Propagate the error values returned by the function instead.
 
-Thanks,
-Rafael
+Applied, thanks.
 
+--YrHeAUbOAX9OMs3W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBNt8AAoJELSic+t+oim985YP/2dhv1CLx6nK+v3db+YKn4q0
+kYOqC+M5PSVa5krx/sXxC1jYEEL7Sn4KUn0QOqmtTuhsXmcPwWkshROuxQU5vADk
+Rp7TXVhSymo0dJ1dQI9FtWsl90u8D9MSLNKBlboYTCw869/AgNwuiVi1HHNo1JYO
+OX0L0LROrMpKgvUUFcuVzFLnFrxk4Nk2psTesjErR2t2zaeIj96DoXj0akREDYfb
+u42UduMDxFnWsH63koXFHXa6iUyJVel0qwLbXkdV/zMvrln4H6Mpfkxx+GcfNRIG
+UUTN7akgUiBXMBfm3QFA23mbPKLwdg+h6vgEZsKsKA3S2YOg5Zgfr2K5vUqdok3t
+WAB1xEzeYKiOC7J66a6S70a3nEkXNbhpIuEJ6DHcRbzlKLV1SyW1K0xIYjqEKwKJ
+BG7ueWUYKroSvasRXlPH+eaSC2snj6k402BWlv4XuWfaI/5ioERXOLqzHacvedgM
+tCu/sv5MGDQqAW6ZvJGH3zd3oJpwHcCTg67tO37/PxDYB3F5eBQgr0lsa7205Fps
+AMWGWcAW1FRWu+yELORmWl69uPYaJvUB7ZelAyqvuwNBRn7D+3pOMUMIL8QCXeFA
+ULzFEwd6R0wzRtUoBXi70mndbzEp9m0DP/Tu7z52eE1aqcjHcwtGWL4D5Tm8ik9Q
+bYowk8YlwiIBAKNX65lq
+=85xg
+-----END PGP SIGNATURE-----
+
+--YrHeAUbOAX9OMs3W--
