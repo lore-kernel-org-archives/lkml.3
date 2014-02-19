@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879AbaBSVRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 16:17:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:34648 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749AbaBSVRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 16:17:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,507,1389772800"; 
-   d="scan'208";a="458383391"
-Date: Wed, 19 Feb 2014 18:17:13 -0300
-From: Lucas De Marchi <lucas.demarchi@intel.com>
-To: Mark Jackson <mpfj-list@newflow.co.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Haavard Skinnemoen <haavard.skinnemoen@atmel.com>,
-        <kay.sievers@vrfy.org>, <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 2/2] misc: add missing minor nodes
-Message-ID: <20140219211712.GB2341@intel.com>
-References: <1392701245-4645-1-git-send-email-lucas.demarchi@intel.com>
- <1392701245-4645-3-git-send-email-lucas.demarchi@intel.com>
- <20140218185228.GC29209@kroah.com>
- <530509FA.9070800@newflow.co.uk>
+	id S1755151AbaBSVSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 16:18:36 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:44841 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaBSVSe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 16:18:34 -0500
+Message-ID: <53051FD2.1020905@windriver.com>
+Date: Wed, 19 Feb 2014 16:19:14 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <530509FA.9070800@newflow.co.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-Originating-IP: [10.218.97.27]
+To: Alan Cox <alan@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/tty/serial: deal with 8250_core.c uninitialized
+ warning for good
+References: <1392840013-15957-1-git-send-email-paul.gortmaker@windriver.com> <1392843083.11798.74.camel@acox1-desk.ger.corp.intel.com>
+In-Reply-To: <1392843083.11798.74.camel@acox1-desk.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 07:46:02PM +0000, Mark Jackson wrote:
-> On 18/02/14 18:52, Greg Kroah-Hartman wrote:
-> > On Tue, Feb 18, 2014 at 02:27:25AM -0300, Lucas De Marchi wrote:
-> >> From: Lucas De Marchi <lucas.demarchi@intel.com>
-> >>
-> >> Signed-off-by: Lucas De Marchi <lucas.demarchi@intel.com>
-> >> ---
-> >>  Documentation/devices.txt | 3 +++
-> >>  1 file changed, 3 insertions(+)
-> >>
-> >> diff --git a/Documentation/devices.txt b/Documentation/devices.txt
-> >> index 04356f5..0ea1cc2 100644
-> >> --- a/Documentation/devices.txt
-> >> +++ b/Documentation/devices.txt
-> >> @@ -329,6 +329,7 @@ Your cooperation is appreciated.
-> >>  		filesystem across multiple physical disks.
-> >>  
-> >>   10 char	Non-serial mice, misc features
-> >> +		  0 = /dev/fram
-> >>  		  0 = /dev/logibm	Logitech bus mouse
-> >>  		  1 = /dev/psaux	PS/2-style mouse port
-> >>  		  2 = /dev/inportbm	Microsoft Inport bus mouse
-> > 
-> > That's not ok at all, and probably a bug, someone must have thought that
-> > minor 0 ment "give me a dynamic number."  No one caught this when the
-> > driver was first merged in a arch-specific tree in 2008 :(
-> > 
-> > In looking at the driver, it probably should just be a UIO driver, or
-> > something else, all it does it map frame buffer memory to userspace,
-> > given the hardware involved, odds are no one even uses it anymore...
-> > 
-> > Mark and Haavard, any thoughts about the
-> > arch/avr32/boards/mimc200/fram.c driver?  Can I fix up the minor number
-> > here, or just delete the driver entirely if it's not being used anymore?
+On 14-02-19 03:51 PM, Alan Cox wrote:
+> On Wed, 2014-02-19 at 15:00 -0500, Paul Gortmaker wrote:
+>> Every couple of months, someone sends a patch to fix:
+>>
+>> drivers/tty/serial/8250/8250_core.c: In function 'serial_unlink_irq_chain':
+>> drivers/tty/serial/8250/8250_core.c:1712:2: warning: 'i' may be used uninitialized in this function [-Wuninitialized]
+>>
+>> and they in turn get a NACK for their efforts, and are told that
+>> their compiler is broken.  This has been going on since at least
+>> the year 2008:  https://lkml.org/lkml/2008/11/24/433
+>>
+>> Lets add a comment, so that subsequent patches don't get as far as
+>> the maintainers or the mailing lists.
 > 
-> I think it's safe to delete the driver.
+> Are people still using gcc variants that get this wrong ?
+
+It seems that gcc 4.6.3 gets it wrong, and it isn't _that_ old.
+
+Paul.
+--
+
+$ mips-linux-gcc -v
+Using built-in specs.
+COLLECT_GCC=mips-linux-gcc
+COLLECT_LTO_WRAPPER=/home/paul/tc/gcc-4.6.3-nolibc/mips-linux/bin/../libexec/gcc/mips-linux/4.6.3/lto-wrapper
+Target: mips-linux
+Configured with: /home/tony/buildall/src/gcc/configure --target=mips-linux --host=x86_64-linux-gnu --build=x86_64-linux-gnu --enable-targets=all --prefix=/opt/cross/gcc-4.6.3-nolibc/mips-linux/ --enable-languages=c --with-newlib --without-headers --enable-sjlj-exceptions --with-system-libunwind --disable-nls --disable-threads --disable-shared --disable-libmudflap --disable-libssp --disable-libgomp --disable-decimal-float --enable-checking=release --with-mpfr=/home/tony/buildall/src/sys-x86_64 --with-gmp=/home/tony/buildall/src/sys-x86_64 --disable-bootstrap --disable-libquadmath
+Thread model: single
+gcc version 4.6.3 (GCC) 
+$ make allmodconfig > /dev/null
+$ make drivers/tty/serial/8250/8250_core.o > /dev/null
+drivers/tty/serial/8250/8250_core.c: In function 'serial_unlink_irq_chain':
+drivers/tty/serial/8250/8250_core.c:1712:2: warning: 'i' may be used uninitialized in this function [-Wuninitialized]
+$ 
+
+
 > 
-> The mimc200 unit is now basically obsolete and there'll be no new development on it.
-
-Ok, thanks.
-
-Greg,
-
-So it looks like only 197 and 239 need to be updated in
-the documentation.  Below is the updated patch.
-
-Lucas De Marchi
-
----------8<---------
-Subject: [PATCH] misc: add missing minor nodes
-
-Signed-off-by: Lucas De Marchi <lucas.demarchi@intel.com>
----
- Documentation/devices.txt | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/Documentation/devices.txt b/Documentation/devices.txt
-index 04356f5..d154147 100644
---- a/Documentation/devices.txt
-+++ b/Documentation/devices.txt
-@@ -411,6 +411,7 @@ Your cooperation is appreciated.
- 		194 = /dev/zkshim	Zero-Knowledge network shim control
- 		195 = /dev/elographics/e2201	Elographics touchscreen E271-2201
- 		196 = /dev/vfio/vfio	VFIO userspace driver interface
-+		197 = /dev/pxa3xx-gcu	PXA3xx graphics controller unit driver
- 		198 = /dev/sexec	Signed executable interface
- 		199 = /dev/scanners/cuecat :CueCat barcode scanner
- 		200 = /dev/net/tun	TAP/TUN network device
-@@ -452,6 +453,7 @@ Your cooperation is appreciated.
- 		236 = /dev/mapper/control	Device-Mapper control device
- 		237 = /dev/loop-control Loopback control device
- 		238 = /dev/vhost-net	Host kernel accelerator for virtio net
-+		239 = /dev/uhid		User-space I/O driver support for HID subsystem
- 
- 		240-254			Reserved for local use
- 		255			Reserved for MISC_DYNAMIC_MINOR
--- 
-1.9.0
-
+> Fine by me.
+> 
+> Acked-by: Alan Cox <alan@linux.intel.com>
+> 
+> 
