@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaBSXGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 18:06:09 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57228 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080AbaBSXGH (ORCPT
+	id S1751768AbaBSXIW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 18:08:22 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:34290 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaBSXIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 18:06:07 -0500
-Date: Wed, 19 Feb 2014 15:05:58 -0800
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] mm: exclude memory less nodes from zone_reclaim
-Message-ID: <20140219230558.GA28062@linux.vnet.ibm.com>
-References: <20140219082313.GB14783@dhcp22.suse.cz>
- <1392829383-4125-1-git-send-email-mhocko@suse.cz>
- <20140219175339.GG27108@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402191353540.31921@chino.kir.corp.google.com>
+	Wed, 19 Feb 2014 18:08:21 -0500
+X-Originating-IP: 173.246.103.110
+Date: Wed, 19 Feb 2014 15:08:09 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Rik van Riel <riel@surriel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kelley Nielsen <kelleynnn@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, opw-kernel@googlegroups.com, jamieliu@google.com,
+        sjenning@linux.vnet.ibm.com, Hugh Dickins <hughd@google.com>
+Subject: Re: [OPW kernel] Re: [RFC] mm:prototype for the updated swapoff
+ implementation
+Message-ID: <20140219230809.GA8221@jtriplet-mobl1>
+References: <20140219003522.GA8887@kelleynnn-virtual-machine>
+ <20140219132757.58b61f07bad914b3848275e9@linux-foundation.org>
+ <530524A3.6090700@surriel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402191353540.31921@chino.kir.corp.google.com>
-X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+In-Reply-To: <530524A3.6090700@surriel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021923-7164-0000-0000-0000063BD107
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.02.2014 [13:56:00 -0800], David Rientjes wrote:
-> On Wed, 19 Feb 2014, Nishanth Aravamudan wrote:
-> 
-> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > index 3e953f07edb0..4a44bdc7a8cf 100644
-> > > --- a/mm/page_alloc.c
-> > > +++ b/mm/page_alloc.c
-> > > @@ -1855,7 +1855,7 @@ static void __paginginit init_zone_allows_reclaim(int nid)
-> > >  {
-> > >  	int i;
-> > > 
-> > > -	for_each_online_node(i)
-> > > +	for_each_node_state(i, N_HIGH_MEMORY)
-> > >  		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
-> > >  			node_set(i, NODE_DATA(nid)->reclaim_nodes);
-> > >  		else
-> > > @@ -4901,7 +4901,8 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
-> > > 
-> > >  	pgdat->node_id = nid;
-> > >  	pgdat->node_start_pfn = node_start_pfn;
-> > > -	init_zone_allows_reclaim(nid);
-> > > +	if (node_state(nid, N_HIGH_MEMORY))
-> > > +		init_zone_allows_reclaim(nid);
+On Wed, Feb 19, 2014 at 04:39:47PM -0500, Rik van Riel wrote:
+> On 02/19/2014 04:27 PM, Andrew Morton wrote:
+> > On Tue, 18 Feb 2014 16:35:22 -0800 Kelley Nielsen <kelleynnn@gmail.com> wrote:
 > > 
-> > I'm still new to this code, but isn't this saying that if a node has no
-> > memory, then it shouldn't reclaim from any node? But, for a memoryless
-> > node to ensure progress later if reclaim is necessary, it *must* reclaim
-> > from other nodes? So wouldn't we want to set reclaim_nodes() in that
-> > case to node_states[N_MEMORY]?
+> >> The function try_to_unuse() is of quadratic complexity, with a lot of
+> >> wasted effort. It unuses swap entries one by one, potentially iterating
+> >> over all the page tables for all the processes in the system for each
+> >> one.
+> >>
+> >> This new proposed implementation of try_to_unuse simplifies its
+> >> complexity to linear. It iterates over the system's mms once, unusing
+> >> all the affected entries as it walks each set of page tables. It also
+> >> makes similar changes to shmem_unuse.
+> >>
+> >> Improvement
+> >>
+> >> swapoff was called on a swap partition containing about 50M of data,
+> >> and calls to the function unuse_pte_range were counted.
+> >>
+> >> Present implementation....about 22.5M calls.
+> >> Prototype.................about  7.0K   calls.
 > > 
+> > Do you have situations in which swapoff is taking an unacceptable
+> > amount of time?  If so, please update the changelog to provide full
+> > details on this, with before-and-after timing measurements.
 > 
-> The only time when pgdat->reclaim_nodes or zone_reclaim_mode matters is 
-> when iterating through a zonelist for page allocation and a memoryless 
-> node should never appear in a zonelist for page allocation, so this is 
-> just preventing setting zone_reclaim_mode unnecessarily because the only 
-> nodes with > RECLAIM_DISTANCE to another node are memoryless.  So this 
-> patch is fine as long as it gets s/N_HIGH_MEMORY/N_MEMORY/.
+> I have seen plenty of that.  With just a few GB in swap space in
+> use, on a system with 24GB of RAM, and about a dozen GB in use
+> by various processes, I have seen swapoff take several hours of
+> CPU time.
 
-Ah yes, sorry, I've been looking at this code perhaps too much and going
-a bit cross-eyed!
+And it's clear what the lower bound on swapoff should be: current amount
+of swap in use, divided by maximum disk write speed.  We're definitely
+not to *that* point yet; this ought to get us a lot closer.
 
-I wonder if we should also put some comments in? But
-
-Acked-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Tested-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-
-Thanks,
-Nish
-
+- Josh Triplett
