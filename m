@@ -1,65 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaBSB3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 20:29:37 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56221 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312AbaBSB3g (ORCPT
+	id S1751833AbaBSBid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 20:38:33 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:46232 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267AbaBSBib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 20:29:36 -0500
-Date: Tue, 18 Feb 2014 11:05:15 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20140218020515.GI2669@sirena.org.uk>
-References: <1392627817-26957-1-git-send-email-sachin.kamat@linaro.org>
- <1392627817-26957-9-git-send-email-sachin.kamat@linaro.org>
+	Tue, 18 Feb 2014 20:38:31 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1RkCiX/UEfbG28Bk"
-Content-Disposition: inline
-In-Reply-To: <1392627817-26957-9-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.103.38
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 9/9] regulator: tps65090: Add missing of_node_put
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
+References: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
+	<20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
+Date: Wed, 19 Feb 2014 10:38:30 +0900
+Message-ID: <CACZ9PQV8RsaefFAOt5b-aL33G3CiD+3+fTuW15io6u1DH3XJ6Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
+ integrity write
+From: Roman Peniaev <r.peniaev@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(my previous email was rejected by vger.kernel.org because google web
+sent it as html.
+ will resend the same one in plain text mode)
 
---1RkCiX/UEfbG28Bk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> What do REQ_SYNC and REQ_NOIDLE actually *do*?
 
-On Mon, Feb 17, 2014 at 02:33:37PM +0530, Sachin Kamat wrote:
-> Add of_node_put to decrement the ref count.
+Yep, this REQ_SYNC is very confusing to me.
+First of all according to the sources of old school block buffer filesystems
+(e.g. ext2) we can get this stack in case of fsync call:
 
-Applied, thanks.
+     __filemap_fdatawrite_range(mapping, 0, LLONG_MAX, sync_mode)
+      do_writepages(mapping, &wbc)
+         mapping->a_ops->writepages(page, wbc)
+         (ext2_writepages)
+            mpage_writepages(mapping, wbc, fat_get_block);
+              write_cache_pages(mapping, wbc, __mpage_writepage, &mpd)
+                __mpage_writepage(page, wbc, data)
+>>>>>             mpage_bio_submit(WRITE, bio) >>>> why WRITE? not WRITE_SYNC in case of WB_SYNC_ALL?
+                    <or in case of not contiguous buffers>
+                  mapping->a_ops->writepage(page, wbc)
+                  (ext2_writepage)
+                    block_write_full_page(page, fat_get_block, wbc)
+                      block_write_full_page_endio(page, get_block, wbc,
+                                                  end_buffer_async_write)
+                        __block_write_full_page(inode, page, get_block, wbc,
+                                                handler);
+                          submit_bh(WRITE_SYNC)
 
---1RkCiX/UEfbG28Bk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So, it turns out to be that some bios for the same dirty range
+can be submitted with REQ_WRITE|REQ_SYNC|REQ_NOIDLE and some of
+the bios only with REQ_WRITE.
+(according to the comment of __mpage_writepage:
+ * If all blocks are found to be contiguous then the page can go into the
+ * BIO.  Otherwise fall back to the mapping's writepage().
+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Also, it seems to me that all over the kernel WRITE_SYNC has meaning of:
+1. try to get the block on-disk faster
+2. if I have to do flush - mark my bio with WRITE_SYNC and wait for result
 
-iQIcBAEBAgAGBQJTAr/YAAoJELSic+t+oim9kKwP/jSWqgLDnbe5WVoqPybD98iS
-6B7YVesUHxUwXKL6Z307J+kISwkcrpuUpjePMEFPXRdw2s97vaG+tdhrU8j76Y5c
-5msgTBHA5bl5lp0Ne5iRiEH1E2IuqJoeZMSo8P2pP5oXVxOXn2QeiZKqzI3YXOMN
-upWK1imf90rdxi8QxO0g4qkHYZ9MzobzqmPc1JeCwx3qWZ7zEr2+pozyeL4poFsL
-XSajb0a5V1jhu5FuNUHfWBUFkvRqE8EV9WP/caKtV14lGYsFupMPxBXL5ZKNiz//
-EKSdoc06Lmny3TddKquCUXlad1Y57fDwpJVvLAdQmfiXZvHikZfIx/WPbgn6aVDo
-+QEIEE89FC9OoyydMORdkUDSufGeYTKsFwOrxUg/7BCZLOqw2QJR6tuAe8jds5KT
-gqj2BU3N4Gw2vEl943XPX2JIx0QaIzJqht/OtVYPNdGg0B7IPW7SMib6HfOl71Nq
-qgsKOKqeQe6+tcWa0UYc8hkHncrFnZyYDXYo4FT6pxZrooDfz9/nvslFv2GylZBc
-7RZHqqal6tpze6GW5Npck0TLCBupyQBOpYRG5R1n1coQVl4avUmo6aR8pLixpJ/4
-8l9a7i1aWLwN6eIGN8EoWcM11v9RnpONU0I+lj9rjCbDeq18JJckaheMYKPtoCKE
-OSoDt4ZHiQoTGZxktGnI
-=F+1s
------END PGP SIGNATURE-----
+My patch is an attempt to make some unification in case of fsync call.
 
---1RkCiX/UEfbG28Bk--
+--
+Roman
+
+
+On Wed, Feb 19, 2014 at 8:59 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sun, 16 Feb 2014 11:54:28 +0900 Roman Pen <r.peniaev@gmail.com> wrote:
+>
+>> In case of wbc->sync_mode == WB_SYNC_ALL we need to do data integrity write,
+>> thus mark request as WRITE_SYNC.
+>
+> gargh, the documentation for this stuff is useless.
+>
+> What do REQ_SYNC and REQ_NOIDLE actually *do*?
+>
+> For mpage writes, REQ_NOIDLE appears to be incorrect - we very much
+> expect that there will be more writes and that they will be contiguous
+> with this one.  But we won't be waiting on this write before submitting
+> more writes, so perhaps REQ_NOIDLE is at least harmless.
+>
+> I dunno about REQ_SYNC - it requires delving into the bowels of CFQ
+> and we shouldn't need to do that.
+>
+> Jens.  Help.  How is a poor kernel reader supposed to work this out?
+>
+>> --- a/fs/mpage.c
+>> +++ b/fs/mpage.c
+>> @@ -462,6 +462,7 @@ static int __mpage_writepage(struct page *page, struct writeback_control *wbc,
+>>       struct buffer_head map_bh;
+>>       loff_t i_size = i_size_read(inode);
+>>       int ret = 0;
+>> +     int wr = (wbc->sync_mode == WB_SYNC_ALL ?  WRITE_SYNC : WRITE);
+>>
+>>       if (page_has_buffers(page)) {
+>>               struct buffer_head *head = page_buffers(page);
+>> @@ -570,7 +571,7 @@ page_is_mapped:
+>>        * This page will go to BIO.  Do we need to send this BIO off first?
+>>        */
+>>       if (bio && mpd->last_block_in_bio != blocks[0] - 1)
+>> -             bio = mpage_bio_submit(WRITE, bio);
+>> +             bio = mpage_bio_submit(wr, bio);
+>>
+>>  alloc_new:
+>>       if (bio == NULL) {
+>> @@ -587,7 +588,7 @@ alloc_new:
+>>        */
+>>       length = first_unmapped << blkbits;
+>>       if (bio_add_page(bio, page, length, 0) < length) {
+>> -             bio = mpage_bio_submit(WRITE, bio);
+>> +             bio = mpage_bio_submit(wr, bio);
+>>               goto alloc_new;
+>>       }
+>>
+>> @@ -620,7 +621,7 @@ alloc_new:
+>>       set_page_writeback(page);
+>>       unlock_page(page);
+>>       if (boundary || (first_unmapped != blocks_per_page)) {
+>> -             bio = mpage_bio_submit(WRITE, bio);
+>> +             bio = mpage_bio_submit(wr, bio);
+>>               if (boundary_block) {
+>>                       write_boundary_block(boundary_bdev,
+>>                                       boundary_block, 1 << blkbits);
+>> @@ -632,7 +633,7 @@ alloc_new:
+>>
+>>  confused:
+>>       if (bio)
+>> -             bio = mpage_bio_submit(WRITE, bio);
+>> +             bio = mpage_bio_submit(wr, bio);
+>>
+>>       if (mpd->use_writepage) {
+>>               ret = mapping->a_ops->writepage(page, wbc);
+>> @@ -688,8 +689,11 @@ mpage_writepages(struct address_space *mapping,
+>>               };
+>>
+>>               ret = write_cache_pages(mapping, wbc, __mpage_writepage, &mpd);
+>> -             if (mpd.bio)
+>> -                     mpage_bio_submit(WRITE, mpd.bio);
+>> +             if (mpd.bio) {
+>> +                     int wr = (wbc->sync_mode == WB_SYNC_ALL ?
+>> +                               WRITE_SYNC : WRITE);
+>> +                     mpage_bio_submit(wr, mpd.bio);
+>> +             }
+>>       }
+>>       blk_finish_plug(&plug);
+>>       return ret;
+>> @@ -706,8 +710,11 @@ int mpage_writepage(struct page *page, get_block_t get_block,
+>>               .use_writepage = 0,
+>>       };
+>>       int ret = __mpage_writepage(page, wbc, &mpd);
+>> -     if (mpd.bio)
+>> -             mpage_bio_submit(WRITE, mpd.bio);
+>> +     if (mpd.bio) {
+>> +             int wr = (wbc->sync_mode == WB_SYNC_ALL ?
+>> +                       WRITE_SYNC : WRITE);
+>> +             mpage_bio_submit(wr, mpd.bio);
+>> +     }
+>>       return ret;
+>>  }
+>>  EXPORT_SYMBOL(mpage_writepage);
+>
