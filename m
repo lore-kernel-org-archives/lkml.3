@@ -1,44 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaBSKE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 05:04:28 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:46789 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750921AbaBSKEY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 05:04:24 -0500
-Date: Wed, 19 Feb 2014 10:04:16 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Wang YanQing <udknight@gmail.com>, rob@landley.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: update kmemleak.txt
-Message-ID: <20140219100415.GB30457@arm.com>
-References: <20140216164205.GA5941@udknight>
+	id S1752207AbaBSKFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 05:05:39 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:53969 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751144AbaBSKFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 05:05:30 -0500
+X-IronPort-AV: E=Sophos;i="4.97,504,1389744000"; 
+   d="scan'208";a="103836319"
+Message-ID: <1392804319.23084.109.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map
+ definitions
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Date: Wed, 19 Feb 2014 10:05:19 +0000
+In-Reply-To: <5303C44D.4070500@citrix.com>
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
+		 <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>
+	 <1392743214.23084.38.camel@kazak.uk.xensource.com>
+	 <5303C44D.4070500@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140216164205.GA5941@udknight>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 16, 2014 at 04:42:05PM +0000, Wang YanQing wrote:
-> Update Documentatin/kmemleak.txt to
-> reflect the following changes:
-> 
-> Commit b69ec42b1b194cc88f04b3fbcda8d3f93182d6c3
-> ("Kconfig: clean up the long arch list for the DEBUG_KMEMLEAK config option")
-> make we can't check supported architectures by read Kconfig.debug.
-> 
-> Commit 85d3a316c714197f94e75c1e5b2d37607d66e5de
-> ("kmemleak: use rbtree instead of prio tree")
-> convert kmemleak to use rbtree instead of prio tree.
-> 
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
+On Tue, 2014-02-18 at 20:36 +0000, Zoltan Kiss wrote:
+> On 18/02/14 17:06, Ian Campbell wrote:
+> > On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
+> >> This patch contains the new definitions necessary for grant mapping.
+> >
+> > Is this just adding a bunch of (currently) unused functions? That's a
+> > slightly odd way to structure a series. They don't seem to be "generic
+> > helpers" or anything so it would be more normal to introduce these as
+> > they get used -- it's a bit hard to review them out of context.
+> I've created two patches because they are quite huge even now, 
+> separately. Together they would be a ~500 line change. That was the best 
+> I could figure out keeping in mind that bisect should work. But as I 
+> wrote in the first email, I welcome other suggestions. If you and Wei 
+> prefer this two patch in one big one, I merge them in the next version.
 
-Since it looks like akpm is picking this patch:
+I suppose it is hard to split a change like this up in a sensible way,
+but it is rather hard to review something which is split in two parts
+sensibly.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+If the combined patch too large to fit on the lists?
 
-Thanks.
+> >> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+> >> index 7669d49..f0f0c3d 100644
+> >> --- a/drivers/net/xen-netback/interface.c
+> >> +++ b/drivers/net/xen-netback/interface.c
+> >> @@ -38,6 +38,7 @@
+> >>
+> >>   #include <xen/events.h>
+> >>   #include <asm/xen/hypercall.h>
+> >> +#include <xen/balloon.h>
+> >
+> > What is this for?
+> For alloc/free_xenballooned_pages
+
+I think I was confused because those changes aren't in this patch.
+
+> >
+> >> +					  struct xenvif,
+> >> +					  pending_tx_info[0]);
+> >> +
+> >> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
+> >> +	do {
+> >> +		pending_idx = ubuf->desc;
+> >> +		ubuf = (struct ubuf_info *) ubuf->ctx;
+> >> +		index = pending_index(vif->dealloc_prod);
+> >> +		vif->dealloc_ring[index] = pending_idx;
+> >> +		/* Sync with xenvif_tx_dealloc_action:
+> >> +		 * insert idx then incr producer.
+> >> +		 */
+> >> +		smp_wmb();
+> >
+> > Is this really needed given that there is a lock held?
+> Yes, as the comment right above explains.
+
+My question is why do you need this sync if you are holding a lock, the
+comment doesn't tell me that. I suppose xenvif_tx_dealloc_action doesn't
+hold the dealloc_lock, but that is non-obvious from the names.
+
+I think I asked in a subsequent patch for an improved description of the
+locking going on here.
+
+>  This actually comes from 
+> classic kernel's netif_idx_release
+> >
+> > Or what is dealloc_lock protecting against?
+> The callbacks from each other. So it is checjed only in this function.
+> >
+> >> +		vif->dealloc_prod++;
+> >
+> > What happens if the dealloc ring becomes full, will this wrap and cause
+> > havoc?
+> Nope, if the dealloc ring is full, the value of the last increment won't 
+> be used to index the dealloc ring again until some space made available. 
+
+I don't follow -- what makes this the case?
+
+> Of course if something broke and we have more pending slots than tx ring 
+> or dealloc slots then it can happen. Do you suggest a 
+> BUG_ON(vif->dealloc_prod - vif->dealloc_cons >= MAX_PENDING_REQS)?
+
+A
+         BUG_ON(space in dealloc ring < number of slots needed to dealloc this skb)
+would seem to be the right thing, if that really is the invariant the
+code is supposed to be implementing.
+
+> >> +	} while (ubuf);
+> >> +	wake_up(&vif->dealloc_wq);
+> >> +	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
+> >> +}
+> >> +
+> >> +static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+> >> +{
+> >> +	struct gnttab_unmap_grant_ref *gop;
+> >> +	pending_ring_idx_t dc, dp;
+> >> +	u16 pending_idx, pending_idx_release[MAX_PENDING_REQS];
+> >> +	unsigned int i = 0;
+> >> +
+> >> +	dc = vif->dealloc_cons;
+> >> +	gop = vif->tx_unmap_ops;
+> >> +
+> >> +	/* Free up any grants we have finished using */
+> >> +	do {
+> >> +		dp = vif->dealloc_prod;
+> >> +
+> >> +		/* Ensure we see all indices enqueued by all
+> >> +		 * xenvif_zerocopy_callback().
+> >> +		 */
+> >> +		smp_rmb();
+> >> +
+> >> +		while (dc != dp) {
+> >> +			pending_idx =
+> >> +				vif->dealloc_ring[pending_index(dc++)];
+> >> +
+> >> +			/* Already unmapped? */
+> >> +			if (vif->grant_tx_handle[pending_idx] ==
+> >> +				NETBACK_INVALID_HANDLE) {
+> >> +				netdev_err(vif->dev,
+> >> +					   "Trying to unmap invalid handle! "
+> >> +					   "pending_idx: %x\n", pending_idx);
+> >> +				BUG();
+> >> +			}
+> >> +
+> >> +			pending_idx_release[gop-vif->tx_unmap_ops] =
+> >> +				pending_idx;
+> >> +			vif->pages_to_unmap[gop-vif->tx_unmap_ops] =
+> >> +				vif->mmap_pages[pending_idx];
+> >> +			gnttab_set_unmap_op(gop,
+> >> +					    idx_to_kaddr(vif, pending_idx),
+> >> +					    GNTMAP_host_map,
+> >> +					    vif->grant_tx_handle[pending_idx]);
+> >> +			vif->grant_tx_handle[pending_idx] =
+> >> +				NETBACK_INVALID_HANDLE;
+> >> +			++gop;
+> >
+> > Can we run out of space in the gop array?
+> No, unless the same thing happen as at my previous answer. BUG_ON() here 
+> as well?
+
+Yes, or at the very least a comment explaining how/why gop is bounded
+elsewhere.
+
+> >
+> >> +		}
+> >> +
+> >> +	} while (dp != vif->dealloc_prod);
+> >> +
+> >> +	vif->dealloc_cons = dc;
+> >
+> > No barrier here?
+> dealloc_cons only used in the dealloc_thread. dealloc_prod is used by 
+> the callback and the thread as well, that's why we need mb() in 
+> previous. Btw. this function comes from classic's net_tx_action_dealloc
+
+Is this code close enough to that code architecturally that you can
+infer correctness due to that though?
+
+So long as you have considered the barrier semantics in the context of
+the current code and you think it is correct to not have one here then
+I'm ok. But if you have just assumed it is OK because some older code
+didn't have it then I'll have to ask you to consider it again...
+
+> >> +				netdev_err(vif->dev,
+> >> +					   " host_addr: %llx handle: %x status: %d\n",
+> >> +					   gop[i].host_addr,
+> >> +					   gop[i].handle,
+> >> +					   gop[i].status);
+> >> +			}
+> >> +			BUG();
+> >> +		}
+> >> +	}
+> >> +
+> >> +	for (i = 0; i < gop - vif->tx_unmap_ops; ++i)
+> >> +		xenvif_idx_release(vif, pending_idx_release[i],
+> >> +				   XEN_NETIF_RSP_OKAY);
+> >> +}
+> >> +
+> >> +
+> >>   /* Called after netfront has transmitted */
+> >>   int xenvif_tx_action(struct xenvif *vif, int budget)
+> >>   {
+> >> @@ -1678,6 +1793,25 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
+> >>   	vif->mmap_pages[pending_idx] = NULL;
+> >>   }
+> >>
+> >> +void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+> >
+> > This is a single shot version of the batched xenvif_tx_dealloc_action
+> > version? Why not just enqueue the idx to be unmapped later?
+> This is called only from the NAPI instance. Using the dealloc ring 
+> require synchronization with the callback which can increase lock 
+> contention. On the other hand, if the guest sends small packets 
+> (<PAGE_SIZE), the TLB flushing can cause performance penalty.
+
+Right. When/How often is this called from the NAPI instance?
+
+Is the locking contention from this case so severe that it out weighs
+the benefits of batching the unmaps? That would surprise me. After all
+the locking contention is there for the zerocopy_callback case too
+
+>  The above 
+> mentioned upcoming patch which gntcopy the header can prevent that 
+
+So this is only called when doing the pull-up to the linear area?
+
+Ian.
+
