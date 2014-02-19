@@ -1,86 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbaBSJox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 04:44:53 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:54711
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753185AbaBSJnf (ORCPT
+	id S1753317AbaBSJqd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 04:46:33 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.165]:11617 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752593AbaBSJqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 04:43:35 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh8275dh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv9 Resend 4/4] Documentation: Add device tree bindings for Freescale FTM PWM.
-Date: Wed, 19 Feb 2014 16:38:57 +0800
-Message-ID: <1392799137-17188-5-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1392799137-17188-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1392799137-17188-1-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 19 Feb 2014 04:46:30 -0500
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-8.tower-39.messagelabs.com!1392803187!12217719!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Wed, 19 Feb 2014 10:46:27 +0100
+Date: Wed, 19 Feb 2014 10:46:25 +0100
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Josh Cartwright <joshc@codeaurora.org>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] mcb: Add PCI carrier for MEN Chameleon Bus
+Message-ID: <20140219094625.GB16649@jtlinux>
+References: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de>
+ <1392737654-22682-3-git-send-email-johannes.thumshirn@men.de>
+ <20140218232017.GA31820@joshc.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140218232017.GA31820@joshc.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the binding documentation for Freescale FlexTimer Module
-(FTM) PWM driver under Documentation/devicetree/bindings/pwm/.
+On Tue, Feb 18, 2014 at 05:20:17PM -0600, Josh Cartwright wrote:
+> On Tue, Feb 18, 2014 at 04:34:13PM +0100, Johannes Thumshirn wrote:
+> > Add support for MCB over PCI devices. Both PCI attached on-board Chameleon FPGAs
+> > as well as CompactPCI based MCB carrier cards are supported with this driver.
+> >
+> > Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> > ---
+> >  drivers/mcb/Kconfig   |  13 ++++++
+> >  drivers/mcb/Makefile  |   2 +
+> >  drivers/mcb/mcb-pci.c | 108 ++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 123 insertions(+)
+> >  create mode 100644 drivers/mcb/mcb-pci.c
+> >
+> > diff --git a/drivers/mcb/Kconfig b/drivers/mcb/Kconfig
+> > index 9e7d6f5..8b058bc 100644
+> > --- a/drivers/mcb/Kconfig
+> > +++ b/drivers/mcb/Kconfig
+> > @@ -14,3 +14,16 @@ menuconfig MCB
+> >
+> >  	   If build as a module, the module is called mcb.ko
+> >
+> > +if MCB
+> > +config MCB_PCI
+> > +	   tristate "PCI based MCB carrier"
+> > +	   default m if MCB
+>
+> 'if MCB' is redundant (MCB has to be set for this option to even be
+> available).
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
-Reviewed-by: Yuan Yao <yao.yuan@freescale.com>
-Acked-by: Kumar Gala <galak@codeaurora.org>
----
- .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 34 ++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+OK
 
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
-new file mode 100644
-index 0000000..1c310df
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
-@@ -0,0 +1,34 @@
-+Freescale FlexTimer Module (FTM) PWM controller
-+
-+Required properties:
-+- compatible: Should be "fsl,vf610-ftm-pwm".
-+- reg: Physical base address and length of the controller's registers
-+- #pwm-cells: Should be 3. See pwm.txt in this directory for a description of
-+  the cells format.
-+- clock-names : Should include the following module clock source entries:
-+    "ftm_sys" (module clock, also can be used as counter clock),
-+    "ftm_ext" (external counter clock),
-+    "ftm_fix" (fixed counter clock),
-+    "ftm_cnt_clk_en" (external and fixed counter clock enable/disable).
-+- clocks : Must contain a clock specifier for each entry in clock-names,
-+  See clock/clock-bindings.txt for details of the property values.
-+- pinctrl-names: Must contain a "default" entry.
-+- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
-+  See pinctrl/pinctrl-bindings.txt for details of the property values.
-+
-+
-+Example:
-+
-+pwm0: pwm@40038000 {
-+		compatible = "fsl,vf610-ftm-pwm";
-+		reg = <0x40038000 0x1000>;
-+		#pwm-cells = <3>;
-+		clock-names = "ftm_sys", "ftm_ext",
-+				"ftm_fix", "ftm_cnt_clk_en";
-+		clocks = <&clks VF610_CLK_FTM0>,
-+			<&clks VF610_CLK_FTM0_EXT_SEL>,
-+			<&clks VF610_CLK_FTM0_FIX_SEL>,
-+			<&clks VF610_CLK_FTM0_EXT_FIX_EN>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&pinctrl_pwm0_1>;
-+};
--- 
-1.8.4
+>
+> [..]
+> > +++ b/drivers/mcb/mcb-pci.c
+> > @@ -0,0 +1,108 @@
+>
+> Copyright/license blurb?
 
+Args, forgotten, sorry.
 
+>
+> > +#include <linux/module.h>
+> > +#include <linux/pci.h>
+> > +#include <linux/mcb.h>
+> > +
+> > +#include "mcb-internal.h"
+> > +
+> > +static struct mcb_bus *bus;
+> > +struct priv {
+> > +	void __iomem *base;
+> > +};
+>
+> This seems weird.  Why is the bus not part of your private data?  Seems
+> like you're unnecessarily restricting yourself to supporting only one of
+> these devices at a time...
+
+You're right. Funny enough I didn't notice it, while testing as I used 2 identical
+carrier cards. Card 2 must then have overwritten Card 1 :-(.
+
+>
+> > +
+> > +static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+> > +{
+> > +	struct priv *priv;
+> > +	phys_addr_t mapbase;
+> > +	int ret = 0;
+>
+> No need to initialize.
+
+OK
+
+>
+> > +	int num_cells;
+> > +	unsigned long flags;
+> > +
+> > +	priv = devm_kzalloc(&pdev->dev, sizeof(struct priv), GFP_KERNEL);
+> > +	if (!priv)
+> > +		return -ENOMEM;
+> > +
+> > +	ret = pci_enable_device(pdev);
+> > +	if (ret) {
+> > +		dev_err(&pdev->dev, "Failed to enable PCI device\n");
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	mapbase = pci_resource_start(pdev, 0);
+> > +	if (!mapbase) {
+> > +		dev_err(&pdev->dev, "No PCI resource\n");
+> > +		goto err_start;
+> > +	}
+> > +
+> > +	ret = pci_request_region(pdev, 0, KBUILD_MODNAME);
+> > +	if (ret) {
+> > +		dev_err(&pdev->dev, "Failed to request PCI BARs\n");
+> > +		goto err_start;
+> > +	}
+> > +
+> > +	priv->base = pci_iomap(pdev, 0, 0);
+>
+> Hmm.  There should really be a devm_* variant for PCI resources.
+
+I don't think so, as I have to free the resources afterwards again so the mcb
+devices can access these resources. Otherwise I would need to make them muxed,
+but I don't see the reason to keep the resources after the parser code has
+finished.
+
+>
+> [..]
+> > +
+> > +static void mcb_pci_remove(struct pci_dev *pdev)
+> > +{
+> > +	struct priv *priv = pci_get_drvdata(pdev);
+> > +
+> > +	mcb_release_bus(bus);
+> > +
+> > +	pci_iounmap(pdev, priv->base);
+> > +	pci_release_region(pdev, 0);
+> > +	pci_disable_device(pdev);
+> > +	pci_set_drvdata(pdev, NULL);
+> > +}
+> > +
+
+It's actually a "double free" of the resources, isn't it. Needs to be fixed.
+
+> > +static struct pci_device_id mcb_pci_tbl[] = {
+>
+> const?
+>
+
+Yup.
+
+> --
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+
+As with the other patch, probably on monday. Sorry for the inconvenience.
+
+Johannes
