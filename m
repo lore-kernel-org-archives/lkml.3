@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbaBSCMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 21:12:45 -0500
-Received: from [216.32.181.181] ([216.32.181.181]:43860 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751312AbaBSCMo (ORCPT
+	id S1752479AbaBSCQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 21:16:24 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:38049 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaBSCQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 21:12:44 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 19 Feb 2014 10:12:48 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Brown <broonie@kernel.org>, <festevam@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pfuze100-regulator: Revert "regulator: pfuze100: Use
- of_get_child_by_name"
-Message-ID: <20140219021246.GK15716@S2101-09.ap.freescale.net>
-References: <1392738636-29877-1-git-send-email-fabio.estevam@freescale.com>
- <CAK9yfHykaoap7Dz+fsZgReRoXW_GsKvmZX7RDGqknd1_o3R50g@mail.gmail.com>
+	Tue, 18 Feb 2014 21:16:22 -0500
+Message-ID: <530413F0.4050008@linaro.org>
+Date: Wed, 19 Feb 2014 10:16:16 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAK9yfHykaoap7Dz+fsZgReRoXW_GsKvmZX7RDGqknd1_o3R50g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Lan Tianyu <tianyu.lan@intel.com>, Joe Perches <joe@perches.com>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org,
+        Graeme Gregory <graeme.gregory@linaro.org>
+Subject: Re: [PATCH v5 2/5] ACPI / processor_core: Rework _PDC related stuff
+ to make it more arch-independent
+References: <1392740638-2479-1-git-send-email-hanjun.guo@linaro.org> <1392740638-2479-3-git-send-email-hanjun.guo@linaro.org> <3459962.GkY99aHQbc@vostro.rjw.lan>
+In-Reply-To: <3459962.GkY99aHQbc@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 09:58:52PM +0530, Sachin Kamat wrote:
-> On 18 February 2014 21:20, Fabio Estevam <fabio.estevam@freescale.com> wrote:
-> > Since commit d7857c42 (regulator: pfuze100: Use of_get_child_by_name) we get
-> > the following probe failure:
-> >
-> > pfuze100-regulator 1-0008: Full layer: 1, Metal layer: 0
-> > pfuze100-regulator 1-0008: FAB: 0, FIN: 0
-> > pfuze100-regulator 1-0008: regulators node not found
-> > pfuze100-regulator: probe of 1-0008 failed with error -22
-> >
-> > Revert the offending commit so that we can probe the regulator successfully.
-> 
-> I wonder what is different in this case from the ones that I already
-> have working
-> that is causing this to fail. Can you please tell me which dts file
-> you have used
-> so that I can see if the way the node is defined is anything different.
+On 2014年02月19日 08:50, Rafael J. Wysocki wrote:
+> On Wednesday, February 19, 2014 12:23:55 AM Hanjun Guo wrote:
+>> _PDC related stuff in processor_core.c is little bit X86/IA64 dependent,
+>> rework the code to make it more arch-independent, no functional change
+>> in this patch.
+>>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> I've queued up patches [1,3-5/5] from this series for 3.15 (modulo changelog
+> modifications), but this one should be CCed to the x86 and ia64 maintainers.
 
-When you change to use of_get_child_by_name(), you should change 'np' to
-point to dev->of_node too.
+Thanks! I will resend this patch with Tony and Thomas in cc list, so is 
+there any chance for this
+patch to be merged into 3.15 if I get acked from them?
 
-Shawn
-
+Best regards
+Hanjun
