@@ -1,153 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbaBSTU6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:20:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39094 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754604AbaBSTU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:20:56 -0500
-Date: Wed, 19 Feb 2014 20:22:55 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] ntb: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140219192255.GA20609@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-1-git-send-email-agordeev@redhat.com>
- <20140219180926.GA1333@jonmason-lab>
+	id S1754990AbaBSTYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:24:16 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:47848 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776AbaBSTYO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 14:24:14 -0500
+Message-ID: <530512F1.3060304@cogentembedded.com>
+Date: Wed, 19 Feb 2014 23:24:17 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140219180926.GA1333@jonmason-lab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Peter Chen <Peter.Chen@freescale.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
+References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>		 <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>		 <53039E2E.2030503@cogentembedded.com>	 <1392743648.17130.17.camel@iivanov-dev>	 <5303A71B.7060208@cogentembedded.com> <1392824921.17130.71.camel@iivanov-dev>
+In-Reply-To: <1392824921.17130.71.camel@iivanov-dev>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 11:09:27AM -0700, Jon Mason wrote:
-> > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> > index 170e8e6..fda37eb 100644
-> > --- a/drivers/ntb/ntb_hw.c
-> > +++ b/drivers/ntb/ntb_hw.c
-> > @@ -1085,21 +1085,15 @@ static int ntb_setup_msix(struct ntb_device *ndev)
-> >  	struct msix_entry *msix;
-> >  	int msix_entries;
-> >  	int rc, i;
-> > -	u16 val;
-> >  
-> > -	if (!pdev->msix_cap) {
-> > -		rc = -EIO;
-> > -		goto err;
-> > -	}
-> > -
-> > -	rc = pci_read_config_word(pdev, pdev->msix_cap + PCI_MSIX_FLAGS, &val);
-> > -	if (rc)
-> > +	rc = pci_msix_vec_count(pdev);
-> 
-> Nit, you should probably use msix_entries instead of rc in this case.
+Hello.
 
-This way it resembles the code few lines below, so the style looks more
-consistent. Whichever you wish, though ;)
+On 02/19/2014 06:48 PM, Ivan T. Ivanov wrote:
 
-> > +	if (rc < 0) {
-> >  		goto err;
-> > -
-> > -	msix_entries = msix_table_size(val);
-> > -	if (msix_entries > ndev->limits.msix_cnt) {
-> > +	} else if (rc > ndev->limits.msix_cnt) {
-> >  		rc = -EINVAL;
-> >  		goto err;
-> > +	} else {
-> > +		msix_entries = rc;
-> >  	}
-> 
-> Style Nit.  Braces with only one line.  If you make the change above,
-> then it is moot.
+>>>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Not on the top of my head, but do we mix bracing this way?
+>>>>> Allows controller to be specified via device tree.
+>>>>> Pass PHY phandle specified in DT to core driver.
 
-> >  
-> >  	ndev->msix_entries = kmalloc(sizeof(struct msix_entry) * msix_entries,
-> > @@ -1112,26 +1106,21 @@ static int ntb_setup_msix(struct ntb_device *ndev)
-> >  	for (i = 0; i < msix_entries; i++)
-> >  		ndev->msix_entries[i].entry = i;
-> >  
-> > -	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> > -	if (rc < 0)
-> > -		goto err1;
-> > -	if (rc > 0) {
-> > +	if (ndev->hw_type != BWD_HW)
-> >  		/* On SNB, the link interrupt is always tied to 4th vector.  If
-> >  		 * we can't get all 4, then we can't use MSI-X.
-> >  		 */
-> > -		if (ndev->hw_type != BWD_HW) {
-> > -			rc = -EIO;
-> > -			goto err1;
-> > -		}
-> > -
-> > -		dev_warn(&pdev->dev,
-> > -			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
-> > -			 rc);
-> > +		rc = pci_enable_msix_range(pdev, ndev->msix_entries,
-> > +					   msix_entries, msix_entries);
-> > +	else
-> > +		rc = pci_enable_msix_range(pdev, ndev->msix_entries,
-> > +					   1, msix_entries);
-> 
-> Actually, this must be 2 for the min.  One for the Data and one for
-> the Link.  If you look a few lines after this in the original code,
-> there is a grabbing of the last vector for the link.  I realize there
-> is currently no check for this in the driver and a potential error
-> case occurs.  I can make a separate patch to correct this issue if
-> this patch is not going through my tree.
+>>>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>>>>> ---
+>>>>>     drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
+>>>>>     1 file changed, 22 insertions(+), 1 deletion(-)
 
-Well, I can re-post with a separate fix with this condition updated...
+>>>>       You also need to describe the binding you're creating in
+>>>> Documentation/devicetree/bindings/usb/<file>.txt.
 
-	} else if (rc < 2 || rc > ndev->limits.msix_cnt) {
-		rc = -EINVAL;
-		goto err;
-	}
+>>> Did you check "[PATCH v2 1/3]"?
 
-...and the original patch with call to pci_enable_msix_range( ...,
-2, ndev->limits.msix_cnt)
+>>      Did you send it to 'linux-usb'?
 
-Will it work with both BWD_HW and non-BWD_HW hardware?
+> Opps, sorry. get_maintainer.pl did not list linux-usb and I forgot
+> to add it. Would like to resend it?
 
-> Thanks,
-> Jon
-> 
-> 
-> > +	if (rc < 0)
-> > +		goto err1;
-> > +	else if (rc < msix_entries) {
-> > +		dev_warn(&pdev->dev, "Only %d MSI-X vectors. "
-> > +			 "Limiting the number of queues to that number.\n", rc);
-> >  		msix_entries = rc;
-> > -
-> > -		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> > -		if (rc)
-> > -			goto err1;
-> >  	}
-> >  
-> >  	for (i = 0; i < msix_entries; i++) {
-> > diff --git a/drivers/ntb/ntb_hw.h b/drivers/ntb/ntb_hw.h
-> > index bbdb7ed..d307107 100644
-> > --- a/drivers/ntb/ntb_hw.h
-> > +++ b/drivers/ntb/ntb_hw.h
-> > @@ -60,8 +60,6 @@
-> >  #define PCI_DEVICE_ID_INTEL_NTB_SS_HSX		0x2F0F
-> >  #define PCI_DEVICE_ID_INTEL_NTB_B2B_BWD		0x0C4E
-> >  
-> > -#define msix_table_size(control)	((control & PCI_MSIX_FLAGS_QSIZE)+1)
-> > -
-> >  #ifndef readq
-> >  static inline u64 readq(void __iomem *addr)
-> >  {
-> > -- 
-> > 1.7.7.6
-> > 
+    I guess so, since the binding document would go in thru the USB tree 
+anyway, IIUC.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> Regards,
+> Ivan
+
+WBR, Sergei
+
