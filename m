@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaBSOKe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:10:34 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42202 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753347AbaBSOKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:10:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,505,1389772800"; 
-   d="scan'208";a="485817933"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Benson Leung <bleung@chromium.org>, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2] i2c: designware-pci: Add Baytrail PCI IDs
-Date: Wed, 19 Feb 2014 16:10:29 +0200
-Message-Id: <1392819029-6438-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.9.0.rc3
+	id S1753831AbaBSOLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:11:52 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:32873 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaBSOLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 09:11:50 -0500
+Date: Wed, 19 Feb 2014 14:11:44 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Subject: [GIT PULL] MFD fixes for v3.14
+Message-ID: <20140219141144.GF10504@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Baytrail I2C controllers can be enumerated from PCI as well as from
-ACPI. In order to support this add the Baytrail PCI IDs to the driver.
+Hi Linus,
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
-Changes to previous version:
- * Removed "-%d" from the adapter name.
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
 
- drivers/i2c/busses/i2c-designware-pcidrv.c | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
 
-diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
-index c0a87a5eb63e..80c3b5e0a5c8 100644
---- a/drivers/i2c/busses/i2c-designware-pcidrv.c
-+++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
-@@ -54,6 +54,8 @@ enum dw_pci_ctl_id_t {
- 	medfield_3,
- 	medfield_4,
- 	medfield_5,
-+
-+	baytrail,
- };
- 
- struct dw_pci_controller {
-@@ -132,6 +134,13 @@ static struct  dw_pci_controller  dw_pci_controllers[] = {
- 		.rx_fifo_depth = 32,
- 		.clk_khz      = 25000,
- 	},
-+	[baytrail] = {
-+		.bus_num = -1,
-+		.bus_cfg = INTEL_MID_STD_CFG | DW_IC_CON_SPEED_FAST,
-+		.tx_fifo_depth = 32,
-+		.rx_fifo_depth = 32,
-+		.clk_khz = 100000,
-+	},
- };
- static struct i2c_algorithm i2c_dw_algo = {
- 	.master_xfer	= i2c_dw_xfer,
-@@ -226,8 +235,8 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
- 	adap->algo = &i2c_dw_algo;
- 	adap->dev.parent = &pdev->dev;
- 	adap->nr = controller->bus_num;
--	snprintf(adap->name, sizeof(adap->name), "i2c-designware-pci-%d",
--		adap->nr);
-+
-+	snprintf(adap->name, sizeof(adap->name), "i2c-designware-pci");
- 
- 	r = devm_request_irq(&pdev->dev, pdev->irq, i2c_dw_isr, IRQF_SHARED,
- 			adap->name, dev);
-@@ -278,6 +287,14 @@ static DEFINE_PCI_DEVICE_TABLE(i2_designware_pci_ids) = {
- 	{ PCI_VDEVICE(INTEL, 0x082C), medfield_0 },
- 	{ PCI_VDEVICE(INTEL, 0x082D), medfield_1 },
- 	{ PCI_VDEVICE(INTEL, 0x082E), medfield_2 },
-+	/* Baytrail */
-+	{ PCI_VDEVICE(INTEL, 0x0F41), baytrail },
-+	{ PCI_VDEVICE(INTEL, 0x0F42), baytrail },
-+	{ PCI_VDEVICE(INTEL, 0x0F43), baytrail },
-+	{ PCI_VDEVICE(INTEL, 0x0F44), baytrail },
-+	{ PCI_VDEVICE(INTEL, 0x0F45), baytrail },
-+	{ PCI_VDEVICE(INTEL, 0x0F46), baytrail },
-+	{ PCI_VDEVICE(INTEL, 0x0F47), baytrail },
- 	{ 0,}
- };
- MODULE_DEVICE_TABLE(pci, i2_designware_pci_ids);
+are available in the git repository at:
+
+  git://git.linaro.org/people/lee.jones/mfd.git tags/mfd-fixes-3.14-1
+
+for you to fetch changes up to 8321bbf8906990e60cdb46be4c909a7780275942:
+
+  mfd: sec-core: sec_pmic_{suspend,resume}() should depend on CONFIG_PM_SLEEP (2014-02-19 13:30:34 +0000)
+
+----------------------------------------------------------------
+MFD fixes due for the v3.14 -rcs
+
+Couple of small issues solved:
+  - Suspend/Resume call-backs require CONFIG_PM_SLEEP
+  - Some drivers written for 32bit architectures fail when compiled
+    with a 64bit compiler. The fixes will future proof the drivers.
+
+----------------------------------------------------------------
+Geert Uytterhoeven (2):
+      mfd: max14577: max14577_{suspend,resume}() should depend on CONFIG_PM_SLEEP
+      mfd: sec-core: sec_pmic_{suspend,resume}() should depend on CONFIG_PM_SLEEP
+
+Lee Jones (4):
+      mfd: max8997: Naturalise cross-architecture discrepancies
+      mfd: max8998: Naturalise cross-architecture discrepancies
+      mfd: wm8994-core: Naturalise cross-architecture discrepancies
+      mfd: tps65217: Naturalise cross-architecture discrepancies
+
+ drivers/mfd/max14577.c              | 2 ++
+ drivers/mfd/max8997.c               | 6 +++---
+ drivers/mfd/max8998.c               | 6 +++---
+ drivers/mfd/sec-core.c              | 2 ++
+ drivers/mfd/tps65217.c              | 4 ++--
+ drivers/mfd/wm8994-core.c           | 2 +-
+ include/linux/mfd/max8997-private.h | 2 +-
+ include/linux/mfd/max8998-private.h | 2 +-
+ include/linux/mfd/tps65217.h        | 4 ++--
+ 9 files changed, 17 insertions(+), 13 deletions(-)
+
 -- 
-1.9.0.rc3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
