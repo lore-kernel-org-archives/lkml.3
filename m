@@ -1,168 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaBSBid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 20:38:33 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:46232 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbaBSBib (ORCPT
+	id S1752135AbaBSBj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 20:39:58 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:5014 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002AbaBSBj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 20:38:31 -0500
+	Tue, 18 Feb 2014 20:39:57 -0500
+Message-ID: <53040B50.4060600@huawei.com>
+Date: Wed, 19 Feb 2014 09:39:28 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
-References: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
-	<20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
-Date: Wed, 19 Feb 2014 10:38:30 +0900
-Message-ID: <CACZ9PQV8RsaefFAOt5b-aL33G3CiD+3+fTuW15io6u1DH3XJ6Q@mail.gmail.com>
-Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
- integrity write
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] sysfs: fix namespace refcnt leak
+References: <53018813.7030409@huawei.com> <20140218231242.GJ31892@mtj.dyndns.org>
+In-Reply-To: <20140218231242.GJ31892@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(my previous email was rejected by vger.kernel.org because google web
-sent it as html.
- will resend the same one in plain text mode)
-
-> What do REQ_SYNC and REQ_NOIDLE actually *do*?
-
-Yep, this REQ_SYNC is very confusing to me.
-First of all according to the sources of old school block buffer filesystems
-(e.g. ext2) we can get this stack in case of fsync call:
-
-     __filemap_fdatawrite_range(mapping, 0, LLONG_MAX, sync_mode)
-      do_writepages(mapping, &wbc)
-         mapping->a_ops->writepages(page, wbc)
-         (ext2_writepages)
-            mpage_writepages(mapping, wbc, fat_get_block);
-              write_cache_pages(mapping, wbc, __mpage_writepage, &mpd)
-                __mpage_writepage(page, wbc, data)
->>>>>             mpage_bio_submit(WRITE, bio) >>>> why WRITE? not WRITE_SYNC in case of WB_SYNC_ALL?
-                    <or in case of not contiguous buffers>
-                  mapping->a_ops->writepage(page, wbc)
-                  (ext2_writepage)
-                    block_write_full_page(page, fat_get_block, wbc)
-                      block_write_full_page_endio(page, get_block, wbc,
-                                                  end_buffer_async_write)
-                        __block_write_full_page(inode, page, get_block, wbc,
-                                                handler);
-                          submit_bh(WRITE_SYNC)
-
-So, it turns out to be that some bios for the same dirty range
-can be submitted with REQ_WRITE|REQ_SYNC|REQ_NOIDLE and some of
-the bios only with REQ_WRITE.
-(according to the comment of __mpage_writepage:
- * If all blocks are found to be contiguous then the page can go into the
- * BIO.  Otherwise fall back to the mapping's writepage().
-)
-
-Also, it seems to me that all over the kernel WRITE_SYNC has meaning of:
-1. try to get the block on-disk faster
-2. if I have to do flush - mark my bio with WRITE_SYNC and wait for result
-
-My patch is an attempt to make some unification in case of fsync call.
-
---
-Roman
-
-
-On Wed, Feb 19, 2014 at 8:59 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sun, 16 Feb 2014 11:54:28 +0900 Roman Pen <r.peniaev@gmail.com> wrote:
->
->> In case of wbc->sync_mode == WB_SYNC_ALL we need to do data integrity write,
->> thus mark request as WRITE_SYNC.
->
-> gargh, the documentation for this stuff is useless.
->
-> What do REQ_SYNC and REQ_NOIDLE actually *do*?
->
-> For mpage writes, REQ_NOIDLE appears to be incorrect - we very much
-> expect that there will be more writes and that they will be contiguous
-> with this one.  But we won't be waiting on this write before submitting
-> more writes, so perhaps REQ_NOIDLE is at least harmless.
->
-> I dunno about REQ_SYNC - it requires delving into the bowels of CFQ
-> and we shouldn't need to do that.
->
-> Jens.  Help.  How is a poor kernel reader supposed to work this out?
->
->> --- a/fs/mpage.c
->> +++ b/fs/mpage.c
->> @@ -462,6 +462,7 @@ static int __mpage_writepage(struct page *page, struct writeback_control *wbc,
->>       struct buffer_head map_bh;
->>       loff_t i_size = i_size_read(inode);
->>       int ret = 0;
->> +     int wr = (wbc->sync_mode == WB_SYNC_ALL ?  WRITE_SYNC : WRITE);
+On 2014/2/19 7:12, Tejun Heo wrote:
+> Hey,
+> 
+> On Mon, Feb 17, 2014 at 11:54:59AM +0800, Li Zefan wrote:
+>> I think we have to fix kernfs in order to fix refcnt leak in sysfs
+>> and cgroupfs. This fix is for 3.14, but it creates conflicts for
+>> cgroup-next.
 >>
->>       if (page_has_buffers(page)) {
->>               struct buffer_head *head = page_buffers(page);
->> @@ -570,7 +571,7 @@ page_is_mapped:
->>        * This page will go to BIO.  Do we need to send this BIO off first?
->>        */
->>       if (bio && mpd->last_block_in_bio != blocks[0] - 1)
->> -             bio = mpage_bio_submit(WRITE, bio);
->> +             bio = mpage_bio_submit(wr, bio);
+>> ====================
 >>
->>  alloc_new:
->>       if (bio == NULL) {
->> @@ -587,7 +588,7 @@ alloc_new:
->>        */
->>       length = first_unmapped << blkbits;
->>       if (bio_add_page(bio, page, length, 0) < length) {
->> -             bio = mpage_bio_submit(WRITE, bio);
->> +             bio = mpage_bio_submit(wr, bio);
->>               goto alloc_new;
->>       }
->>
->> @@ -620,7 +621,7 @@ alloc_new:
->>       set_page_writeback(page);
->>       unlock_page(page);
->>       if (boundary || (first_unmapped != blocks_per_page)) {
->> -             bio = mpage_bio_submit(WRITE, bio);
->> +             bio = mpage_bio_submit(wr, bio);
->>               if (boundary_block) {
->>                       write_boundary_block(boundary_bdev,
->>                                       boundary_block, 1 << blkbits);
->> @@ -632,7 +633,7 @@ alloc_new:
->>
->>  confused:
->>       if (bio)
->> -             bio = mpage_bio_submit(WRITE, bio);
->> +             bio = mpage_bio_submit(wr, bio);
->>
->>       if (mpd->use_writepage) {
->>               ret = mapping->a_ops->writepage(page, wbc);
->> @@ -688,8 +689,11 @@ mpage_writepages(struct address_space *mapping,
->>               };
->>
->>               ret = write_cache_pages(mapping, wbc, __mpage_writepage, &mpd);
->> -             if (mpd.bio)
->> -                     mpage_bio_submit(WRITE, mpd.bio);
->> +             if (mpd.bio) {
->> +                     int wr = (wbc->sync_mode == WB_SYNC_ALL ?
->> +                               WRITE_SYNC : WRITE);
->> +                     mpage_bio_submit(wr, mpd.bio);
->> +             }
->>       }
->>       blk_finish_plug(&plug);
->>       return ret;
->> @@ -706,8 +710,11 @@ int mpage_writepage(struct page *page, get_block_t get_block,
->>               .use_writepage = 0,
->>       };
->>       int ret = __mpage_writepage(page, wbc, &mpd);
->> -     if (mpd.bio)
->> -             mpage_bio_submit(WRITE, mpd.bio);
->> +     if (mpd.bio) {
->> +             int wr = (wbc->sync_mode == WB_SYNC_ALL ?
->> +                       WRITE_SYNC : WRITE);
->> +             mpage_bio_submit(wr, mpd.bio);
->> +     }
->>       return ret;
->>  }
->>  EXPORT_SYMBOL(mpage_writepage);
->
+>> As mount() and kill_sb() is not a one-to-one match, we shoudn't get
+>> ns refcnt unconditionally in sysfs_mount(), and instead we should
+>> get the refcnt only when kernfs_mount() allocated a new superblock.
+> 
+> Ugh... nasty :(
+> 
+>> @@ -132,6 +132,7 @@ const void *kernfs_super_ns(struct super_block *sb)
+>>   * @flags: mount flags specified for the mount
+>>   * @root: kernfs_root of the hierarchy being mounted
+>>   * @ns: optional namespace tag of the mount
+>> + * @new: tell the caller if we allocated a new superblock
+> 
+> Maybe something like @new_sb_created is better?
+> 
+>>  	struct super_block *sb;
+>>  	struct kernfs_super_info *info;
+>>  	int error;
+>>  
+>> +	*new_sb = false;
+> 
+> Can we make it optional so that users who don't care about it can
+> ignore it?
+> 
+
+cgroupfs also needs this to fix refcnt leak.
+
+Because success in finding an existing cgroup_root doesn't mean no new
+superblock is needed. For example:
+
+  # mount -t cgroup -o cpuacct xxx /cgroup
+  # mkdir /cgroup/tmp
+  # umount /cgroup    <--- sb will be freed but cgroup_root won't
+
+  // this will allocate new sb, but we find the cgroup_root is there.
+  # mount -t cgroup -o cpuacct xxx /cgroup
+
+But debugfs won't need this if it's converted to kernfs.
+
+How about I keep kernfs_mount() API intact, and when this fix gets
+merged into mainline, you merge the fix into cgroup-next, and then
+I make a fix for cgroup by changing kernfs_mount()?
+
+>> @@ -430,9 +431,9 @@ static inline int kernfs_rename(struct kernfs_node *kn,
+>>  
+>>  static inline struct dentry *
+>>  kernfs_mount(struct file_system_type *fs_type, int flags,
+>> -	     struct kernfs_root *root)
+>> +	     struct kernfs_root *root, bool *new_sb)
+>>  {
+>> -	return kernfs_mount_ns(fs_type, flags, root, NULL);
+>> +	return kernfs_mount_ns(fs_type, flags, root, NULL, new_sb);
+> 
+> And let kernfs_mount() just use NULL for the parameter?
+> 
+
+
