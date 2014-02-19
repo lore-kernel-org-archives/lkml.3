@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473AbaBSDCZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 22:02:25 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:41627 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaBSDCX (ORCPT
+	id S1752647AbaBSDE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 22:04:59 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:43825 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbaBSDE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 22:02:23 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1J31k1r027380, This message is accepted by code: ctloc85258
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <nic_swsd@realtek.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-References: <1392731351-25502-1-git-send-email-hayeswang@realtek.com> <1392731351-25502-13-git-send-email-hayeswang@realtek.com> <20140218232850.GB13394@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH net-next 12/14] r8152: replace netif_rx withnetif_receive_skb
-Date: Wed, 19 Feb 2014 11:01:51 +0800
-Message-ID: <79F93FE4FECD48E7B7B6C6EE93151CB6@realtek.com.tw>
+	Tue, 18 Feb 2014 22:04:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <20140218232850.GB13394@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-Thread-Index: Ac8tATEo3BPEgPo/TxOO/cvgsIfXtwAFruUg
-X-Originating-IP: [172.21.71.143]
+In-Reply-To: <CAEjAshp3HQq6L1opWJX=dnwQ=SqScb4s2gdLiehC8ejaFV7eOQ@mail.gmail.com>
+References: <1392722606-965-1-git-send-email-sj38.park@gmail.com>
+	<20140218170753.GB32227@kroah.com>
+	<CAEjAshp3HQq6L1opWJX=dnwQ=SqScb4s2gdLiehC8ejaFV7eOQ@mail.gmail.com>
+Date: Wed, 19 Feb 2014 08:34:57 +0530
+Message-ID: <CAK9yfHyCs+GSD1i25u-8aJ49kBQkRLbWvsupSpQAD=6=W66vdA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] staging: android: binder: remove unnecessary comment
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: SeongJae Park <sj38.park@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Wednesday, February 19, 2014 7:29 AM
-> To: Hayes Wang
-> Cc: netdev@vger.kernel.org; nic_swsd@realtek.com; 
-> linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
-> Subject: Re: [PATCH net-next 12/14] r8152: replace netif_rx 
-> withnetif_receive_skb
-> 
-> Hayes Wang <hayeswang@realtek.com> :
-> > Replace netif_rx with netif_receive_skb to avoid disabling irq frequently
-> > for increasing the efficiency.
-> 
-> read_bulk_callback is issued in irq context. It could thus use plain
-> spin_lock / spin_unlock instead of the irq disabling version.
+On 19 February 2014 05:58, SeongJae Park <sj38.park@gmail.com> wrote:
+> On Wed, Feb 19, 2014 at 2:07 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Tue, Feb 18, 2014 at 08:23:25PM +0900, SeongJae Park wrote:
+>>> Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+>>> ---
+>>>  drivers/staging/android/binder.c | 2 --
+>>>  1 file changed, 2 deletions(-)
+>>>
+>>> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+>>> index eaec1da..b23cbc9 100644
+>>> --- a/drivers/staging/android/binder.c
+>>> +++ b/drivers/staging/android/binder.c
+>>> @@ -2553,8 +2553,6 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>>>       unsigned int size = _IOC_SIZE(cmd);
+>>>       void __user *ubuf = (void __user *)arg;
+>>>
+>>> -     /*pr_info("binder_ioctl: %d:%d %x %lx\n", proc->pid, current->pid, cmd, arg);*/
+>>
+>> It's useful for debugging, I'll leave it as-is, sorry.
 
-The rx_bottom() is called in tasklet, so I just think I could use
-netif_receive_skb directly. The netif_rx seems to queue the packet,
-and local_irq_disable() would be called before dequeuing the skb.
- 
-Best Regards,
-Hayes
+Or just convert pr_info to pr_debug and leave uncommented?
 
+-- 
+With warm regards,
+Sachin
