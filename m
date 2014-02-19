@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114AbaBSUCG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 15:02:06 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:43049 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114AbaBSUCE (ORCPT
+	id S1754911AbaBSUEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 15:04:32 -0500
+Received: from [176.62.209.28] ([176.62.209.28]:36842 "EHLO
+	centos1.newflow.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753731AbaBSUEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 15:02:04 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH] drivers/tty/serial: deal with 8250_core.c uninitialized warning for good
-Date: Wed, 19 Feb 2014 15:00:13 -0500
-Message-ID: <1392840013-15957-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
+	Wed, 19 Feb 2014 15:04:31 -0500
+X-Greylist: delayed 1104 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 15:04:30 EST
+Message-ID: <530509FA.9070800@newflow.co.uk>
+Date: Wed, 19 Feb 2014 19:46:02 +0000
+From: Mark Jackson <mpfj-list@newflow.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
+CC: kay.sievers@vrfy.org, linux-kernel@vger.kernel.org,
+        Rob Landley <rob@landley.net>,
+        Lucas De Marchi <lucas.demarchi@intel.com>
+Subject: Re: [PATCH 2/2] misc: add missing minor nodes
+References: <1392701245-4645-1-git-send-email-lucas.demarchi@intel.com> <1392701245-4645-3-git-send-email-lucas.demarchi@intel.com> <20140218185228.GC29209@kroah.com>
+In-Reply-To: <20140218185228.GC29209@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every couple of months, someone sends a patch to fix:
+On 18/02/14 18:52, Greg Kroah-Hartman wrote:
+> On Tue, Feb 18, 2014 at 02:27:25AM -0300, Lucas De Marchi wrote:
+>> From: Lucas De Marchi <lucas.demarchi@intel.com>
+>>
+>> Signed-off-by: Lucas De Marchi <lucas.demarchi@intel.com>
+>> ---
+>>  Documentation/devices.txt | 3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/Documentation/devices.txt b/Documentation/devices.txt
+>> index 04356f5..0ea1cc2 100644
+>> --- a/Documentation/devices.txt
+>> +++ b/Documentation/devices.txt
+>> @@ -329,6 +329,7 @@ Your cooperation is appreciated.
+>>  		filesystem across multiple physical disks.
+>>  
+>>   10 char	Non-serial mice, misc features
+>> +		  0 = /dev/fram
+>>  		  0 = /dev/logibm	Logitech bus mouse
+>>  		  1 = /dev/psaux	PS/2-style mouse port
+>>  		  2 = /dev/inportbm	Microsoft Inport bus mouse
+> 
+> That's not ok at all, and probably a bug, someone must have thought that
+> minor 0 ment "give me a dynamic number."  No one caught this when the
+> driver was first merged in a arch-specific tree in 2008 :(
+> 
+> In looking at the driver, it probably should just be a UIO driver, or
+> something else, all it does it map frame buffer memory to userspace,
+> given the hardware involved, odds are no one even uses it anymore...
+> 
+> Mark and Haavard, any thoughts about the
+> arch/avr32/boards/mimc200/fram.c driver?  Can I fix up the minor number
+> here, or just delete the driver entirely if it's not being used anymore?
 
-drivers/tty/serial/8250/8250_core.c: In function 'serial_unlink_irq_chain':
-drivers/tty/serial/8250/8250_core.c:1712:2: warning: 'i' may be used uninitialized in this function [-Wuninitialized]
+I think it's safe to delete the driver.
 
-and they in turn get a NACK for their efforts, and are told that
-their compiler is broken.  This has been going on since at least
-the year 2008:  https://lkml.org/lkml/2008/11/24/433
+The mimc200 unit is now basically obsolete and there'll be no new development on it.
 
-Lets add a comment, so that subsequent patches don't get as far as
-the maintainers or the mailing lists.
-
-Cc: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 69932b7556cf..747073b8c38a 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1694,6 +1694,10 @@ static int serial_link_irq_chain(struct uart_8250_port *up)
- 
- static void serial_unlink_irq_chain(struct uart_8250_port *up)
- {
-+	/*
-+	 * yes, some broken gcc emit "warning: 'i' may be used uninitialized"
-+	 * but no, we are not going to take a patch that assigns NULL below.
-+	 */
- 	struct irq_info *i;
- 	struct hlist_node *n;
- 	struct hlist_head *h;
--- 
-1.8.5.2
-
+Regards
+Mark J.
