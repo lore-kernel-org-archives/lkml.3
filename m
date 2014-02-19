@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863AbaBSS4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 13:56:14 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43602 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402AbaBSS4M (ORCPT
+	id S1754892AbaBSTBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:01:46 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:40993 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127AbaBSTBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 13:56:12 -0500
-Message-ID: <5304FE4B.1020408@codeaurora.org>
-Date: Wed, 19 Feb 2014 10:56:11 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 19 Feb 2014 14:01:44 -0500
+Date: Wed, 19 Feb 2014 14:01:39 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Derek Basehore <dbasehore@chromium.org>,
+        Alexander Viro <viro@zento.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, bleung@chromium.org,
+        sonnyrao@chromium.org, semenzato@chromium.org
+Subject: Re: [PATCH] backing_dev: Fix hung task on sync
+Message-ID: <20140219190139.GQ10134@htj.dyndns.org>
+References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
+ <20140218225548.GI31892@mtj.dyndns.org>
+ <20140219092731.GA4849@quack.suse.cz>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: arm@kernel.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@linaro.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Subject: Re: [GIT PULL] qcom cleanups for v3.15
-References: <alpine.DEB.2.00.1402101722170.12284@galak-ubuntu.qualcomm.com> <5303F56A.9010107@codeaurora.org> <FE60A8A0-B1C4-46F2-96E8-95FE25503DAF@codeaurora.org>
-In-Reply-To: <FE60A8A0-B1C4-46F2-96E8-95FE25503DAF@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140219092731.GA4849@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/14 07:20, Kumar Gala wrote:
-> On Feb 18, 2014, at 6:06 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->
->> On 02/10/14 15:23, Kumar Gala wrote:
->>> Kumar Gala (6):
->>>      ARM: dts: msm: split out msm8660 and msm8960 soc into dts include
->>>      ARM: msm: kill off hotplug.c
->>>      clocksource: qcom: Move clocksource code out of mach-msm
->>>      ARM: qcom: Split Qualcomm support into legacy and multiplatform
->> Sorry to nag, but can you please address my comment on this patch?
-> Which comment?  The copyright one or something else?
->
+Hello, Jan.
 
-Yes the copyright one.
+On Wed, Feb 19, 2014 at 10:27:31AM +0100, Jan Kara wrote:
+>   You are the workqueue expert so you may know better ;) But the way I
+> understand it is that queue_delayed_work() does nothing if the timer is
+> already running. Since we queue flusher work to run either immediately or
+> after dirty_writeback_interval we are safe to run queue_delayed_work()
+> whenever we want it to run after dirty_writeback_interval and
+> mod_delayed_work() whenever we want to run it immediately.
+
+Ah, okay, so it's always mod on immediate and queue on delayed.  Yeah,
+that should work.
+
+> But it's subtle and some interface where we could say queue delayed work
+> after no later than X would be easier to grasp.
+
+Yeah, I think it'd be better if we had something like
+mod_delayed_work_if_later().  Hmm...
+
+Thanks.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+tejun
