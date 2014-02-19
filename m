@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891AbaBSHMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 02:12:09 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:2165 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751029AbaBSHMF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 02:12:05 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(z579eh551biz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 19 Feb 2014 15:11:56 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] ARM: dts: Enable SAI ALSA SoC DAI device for Vybrid
- VF610 TOWER board.
-Message-ID: <20140219071154.GG3010@S2101-09.ap.freescale.net>
-References: <1392788323-6092-1-git-send-email-Li.Xiubo@freescale.com>
- <1392788323-6092-3-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1392788323-6092-3-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	id S1752032AbaBSHOC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 02:14:02 -0500
+Received: from SMTPBG254.QQ.COM ([183.60.52.96]:51509 "HELO smtpbg254.qq.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751178AbaBSHOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 02:14:00 -0500
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 02:13:59 EST
+X-QQ-SSF: 00000000000000F000000000000000J
+X-HAS-ATTACH: no
+X-QQ-BUSINESS-ORIGIN: 2
+X-Originating-IP: 162.105.192.76
+X-QQ-STYLE: 
+X-QQ-mid: webmail688t1392793575t8618279
+From: "=?utf-8?B?WXVhbiBQZW5nZmVp?=" <coolypf@qq.com>
+To: "=?utf-8?B?UGV0ZXIgT2JlcnBhcmxlaXRlcg==?=" 
+	<oberpar@linux.vnet.ibm.com>
+Cc: "=?utf-8?B?bGludXgta2VybmVs?=" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] gcov: fix memory allocation problem in gcov_info_dup
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+Date: Wed, 19 Feb 2014 15:06:15 +0800
+X-Priority: 3
+Message-ID: <tencent_074552B42B4D25D2329613D8@qq.com>
+X-QQ-MIME: TCMime 1.0 by Tencent
+X-Mailer: QQMail 2.x
+X-QQ-Mailer: QQMail 2.x
+X-QQ-SENDSIZE: 520
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1J7E9fQ003451
 
-On Wed, Feb 19, 2014 at 01:38:41PM +0800, Xiubo Li wrote:
-> This patch adds and enables the SAI device.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+From: Yuan Pengfei <coolypf@qq.com>
 
-The patch subject can be a little short like
+If -fprofile-values option is used, ctr->num and sci_ptr->num
+may be zero, resulting in zero size and cv_size, which will
+cause ENOMEM when opening gcov data files in debugfs.
+Signed-off-by: Yuan Pengfei <coolypf@qq.com>
+---
+ kernel/gcov/gcc_3_4.c | 2 +-
+ kernel/gcov/gcc_4_7.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-  ARM: dts: vf610-twr: Enable SAI ALSA SoC DAI device
-
-Shawn
-
-> ---
->  arch/arm/boot/dts/vf610-twr.dts | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-> index e3a3805..8217854 100644
-> --- a/arch/arm/boot/dts/vf610-twr.dts
-> +++ b/arch/arm/boot/dts/vf610-twr.dts
-> @@ -127,9 +127,27 @@
->  				VF610_PAD_PTB5__UART1_RX		0x21a1
->  			>;
->  		};
-> +
-> +		pinctrl_sai2: sai2grp {
-> +		      fsl,pins = <
-> +			      VF610_PAD_PTA16__SAI2_TX_BCLK   0x02ed
-> +			      VF610_PAD_PTA18__SAI2_TX_DATA   0x02ee
-> +			      VF610_PAD_PTA19__SAI2_TX_SYNC   0x02ed
-> +			      VF610_PAD_PTA21__SAI2_RX_BCLK   0x02ed
-> +			      VF610_PAD_PTA22__SAI2_RX_DATA   0x02ed
-> +			      VF610_PAD_PTA23__SAI2_RX_SYNC   0x02ed
-> +			      VF610_PAD_PTB18__EXT_AUDIO_MCLK 0x02ed
-> +			>;
-> +		};
->  	};
->  };
->  
-> +&sai2 {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_sai2>;
-> +	status = "okay";
-> +};
-> +
->  &uart1 {
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&pinctrl_uart1>;
-> -- 
-> 1.8.4
-> 
-> 
-
+diff --git a/kernel/gcov/gcc_3_4.c b/kernel/gcov/gcc_3_4.c
+index 27bc88a..1c1f425 100644
+--- a/kernel/gcov/gcc_3_4.c
++++ b/kernel/gcov/gcc_3_4.c
+@@ -269,7 +269,7 @@ struct gcov_info *gcov_info_dup(struct gcov_info *info)
+ 		dup->counts[i].num = ctr->num;
+ 		dup->counts[i].merge = ctr->merge;
+ 		dup->counts[i].values = vmalloc(size);
+-		if (!dup->counts[i].values)
++		if (size && !dup->counts[i].values)
+ 			goto err_free;
+ 		memcpy(dup->counts[i].values, ctr->values, size);
+ 	}
+diff --git a/kernel/gcov/gcc_4_7.c b/kernel/gcov/gcc_4_7.c
+index 2c6e463..7465944 100644
+--- a/kernel/gcov/gcc_4_7.c
++++ b/kernel/gcov/gcc_4_7.c
+@@ -290,7 +290,7 @@ struct gcov_info *gcov_info_dup(struct gcov_info *info)
+ 
+ 			dci_ptr->values = vmalloc(cv_size);
+ 
+-			if (!dci_ptr->values)
++			if (cv_size && !dci_ptr->values)
+ 				goto err_free;
+ 
+ 			dci_ptr->num = sci_ptr->num;
+-- 
+1.8.5.3ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
