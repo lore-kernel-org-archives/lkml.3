@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022AbaBSCk6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 21:40:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41951 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750966AbaBSCk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 21:40:57 -0500
-Date: Tue, 18 Feb 2014 21:40:49 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, fowles@inreach.com, eranian@google.com
-Subject: Re: [PATCH 05/21] perf, session: Change header.misc dump from
- decimal to hex
-Message-ID: <20140219024049.GJ25953@redhat.com>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <1392053356-23024-6-git-send-email-dzickus@redhat.com>
- <20140218125644.GG4343@krava.brq.redhat.com>
+	id S1752275AbaBSClw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 21:41:52 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:51769 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaBSClv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Feb 2014 21:41:51 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1J2fjba021473, This message is accepted by code: ctloc85258
+From: hayeswang <hayeswang@realtek.com>
+To: "'Florian Fainelli'" <f.fainelli@gmail.com>
+CC: "'netdev'" <netdev@vger.kernel.org>, <nic_swsd@realtek.com>,
+        <linux-kernel@vger.kernel.org>,
+        "'linux-usb'" <linux-usb@vger.kernel.org>
+References: <1392731351-25502-1-git-send-email-hayeswang@realtek.com> <1392731351-25502-8-git-send-email-hayeswang@realtek.com> <201402190209.s1J29EVG032292@rtits1.realtek.com>
+Subject: RE: [PATCH net-next 07/14] r8152: combine PHY reset with set_speed
+Date: Wed, 19 Feb 2014 10:41:54 +0800
+Message-ID: <3532474F0A1E449C8ABAC51A6F690258@realtek.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218125644.GG4343@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <201402190209.s1J29EVG032292@rtits1.realtek.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+Thread-Index: Ac8tF5XvqtbfEJOuTIqKmAIOks/QnAAAyz4g
+X-Originating-IP: [172.21.71.143]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 01:56:44PM +0100, Jiri Olsa wrote:
-> On Mon, Feb 10, 2014 at 12:29:00PM -0500, Don Zickus wrote:
-> > When printing the raw dump of a data file, the header.misc is
-> > printed as a decimal.  Unfortunately, that field is a bit mask, so
-> > it is hard to interpret as a decimal.
-> > 
-> > Print in hex, so the user can easily see what bits are set and more
-> > importantly what type of info it is conveying.
-> > 
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > ---
-> >  tools/perf/util/session.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> > index 0b39a48..d1ad10f 100644
-> > --- a/tools/perf/util/session.c
-> > +++ b/tools/perf/util/session.c
-> > @@ -793,7 +793,7 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
-> >  	if (!dump_trace)
-> >  		return;
-> >  
-> > -	printf("(IP, %d): %d/%d: %#" PRIx64 " period: %" PRIu64 " addr: %#" PRIx64 "\n",
-> > +	printf("(IP, %x): %d/%d: %#" PRIx64 " period: %" PRIu64 " addr: %#" PRIx64 "\n",
-> >  	       event->header.misc, sample->pid, sample->tid, sample->ip,
-> >  	       sample->period, sample->addr);
+ Florian Fainelli [mailto:f.fainelli@gmail.com] 
+> Sent: Wednesday, February 19, 2014 1:19 AM
+> To: Hayes Wang
+> Cc: netdev; nic_swsd@realtek.com; 
+> linux-kernel@vger.kernel.org; linux-usb
+> Subject: Re: [PATCH net-next 07/14] r8152: combine PHY reset 
+> with set_speed
+[...]
+> > +static void rtl_phy_reset(struct r8152 *tp)
+> > +{
+> > +       u16 data;
+> > +       int i;
+> > +
+> > +       clear_bit(PHY_RESET, &tp->flags);
+> > +
+> > +       data = r8152_mdio_read(tp, MII_BMCR);
+> > +
+> > +       /* don't reset again before the previous one complete */
+> > +       if (data & BMCR_RESET)
+> > +               return;
+> > +
+> > +       data |= BMCR_RESET;
+> > +       r8152_mdio_write(tp, MII_BMCR, data);
+> > +
+> > +       for (i = 0; i < 50; i++) {
+> > +               msleep(20);
+> > +               if ((r8152_mdio_read(tp, MII_BMCR) & 
+> BMCR_RESET) == 0)
+> > +                       break;
+> > +       }
+> > +}
 > 
-> nit, maybe use '0x%x' ? hum, but probably nobody is actually parsing this..
+> If you implemented libphy in the driver you would not have to
+> duplicate that and you could use "phy_init_hw()" or
+> genphy_soft_reset() to perform the BMCR-based software reset.
 
-Fair enough. :-)
+Thanks for you suggestion. I would study about those.
+ 
+Best Regards,
+Hayes
 
-Cheers,
-Don
 
