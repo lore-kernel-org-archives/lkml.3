@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbaBSLmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 06:42:51 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53684 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881AbaBSLmt (ORCPT
+	id S1753117AbaBSLng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 06:43:36 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:32844 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632AbaBSLne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 06:42:49 -0500
-Date: Wed, 19 Feb 2014 12:42:38 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alec Teal <a.teal@warwick.ac.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140219114238.GH15586@twins.programming.kicks-ass.net>
-References: <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
- <1392666947.18779.6838.camel@triegel.csb>
- <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
- <530296CD.5050503@warwick.ac.uk>
- <CA+55aFyi8QWge7QR0M+ABH-kEiwvoEyMhK6GWRvN1YNKJAFuSQ@mail.gmail.c!om>
- <1392737465.18779.7644.camel@triegel.csb>
- <CA+55aFxn2KRXDQ91xRs=bO_6d_nA_PSQvoY1_=OxyJ86+KOO9Q@mail.gmail.com>
- <1392758516.18779.8378.camel@triegel.csb>
- <20140218214713.GV14089@laptop.programming.kicks-ass.net>
- <1392808022.18779.8674.camel@triegel.csb>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392808022.18779.8674.camel@triegel.csb>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 19 Feb 2014 06:43:34 -0500
+Date: Wed, 19 Feb 2014 11:43:15 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "Zhao\, Gang" <gamerh2o@gmail.com>
+Cc: devel@driverdev.osuosl.org, mark.einon@gmail.com,
+        linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: Re: [PATCH] et131x: fix allocation failures
+Message-ID: <20140219114315.5af78dfe@alan.etchedpixels.co.uk>
+In-Reply-To: <874n3v52fo.fsf@will.lan>
+References: <20140217141252.26738.33549.stgit@alan.etchedpixels.co.uk>
+	<874n3v52fo.fsf@will.lan>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 12:07:02PM +0100, Torvald Riegel wrote:
-> > Its not only hardware; also the kernel/user boundary has this same
-> > problem. We cannot a-priory say what userspace will do; in fact, because
-> > we're a general purpose OS, we must assume it will willfully try its
-> > bestest to wreck whatever assumptions we make about its behaviour.
+On Wed, 19 Feb 2014 09:14:19 +0800
+"Zhao\, Gang" <gamerh2o@gmail.com> wrote:
+
+> Alan, thanks for resending this patch. But it seems you overlooked
+> something we discussed earlier.
 > 
-> That's a good note, and I think a distinct case from those below,
-> because here you're saying that you can't assume that the userspace code
-> follows the C11 semantics ...
+> On Mon, 2014-02-17 at 22:13:08 +0800, Alan wrote:
+> > We should check the ring allocations don't fail.
+> > If we get a fail we need to clean up properly. The allocator assumes the
+> > deallocator will be used on failure, but it isn't. Make sure the
+> > right deallocator is always called and add a missing check against
+> > fbr allocation failure.
+> >
+> > [v2]: Correct check logic
+> >
+> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> > ---
+> >  drivers/staging/et131x/et131x.c |    9 +++++++--
+> >  1 file changed, 7 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+> > index 6413500..cc600df 100644
+> > --- a/drivers/staging/et131x/et131x.c
+> > +++ b/drivers/staging/et131x/et131x.c
+> > @@ -2124,7 +2124,11 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+> >  
+> >  	/* Alloc memory for the lookup table */
+> >  	rx_ring->fbr[0] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
+> > +	if (rx_ring->fbr[0] == NULL)
+> > +		return -ENOMEM;
+> >  	rx_ring->fbr[1] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
+> > +	if (rx_ring->fbr[1] == NULL)
+> > +		return -ENOMEM;
+> 
+> Shouldn't rx_ring->fbr[0] be freed when allocation of rx_ring->fbr[1]
+> fails ? Or we will leak memory here.
 
-Right; we can malfunction in those cases though; as long as the
-malfunctioning happens on the userspace side. That is, whatever
-userspace does should not cause the kernel to crash, but userspace
-crashing itself, or getting crap data or whatever is its own damn fault
-for not following expected behaviour.
+No.. the tx_dma_memory_free and rx_dma_memory_free functions are
+designed to handle incomplete set up. They are now called on incomplete
+setup and will clean up all the resources.
 
-To stay on topic; if the kernel/user interface requires memory ordering
-and userspace explicitly omits the barriers all malfunctioning should be
-on the user. For instance it might loose a fwd progress guarantee or
-data integrity guarantees.
+> > @@ -3591,6 +3595,7 @@ static int et131x_adapter_memory_alloc(struct et131x_adapter *adapter)
+> >  	if (status) {
+> >  		dev_err(&adapter->pdev->dev,
+> >  			  "et131x_tx_dma_memory_alloc FAILED\n");
+> > +		et131x_tx_dma_memory_free(adapter);
+> >  		return status;
+> >  	}
+> >  	/* Receive buffer memory allocation */
+> > @@ -3598,7 +3603,7 @@ static int et131x_adapter_memory_alloc(struct et131x_adapter *adapter)
+> >  	if (status) {
+> >  		dev_err(&adapter->pdev->dev,
+> >  			  "et131x_rx_dma_memory_alloc FAILED\n");
+> > -		et131x_tx_dma_memory_free(adapter);
+> > +		et131x_adapter_memory_free(adapter);
+> >  		return status;
+> >  	}
+> >  
 
-In specific, given a kernel/user lockless producer/consumer buffer, if
-the user-side allows the tail write to happen before its data reads are
-complete, the kernel might overwrite the data its still reading.
+Which is what these changes are about.
 
-Or in case of futexes, if the user side doesn't use the appropriate
-operations its lock state gets corrupt but only userspace should suffer.
+Whoever wrote the allocator and cleanup methods arranged (except for the
+rx_ring->fbr cases) that the free method should be called on a failure.
+It looks as if somewhere along the line of the driver development whoever
+wrote the higher level bits didn't understand that.
 
-But yes, this does require some care and consideration from our side.
+Alan
