@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaBSGH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 01:07:28 -0500
+	id S1752468AbaBSGHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 01:07:34 -0500
 Received: from mga09.intel.com ([134.134.136.24]:18482 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752293AbaBSGHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 01:07:23 -0500
+	id S1752293AbaBSGHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 01:07:31 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,504,1389772800"; 
-   d="scan'208";a="485626531"
+   d="scan'208";a="485626587"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -18,10 +18,11 @@ To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part2 V2 07/17] iommu/vt-d: free resources if failed to create domain for PCIe endpoint
-Date: Wed, 19 Feb 2014 14:07:27 +0800
-Message-Id: <1392790057-32434-8-git-send-email-jiang.liu@linux.intel.com>
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: [Patch Part2 V2 09/17] iommu/vt-d: fix incorrect iommu_count for si_domain
+Date: Wed, 19 Feb 2014 14:07:29 +0800
+Message-Id: <1392790057-32434-10-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
@@ -29,60 +30,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance function get_domain_for_dev() to release allocated resources
-if failed to create domain for PCIe endpoint, otherwise the allocated
-resources will get lost.
+The iommu_count field in si_domain(static identity domain) is
+initialized to zero and never increases. It will underflow
+when tearing down iommu unit in function free_dmar_iommu()
+and leak memory. So refine code to correctly manage
+si_domain->iommu_count.
+
+Warning message caused by si_domain memory leak:
+[   14.609681] IOMMU: Setting RMRR:
+[   14.613496] Ignoring identity map for HW passthrough device 0000:00:1a.0 [0xbdcfd000 - 0xbdd1dfff]
+[   14.623809] Ignoring identity map for HW passthrough device 0000:00:1d.0 [0xbdcfd000 - 0xbdd1dfff]
+[   14.634162] IOMMU: Prepare 0-16MiB unity mapping for LPC
+[   14.640329] Ignoring identity map for HW passthrough device 0000:00:1f.0 [0x0 - 0xffffff]
+[   14.673360] IOMMU: dmar init failed
+[   14.678157] kmem_cache_destroy iommu_devinfo: Slab cache still has objects
+[   14.686076] CPU: 12 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc1-gerry+ #59
+[   14.694176] Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.99.99.x059.091020121352 09/10/2012
+[   14.707412]  0000000000000000 ffff88042dd33db0 ffffffff8156223d ffff880c2cc37c00
+[   14.716407]  ffff88042dd33dc8 ffffffff811790b1 ffff880c2d3533b8 ffff88042dd33e00
+[   14.725468]  ffffffff81dc7a6a ffffffff81b1e8e0 ffffffff81f84058 ffffffff81d8a711
+[   14.734464] Call Trace:
+[   14.737453]  [<ffffffff8156223d>] dump_stack+0x4d/0x66
+[   14.743430]  [<ffffffff811790b1>] kmem_cache_destroy+0xf1/0x100
+[   14.750279]  [<ffffffff81dc7a6a>] intel_iommu_init+0x122/0x56a
+[   14.757035]  [<ffffffff81d8a711>] ? iommu_setup+0x27d/0x27d
+[   14.763491]  [<ffffffff81d8a739>] pci_iommu_init+0x28/0x52
+[   14.769846]  [<ffffffff81000342>] do_one_initcall+0x122/0x180
+[   14.776506]  [<ffffffff81077738>] ? parse_args+0x1e8/0x320
+[   14.782866]  [<ffffffff81d850e8>] kernel_init_freeable+0x1e1/0x26c
+[   14.789994]  [<ffffffff81d84833>] ? do_early_param+0x88/0x88
+[   14.796556]  [<ffffffff8154ffc0>] ? rest_init+0xd0/0xd0
+[   14.802626]  [<ffffffff8154ffce>] kernel_init+0xe/0x130
+[   14.808698]  [<ffffffff815756ac>] ret_from_fork+0x7c/0xb0
+[   14.814963]  [<ffffffff8154ffc0>] ? rest_init+0xd0/0xd0
+[   14.821640] kmem_cache_destroy iommu_domain: Slab cache still has objects
+[   14.829456] CPU: 12 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc1-gerry+ #59
+[   14.837562] Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.99.99.x059.091020121352 09/10/2012
+[   14.850803]  0000000000000000 ffff88042dd33db0 ffffffff8156223d ffff88102c1ee3c0
+[   14.861222]  ffff88042dd33dc8 ffffffff811790b1 ffff880c2d3533b8 ffff88042dd33e00
+[   14.870284]  ffffffff81dc7a76 ffffffff81b1e8e0 ffffffff81f84058 ffffffff81d8a711
+[   14.879271] Call Trace:
+[   14.882227]  [<ffffffff8156223d>] dump_stack+0x4d/0x66
+[   14.888197]  [<ffffffff811790b1>] kmem_cache_destroy+0xf1/0x100
+[   14.895034]  [<ffffffff81dc7a76>] intel_iommu_init+0x12e/0x56a
+[   14.901781]  [<ffffffff81d8a711>] ? iommu_setup+0x27d/0x27d
+[   14.908238]  [<ffffffff81d8a739>] pci_iommu_init+0x28/0x52
+[   14.914594]  [<ffffffff81000342>] do_one_initcall+0x122/0x180
+[   14.921244]  [<ffffffff81077738>] ? parse_args+0x1e8/0x320
+[   14.927598]  [<ffffffff81d850e8>] kernel_init_freeable+0x1e1/0x26c
+[   14.934738]  [<ffffffff81d84833>] ? do_early_param+0x88/0x88
+[   14.941309]  [<ffffffff8154ffc0>] ? rest_init+0xd0/0xd0
+[   14.947380]  [<ffffffff8154ffce>] kernel_init+0xe/0x130
+[   14.953430]  [<ffffffff815756ac>] ret_from_fork+0x7c/0xb0
+[   14.959689]  [<ffffffff8154ffc0>] ? rest_init+0xd0/0xd0
+[   14.966299] kmem_cache_destroy iommu_iova: Slab cache still has objects
+[   14.973923] CPU: 12 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc1-gerry+ #59
+[   14.982020] Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.99.99.x059.091020121352 09/10/2012
+[   14.995263]  0000000000000000 ffff88042dd33db0 ffffffff8156223d ffff88042cb5c980
+[   15.004265]  ffff88042dd33dc8 ffffffff811790b1 ffff880c2d3533b8 ffff88042dd33e00
+[   15.013322]  ffffffff81dc7a82 ffffffff81b1e8e0 ffffffff81f84058 ffffffff81d8a711
+[   15.022318] Call Trace:
+[   15.025238]  [<ffffffff8156223d>] dump_stack+0x4d/0x66
+[   15.031202]  [<ffffffff811790b1>] kmem_cache_destroy+0xf1/0x100
+[   15.038038]  [<ffffffff81dc7a82>] intel_iommu_init+0x13a/0x56a
+[   15.044786]  [<ffffffff81d8a711>] ? iommu_setup+0x27d/0x27d
+[   15.051242]  [<ffffffff81d8a739>] pci_iommu_init+0x28/0x52
+[   15.057601]  [<ffffffff81000342>] do_one_initcall+0x122/0x180
+[   15.064254]  [<ffffffff81077738>] ? parse_args+0x1e8/0x320
+[   15.070608]  [<ffffffff81d850e8>] kernel_init_freeable+0x1e1/0x26c
+[   15.077747]  [<ffffffff81d84833>] ? do_early_param+0x88/0x88
+[   15.084300]  [<ffffffff8154ffc0>] ? rest_init+0xd0/0xd0
+[   15.090362]  [<ffffffff8154ffce>] kernel_init+0xe/0x130
+[   15.096431]  [<ffffffff815756ac>] ret_from_fork+0x7c/0xb0
+[   15.102693]  [<ffffffff8154ffc0>] ? rest_init+0xd0/0xd0
+[   15.189273] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/iommu/intel-iommu.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/iommu/intel-iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 67b114e..503cc73 100644
+index 6724772..a27d3eb 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -2015,7 +2015,7 @@ static int dmar_insert_dev_info(int segment, int bus, int devfn,
- /* domain is initialized */
- static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
- {
--	struct dmar_domain *domain;
-+	struct dmar_domain *domain, *free = NULL;
- 	struct intel_iommu *iommu;
- 	struct dmar_drhd_unit *drhd;
- 	struct pci_dev *dev_tmp;
-@@ -2062,17 +2062,16 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
- 		free_domain_mem(domain);
- 		goto error;
- 	}
--	if (domain_init(domain, gaw)) {
--		domain_exit(domain);
-+	free = domain;
-+	if (domain_init(domain, gaw))
- 		goto error;
--	}
- 
- 	/* register pcie-to-pci device */
- 	if (dev_tmp) {
--		if (dmar_insert_dev_info(segment, bus, devfn, NULL, &domain)) {
--			domain_exit(domain);
-+		if (dmar_insert_dev_info(segment, bus, devfn, NULL, &domain))
- 			goto error;
--		}
-+		else
-+			free = NULL;
+@@ -1365,6 +1365,7 @@ static int iommu_attach_domain(struct dmar_domain *domain,
  	}
  
- found_domain:
-@@ -2080,6 +2079,8 @@ found_domain:
- 				 pdev, &domain) == 0)
- 		return domain;
- error:
-+	if (free)
-+		domain_exit(free);
- 	/* recheck it here, maybe others set it */
- 	return find_domain(pdev);
- }
+ 	domain->id = num;
++	domain->iommu_count++;
+ 	set_bit(num, iommu->domain_ids);
+ 	set_bit(iommu->seq_id, domain->iommu_bmp);
+ 	iommu->domains[num] = domain;
+@@ -1489,7 +1490,6 @@ static int domain_init(struct dmar_domain *domain, int guest_width)
+ 		domain->iommu_snooping = 0;
+ 
+ 	domain->iommu_superpage = fls(cap_super_page_val(iommu->cap));
+-	domain->iommu_count = 1;
+ 	domain->nid = iommu->node;
+ 
+ 	/* always allocate the top pgd */
 -- 
 1.7.10.4
 
