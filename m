@@ -1,52 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaBSLwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 06:52:35 -0500
-Received: from mga09.intel.com ([134.134.136.24]:9959 "EHLO mga09.intel.com"
+	id S1752532AbaBSLwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 06:52:50 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20559 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151AbaBSLwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751321AbaBSLwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Feb 2014 06:52:34 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,505,1389772800"; 
-   d="scan'208";a="458018502"
+   d="scan'208";a="477607418"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Bin Gao <bin.gao@linux.intel.com>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, x86@kernel.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v5 2/2] x86, tsc: Add missing Baytrail frequency to the table
-Date: Wed, 19 Feb 2014 13:52:30 +0200
-Message-Id: <1392810750-18660-2-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v5 1/2] x86, tsc: Fallback to normal calibration if fast MSR calibration fails
+Date: Wed, 19 Feb 2014 13:52:29 +0200
+Message-Id: <1392810750-18660-1-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.9.0.rc3
-In-Reply-To: <1392810750-18660-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1392810750-18660-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Baytrail is based on Silvermont core so MSR_FSB_FREQ[2:0] == 0 means
-that the CPU reference clock runs at 83.3MHz. Add this missing frequency to
-the table.
+From: Thomas Gleixner <tglx@linutronix.de>
 
+If we cannot calibrate TSC via MSR based calibration
+try_msr_calibrate_tsc() stores zero to fast_calibrate and returns that to
+the caller. This value gets then propagated further to clockevents code
+resulting division by zero oops like the one below:
+
+ divide error: 0000 [#1] PREEMPT SMP
+ Modules linked in:
+ CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W    3.13.0+ #47
+ task: ffff880075508000 ti: ffff880075506000 task.ti: ffff880075506000
+ RIP: 0010:[<ffffffff810aec14>]  [<ffffffff810aec14>] clockevents_config.part.3+0x24/0xa0
+ RSP: 0000:ffff880075507e58  EFLAGS: 00010246
+ RAX: ffffffffffffffff RBX: ffff880079c0cd80 RCX: 0000000000000000
+ RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffffffffffff
+ RBP: ffff880075507e70 R08: 0000000000000001 R09: 00000000000000be
+ R10: 00000000000000bd R11: 0000000000000003 R12: 000000000000b008
+ R13: 0000000000000008 R14: 000000000000b010 R15: 0000000000000000
+ FS:  0000000000000000(0000) GS:ffff880079c00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: ffff880079fff000 CR3: 0000000001c0b000 CR4: 00000000001006f0
+ Stack:
+  ffff880079c0cd80 000000000000b008 0000000000000008 ffff880075507e88
+  ffffffff810aecb0 ffff880079c0cd80 ffff880075507e98 ffffffff81030168
+  ffff880075507ed8 ffffffff81d1104f 00000000000000c3 0000000000000000
+ Call Trace:
+  [<ffffffff810aecb0>] clockevents_config_and_register+0x20/0x30
+  [<ffffffff81030168>] setup_APIC_timer+0xc8/0xd0
+  [<ffffffff81d1104f>] setup_boot_APIC_clock+0x4cc/0x4d8
+  [<ffffffff81d0f5de>] native_smp_prepare_cpus+0x3dd/0x3f0
+  [<ffffffff81d02ee9>] kernel_init_freeable+0xc3/0x205
+  [<ffffffff8177c910>] ? rest_init+0x90/0x90
+  [<ffffffff8177c91e>] kernel_init+0xe/0x120
+  [<ffffffff8178deec>] ret_from_fork+0x7c/0xb0
+  [<ffffffff8177c910>] ? rest_init+0x90/0x90
+
+Prevent this from happening by:
+ 1) Modifying try_msr_calibrate_tsc() to return calibration value or zero
+    if it fails.
+ 2) Check this return value in native_calibrate_tsc() and in case of zero
+    fallback to use normal non-MSR based calibration.
+
+Reported-and-tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[mw: Subject and changelog]
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- arch/x86/kernel/tsc_msr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Changes to the previous version (v4) is that I added my SoB as requested by
+Thomas.
 
+ arch/x86/include/asm/tsc.h |  2 +-
+ arch/x86/kernel/tsc.c      |  7 ++-----
+ arch/x86/kernel/tsc_msr.c  | 28 ++++++++++++++--------------
+ 3 files changed, 17 insertions(+), 20 deletions(-)
+
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index 57ae63cd6ee2..94605c0e9cee 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -66,6 +66,6 @@ extern void tsc_save_sched_clock_state(void);
+ extern void tsc_restore_sched_clock_state(void);
+ 
+ /* MSR based TSC calibration for Intel Atom SoC platforms */
+-int try_msr_calibrate_tsc(unsigned long *fast_calibrate);
++unsigned long try_msr_calibrate_tsc(void);
+ 
+ #endif /* _ASM_X86_TSC_H */
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index acb3b606613e..cfbe99f88830 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -653,13 +653,10 @@ unsigned long native_calibrate_tsc(void)
+ 
+ 	/* Calibrate TSC using MSR for Intel Atom SoCs */
+ 	local_irq_save(flags);
+-	i = try_msr_calibrate_tsc(&fast_calibrate);
++	fast_calibrate = try_msr_calibrate_tsc();
+ 	local_irq_restore(flags);
+-	if (i >= 0) {
+-		if (i == 0)
+-			pr_warn("Fast TSC calibration using MSR failed\n");
++	if (fast_calibrate)
+ 		return fast_calibrate;
+-	}
+ 
+ 	local_irq_save(flags);
+ 	fast_calibrate = quick_pit_calibrate();
 diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
-index 5dfff5809e74..92ae6acac8a7 100644
+index 8b5434f4389f..5dfff5809e74 100644
 --- a/arch/x86/kernel/tsc_msr.c
 +++ b/arch/x86/kernel/tsc_msr.c
-@@ -53,7 +53,7 @@ static struct freq_desc freq_desc_tables[] = {
- 	/* TNG */
- 	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
- 	/* VLV2 */
--	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
-+	{ 6, 0x37, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
- 	/* ANN */
- 	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
- };
+@@ -77,21 +77,18 @@ static int match_cpu(u8 family, u8 model)
+ 
+ /*
+  * Do MSR calibration only for known/supported CPUs.
+- * Return values:
+- * -1: CPU is unknown/unsupported for MSR based calibration
+- *  0: CPU is known/supported, but calibration failed
+- *  1: CPU is known/supported, and calibration succeeded
++ *
++ * Returns the calibration value or 0 if MSR calibration failed.
+  */
+-int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
++unsigned long try_msr_calibrate_tsc(void)
+ {
+-	int cpu_index;
+ 	u32 lo, hi, ratio, freq_id, freq;
++	unsigned long res;
++	int cpu_index;
+ 
+ 	cpu_index = match_cpu(boot_cpu_data.x86, boot_cpu_data.x86_model);
+ 	if (cpu_index < 0)
+-		return -1;
+-
+-	*fast_calibrate = 0;
++		return 0;
+ 
+ 	if (freq_desc_tables[cpu_index].msr_plat) {
+ 		rdmsr(MSR_PLATFORM_INFO, lo, hi);
+@@ -103,7 +100,7 @@ int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
+ 	pr_info("Maximum core-clock to bus-clock ratio: 0x%x\n", ratio);
+ 
+ 	if (!ratio)
+-		return 0;
++		goto fail;
+ 
+ 	/* Get FSB FREQ ID */
+ 	rdmsr(MSR_FSB_FREQ, lo, hi);
+@@ -112,16 +109,19 @@ int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
+ 	pr_info("Resolved frequency ID: %u, frequency: %u KHz\n",
+ 				freq_id, freq);
+ 	if (!freq)
+-		return 0;
++		goto fail;
+ 
+ 	/* TSC frequency = maximum resolved freq * maximum resolved bus ratio */
+-	*fast_calibrate = freq * ratio;
+-	pr_info("TSC runs at %lu KHz\n", *fast_calibrate);
++	res = freq * ratio;
++	pr_info("TSC runs at %lu KHz\n", res);
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	lapic_timer_frequency = (freq * 1000) / HZ;
+ 	pr_info("lapic_timer_frequency = %d\n", lapic_timer_frequency);
+ #endif
++	return res;
+ 
+-	return 1;
++fail:
++	pr_warn("Fast TSC calibration using MSR failed\n");
++	return 0;
+ }
 -- 
 1.9.0.rc3
 
