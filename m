@@ -1,117 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365AbaBSPz3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:55:29 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58599 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654AbaBSPxv (ORCPT
+	id S1754420AbaBSP4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:56:22 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60945 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753804AbaBSP4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:53:51 -0500
-Date: Thu, 20 Feb 2014 00:53:25 +0900
-From: Mark Brown <broonie@kernel.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk
-Message-ID: <20140219155325.GJ2669@sirena.org.uk>
-References: <20140213184249.GC30257@n2100.arm.linux.org.uk>
- <20140213232606.GA27372@kroah.com>
- <20140214000717.GG30257@n2100.arm.linux.org.uk>
- <20140214001436.GA16287@kroah.com>
- <20140214003834.GH30257@n2100.arm.linux.org.uk>
- <20140217153518.30891455@alan.etchedpixels.co.uk>
- <20140217235013.GD2669@sirena.org.uk>
- <20140218100943.34f2e186@alan.etchedpixels.co.uk>
- <20140219135751.GX2669@sirena.org.uk>
- <20140219144751.75f7fb70@alan.etchedpixels.co.uk>
+	Wed, 19 Feb 2014 10:56:20 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v2 1/1] ACPI, PCI, ISA: Call ISA-specific code only for architectures which support ISA.
+Date: Wed, 19 Feb 2014 17:11:10 +0100
+Message-ID: <3640027.L0fXHYxIB5@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392806122-23318-1-git-send-email-tomasz.nowicki@linaro.org>
+References: <1392806122-23318-1-git-send-email-tomasz.nowicki@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="o9omvSfeMYbm0Ozc"
-Content-Disposition: inline
-In-Reply-To: <20140219144751.75f7fb70@alan.etchedpixels.co.uk>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.144.10
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
- device probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, February 19, 2014 11:35:22 AM Tomasz Nowicki wrote:
+> This commit moves ISA-specific code to separate function and makes that
+> function depend on CONFIG_{E}ISA so that we do not have to maintain
+> acpi_isa_irq_to_gsi() function for architectures which do not support ISA.
+> 
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> ---
+>  drivers/acpi/pci_irq.c |   35 +++++++++++++++++++++++++----------
+>  1 file changed, 25 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+> index 361b40c..0a553a0 100644
+> --- a/drivers/acpi/pci_irq.c
+> +++ b/drivers/acpi/pci_irq.c
+> @@ -370,6 +370,30 @@ static struct acpi_prt_entry *acpi_pci_irq_lookup(struct pci_dev *dev, int pin)
+>  	return NULL;
+>  }
+>  
+> +#if IS_ENABLED(CONFIG_ISA) || IS_ENABLED(CONFIG_EISA)
+> +static int acpi_isa_register_gsi(struct pci_dev *dev)
+> +{
+> +	u32 dev_gsi;
+> +
+> +	/* Interrupt Line values above 0xF are forbidden */
+> +	if (dev->irq > 0 && (dev->irq <= 0xF) &&
+> +	    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
+> +		dev_warn(&dev->dev, "PCI INT %c: no GSI - using ISA IRQ %d\n",
+> +			 pin_name(dev->pin), dev->irq);
+> +		acpi_register_gsi(&dev->dev, dev_gsi,
+> +				  ACPI_LEVEL_SENSITIVE,
+> +				  ACPI_ACTIVE_LOW);
+> +		return 0;
+> +	}
+> +	return -EINVAL;
+> +}
+> +#else
+> +static inline int acpi_isa_register_gsi(struct pci_dev *dev)
+> +{
+> +	return -ENODEV;
+> +}
+> +#endif
+> +
+>  int acpi_pci_irq_enable(struct pci_dev *dev)
+>  {
+>  	struct acpi_prt_entry *entry;
+> @@ -416,16 +440,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+>  	 * driver reported one, then use it. Exit in any case.
+>  	 */
+>  	if (gsi < 0) {
+> -		u32 dev_gsi;
+> -		/* Interrupt Line values above 0xF are forbidden */
+> -		if (dev->irq > 0 && (dev->irq <= 0xF) &&
+> -		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
+> -			dev_warn(&dev->dev, "PCI INT %c: no GSI - using ISA IRQ %d\n",
+> -				 pin_name(pin), dev->irq);
+> -			acpi_register_gsi(&dev->dev, dev_gsi,
+> -					  ACPI_LEVEL_SENSITIVE,
+> -					  ACPI_ACTIVE_LOW);
+> -		} else {
+> +		if (acpi_isa_register_gsi(dev)) {
 
---o9omvSfeMYbm0Ozc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The curly brackets are not necessary here and you can even move the below into
+acpi_isa_register_gsi().
 
-On Wed, Feb 19, 2014 at 02:47:51PM +0000, One Thousand Gnomes wrote:
+>  			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
+>  				 pin_name(pin));
+>  		}
+> 
 
-> > anything to complain that people are following the recommendations of
-> > the maintainer or to demand that this somehow gets hacked around in
-> > arch/ when we're trying to convince all the architectures to get their
-> > drivers merged into subsystem trees so they're reviewed by the subsystem
-> > maintainers.
-
-> It's not a case of hacking around it in arch. It's a case of fixing up
-> problems where they belong, which btw is what Greg has in his tree -
-> specifically ef2889f7ffee67f0aed49e854c72be63f1466759 and
-> 6f134c3c770355b7e930d3ffc558864668f13055 which keep the handling of the
-> minor clash cock-up in the drivers affected.
-
-That's more reasonable, what you were saying was to do things in the ARM
-tree which reads like you want changes in arch/arm - those changes are
-in the serial code.
-
-> > you're doing here is making disparaging remarks and telling people to
-> > adopt bad practices because someone else made a mistake a decade ago.
-
-> I'm not telling anyone to adopt bad practices - at least its news to me
-> that "stopping the merge of buggy crap" is now a bad practice.
-
-Like I say, it's the "do it in the ARM tree" bit that's bad practice.
-
-> > > And the proposed change set is buggy as hell - because we register things
-> > > like 8250 devices at least four ways on the same x86 machine all of which
-> > > could in theory occur in parallel.
-
-> > Then you need to convince Greg of that.  The most recent set of patches
-> > are exactly what he asked for.
-
-> No there's an assumption that when someone asks for patches the proposed
-> changes actually *work*. As Russell has demonstrated - the general
-> deferral patches for the uart/tty layer are broken. The driver specific
-> fixups in -next on the other hand appear to be fine providing the amba
-> bus probe remains serialized (and trivially fixed if it doesn't).
-
-So like I say discuss that with Greg, it's entirely reasonable for a
-submitter to trust the maintainer on something like this so it's not
-helpful to yell at them (or other people who happen to be working on
-the same architecture for that matter).
-
---o9omvSfeMYbm0Ozc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTBNNyAAoJELSic+t+oim9URUP/0y0iTP9SUL77Pn5Uah2rZ6h
-J/AMEkmUC0JXdrpMexYuHp1lLEeM94zrAof8ATgYewIdD5GABUhoH5dhhyeyLecA
-TD8YDPFJaKaUXqpp5GuK025DP3WJUKWC91bSHmB6aM+p23OW/yce3e+mkW21T2SM
-xGcSzFv4p53SRlwB9et/OFWIVmgL4MALylTRpg0VeUGiaXpAbS25OKbulVLOisou
-5r7NqQxIXSXhaMpMk04nP1DOSD20aakGDlOu5a2cLgC2Pt0MfpE0wO0nd2YWvTSQ
-2CDjna3PX6zxPl3rMnHIZUS7Rqpknu5lXlqibaSG73MNsn67JAeA/6z91icIbva0
-s+0G6U2V4/zDM1BnY22ncZiD9PBuCtz5nPq/JWobaJej4ahc2WUiY0KXh+peOTok
-dugkLb02BjwqtQWAD+CC4qCUDYHPEkcsKkre8RoiXGcNrXTeaFnMf5FIMZ0R8qv9
-TGQY8UZHLjV4uQiMsos0IjZc/qUlyM59Z5SM5pyayKePUVE5R+AJmuUkdg6bL/Bi
-2Ycq94Ril1wgULuHPsbwTyj3hqo9uNK8pV090UR/xakFmSlrm7sqds+8d1Nj1nRD
-ACkK0VxwoVqMqPcInvmD1YHdT7psOJ9wiaahdyIhn9+/dVLjttQMlvObBprE50oN
-hVXY1oq04/MfO1vaDkxd
-=xXrx
------END PGP SIGNATURE-----
-
---o9omvSfeMYbm0Ozc--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
