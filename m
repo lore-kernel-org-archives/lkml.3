@@ -1,111 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983AbaBSJ1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 04:27:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52883 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926AbaBSJ1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 04:27:34 -0500
-Date: Wed, 19 Feb 2014 10:27:31 +0100
-From: Jan Kara <jack@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Derek Basehore <dbasehore@chromium.org>,
-        Alexander Viro <viro@zento.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, bleung@chromium.org,
-        sonnyrao@chromium.org, semenzato@chromium.org
-Subject: Re: [PATCH] backing_dev: Fix hung task on sync
-Message-ID: <20140219092731.GA4849@quack.suse.cz>
-References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
- <20140218225548.GI31892@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218225548.GI31892@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753051AbaBSJbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 04:31:07 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:63004 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412AbaBSJbB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 04:31:01 -0500
+X-AuditID: cbfee68e-b7f566d000002344-22-530479d183f3
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: fix to do build_stat prior to the recovery procedure
+Date: Wed, 19 Feb 2014 18:29:23 +0900
+Message-id: <1392802163-25825-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zQ92LlSzBBq8nKVtc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbH61wqWgl6pimOH
+	1zE2MO4X7WLk5JAQMJG4+3YvE4QtJnHh3nq2LkYuDiGBZYwSe2ceYIIpuvyxgQUisYhR4tSh
+	fmYIp5NJYsHco+xdjBwcbALaEpv3G4A0iAgwSyyYep4RpIZZYAKjxP9F71lAEsIC3hIPp3eB
+	1bMIqEosnRIHEuYVcJfYtbCBDWKZtsS25xPBeiUEHrNJnHz8lBEkwSIgIPFt8iEWkF4JAVmJ
+	TQeYIeolJQ6uuMEygVFwASPDKkbR1ILkguKk9CIjveLE3OLSvHS95PzcTYyQEOzbwXjzgPUh
+	xmSgcROZpUST84EhnFcSb2hsZmRhamJqbGRuaUaasJI476KHSUFCAumJJanZqakFqUXxRaU5
+	qcWHGJk4OKUaGF0t9ipsaP849flWrgqdzt3Lllq/FJud+f6LvUSbf1eJ4gdrzViLO5cdLu9g
+	977/Z8F0u6NmERYJHTuKgsqbH99pMtnQErpiqduu+tbSovJ5STdV/a0tOVxaC5yFN4h+K4ux
+	5WdhS+3YeOmjSEb4ps+rt4buu1j4aNm7tOrfa8yzNK6t+L35uBJLcUaioRZzUXEiAPA0lKlX	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd2LlSzBBhs/yVlc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5ix+tcKloJeqYpjh9cxNjDuF+1i5OSQEDCRuPyxgQXCFpO4cG89WxcjF4eQ
+	wCJGiVOH+pkhnE4miQVzj7J3MXJwsAloS2zebwDSICLALLFg6nlGkBpmgQmMEv8XvQebJCzg
+	LfFwehdYPYuAqsTSKXEgYV4Bd4ldCxvYIJZpS2x7PpFxAiP3AkaGVYyiqQXJBcVJ6blGesWJ
+	ucWleel6yfm5mxjBAf5MegfjqgaLQ4wCHIxKPLweL5iDhVgTy4orcw8xSnAwK4nw3oljCRbi
+	TUmsrEotyo8vKs1JLT7EmAy0fCKzlGhyPjD68kriDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgk
+	kJ5YkpqdmlqQWgSzhYmDU6qBkXmJ6IeVSw8cq59/b+lKqY2hl4VEu0oadgcnaRz9wrL19tuC
+	T88/SsZ8f3Hr2P+z/iYflb8aCwoIOi2vX6samsqzR171s8p02fXL/p/2cxJTrZ/rdXzvAs4v
+	B0WlZ++P++bUVWzzbN2Shke8zR8leMSzQ20XX3hh+3DX1QT/Ba3f7/5bLnM+LkCJpTgj0VCL
+	uag4EQBXg93RtAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-02-14 17:55:48, Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Feb 14, 2014 at 08:12:17PM -0800, Derek Basehore wrote:
-> > bdi_wakeup_thread_delayed used the mod_delayed_work function to schedule work
-> > to writeback dirty inodes. The problem with this is that it can delay work that
-> > is scheduled for immediate execution, such as the work from sync_inodes_sb.
-> > This can happen since mod_delayed_work can now steal work from a work_queue.
-> > This fixes the problem by using queue_delayed_work instead. This is a
-> > regression from the move to the bdi workqueue design.
-> > 
-> > The reason that this causes a problem is that laptop-mode will change the
-> > delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default. In the case
-> > that bdi_wakeup_thread_delayed races with sync_inodes_sb, sync will be stopped
-> > for 10 minutes and trigger a hung task. Even if dirty_writeback_centisecs is
-> > not long enough to cause a hung task, we still don't want to delay sync for
-> > that long.
-> 
-> Oops.
-> 
-> > For the same reason, this also changes bdi_writeback_workfn to immediately
-> > queue the work again in the case that the work_list is not empty. The same
-> > problem can happen if the sync work is run on the rescue worker.
-> > 
-> > Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-> > ---
-> >  fs/fs-writeback.c | 5 +++--
-> >  mm/backing-dev.c  | 2 +-
-> >  2 files changed, 4 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> > index e0259a1..95b7b8c 100644
-> > --- a/fs/fs-writeback.c
-> > +++ b/fs/fs-writeback.c
-> > @@ -1047,8 +1047,9 @@ void bdi_writeback_workfn(struct work_struct *work)
-> >  		trace_writeback_pages_written(pages_written);
-> >  	}
-> >  
-> > -	if (!list_empty(&bdi->work_list) ||
-> > -	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
-> > +	if (!list_empty(&bdi->work_list))
-> > +		mod_delayed_work(bdi_wq, &wb->dwork, 0);
-> > +	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
-> >  		queue_delayed_work(bdi_wq, &wb->dwork,
-> >  			msecs_to_jiffies(dirty_writeback_interval * 10));
-> 
-> Can you please add some comments explaining why the specific variants
-> are being used here?
-> 
-> > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> > index ce682f7..3fde024 100644
-> > --- a/mm/backing-dev.c
-> > +++ b/mm/backing-dev.c
-> > @@ -294,7 +294,7 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
-> >  	unsigned long timeout;
-> >  
-> >  	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
-> > -	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-> > +	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-> 
-> and here?
-> 
-> Hmmm.... but doesn't this create an opposite problem?  Now a flush
-> queued for an earlier time may be overridden by something scheduled
-> later, no?
-  You are the workqueue expert so you may know better ;) But the way I
-understand it is that queue_delayed_work() does nothing if the timer is
-already running. Since we queue flusher work to run either immediately or
-after dirty_writeback_interval we are safe to run queue_delayed_work()
-whenever we want it to run after dirty_writeback_interval and
-mod_delayed_work() whenever we want to run it immediately.
+At the end of the recovery procedure, write_checkpoint is called and updates
+the cp count which is managed by f2fs stat.
+But, previously build_stat() is called after the recovery procedure, which
+results in:
 
-But it's subtle and some interface where we could say queue delayed work
-after no later than X would be easier to grasp.
+BUG: unable to handle kernel NULL pointer dereference at 000000000000012c
+IP: [<ffffffffa03b1030>] write_checkpoint+0x720/0xbc0 [f2fs]
+Call Trace:
+ [<ffffffff810a6b44>] ? mark_held_locks+0x74/0x140
+ [<ffffffff8109a3e0>] ? __init_waitqueue_head+0x60/0x60
+ [<ffffffffa03bf036>] recover_fsync_data+0x656/0xf20 [f2fs]
+ [<ffffffff812ee3eb>] ? security_d_instantiate+0x1b/0x30
+ [<ffffffffa03aeb4d>] f2fs_fill_super+0x94d/0xa00 [f2fs]
+ [<ffffffff811a9825>] mount_bdev+0x1a5/0x1f0
+ [<ffffffff8114915e>] ? __get_free_pages+0xe/0x40
+ [<ffffffffa03ae200>] ? f2fs_remount+0x130/0x130 [f2fs]
+ [<ffffffffa03aa575>] f2fs_mount+0x15/0x20 [f2fs]
+ [<ffffffff811aa713>] mount_fs+0x43/0x1b0
+ [<ffffffff811c7124>] vfs_kern_mount+0x74/0x160
+ [<ffffffff811c5cb1>] ? __get_fs_type+0x51/0x60
+ [<ffffffff811c9727>] do_mount+0x237/0xb50
+ [<ffffffff811c936a>] ? copy_mount_options+0x3a/0x170
 
-								Honza
+So, this patche changes the order of recovery_fsync_data() and
+f2fs_build_stats().
+
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/super.c | 48 ++++++++++++++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
+
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 1a85f83..475560e 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -989,28 +989,9 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto free_root_inode;
+ 	}
+ 
+-	/* recover fsynced data */
+-	if (!test_opt(sbi, DISABLE_ROLL_FORWARD)) {
+-		err = recover_fsync_data(sbi);
+-		if (err)
+-			f2fs_msg(sb, KERN_ERR,
+-				"Cannot recover all fsync data errno=%ld", err);
+-	}
+-
+-	/*
+-	 * If filesystem is not mounted as read-only then
+-	 * do start the gc_thread.
+-	 */
+-	if (!(sb->s_flags & MS_RDONLY)) {
+-		/* After POR, we can run background GC thread.*/
+-		err = start_gc_thread(sbi);
+-		if (err)
+-			goto free_gc;
+-	}
+-
+ 	err = f2fs_build_stats(sbi);
+ 	if (err)
+-		goto free_gc;
++		goto free_root_inode;
+ 
+ 	if (f2fs_proc_root)
+ 		sbi->s_proc = proc_mkdir(sb->s_id, f2fs_proc_root);
+@@ -1032,17 +1013,36 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	err = kobject_init_and_add(&sbi->s_kobj, &f2fs_ktype, NULL,
+ 							"%s", sb->s_id);
+ 	if (err)
+-		goto fail;
++		goto free_proc;
+ 
++	/* recover fsynced data */
++	if (!test_opt(sbi, DISABLE_ROLL_FORWARD)) {
++		err = recover_fsync_data(sbi);
++		if (err)
++			f2fs_msg(sb, KERN_ERR,
++				"Cannot recover all fsync data errno=%ld", err);
++	}
++
++	/*
++	 * If filesystem is not mounted as read-only then
++	 * do start the gc_thread.
++	 */
++	if (!(sb->s_flags & MS_RDONLY)) {
++		/* After POR, we can run background GC thread.*/
++		err = start_gc_thread(sbi);
++		if (err)
++			goto free_kobj;
++	}
+ 	return 0;
+-fail:
++
++free_kobj:
++	kobject_del(&sbi->s_kobj);
++free_proc:
+ 	if (sbi->s_proc) {
+ 		remove_proc_entry("segment_info", sbi->s_proc);
+ 		remove_proc_entry(sb->s_id, f2fs_proc_root);
+ 	}
+ 	f2fs_destroy_stats(sbi);
+-free_gc:
+-	stop_gc_thread(sbi);
+ free_root_inode:
+ 	dput(sb->s_root);
+ 	sb->s_root = NULL;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.4.474.g128a96c
+
