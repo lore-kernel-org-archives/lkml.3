@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138AbaBSWOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 17:14:46 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48109 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbaBSWOo (ORCPT
+	id S1755272AbaBSWP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 17:15:26 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:53033 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755183AbaBSWPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 17:14:44 -0500
-Date: Wed, 19 Feb 2014 14:14:40 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vegard Nossum <vegardno@ifi.uio.no>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-cc: Xishi Qiu <qiuxishi@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] x86, kmemcheck: Use kstrtoint() instead of sscanf()
-In-Reply-To: <alpine.DEB.2.02.1402182344001.3551@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1402191412300.31921@chino.kir.corp.google.com>
-References: <5304558F.9050605@huawei.com> <alpine.DEB.2.02.1402182344001.3551@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 19 Feb 2014 17:15:20 -0500
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>
+Subject: [PATCH 0/2] Translate of PCI address without PCI enabled
+Date: Wed, 19 Feb 2014 23:14:54 +0100
+Message-Id: <1392848096-17838-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kmemcheck should use the preferred interface for parsing command line 
-arguments, kstrto*(), rather than sscanf() itself.  Use it appropriately.
+Hello,
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/mm/kmemcheck/kmemcheck.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+This patch set makes the use of the of PCI address translator less
+restrictive. At the end it will allow to use the mvebu_get_soc_id
+unconditionally.
 
-diff --git a/arch/x86/mm/kmemcheck/kmemcheck.c b/arch/x86/mm/kmemcheck/kmemcheck.c
---- a/arch/x86/mm/kmemcheck/kmemcheck.c
-+++ b/arch/x86/mm/kmemcheck/kmemcheck.c
-@@ -78,10 +78,16 @@ early_initcall(kmemcheck_init);
-  */
- static int __init param_kmemcheck(char *str)
- {
-+	int val;
-+	int ret;
-+
- 	if (!str)
- 		return -EINVAL;
- 
--	sscanf(str, "%d", &kmemcheck_enabled);
-+	ret = kstrtoint(str, 0, &val);
-+	if (ret)
-+		return ret;
-+	kmemcheck_enabled = val;
- 	return 0;
- }
- 
+The mvebu SoC (such as Kirkwood, Dove or Armada XP for instance) come
+with an IP of a PCI controller. The ID and the revision of a SoC are
+stored in the registers of this controller. Being able to get this
+information allows to deals with errata more dynamically.
+
+To manage to read this information, we need to map the registers, and
+for this we need to use the of PCI translator which depend of the PCI
+support.
+
+However there are mvebu board without any PCI devices, and where
+selecting the PCI support would be useless.
+
+Moreover translating an address from a PCI node of the device-tree
+into a CPU physical address doesn't require the core PCI
+support. Those translations are just related to the device tree
+itself.
+
+The 1st patch introduces a new config symbol: OF_ADDRESS_PCI, which
+will be selected as soon as PCI will be selected, so we remains in the
+same situation the current code. It should go to the of tree.
+
+The 2nd patch selects OF_ADDRESS_PCI as soon as ARCH_MVEBU will be
+selected. This will make mvebu_get_soc_id available even without the
+PCI support. It should go to the mvebu tree.
+
+Thanks,
+
+Gregory CLEMENT (2):
+  of: Allows to use the PCI translator without the PCI core
+  ARM: mvebu: Allows to get the SoC ID even without PCI enabled
+
+ arch/arm/mach-mvebu/Kconfig | 1 +
+ drivers/of/Kconfig          | 4 ++++
+ drivers/of/address.c        | 8 +++++---
+ 3 files changed, 10 insertions(+), 3 deletions(-)
+
+-- 
+1.8.1.2
+
