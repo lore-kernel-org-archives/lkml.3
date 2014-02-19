@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbaBSAmk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 19:42:40 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:18646 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaBSAmi (ORCPT
+	id S1752491AbaBSAoL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 19:44:11 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56042 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751587AbaBSAoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 19:42:38 -0500
-X-Greylist: delayed 18168 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Feb 2014 19:42:38 EST
-Message-ID: <5303FDEC.9060001@hp.com>
-Date: Tue, 18 Feb 2014 19:42:20 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 18 Feb 2014 19:44:09 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: dirk.brandewie@gmail.com
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 4/5] intel_pstate: Use LFM bus ratio as min ratio/P state
+Date: Wed, 19 Feb 2014 01:58:59 +0100
+Message-ID: <5856987.3qKttR09W1@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392228067-14817-5-git-send-email-dirk.j.brandewie@intel.com>
+References: <1392228067-14817-1-git-send-email-dirk.j.brandewie@intel.com> <1392228067-14817-5-git-send-email-dirk.j.brandewie@intel.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
-References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com> <20140218073111.GW27965@twins.programming.kicks-ass.net> <5303B4C4.2040907@hp.com> <20140218212827.GR14089@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140218212827.GR14089@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 04:28 PM, Peter Zijlstra wrote:
-> On Tue, Feb 18, 2014 at 02:30:12PM -0500, Waiman Long wrote:
->> I will start looking at how to make it work with paravirt. Hopefully, it
->> won't take too long.
-> The cheap way out is to simply switch to the test-and-set spinlock on
-> whatever X86_FEATURE_ indicates a guest I suppose.
+On Wednesday, February 12, 2014 10:01:06 AM dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> 
+> Using LFM ratio provides better perf/watt vs min ratio.
+> 
+> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-I don't think there is X86_FEATURE flag that indicates running in a 
-guest. In fact, a guest should never find out if it is running virtualized.
+This changelog is particularly insufficient.
 
-After reading the current PV ticketlock implementation, I have a rough 
-idea of what I need to do to implement PV support in qspinlock. A large 
-portion of PV ticketlock code is find out the CPU number of the next one 
-to get the lock. The current qspinlock implementation has already 
-included CPU number of the previous member in the queue and it should be 
-pretty easy to store CPU number of the next one in the queue node 
-structure. These CPU numbers can then be supplied to the kick_cpu() 
-function to schedule in the require the CPU to make sure that progress 
-can be made.
+Can you please explain what's wrong with the previous calculation and how
+the change makes it better?
 
-I will try to implement this idea to see how thing work out.
+> ---
+>  drivers/cpufreq/intel_pstate.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index b80c03d..ff45ce1 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -356,7 +356,7 @@ static int byt_get_min_pstate(void)
+>  {
+>  	u64 value;
+>  	rdmsrl(BYT_RATIOS, value);
+> -	return value & 0xFF;
+> +	return (value >> 8) & 0xFF;
+>  }
+>  
+>  static int byt_get_max_pstate(void)
+> 
 
--Longman
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
