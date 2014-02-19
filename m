@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaBSD1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 22:27:34 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:60626 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaBSD1d (ORCPT
+	id S1752122AbaBSD2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 22:28:11 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42296 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaBSD1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 22:27:33 -0500
+	Tue, 18 Feb 2014 22:27:42 -0500
+Message-ID: <530423CB.5060105@linux.vnet.ibm.com>
+Date: Wed, 19 Feb 2014 08:53:55 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20140219021246.GK15716@S2101-09.ap.freescale.net>
-References: <1392738636-29877-1-git-send-email-fabio.estevam@freescale.com>
-	<CAK9yfHykaoap7Dz+fsZgReRoXW_GsKvmZX7RDGqknd1_o3R50g@mail.gmail.com>
-	<20140219021246.GK15716@S2101-09.ap.freescale.net>
-Date: Wed, 19 Feb 2014 08:57:32 +0530
-Message-ID: <CAK9yfHw2q-PSaUS_tApxN=tsBhN33n6ghgTmpSJVP5yJYDQgWA@mail.gmail.com>
-Subject: Re: [PATCH] pfuze100-regulator: Revert "regulator: pfuze100: Use of_get_child_by_name"
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Brown <broonie@kernel.org>, festevam@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Preeti Murthy <preeti.lkml@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [GIT Pull] timer fixes for 3.14
+References: <alpine.DEB.2.02.1402152005210.21991@ionos.tec.linutronix.de> <CAM4v1pNDbiC54Ot6J2Tpc9t4BgT3fY7jgZkb6Fem4OfedwvV-w@mail.gmail.com> <alpine.DEB.2.02.1402181938140.4468@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402181938140.4468@ionos.tec.linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021903-0928-0000-0000-00000692A5AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 February 2014 07:42, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Tue, Feb 18, 2014 at 09:58:52PM +0530, Sachin Kamat wrote:
->> On 18 February 2014 21:20, Fabio Estevam <fabio.estevam@freescale.com> wrote:
->> > Since commit d7857c42 (regulator: pfuze100: Use of_get_child_by_name) we get
->> > the following probe failure:
->> >
->> > pfuze100-regulator 1-0008: Full layer: 1, Metal layer: 0
->> > pfuze100-regulator 1-0008: FAB: 0, FIN: 0
->> > pfuze100-regulator 1-0008: regulators node not found
->> > pfuze100-regulator: probe of 1-0008 failed with error -22
->> >
->> > Revert the offending commit so that we can probe the regulator successfully.
+On 02/19/2014 12:10 AM, Thomas Gleixner wrote:
+> On Tue, 18 Feb 2014, Preeti Murthy wrote:
+> 
+>> Hi Thomas,
 >>
->> I wonder what is different in this case from the ones that I already
->> have working
->> that is causing this to fail. Can you please tell me which dts file
->> you have used
->> so that I can see if the way the node is defined is anything different.
->
-> When you change to use of_get_child_by_name(), you should change 'np' to
-> point to dev->of_node too.
+>> With regard to the patch: "tick: Clear broadcast pending bit when
+>> switching to oneshot"
+>> isn't BROADCAST_EXIT called atleast after initializing the high
+>> resolution timers while
+>> handling the broadcast IPI and before re-entering idle? This should
+>> clear the cpu bit
+>> in the pending mask right?
+>>
+>> idle()
+>> |__BROADCAST_ENTER
+>>     |__halt()
+>>       |__broadcast_ipi
+>>           |__init_highres()->clear oneshot mask
+>>               |__return from interrupt->BROADCAST_EXIT (clear pending mask)
+> 
+> Unfortunately not:
+> 
+>      if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
+>      	  clear pending mask;
+>      }
+> 
+>>                    |__re-enter idle
+> 
+> Go figure :)
 
-Thanks for the tip Shawn. Coincidentally all the ones that I tested
-had this (np pointing
-to dev->of_node) already. So I happened to miss out on this check.
+Ah right! Thanks :)
 
--- 
-With warm regards,
-Sachin
+Regards
+Preeti U Murthy
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+
