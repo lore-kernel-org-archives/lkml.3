@@ -1,48 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830AbaBSVbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 16:31:33 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:60820 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaBSVbc (ORCPT
+	id S1754082AbaBSVcD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 16:32:03 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:60950 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753303AbaBSVcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 16:31:32 -0500
-Date: Wed, 19 Feb 2014 16:31:27 -0500
+	Wed, 19 Feb 2014 16:32:00 -0500
 From: Matt Porter <mporter@linaro.org>
-To: Alex Elder <elder@linaro.org>
-Cc: Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Christian Daudt <bcm@fixthebug.org>, Rob Herring <robh+dt@kernel.org>,
+To: Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <robh+dt@kernel.org>,
         Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Markus Mayer <markus.mayer@linaro.org>,
-        Tim Kryger <tim.kryger@linaro.org>
-Subject: Re: [PATCH] ARM: dts: remove bcm11351-brt.dts
-Message-ID: <20140219213127.GL29906@beef>
-References: <1392840808-28214-1-git-send-email-mporter@linaro.org>
- <53052059.3020105@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53052059.3020105@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Tim Kryger <tim.kryger@linaro.org>, Alex Elder <elder@linaro.org>
+Subject: [PATCH v2] ARM: dts: remove bcm11351-brt.dts
+Date: Wed, 19 Feb 2014 16:31:52 -0500
+Message-Id: <1392845512-31333-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 03:21:29PM -0600, Alex Elder wrote:
-> On 02/19/2014 02:13 PM, Matt Porter wrote:
-> > The BCM11351 BRT board will never see the light of day. Remove the BRT
-> > dts since it is not maintainable.
-> > 
-> > Signed-off-by: Matt Porter <mporter@linaro.org>
-> 
-> Please remove the line in the Makefile that refers to this file.
-> Provided you make that change, it looks good to me.
-> 
-> Reviewed-by: Alex Elder <elder@linaro.org>
+The BCM11351 BRT board will never see the light of day. Remove the BRT
+dts since it is not maintainable.
 
-Done, thanks.
+Reviewed-by: Alex Elder <elder@linaro.org>
+Signed-off-by: Matt Porter <mporter@linaro.org>
+---
+Changes since v1:
+	- remove bcm11351-brt from Makefile
 
--Matt
+ arch/arm/boot/dts/Makefile         |  3 +--
+ arch/arm/boot/dts/bcm11351-brt.dts | 54 --------------------------------------
+ 2 files changed, 1 insertion(+), 56 deletions(-)
+ delete mode 100644 arch/arm/boot/dts/bcm11351-brt.dts
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 6d1e43d..faf4676 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -47,8 +47,7 @@ dtb-$(CONFIG_ARCH_AT91)	+= sama5d36ek.dtb
+ 
+ dtb-$(CONFIG_ARCH_ATLAS6) += atlas6-evb.dtb
+ dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
+-dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm11351-brt.dtb \
+-	bcm28155-ap.dtb
++dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm28155-ap.dtb
+ dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
+ dtb-$(CONFIG_ARCH_BERLIN) += \
+ 	berlin2-sony-nsz-gs7.dtb	\
+diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
+deleted file mode 100644
+index 396b704..0000000
+--- a/arch/arm/boot/dts/bcm11351-brt.dts
++++ /dev/null
+@@ -1,54 +0,0 @@
+-/*
+- * Copyright (C) 2012 Broadcom Corporation
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License as
+- * published by the Free Software Foundation version 2.
+- *
+- * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+- * kind, whether express or implied; without even the implied warranty
+- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-/dts-v1/;
+-
+-#include "bcm11351.dtsi"
+-
+-/ {
+-	model = "BCM11351 BRT board";
+-	compatible = "brcm,bcm11351-brt", "brcm,bcm11351";
+-
+-	memory {
+-		reg = <0x80000000 0x40000000>; /* 1 GB */
+-	};
+-
+-	uart@3e000000 {
+-		status = "okay";
+-	};
+-
+-	sdio1: sdio@3f180000 {
+-		max-frequency = <48000000>;
+-		status = "okay";
+-	};
+-
+-	sdio2: sdio@3f190000 {
+-		non-removable;
+-		max-frequency = <48000000>;
+-		status = "okay";
+-	};
+-
+-	sdio4: sdio@3f1b0000 {
+-		max-frequency = <48000000>;
+-		cd-gpios = <&gpio 14 0>;
+-		status = "okay";
+-	};
+-
+-	usbotg: usb@3f120000 {
+-		status = "okay";
+-	};
+-
+-	usbphy: usb-phy@3f130000 {
+-		status = "okay";
+-	};
+-};
+-- 
+1.8.4
+
