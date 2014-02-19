@@ -1,111 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289AbaBSCLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 21:11:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52255 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaBSCLP (ORCPT
+	id S1752396AbaBSCMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 21:12:45 -0500
+Received: from [216.32.181.181] ([216.32.181.181]:43860 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751312AbaBSCMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 21:11:15 -0500
-Date: Tue, 18 Feb 2014 18:13:44 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 12/14] staging: binder: Fix ABI for 64bit Android
-Message-ID: <20140219021344.GA21896@kroah.com>
-References: <1392674322-9036-1-git-send-email-john.stultz@linaro.org>
- <1392674322-9036-13-git-send-email-john.stultz@linaro.org>
- <20140218190828.GA10376@kroah.com>
- <CALAqxLWMF0WFAoi-yGtWiKh2Dgw8hpM4NY5F8TQ5Yt3MvHY3kA@mail.gmail.com>
- <20140218194936.GA8584@kroah.com>
- <CALAqxLXYzCkwywS2+besc3Ai1yJc9EuDwDEHquF0OnCjPOXe_Q@mail.gmail.com>
- <20140218203239.GA18852@kroah.com>
- <CAMP5XgeFiLZZ0i0evCv5Jai02u+4QK1cOvrQpZqVcxFbHJ+C3A@mail.gmail.com>
+	Tue, 18 Feb 2014 21:12:44 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 19 Feb 2014 10:12:48 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+CC: Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@kernel.org>, <festevam@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pfuze100-regulator: Revert "regulator: pfuze100: Use
+ of_get_child_by_name"
+Message-ID: <20140219021246.GK15716@S2101-09.ap.freescale.net>
+References: <1392738636-29877-1-git-send-email-fabio.estevam@freescale.com>
+ <CAK9yfHykaoap7Dz+fsZgReRoXW_GsKvmZX7RDGqknd1_o3R50g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP5XgeFiLZZ0i0evCv5Jai02u+4QK1cOvrQpZqVcxFbHJ+C3A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAK9yfHykaoap7Dz+fsZgReRoXW_GsKvmZX7RDGqknd1_o3R50g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 04:08:20PM -0800, Arve Hjønnevåg wrote:
-> On Tue, Feb 18, 2014 at 12:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Feb 18, 2014 at 12:02:07PM -0800, John Stultz wrote:
-> >> On Tue, Feb 18, 2014 at 11:49 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Tue, Feb 18, 2014 at 11:30:26AM -0800, John Stultz wrote:
-> >> >> On Tue, Feb 18, 2014 at 11:08 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> >> > On Mon, Feb 17, 2014 at 01:58:40PM -0800, John Stultz wrote:
-> >> >> >> From: Serban Constantinescu <serban.constantinescu@arm.com>
-> >> >> >>
-> >> >> >> This patch fixes the ABI for 64bit Android userspace.
-> >> >> >> BC_REQUEST_DEATH_NOTIFICATION and BC_CLEAR_DEATH_NOTIFICATION claim
-> >> >> >> to be using struct binder_ptr_cookie, but they are using a 32bit handle
-> >> >> >> and a pointer.
-> >> >> >>
-> >> >> >> On 32bit systems the payload size is the same as the size of struct
-> >> >> >> binder_ptr_cookie, however for 64bit systems this will differ. This
-> >> >> >> patch adds struct binder_handle_cookie that fixes this issue for 64bit
-> >> >> >> Android.
-> >> >> >>
-> >> >> >> Since there are no 64bit users of this interface that we know of this
-> >> >> >> change should not affect any existing systems.
-> >> >> >
-> >> >> > But you are changing the ioctl structures here, what is that going to
-> >> >> > cause with old programs?
-> >> >>
-> >> >> So I'd be glad for Serban or Arve to clarify, but my understanding
-> >> >> (and as is described in the commit message) is that the assumption is
-> >> >> there are no 64bit binder users at this point, and the ioctl structure
-> >> >> changes are made such that existing 32bit applications are unaffected.
-> >> >
-> >> > How does changing the structure size, and contents, not affect any
-> >> > applications or the kernel code?  What am I missing here?
-> >>
-> >> On 32bit pointers and ints are the same size? (Years ago I sat through
-> >> your presentation on this, so I'm worried I'm missing something here
-> >> :)
-> >>
-> >> struct binder_ptr_cookie {
-> >> void *ptr;
-> >> void *cookie;
-> >> };
-> >>
-> >> struct binder_handle_cookie {
-> >> __u32 handle;
-> >> void *cookie;
-> >> } __attribute__((packed));
-> >>
-> >>
-> >> On 32bit systems these are the same size.  Now on 64bit systems, this
-> >> changes things, and would break users, but the assumption here is
-> >> there are no pre-existing 64bit binder users.
+On Tue, Feb 18, 2014 at 09:58:52PM +0530, Sachin Kamat wrote:
+> On 18 February 2014 21:20, Fabio Estevam <fabio.estevam@freescale.com> wrote:
+> > Since commit d7857c42 (regulator: pfuze100: Use of_get_child_by_name) we get
+> > the following probe failure:
 > >
-> > But you added a field to the existing structure, right?  I don't really
-> > remember the patch, it was a few hundred back in my review of stuff
-> > today, sorry...
+> > pfuze100-regulator 1-0008: Full layer: 1, Metal layer: 0
+> > pfuze100-regulator 1-0008: FAB: 0, FIN: 0
+> > pfuze100-regulator 1-0008: regulators node not found
+> > pfuze100-regulator: probe of 1-0008 failed with error -22
 > >
-> > greg k-h
+> > Revert the offending commit so that we can probe the regulator successfully.
 > 
-> The existing structure is not changed. These two commands were defined
-> with wrong structure that did not match the code. Since a binder
-> pointer and handle are the same size on 32 bit systems, this change
-> does not affect them. On 64 bit systems, the ioctl number does change,
-> but these systems need the next patch to run 32 bit processes anyway,
-> so I don't expect anyone to ship a system without this change. The
-> main purpose of this patch is to add the binder_handle_cookie struct
-> so the service manager does not have to define its own version
-> (libbinder writes one field at a time so it does not use the struct).
+> I wonder what is different in this case from the ones that I already
+> have working
+> that is causing this to fail. Can you please tell me which dts file
+> you have used
+> so that I can see if the way the node is defined is anything different.
 
-Ah, ok, that makes more sense, can someone put it in the changelog
-information so that I don't have to reject the patch for the same reason
-again?
+When you change to use of_get_child_by_name(), you should change 'np' to
+point to dev->of_node too.
 
-thanks,
+Shawn
 
-greg k-h
