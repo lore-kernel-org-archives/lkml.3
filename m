@@ -1,201 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351AbaBSQNE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:13:04 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52997 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693AbaBSQNB convert rfc822-to-8bit (ORCPT
+	id S1754440AbaBSQP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:15:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56476 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992AbaBSQPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:13:01 -0500
-Date: Wed, 19 Feb 2014 16:12:54 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <Will.Deacon@arm.com>, Cyril Chemparathy <cyril@ti.com>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
-Message-ID: <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
-References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org>
- <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
+	Wed, 19 Feb 2014 11:15:55 -0500
+Date: Wed, 19 Feb 2014 08:15:38 -0800
+From: tip-bot for Mika Westerberg <tipbot@zytor.com>
+Message-ID: <tip-3e11e818bfd7bd4a8e1214970337bab73ffed32d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk, hpa@zytor.com,
+        mingo@kernel.org, mika.westerberg@linux.intel.com, tglx@linutronix.de,
+        bin.gao@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-kernel@vger.kernel.org, mika.westerberg@linux.intel.com,
+        tglx@linutronix.de, bin.gao@linux.intel.com
+In-Reply-To: <1392810750-18660-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1392810750-18660-2-git-send-email-mika.westerberg@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: tsc:
+  Add missing Baytrail frequency to the table
+Git-Commit-ID: 3e11e818bfd7bd4a8e1214970337bab73ffed32d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 19 Feb 2014 16:12:58.0950 (UTC) FILETIME=[74C15660:01CF2D8D]
-X-MC-Unique: 114021916125603601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 01:52:09AM +0000, Sebastian Capella wrote:
+Commit-ID:  3e11e818bfd7bd4a8e1214970337bab73ffed32d
+Gitweb:     http://git.kernel.org/tip/3e11e818bfd7bd4a8e1214970337bab73ffed32d
+Author:     Mika Westerberg <mika.westerberg@linux.intel.com>
+AuthorDate: Wed, 19 Feb 2014 13:52:30 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 19 Feb 2014 17:12:24 +0100
 
-[...]
+x86: tsc: Add missing Baytrail frequency to the table
 
-> diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
-> new file mode 100644
-> index 0000000..16f406f
-> --- /dev/null
-> +++ b/arch/arm/kernel/hibernate.c
-> @@ -0,0 +1,106 @@
-> +/*
-> + * Hibernation support specific for ARM
-> + *
-> + * Derived from work on ARM hibernation support by:
-> + *
-> + * Ubuntu project, hibernation support for mach-dove
-> + * Copyright (C) 2010 Nokia Corporation (Hiroshi Doyu)
-> + * Copyright (C) 2010 Texas Instruments, Inc. (Teerth Reddy et al.)
-> + *  https://lkml.org/lkml/2010/6/18/4
-> + *  https://lists.linux-foundation.org/pipermail/linux-pm/2010-June/027422.html
-> + *  https://patchwork.kernel.org/patch/96442/
-> + *
-> + * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-> + *
-> + * License terms: GNU General Public License (GPL) version 2
-> + */
-> +
-> +#include <linux/mm.h>
-> +#include <linux/suspend.h>
-> +#include <asm/tlbflush.h>
-> +#include <asm/cacheflush.h>
-> +#include <asm/system_misc.h>
-> +#include <asm/idmap.h>
-> +#include <asm/suspend.h>
-> +
-> +extern const void __nosave_begin, __nosave_end;
-> +
-> +int pfn_is_nosave(unsigned long pfn)
-> +{
-> +	unsigned long nosave_begin_pfn =
-> +			__pa_symbol(&__nosave_begin) >> PAGE_SHIFT;
-> +	unsigned long nosave_end_pfn =
-> +			PAGE_ALIGN(__pa_symbol(&__nosave_end)) >> PAGE_SHIFT;
-> +
-> +	return (pfn >= nosave_begin_pfn) && (pfn < nosave_end_pfn);
-> +}
-> +
-> +void notrace save_processor_state(void)
-> +{
-> +	WARN_ON(num_online_cpus() != 1);
-> +	flush_thread();
+Intel Baytrail is based on Silvermont core so MSR_FSB_FREQ[2:0] == 0 means
+that the CPU reference clock runs at 83.3MHz. Add this missing frequency to
+the table.
 
-Can you explain to me please why we need to call flush_thread() here ?
-At this point in time syscore_suspend() was already called and CPU
-peripheral state saved through CPU PM notifiers.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Bin Gao <bin.gao@linux.intel.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1392810750-18660-2-git-send-email-mika.westerberg@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/tsc_msr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +	local_fiq_disable();
-
-To me it looks like we are using this hook to disable fiqs, since it is
-not done in generic code.
-
-> +}
-> +
-> +void notrace restore_processor_state(void)
-> +{
-> +	local_fiq_enable();
-> +}
-> +
-> +/*
-> + * Snapshot kernel memory and reset the system.
-> + * After resume, the hibernation snapshot is written out.
-> + */
-> +static int notrace __swsusp_arch_save_image(unsigned long unused)
-> +{
-> +	int ret;
-> +
-> +	ret = swsusp_save();
-> +	if (ret == 0)
-> +		soft_restart(virt_to_phys(cpu_resume));
-
-By the time the suspend finisher (ie this function) is run, the
-processor state has been saved and I think that's all you have to do,
-function can just return after calling swsusp_save(), unless I am missing
-something.
-
-I do not understand why a soft_restart is required here. On a side note,
-finisher is called with irqs disabled so, since you added a function for
-soft restart noirq, it should be used, if needed, but I have to understand
-why in the first place.
-
-> +	return ret;
-> +}
-> +
-> +/*
-> + * Save the current CPU state before suspend / poweroff.
-> + */
-> +int notrace swsusp_arch_suspend(void)
-> +{
-> +	return cpu_suspend(0, __swsusp_arch_save_image);
-
-If the goal of soft_restart is to return 0 on success from this call,
-you can still do that without requiring a soft_restart in the first
-place. IIUC all you want to achieve is to save processor context
-registers so that when you resume from image you will actually return
-from here.
-
-> +}
-> +
-> +/*
-> + * The framework loads the hibernation image into a linked list anchored
-> + * at restore_pblist, for swsusp_arch_resume() to copy back to the proper
-> + * destinations.
-> + *
-> + * To make this work if resume is triggered from initramfs, the
-> + * pagetables need to be switched to allow writes to kernel mem.
-
-Can you elaborate a bit more on this please ?
-
-> + */
-> +static void notrace __swsusp_arch_restore_image(void *unused)
-> +{
-> +	struct pbe *pbe;
-> +
-> +	cpu_switch_mm(idmap_pgd, &init_mm);
-
-Same here, thanks.
-
-> +	for (pbe = restore_pblist; pbe; pbe = pbe->next)
-> +		copy_page(pbe->orig_address, pbe->address);
-> +
-> +	soft_restart_noirq(virt_to_phys(cpu_resume));
-
-This soft_restart is justified so that you resume from the context saved
-when creating the image.
-
-> +}
-> +
-> +static u8 __swsusp_resume_stk[PAGE_SIZE/2] __nosavedata;
-> +
-> +/*
-> + * Resume from the hibernation image.
-> + * Due to the kernel heap / data restore, stack contents change underneath
-> + * and that would make function calls impossible; switch to a temporary
-> + * stack within the nosave region to avoid that problem.
-> + */
-> +int __naked swsusp_arch_resume(void)
-> +{
-> +	extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
-
-Ok, a function with attribute __naked that still calls C functions, is
-attr __naked really needed here ?
-
-> +	cpu_init();	/* get a clean PSR */
-
-cpu_init is called in the cpu_resume path, why is this call needed here ?
-
-Thanks,
-Lorenzo
-
+diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
+index 5dfff58..92ae6ac 100644
+--- a/arch/x86/kernel/tsc_msr.c
++++ b/arch/x86/kernel/tsc_msr.c
+@@ -53,7 +53,7 @@ static struct freq_desc freq_desc_tables[] = {
+ 	/* TNG */
+ 	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
+ 	/* VLV2 */
+-	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
++	{ 6, 0x37, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
+ 	/* ANN */
+ 	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
+ };
