@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbaBSWqa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 17:46:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33712 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaBSWq1 (ORCPT
+	id S1751636AbaBSW4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 17:56:15 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:54460 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029AbaBSW4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 17:46:27 -0500
-Date: Wed, 19 Feb 2014 14:47:52 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Commit fcb6a15c2e7e (intel_pstate: Take core C0 time into account
- for core busy calculation) sucks rocks
-Message-ID: <20140219224752.GA370@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 19 Feb 2014 17:56:14 -0500
+Message-ID: <1392850749.22195.1.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH] target_core_alua: silence GCC warning
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        scsi <linux-scsi@vger.kernel.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 19 Feb 2014 14:59:09 -0800
+In-Reply-To: <1392804347.27558.20.camel@x220>
+References: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
+	 <1392803546.27558.16.camel@x220>
+	 <CAMuHMdXZrw7oU=n60+PNNQftU6Su=mBf2V75TCO8Ws1pS5z+6Q@mail.gmail.com>
+	 <1392804347.27558.20.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dirk,
+On Wed, 2014-02-19 at 11:05 +0100, Paul Bolle wrote:
+> On Wed, 2014-02-19 at 10:59 +0100, Geert Uytterhoeven wrote:
+> > On Wed, Feb 19, 2014 at 10:52 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > > -               ret = core_alua_state_nonoptimized(cmd, cdb,
+> > > -                                       nonop_delay_msecs, &alua_ascq);
+> > > +               core_alua_state_nonoptimized(cmd, cdb, nonop_delay_msecs);
+> > 
+> > I suggest making core_alua_state_nonoptimized()  return void, too.
+> > Currently it always returns zero.
+> 
+> Good catch. Not sure how I missed that, since I deliberately ignore its
+> return value here.
+> 
+> I'll wait with sending a v2 until after Nicholas or the other target
+> developers have given their feedback.
+> 
+> 
 
-I've been having some huge slowdowns on my box building kernels, and I
-took the time to bisect it down to commit
-fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 (intel_pstate: Take core C0
-time into account for core busy calculation).  With that patch reverted
-on Linus's current tree, my build speeds are back up to the normal rate.
+Hi Paul,
 
-The difference is huge, 2 minutes to do a kernel build with that patch
-reverted, 8-10 minutes with it applied!  With all of the stable kernel
-builds and other trees, this is a huge problem for my workload (all I do
-is kernel builds it seems...)
+The patch is fine with me..  Feel free to post a -v2.
 
-I see some patches you marked as "fixes" that you sent to Rafael, do you
-want me to test any of those?  How am I the only one seeing this
-problem, do you need my cpu information or anything else?
+Thanks,
 
-Oh, and because of the problems, I'll just drop this patch from the
--stable trees for now, I don't want to pollute them with the issue until
-it is resolved properly.
+--nab
 
-thanks,
-
-greg k-h
