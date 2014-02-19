@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaBSSK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 13:10:58 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37936 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755077AbaBSSKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 13:10:55 -0500
-Message-ID: <5304F38E.3090701@oracle.com>
-Date: Wed, 19 Feb 2014 13:10:22 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Michael wang <wangyun@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: fair: NULL ptr deref in check_preempt_wakeup
-References: <52FFF7F8.2070801@oracle.com> <5301C41D.5000009@linux.vnet.ibm.com> <20140217092055.GP27965@twins.programming.kicks-ass.net> <5302C4F1.3020907@linux.vnet.ibm.com>
-In-Reply-To: <5302C4F1.3020907@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1754886AbaBSSJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 13:09:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754412AbaBSSJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 13:09:16 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: netdev@oss.sgi.com, davem@davemloft.net, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>
+Subject: [PATCH 1/5] audit: move kaudit thread start from auditd registration to kaudit init
+Date: Wed, 19 Feb 2014 13:08:19 -0500
+Message-Id: <051b7435793f18b45194360662ff2cb17ee5928c.1392831003.git.rgb@redhat.com>
+In-Reply-To: <cover.1392831003.git.rgb@redhat.com>
+References: <cover.1392831003.git.rgb@redhat.com>
+In-Reply-To: <cover.1392831003.git.rgb@redhat.com>
+References: <cover.1392831003.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2014 09:26 PM, Michael wang wrote:
-> On 02/17/2014 05:20 PM, Peter Zijlstra wrote:
-> [snip]
->>> >>  static void switched_to_fair(struct rq *rq, struct task_struct *p)
->>> >>  {
->>> >>-	if (!p->se.on_rq)
->>> >>+	struct sched_entity *se = &p->se;
->>> >>+#ifdef CONFIG_FAIR_GROUP_SCHED
->>> >>+	se->depth = se->parent ? se->parent->depth + 1 : 0;
->>> >>+#endif
->>> >>+	if (!se->on_rq)
->>> >>  		return;
->>> >>
->>> >>  	/*
->> >
->> >Yes indeed. My first idea yesterday was to put it in set_task_rq() to be
->> >absolutely sure we catch all; but if this is sufficient its better.
-> Agree, let's wait for Sasha's testing result then:)
+The kauditd_thread() task was started only after the auditd userspace daemon
+registers itself with kaudit.  This was fine when only auditd consumed messages
+from the kaudit netlink unicast socket.  With the addition of a multicast group
+to that socket it is more convenient to have the thread start on init of the
+kaudit kernel subsystem.
 
-I took my time with testing it seems I'm hitting new issues with both sched and mm, and I've wanted 
-to confirm I don't see this one any more.
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ kernel/audit.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-It does seem like this patch fixes the problem for me, so:
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 34c5a23..b5b2f72 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -768,16 +768,6 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	if (err)
+ 		return err;
+ 
+-	/* As soon as there's any sign of userspace auditd,
+-	 * start kauditd to talk to it */
+-	if (!kauditd_task) {
+-		kauditd_task = kthread_run(kauditd_thread, NULL, "kauditd");
+-		if (IS_ERR(kauditd_task)) {
+-			err = PTR_ERR(kauditd_task);
+-			kauditd_task = NULL;
+-			return err;
+-		}
+-	}
+ 	seq  = nlh->nlmsg_seq;
+ 	data = nlmsg_data(nlh);
+ 
+@@ -1116,6 +1106,11 @@ static int __init audit_init(void)
+ 	audit_enabled = audit_default;
+ 	audit_ever_enabled |= !!audit_default;
+ 
++	kauditd_task = kthread_run(kauditd_thread, NULL, "kauditd");
++	if (IS_ERR(kauditd_task))
++		printk(KERN_ERR "audit: error starting kauditd_thread (%ld)\n",
++			PTR_ERR(kauditd_task));
++
+ 	audit_log(NULL, GFP_KERNEL, AUDIT_KERNEL, "initialized");
+ 
+ 	for (i = 0; i < AUDIT_INODE_BUCKETS; i++)
+-- 
+1.7.1
 
-	Tested-by: Sasha Levin <sasha.levin@oracle.com>
-
-
-Thanks,
-Sasha
