@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576AbaBSNUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 08:20:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:32313 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753269AbaBSNUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 08:20:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,505,1389772800"; 
-   d="scan'208";a="477643969"
-Date: Wed, 19 Feb 2014 21:20:34 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux Netdev List <netdev@vger.kernel.org>
-Subject: [sctp] ef2820a735: -50% netperf Throughput_Mbps
-Message-ID: <20140219132034.GC8704@localhost>
+	id S1753472AbaBSNY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 08:24:58 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46914 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036AbaBSNY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 08:24:57 -0500
+Message-ID: <5304B09D.7010900@redhat.com>
+Date: Wed, 19 Feb 2014 14:24:45 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+CC: Gleb Natapov <gleb@kernel.org>, kvm@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] kvm: Use pci_enable_msix_range() instead of pci_enable_msix()
+References: <1392804931-30671-11-git-send-email-agordeev@redhat.com>
+In-Reply-To: <1392804931-30671-11-git-send-email-agordeev@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matija,
+Il 19/02/2014 11:15, Alexander Gordeev ha scritto:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range() and pci_enable_msix_range()
+> interfaces.
+>
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Gleb Natapov <gleb@kernel.org>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: kvm@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  virt/kvm/assigned-dev.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+> index 8db4370..92e25e9 100644
+> --- a/virt/kvm/assigned-dev.c
+> +++ b/virt/kvm/assigned-dev.c
+> @@ -395,8 +395,9 @@ static int assigned_device_enable_host_msix(struct kvm *kvm,
+>  	if (dev->entries_nr == 0)
+>  		return r;
+>
+> -	r = pci_enable_msix(dev->dev, dev->host_msix_entries, dev->entries_nr);
+> -	if (r)
+> +	r = pci_enable_msix_range(dev->dev, dev->host_msix_entries,
+> +				  dev->entries_nr, dev->entries_nr);
+> +	if (r < 0)
+>  		return r;
+>
+>  	for (i = 0; i < dev->entries_nr; i++) {
+>
 
-We noticed the below changes on commit ef2820a735f74ea60335f8ba3801b844f0cb184d
-(" net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receiver's buffer")
-in netperf SCTP_STREAM tests:
-
-cd0f0b95fd2cd2b  ef2820a735f74ea60335f8ba3  
----------------  -------------------------  
-         8 ~ 0%     -50.0%          4 ~ 0%  TOTAL netperf.Throughput_Mbps
-     54287 ~44%    +338.1%     237842 ~48%  TOTAL cpuidle.C1E-NHM.time
-  12008353 ~12%     -56.0%    5281848 ~ 0%  TOTAL proc-vmstat.pgalloc_normal
-    114861 ~ 0%     -50.3%      57085 ~ 3%  TOTAL softirqs.NET_RX
-  12964639 ~11%     -55.1%    5818663 ~ 0%  TOTAL proc-vmstat.pgfree
-    866489 ~ 0%     -43.3%     491417 ~ 0%  TOTAL proc-vmstat.pgalloc_dma32
-    119373 ~17%     -39.1%      72661 ~ 1%  TOTAL softirqs.SCHED
-      1985 ~13%     -24.3%       1502 ~19%  TOTAL slabinfo.kmalloc-128.active_objs
-      2139 ~20%     -28.4%       1532 ~ 4%  TOTAL proc-vmstat.nr_alloc_batch
-    124360 ~33%     -31.0%      85748 ~ 2%  TOTAL softirqs.RCU
-      1977 ~ 9%     -18.5%       1610 ~ 9%  TOTAL slabinfo.UDP.active_objs
-      1977 ~ 9%     -18.5%       1610 ~ 9%  TOTAL slabinfo.UDP.num_objs
-      2066 ~ 6%     -12.9%       1800 ~ 7%  TOTAL slabinfo.kmalloc-128.num_objs
-      1738 ~10%     -18.4%       1418 ~ 9%  TOTAL slabinfo.UDPv6.active_objs
-      1738 ~10%     -18.4%       1418 ~ 9%  TOTAL slabinfo.UDPv6.num_objs
-       923 ~10%     -17.7%        760 ~ 8%  TOTAL slabinfo.TCPv6.active_objs
-       923 ~10%     -17.7%        760 ~ 8%  TOTAL slabinfo.TCPv6.num_objs
-       989 ~ 9%     -17.1%        820 ~ 7%  TOTAL slabinfo.TCP.active_objs
-       989 ~ 9%     -17.1%        820 ~ 7%  TOTAL slabinfo.TCP.num_objs
-    398761 ~44%     -32.6%     268792 ~ 3%  TOTAL numa-vmstat.node2.numa_hit
-    389672 ~49%     -32.9%     261443 ~ 3%  TOTAL numa-vmstat.node0.numa_hit
-       447 ~ 1%     -13.8%        385 ~ 0%  TOTAL vmstat.system.cs
-
-Note: the "~ XX%" numbers are stddev percent.
-
-                              netperf.Throughput_Mbps
-
-     4 *+-*--*--*--*-*--*--*--*--*--*--*--*-*--*--*--*--*--*--*--*-*--*--*--*
-       |                                                                    |
-       |                                                                    |
-   3.5 ++                                                                   |
-       |                                                                    |
-       |                                                                    |
-       |                                                                    |
-     3 ++                                                                   |
-       |                                                                    |
-       |                                                                    |
-   2.5 ++                                                                   |
-       |                                                                    |
-       |                                                                    |
-       |                                                                    |
-     2 O+-O--O--O--O-O--O--O--O--O--O--O--O-O--O--O--O--O--O--O-------------+
-
-
-                                 vmstat.system.cs
-
-   460 ++------------------------*--*----------------*----------------------+
-       |       .*..    .*..     :    +              +              *..     .*
-   450 ++    *.     .*.    *..  :     +    .*..*.. +    *..*..*.. +     .*. |
-   440 *+   :      *           :       *..*       *              *    *.    |
-       |:   :                 *                                             |
-   430 ++: :                                                                |
-   420 ++: :                                                                |
-       |  *                                                                 |
-   410 ++                                                                   |
-   400 ++                                                                   |
-       |                                                                    |
-   390 ++            O        O             O     O        O                |
-   380 O+ O  O  O       O  O     O  O  O  O    O     O  O     O             |
-       |           O                                                        |
-   370 ++-------------------------------------------------------------------+
-
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
