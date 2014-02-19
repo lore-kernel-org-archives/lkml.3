@@ -1,156 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051AbaBSJbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 04:31:07 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:63004 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaBSJbB (ORCPT
+	id S1752959AbaBSJf4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 04:35:56 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.173]:54430 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751809AbaBSJfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 04:31:01 -0500
-X-AuditID: cbfee68e-b7f566d000002344-22-530479d183f3
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: fix to do build_stat prior to the recovery procedure
-Date: Wed, 19 Feb 2014 18:29:23 +0900
-Message-id: <1392802163-25825-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zQ92LlSzBBq8nKVtc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbH61wqWgl6pimOH
-	1zE2MO4X7WLk5JAQMJG4+3YvE4QtJnHh3nq2LkYuDiGBZYwSe2ceYIIpuvyxgQUisYhR4tSh
-	fmYIp5NJYsHco+xdjBwcbALaEpv3G4A0iAgwSyyYep4RpIZZYAKjxP9F71lAEsIC3hIPp3eB
-	1bMIqEosnRIHEuYVcJfYtbCBDWKZtsS25xPBeiUEHrNJnHz8lBEkwSIgIPFt8iEWkF4JAVmJ
-	TQeYIeolJQ6uuMEygVFwASPDKkbR1ILkguKk9CIjveLE3OLSvHS95PzcTYyQEOzbwXjzgPUh
-	xmSgcROZpUST84EhnFcSb2hsZmRhamJqbGRuaUaasJI476KHSUFCAumJJanZqakFqUXxRaU5
-	qcWHGJk4OKUaGF0t9ipsaP849flWrgqdzt3Lllq/FJud+f6LvUSbf1eJ4gdrzViLO5cdLu9g
-	977/Z8F0u6NmERYJHTuKgsqbH99pMtnQErpiqduu+tbSovJ5STdV/a0tOVxaC5yFN4h+K4ux
-	5WdhS+3YeOmjSEb4ps+rt4buu1j4aNm7tOrfa8yzNK6t+L35uBJLcUaioRZzUXEiAPA0lKlX	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd2LlSzBBhs/yVlc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5ix+tcKloJeqYpjh9cxNjDuF+1i5OSQEDCRuPyxgQXCFpO4cG89WxcjF4eQ
-	wCJGiVOH+pkhnE4miQVzj7J3MXJwsAloS2zebwDSICLALLFg6nlGkBpmgQmMEv8XvQebJCzg
-	LfFwehdYPYuAqsTSKXEgYV4Bd4ldCxvYIJZpS2x7PpFxAiP3AkaGVYyiqQXJBcVJ6blGesWJ
-	ucWleel6yfm5mxjBAf5MegfjqgaLQ4wCHIxKPLweL5iDhVgTy4orcw8xSnAwK4nw3oljCRbi
-	TUmsrEotyo8vKs1JLT7EmAy0fCKzlGhyPjD68kriDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgk
-	kJ5YkpqdmlqQWgSzhYmDU6qBkXmJ6IeVSw8cq59/b+lKqY2hl4VEu0oadgcnaRz9wrL19tuC
-	T88/SsZ8f3Hr2P+z/iYflb8aCwoIOi2vX6samsqzR171s8p02fXL/p/2cxJTrZ/rdXzvAs4v
-	B0WlZ++P++bUVWzzbN2Shke8zR8leMSzQ20XX3hh+3DX1QT/Ba3f7/5bLnM+LkCJpTgj0VCL
-	uag4EQBXg93RtAIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 19 Feb 2014 04:35:52 -0500
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-13.tower-38.messagelabs.com!1392802547!14378213!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Wed, 19 Feb 2014 10:35:48 +0100
+Date: Wed, 19 Feb 2014 10:35:42 +0100
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Josh Cartwright <joshc@codeaurora.org>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] drivers: Introduce MEN Chameleon Bus
+Message-ID: <20140219093541.GA16649@jtlinux>
+References: <1392737654-22682-1-git-send-email-johannes.thumshirn@men.de>
+ <1392737654-22682-2-git-send-email-johannes.thumshirn@men.de>
+ <20140218230210.GK31116@joshc.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140218230210.GK31116@joshc.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the end of the recovery procedure, write_checkpoint is called and updates
-the cp count which is managed by f2fs stat.
-But, previously build_stat() is called after the recovery procedure, which
-results in:
+Hello Josh,
 
-BUG: unable to handle kernel NULL pointer dereference at 000000000000012c
-IP: [<ffffffffa03b1030>] write_checkpoint+0x720/0xbc0 [f2fs]
-Call Trace:
- [<ffffffff810a6b44>] ? mark_held_locks+0x74/0x140
- [<ffffffff8109a3e0>] ? __init_waitqueue_head+0x60/0x60
- [<ffffffffa03bf036>] recover_fsync_data+0x656/0xf20 [f2fs]
- [<ffffffff812ee3eb>] ? security_d_instantiate+0x1b/0x30
- [<ffffffffa03aeb4d>] f2fs_fill_super+0x94d/0xa00 [f2fs]
- [<ffffffff811a9825>] mount_bdev+0x1a5/0x1f0
- [<ffffffff8114915e>] ? __get_free_pages+0xe/0x40
- [<ffffffffa03ae200>] ? f2fs_remount+0x130/0x130 [f2fs]
- [<ffffffffa03aa575>] f2fs_mount+0x15/0x20 [f2fs]
- [<ffffffff811aa713>] mount_fs+0x43/0x1b0
- [<ffffffff811c7124>] vfs_kern_mount+0x74/0x160
- [<ffffffff811c5cb1>] ? __get_fs_type+0x51/0x60
- [<ffffffff811c9727>] do_mount+0x237/0xb50
- [<ffffffff811c936a>] ? copy_mount_options+0x3a/0x170
+On Tue, Feb 18, 2014 at 05:02:10PM -0600, Josh Cartwright wrote:
+> Hello Johannes,
+>
+> On Tue, Feb 18, 2014 at 04:34:12PM +0100, Johannes Thumshirn wrote:
+> [..]
+> > +++ b/drivers/mcb/mcb-core.c
+> > @@ -0,0 +1,420 @@
+> > +/*
+> > + * MEN Chameleon Bus.
+> > + *
+> > + * Copyright (C) 2013 MEN Mikroelektronik GmbH (www.men.de)
+> > + * Author: Johannes Thumshirn <johannes.thumshirn@men.de>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License as published by the Free
+> > + * Software Foundation; version 2 of the License.
+> > + */
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/types.h>
+> > +#include <linux/rwsem.h>
+> > +#include <linux/idr.h>
+> > +#include <linux/mcb.h>
+> > +
+> > +static DECLARE_RWSEM(mcb_bus_sem);
+>
+> Why a rwsemaphore and not a simple mutex?  It doesn't appear like you
+> attempt to handle any multiple-reader usecases.
 
-So, this patche changes the order of recovery_fsync_data() and
-f2fs_build_stats().
+Yup, you're right. It's actually a copy'n'paste from PCI.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/super.c | 48 ++++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
+>
+> > +static DEFINE_IDA(mcb_ida);
+> > +
+> [..]
+> > +static void mcb_release_dev(struct device *dev)
+> > +{
+> > +	struct mcb_device *mdev = to_mcb_device(dev);
+> > +
+> > +	down_write(&mcb_bus_sem);
+> > +	list_del(&mdev->bus_list);
+> > +	up_write(&mcb_bus_sem);
+>
+> Why even maintain your own list of devices?  Doesn't the bus_type
+> already do so for you? (And provides conveniences such as
+> bus_for_each_dev, etc).
 
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 1a85f83..475560e 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -989,28 +989,9 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 		goto free_root_inode;
- 	}
- 
--	/* recover fsynced data */
--	if (!test_opt(sbi, DISABLE_ROLL_FORWARD)) {
--		err = recover_fsync_data(sbi);
--		if (err)
--			f2fs_msg(sb, KERN_ERR,
--				"Cannot recover all fsync data errno=%ld", err);
--	}
--
--	/*
--	 * If filesystem is not mounted as read-only then
--	 * do start the gc_thread.
--	 */
--	if (!(sb->s_flags & MS_RDONLY)) {
--		/* After POR, we can run background GC thread.*/
--		err = start_gc_thread(sbi);
--		if (err)
--			goto free_gc;
--	}
--
- 	err = f2fs_build_stats(sbi);
- 	if (err)
--		goto free_gc;
-+		goto free_root_inode;
- 
- 	if (f2fs_proc_root)
- 		sbi->s_proc = proc_mkdir(sb->s_id, f2fs_proc_root);
-@@ -1032,17 +1013,36 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 	err = kobject_init_and_add(&sbi->s_kobj, &f2fs_ktype, NULL,
- 							"%s", sb->s_id);
- 	if (err)
--		goto fail;
-+		goto free_proc;
- 
-+	/* recover fsynced data */
-+	if (!test_opt(sbi, DISABLE_ROLL_FORWARD)) {
-+		err = recover_fsync_data(sbi);
-+		if (err)
-+			f2fs_msg(sb, KERN_ERR,
-+				"Cannot recover all fsync data errno=%ld", err);
-+	}
-+
-+	/*
-+	 * If filesystem is not mounted as read-only then
-+	 * do start the gc_thread.
-+	 */
-+	if (!(sb->s_flags & MS_RDONLY)) {
-+		/* After POR, we can run background GC thread.*/
-+		err = start_gc_thread(sbi);
-+		if (err)
-+			goto free_kobj;
-+	}
- 	return 0;
--fail:
-+
-+free_kobj:
-+	kobject_del(&sbi->s_kobj);
-+free_proc:
- 	if (sbi->s_proc) {
- 		remove_proc_entry("segment_info", sbi->s_proc);
- 		remove_proc_entry(sb->s_id, f2fs_proc_root);
- 	}
- 	f2fs_destroy_stats(sbi);
--free_gc:
--	stop_gc_thread(sbi);
- free_root_inode:
- 	dput(sb->s_root);
- 	sb->s_root = NULL;
--- 
-1.8.4.474.g128a96c
+Again, I looked how PCI handles this stuff and just copied everything I thought it could
+be important to me.
 
+>
+> > +
+> > +	mcb_bus_put(mdev->bus);
+> > +	kfree(mdev);
+> > +}
+> > +
+> > +/**
+> > + * mcb_device_register() - Register a mcb_device
+> > + * @bus: The @mcb_bus of the device
+> > + * @dev: The @mcb_device
+> > + *
+> > + * Register a specific @mcb_device at a @mcb_bus and the system itself.
+> > + */
+> > +int mcb_device_register(struct mcb_bus *bus, struct mcb_device *dev)
+> > +{
+> > +	int ret;
+> > +	int device_id;
+> > +
+> > +	device_initialize(&dev->dev);
+> > +	dev->dev.bus = &mcb_bus_type;
+> > +	dev->dev.parent = bus->dev.parent;
+> > +	dev->dev.release = mcb_release_dev;
+> > +
+> > +
+>
+> Nit: extraneous line.
+
+Yup.
+
+>
+> > +	device_id = dev->id;
+> > +	dev_set_name(&dev->dev, "mcb%d-16z%03d-%d:%d:%d",
+> > +		bus->bus_nr, device_id, dev->inst, dev->group, dev->var);
+> > +
+> > +	down_write(&mcb_bus_sem);
+> > +	list_add_tail(&dev->bus_list, &bus->devices);
+> > +	up_write(&mcb_bus_sem);
+>
+> Again, unsure why you maintain your own list :(.
+
+See comment above.
+
+>
+> > +
+> > +	ret = device_add(&dev->dev);
+> > +	if (ret < 0) {
+> > +		pr_err("Failed registering device 16z%03d on bus mcb%d (%d)\n",
+> > +			device_id, bus->bus_nr, ret);
+> > +		goto out;
+> > +	}
+> > +
+> > +	return 0;
+> > +
+> > +out:
+> > +
+> > +	return ret;
+> > +}
+> [..]
+> > +/**
+> > + * mcb_get_irq() - Get device's IRQ number
+> > + * @dev: The @mcb_device the IRQ is for
+> > + *
+> > + * Get the IRQ number of a given @mcb_device.
+> > + */
+> > +int mcb_get_irq(struct mcb_device *dev)
+> > +{
+> > +	struct resource *irq = &dev->irq;
+> > +
+> > +	return irq ? irq->start : -ENXIO;
+>
+> How could irq ever be NULL?
+>
+
+You're right.
+
+> > +}
+> > +EXPORT_SYMBOL_GPL(mcb_get_irq);
+> > +
+> > +static int mcb_init(void)
+> > +{
+> > +	ida_init(&mcb_ida);
+>
+> This isn't explicitly necessary (DEFINE_IDA statically initializes the
+> ida).
+>
+
+Blindly copied from ipack.c. Looks like it should be changed over there as well then.
+
+> > +	return bus_register(&mcb_bus_type);
+> > +}
+> > +
+> > +static void mcb_exit(void)
+> > +{
+> > +	bus_unregister(&mcb_bus_type);
+> > +	ida_destroy(&mcb_ida);
+>
+> This is also unnecessary.
+
+See comment above.
+
+>
+> > +}
+> > +
+> > +/* mcb must be initialized after PCI but before the chameleon drivers.
+> > + * That means we must use some initcall between subsys_initcall and
+> > + * device_initcall.
+> > + */
+> > +fs_initcall(mcb_init);
+> > +module_exit(mcb_exit);
+> > +
+> > +MODULE_DESCRIPTION("MEN Chameleon Bus Driver");
+> > +MODULE_AUTHOR("Johannes Thumshirn <johannes.thumshirn@men.de>");
+> > +MODULE_LICENSE("GPL v2");
+> > diff --git a/drivers/mcb/mcb-internal.h b/drivers/mcb/mcb-internal.h
+> > new file mode 100644
+> > index 0000000..ca253e3
+> > --- /dev/null
+> > +++ b/drivers/mcb/mcb-internal.h
+> > @@ -0,0 +1,118 @@
+> > +#ifndef __MCB_INTERNAL
+> > +#define __MCB_INTERNAL
+> > +
+> > +#include <linux/types.h>
+> > +
+> > +#define PCI_VENDOR_ID_MEN		0x1a88
+> > +#define PCI_DEVICE_ID_MEN_CHAMELEON	0x4d45
+>
+> This seems misplaced.  Perhaps it should really be in the PCI carrier
+> patch?
+
+Yup.
+
+>
+> > +#define CHAMELEON_FILENAME_LEN		12
+> > +#define CHAMELEONV2_MAGIC		0xabce
+> > +
+> [..]
+> > +int parse_chameleon_cells(struct mcb_bus *bus, phys_addr_t mapbase,
+> > +			  void __iomem *base);
+>
+> Nit: it'd be nicer if you consistently used the chameleon_ prefix.  That
+> is, rename this chameleon_parse_cells(...).
+>
+> [..]
+> > +int parse_chameleon_cells(struct mcb_bus *bus, phys_addr_t mapbase,
+> > +			void __iomem *base)
+> > +{
+> > +	char __iomem *p = base;
+> > +	struct chameleon_fpga_header *header;
+> > +	uint32_t dtype;
+> > +	int num_cells = 0;
+> > +	int ret = 0;
+> > +	u32 hsize;
+> > +
+> > +	hsize = sizeof(struct chameleon_fpga_header);
+> > +
+> > +	header = kzalloc(hsize, GFP_KERNEL);
+> > +	if (!header)
+> > +		return -ENOMEM;
+> > +
+> > +	/* Extract header information */
+> > +	memcpy_fromio(header, p, hsize);
+> > +	/* We only support chameleon v2 at the moment */
+> > +	header->magic = le16_to_cpu(header->magic);
+> > +	if (header->magic != CHAMELEONV2_MAGIC) {
+> > +		pr_err("Unsupported chameleon version 0x%x\n",
+> > +				header->magic);
+> > +		kfree(header);
+> > +		return -ENODEV;
+> > +	}
+> > +	p += hsize;
+> > +
+> > +	pr_debug("header->revision = %d\n", header->revision);
+> > +	pr_debug("header->model = 0x%x ('%c')\n", header->model,
+> > +		header->model);
+> > +	pr_debug("header->minor = %d\n", header->minor);
+> > +	pr_debug("header->bus_type = 0x%x\n", header->bus_type);
+> > +
+> > +
+> > +	pr_debug("header->magic = 0x%x\n", header->magic);
+> > +	pr_debug("header->filename = \"%.*s\"\n", CHAMELEON_FILENAME_LEN,
+> > +		header->filename);
+> > +
+> > +	for_each_chameleon_cell(dtype, p) {
+> > +		switch (dtype) {
+> > +		case CHAMELEON_DTYPE_GENERAL:
+> > +			ret = parse_chameleon_gdd(bus, mapbase, p);
+>
+> Same comment about using chameleon_ prefix.
+>
+> > +			if (ret < 0)
+> > +				goto out;
+> > +			p += sizeof(struct chameleon_gdd);
+> > +			break;
+> > +		case CHAMELEON_DTYPE_BRIDGE:
+> > +			parse_chameleon_bdd(bus, mapbase, p);
+>
+> And this one, too :).
+
+Agreed for all three above.
+
+>
+> [..]
+> > +++ b/include/linux/mcb.h
+> > @@ -0,0 +1,113 @@
+> > +/*
+> > + * MEN Chameleon Bus.
+> > + *
+> > + * Copyright (C) 2014 MEN Mikroelektronik GmbH (www.men.de)
+> > + * Author: Johannes Thumshirn <johannes.thumshirn@men.de>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License as published by the Free
+> > + * Software Foundation; version 2 of the License.
+> > + */
+> > +#ifndef _LINUX_MCB_H
+> > +#define _LINUX_MCB_H
+> > +
+> > +#include <linux/mod_devicetable.h>
+> > +#include <linux/device.h>
+> > +#include <linux/irqreturn.h>
+> > +
+> > +struct mcb_driver;
+> > +
+> > +/**
+> > + * struct mcb_bus - MEN Chameleon Bus
+> > + *
+> > + * @parent: Pointer to carrier device
+> > + * @cores: Number of cores available on this bus
+>
+> Looks like these comments could be updated...
+
+args, yes.
+
+>
+> > + * @bus_nr: mcb bus number
+> > + */
+> > +struct mcb_bus {
+> > +	struct list_head node;
+> > +	struct list_head devices;
+> > +	struct list_head children;
+> > +	struct device dev;
+> > +	int bus_nr;
+> > +};
+> > +#define to_mcb_bus(b) container_of((b), struct mcb_bus, dev)
+> > +
+> > +/**
+> > + * struct mcb_device - MEN Chameleon Bus device
+> > + *
+> > + * @bus_list: internal list handling for bus code
+> > + * @dev: device in kernel representation
+> > + * @bus: mcb bus the device is plugged to
+> > + * @subordinate: subordinate MCBus in case of bridge
+> > + * @is_added: flag to check if device is added to bus
+> > + * @driver: associated mcb_driver
+> > + * @id: mcb device id
+> > + * @inst: instance in Chameleon table
+> > + * @group: group in Chameleon table
+> > + * @var: variant in Chameleon table
+> > + * @bar: BAR in Chameleon table
+> > + * @rev: revision in Chameleon table
+> > + * @irq: IRQ resource
+> > + * @memory: memory resource
+> > + */
+> > +struct mcb_device {
+> > +	struct list_head bus_list;
+> > +	struct device dev;
+> > +	struct mcb_bus *bus;
+> > +	struct mcb_bus *subordinate;
+> > +	bool is_added;
+> > +	struct mcb_driver *driver;
+> > +	u16 id;
+> > +	int inst;
+> > +	int group;
+> > +	int var;
+> > +	int bar;
+> > +	int rev;
+> > +	struct resource irq;
+> > +	struct resource mem;
+> > +};
+> > +#define to_mcb_device(x) container_of((x), struct mcb_device, dev)
+> > +
+> > +struct mcb_driver {
+>
+> This could probably use a kerneldoc.
+
+Yes.
+
+>
+> > +	struct list_head node;
+>
+> How is this node used?
+
+Again, probably copied from somewhere (probably PCI) and forgotten to validate
+if I actually use it.
+
+>
+> > +	struct device_driver driver;
+> > +	const struct mcb_device_id *id_table;
+> > +	int (*probe)(struct mcb_device *mdev, const struct mcb_device_id *id);
+> > +	void (*remove)(struct mcb_device *mdev);
+> > +	void (*shutdown)(struct mcb_device *mdev);
+> > +};
+>
+> --
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+
+
+This will be changed in a v2 of this patch. But I'm not sure if I can get to it today,
+and then I have 2 days off, so maybe v2 will hit the list on monday, sorry.
+
+Thanks,
+Johannes
