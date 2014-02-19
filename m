@@ -1,55 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181AbaBSQXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:23:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43928 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654AbaBSQXB (ORCPT
+	id S1754260AbaBSQZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:25:52 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51894 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754159AbaBSQZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:23:01 -0500
-Message-ID: <5304DABD.9000605@oracle.com>
-Date: Wed, 19 Feb 2014 11:24:29 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Wed, 19 Feb 2014 11:25:51 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 6/9] ACPI / ATA: Add hotplug contexts to ACPI companions of SATA devices
+Date: Wed, 19 Feb 2014 17:40:41 +0100
+Message-ID: <5171255.VRC6s13geU@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53041A0C.4040306@intel.com>
+References: <3011875.q18rCmXyYX@vostro.rjw.lan> <1707532.0BItEHDuFB@vostro.rjw.lan> <53041A0C.4040306@intel.com>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] xen-pciback: Use pci_enable_msix_range() instead of pci_enable_msix()
-References: <1392804931-30671-10-git-send-email-agordeev@redhat.com> <5304CC49.7020000@oracle.com> <5304D063.90000@oracle.com> <20140219160501.GA32067@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20140219160501.GA32067@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 11:05 AM, Alexander Gordeev wrote:
-> On Wed, Feb 19, 2014 at 10:40:19AM -0500, Boris Ostrovsky wrote:
->>>> diff --git a/drivers/xen/xen-pciback/pciback_ops.c
->>>> b/drivers/xen/xen-pciback/pciback_ops.c
->>>> index 64eb0cd..f5b4c3e 100644
->>>> --- a/drivers/xen/xen-pciback/pciback_ops.c
->>>> +++ b/drivers/xen/xen-pciback/pciback_ops.c
->>>> @@ -213,9 +213,15 @@ int xen_pcibk_enable_msix(struct
->>>> xen_pcibk_device *pdev,
->>>>           entries[i].vector = op->msix_entries[i].vector;
->>>>       }
->>>>   -    result = pci_enable_msix(dev, entries, op->value);
->>>> +    result = pci_enable_msix_range(dev, entries, op->value, op->value);
->>>> +    if (result < op->value) {
->>>
->>> I think it would be better to have 'if (result != op->value)', in
->>> case op->value is negative (which presumably it should never be).
->>
->> Better yet, at the top of the routine we check 'if (op->value >
->> SH_INFO_MAX_VEC)'. If you add '|| op->value < 0' we'd be all set.
-> xen_pci_op::value is uint32_t
+On Wednesday, February 19, 2014 10:42:20 AM Aaron Lu wrote:
+> On 02/19/2014 09:30 AM, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Modify the SATA subsystem to add hotplug contexts to ACPI companions
+> > of SATA devices and ports instead of registering special ACPI dock
+> > operations using register_hotplug_dock_device().
+> > 
+> > That change will allow the entire code handling those special ACPI
+> > dock operations to be dropped in the next commit.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/ata/libata-acpi.c |   76 +++++++++++++++++++++++++++++-----------------
+> >  1 file changed, 49 insertions(+), 27 deletions(-)
+> > 
+> > Index: linux-pm/drivers/ata/libata-acpi.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/ata/libata-acpi.c
+> > +++ linux-pm/drivers/ata/libata-acpi.c
+> > @@ -38,6 +38,16 @@ static void ata_acpi_clear_gtf(struct at
+> >  	dev->gtf_cache = NULL;
+> >  }
+> >  
+> > +struct ata_acpi_hotplug_context {
+> > +	struct acpi_hotplug_context hp;
+> > +	union {
+> > +		struct ata_port *ap;
+> > +		struct ata_device *dev;
+> > +	} data;
+> > +};
+> > +
+> > +#define ata_hotplug_data(context) (container_of((context), struct ata_acpi_hotplug_context, hp)->data)
+> > +
+> >  /**
+> >   * ata_dev_acpi_handle - provide the acpi_handle for an ata_device
+> >   * @dev: the acpi_handle returned will correspond to this device
+> > @@ -121,18 +131,17 @@ static void ata_acpi_handle_hotplug(stru
+> >  		ata_port_wait_eh(ap);
+> >  }
+> >  
+> > -static void ata_acpi_dev_notify_dock(acpi_handle handle, u32 event, void *data)
+> > +static int ata_acpi_dev_notify_dock(struct acpi_device *adev, u32 event)
+> >  {
+> > -	struct ata_device *dev = data;
+> > -
+> > +	struct ata_device *dev = ata_hotplug_data(adev->hp).dev;
+> >  	ata_acpi_handle_hotplug(dev->link->ap, dev, event);
+> > +	return 0;
+> >  }
+> >  
+> > -static void ata_acpi_ap_notify_dock(acpi_handle handle, u32 event, void *data)
+> > +static int ata_acpi_ap_notify_dock(struct acpi_device *adev, u32 event)
+> >  {
+> > -	struct ata_port *ap = data;
+> > -
+> > -	ata_acpi_handle_hotplug(ap, NULL, event);
+> > +	ata_acpi_handle_hotplug(ata_hotplug_data(adev->hp).ap, NULL, event);
+> > +	return 0;
+> >  }
+> >  
+> >  static void ata_acpi_uevent(struct ata_port *ap, struct ata_device *dev,
+> > @@ -154,31 +163,23 @@ static void ata_acpi_uevent(struct ata_p
+> >  	}
+> >  }
+> >  
+> > -static void ata_acpi_ap_uevent(acpi_handle handle, u32 event, void *data)
+> > +static void ata_acpi_ap_uevent(struct acpi_device *adev, u32 event)
+> >  {
+> > -	ata_acpi_uevent(data, NULL, event);
+> > +	ata_acpi_uevent(ata_hotplug_data(adev->hp).ap, NULL, event);
+> >  }
+> >  
+> > -static void ata_acpi_dev_uevent(acpi_handle handle, u32 event, void *data)
+> > +static void ata_acpi_dev_uevent(struct acpi_device *adev, u32 event)
+> >  {
+> > -	struct ata_device *dev = data;
+> > +	struct ata_device *dev = ata_hotplug_data(adev->hp).dev;
+> >  	ata_acpi_uevent(dev->link->ap, dev, event);
+> >  }
+> >  
+> > -static const struct acpi_dock_ops ata_acpi_dev_dock_ops = {
+> > -	.handler = ata_acpi_dev_notify_dock,
+> > -	.uevent = ata_acpi_dev_uevent,
+> > -};
+> > -
+> > -static const struct acpi_dock_ops ata_acpi_ap_dock_ops = {
+> > -	.handler = ata_acpi_ap_notify_dock,
+> > -	.uevent = ata_acpi_ap_uevent,
+> > -};
+> > -
+> >  /* bind acpi handle to pata port */
+> >  void ata_acpi_bind_port(struct ata_port *ap)
+> >  {
+> >  	struct acpi_device *host_companion = ACPI_COMPANION(ap->host->dev);
+> > +	struct acpi_device *adev;
+> > +	struct ata_acpi_hotplug_context *context;
+> >  
+> >  	if (libata_noacpi || ap->flags & ATA_FLAG_ACPI_SATA || !host_companion)
+> >  		return;
+> > @@ -188,9 +189,19 @@ void ata_acpi_bind_port(struct ata_port
+> >  	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
+> >  		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
+> >  
+> > -	/* we might be on a docking station */
+> > -	register_hotplug_dock_device(ACPI_HANDLE(&ap->tdev),
+> > -				     &ata_acpi_ap_dock_ops, ap, NULL, NULL);
+> > +	adev = ACPI_COMPANION(&ap->tdev);
+> > +	if (!adev)
+> > +		return;
+> > +
+> > +	context = kzalloc(sizeof(*context), GFP_KERNEL);
+> > +	if (!context)
+> > +		return;
+> 
+> The context isn't freed on ATA driver detach, which doesn't normally
+> happen though.
 
-Ah, OK --- then 'if (op->value > SH_INFO_MAX_VEC)' alone will catch this 
-(hopefully its' not in billions).
+Yes, but it will happen for ATA devices in docks and bays.  However,
+the struct acpi_device objects won't go away then and we only need to initialize
+the contexts once, so it should be sufficient to simply return from here if
+the context is already there.
 
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+I'll send an updated patch with that change later today.
+
+Thanks,
+Rafael
 
