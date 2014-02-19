@@ -1,158 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444AbaBSQLZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:11:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56409 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaBSQLX (ORCPT
+	id S1754351AbaBSQNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:13:04 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52997 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693AbaBSQNB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:11:23 -0500
-Date: Wed, 19 Feb 2014 08:10:18 -0800
-From: tip-bot for Stephen Boyd <tipbot@zytor.com>
-Message-ID: <tip-5ae8aabeaec3fe69c4fb21cbe5b17b72b35b5892@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, peterz@infradead.org, sboyd@codeaurora.org,
-        john.stultz@linaro.org, joshc@codeaurora.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        will.deacon@arm.com, peterz@infradead.org, sboyd@codeaurora.org,
-        john.stultz@linaro.org, joshc@codeaurora.org, tglx@linutronix.de
-In-Reply-To: <1392662736-7803-2-git-send-email-john.stultz@linaro.org>
-References: <1392662736-7803-2-git-send-email-john.stultz@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] sched_clock:
-  Prevent callers from seeing half-updated data
-Git-Commit-ID: 5ae8aabeaec3fe69c4fb21cbe5b17b72b35b5892
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Feb 2014 11:13:01 -0500
+Date: Wed, 19 Feb 2014 16:12:54 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Nicolas Pitre <nico@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <Will.Deacon@arm.com>, Cyril Chemparathy <cyril@ti.com>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
+Message-ID: <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
+References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org>
+ <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 19 Feb 2014 16:12:58.0950 (UTC) FILETIME=[74C15660:01CF2D8D]
+X-MC-Unique: 114021916125603601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5ae8aabeaec3fe69c4fb21cbe5b17b72b35b5892
-Gitweb:     http://git.kernel.org/tip/5ae8aabeaec3fe69c4fb21cbe5b17b72b35b5892
-Author:     Stephen Boyd <sboyd@codeaurora.org>
-AuthorDate: Mon, 17 Feb 2014 10:45:36 -0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 19 Feb 2014 17:07:22 +0100
+On Wed, Feb 19, 2014 at 01:52:09AM +0000, Sebastian Capella wrote:
 
-sched_clock: Prevent callers from seeing half-updated data
+[...]
 
-The generic sched_clock registration function was previously
-done lockless, due to the fact that it was expected to be called
-only once. However, now there are systems that may register
-multiple sched_clock sources, for which the lack of locking has
-casued problems:
+> diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
+> new file mode 100644
+> index 0000000..16f406f
+> --- /dev/null
+> +++ b/arch/arm/kernel/hibernate.c
+> @@ -0,0 +1,106 @@
+> +/*
+> + * Hibernation support specific for ARM
+> + *
+> + * Derived from work on ARM hibernation support by:
+> + *
+> + * Ubuntu project, hibernation support for mach-dove
+> + * Copyright (C) 2010 Nokia Corporation (Hiroshi Doyu)
+> + * Copyright (C) 2010 Texas Instruments, Inc. (Teerth Reddy et al.)
+> + *  https://lkml.org/lkml/2010/6/18/4
+> + *  https://lists.linux-foundation.org/pipermail/linux-pm/2010-June/027422.html
+> + *  https://patchwork.kernel.org/patch/96442/
+> + *
+> + * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+> + *
+> + * License terms: GNU General Public License (GPL) version 2
+> + */
+> +
+> +#include <linux/mm.h>
+> +#include <linux/suspend.h>
+> +#include <asm/tlbflush.h>
+> +#include <asm/cacheflush.h>
+> +#include <asm/system_misc.h>
+> +#include <asm/idmap.h>
+> +#include <asm/suspend.h>
+> +
+> +extern const void __nosave_begin, __nosave_end;
+> +
+> +int pfn_is_nosave(unsigned long pfn)
+> +{
+> +	unsigned long nosave_begin_pfn =
+> +			__pa_symbol(&__nosave_begin) >> PAGE_SHIFT;
+> +	unsigned long nosave_end_pfn =
+> +			PAGE_ALIGN(__pa_symbol(&__nosave_end)) >> PAGE_SHIFT;
+> +
+> +	return (pfn >= nosave_begin_pfn) && (pfn < nosave_end_pfn);
+> +}
+> +
+> +void notrace save_processor_state(void)
+> +{
+> +	WARN_ON(num_online_cpus() != 1);
+> +	flush_thread();
 
-If two sched_clock sources are registered we may end up in a
-situation where a call to sched_clock() may be accessing the
-epoch cycle count for the old counter and the cycle count for the
-new counter. This can lead to confusing results where
-sched_clock() values jump and then are reset to 0 (due to the way
-the registration function forces the epoch_ns to be 0).
+Can you explain to me please why we need to call flush_thread() here ?
+At this point in time syscore_suspend() was already called and CPU
+peripheral state saved through CPU PM notifiers.
 
-Fix this by reorganizing the registration function to hold the
-seqlock for as short a time as possible while we update the
-clock_data structure for a new counter. We also put any
-accumulated time into epoch_ns instead of resetting the time to
-0 so that the clock doesn't reset after each successful
-registration.
+> +	local_fiq_disable();
 
-[jstultz: Added extra context to the commit message]
+To me it looks like we are using this hook to disable fiqs, since it is
+not done in generic code.
 
-Reported-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Josh Cartwright <joshc@codeaurora.org>
-Link: http://lkml.kernel.org/r/1392662736-7803-2-git-send-email-john.stultz@linaro.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/sched_clock.c | 46 +++++++++++++++++++++++++++++-----------------
- 1 file changed, 29 insertions(+), 17 deletions(-)
+> +}
+> +
+> +void notrace restore_processor_state(void)
+> +{
+> +	local_fiq_enable();
+> +}
+> +
+> +/*
+> + * Snapshot kernel memory and reset the system.
+> + * After resume, the hibernation snapshot is written out.
+> + */
+> +static int notrace __swsusp_arch_save_image(unsigned long unused)
+> +{
+> +	int ret;
+> +
+> +	ret = swsusp_save();
+> +	if (ret == 0)
+> +		soft_restart(virt_to_phys(cpu_resume));
 
-diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-index 0abb364..4d23dc4 100644
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -116,20 +116,42 @@ static enum hrtimer_restart sched_clock_poll(struct hrtimer *hrt)
- void __init sched_clock_register(u64 (*read)(void), int bits,
- 				 unsigned long rate)
- {
-+	u64 res, wrap, new_mask, new_epoch, cyc, ns;
-+	u32 new_mult, new_shift;
-+	ktime_t new_wrap_kt;
- 	unsigned long r;
--	u64 res, wrap;
- 	char r_unit;
- 
- 	if (cd.rate > rate)
- 		return;
- 
- 	WARN_ON(!irqs_disabled());
--	read_sched_clock = read;
--	sched_clock_mask = CLOCKSOURCE_MASK(bits);
--	cd.rate = rate;
- 
- 	/* calculate the mult/shift to convert counter ticks to ns. */
--	clocks_calc_mult_shift(&cd.mult, &cd.shift, rate, NSEC_PER_SEC, 3600);
-+	clocks_calc_mult_shift(&new_mult, &new_shift, rate, NSEC_PER_SEC, 3600);
-+
-+	new_mask = CLOCKSOURCE_MASK(bits);
-+
-+	/* calculate how many ns until we wrap */
-+	wrap = clocks_calc_max_nsecs(new_mult, new_shift, 0, new_mask);
-+	new_wrap_kt = ns_to_ktime(wrap - (wrap >> 3));
-+
-+	/* update epoch for new counter and update epoch_ns from old counter*/
-+	new_epoch = read();
-+	cyc = read_sched_clock();
-+	ns = cd.epoch_ns + cyc_to_ns((cyc - cd.epoch_cyc) & sched_clock_mask,
-+			  cd.mult, cd.shift);
-+
-+	raw_write_seqcount_begin(&cd.seq);
-+	read_sched_clock = read;
-+	sched_clock_mask = new_mask;
-+	cd.rate = rate;
-+	cd.wrap_kt = new_wrap_kt;
-+	cd.mult = new_mult;
-+	cd.shift = new_shift;
-+	cd.epoch_cyc = new_epoch;
-+	cd.epoch_ns = ns;
-+	raw_write_seqcount_end(&cd.seq);
- 
- 	r = rate;
- 	if (r >= 4000000) {
-@@ -141,22 +163,12 @@ void __init sched_clock_register(u64 (*read)(void), int bits,
- 	} else
- 		r_unit = ' ';
- 
--	/* calculate how many ns until we wrap */
--	wrap = clocks_calc_max_nsecs(cd.mult, cd.shift, 0, sched_clock_mask);
--	cd.wrap_kt = ns_to_ktime(wrap - (wrap >> 3));
--
- 	/* calculate the ns resolution of this counter */
--	res = cyc_to_ns(1ULL, cd.mult, cd.shift);
-+	res = cyc_to_ns(1ULL, new_mult, new_shift);
-+
- 	pr_info("sched_clock: %u bits at %lu%cHz, resolution %lluns, wraps every %lluns\n",
- 		bits, r, r_unit, res, wrap);
- 
--	update_sched_clock();
--
--	/*
--	 * Ensure that sched_clock() starts off at 0ns
--	 */
--	cd.epoch_ns = 0;
--
- 	/* Enable IRQ time accounting if we have a fast enough sched_clock */
- 	if (irqtime > 0 || (irqtime == -1 && rate >= 1000000))
- 		enable_sched_clock_irqtime();
+By the time the suspend finisher (ie this function) is run, the
+processor state has been saved and I think that's all you have to do,
+function can just return after calling swsusp_save(), unless I am missing
+something.
+
+I do not understand why a soft_restart is required here. On a side note,
+finisher is called with irqs disabled so, since you added a function for
+soft restart noirq, it should be used, if needed, but I have to understand
+why in the first place.
+
+> +	return ret;
+> +}
+> +
+> +/*
+> + * Save the current CPU state before suspend / poweroff.
+> + */
+> +int notrace swsusp_arch_suspend(void)
+> +{
+> +	return cpu_suspend(0, __swsusp_arch_save_image);
+
+If the goal of soft_restart is to return 0 on success from this call,
+you can still do that without requiring a soft_restart in the first
+place. IIUC all you want to achieve is to save processor context
+registers so that when you resume from image you will actually return
+from here.
+
+> +}
+> +
+> +/*
+> + * The framework loads the hibernation image into a linked list anchored
+> + * at restore_pblist, for swsusp_arch_resume() to copy back to the proper
+> + * destinations.
+> + *
+> + * To make this work if resume is triggered from initramfs, the
+> + * pagetables need to be switched to allow writes to kernel mem.
+
+Can you elaborate a bit more on this please ?
+
+> + */
+> +static void notrace __swsusp_arch_restore_image(void *unused)
+> +{
+> +	struct pbe *pbe;
+> +
+> +	cpu_switch_mm(idmap_pgd, &init_mm);
+
+Same here, thanks.
+
+> +	for (pbe = restore_pblist; pbe; pbe = pbe->next)
+> +		copy_page(pbe->orig_address, pbe->address);
+> +
+> +	soft_restart_noirq(virt_to_phys(cpu_resume));
+
+This soft_restart is justified so that you resume from the context saved
+when creating the image.
+
+> +}
+> +
+> +static u8 __swsusp_resume_stk[PAGE_SIZE/2] __nosavedata;
+> +
+> +/*
+> + * Resume from the hibernation image.
+> + * Due to the kernel heap / data restore, stack contents change underneath
+> + * and that would make function calls impossible; switch to a temporary
+> + * stack within the nosave region to avoid that problem.
+> + */
+> +int __naked swsusp_arch_resume(void)
+> +{
+> +	extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
+
+Ok, a function with attribute __naked that still calls C functions, is
+attr __naked really needed here ?
+
+> +	cpu_init();	/* get a clean PSR */
+
+cpu_init is called in the cpu_resume path, why is this call needed here ?
+
+Thanks,
+Lorenzo
+
