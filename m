@@ -1,65 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbaBSQ2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:28:42 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55337 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472AbaBSQ2k (ORCPT
+	id S1754435AbaBSQ22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:28:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35023 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754369AbaBSQ2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:28:40 -0500
-Date: Thu, 20 Feb 2014 01:28:25 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20140219162825.GP2669@sirena.org.uk>
-References: <1392720071-13503-1-git-send-email-sachin.kamat@linaro.org>
- <1392720071-13503-7-git-send-email-sachin.kamat@linaro.org>
+	Wed, 19 Feb 2014 11:28:25 -0500
+Date: Wed, 19 Feb 2014 17:28:19 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Drew Richardson <drew.richardson@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo <acme@redhat.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Wade Cherry <Wade.Cherry@arm.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Perf Oops on 3.14-rc2
+Message-ID: <20140219162819.GP15586@twins.programming.kicks-ass.net>
+References: <20140210221758.GB11542@dreric01-Precision-T1600>
+ <20140218101831.GB4178@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="blo/x4cKJaGaeGcC"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392720071-13503-7-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.144.10
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 07/15] regulator: lp3971: Do not hardcode return value
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20140218101831.GB4178@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 18, 2014 at 10:18:31AM +0000, Will Deacon wrote:
+> On Mon, Feb 10, 2014 at 10:17:59PM +0000, Drew Richardson wrote:
+> > While adding CPU on/offlining support during perf captures I get an
+> > Oops both on ARM as well as my desktop x86_64. Below is a small
+> > program that duplicates the issue.
+> 
+> [...]
+> 
+> FWIW I can reproduce this easily with -rc3 on my x86 laptop running
+> hackbench in parallel with a tweaked version of your test (using
+> _SC_NPROCESSORS_ONLN instead of _SC_NPROCESSORS_CONF and hotplugging off
+> both CPU2 and CPU3).
+> 
 
---blo/x4cKJaGaeGcC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+OK; found it, or at least, I stopped being able to make my box explode.
 
-On Tue, Feb 18, 2014 at 04:11:03PM +0530, Sachin Kamat wrote:
-> Propagate the error value returned by the function instead.
+Drew, can you try the below and confirm? Its still got all the debug goo
+in too, but *shees* took me long enough.
 
-Applied, thanks.
+Stephane, there's two task_function_call()s in the CGROUP_PERF code that
+don't check return codes; can you please audit those?
 
---blo/x4cKJaGaeGcC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
+ kernel/events/core.c | 128 ++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 101 insertions(+), 27 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTBNumAAoJELSic+t+oim9JF4QAIpnDYCBDmQ+pUWTMa6WRZEu
-YhO+ZJZ1UgGYPjgAmzJvEtfTghGqRUuej5f6ZH3cqsQaeQmfpG/nHkGxDGKU7jpy
-9L9BwwGXnh9p6wuP7nlL7ulxpSO1TpmwuccjD/MiJ7mFKAomCPHcm72ixppuNWCT
-4AeisPPwzPBaC83/76c3ii0NdXkaO6aMxvEdF7lsQFzaxlzMT0GN+viWk3kJf6/J
-e46Qhzy4fJBrgx+kVHOnbEF2zYm+FH87H/x7BQXck55cYGKQr82KDhjzAiOIXgw3
-7r1rRickxdwok1wLIF+Z97siP67Soy1bHx5UX92ib3Y6kJvULzJIvUo7pSgArc5i
-z44uE0aIAIJ3DMSawuY1ZQjCZAvXonQvPG3/3U0q+WY650xQGg4jK61mAvglo+1X
-MclFyBXxabhpt+MB8ya61rA0tGSP62HVdRU3VRs5GYTCH0zeFYDDjxuAxrotNVsF
-JhHXvaDlFeccxD1RaM2Id4/SwulUYcq1ds88ecUPM+dBI6uH25HZ2z1f6n6l3rZc
-Z4bR+NJidXc/4+NYl9YwYsvjUg4QuUIxpjmPvLPBpI3IZfoHtaQsnUxK+xQsu7Be
-gsDbfelvQLIYzyYCeD5IZxQoS1pOxbgCfu/SOMqmkax4DubPt3wVlj74tBNP6C7K
-VwXxtq1cjwP4H7Sb9zMI
-=wNG/
------END PGP SIGNATURE-----
-
---blo/x4cKJaGaeGcC--
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2067cbb378eb..7c378fc21bff 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -78,7 +78,7 @@ static void remote_function(void *data)
+  *	    -ESRCH  - when the process isn't running
+  *	    -EAGAIN - when the process moved away
+  */
+-static int
++static int __must_check
+ task_function_call(struct task_struct *p, int (*func) (void *info), void *info)
+ {
+ 	struct remote_function_call data = {
+@@ -103,7 +103,8 @@ task_function_call(struct task_struct *p, int (*func) (void *info), void *info)
+  *
+  * returns: @func return value or -ENXIO when the cpu is offline
+  */
+-static int cpu_function_call(int cpu, int (*func) (void *info), void *info)
++static int __must_check
++cpu_function_call(int cpu, int (*func) (void *info), void *info)
+ {
+ 	struct remote_function_call data = {
+ 		.p	= NULL,
+@@ -1500,14 +1501,23 @@ static void perf_remove_from_context(struct perf_event *event)
+ 
+ 	if (!task) {
+ 		/*
+-		 * Per cpu events are removed via an smp call and
+-		 * the removal is always successful.
++		 * Per cpu events are removed via an smp call.
+ 		 */
+-		cpu_function_call(event->cpu, __perf_remove_from_context, event);
++retry1:
++		if (!cpu_function_call(event->cpu, __perf_remove_from_context, event))
++			return;
++
++		raw_spin_lock_irq(&ctx->lock);
++		if (ctx->is_active) {
++			raw_spin_unlock_irq(&ctx->lock);
++			goto retry1;
++		}
++		list_del_event(event, ctx);
++		raw_spin_unlock_irq(&ctx->lock);
+ 		return;
+ 	}
+ 
+-retry:
++retry2:
+ 	if (!task_function_call(task, __perf_remove_from_context, event))
+ 		return;
+ 
+@@ -1518,7 +1528,7 @@ static void perf_remove_from_context(struct perf_event *event)
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
+-		goto retry;
++		goto retry2;
+ 	}
+ 
+ 	/*
+@@ -1592,11 +1602,24 @@ void perf_event_disable(struct perf_event *event)
+ 		/*
+ 		 * Disable the event on the cpu that it's on
+ 		 */
+-		cpu_function_call(event->cpu, __perf_event_disable, event);
++retry1:
++		if (!cpu_function_call(event->cpu, __perf_event_disable, event))
++			return;
++
++		raw_spin_lock_irq(&ctx->lock);
++		if (event->state == PERF_EVENT_STATE_ACTIVE) {
++			raw_spin_unlock_irq(&ctx->lock);
++			goto retry1;
++		}
++		if (event->state == PERF_EVENT_STATE_INACTIVE) {
++			update_group_times(event);
++			event->state = PERF_EVENT_STATE_OFF;
++		}
++		raw_spin_unlock_irq(&ctx->lock);
+ 		return;
+ 	}
+ 
+-retry:
++retry2:
+ 	if (!task_function_call(task, __perf_event_disable, event))
+ 		return;
+ 
+@@ -1611,7 +1634,7 @@ void perf_event_disable(struct perf_event *event)
+ 		 * a concurrent perf_event_context_sched_out().
+ 		 */
+ 		task = ctx->task;
+-		goto retry;
++		goto retry2;
+ 	}
+ 
+ 	/*
+@@ -1939,14 +1962,22 @@ perf_install_in_context(struct perf_event_context *ctx,
+ 
+ 	if (!task) {
+ 		/*
+-		 * Per cpu events are installed via an smp call and
+-		 * the install is always successful.
++		 * Per cpu events are installed via an smp call.
+ 		 */
+-		cpu_function_call(cpu, __perf_install_in_context, event);
++retry1:
++		if (!cpu_function_call(cpu, __perf_install_in_context, event))
++			return;
++		raw_spin_lock_irq(&ctx->lock);
++		if (ctx->is_active) {
++			raw_spin_unlock_irq(&ctx->lock);
++			goto retry1;
++		}
++		add_event_to_ctx(event, ctx);
++		raw_spin_unlock_irq(&ctx->lock);
+ 		return;
+ 	}
+ 
+-retry:
++retry2:
+ 	if (!task_function_call(task, __perf_install_in_context, event))
+ 		return;
+ 
+@@ -1957,7 +1988,7 @@ perf_install_in_context(struct perf_event_context *ctx,
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
+-		goto retry;
++		goto retry2;
+ 	}
+ 
+ 	/*
+@@ -2086,7 +2117,15 @@ void perf_event_enable(struct perf_event *event)
+ 		/*
+ 		 * Enable the event on the cpu that it's on
+ 		 */
+-		cpu_function_call(event->cpu, __perf_event_enable, event);
++retry1:
++		if (!cpu_function_call(event->cpu, __perf_event_enable, event))
++			return;
++		raw_spin_lock_irq(&ctx->lock);
++		if (ctx->is_active && event->state == PERF_EVENT_STATE_OFF) {
++			raw_spin_unlock_irq(&ctx->lock);
++			goto retry1;
++		}
++		raw_spin_unlock_irq(&ctx->lock);
+ 		return;
+ 	}
+ 
+@@ -2104,7 +2143,7 @@ void perf_event_enable(struct perf_event *event)
+ 	if (event->state == PERF_EVENT_STATE_ERROR)
+ 		event->state = PERF_EVENT_STATE_OFF;
+ 
+-retry:
++retry2:
+ 	if (!ctx->is_active) {
+ 		__perf_event_mark_enabled(event);
+ 		goto out;
+@@ -2127,7 +2166,7 @@ void perf_event_enable(struct perf_event *event)
+ 		 * perf_event_context_sched_out()
+ 		 */
+ 		task = ctx->task;
+-		goto retry;
++		goto retry2;
+ 	}
+ 
+ out:
+@@ -3243,6 +3282,7 @@ static void __free_event(struct perf_event *event)
+ 
+ 	call_rcu(&event->rcu_head, free_event_rcu);
+ }
++
+ static void free_event(struct perf_event *event)
+ {
+ 	irq_work_sync(&event->pending);
+@@ -3271,6 +3311,8 @@ static void free_event(struct perf_event *event)
+ 	if (is_cgroup_event(event))
+ 		perf_detach_cgroup(event);
+ 
++	printk("destroying event (%p) : %d:%lx for cpu: %d\n",
++			event, event->attr.type, event->attr.config, event->cpu);
+ 
+ 	__free_event(event);
+ }
+@@ -4831,6 +4873,28 @@ perf_event_aux_ctx(struct perf_event_context *ctx,
+ 	struct perf_event *event;
+ 
+ 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
++		if (!event) {
++			struct perf_event *tmp;
++			printk("on cpu: %d, %p:(%p,%p)\n", smp_processor_id(),
++					&ctx->event_list,
++					ctx->event_list.prev,
++					ctx->event_list.next);
++
++			tmp = ctx->event_list.next;
++			while (tmp) {
++				printk("%02d: event(%p): %d:%lx %d %d\n", 
++						smp_processor_id(), tmp, 
++						tmp ? tmp->attr.type : -1, 
++						tmp ? tmp->attr.config : 0,
++						tmp ? tmp->state : 0,
++						tmp ? tmp->cpu : 0);
++				printk("%02d:  ->next (%p)\n", 
++						smp_processor_id(),
++						tmp->event_entry.next);
++				tmp = tmp->event_entry.next;
++			}
++		}
++
+ 		if (event->state < PERF_EVENT_STATE_INACTIVE)
+ 			continue;
+ 		if (!event_filter_match(event))
+@@ -6722,6 +6786,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 
+ 	event->state		= PERF_EVENT_STATE_INACTIVE;
+ 
++	printk("creating event (%p) : %d:%lx for cpu: %d\n",
++			event, attr->type, attr->config, cpu);
++
+ 	if (task) {
+ 		event->attach_state = PERF_ATTACH_TASK;
+ 
+@@ -7869,29 +7936,35 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
+ 
+ static void __perf_event_exit_context(void *__info)
+ {
+-	struct perf_event_context *ctx = __info;
+-	struct perf_event *event, *tmp;
++	struct perf_cpu_context *cpuctx = __info;
++	struct perf_event_context *ctx = &cpuctx->ctx;
++	struct perf_event *event;
+ 
+ 	perf_pmu_rotate_stop(ctx->pmu);
+ 
+-	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
+-		__perf_remove_from_context(event);
+-	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
+-		__perf_remove_from_context(event);
++	raw_spin_lock(&ctx->lock);
++	ctx_sched_out(ctx, cpuctx, EVENT_ALL);
++
++	list_for_each_entry(event, &ctx->event_list, event_entry)
++		event->state = PERF_EVENT_STATE_off;
++
++	raw_spin_unlock(&ctx->lock);
+ }
+ 
+ static void perf_event_exit_cpu_context(int cpu)
+ {
++	struct perf_cpu_context *cpuctx;
+ 	struct perf_event_context *ctx;
+ 	struct pmu *pmu;
+ 	int idx;
+ 
+ 	idx = srcu_read_lock(&pmus_srcu);
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		ctx = &per_cpu_ptr(pmu->pmu_cpu_context, cpu)->ctx;
++		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
++		ctx = &cpuctx->ctx;
+ 
+ 		mutex_lock(&ctx->mutex);
+-		smp_call_function_single(cpu, __perf_event_exit_context, ctx, 1);
++		smp_call_function_single(cpu, __perf_event_exit_context, cpuctx, 1);
+ 		mutex_unlock(&ctx->mutex);
+ 	}
+ 	srcu_read_unlock(&pmus_srcu, idx);
+@@ -7901,11 +7974,12 @@ static void perf_event_exit_cpu(int cpu)
+ {
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
+ 
++	perf_event_exit_cpu_context(cpu);
++
+ 	mutex_lock(&swhash->hlist_mutex);
+ 	swevent_hlist_release(swhash);
+ 	mutex_unlock(&swhash->hlist_mutex);
+ 
+-	perf_event_exit_cpu_context(cpu);
+ }
+ #else
+ static inline void perf_event_exit_cpu(int cpu) { }
