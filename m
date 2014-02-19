@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbaBSOdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:33:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57657 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaBSOdG (ORCPT
+	id S1753901AbaBSOdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:33:19 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:38011 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881AbaBSOdQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:33:06 -0500
-Date: Wed, 19 Feb 2014 06:35:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [char-misc-next 01/11 RESEND] mei: add mei_hbuf_acquire wrapper
-Message-ID: <20140219143539.GB31063@kroah.com>
-References: <1392642807-8878-1-git-send-email-tomas.winkler@intel.com>
- <1392642807-8878-2-git-send-email-tomas.winkler@intel.com>
- <20140218180357.GA15274@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AF74203@HASMSX106.ger.corp.intel.com>
+	Wed, 19 Feb 2014 09:33:16 -0500
+Message-ID: <5304C0C4.3080601@arm.com>
+Date: Wed, 19 Feb 2014 14:33:40 +0000
+From: Sudeep Holla <Sudeep.Holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AF74203@HASMSX106.ger.corp.intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Sudeep.Holla@arm.com, Lan Tianyu <tianyu.lan@intel.com>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 3/5] ACPI / processor: Introduce map_gic_id() to get
+ apic id from MADT or _MAT method
+References: <1392740638-2479-1-git-send-email-hanjun.guo@linaro.org> <1392740638-2479-4-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1392740638-2479-4-git-send-email-hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 19 Feb 2014 14:33:16.0993 (UTC) FILETIME=[873B2310:01CF2D7F]
+X-MC-Unique: 114021914331404701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 09:58:08AM +0000, Winkler, Tomas wrote:
+Hi Hanjun,
+
+On 18/02/14 16:23, Hanjun Guo wrote:
+> Get apic id from MADT or _MAT method is not implemented on arm/arm64,
+> and ACPI 5.0 introduces GIC Structure for it, so this patch introduces
+> map_gic_id() to get apic id followed the ACPI 5.0 spec.
 > 
-> > 
-> > This patch fails to apply to my char-misc-next branch (I've pulled in
-> > 3.14-rc3 into this branch now):
-> > 	checking file drivers/misc/mei/amthif.c
-> > 	checking file drivers/misc/mei/client.c
-> > 	Hunk #4 FAILED at 681.
-> > 	Hunk #5 succeeded at 815 (offset -2 lines).
-> > 	Hunk #6 succeeded at 848 (offset -2 lines).
-> > 	1 out of 6 hunks FAILED
-> > 	checking file drivers/misc/mei/hw-me.c
-> > 	checking file drivers/misc/mei/hw-txe.c
-> > 	checking file drivers/misc/mei/interrupt.c
-> > 	checking file drivers/misc/mei/mei_dev.h
-> > 	checking file drivers/misc/mei/wd.c
-> > 
-> > Care to fix this up and resend this series?
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  drivers/acpi/processor_core.c |   26 ++++++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
 > 
-> 
-> The patch 'mei: set client's read_cb to NULL when flow control fails'
-> (accb884b32e82f943340688c9cd30290531e73e0) Which is in
-> char-misc-linus, still haven't make it to the  upstream...I thought it
-> would be in rc3 already.
+> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+> index 4dcf776..d316d9b 100644
+> --- a/drivers/acpi/processor_core.c
+> +++ b/drivers/acpi/processor_core.c
+> @@ -71,6 +71,27 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
+>  	return 0;
+>  }
+>  
+> +static int map_gic_id(struct acpi_subtable_header *entry,
+> +		int device_declaration, u32 acpi_id, int *apic_id)
+> +{
+> +	struct acpi_madt_generic_interrupt *gic =
+> +		(struct acpi_madt_generic_interrupt *)entry;
+> +
+> +	if (!(gic->flags & ACPI_MADT_ENABLED))
+> +		return -ENODEV;
+> +
+> +	/* In the GIC interrupt model, logical processors are
+> +	 * required to have a Processor Device object in the DSDT,
+> +	 * so we should check device_declaration here
+> +	 */
+> +	if (device_declaration && (gic->uid == acpi_id)) {
+> +		*apic_id = gic->gic_id;
 
-No, you sent it too late for that.
+I have mentioned this earlier, it's not clear yet to me how does this work ?
+It needs more clarity in the form of comment here at-least as the ACPIv5.0 is
+also not so clear or explicit on how to handle this.
 
-> I can either fix the current series and then you will need to resolve
-> quite simple conflict in merge (it's just a two line patch) or we wait
-> for another cycle.  I would prefer the first option as I have few more
-> patches in the queue I won't to send for review but it's up to you.
+Here you are expecting gic->uid = acpi_id which is fine, while acpi_map_cpuid
+matches apic_id with cpu_physical_id(which must be MPIDR in ARM{32,64}). The
+latter imposes restriction that gic->gic_id has to be MPIDR. Does that mean we
+are imposing restriction on GIC ID to be MPIDR ? If so please document it here
+and please explain the reason behind that choice.
 
-I'll merge char-misc-linus into char-misc-next and then can you resend
-the pending patches to me?
+I would expect _UID to be MPIDR rather than GIC ID but you may have some reasons
+for this choice.
 
-thanks,
+Regards,
+Sudeep
 
-greg k-h
