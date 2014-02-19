@@ -1,35 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaBSVgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 16:36:33 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:46984 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956AbaBSVgb (ORCPT
+	id S1753932AbaBSVhQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 16:37:16 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:51868 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724AbaBSVhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 16:36:31 -0500
-Date: Wed, 19 Feb 2014 16:36:28 -0500 (EST)
-Message-Id: <20140219.163628.324914523484779727.davem@davemloft.net>
-To: jcmvbkbc@gmail.com
-Cc: netdev@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        robherring2@gmail.com, sergei.shtylyov@cogentembedded.com,
-        f.fainelli@gmail.com
-Subject: Re: [PATCH v2] net: ethoc: document OF bindings
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1392763610-19197-1-git-send-email-jcmvbkbc@gmail.com>
-References: <1392763610-19197-1-git-send-email-jcmvbkbc@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Feb 2014 13:36:31 -0800 (PST)
+	Wed, 19 Feb 2014 16:37:14 -0500
+Date: Wed, 19 Feb 2014 13:37:12 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Akinobu Mita <akinobu.mita@gmail.com>
+cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] Set bounds on what /proc/self/make-it-fail accepts.
+In-Reply-To: <CAC5umyi2VSQZfUfNswSBzB3QuKq4Osm3oof88b1o1Gi-sc6xVQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402191336130.31921@chino.kir.corp.google.com>
+References: <20140218220606.GA9712@redhat.com> <alpine.DEB.2.02.1402181429060.20772@chino.kir.corp.google.com> <20140218232702.GA26051@redhat.com> <CAC5umyi2VSQZfUfNswSBzB3QuKq4Osm3oof88b1o1Gi-sc6xVQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Max Filippov <jcmvbkbc@gmail.com>
-Date: Wed, 19 Feb 2014 02:46:50 +0400
+On Wed, 19 Feb 2014, Akinobu Mita wrote:
 
-> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+> I don't have any plans to extend /proc/self/make-it-fail to support
+> other than 0 or 1.  So I have no objection against this change.
+> 
+> Reviewed-by: Akinobu Mita <akinobu.mita@gmail.com>
+> 
 
-Applied, thanks.
+Ok, thanks.  I hoped that the simple_strtol() would have been replaced by 
+kstrtoint() since it's the preferred interface to make a lot of this 
+simpler and then just test for val == !!val, but the minimal change is 
+fine as well.
+
+Acked-by: David Rientjes <rientjes@google.com>
