@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaBSBQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 20:16:06 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:52475 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751392AbaBSBQE (ORCPT
+	id S1752275AbaBSBSf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 20:18:35 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62681 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751592AbaBSBSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 20:16:04 -0500
-Message-ID: <53040592.2000707@atmel.com>
-Date: Wed, 19 Feb 2014 09:14:58 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Feb 2014 20:18:30 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux PCI <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: [PATCH 8/9] ACPI / dock: Drop remove_dock_dependent_devices()
+Date: Wed, 19 Feb 2014 02:32:12 +0100
+Message-ID: <3723851.WP79lXh8Px@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3011875.q18rCmXyYX@vostro.rjw.lan>
+References: <3011875.q18rCmXyYX@vostro.rjw.lan>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: at91: using USBA_NR_DMAS for DMA channels
-References: <1389927565-22477-1-git-send-email-voice.shen@atmel.com> <1389927565-22477-2-git-send-email-voice.shen@atmel.com> <20140218161839.GD9878@saruman.home>
-In-Reply-To: <20140218161839.GD9878@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe Balbi,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-On 02/19/2014 12:19 AM, Felipe Balbi wrote:
-> On Fri, Jan 17, 2014 at 10:59:25AM +0800, Bo Shen wrote:
->> When the SoC is earlier than sama5d3 SoC, which have the same number
->> endpoints and DMAs. However for sama5d3 SoC, it has different number
->> for endpoints and DMAs. So, define USBA_NR_DMAs for DMA channels
->>
->> Signed-off-by: Bo Shen <voice.shen@atmel.com>
->> ---
->>
->>   drivers/usb/gadget/atmel_usba_udc.c | 2 +-
->>   drivers/usb/gadget/atmel_usba_udc.h | 2 +-
->>   2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
->> index 7e67a81..5cded1c 100644
->> --- a/drivers/usb/gadget/atmel_usba_udc.c
->> +++ b/drivers/usb/gadget/atmel_usba_udc.c
->> @@ -1661,7 +1661,7 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
->>   	if (dma_status) {
->>   		int i;
->>
->> -		for (i = 1; i < USBA_NR_ENDPOINTS; i++)
->> +		for (i = 1; i < USBA_NR_DMAS; i++)
->>   			if (dma_status & (1 << i))
->>   				usba_dma_irq(udc, &udc->usba_ep[i]);
->>   	}
->> diff --git a/drivers/usb/gadget/atmel_usba_udc.h b/drivers/usb/gadget/atmel_usba_udc.h
->> index 2922db5..a70706e 100644
->> --- a/drivers/usb/gadget/atmel_usba_udc.h
->> +++ b/drivers/usb/gadget/atmel_usba_udc.h
->> @@ -210,7 +210,7 @@
->>   #define USBA_FIFO_BASE(x)	((x) << 16)
->>
->>   /* Synth parameters */
->> -#define USBA_NR_ENDPOINTS	7
->> +#define USBA_NR_DMAS		7
->
-> what's the difference ? You just renamed this macro. Also, please
-> clarify a bit your commit log.
+Since remove_dock_dependent_devices() is only called from acpi_dock_add()
+and it only is called if the add_dock_dependent_device() adding the
+dock station to its own list of dependent devices has failed, it is not
+really necessary, because the dock station's list of dependent devices
+is guaranteed to be empty at that point.  Drop it, then.
 
-As commit message said, the SoC before sama5d3, the endpoint number is 
-the same as DMA channel number, so use endpoints definition for DMA 
-channel number, however after sama5d3, the endpoints is not the same as 
-DMA channel, so use DMA micro for DMA channels.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/dock.c |   12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-Best Regards,
-Bo Shen
-
+Index: linux-pm/drivers/acpi/dock.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/dock.c
++++ linux-pm/drivers/acpi/dock.c
+@@ -114,16 +114,6 @@ static int add_dock_dependent_device(str
+ 	return 0;
+ }
+ 
+-static void remove_dock_dependent_devices(struct dock_station *ds)
+-{
+-	struct dock_dependent_device *dd, *aux;
+-
+-	list_for_each_entry_safe(dd, aux, &ds->dependent_devices, list) {
+-		list_del(&dd->list);
+-		kfree(dd);
+-	}
+-}
+-
+ static void dock_hotplug_event(struct dock_dependent_device *dd, u32 event,
+ 			       enum dock_callback_type cb_type)
+ {
+@@ -674,8 +664,8 @@ void acpi_dock_add(struct acpi_device *a
+ 	return;
+ 
+ err_rmgroup:
+-	remove_dock_dependent_devices(dock_station);
+ 	sysfs_remove_group(&dd->dev.kobj, &dock_attribute_group);
++
+ err_unregister:
+ 	platform_device_unregister(dd);
+ 	acpi_handle_err(handle, "%s encountered error %d\n", __func__, ret);
 
