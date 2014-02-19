@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197AbaBSPxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:53:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62982 "EHLO mx1.redhat.com"
+	id S1754215AbaBSPyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:54:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29681 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173AbaBSPxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:53:50 -0500
+	id S1754121AbaBSPx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 10:53:58 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -15,85 +15,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         David Ahern <dsahern@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 1/6] perf tools: Factor features display code
-Date: Wed, 19 Feb 2014 16:52:54 +0100
-Message-Id: <1392825179-5228-2-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 3/6] perf tools: Add feature check for libdw dwarf unwind
+Date: Wed, 19 Feb 2014 16:52:56 +0100
+Message-Id: <1392825179-5228-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1392825179-5228-1-git-send-email-jolsa@redhat.com>
 References: <1392825179-5228-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the we display all detected features/libraries
-by following rules:
- - if one of the features is missing
- - if it's build from clean tree
-
-This patch changes changes this behavior in several ways.
-
-- We no longer display all detected features, only detected
-  libraries are displayed by default:
-
-  $ make
-    BUILD:   Doing 'make -j4' parallel build
-
-  Auto-detecting system features:
-  ...                         dwarf: [ on  ]
-  ...                         glibc: [ on  ]
-  ...                          gtk2: [ on  ]
-  ...                      libaudit: [ on  ]
-  ...                        libbfd: [ on  ]
-  ...                        libelf: [ on  ]
-  ...                       libnuma: [ on  ]
-  ...                       libperl: [ on  ]
-  ...                     libpython: [ on  ]
-  ...                      libslang: [ on  ]
-  ...                     libunwind: [ on  ]
-
-  The assumption is, that above libraries are the most interesting
-  part of the detection, while we don't care much about detection
-  of on-exit support.
-
-- If all above libraries are detected, the default is not shown
-  on subsequent builds.
-
-- If one of the above libraries is missing, the detection output
-  is forced.
-
-- The features status is stored in PERF-FEATURES file and the
-  detection output is forced in case the there's difference
-  between the file contents and currently detected features.
-
-- If you want to see all detected features, you can use
-  VF=1 make variable, that forces the detected features
-  output.
-
-  $ make VF=1
-    BUILD:   Doing 'make -j4' parallel build
-
-  Auto-detecting system features:
-  ...                         dwarf: [ on  ]
-  ...                         glibc: [ on  ]
-  ...                          gtk2: [ on  ]
-  ...                      libaudit: [ on  ]
-  ...                        libbfd: [ on  ]
-  ...                        libelf: [ on  ]
-  ...                       libnuma: [ on  ]
-  ...                       libperl: [ on  ]
-  ...                     libpython: [ on  ]
-  ...                      libslang: [ on  ]
-  ...                     libunwind: [ on  ]
-  ...                     backtrace: [ on  ]
-  ...                fortify-source: [ on  ]
-  ...                  gtk2-infobar: [ on  ]
-  ...             libelf-getphdrnum: [ on  ]
-  ...                   libelf-mmap: [ on  ]
-  ...             libpython-version: [ on  ]
-  ...                       on-exit: [ on  ]
-  ...            stackprotector-all: [ on  ]
-  ...                       timerfd: [ on  ]
-  ...         libunwind-debug-frame: [ OFF ]
-  ...                        bionic: [ OFF ]
+Adding feature check test code for libdw dwarf unwind.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -106,191 +37,116 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jean Pihet <jean.pihet@linaro.org>
 ---
- tools/perf/Makefile.perf   |   4 +-
- tools/perf/config/Makefile | 123 ++++++++++++++++++++++++++++++---------------
- 2 files changed, 85 insertions(+), 42 deletions(-)
+ tools/perf/config/Makefile                            | 19 ++++++++++++-------
+ tools/perf/config/feature-checks/Makefile             |  6 +++++-
+ tools/perf/config/feature-checks/test-all.c           |  5 +++++
+ .../config/feature-checks/test-libdw-dwarf-unwind.c   | 13 +++++++++++++
+ 4 files changed, 35 insertions(+), 8 deletions(-)
+ create mode 100644 tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 5fedd69..bde91f8 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -7,6 +7,8 @@ include config/utilities.mak
- 
- # Define V to have a more verbose compile.
- #
-+# Define VF to have a more verbose feature check output.
-+#
- # Define O to save output files in a separate directory.
- #
- # Define ARCH as name of target architecture if you want cross-builds.
-@@ -897,7 +899,7 @@ config-clean:
- clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
- 	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
- 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
--	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
-+	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
- 	$(python-clean)
- 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 1686583..39e6e6c 100644
+index 97a64c4..63c98c2 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -149,6 +149,32 @@ CORE_FEATURE_TESTS =			\
- 	stackprotector-all		\
- 	timerfd
- 
-+LIB_FEATURE_TESTS =			\
-+	dwarf				\
-+	glibc				\
-+	gtk2				\
-+	libaudit			\
-+	libbfd				\
-+	libelf				\
-+	libnuma				\
-+	libperl				\
-+	libpython			\
-+	libslang			\
-+	libunwind
-+
-+VF_FEATURE_TESTS =			\
-+	backtrace			\
-+	fortify-source			\
-+	gtk2-infobar			\
-+	libelf-getphdrnum		\
-+	libelf-mmap			\
-+	libpython-version		\
-+	on-exit				\
-+	stackprotector-all		\
-+	timerfd				\
-+	libunwind-debug-frame		\
-+	bionic
-+
- # Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
- # If in the future we need per-feature checks/flags for features not
- # mentioned in this list we need to refactor this ;-).
-@@ -161,17 +187,6 @@ endef
- $(foreach feat,$(CORE_FEATURE_TESTS),$(call set_test_all_flags,$(feat)))
- 
- #
--# So here we detect whether test-all was rebuilt, to be able
--# to skip the print-out of the long features list if the file
--# existed before and after it was built:
--#
--ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all.bin),)
--  test-all-failed := 1
--else
--  test-all-failed := 0
--endif
--
--#
- # Special fast-path for the 'all features are available' case:
- #
- $(call feature_check,all,$(MSG))
-@@ -180,15 +195,6 @@ $(call feature_check,all,$(MSG))
- # Just in case the build freshly failed, make sure we print the
- # feature matrix:
- #
--ifeq ($(feature-all), 0)
--  test-all-failed := 1
--endif
--
--ifeq ($(test-all-failed),1)
--  $(info )
--  $(info Auto-detecting system features:)
--endif
--
- ifeq ($(feature-all), 1)
-   #
-   # test-all.c passed - just set all the core feature flags to 1:
-@@ -199,27 +205,6 @@ else
-   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+@@ -59,6 +59,18 @@ ifeq ($(NO_PERF_REGS),0)
+   CFLAGS += -DHAVE_PERF_REGS_SUPPORT
  endif
  
--#
--# Print the result of the feature test:
--#
--feature_print = $(eval $(feature_print_code)) $(info $(MSG))
--
--define feature_print_code
--  ifeq ($(feature-$(1)), 1)
--    MSG = $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
--  else
--    MSG = $(shell printf '...%30s: [ \033[31mOFF\033[m ]' $(1))
--  endif
--endef
--
--#
--# Only print out our features if we rebuilt the testcases or if a test failed:
--#
--ifeq ($(test-all-failed), 1)
--  $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_print,$(feat)))
--  $(info )
--endif
--
- ifeq ($(feature-stackprotector-all), 1)
-   CFLAGS += -fstack-protector-all
- endif
-@@ -602,3 +587,59 @@ ifdef DESTDIR
- plugindir=$(libdir)/traceevent/plugins
- plugindir_SQ= $(subst ','\'',$(plugindir))
- endif
++ifndef NO_LIBELF
++  # for linking with debug library, run like:
++  # make DEBUG=1 LIBDW_DIR=/opt/libdw/
++  ifdef LIBDW_DIR
++    LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
++    LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
 +
-+#
-+# Print the result of the feature test:
-+#
-+feature_print = $(eval $(feature_print_code)) $(info $(MSG))
-+
-+define feature_print_code
-+  ifeq ($(feature-$(1)), 1)
-+    MSG = $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
-+  else
-+    MSG = $(shell printf '...%30s: [ \033[31mOFF\033[m ]' $(1))
++    FEATURE_CHECK_CFLAGS-libdw-dwarf-unwind := $(LIBDW_CFLAGS)
++    FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
 +  endif
-+endef
-+
-+PERF_FEATURES := $(foreach feat,$(LIB_FEATURE_TESTS),feature-$(feat)($(feature-$(feat))))
-+PERF_FEATURES_FILE := $(shell touch $(OUTPUT)PERF-FEATURES; cat $(OUTPUT)PERF-FEATURES)
-+
-+# The $(display_lib) controls the default detection message
-+# output. It's set if:
-+# - detected features differes from stored features from
-+#   last build (in PERF-FEATURES file)
-+# - one of the $(LIB_FEATURE_TESTS) is not detected
-+# - VF is enabled
-+
-+ifneq ("$(PERF_FEATURES)","$(PERF_FEATURES_FILE)")
-+  $(shell echo "$(PERF_FEATURES)" > $(OUTPUT)PERF-FEATURES)
-+  display_lib := 1
 +endif
 +
-+feature_check = $(eval $(feature_check_code))
-+define feature_check_code
-+  ifneq ($(feature-$(1)), 1)
-+    display_lib := 1
-+  endif
-+endef
+ # include ARCH specific config
+ -include $(src-perf)/arch/$(ARCH)/Makefile
+ 
+@@ -267,13 +279,6 @@ else
+       msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
+     endif
+   else
+-    # for linking with debug library, run like:
+-    # make DEBUG=1 LIBDW_DIR=/opt/libdw/
+-    ifdef LIBDW_DIR
+-      LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
+-      LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
+-    endif
+-
+     ifneq ($(feature-dwarf), 1)
+       msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+       NO_DWARF := 1
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 12e5513..2b492f5 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -26,7 +26,8 @@ FILES=					\
+ 	test-libunwind-debug-frame.bin	\
+ 	test-on-exit.bin		\
+ 	test-stackprotector-all.bin	\
+-	test-timerfd.bin
++	test-timerfd.bin		\
++	test-libdw-dwarf-unwind.bin
+ 
+ CC := $(CROSS_COMPILE)gcc -MD
+ PKG_CONFIG := $(CROSS_COMPILE)pkg-config
+@@ -141,6 +142,9 @@ test-backtrace.bin:
+ test-timerfd.bin:
+ 	$(BUILD)
+ 
++test-libdw-dwarf-unwind.bin:
++	$(BUILD)
 +
-+$(foreach feat,$(LIB_FEATURE_TESTS),$(call feature_check,$(feat)))
+ -include *.d
+ 
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index 9b8a544..fc37eb3 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -89,6 +89,10 @@
+ # include "test-stackprotector-all.c"
+ #undef main
+ 
++#define main main_test_libdw_dwarf_unwind
++# include "test-libdw-dwarf-unwind.c"
++#undef main
 +
-+ifeq ($(VF),1)
-+  display_lib := 1
-+  display_vf := 1
-+endif
+ int main(int argc, char *argv[])
+ {
+ 	main_test_libpython();
+@@ -111,6 +115,7 @@ int main(int argc, char *argv[])
+ 	main_test_libnuma();
+ 	main_test_timerfd();
+ 	main_test_stackprotector_all();
++	main_test_libdw_dwarf_unwind();
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c b/tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c
+new file mode 100644
+index 0000000..f676a3f
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c
+@@ -0,0 +1,13 @@
 +
-+ifeq ($(display_lib),1)
-+  $(info )
-+  $(info Auto-detecting system features:)
-+  $(foreach feat,$(LIB_FEATURE_TESTS),$(call feature_print,$(feat),))
-+endif
++#include <elfutils/libdwfl.h>
 +
-+ifeq ($(display_vf),1)
-+  $(foreach feat,$(VF_FEATURE_TESTS),$(call feature_print,$(feat),))
-+endif
-+
-+ifeq ($(display_lib),1)
-+  $(info )
-+endif
++int main(void)
++{
++	/*
++	 * This function is guarded via: __nonnull_attribute__ (1, 2).
++	 * Passing '1' as arguments value. This code is never executed,
++	 * only compiled.
++	 */
++	dwfl_thread_getframes((void *) 1, (void *) 1, NULL);
++	return 0;
++}
 -- 
 1.8.3.1
 
