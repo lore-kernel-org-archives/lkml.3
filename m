@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbaBSI7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:59:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38080 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809AbaBSI7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 03:59:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,504,1389772800"; 
-   d="scan'208";a="457947543"
-Message-ID: <5304725A.3020909@intel.com>
-Date: Wed, 19 Feb 2014 16:59:06 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1753357AbaBSI7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 03:59:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49882 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631AbaBSI7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 03:59:20 -0500
+Date: Wed, 19 Feb 2014 09:59:17 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, linux-mm@kvack.org,
+        chegu_vinod@hp.com, aarcange@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH -mm 0/3] fix numa vs kvm scalability issue
+Message-ID: <20140219085917.GJ27965@twins.programming.kicks-ass.net>
+References: <1392761566-24834-1-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] drm/i915/opregion: work around buggy firmware that provides
- 8+ output devices
-References: <52FAE504.8020001@intel.com> <20140212103156.GC5298@nuc-i3427.alporthouse.com> <52FC8C01.1040002@intel.com> <20140213100814.GM14909@nuc-i3427.alporthouse.com> <CAKMK7uGN3Of2VU6_LsSLh041kkx4TrhyH0H8zvE-PRvOtzJgfg@mail.gmail.com> <53045DD1.5010406@intel.com> <20140219073339.GA30685@srcf.ucam.org>
-In-Reply-To: <20140219073339.GA30685@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392761566-24834-1-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 03:33 PM, Matthew Garrett wrote:
-> On Wed, Feb 19, 2014 at 03:31:29PM +0800, Aaron Lu wrote:
+On Tue, Feb 18, 2014 at 05:12:43PM -0500, riel@redhat.com wrote:
+> The NUMA scanning code can end up iterating over many gigabytes
+> of unpopulated memory, especially in the case of a freshly started
+> KVM guest with lots of memory.
 > 
->> DID2 is in system memory region and has some assigned value like 0x400
->> when we read it. For this case it is easy since there is only one output
->> device that is of type LVDS so we can match it to connector of type eDP
->> or LVDS, suppose there is only one such connector. But for output
->> devices' whose _ADR has the value of 0x301, 0x302, etc. I have no idea
->> how to match them up to the connectors of that type as we can't be sure
->> the probe order we have used in i915 driver is the same as BIOS'.
+> This results in the mmu notifier code being called even when
+> there are no mapped pages in a virtual address range. The amount
+> of time wasted can be enough to trigger soft lockup warnings
+> with very large (>2TB) KVM guests.
 > 
-> Non-standard _ADR values are assigend by the GPU vendor, so Intel should 
-> be able to provide you with the correct interpretations.
+> This patch moves the mmu notifier call to the pmd level, which
+> represents 1GB areas of memory on x86-64. Furthermore, the mmu
+> notifier code is only called from the address in the PMD where
+> present mappings are first encountered.
+> 
+> The hugetlbfs code is left alone for now; hugetlb mappings are
+> not relocatable, and as such are left alone by the NUMA code,
+> and should never trigger this problem to begin with.
+> 
+> The series also adds a cond_resched to task_numa_work, to
+> fix another potential latency issue.
 
-It doesn't seem the _ADR value has to be the format defined by _DOD, as
-the example of the ACPI spec gives:
-Method (_ADR, 0) {
-    return(0x0100)
-}
-So that is not the problem here.
-
-The problem is, we don't have any way of matching an ACPI output device
-node to a drm connector of the same type when there are more than 1 of
-those with the same type, i.e. we don't know how the index value are
-assigned by BIOS.
+Andrew, I'll pick up the first kernel/sched/ patch; do you want the
+other two mm/ patches?
