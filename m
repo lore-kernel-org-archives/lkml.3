@@ -1,55 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857AbaBSOMP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:12:15 -0500
-Received: from mga01.intel.com ([192.55.52.88]:36684 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753837AbaBSOMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:12:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,505,1389772800"; 
-   d="scan'208";a="484058745"
-Message-ID: <5304BBB9.9010205@linux.intel.com>
-Date: Wed, 19 Feb 2014 22:12:09 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        David Airlie <airlied@linux.ie>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Emil Velikov <emil.l.velikov@gmail.com>
-CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nouveau, ACPI: fix regression caused by b072e53
-References: <1392785628-30633-1-git-send-email-jiang.liu@linux.intel.com> <5304838B.4040500@canonical.com>
-In-Reply-To: <5304838B.4040500@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753877AbaBSONG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:13:06 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:41767 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562AbaBSOND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 09:13:03 -0500
+Message-ID: <1392819180.3670.1.camel@leira.trondhjem.org>
+Subject: [GIT PULL] Please pull NFS client fixes
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Torvalds Linus <torvalds@linux-foundation.org>
+Cc: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Date: Wed, 19 Feb 2014 09:13:00 -0500
+Organization: PrimaryData Inc
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-rLXzoHYJaWcvq/uLRK8g"
+X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--=-rLXzoHYJaWcvq/uLRK8g
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On 2014/2/19 18:12, Maarten Lankhorst wrote:
-> op 19-02-14 05:53, Jiang Liu schreef:
->> On some platforms, ACPI _DSM method (nouveau_op_dsm_muid, function 0)
->> has special requirements on the fourth parameter, which is different
->> from ACPI specifications. So revert to the private implementation
->> to check availability of _DSM functions instead of using common
->> acpi_check_dsm() interface.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->> ---
->> Hi Maarten,
->>     Thanks for bisecting. Could you please help to verify whether
->> this patch fixes the regression?
->>
-> Tested-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> 
-> I was wrong about the operator precedence, seems correct after all. :-)
-Hi Maarten,
-	Thanks for testing.
-Cheers!
-Gerry
+Hi Linus,
+
+The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed=
+:
+
+  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+
+are available in the git repository at:
+
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.14-=
+4
+
+for you to fetch changes up to 2564f0dc58962a08abc960fca820e344f61981ed:
+
+  NFS fix error return in nfs4_select_rw_stateid (2014-02-18 11:33:03 -0500=
+)
+
+----------------------------------------------------------------
+NFS client bugfixes for Linux 3.14
+
+Highlights include stable fixes for the following bugs:
+
+- General performance regression due to NFS_INO_INVALID_LABEL being set
+  when the server doesn't support labeled NFS
+- Hang in the RPC code due to a socket out-of-buffer race
+- Infinite loop when trying to establish the NFSv4 lease
+- Use-after-free bug in the RPCSEC gss code.
+- nfs4_select_rw_stateid is returning with a non-zero error value on succes=
+s
+
+Other bug fixes:
+
+- Potential memory scribble in the RPC bi-directional RPC code
+- Pipe version reference leak
+- Use the correct net namespace in the new NFSv4 migration code
+
+----------------------------------------------------------------
+Andy Adamson (1):
+      NFS fix error return in nfs4_select_rw_stateid
+
+Trond Myklebust (7):
+      NFS: Do not set NFS_INO_INVALID_LABEL unless server supports labeled =
+NFS
+      SUNRPC: Don't create a gss auth cache unless rpc.gssd is running
+      SUNRPC: Fix races in xs_nospace()
+      SUNRPC: Fix potential memory scribble in xprt_free_bc_request()
+      SUNRPC: Ensure that gss_auth isn't freed before its upcall messages
+      SUNRPC: Fix a pipe_version reference leak
+      NFSv4: Use the correct net namespace in nfs4_update_server
+
+ fs/nfs/inode.c                 | 14 ++++++++++----
+ fs/nfs/internal.h              | 12 +++++++++++-
+ fs/nfs/nfs4client.c            |  7 ++++---
+ fs/nfs/nfs4namespace.c         | 12 ++++++------
+ fs/nfs/nfs4state.c             |  1 +
+ net/sunrpc/auth_gss/auth_gss.c | 19 ++++++++++++++++---
+ net/sunrpc/backchannel_rqst.c  |  6 ++++--
+ net/sunrpc/xprtsock.c          |  6 +++++-
+ 8 files changed, 57 insertions(+), 20 deletions(-)
+
+--=20
+Trond Myklebust
+Linux NFS client maintainer, PrimaryData
+trond.myklebust@primarydata.com
+
+
+--=-rLXzoHYJaWcvq/uLRK8g
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABAgAGBQJTBLvsAAoJEGcL54qWCgDysTgQAIc5HbZ/FH9FpYJ05VvrCRSi
+6gBqxPmJbYRCOOACSO0GkGAZ0LMPMxGJAie/2cRx1ykgs61fu747aXUuJozWnXd+
+OJ1tZ6qYQ0PttI5clJdJfeKNAMh0jnLesvjo+RrMgCsYGzHQAU+yAaqCuXQ5QpA7
+Ot0BWyVIkgkRykU5f+NSK4Gewyv+kvr/eildhCAogPgpKoHKv2XxU0LFV2C0in50
+2cLKwjeCV2lpHf9yG51bMIQTqNhYS09KiUkDyxFc9ekYAeSx3oRB/tekgxfo2R3G
+aS4o1zLcszOWSqIT5NswKX2DXiS27S2n4auGETwHKuV42Pd1w7UimrK/3Z00qf76
+I8LYjwDuB9a+Ke90faFbNV9r3jOwPFWP1HlfkVEYfkJM7565O7lBQi0ppbJbXloq
+9TGW8u6RwFoTVjUiwtgKR/tRiHY5WoTQCiJFCshfeAfQKzWyYaPtDfdQb5/v1sAW
+IeZ+wM1rLQsxhQD1/LPByvYdVVLjCXanBtS7WOQWN9X6cPE28O6FPxYN6zp9MWUM
+KXylRr+sCmcOypcalxwC4CqaNRbEj4Br1VDEqLgAY8YuDshRISv8aQ48qKR79n7v
+KuU8sKMTVE9AV2kimN5kZR3GckrDiAm3RIR1Kt6MKd6EDSs3i15Ab67JVBcIaJuD
++lI61Pb1TAI3KBfGDWsx
+=eME4
+-----END PGP SIGNATURE-----
+
+--=-rLXzoHYJaWcvq/uLRK8g--
+
