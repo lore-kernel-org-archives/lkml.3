@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648AbaBSQh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:37:29 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:47581 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754124AbaBSQhZ (ORCPT
+	id S1754655AbaBSQhv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:37:51 -0500
+Received: from host.colocrossing.com ([192.210.149.62]:57717 "EHLO
+	smtp5.vercj.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089AbaBSQht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:37:25 -0500
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-14.tower-194.messagelabs.com!1392827842!11157569!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201402191637.s1JGb4t9017699@swsrvapps-02.lan>
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-Date: Wed, 19 Feb 2014 16:32:47 +0000
-Subject: [PATCH V1 3/3] REGULATOR: da9052: Add new DA9053 BC chip variant
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-CC: Lee Jones <lee.jones@linaro.org>, <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>
+	Wed, 19 Feb 2014 11:37:49 -0500
+X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 11:37:49 EST
+Date: Thu, 20 Feb 2014 00:31:06 +0800
+From: "Iris" <bc5@smtp5.vercj.com>
+Reply-To: iris20111207@hotmail.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Hot sale HDPE LDPE LLDPE
+Message-ID: <201402200031064374260@smtp5.vercj.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1JGbt4R008336
 
-Add support for a new BC variant of the DA9053 PMIC.
+Dear Sir,
 
-There is one difference between it and the AA, BA and BB.
+Good day!
 
-Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
----
+We had dealing plastic raw materials for many years . And supplied high quality different grade HDPE/LDPE/PP/PET to our old and new customers.
+  
+Should any of the items be of interest to you, please let me know. We shall be glad to give you our lowest quotations upon receipt of your detailed requirements.
 
-This patch is relative to linux-next repository tag next-20140219
-
-This patch depends on patch number 1 of this patch
-series being applied first or it will not compile.
-
- drivers/regulator/da9052-regulator.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
-index 889c7c9..599f2ad 100644
---- a/drivers/regulator/da9052-regulator.c
-+++ b/drivers/regulator/da9052-regulator.c
-@@ -354,6 +354,7 @@ static inline struct da9052_regulator_info *find_regulator_info(u8 chip_id,
- 	case DA9053_AA:
- 	case DA9053_BA:
- 	case DA9053_BB:
-+	case DA9053_BC:
- 		for (i = 0; i < ARRAY_SIZE(da9053_regulator_info); i++) {
- 			info = &da9053_regulator_info[i];
- 			if (info->reg_desc.id == id)
--- 
-end-of-patch 3/3 for PATCH V1
-
+Thanks,
+Iris
+Email: iris20111207@hotmail.com
+Skype:iris.song12ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
