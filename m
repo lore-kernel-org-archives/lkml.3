@@ -1,140 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953AbaBSMiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 07:38:04 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54782 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126AbaBSMiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 07:38:01 -0500
-Message-ID: <5304A58C.2030306@ti.com>
-Date: Wed, 19 Feb 2014 14:37:32 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753338AbaBSMiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 07:38:54 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:54277 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148AbaBSMiw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 07:38:52 -0500
+Message-ID: <5304A5DF.8070302@cogentembedded.com>
+Date: Wed, 19 Feb 2014 16:38:55 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>
-CC: <george.cherian@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
- returns -ENODEV/-ENXIO
-References: <1385373690-12170-1-git-send-email-kishon@ti.com> <1390299099-14764-1-git-send-email-kishon@ti.com> <20140121144725.GF30451@saruman.home> <20140127150855.GA17928@xps8300> <20140127160458.GF13268@saruman.home> <20140128153230.GA20991@xps8300> <20140128163036.GD28546@saruman.home> <20140129144659.GA22152@xps8300> <52FB42DE.4090203@ti.com>
-In-Reply-To: <52FB42DE.4090203@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Daeseok Youn <daeseok.youn@gmail.com>, tj@kernel.org
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: libahci: make ahci_pmp_retry_softreset() as static
+References: <3035873.ZkIlzycZBr@daeseok-laptop.cloud.net>
+In-Reply-To: <3035873.ZkIlzycZBr@daeseok-laptop.cloud.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello.
 
-On 02/12/2014 11:46 AM, Kishon Vijay Abraham I wrote:
-> On Wednesday 29 January 2014 08:17 PM, Heikki Krogerus wrote:
->> Hi,
->>
->> On Tue, Jan 28, 2014 at 10:30:36AM -0600, Felipe Balbi wrote:
->>> On Tue, Jan 28, 2014 at 05:32:30PM +0200, Heikki Krogerus wrote:
->>>> On Mon, Jan 27, 2014 at 10:05:20AM -0600, Felipe Balbi wrote:
->>>> For the controller drivers the PHYs are just a resource like any
->>>> other. The controller drivers can't have any responsibility of
->>>> them. They should not care if PHY drivers are available for them or
->>>> not, or even if the PHY framework is available or not.
->>>
->>> huh? If memory isn't available you don't continue probing, right ? If
->>> your IORESOURCE_MEM is missing, you also don't continue probing, if your
->>> IRQ line is missing, you bail too. Those are also nothing but resources
->>> to the driver, what you're asking here is to treat PHY as a _different_
->>> resource; which might be fine, but we need to make sure we don't
->>> continue probing when a PHY is missing in a platform that certainly
->>> needs a PHY.
->>
->> Yes, true. In my head I was comparing the PHY only to resources like
->> gpios, clocks, dma channels, etc. that are often optional to the
->> drivers.
->>
->>>>>>> But I really want to see the argument against using no-op. As far as I
->>>>>>> could see, everybody needs a PHY driver one way or another, some
->>>>>>> platforms just haven't sent any PHY driver upstream and have their own
->>>>>>> hacked up solution to avoid using the PHY layer.
->>>>>>
->>>>>> Not true in our case. Platforms using Intel's SoCs and chip sets may
->>>>>> or may not have controllable USB PHY. Quite often they don't. The
->>>>>> Baytrails have usually ULPI PHY for USB2, but that does not mean they
->>>>>> provide any vendor specific functions or any need for a driver in any
->>>>>> case.
->>>>>
->>>>> that's different from what I heard.
->>>>
->>>> I don't know where you got that impression, but it's not true. The
->>>> Baytrail SoCs for example don't have internal USB PHYs, which means
->>>> the manufacturers using it can select what they want. So we have
->>>> boards where PHY driver(s) is needed and boards where it isn't.
->>>
->>> alright, that explains it ;-) So you have external USB2 and USB3 PHYs ?
->>> You have an external PIPE3 interface ? That's quite an achievement,
->>> kudos to your HW designers. Getting timing closure on PIPE3 is a
->>> difficult task.
->>
->> No, only the USB2 PHY is external. I'm giving you wrong information,
->> I'm sorry about that. Need to concentrate on what I'm writing.
->>
->> <snip>
->>
->>>> This is really good to get. We have some projects where we are dealing
->>>> with more embedded environments, like IVI, where the kernel should be
->>>> stripped of everything useless. Since the PHYs are autonomous, we
->>>> should be able to disable the PHY libraries/frameworks.
->>>
->>> hmmm, in that case it's a lot easier to treat. We can use
->>> ERR_PTR(-ENXIO) as an indication that the framework is disabled, or
->>> something like that.
->>>
->>> The difficult is really reliably supporting e.g. OMAP5 (which won't work
->>> without a PHY) and your BayTrail with autonomous PHYs. What can we use
->>> as an indication ?
->>
->> OMAP has it's own glue driver, so shouldn't it depend on the PHY
->> layer?
-> 
-> right, but the PHY is connected to the dwc3 core and not to the glue.
->>
->>> I mean, I need to know that a particular platform depends on a PHY
->>> driver before I decide to return -EPROBE_DEFER or just assume the PHY
->>> isn't needed ;-)
->>
->> I don't think dwc3 (core) should care about that. The PHY layer needs
->> to tell us that. If the PHY driver that the platform depends is not
->> available yet, the PHY layer returns -EPROBE_DEFER and dwc3 ends up
->> returning -EPROBE_DEFER.
-> 
-> I don't think the PHY layer can 'reliably' tell if PHY driver is available or
-> not. Consider when the phy_provider_register fails, there is no way to know if
-> PHY driver is available or not. There are a few cases where PHY layer returns
-> -EPROBE_DEFER but none of them can tell for sure that PHY driver is either
-> available and failed or not available at all. It would be best for us to leave
-> that to the platforms if we want to be sure if the platform needs a PHY or not.
-> 
+On 19-0202014 9:07, Daeseok Youn wrote:
 
-Just to summarize this thread on what we need
+>  From 2a428e5e45bca3fc38fad17b9e2e14c5e6514ca0 Mon Sep 17 00:00:00 2001
+> From: Daeseok Youn <daeseok.youn@gmail.com>
+> Date: Wed, 19 Feb 2014 10:56:37 +0900
+> Subject: [PATCH] ata: libahci: make ahci_pmp_retry_softreset() as static
 
-1) dwc3 core shouldn't worry about platform specific stuff i.e. PHY needed or not.
-It should be as generic as possible.
+    This header is not needed.
 
-2) dwc3 core should continue probe even if PHY layer is not enabled, as not all platforms need it.
+> sparse says:
 
-3) dwc3 core should continue probe if PHY device is not available. (-ENODEV?)
+> drivers/ata/libahci.c:1390:5: warning:
+>   symbol 'ahci_pmp_retry_softreset' was not declared. Should it be static?
 
-4) dwc3 core should error out on any error condition if PHY device is available and caused some error,
-e.g. init error.
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>   drivers/ata/libahci.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 
-5) dwc3 core should return EPROBE_DEFER if PHY device is available but device driver is not yet loaded.
+> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+> index 36605ab..f9600fe 100644
+> --- a/drivers/ata/libahci.c
+> +++ b/drivers/ata/libahci.c
+> @@ -1387,7 +1387,7 @@ static int ahci_bad_pmp_check_ready(struct ata_link *link)
+>   	return ata_check_ready(status);
+>   }
+>
+> -int ahci_pmp_retry_softreset(struct ata_link *link, unsigned int *class,
+> +static int ahci_pmp_retry_softreset(struct ata_link *link, unsigned int *class,
+>   				unsigned long deadline)
 
-6) platform glue should do the necessary sanity checks for availability of all resources like PHY device, PHY layer, etc, before populating the dwc3 device. e.g. in OMAP5 case we could check if both usb2 and usb3 PHY
-nodes are available in the DT and PHY layer is enabled, from dwc3-omap.c? In J6 case we could check that at least usb2 phy node is there for the High-Speed only controller, and so on.
+     Realign this continuation line too, for it to start under *struct* on the 
+first line.
 
-Let us first agree on the requirements and then we can think about implementation.
+WBR, Sergei
 
-cheers,
--roger
