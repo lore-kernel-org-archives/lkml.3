@@ -1,75 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003AbaBSOPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:15:19 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:34544 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935AbaBSOPH (ORCPT
+	id S1753988AbaBSOPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:15:16 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:35783 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753926AbaBSOPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:15:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140210125113.GZ1757@sirena.org.uk>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-	<1391529538-21685-8-git-send-email-ulf.hansson@linaro.org>
-	<20140204191609.GU22609@sirena.org.uk>
-	<CAPDyKFqNdw-6R12cUOre8UOTOnB-PpxHD5rPAMCwuS3i--Sesg@mail.gmail.com>
-	<20140210125113.GZ1757@sirena.org.uk>
-Date: Wed, 19 Feb 2014 15:15:06 +0100
-Message-ID: <CAPDyKFqDdoya2+_3b+6SD5r1qXu+o4CVQfXFEHPRA5xr+xg8nQ@mail.gmail.com>
-Subject: Re: [PATCH 07/17] spi: pl022: Don't ignore power domain and amba bus
- at system suspend
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 Feb 2014 09:15:04 -0500
+From: Grant Likely <grant.likely@linaro.org>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH v4 3/4] of: Move testcase FDT data into drivers/of
+Date: Wed, 19 Feb 2014 14:14:49 +0000
+Message-Id: <1392819290-1044-4-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
+References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 February 2014 13:51, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Feb 10, 2014 at 01:33:50PM +0100, Ulf Hansson wrote:
->> On 4 February 2014 20:16, Mark Brown <broonie@kernel.org> wrote:
->
->> > This seems like a fairly hideous thing to be having to open code in an
->> > individual driver, it all looks generic and like something that most if
->
-> ...
->
->> > Putting it in a helper would at least mean that it's easier for the
->> > mechanics to be transferred to the core proper later on.
->
->> I agree, a helper function would be nice. I have earlier sent a patch
->> to the PM core, that is similar to the code above, though it was
->> rejected in it's current form. Let me follow up on this again.
->
->> At this point, would a way forward be to still go ahead with this
->> patch and then convert to, when/if, the helper function from the PM
->> core becomes available?
->
-> It's definitely *a* way forward, but I'm not convinced it's a good way
-> forward.  Since it's something that I'd expect us to be doing in all
-> drivers we'd want to replicate it all over the place which is obviously
-> not good, or conversely if there are issues that prevented the code
-> being added to the PM core then presumably we're just adding problematic
-> code to the driver (you've not mentioned what the problems were with
-> doing this in the PM core).
+The testcase data is usable by any platform. This patch moves it into
+the drivers/of directory so it can be included by any architecture.
 
-I have posted a patch which adds a runtime PM helper function to the
-PM core, I am hoping to get some comments soon.
-http://marc.info/?l=linux-pm&m=139228211505423&w=2
+Using the test cases requires manually adding #include <testcases.dtsi>
+to the end of the boards .dtsi file and enabling CONFIG_OF_SELFTEST. Not
+pretty though. A useful project would be to make the testcase code
+easier to execute.
 
-So I agree, let's put this patch on hold until we sorted out how to
-proceed. Though I will rebase and send a v2 of it, just to keep it as
-a reference for later use.
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
+ arch/arm/boot/dts/testcases/tests-interrupts.dtsi | 58 -----------------------
+ arch/arm/boot/dts/testcases/tests-phandle.dtsi    | 39 ---------------
+ arch/arm/boot/dts/testcases/tests.dtsi            |  2 -
+ arch/arm/boot/dts/versatile-pb.dts                |  4 +-
+ drivers/of/testcase-data/testcases.dtsi           |  2 +
+ drivers/of/testcase-data/tests-interrupts.dtsi    | 58 +++++++++++++++++++++++
+ drivers/of/testcase-data/tests-phandle.dtsi       | 39 +++++++++++++++
+ scripts/Makefile.lib                              |  1 +
+ 8 files changed, 102 insertions(+), 101 deletions(-)
+ delete mode 100644 arch/arm/boot/dts/testcases/tests-interrupts.dtsi
+ delete mode 100644 arch/arm/boot/dts/testcases/tests-phandle.dtsi
+ delete mode 100644 arch/arm/boot/dts/testcases/tests.dtsi
+ create mode 100644 drivers/of/testcase-data/testcases.dtsi
+ create mode 100644 drivers/of/testcase-data/tests-interrupts.dtsi
+ create mode 100644 drivers/of/testcase-data/tests-phandle.dtsi
 
-Kind regards
-Uffe
+diff --git a/arch/arm/boot/dts/testcases/tests-interrupts.dtsi b/arch/arm/boot/dts/testcases/tests-interrupts.dtsi
+deleted file mode 100644
+index c843720bd3e5..000000000000
+--- a/arch/arm/boot/dts/testcases/tests-interrupts.dtsi
++++ /dev/null
+@@ -1,58 +0,0 @@
+-
+-/ {
+-	testcase-data {
+-		interrupts {
+-			#address-cells = <1>;
+-			#size-cells = <1>;
+-			test_intc0: intc0 {
+-				interrupt-controller;
+-				#interrupt-cells = <1>;
+-			};
+-
+-			test_intc1: intc1 {
+-				interrupt-controller;
+-				#interrupt-cells = <3>;
+-			};
+-
+-			test_intc2: intc2 {
+-				interrupt-controller;
+-				#interrupt-cells = <2>;
+-			};
+-
+-			test_intmap0: intmap0 {
+-				#interrupt-cells = <1>;
+-				#address-cells = <0>;
+-				interrupt-map = <1 &test_intc0 9>,
+-						<2 &test_intc1 10 11 12>,
+-						<3 &test_intc2 13 14>,
+-						<4 &test_intc2 15 16>;
+-			};
+-
+-			test_intmap1: intmap1 {
+-				#interrupt-cells = <2>;
+-				interrupt-map = <0x5000 1 2 &test_intc0 15>;
+-			};
+-
+-			interrupts0 {
+-				interrupt-parent = <&test_intc0>;
+-				interrupts = <1>, <2>, <3>, <4>;
+-			};
+-
+-			interrupts1 {
+-				interrupt-parent = <&test_intmap0>;
+-				interrupts = <1>, <2>, <3>, <4>;
+-			};
+-
+-			interrupts-extended0 {
+-				reg = <0x5000 0x100>;
+-				interrupts-extended = <&test_intc0 1>,
+-						      <&test_intc1 2 3 4>,
+-						      <&test_intc2 5 6>,
+-						      <&test_intmap0 1>,
+-						      <&test_intmap0 2>,
+-						      <&test_intmap0 3>,
+-						      <&test_intmap1 1 2>;
+-			};
+-		};
+-	};
+-};
+diff --git a/arch/arm/boot/dts/testcases/tests-phandle.dtsi b/arch/arm/boot/dts/testcases/tests-phandle.dtsi
+deleted file mode 100644
+index 0007d3cd7dc2..000000000000
+--- a/arch/arm/boot/dts/testcases/tests-phandle.dtsi
++++ /dev/null
+@@ -1,39 +0,0 @@
+-
+-/ {
+-	testcase-data {
+-		phandle-tests {
+-			provider0: provider0 {
+-				#phandle-cells = <0>;
+-			};
+-
+-			provider1: provider1 {
+-				#phandle-cells = <1>;
+-			};
+-
+-			provider2: provider2 {
+-				#phandle-cells = <2>;
+-			};
+-
+-			provider3: provider3 {
+-				#phandle-cells = <3>;
+-			};
+-
+-			consumer-a {
+-				phandle-list =	<&provider1 1>,
+-						<&provider2 2 0>,
+-						<0>,
+-						<&provider3 4 4 3>,
+-						<&provider2 5 100>,
+-						<&provider0>,
+-						<&provider1 7>;
+-				phandle-list-names = "first", "second", "third";
+-
+-				phandle-list-bad-phandle = <12345678 0 0>;
+-				phandle-list-bad-args = <&provider2 1 0>,
+-							<&provider3 0>;
+-				empty-property;
+-				unterminated-string = [40 41 42 43];
+-			};
+-		};
+-	};
+-};
+diff --git a/arch/arm/boot/dts/testcases/tests.dtsi b/arch/arm/boot/dts/testcases/tests.dtsi
+deleted file mode 100644
+index 3f123ecc9dd7..000000000000
+--- a/arch/arm/boot/dts/testcases/tests.dtsi
++++ /dev/null
+@@ -1,2 +0,0 @@
+-/include/ "tests-phandle.dtsi"
+-/include/ "tests-interrupts.dtsi"
+diff --git a/arch/arm/boot/dts/versatile-pb.dts b/arch/arm/boot/dts/versatile-pb.dts
+index f43907c40c93..65f657711323 100644
+--- a/arch/arm/boot/dts/versatile-pb.dts
++++ b/arch/arm/boot/dts/versatile-pb.dts
+@@ -1,4 +1,4 @@
+-/include/ "versatile-ab.dts"
++#include <versatile-ab.dts>
+ 
+ / {
+ 	model = "ARM Versatile PB";
+@@ -47,4 +47,4 @@
+ 	};
+ };
+ 
+-/include/ "testcases/tests.dtsi"
++#include <testcases.dtsi>
+diff --git a/drivers/of/testcase-data/testcases.dtsi b/drivers/of/testcase-data/testcases.dtsi
+new file mode 100644
+index 000000000000..3cc2f55534ac
+--- /dev/null
++++ b/drivers/of/testcase-data/testcases.dtsi
+@@ -0,0 +1,2 @@
++#include "tests-phandle.dtsi"
++#include "tests-interrupts.dtsi"
+diff --git a/drivers/of/testcase-data/tests-interrupts.dtsi b/drivers/of/testcase-data/tests-interrupts.dtsi
+new file mode 100644
+index 000000000000..c843720bd3e5
+--- /dev/null
++++ b/drivers/of/testcase-data/tests-interrupts.dtsi
+@@ -0,0 +1,58 @@
++
++/ {
++	testcase-data {
++		interrupts {
++			#address-cells = <1>;
++			#size-cells = <1>;
++			test_intc0: intc0 {
++				interrupt-controller;
++				#interrupt-cells = <1>;
++			};
++
++			test_intc1: intc1 {
++				interrupt-controller;
++				#interrupt-cells = <3>;
++			};
++
++			test_intc2: intc2 {
++				interrupt-controller;
++				#interrupt-cells = <2>;
++			};
++
++			test_intmap0: intmap0 {
++				#interrupt-cells = <1>;
++				#address-cells = <0>;
++				interrupt-map = <1 &test_intc0 9>,
++						<2 &test_intc1 10 11 12>,
++						<3 &test_intc2 13 14>,
++						<4 &test_intc2 15 16>;
++			};
++
++			test_intmap1: intmap1 {
++				#interrupt-cells = <2>;
++				interrupt-map = <0x5000 1 2 &test_intc0 15>;
++			};
++
++			interrupts0 {
++				interrupt-parent = <&test_intc0>;
++				interrupts = <1>, <2>, <3>, <4>;
++			};
++
++			interrupts1 {
++				interrupt-parent = <&test_intmap0>;
++				interrupts = <1>, <2>, <3>, <4>;
++			};
++
++			interrupts-extended0 {
++				reg = <0x5000 0x100>;
++				interrupts-extended = <&test_intc0 1>,
++						      <&test_intc1 2 3 4>,
++						      <&test_intc2 5 6>,
++						      <&test_intmap0 1>,
++						      <&test_intmap0 2>,
++						      <&test_intmap0 3>,
++						      <&test_intmap1 1 2>;
++			};
++		};
++	};
++};
+diff --git a/drivers/of/testcase-data/tests-phandle.dtsi b/drivers/of/testcase-data/tests-phandle.dtsi
+new file mode 100644
+index 000000000000..0007d3cd7dc2
+--- /dev/null
++++ b/drivers/of/testcase-data/tests-phandle.dtsi
+@@ -0,0 +1,39 @@
++
++/ {
++	testcase-data {
++		phandle-tests {
++			provider0: provider0 {
++				#phandle-cells = <0>;
++			};
++
++			provider1: provider1 {
++				#phandle-cells = <1>;
++			};
++
++			provider2: provider2 {
++				#phandle-cells = <2>;
++			};
++
++			provider3: provider3 {
++				#phandle-cells = <3>;
++			};
++
++			consumer-a {
++				phandle-list =	<&provider1 1>,
++						<&provider2 2 0>,
++						<0>,
++						<&provider3 4 4 3>,
++						<&provider2 5 100>,
++						<&provider0>,
++						<&provider1 7>;
++				phandle-list-names = "first", "second", "third";
++
++				phandle-list-bad-phandle = <12345678 0 0>;
++				phandle-list-bad-args = <&provider2 1 0>,
++							<&provider3 0>;
++				empty-property;
++				unterminated-string = [40 41 42 43];
++			};
++		};
++	};
++};
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 49392ecbef17..79c059e70860 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -152,6 +152,7 @@ ld_flags       = $(LDFLAGS) $(ldflags-y)
+ dtc_cpp_flags  = -Wp,-MD,$(depfile).pre.tmp -nostdinc                    \
+ 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
+ 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
++		 -I$(srctree)/drivers/of/testcase-data                   \
+ 		 -undef -D__DTS__
+ 
+ # Finds the multi-part object the current object will be linked into
+-- 
+1.8.3.2
+
