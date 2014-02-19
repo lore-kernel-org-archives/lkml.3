@@ -1,30 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643AbaBSNFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 08:05:20 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43045 "EHLO
+	id S1753670AbaBSNF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 08:05:29 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43058 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbaBSNFS (ORCPT
+	with ESMTP id S1753472AbaBSNFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 08:05:18 -0500
-Date: Wed, 19 Feb 2014 22:05:00 +0900
+	Wed, 19 Feb 2014 08:05:25 -0500
+Date: Wed, 19 Feb 2014 21:17:56 +0900
 From: Mark Brown <broonie@kernel.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        kernel@pengutronix.de
-Message-ID: <20140219130500.GS2669@sirena.org.uk>
-References: <1391697321-14231-1-git-send-email-p.zabel@pengutronix.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Lee Jones <lee.jones@linaro.org>, Michal Simek <michal.simek@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140219121756.GM2669@sirena.org.uk>
+References: <cover.1392807832.git.michal.simek@xilinx.com>
+ <fa3178534fcf4488fc45a9a24e44b2588acb38c6.1392807832.git.michal.simek@xilinx.com>
+ <20140219114132.GC10504@lee--X1>
+ <53049932.8020901@monstr.eu>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MgsldsnE3DYXgZCe"
+	protocol="application/pgp-signature"; boundary="9OBXiyLbHWeQuzfF"
 Content-Disposition: inline
-In-Reply-To: <1391697321-14231-1-git-send-email-p.zabel@pengutronix.de>
+In-Reply-To: <53049932.8020901@monstr.eu>
 X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 106.188.144.10
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: da9052: Add ramp speed information for the
- DVC regulators
+Subject: Re: [RFC PATCH v2 1/2] mfd: syscon: Support early initialization
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,38 +35,41 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---MgsldsnE3DYXgZCe
-Content-Type: text/plain; charset=iso-8859-1
+--9OBXiyLbHWeQuzfF
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Feb 06, 2014 at 03:35:21PM +0100, Philipp Zabel wrote:
-> Some LDOs and DCDCs have a fixed ramp speed of 6.25 mV/=B5s. This patch a=
-dds
-> the set_voltage_time_sel function to let consumers know about this.
+On Wed, Feb 19, 2014 at 12:44:50PM +0100, Michal Simek wrote:
+> On 02/19/2014 12:41 PM, Lee Jones wrote:
 
-Applied, thanks.
+> > I believe you were waiting for Arnd and/or Mark to comment.
 
---MgsldsnE3DYXgZCe
+> yes on Arnd because Mark already applied that regmap part.
+> But of course any input how to get this done will be helpful.
+
+Like I said I've never seen the user you're adding for the regmap API so
+I've no particular opinion on it.
+
+--9OBXiyLbHWeQuzfF
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTBKv5AAoJELSic+t+oim9dj4P/0tNKtfP9E3Vw16VAfDeg6yd
-V++Qz0R657X8mqGHPOKEoJTgaad/r+nOkRRQbmMBTK9jAFPfathpXlVEOxagY5RE
-8G08GaPBIY+CxxZh9DDY61kk8VjlXUMDQxXqeuhh3a8YBDl4M1Lw5apiWAM+/CyW
-Kr3AxypBXSgEir55Ib4ps2K5KQTxJ7iA8bBc4yVAz+wGaMjgdgQ+xMl7AJkhUoKU
-t02btiAm+6/0desq8pIeQQgbKUYeM/0P7786kPV/gP2eBhoRpOyo0/5zaLY/3TcB
-6/jIGB8LWjAnnlh+T/3PqbGU4+Pi8diRllPzWlq2PUzzWUpO8PKdZmTXGwvfzB1o
-4RtsAxz4rY9q0UNQQHTLf0ks2P0eyf9uqItFZdXI7YgNWTtoTHAWOAReSiu/BLKB
-cxyO8BhljqZhDwj2w6Oh1hfQGkh2bmT6lj373dbJPGeoVeVx3y2u7dGiaGFTq0fP
-o/GItXhP48NYxXzvTsnPn9ELnCWITmO48VrJVm92tR7Fl1EYOoAKGIH0nlJ95k+T
-IU/7tFjIhHzE7s2QMOTR2DxcMBjFqz3e70IMov2a2rzZjrCwidmACdnv6AMLEjJ1
-scoe/kA4QkD2n04CVcIP9m2WmU29s2FiEQaDt0YFOm20ijVO4r9HW+rvhrjlAaYR
-q5EOC8pZWRoGWS3DBPbV
-=Qk/z
+iQIcBAEBAgAGBQJTBKDxAAoJELSic+t+oim9zz0P/19J7Z++YQgDYS77rZJoZ8bJ
+3pPe9akSA8PuDQoenO1ZMiWSolmIPwBVJugqpT5GJZOs/pdc+nloWvp09RjpKPvq
+Fi2Kav8El0qfqxfK/t7hzxOsvYuEN+24vpuw/vGy6bEXXN83rIacTLIBXoCTvOsh
+wiDt1VCdwd7uuNr8DR0A4Iq+Ri5aouv7CrbHS7wQ0dHWdRBv7xlcPqDKK2VB05bK
+1w56wNj1I0vTf2ILxeD+JAiOz9Pni149v7kITqosfWmQ8yYjIvojy8WgHk97kGWz
+Wk6PEucQbb9e4QbX2tZey4BT8QX4uw2AyUwOYUcbEB6iscfQ6LQEpYIJNzrCd5v3
+oYJJkzHHANqQ+FhSYjsqfKkbFdaoWD2xSUTW8eJDOibdcCnbPtfktsKqeWGPQPvi
+32V6Yhvoq+I0rO5Ba0OonhxopjTBwlkrDfbkqUvnrgdvvAMvGjVEIIdTfXwsopBI
+Y7hZNlypeCD3Tv9wZzKCIWHHDcuITvJw0/19VC0LTJNB2i59bSuDG9LVRoqNCndv
+ixrbxCYBaAB8DPG3+BFudGU4kaV3a01kI0fsJbpUV9xyMPBcbJbgEAjFpc5uSSzA
+5EirwozvajVbFvDMEhofTYmLxmd0CWVsQGiLehpFdkBnoPaS4f4KeGXRVgNk7bd4
+7FhIeeC9xIG7GfzR3Sva
+=IYdr
 -----END PGP SIGNATURE-----
 
---MgsldsnE3DYXgZCe--
+--9OBXiyLbHWeQuzfF--
