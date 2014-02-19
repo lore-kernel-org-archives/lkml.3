@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaBSLx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 06:53:57 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50021 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799AbaBSLxz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 06:53:55 -0500
-Date: Wed, 19 Feb 2014 12:53:53 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>, Ulrich Obergfell <uobergfe@redhat.com>
-Subject: [PATCH RT] kernel/hrtimer: be non-freezeable in cpu_chill()
-Message-ID: <20140219115353.GA28909@linutronix.de>
-References: <20140205115125.3cc950ce@gandalf.local.home>
- <20140207113006.GD23668@linutronix.de>
- <20140207090834.72774272@gandalf.local.home>
- <20140207091313.097f9059@gandalf.local.home>
+	id S1753100AbaBSLzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 06:55:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50551 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751454AbaBSLzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 06:55:09 -0500
+Message-ID: <53049B7A.6080404@redhat.com>
+Date: Wed, 19 Feb 2014 12:54:34 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140207091313.097f9059@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>, Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alexandre.torgue@st.com, linux-ide@vger.kernel.org
+Subject: Re: [PATCH 3/3] ahci: st: Add support for ST's SATA IP
+References: <1392641818-23419-1-git-send-email-lee.jones@linaro.org> <1392641818-23419-3-git-send-email-lee.jones@linaro.org> <20140218233645.GP31892@mtj.dyndns.org>
+In-Reply-To: <20140218233645.GP31892@mtj.dyndns.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we replaced msleep() by hrtimer I see now and then (rarely) this:
+Hi,
 
-| [....] Waiting for /dev to be fully populated...
-| =====================================
-| [ BUG: udevd/229 still has locks held! ]
-| 3.12.11-rt17 #23 Not tainted
-| -------------------------------------
-| 1 lock held by udevd/229:
-|  #0:  (&type->i_mutex_dir_key#2){+.+.+.}, at: lookup_slow+0x28/0x98
-|
-| stack backtrace:
-| CPU: 0 PID: 229 Comm: udevd Not tainted 3.12.11-rt17 #23
-| (unwind_backtrace+0x0/0xf8) from (show_stack+0x10/0x14)
-| (show_stack+0x10/0x14) from (dump_stack+0x74/0xbc)
-| (dump_stack+0x74/0xbc) from (do_nanosleep+0x120/0x160)
-| (do_nanosleep+0x120/0x160) from (hrtimer_nanosleep+0x90/0x110)
-| (hrtimer_nanosleep+0x90/0x110) from (cpu_chill+0x30/0x38)
-| (cpu_chill+0x30/0x38) from (dentry_kill+0x158/0x1ec)
-| (dentry_kill+0x158/0x1ec) from (dput+0x74/0x15c)
-| (dput+0x74/0x15c) from (lookup_real+0x4c/0x50)
-| (lookup_real+0x4c/0x50) from (__lookup_hash+0x34/0x44)
-| (__lookup_hash+0x34/0x44) from (lookup_slow+0x38/0x98)
-| (lookup_slow+0x38/0x98) from (path_lookupat+0x208/0x7fc)
-| (path_lookupat+0x208/0x7fc) from (filename_lookup+0x20/0x60)
-| (filename_lookup+0x20/0x60) from (user_path_at_empty+0x50/0x7c)
-| (user_path_at_empty+0x50/0x7c) from (user_path_at+0x14/0x1c)
-| (user_path_at+0x14/0x1c) from (vfs_fstatat+0x48/0x94)
-| (vfs_fstatat+0x48/0x94) from (SyS_stat64+0x14/0x30)
-| (SyS_stat64+0x14/0x30) from (ret_fast_syscall+0x0/0x48)
+On 02/19/2014 12:36 AM, Tejun Heo wrote:
+> On Mon, Feb 17, 2014 at 12:56:58PM +0000, Lee Jones wrote:
+>> Cc: Tejun Heo <tj@kernel.org>
+>> Cc: linux-ide@vger.kernel.org
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Please consider basing it on top of Hans' refactored ahci_platform.
+> 
+>  http://www.spinics.net/lists/linux-ide/msg47628.html
 
-For now I see no better way but to disable the freezer for the sleep period.
+Which reminds I must test the version I've rebased on top of 3.14-rc1
+and then send a v6 so that this can get merged.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- kernel/hrtimer.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Lee, I'll add you to the CC of the v6 I'm about to send.
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 5c26d2c..083815d 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1899,8 +1899,12 @@ void cpu_chill(void)
- 	struct timespec tu = {
- 		.tv_nsec = NSEC_PER_MSEC,
- 	};
-+	unsigned int freeze_flag = current->flags & PF_NOFREEZE;
- 
-+	current->flags |= PF_NOFREEZE;
- 	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-+	if (!freeze_flag)
-+		current->flags &= ~PF_NOFREEZE;
- }
- EXPORT_SYMBOL(cpu_chill);
- #endif
--- 
-1.9.0.rc3
+Regards,
 
+Hans
