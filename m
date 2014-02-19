@@ -1,138 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567AbaBSNMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 08:12:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:18083 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752823AbaBSNMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 08:12:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,505,1389772800"; 
-   d="scan'208";a="477640687"
-Date: Wed, 19 Feb 2014 21:12:35 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [vfs] 73c12e50a: +13349.5% softirqs.RCU
-Message-ID: <20140219131235.GA8731@localhost>
+	id S1753592AbaBSNOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 08:14:45 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:38235 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753094AbaBSNOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 08:14:43 -0500
+Message-ID: <5304AE4E.6030208@gmail.com>
+Date: Wed, 19 Feb 2014 14:14:54 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] sched/deadline: Fix bad accounting of nr_running
+References: <20140214235946.60a89b65@gandalf.local.home> <53022F2D.8040301@gmail.com> <20140218215012.209059c0@gandalf.local.home> <20140219084618.GF27965@twins.programming.kicks-ass.net> <53048849.3000601@gmail.com>
+In-Reply-To: <53048849.3000601@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On 02/19/2014 11:32 AM, Juri Lelli wrote:
+> On 02/19/2014 09:46 AM, Peter Zijlstra wrote:
+>> On Tue, Feb 18, 2014 at 09:50:12PM -0500, Steven Rostedt wrote:
+>>>  
+>>>> Rationale for this odd behavior is that, when a task is throttled, it
+>>>> is removed only from the dl_rq, but we keep it on_rq (as this is not
+>>>> a "full dequeue", that is the task is not actually sleeping). But, it
+>>>> is also true that, while throttled a task behaves like it is sleeping
+>>>> (e.g., its timer will fire on a new CPU if the old one is dead). So,
+>>>> Steven's fix sounds also semantically correct.
+>>>
+>>> Actually, it seems that I was hitting it again, but this time getting a
+>>> negative number. OK, after looking at the code a bit more, I think we
+>>> should update the runqueue nr_running only when the task is officially
+>>> enqueued and dequeued, and all accounting within, will not touch that
+>>> number.
+> 
+> This is a different way to get the same result (mildly tested on my box):
+> 
+> ---
+>  kernel/sched/deadline.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index 0dd5e09..675dad3 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -837,7 +837,8 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+>         if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
+>                 enqueue_pushable_dl_task(rq, p);
+> 
+> -       inc_nr_running(rq);
+> +       if (!(flags & ENQUEUE_REPLENISH))
+> +               inc_nr_running(rq);
+>  }
+> 
+>  static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+> --
+> 
+> We touch nr_running only when we don't enqueue back as a consequence
+> of a replenishment.
+> 
+>>
+>> But if the task is throttled it should still very much decrement the
+>> number. There's places that very much rely on nr_running be exactly the
+>> number of runnable tasks.
+>>
+> 
+> This is a different thing, and V2 seemed to implement this behavior
+> (that's why I said it looked semantically correct).
+> 
 
-FYI, we noticed the below changes on commit 73c12e50af3a756137071c1e1c1e99cffcbaa835
-("vfs: Lazily remove mounts on unlinked files and directories."):
-    
-test case: dbench
+So, both my last approach and Steven's V2 were causing nr_running to
+become negative, as they double decrement it when dequeuing a task that
+also exceeded its budget.
 
-5c39777e797e7ba  73c12e50af3a756137071c1e1  
----------------  -------------------------  
-      6.22 ~ 0%    +195.3%      18.36 ~18%  TOTAL dbench.max_latency
+What follows seems to solve the issue, and correcly account for throttled
+tasks as !nr_running.
 
-Note: the "~ XX%" numbers are stddev percent.
+---
+ kernel/sched/deadline.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-test case: will-it-scale/unlink2
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 0dd5e09..b819577 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -717,6 +717,7 @@ void inc_dl_tasks(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
 
-5c39777e797e7ba  73c12e50af3a756137071c1e1  
----------------  -------------------------  
-     57178 ~ 2%     -83.9%       9188 ~ 3%  TOTAL numa-vmstat.node1.nr_slab_unreclaimable
-     97777 ~ 1%     -85.3%      14413 ~ 6%  TOTAL numa-vmstat.node0.nr_slab_unreclaimable
-    227271 ~ 2%     -83.9%      36567 ~ 4%  TOTAL numa-meminfo.node1.SUnreclaim
-     78384 ~ 2%  +13349.5%   10542303 ~11%  TOTAL softirqs.RCU
-    202419 ~15%  +48738.0%   98857773 ~ 4%  TOTAL cpuidle.C1-SNB.time
-    955612 ~31%   +2561.5%   25433795 ~10%  TOTAL cpuidle.C1E-SNB.time
-      1278 ~20%   +8648.3%     111872 ~11%  TOTAL cpuidle.C1E-SNB.usage
-    364333 ~11%    +786.3%    3229011 ~17%  TOTAL cpuidle.C3-SNB.time
-       793 ~ 5%    +568.6%       5305 ~12%  TOTAL cpuidle.C3-SNB.usage
-     10882 ~15%   +1943.2%     222341 ~18%  TOTAL cpuidle.C6-SNB.time
-         8 ~27%   +4702.4%        403 ~17%  TOTAL cpuidle.C6-SNB.usage
-    389688 ~ 2%     -85.3%      57320 ~ 5%  TOTAL numa-meminfo.node0.SUnreclaim
-    485651 ~ 2%     -82.5%      84770 ~ 5%  TOTAL numa-meminfo.node0.Slab
-     19822 ~ 4%     -91.7%       1649 ~ 7%  TOTAL slabinfo.kmalloc-256.num_slabs
-     19822 ~ 4%     -91.7%       1649 ~ 7%  TOTAL slabinfo.kmalloc-256.active_slabs
-    634311 ~ 4%     -91.7%      52792 ~ 7%  TOTAL slabinfo.kmalloc-256.num_objs
-    768494 ~ 3%     -81.0%     146268 ~ 2%  TOTAL meminfo.Slab
-    634179 ~ 4%     -91.7%      52517 ~ 7%  TOTAL slabinfo.kmalloc-256.active_objs
-     16094 ~ 3%     -85.4%       2343 ~ 3%  TOTAL slabinfo.dentry.num_slabs
-     16094 ~ 3%     -85.4%       2343 ~ 3%  TOTAL slabinfo.dentry.active_slabs
-    675979 ~ 3%     -85.4%      98427 ~ 3%  TOTAL slabinfo.dentry.num_objs
-    675739 ~ 3%     -85.5%      98065 ~ 3%  TOTAL slabinfo.dentry.active_objs
-     12925 ~ 4%     -91.6%       1081 ~ 7%  TOTAL slabinfo.shmem_inode_cache.num_slabs
-     12925 ~ 4%     -91.6%       1081 ~ 7%  TOTAL slabinfo.shmem_inode_cache.active_slabs
-    153617 ~ 3%     -84.5%      23851 ~ 3%  TOTAL proc-vmstat.nr_slab_unreclaimable
-    633368 ~ 4%     -91.6%      53034 ~ 7%  TOTAL slabinfo.shmem_inode_cache.num_objs
-    633182 ~ 4%     -91.7%      52584 ~ 7%  TOTAL slabinfo.shmem_inode_cache.active_objs
-    611608 ~ 3%     -84.4%      95315 ~ 3%  TOTAL meminfo.SUnreclaim
-     56626 ~ 0%    +977.2%     609963 ~ 4%  TOTAL interrupts.RES
-    289471 ~ 1%     -79.4%      59729 ~ 4%  TOTAL numa-meminfo.node1.Slab
-     95962 ~ 3%     -71.4%      27449 ~ 7%  TOTAL numa-meminfo.node0.SReclaimable
-     24059 ~ 3%     -71.4%       6870 ~ 7%  TOTAL numa-vmstat.node0.nr_slab_reclaimable
-     39360 ~ 2%     -67.6%      12741 ~ 1%  TOTAL proc-vmstat.nr_slab_reclaimable
-    156885 ~ 2%     -67.5%      50952 ~ 1%  TOTAL meminfo.SReclaimable
-     62199 ~ 1%     -62.8%      23161 ~ 7%  TOTAL numa-meminfo.node1.SReclaimable
-     15622 ~ 1%     -62.9%       5795 ~ 7%  TOTAL numa-vmstat.node1.nr_slab_reclaimable
-     40507 ~39%    +153.7%     102749 ~19%  TOTAL cpuidle.C1-NHM.time
-     23068 ~ 2%    +135.2%      54252 ~ 9%  TOTAL interrupts.IWI
-       357 ~27%    +116.4%        774 ~15%  TOTAL cpuidle.C3-NHM.usage
-   4834003 ~ 3%     -47.6%    2534625 ~ 4%  TOTAL numa-numastat.node1.local_node
-   4834003 ~ 3%     -47.6%    2534625 ~ 4%  TOTAL numa-numastat.node1.numa_hit
-      2167 ~23%     -28.0%       1560 ~ 6%  TOTAL proc-vmstat.nr_tlb_remote_flush_received
-  58685570 ~ 2%     -38.5%   36079286 ~ 2%  TOTAL proc-vmstat.pgalloc_normal
-  68325712 ~ 1%     -37.7%   42551512 ~ 2%  TOTAL proc-vmstat.pgfree
-   1079369 ~ 0%     -36.9%     681261 ~ 0%  TOTAL numa-meminfo.node0.MemUsed
-    140248 ~ 2%     -35.2%      90832 ~ 5%  TOTAL softirqs.SCHED
-  19460075 ~ 1%     -36.5%   12353959 ~ 2%  TOTAL proc-vmstat.numa_local
-  19460075 ~ 1%     -36.5%   12353960 ~ 2%  TOTAL proc-vmstat.numa_hit
-     53926 ~24%     -33.4%      35902 ~ 2%  TOTAL meminfo.DirectMap4k
-        85 ~31%     +79.6%        153 ~28%  TOTAL cpuidle.C1-NHM.usage
-   9675753 ~ 1%     -33.1%    6474766 ~ 1%  TOTAL proc-vmstat.pgalloc_dma32
-  14654234 ~ 1%     -32.9%    9829336 ~ 1%  TOTAL numa-numastat.node0.local_node
-  14654234 ~ 1%     -32.9%    9829336 ~ 1%  TOTAL numa-numastat.node0.numa_hit
-   1878635 ~ 1%     -31.6%    1284774 ~ 2%  TOTAL numa-vmstat.node1.numa_local
-   1886571 ~ 1%     -31.5%    1292725 ~ 2%  TOTAL numa-vmstat.node1.numa_hit
-      1425 ~ 7%     -20.0%       1140 ~10%  TOTAL numa-meminfo.node1.Mlocked
-       356 ~ 7%     -20.0%        285 ~10%  TOTAL numa-vmstat.node1.nr_mlock
-       287 ~ 9%     +24.8%        358 ~ 8%  TOTAL numa-vmstat.node0.nr_mlock
-      1150 ~ 9%     +24.8%       1435 ~ 8%  TOTAL numa-meminfo.node0.Mlocked
-      1441 ~ 7%     -19.8%       1156 ~10%  TOTAL numa-meminfo.node1.Unevictable
-       360 ~ 7%     -19.8%        289 ~10%  TOTAL numa-vmstat.node1.nr_unevictable
-      1166 ~ 9%     +24.4%       1451 ~ 8%  TOTAL numa-meminfo.node0.Unevictable
-       291 ~ 9%     +24.4%        362 ~ 8%  TOTAL numa-vmstat.node0.nr_unevictable
-    871951 ~ 0%     -25.9%     645735 ~ 0%  TOTAL numa-meminfo.node1.MemUsed
-   8508242 ~ 0%     -24.4%    6432405 ~ 1%  TOTAL numa-vmstat.node0.numa_local
-    225490 ~ 2%     -24.1%     171244 ~ 2%  TOTAL cpuidle.C7-SNB.usage
-   8623332 ~ 0%     -24.1%    6547495 ~ 1%  TOTAL numa-vmstat.node0.numa_hit
-       313 ~28%     -30.7%        217 ~21%  TOTAL cpuidle.C1E-NHM.usage
-      1943 ~ 0%   +7380.4%     145404 ~11%  TOTAL time.voluntary_context_switches
-      1001 ~ 0%   +1015.5%      11173 ~ 4%  TOTAL vmstat.system.cs
-      4815 ~ 0%     +34.0%       6452 ~ 1%  TOTAL vmstat.system.in
-      1480 ~ 0%      -1.7%       1454 ~ 0%  TOTAL time.system_time
-       485 ~ 0%      -1.6%        477 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
-     50.66 ~ 0%      -1.4%      49.97 ~ 0%  TOTAL turbostat.%c0
-      7.69 ~ 0%      +1.1%       7.78 ~ 0%  TOTAL boottime.dhcp
-       106 ~ 0%      -0.5%        106 ~ 0%  TOTAL turbostat.Cor_W
-       134 ~ 0%      -0.4%        133 ~ 0%  TOTAL turbostat.Pkg_W
+        WARN_ON(!dl_prio(prio));
+        dl_rq->dl_nr_running++;
++       inc_nr_running(rq_of_dl_rq(dl_rq));
 
-                           time.voluntary_context_switches
+        inc_dl_deadline(dl_rq, deadline);
+        inc_dl_migration(dl_se, dl_rq);
+@@ -730,6 +731,7 @@ void dec_dl_tasks(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
+        WARN_ON(!dl_prio(prio));
+        WARN_ON(!dl_rq->dl_nr_running);
+        dl_rq->dl_nr_running--;
++       dec_nr_running(rq_of_dl_rq(dl_rq));
 
-   20000 ++-----------------------------------------------------------------+
-   18000 ++                             O    O          O                   |
-         |                                                       O          |
-   16000 ++                                                O                |
-   14000 ++ O                        O                                      |
-         O     O                  O        O    O                   O       |
-   12000 ++                                                   O             |
-   10000 ++                                        O  O                     |
-    8000 ++                                                                 |
-         |       O  O  O  O  O O                                            |
-    6000 ++                                                                 |
-    4000 ++                                                                 |
-         |                                                                  |
-    2000 *+.*..*.*..*..*..*..*.*..*..*..*..*.*..*..*..*.*..*..*..*..*.*..*..*
-       0 ++-----------------------------------------------------------------+
+        dec_dl_deadline(dl_rq, dl_se->deadline);
+        dec_dl_migration(dl_se, dl_rq);
+@@ -836,8 +838,6 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
 
+        if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
+                enqueue_pushable_dl_task(rq, p);
+-
+-       inc_nr_running(rq);
+ }
+
+ static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+@@ -850,8 +850,6 @@ static void dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+ {
+        update_curr_dl(rq);
+        __dequeue_task_dl(rq, p, flags);
+-
+-       dec_nr_running(rq);
+ }
+
+ /*
+-- 
+1.7.9.5
+
+Steven, could you test it?
+
+Thanks,
+
+- Juri
