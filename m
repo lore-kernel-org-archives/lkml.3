@@ -1,113 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaBSEiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 23:38:00 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:57810 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaBSEh6 (ORCPT
+	id S1751527AbaBSEop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 23:44:45 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:33703 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaBSEon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 23:37:58 -0500
-Message-ID: <53043521.4060206@gmail.com>
-Date: Wed, 19 Feb 2014 05:37:53 +0100
+	Tue, 18 Feb 2014 23:44:43 -0500
+Message-ID: <530436B6.70009@gmail.com>
+Date: Wed, 19 Feb 2014 05:44:38 +0100
 From: poma <pomidorabelisima@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: Intel Corporation <linux.nics@intel.com>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+To: Dan Williams <dan.j.williams@intel.com>
+CC: Stanislaw Gruszka <sgruszka@redhat.com>,
         Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Joerg Roedel <joro@8bytes.org>, Tejun Heo <tj@kernel.org>,
+        Gerard Roudier <groudier@club-internet.fr>,
+        Alan Stern <stern@rowland.harvard.edu>,
         Josh Boyer <jwboyer@redhat.com>,
-        "Justin M. Forbes" <jforbes@redhat.com>
-Subject: Re: WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x276/0x280()
-References: <530332B7.10909@gmail.com>
-In-Reply-To: <530332B7.10909@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        "Justin M. Forbes" <jforbes@redhat.com>,
+        Chris Murphy <lists@colorremedies.com>
+Subject: Re: [dma-debug.c - DMA-API] exceeded overlapping ... & sym53c8xx
+ ... tries to free DMA ...
+References: <52FDD955.4000701@gmail.com>	<20140214091639.GB1782@redhat.com>	<52FE5E74.6000509@gmail.com>	<53021F47.5050702@gmail.com> <CAA9_cmd_AcHRUqqPziyd4bbLGcDWGJdneWd_Wk+KEQynhuHj+w@mail.gmail.com>
+In-Reply-To: <CAA9_cmd_AcHRUqqPziyd4bbLGcDWGJdneWd_Wk+KEQynhuHj+w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.02.2014 11:15, poma wrote:
+On 18.02.2014 20:36, Dan Williams wrote:
+> On Mon, Feb 17, 2014 at 6:40 AM, poma <pomidorabelisima@gmail.com> wrote:
+>> On 14.02.2014 19:20, poma wrote:
+>>> On 14.02.2014 10:16, Stanislaw Gruszka wrote:
+>>>> On Fri, Feb 14, 2014 at 09:52:37AM +0100, poma wrote:
+>>>>>
+>>>>> Ahoy!
+>>>>>
+>>>>> Perhaps this is already solved, but I made the effort to test & record
+>>>>> all of this, therefore here you are. :)
+>>>>>
+>>>>> https://bugzilla.redhat.com/show_bug.cgi?id=1062833
+>>>>
+>>>> There is patch posted for this problem
+>>>> http://marc.info/?l=linux-kernel&m=139233546223338&w=2
+>>>> It is under review currently, if there will be no complains it will be
+>>>> applied.
+>>>>
+>>>> Stanislaw
+>>>>
+>>>
+>>> Thanks!
+>>> I have a few questions but the weekend begins, so we'll leave it for
+>>> later. :)
+>>> See ya!
+>>
+>> https://bugzilla.redhat.com/show_bug.cgi?id=1062833
+>>
+>> IDE disk - ata_piix - dmesg - OK
+>> https://bugzilla.redhat.com/attachment.cgi?id=864085
+>>
+>> SATA disk - ahci - dmesg - OK
+>> https://bugzilla.redhat.com/attachment.cgi?id=864086
+>>
+>> SCSI disk - sym53c8xx - dmesg - OK
+>> https://bugzilla.redhat.com/attachment.cgi?id=864087
+>>
+>> VirtIO SCSI disk - virtio_scsi - dmesg - OK
+>> https://bugzilla.redhat.com/attachment.cgi?id=864088
+>>
+>> USB disk - usb_storage - dmesg - OK
+>> https://bugzilla.redhat.com/attachment.cgi?id=864089
+>>
+>> Test media - 'boot-fix-dma-debug-overlap-v2.iso',
+>> http://goo.gl/UJSfVn
+>> sha256sum:
+>> 6d6b36fdcb0a0ff662ff6a27048d6d5f35ac211c34439f75bba1d524b3507e82
+>> boot-fix-dma-debug-overlap-v2.iso
+>>
+>> Contains 'kernel-3.14.0-0.rc2.git4.1.fc21.x86_64'
+>> based on Rawhide 'kernel-3.14.0-0.rc2.git4.1.fc21'
+>> http://koji.fedoraproject.org/koji/buildinfo?buildID=498404
+>> with the addition of Dan's 'fix-dma-debug-overlap-v2.patch'
+>> "Fix dma debug v2: account for cachelines and read-only mappings in
+>> overlap tracking"
+>> http://marc.info/?l=linux-netdev&m=139233546723342&q=raw
+>>
+>>
+>> All tests are PASSED.
+>>
+>>        _
+>>       ( \
+>>        \ \
+>>    ____)  \
+>>   (___)    ------
+>>  (___)
+>>  (___)
+>>   (__)----------------
+>>
+>>
+>>
+>> poma
 > 
-> Ahoy!
+> Thanks for the in-depth regression test and report.  Much appreciated!
 > 
-> Debugging S3 aka suspend produces 'WARNINGS':
+> --
+> Dan
 > 
-> Steps to Reproduce:
-> # echo core > /sys/power/pm_test
-> # cat /sys/power/pm_test
-> none [core] processors platform devices freezer
-> # echo mem > /sys/power/state
-> Results:
-> - dmesg-3.14.0-0.rc3.git0.1.fc21.x86_64+debug-pm_test-core.diff
->   https://bugzilla.redhat.com/attachment.cgi?id=864436
-> 
-> Steps to Reproduce:
-> # echo processors > /sys/power/pm_test
-> # cat /sys/power/pm_test
-> none core [processors] platform devices freezer
-> # echo mem > /sys/power/state
-> Results:
-> - dmesg-3.14.0-0.rc3.git0.1.fc21.x86_64+debug-pm_test-processors.diff
->   https://bugzilla.redhat.com/attachment.cgi?id=864438
-> 
-> Steps to Reproduce:
-> # echo platform > /sys/power/pm_test
-> # cat /sys/power/pm_test
-> none core processors [platform] devices freezer
-> # echo mem > /sys/power/state
-> Results:
-> - dmesg-3.14.0-0.rc3.git0.1.fc21.x86_64+debug-pm_test-platform.diff
->   https://bugzilla.redhat.com/attachment.cgi?id=864439
-> 
-> RHBZ 1010764:
-> "[abrt] NETDEV WATCHDOG: em1 (e1000e): transmit queue 0 timed out"
-> https://bugzilla.redhat.com/show_bug.cgi?id=1010764
-> 
-> Tested with Rawhide 'kernel-debug-3.14.0-0.rc3.git0.1.fc21.x86_64'
-> http://koji.fedoraproject.org/koji/buildinfo?buildID=498711
 
-A comparison of 'RealTek RTL-8169 GE' & 'SysKonnect GE'
-
-Debugging S3 - core:
-# echo core > /sys/power/pm_test
-# echo mem > /sys/power/state
-  RTL8169:
-- dmesg-3.14.0-0.rc3.git2.1.fc21.x86_64-r8169-pm_test-core.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864959
-  SKGE:
-- dmesg-3.14.0-0.rc3.git2.1.fc21.x86_64-skge-pm_test-core.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864960
-
-Debugging S3 - processors:
-# echo processors > /sys/power/pm_test
-# echo mem > /sys/power/state
-  RTL8169:
-- dmesg-3.14.0-0.rc3.git2.1.fc21.x86_64-r8169-pm_test-processors.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864961
-  SKGE:
-- dmesg-3.14.0-0.rc3.git2.1.fc21.x86_64-skge-pm_test-processors.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864962
-
-Debugging S3 - platform:
-# echo platform > /sys/power/pm_test
-# echo mem > /sys/power/state
-  RTL8169:
-- dmesg-3.14.0-0.rc3.git2.1.fc21.x86_64-r8169-pm_test-platform.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864963
-  SKGE:
-- dmesg-3.14.0-0.rc3.git2.1.fc21.x86_64-skge-pm_test-platform.diff
-  https://bugzilla.redhat.com/attachment.cgi?id=864964
-
-RHBZ
-https://bugzilla.redhat.com/show_bug.cgi?id=1010764
-
-Tested with Rawhide ' kernel-3.14.0-0.rc3.git2.1.fc21.x86_64'
-http://koji.fedoraproject.org/koji/buildinfo?buildID=499061
+You're welcome. ;)
+Thanks for the patch.
 
 
 poma
+
 
