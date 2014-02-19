@@ -1,90 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825AbaBSOsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:48:21 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33048 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463AbaBSOsS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:48:18 -0500
-Date: Wed, 19 Feb 2014 14:47:51 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        jslaby@suse.cz, ben.dooks@codethink.co.uk
-Subject: Re: [PATCH 2/2] serial: pl011: Move uart_register_driver call to
- device probe
-Message-ID: <20140219144751.75f7fb70@alan.etchedpixels.co.uk>
-In-Reply-To: <20140219135751.GX2669@sirena.org.uk>
-References: <20140213181559.GB30257@n2100.arm.linux.org.uk>
-	<20140213182701.GA32578@kroah.com>
-	<20140213184249.GC30257@n2100.arm.linux.org.uk>
-	<20140213232606.GA27372@kroah.com>
-	<20140214000717.GG30257@n2100.arm.linux.org.uk>
-	<20140214001436.GA16287@kroah.com>
-	<20140214003834.GH30257@n2100.arm.linux.org.uk>
-	<20140217153518.30891455@alan.etchedpixels.co.uk>
-	<20140217235013.GD2669@sirena.org.uk>
-	<20140218100943.34f2e186@alan.etchedpixels.co.uk>
-	<20140219135751.GX2669@sirena.org.uk>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753859AbaBSOvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:51:03 -0500
+Received: from fieldses.org ([174.143.236.118]:36991 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132AbaBSOvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 09:51:01 -0500
+Date: Wed, 19 Feb 2014 09:50:43 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>, greg@kroah.com,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd
+ superblock's one
+Message-ID: <20140219145043.GC8401@fieldses.org>
+References: <20131230142339.16166.28243.stgit@localhost.localdomain>
+ <20140103222226.GD5164@fieldses.org>
+ <52FEC818.7030604@huawei.com>
+ <20140217221900.GA8401@fieldses.org>
+ <53037A03.4020603@parallels.com>
+ <20140218154406.GD4319@fieldses.org>
+ <530486D9.7010502@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <530486D9.7010502@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please try to avoid this sort of misdirected yelling, it's not helping
-
-I don't see any misdirected yelling
-
-> anything to complain that people are following the recommendations of
-> the maintainer or to demand that this somehow gets hacked around in
-> arch/ when we're trying to convince all the architectures to get their
-> drivers merged into subsystem trees so they're reviewed by the subsystem
-> maintainers.
-
-It's not a case of hacking around it in arch. It's a case of fixing up
-problems where they belong, which btw is what Greg has in his tree -
-specifically ef2889f7ffee67f0aed49e854c72be63f1466759 and
-6f134c3c770355b7e930d3ffc558864668f13055 which keep the handling of the
-minor clash cock-up in the drivers affected.
-
-No garbage in the core tty drivers, no racy delayed registration in the
-core uart code. In the longer term we should probably just abolish the
-fixed minor numbers, nothing in the real world cares about them enough to
-justify keeping them forever.
-
-> you're doing here is making disparaging remarks and telling people to
-> adopt bad practices because someone else made a mistake a decade ago.
-
-I'm not telling anyone to adopt bad practices - at least its news to me
-that "stopping the merge of buggy crap" is now a bad practice.
-
-> That is how problems like this get created in the first place.
-
-We were having a discussion about the fact the proposed patch for
-deferring the processing was buggy, and probably unfixably so. That's a
-code correctness discussion. Merging overcomplicated buggy crap causes
-problems.
-
-> > And the proposed change set is buggy as hell - because we register things
-> > like 8250 devices at least four ways on the same x86 machine all of which
-> > could in theory occur in parallel.
+On Wed, Feb 19, 2014 at 02:26:33PM +0400, Stanislav Kinsbursky wrote:
+> 18.02.2014 19:44, J. Bruce Fields пишет:
+> >On Tue, Feb 18, 2014 at 07:19:31PM +0400, Stanislav Kinsbursky wrote:
+> >>18.02.2014 02:19, J. Bruce Fields пишет:
+> >>>On Sat, Feb 15, 2014 at 09:51:20AM +0800, Weng Meiling wrote:
+> >>>>Hi Bruce,
+> >>>>
+> >>>>The upstream has merged your git tree for-3.14, but there is no this patch?
+> >>>>Do you forget this patch?
+> >>>
+> >>>Apologies, I'm not sure what happened.
+> >>>
+> >>>Looking back at it....  The patch causes all my pynfs reboot recovery
+> >>>tests to fail.  They're just doing a "systemctl restart
+> >>>nfs-server.service", and "systemctl status nfs-server.service" shows in
+> >>>part
+> >>>
+> >>>	ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS $RPCNFSDCOUNT (code=exited, status=1/FAILURE)
+> >>>
+> >>>So the patch is causing rpc.nfsd to fail?  No network namespaces should
+> >>>be involved.
+> >>>
+> >>>I haven't investigated any further.
+> >>>
+> >>
+> >>Hi Bruce,
+> >>Are you sure, that exactly this patch broke your pynfs tests?
+> >>BTW, systemd manipulates namespaces. Maybe the patch revealed some pynfs internal bugs?
+> >>What do you think?
+> >
+> >It's really just "systemctl restart nfs-server.service" that the patch
+> >breaks, pynfs isn't involved much.
+> >
+> >The patch I'm actually using follows, but I believe the only difference
+> >is in the printk message?
+> >
 > 
-> Then you need to convince Greg of that.  The most recent set of patches
-> are exactly what he asked for.
+> Yep, looks true.
+> That's strange: "systemctl restart nfs-server.service" works for me on Fedora 18 with kernel, based on your repo.
 
-No there's an assumption that when someone asks for patches the proposed
-changes actually *work*. As Russell has demonstrated - the general
-deferral patches for the uart/tty layer are broken. The driver specific
-fixups in -next on the other hand appear to be fine providing the amba
-bus probe remains serialized (and trivially fixed if it doesn't).
+OK, I'll take a closer look and let you know what I find.
 
-Alan
+--b.
 
+> 
+> >--b
+> >
+> >commit e1f2922c12cb59baba0f2c7726bee992a0861310
+> >Author: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> >Date:   Mon Dec 30 17:23:59 2013 +0300
+> >
+> >     nfsd: check passed socket's net matches the NFSd superblock's
+> >
+> >     The file descriptor written to the nfsd/portlist file could be for a
+> >     socket in a different network namespace from the network namespace that
+> >     the nfsd filesystem was mounted in, and this can cause a crash.
+> >
+> >     For example: "ip netns exec" creates a new network and mount namespace,
+> >     which duplicates the nfsd mount point which was created in the init_net
+> >     context.  Thus NFS server stop in the nested network context leads to
+> >     RPCBIND client destruction in init_net.  Then, on nfsd start in the
+> >     nested network context, the rpc.nfsd process creates a socket in the
+> >     nested net and passes it into "write_ports", which leads to RPCBIND
+> >     socket creation in init_net context for the same reason (the nfsd mount
+> >     point was created in the init_net context). An attempt to register
+> >     passed socket in nested net leads to panic, because no RPCBIND client is
+> >     present in the nested network namespace.
+> >
+> >     This patch adds a check that the passed the socket's net matches the
+> >     nfsd superblock's net, and returns -EINVAL error to user space if not.
+> >
+> >     Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
+> >     Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> >     Cc: stable@vger.kernel.org
+> >     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> >
+> >diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> >index 7f55517..1331766 100644
+> >--- a/fs/nfsd/nfsctl.c
+> >+++ b/fs/nfsd/nfsctl.c
+> >@@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
+> >  	if (err != 0 || fd < 0)
+> >  		return -EINVAL;
+> >
+> >+	if (svc_alien_sock(net, fd)) {
+> >+		printk(KERN_ERR "%s: socket net is different from NFSd's\n", __func__);
+> >+		return -EINVAL;
+> >+	}
+> >+
+> >  	err = nfsd_create_serv(net);
+> >  	if (err != 0)
+> >  		return err;
+> >diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
+> >index 62fd1b7..947009e 100644
+> >--- a/include/linux/sunrpc/svcsock.h
+> >+++ b/include/linux/sunrpc/svcsock.h
+> >@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
+> >  int		svc_send(struct svc_rqst *);
+> >  void		svc_drop(struct svc_rqst *);
+> >  void		svc_sock_update_bufs(struct svc_serv *serv);
+> >+bool		svc_alien_sock(struct net *net, int fd);
+> >  int		svc_addsock(struct svc_serv *serv, const int fd,
+> >  					char *name_return, const size_t len);
+> >  void		svc_init_xprt_sock(void);
+> >diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+> >index b6e59f0..3ba5b87 100644
+> >--- a/net/sunrpc/svcsock.c
+> >+++ b/net/sunrpc/svcsock.c
+> >@@ -1397,6 +1397,17 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
+> >  	return svsk;
+> >  }
+> >
+> >+bool svc_alien_sock(struct net *net, int fd)
+> >+{
+> >+	int err;
+> >+	struct socket *sock = sockfd_lookup(fd, &err);
+> >+
+> >+	if (sock && (sock_net(sock->sk) != net))
+> >+		return true;
+> >+	return false;
+> >+}
+> >+EXPORT_SYMBOL_GPL(svc_alien_sock);
+> >+
+> >  /**
+> >   * svc_addsock - add a listener socket to an RPC service
+> >   * @serv: pointer to RPC service to which to add a new listener
+> >
+> 
+> 
+> -- 
+> Best regards,
+> Stanislav Kinsbursky
