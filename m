@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364AbaBSKrG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 05:47:06 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:58756 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296AbaBSKrD (ORCPT
+	id S1751220AbaBSKtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 05:49:09 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:62926 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843AbaBSKtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 05:47:03 -0500
-Message-ID: <53048B9D.2050606@linaro.org>
-Date: Wed, 19 Feb 2014 19:46:53 +0900
+	Wed, 19 Feb 2014 05:49:07 -0500
+Message-ID: <53048C19.6040509@linaro.org>
+Date: Wed, 19 Feb 2014 19:48:57 +0900
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -25,123 +25,92 @@ CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
         "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [PATCH v3 1/6] arm64: Add ftrace support
-References: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org> <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org> <1391768336-5642-2-git-send-email-takahiro.akashi@linaro.org> <20140217181209.GF26590@mudshark.cambridge.arm.com>
-In-Reply-To: <20140217181209.GF26590@mudshark.cambridge.arm.com>
+Subject: Re: [PATCH v3 5/6] arm64: ftrace: Add system call tracepoint
+References: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org> <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org> <1391768336-5642-6-git-send-email-takahiro.akashi@linaro.org> <20140217192936.GH26590@mudshark.cambridge.arm.com>
+In-Reply-To: <20140217192936.GH26590@mudshark.cambridge.arm.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 03:12 AM, Will Deacon wrote:
-> On Fri, Feb 07, 2014 at 10:18:51AM +0000, AKASHI Takahiro wrote:
->> This patch implements arm64 specific part to support function tracers,
->> such as function (CONFIG_FUNCTION_TRACER), function_graph
->> (CONFIG_FUNCTION_GRAPH_TRACER) and function profiler
->> (CONFIG_FUNCTION_PROFILER).
+On 02/18/2014 04:29 AM, Will Deacon wrote:
+> On Fri, Feb 07, 2014 at 10:18:55AM +0000, AKASHI Takahiro wrote:
+>> This patch allows system call entry or exit to be traced as ftrace events,
+>> ie. sys_enter_*/sys_exit_*, if CONFIG_FTRACE_SYSCALLS is enabled.
+>> Those events appear and can be controlled under
+>>      ${sysfs}/tracing/events/syscalls/
 >>
->> With 'function' tracer, all the functions in the kernel are traced with
->> timestamps in ${sysfs}/tracing/trace. If function_graph tracer is
->> specified, call graph is generated.
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>   arch/arm64/Kconfig               |    1 +
+>>   arch/arm64/include/asm/syscall.h |    1 +
+>>   arch/arm64/include/asm/unistd.h  |    2 ++
+>>   arch/arm64/kernel/ptrace.c       |    5 +++++
+>>   4 files changed, 9 insertions(+)
 >>
->> The kernel must be compiled with -pg option so that _mcount() is inserted
->> at the beginning of functions. This function is called on every function's
->> entry as long as tracing is enabled.
->> In addition, function_graph tracer also needs to be able to probe function's
->> exit. ftrace_graph_caller() & return_to_handler do this by faking link
->> register's value to intercept function's return path.
+>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+>> index 43fce76..9bdaf5c 100644
+>> --- a/arch/arm64/Kconfig
+>> +++ b/arch/arm64/Kconfig
+>> @@ -42,6 +42,7 @@ config ARM64
+>>   	select HAVE_HW_BREAKPOINT if PERF_EVENTS
+>>   	select HAVE_MEMBLOCK
+>>   	select HAVE_PERF_EVENTS
+>> +	select HAVE_SYSCALL_TRACEPOINTS
+>>   	select IRQ_DOMAIN
+>>   	select MODULES_USE_ELF_RELA
+>>   	select NO_BOOTMEM
+>> diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
+>> index 70ba9d4..383771e 100644
+>> --- a/arch/arm64/include/asm/syscall.h
+>> +++ b/arch/arm64/include/asm/syscall.h
+>> @@ -18,6 +18,7 @@
 >>
->> More details on architecture specific requirements are described in
->> Documentation/trace/ftrace-design.txt.
->
-> [...]
->
->> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
->> new file mode 100644
->> index 0000000..0d5dfdb
->> --- /dev/null
->> +++ b/arch/arm64/include/asm/ftrace.h
->> @@ -0,0 +1,23 @@
->> +/*
->> + * arch/arm64/include/asm/ftrace.h
->> + *
->> + * Copyright (C) 2013 Linaro Limited
->> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +#ifndef __ASM_FTRACE_H
->> +#define __ASM_FTRACE_H
+>>   #include <linux/err.h>
+>>
+>> +extern const void *sys_call_table[];
+>>
+>>   static inline int syscall_get_nr(struct task_struct *task,
+>>   				 struct pt_regs *regs)
+>> diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+>> index 82ce217..c335479 100644
+>> --- a/arch/arm64/include/asm/unistd.h
+>> +++ b/arch/arm64/include/asm/unistd.h
+>> @@ -28,3 +28,5 @@
+>>   #endif
+>>   #define __ARCH_WANT_SYS_CLONE
+>>   #include <uapi/asm/unistd.h>
 >> +
->> +#ifdef CONFIG_FUNCTION_TRACER
->> +#define MCOUNT_ADDR            ((unsigned long)_mcount)
->> +#define MCOUNT_INSN_SIZE       4 /* sizeof mcount call */
->
-> You can use AARCH64_INSN_SIZE here.
-
-OK, but MCOUNT_INSN_SIZE can't be removed here because it is also used in
-kernel/trace/ftrace.c. So I will redefine it as
-#define MCOUNT_INSN_SIZE AARCH64_INSN_SIZE
-
-In this case, I need to add __ASSEMBLY__ in asm/insn.h because
-asm/ftrace.h (and so asm/insn.h) is included in entry-ftrace.S.
-
-Is it OK?
-
-
->> +#include <linux/linkage.h>
->> +#include <asm/ftrace.h>
+>> +#define NR_syscalls (__NR_syscalls)
+>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>> index 64ce39f..f4c3c4e 100644
+>> --- a/arch/arm64/kernel/ptrace.c
+>> +++ b/arch/arm64/kernel/ptrace.c
+>> @@ -41,6 +41,9 @@
+>>   #include <asm/traps.h>
+>>   #include <asm/system_misc.h>
+>>
+>> +#define CREATE_TRACE_POINTS
+>> +#include <trace/events/syscalls.h>
 >> +
->> +/*
->> + * Gcc with -pg will put the following code in the beginning of each function:
->> + *      mov x0, x30
->> + *      bl _mcount
->> + *     [function's body ...]
->> + * "bl _mcount" may be replaced to "bl ftrace_caller" or NOP if dynamic
->> + * ftrace is enabled.
->> + *
->> + * Please note that x0 as an argument will not be used here because we can
->> + * get lr(x30) of insturmented function at any time by winding up call stack
+>>   /*
+>>    * TODO: does not yet catch signals sent when the child dies.
+>>    * in exit.c or in signal.c.
+>> @@ -1076,10 +1079,12 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+>>   	}
+>>
+>>   	if (dir) {
+>> +		trace_sys_exit(regs, regs->syscallno);
+>>   		tracehook_report_syscall_exit(regs, 0);
+>>   	} else {
+>>   		if (tracehook_report_syscall_entry(regs))
+>>   			regs->syscallno = ~0UL;
+>> +		trace_sys_enter(regs, regs->syscallno);
 >
-> instrumented
+> Shouldn't these calls be guarded by a TIF_SYSCALL_TRACEPOINT check?
 
-I  will fix two occurences of "insturmented" :-)
-Just a question: Is there any better word than "instrument"?
-
->> + * as long as the kernel is compiled without -fomit-frame-pointer.
->> + * (or CONFIG_FRAME_POINTER, this is forced on arm64)
->> + *
->> + * stack layout after mcount_enter:
->> + *
->> + *   0 ---------------------------------------- sp of _mcount()
->> + *      x29: fp of instrumented function       fp is not winded
->> + *     --------------------
->> + *      x30: lr of _mcount() (= instrumented function's pc)
->> + * +16 ---------------------------------------- sp of instrumented function
->> + *
->> + *     ....
->> + *
->> + * +xx ---------------------------------------- fp of instrumented function
->> + *      x29: fp of parent
->> + *     --------------------
->> + *      x30: lr of insturmented function (= parent's pc)
->> + *     --------------------
->> + *      xxx
->> + */
->> +
->> +       .macro mcount_enter
->> +       stp     x29, x30, [sp, #-48]!
->> +       .endm
->
-> Can you elaborate in your comment about where this 48 comes from please? I
-> can't join it up with your ascii art.
-
-Right. It should be -16 as shown in the stack layout.
-When I removed an operation of saving/restoring x0-x3 at v3 patch, this value
-should also have been changed.
+Yes. I will add the guard.
 
 -Takahiro AKASHI
 
