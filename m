@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456AbaBSATy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 19:19:54 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64554 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752234AbaBSATq (ORCPT
+	id S1752541AbaBSAUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 19:20:47 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:42223 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaBSAUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 19:19:46 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: dirk.j.brandewie@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] intel_pstate updates for v3.14-rcX
-Date: Wed, 19 Feb 2014 01:34:35 +0100
-Message-ID: <4187014.8zm183CESa@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5303F28C.4060906@intel.com>
-References: <1392228067-14817-1-git-send-email-dirk.j.brandewie@intel.com> <2705558.gK5sRhMz43@vostro.rjw.lan> <5303F28C.4060906@intel.com>
+	Tue, 18 Feb 2014 19:20:45 -0500
+Date: Tue, 18 Feb 2014 16:20:43 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 2/4] devicetree: bindings: Document Krait CPU/L1 EDAC
+Message-ID: <20140219002043.GE14769@codeaurora.org>
+References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
+ <1389735034-21430-3-git-send-email-sboyd@codeaurora.org>
+ <20140115102701.GA27314@e102568-lin.cambridge.arm.com>
+ <20140115165623.GJ14405@codeaurora.org>
+ <20140116013840.GA674@codeaurora.org>
+ <20140116113332.GC25540@e102568-lin.cambridge.arm.com>
+ <20140116180505.GA30925@codeaurora.org>
+ <20140116183326.GG25540@e102568-lin.cambridge.arm.com>
+ <20140116192617.GA13785@codeaurora.org>
+ <20140117102109.GA22544@e102568-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140117102109.GA22544@e102568-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 18, 2014 03:53:48 PM Dirk Brandewie wrote:
-> On 02/18/2014 02:27 PM, Rafael J. Wysocki wrote:
-> > On Tuesday, February 18, 2014 12:29:54 PM Dirk Brandewie wrote:
-> >> Hi Rafael,
-> >
-> > Hi,
-> >
-> >> On 02/12/2014 10:01 AM, dirk.brandewie@gmail.com wrote:
-> >>> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> >>>
-> >>> Based on v3.14-rc2
-> >>>
-> >>> Patch 1 removes energy reporting the patch from Maurizio Lambardi
-> >>>    intel_pstate: fix race condition in intel_pstate_init() can be dropped.
-> >>>
-> >>
-> >> Any reason why patches 2-5 did not make rc3 other than timing?
-> >>
-> >> Patches 2/3 can easily wait for v3.15.x
-> >>
-> >> Patches 4/5 fix bugs that are in the wild.
-> >
-> > I asked you about them, but you didn't reply:
-> >
-> > http://marc.info/?l=linux-pm&m=139225158531023&w=4
-> >
-> > Again, do patches [4-5/5] depend on [2-3/5]?
-> >
-> > If not, I can queue them up for -rc4.
-> 
-> All the patches are independent of one another.
-> 
-> Patch 2 is straight cleanup no functional change but reduces the memory
-> footprint slightly.
-> 
-> Patch 3 is a bug that will only be seen when the PID is reset at init time
-> or when a change is made to PID params via debugfs.  The problem will only
-> exist for one sample time since it is setting last_err in the PID.
-> 
-> Patch 4-5 are bugs found during Baytrail-T testing
+(Sorry, this discussion stalled due to merge window + life events)
 
-Are there any pointers to bug reports that may be included in the changelogs
-of these?
+On 01/17, Lorenzo Pieralisi wrote:
+> On Thu, Jan 16, 2014 at 07:26:17PM +0000, Stephen Boyd wrote:
+> > On 01/16, Lorenzo Pieralisi wrote:
+> > > On Thu, Jan 16, 2014 at 06:05:05PM +0000, Stephen Boyd wrote:
+> > > > On 01/16, Lorenzo Pieralisi wrote:
+> > > > > Do we really want to do that ? I am not sure. A cpus node is supposed to
+> > > > > be a container node, we should not define this binding just because we
+> > > > > know the kernel creates a platform device for it then.
+> > > > 
+> > > > This is just copying more of the ePAPR spec into this document.
+> > > > It just so happens that having a compatible field here allows a
+> > > > platform device to be created. I don't see why that's a problem.
+> > > 
+> > > I do not see why you cannot define a node like pmu or arch-timer and stick
+> > > a compatible property in there. cpus node does not represent a device, and
+> > > must not be created as a platform device, that's my opinion.
+> > > 
+> > 
+> > I had what you're suggesting before in the original revision of
+> > this patch. Please take a look at the original patch series[1]. I
+> > suppose it could be tweaked slightly to still have a cache node
+> > for the L2 interrupt and the next-level-cache pointer from the
+> > CPUs.
+> 
+> Ok, sorry, we are running around in circles here, basically you moved
+> the node to cpus according to reviews. I still think that treating cpus
+> as a device is not a great idea, even though I am in the same
+> position with C-states and probably will add C-state tables in the cpus
+> node.
+> 
+> http://comments.gmane.org/gmane.linux.power-management.general/41012
+> 
+> I just would like to see under cpus nodes and properties that apply to
+> all ARM systems, and avoid defining properties (eg interrupts) that
+> have different meanings for different ARM cores.
+> 
+> The question related to why the kernel should create a platform device
+> out of cpus is still open. I really do not want to block your series
+> for these simple issues but we have to make a decision and stick to that,
+> I am fine either way if we have a plan.
+> 
 
-Rafael
+Do you just want a backup plan in case we don't make a platform
+device out of the cpus node? I believe we can always add code
+somewhere to create a platform device at runtime if we detect the
+cpus node has a compatible string equal to "qcom,krait". We could
+probably change this driver's module_init() to scan the DT for
+such a compatible string and create the platform device right
+there. If we get more than one interrupt in the cpus node we can
+add interrupt-names and then have software look for interrupts by
+name instead of number.
 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
