@@ -1,120 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506AbaBSWMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 17:12:36 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:39333 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaBSWMd (ORCPT
+	id S1754777AbaBSWMo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 17:12:44 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:34924 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015AbaBSWMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 17:12:33 -0500
-Date: Wed, 19 Feb 2014 14:12:29 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alec Teal <a.teal@warwick.ac.uk>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140219221229.GJ4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <530296CD.5050503@warwick.ac.uk>
- <CA+55aFyi8QWge7QR0M+ABH-kEiwvoEyMhK6GWRvN1YNKJAFuSQ@mail.gmail.com>
- <1392737465.18779.7644.camel@triegel.csb>
- <CA+55aFxn2KRXDQ91xRs=bO_6d_nA_PSQvoY1_=OxyJ86+KOO9Q@mail.gmail.com>
- <20140218171609.GP4250@linux.vnet.ibm.com>
- <1392759615.18779.8429.camel@triegel.csb>
- <20140218225845.GB4250@linux.vnet.ibm.com>
- <1392807548.18779.8659.camel@triegel.csb>
- <20140219151422.GE4250@linux.vnet.ibm.com>
- <1392832551.18779.9315.camel@triegel.csb>
+	Wed, 19 Feb 2014 17:12:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392832551.18779.9315.camel@triegel.csb>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021922-8236-0000-0000-00000769E520
+In-Reply-To: <CAEPRUYr8_qpL65Q0jCnLXHsZpb27DxuiF6JsZb6eRb4JOX2evg@mail.gmail.com>
+References: <1392845512-31333-1-git-send-email-mporter@linaro.org>
+	<CAEPRUYr8_qpL65Q0jCnLXHsZpb27DxuiF6JsZb6eRb4JOX2evg@mail.gmail.com>
+Date: Wed, 19 Feb 2014 14:12:34 -0800
+Message-ID: <CAPdLdqkLV+NODgGS5NxvHaD1P_zpoeEhTnZunEGsR9OZXhWFSw@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: dts: remove bcm11351-brt.dts
+From: Markus Mayer <markus.mayer@linaro.org>
+To: Christian Daudt <bcm@fixthebug.org>
+Cc: Matt Porter <mporter@linaro.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tim Kryger <tim.kryger@linaro.org>, Alex Elder <elder@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 06:55:51PM +0100, Torvald Riegel wrote:
-> On Wed, 2014-02-19 at 07:14 -0800, Paul E. McKenney wrote:
-> > On Wed, Feb 19, 2014 at 11:59:08AM +0100, Torvald Riegel wrote:
+On 19 February 2014 13:37, Christian Daudt <bcm@fixthebug.org> wrote:
+> On Wed, Feb 19, 2014 at 1:31 PM, Matt Porter <mporter@linaro.org> wrote:
+>> The BCM11351 BRT board will never see the light of day. Remove the BRT
+>> dts since it is not maintainable.
+>>
+>> Reviewed-by: Alex Elder <elder@linaro.org>
+>> Signed-off-by: Matt Porter <mporter@linaro.org>
+>> ---
+>> Changes since v1:
+>>         - remove bcm11351-brt from Makefile
+>>
+>>  arch/arm/boot/dts/Makefile         |  3 +--
+>>  arch/arm/boot/dts/bcm11351-brt.dts | 54 --------------------------------------
+>>  2 files changed, 1 insertion(+), 56 deletions(-)
+>>  delete mode 100644 arch/arm/boot/dts/bcm11351-brt.dts
+>>
+>
+> R.I.P bcm11351...
+>
+> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
 
-[ . . . ]
+There goes our original guinea pig.
 
-> > > On both sides, the compiler will see that mmap() (or similar) is called,
-> > > so that means the data escapes to something unknown, which could create
-> > > threads and so on.  So first, it can't do whole-program analysis for
-> > > this state anymore, and has to assume that other C11 threads are
-> > > accessing this memory.  Next, lock-free atomics are specified to be
-> > > "address-free", meaning that they must work independent of where in
-> > > memory the atomics are mapped (see C++ (e.g., N3690) 29.4p3; that's a
-> > > "should" and non-normative, but essential IMO).  Thus, this then boils
-> > > down to just a simple case of synchronization.  (Of course, the rest of
-> > > the ABI has to match too for the data exchange to work.)
-> > 
-> > The compiler will see mmap() on the user side, but not on the kernel
-> > side.  On the kernel side, something special is required.
-> 
-> Maybe -- you'll certainly know better :)
-> 
-> But maybe it's not that hard: For example, if the memory is in current
-> code made available to userspace via calling some function with an asm
-> implementation that the compiler can't analyze, then this should be
-> sufficient.
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 
-The kernel code would need to explicitly tell the compiler what portions
-of the kernel address space were covered by this.  I would not want the
-compiler to have to work it out based on observing interactions with the
-page tables.  ;-)
-
-> > Agree that "address-free" would be nice as "shall" rather than "should".
-> > 
-> > > > I echo Peter's question about how one tags functions like mmap().
-> > > > 
-> > > > I will also remember this for the next time someone on the committee
-> > > > discounts "volatile".  ;-)
-> > > > 
-> > > > > > 5.	JITed code produced based on BPF: https://lwn.net/Articles/437981/
-> > > > > 
-> > > > > This might be special, or not, depending on how the JITed code gets
-> > > > > access to data.  If this is via fixed addresses (e.g., (void*)0x123),
-> > > > > then see above.  If this is through function calls that the compiler
-> > > > > can't analyze, then this is like 4.
-> > > > 
-> > > > It could well be via the kernel reading its own symbol table, sort of
-> > > > a poor-person's reflection facility.  I guess that would be for all
-> > > > intents and purposes equivalent to your (void*)0x123.
-> > > 
-> > > If it is replacing code generated by the compiler, then yes.  If the JIT
-> > > is just filling in functions that had been undefined yet declared
-> > > before, then the compiler will have seen the data escape through the
-> > > function interfaces, and should be aware that there is other stuff.
-> > 
-> > So one other concern would then be things things like ftrace, kprobes,
-> > ksplice, and so on.  These rewrite the kernel binary at runtime, though
-> > in very limited ways.
-> 
-> Yes.  Nonetheless, I wouldn't see a problem if they, say, rewrite with
-> C11-compatible code (and same ABI) on a function granularity (and when
-> the function itself isn't executing concurrently) -- this seems to be
-> similar to just having another compiler compile this particular
-> function.
-
-Well, they aren't using C11-compatible code yet.  They do patch within
-functions.  And in some cases, they make staged sequences of changes to
-allow the patching to happen concurrently with other CPUs executing the
-code being patched.  Not sure that any of the latter is actually in the
-kernel at the moment, but it has at least been prototyped and discussed.
-
-							Thanx, Paul
-
+-- 
+Markus Mayer
+Broadcom Landing Team
