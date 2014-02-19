@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaBSI60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 03:58:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753182AbaBSI4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753178AbaBSI4k (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 19 Feb 2014 03:56:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26938 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753157AbaBSI4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 03:56:37 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Joshua Morris <josh.h.morris@us.ibm.com>,
-        Philip Kelleher <pjk1939@linux.vnet.ibm.com>,
-        linux-pci@vger.kernel.org
-Subject: [PATCH 5/9] rsxx: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Wed, 19 Feb 2014 09:58:17 +0100
-Message-Id: <884e8e236ae1e7223230ee0de75f2f01817140cf.1392799751.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>, linux-pci@vger.kernel.org
+Subject: [PATCH 4/9] mtip32xx: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Wed, 19 Feb 2014 09:58:16 +0100
+Message-Id: <02b7d83dfc12a519431e48ab54e448bafb4b29fe.1392799751.git.agordeev@redhat.com>
 In-Reply-To: <cover.1392799751.git.agordeev@redhat.com>
 References: <cover.1392799751.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,28 +26,28 @@ new pci_enable_msi_range() and pci_enable_msix_range()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Joshua Morris <josh.h.morris@us.ibm.com>
-Cc: Philip Kelleher <pjk1939@linux.vnet.ibm.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/block/rsxx/core.c |    4 ++--
+ drivers/block/mtip32xx/mtip32xx.c |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/rsxx/core.c b/drivers/block/rsxx/core.c
-index a8de2ee..76c8124 100644
---- a/drivers/block/rsxx/core.c
-+++ b/drivers/block/rsxx/core.c
-@@ -880,8 +880,8 @@ static int rsxx_pci_probe(struct pci_dev *dev,
- 	spin_unlock_irq(&card->irq_lock);
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 5299a65..60e86e8 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -4611,8 +4611,8 @@ static int mtip_pci_probe(struct pci_dev *pdev,
+ 	INIT_WORK(&dd->work[7].work, mtip_workq_sdbf7);
  
- 	if (!force_legacy) {
--		st = pci_enable_msi(dev);
--		if (st)
-+		st = pci_enable_msi_range(dev, 1, 1);
-+		if (st < 0)
- 			dev_warn(CARD_TO_DEV(card),
- 				"Failed to enable MSI\n");
- 	}
+ 	pci_set_master(pdev);
+-	rv = pci_enable_msi(pdev);
+-	if (rv) {
++	rv = pci_enable_msi_range(pdev, 1, 1);
++	if (rv < 0) {
+ 		dev_warn(&pdev->dev,
+ 			"Unable to enable MSI interrupt.\n");
+ 		goto msi_initialize_err;
 -- 
 1.7.7.6
 
