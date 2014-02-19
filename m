@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbaBSWc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 17:32:56 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:40614 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaBSWcz (ORCPT
+	id S1751410AbaBSWqa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 17:46:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33712 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaBSWq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 17:32:55 -0500
-Date: Wed, 19 Feb 2014 17:34:49 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: x86_pmu_start WARN_ON.
-In-Reply-To: <20140219101949.GG15586@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
-References: <20140130190253.GA11819@redhat.com> <alpine.DEB.2.10.1402101620170.29602@vincent-weaver-1.um.maine.edu> <20140211132956.GY9987@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402121559350.20738@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu> <20140217152859.GF15586@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu> <20140219101949.GG15586@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 19 Feb 2014 17:46:27 -0500
+Date: Wed, 19 Feb 2014 14:47:52 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Commit fcb6a15c2e7e (intel_pstate: Take core C0 time into account
+ for core busy calculation) sucks rocks
+Message-ID: <20140219224752.GA370@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014, Peter Zijlstra wrote:
+Hi Dirk,
 
-> So when we add a new event (or more) we compute a mapping from event to
-> counter. Then we disable all (pre existing) events that moved to a new
-> location, then we enable all events (insert HES_ARCH) that were running
-> but got relocated and the new events.
-> 
-> Of course the code is horrible, but I think the above is what it does.
+I've been having some huge slowdowns on my box building kernels, and I
+took the time to bisect it down to commit
+fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 (intel_pstate: Take core C0
+time into account for core busy calculation).  With that patch reverted
+on Linus's current tree, my build speeds are back up to the normal rate.
 
-The code is a pain, with all of the various ctx types, and the nested 
-calls to perf_pmu_enable/perf_pmu_disable in particular.
+The difference is huge, 2 minutes to do a kernel build with that patch
+reverted, 8-10 minutes with it applied!  With all of the stable kernel
+builds and other trees, this is a huge problem for my workload (all I do
+is kernel builds it seems...)
 
+I see some patches you marked as "fixes" that you sent to Rafael, do you
+want me to test any of those?  How am I the only one seeing this
+problem, do you need my cpu information or anything else?
 
-So I've hacked the code so that it shows the last location where 
-hwc->state was cleared for an event (i.e., where it was last enabled).
+Oh, and because of the problems, I'll just drop this patch from the
+-stable trees for now, I don't want to pollute them with the issue until
+it is resolved properly.
 
-The NMI counter event was enabled in _perf_install_in_context (presumably 
-at creation time) and as far as I can tell never disabled.
+thanks,
 
-Then when x86_pmu_enable/x86_pmu_start gets called at the end of
-_perf_event_context_sched_in() it is sad because the NMI counter event is 
-not disabled.
-
-So where would the NMI counter event get disabled?  Would it never get 
-disabled, just because it's always running and always gets the same fixed 
-slot?  Why isn't this a problem all the time, not just with corner cases?
-
-Is somehow n_added getting confused?
-
-Vince
-
+greg k-h
