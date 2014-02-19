@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbaBSOUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:20:10 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:48275 "EHLO extserv.mm-sol.com"
+	id S1753900AbaBSOVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:21:39 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50128 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753760AbaBSOUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:20:07 -0500
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH] clk: qcom: Add missing clock at index GCC_XO_CLK for MSM8974
-Date: Wed, 19 Feb 2014 16:18:41 +0200
-Message-Id: <1392819521-25734-1-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753561AbaBSOVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 09:21:38 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Borislav Petkov <bp@suse.de>, Eric Biederman <ebiederm@xmission.com>,
+        kexec@lists.infradead.org
+Subject: [PATCH] kexec: Fix ->unuseable_pages typo
+Date: Wed, 19 Feb 2014 15:21:35 +0100
+Message-Id: <1392819695-24116-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.5.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+From: Borislav Petkov <bp@suse.de>
 
-Accessing GCC on MSM8974 trough <&gcc GCC_XO_CLK> lead to NULL
-pointer dereference. Fix this.
+Let's use the more common "unusable".
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Cc: Eric Biederman <ebiederm@xmission.com>
+Cc: kexec@lists.infradead.org
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- drivers/clk/qcom/gcc-msm8974.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/kexec.h | 2 +-
+ kernel/kexec.c        | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/clk/qcom/gcc-msm8974.c b/drivers/clk/qcom/gcc-msm8974.c
-index 51d457e..98be7ea 100644
---- a/drivers/clk/qcom/gcc-msm8974.c
-+++ b/drivers/clk/qcom/gcc-msm8974.c
-@@ -2625,6 +2625,8 @@ static int gcc_msm8974_probe(struct platform_device *pdev)
- 	if (IS_ERR(clk))
- 		return PTR_ERR(clk);
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index 6d4066cdb5b5..969237e338d1 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -100,7 +100,7 @@ struct kimage {
  
-+	clks[GCC_XO_CLK] = clk;
-+
- 	/* Should move to DT node? */
- 	clk = clk_register_fixed_rate(dev, "sleep_clk_src", NULL,
- 				      CLK_IS_ROOT, 32768);
+ 	struct list_head control_pages;
+ 	struct list_head dest_pages;
+-	struct list_head unuseable_pages;
++	struct list_head unusable_pages;
+ 
+ 	/* Address of next control page to allocate for crash kernels. */
+ 	unsigned long control_page;
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 60bafbed06ab..a2d0c5f80bf2 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -152,7 +152,7 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
+ 	INIT_LIST_HEAD(&image->dest_pages);
+ 
+ 	/* Initialize the list of unusable pages */
+-	INIT_LIST_HEAD(&image->unuseable_pages);
++	INIT_LIST_HEAD(&image->unusable_pages);
+ 
+ 	/* Read in the segments */
+ 	image->nr_segments = nr_segments;
+@@ -607,7 +607,7 @@ static void kimage_free_extra_pages(struct kimage *image)
+ 	kimage_free_page_list(&image->dest_pages);
+ 
+ 	/* Walk through and free any unusable pages I have cached */
+-	kimage_free_page_list(&image->unuseable_pages);
++	kimage_free_page_list(&image->unusable_pages);
+ 
+ }
+ static void kimage_terminate(struct kimage *image)
+@@ -731,7 +731,7 @@ static struct page *kimage_alloc_page(struct kimage *image,
+ 		/* If the page cannot be used file it away */
+ 		if (page_to_pfn(page) >
+ 				(KEXEC_SOURCE_MEMORY_LIMIT >> PAGE_SHIFT)) {
+-			list_add(&page->lru, &image->unuseable_pages);
++			list_add(&page->lru, &image->unusable_pages);
+ 			continue;
+ 		}
+ 		addr = page_to_pfn(page) << PAGE_SHIFT;
 -- 
-1.7.9.5
+1.8.5.rc3
 
