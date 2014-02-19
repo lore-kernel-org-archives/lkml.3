@@ -1,75 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214AbaBSPg3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:36:29 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:33782 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898AbaBSPg2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:36:28 -0500
-Date: Wed, 19 Feb 2014 10:36:24 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alexandre.torgue@st.com, linux-ide@vger.kernel.org,
-        hdegoede@redhat.com
-Subject: Re: [PATCH 3/3] ahci: st: Add support for ST's SATA IP
-Message-ID: <20140219153624.GI10134@htj.dyndns.org>
-References: <1392641818-23419-1-git-send-email-lee.jones@linaro.org>
- <1392641818-23419-3-git-send-email-lee.jones@linaro.org>
- <20140218233645.GP31892@mtj.dyndns.org>
- <20140219083025.GB10504@lee--X1>
- <20140219140458.GA10134@htj.dyndns.org>
- <20140219150121.GG10504@lee--X1>
- <20140219150654.GH10134@htj.dyndns.org>
- <20140219152336.GH10504@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140219152336.GH10504@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754224AbaBSPhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:37:04 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15745 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830AbaBSPhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 10:37:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,506,1389772800"; 
+   d="scan'208";a="485868868"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/5 RESEND] mei: add mei_hbuf_acquire wrapper
+Date: Wed, 19 Feb 2014 17:35:47 +0200
+Message-Id: <1392824151-5886-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 03:23:36PM +0000, Lee Jones wrote:
-> Since when has maintaining core code been the responsibility of the
-> leaf driver developers? If you're aware that the core code is
-> sub-standard then it's you who should be fixing it.
+A client has to acquire host buffer
+before writing, we add lock like wrapper
+to replace the code snippet
 
-No, there isn't this clear divide between core and the leaf
-developers.  People working on the "core" don't just grow off the
-ground.  You can't just go around piling mess around claiming that
-it's not your responsbility and then expect someone else to clean up
-after you.  How can that be *possibly* sustainable?
+if (dev->hbuf_is_ready)
+        dev->hbuf_is_ready = false;
 
-> I think it's great that forward thinking developers like Hans take on
-> challenges to improve subsystems which are lacking in one way or
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/amthif.c    |  7 +-----
+ drivers/misc/mei/client.c    | 56 ++++++++++++++++++++++++++++----------------
+ drivers/misc/mei/hw-me.c     |  2 ++
+ drivers/misc/mei/hw-txe.c    | 17 +++++---------
+ drivers/misc/mei/interrupt.c |  6 ++---
+ drivers/misc/mei/mei_dev.h   |  2 ++
+ drivers/misc/mei/wd.c        | 14 +++++------
+ 7 files changed, 57 insertions(+), 47 deletions(-)
 
-Yeah, which happened only because I pushed back and Hans isn't even
-paid to do it.  Doesn't that say something?  Nobody is actually
-helping Hans' work.  Not at all, nada, zilch.  Just complain when
-directed towards it.
-
-> another, but holding back other development while this process is
-> ongoing is fundamentally wrong. Especially in this case where you're
-> still actively reviewing/NACKing the core changes.
-> 
-> Changes to APIs should either support backward-capability or change all
-> effected drivers. I haven't been able to apply the patches yet, so I
-> can't tell which one of these holds true, but I believe it's the
-> former. In which case any new driver using the _current_ (not old)
-> API should fold neatly in. I've even offered to convert to the new API
-> once it's Mainlined. How can I say fairer than that?
-> 
-> Finally, do try and stay at least a little bit professional on the
-> MLs. That sort of disrespectful, rude behaviour may be how you guys do
-> it at Redhat, but most will think it's nothing more than childish.
-
-If you want me to be respectful towards you, don't be a crybaby
-screaming "it's not fair".  It apparently isn't clear to you that you
-have to chip in for the whole thing to be maintainable in the long
-term.  Unfair... lol, that was a good one, really.
-
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index 61275e6..e7ba880 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -296,9 +296,8 @@ static int mei_amthif_send_cmd(struct mei_device *dev, struct mei_cl_cb *cb)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (ret && dev->hbuf_is_ready) {
++	if (ret && mei_hbuf_acquire(dev)) {
+ 		ret = 0;
+-		dev->hbuf_is_ready = false;
+ 		if (cb->request_buffer.size > mei_hbuf_max_len(dev)) {
+ 			mei_hdr.length = mei_hbuf_max_len(dev);
+ 			mei_hdr.msg_complete = 0;
+@@ -330,10 +329,6 @@ static int mei_amthif_send_cmd(struct mei_device *dev, struct mei_cl_cb *cb)
+ 			list_add_tail(&cb->list, &dev->write_list.list);
+ 		}
+ 	} else {
+-		if (!dev->hbuf_is_ready)
+-			dev_dbg(&dev->pdev->dev, "host buffer is not empty");
+-
+-		dev_dbg(&dev->pdev->dev, "No flow control credentials, so add iamthif cb to write list.\n");
+ 		list_add_tail(&cb->list, &dev->write_list.list);
+ 	}
+ 	return 0;
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index e443bf1..286bc57 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -371,6 +371,23 @@ void mei_host_client_init(struct work_struct *work)
+ 	mutex_unlock(&dev->device_lock);
+ }
+ 
++/**
++ * mei_hbuf_acquire: try to acquire host buffer
++ *
++ * @dev: the device structure
++ * returns true if host buffer was acquired
++ */
++bool mei_hbuf_acquire(struct mei_device *dev)
++{
++	if (!dev->hbuf_is_ready) {
++		dev_dbg(&dev->pdev->dev, "hbuf is not ready\n");
++		return false;
++	}
++
++	dev->hbuf_is_ready = false;
++
++	return true;
++}
+ 
+ /**
+  * mei_cl_disconnect - disconnect host client from the me one
+@@ -402,8 +419,7 @@ int mei_cl_disconnect(struct mei_cl *cl)
+ 		return -ENOMEM;
+ 
+ 	cb->fop_type = MEI_FOP_CLOSE;
+-	if (dev->hbuf_is_ready) {
+-		dev->hbuf_is_ready = false;
++	if (mei_hbuf_acquire(dev)) {
+ 		if (mei_hbm_cl_disconnect_req(dev, cl)) {
+ 			rets = -ENODEV;
+ 			cl_err(dev, cl, "failed to disconnect.\n");
+@@ -503,9 +519,8 @@ int mei_cl_connect(struct mei_cl *cl, struct file *file)
+ 
+ 	cb->fop_type = MEI_FOP_CONNECT;
+ 
+-	if (dev->hbuf_is_ready && !mei_cl_is_other_connecting(cl)) {
+-		dev->hbuf_is_ready = false;
+-
++	/* run hbuf acquire last so we don't have to undo */
++	if (!mei_cl_is_other_connecting(cl) && mei_hbuf_acquire(dev)) {
+ 		if (mei_hbm_cl_connect_req(dev, cl)) {
+ 			rets = -ENODEV;
+ 			goto out;
+@@ -663,8 +678,7 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+ 		goto err;
+ 
+ 	cb->fop_type = MEI_FOP_READ;
+-	if (dev->hbuf_is_ready) {
+-		dev->hbuf_is_ready = false;
++	if (mei_hbuf_acquire(dev)) {
+ 		if (mei_hbm_cl_flow_control_req(dev, cl)) {
+ 			cl_err(dev, cl, "flow control send failed\n");
+ 			rets = -ENODEV;
+@@ -799,21 +813,29 @@ int mei_cl_write(struct mei_cl *cl, struct mei_cl_cb *cb, bool blocking)
+ 
+ 
+ 	cb->fop_type = MEI_FOP_WRITE;
++	cb->buf_idx = 0;
++	cl->writing_state = MEI_IDLE;
++
++	mei_hdr.host_addr = cl->host_client_id;
++	mei_hdr.me_addr = cl->me_client_id;
++	mei_hdr.reserved = 0;
++	mei_hdr.msg_complete = 0;
++	mei_hdr.internal = cb->internal;
+ 
+ 	rets = mei_cl_flow_ctrl_creds(cl);
+ 	if (rets < 0)
+ 		goto err;
+ 
+-	/* Host buffer is not ready, we queue the request */
+-	if (rets == 0 || !dev->hbuf_is_ready) {
+-		cb->buf_idx = 0;
+-		/* unseting complete will enqueue the cb for write */
+-		mei_hdr.msg_complete = 0;
++	if (rets == 0) {
++		cl_dbg(dev, cl, "No flow control credentials: not sending.\n");
++		rets = buf->size;
++		goto out;
++	}
++	if (!mei_hbuf_acquire(dev)) {
++		cl_dbg(dev, cl, "Cannot acquire the host buffer: not sending.\n");
+ 		rets = buf->size;
+ 		goto out;
+ 	}
+-
+-	dev->hbuf_is_ready = false;
+ 
+ 	/* Check for a maximum length */
+ 	if (buf->size > mei_hbuf_max_len(dev)) {
+@@ -824,12 +846,6 @@ int mei_cl_write(struct mei_cl *cl, struct mei_cl_cb *cb, bool blocking)
+ 		mei_hdr.msg_complete = 1;
+ 	}
+ 
+-	mei_hdr.host_addr = cl->host_client_id;
+-	mei_hdr.me_addr = cl->me_client_id;
+-	mei_hdr.reserved = 0;
+-	mei_hdr.internal = cb->internal;
+-
+-
+ 	rets = mei_write_message(dev, &mei_hdr, buf->data);
+ 	if (rets)
+ 		goto err;
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 847c9e5..b0c42d6 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -513,6 +513,8 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
+ 		}
+ 	}
+ 
++	dev->hbuf_is_ready = mei_hbuf_is_ready(dev);
++
+ 	rets = mei_irq_write_handler(dev, &complete_list);
+ 
+ 	dev->hbuf_is_ready = mei_hbuf_is_ready(dev);
+diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
+index 19579e5..ab0442e 100644
+--- a/drivers/misc/mei/hw-txe.c
++++ b/drivers/misc/mei/hw-txe.c
+@@ -604,7 +604,6 @@ static int mei_txe_write(struct mei_device *dev,
+ 		mei_txe_input_payload_write(dev, i + 1, reg);
+ 	}
+ 
+-	dev->hbuf_is_ready = false;
+ 	/* Set Input-Doorbell */
+ 	mei_txe_input_doorbell_set(hw);
+ 
+@@ -982,20 +981,16 @@ irqreturn_t mei_txe_irq_thread_handler(int irq, void *dev_id)
+ 		dev->hbuf_is_ready = true;
+ 
+ 	if (hw->aliveness && dev->hbuf_is_ready) {
+-		/* if SeC did not complete reading the written data by host */
+-		if (!mei_txe_is_input_ready(dev)) {
+-			dev_dbg(&dev->pdev->dev, "got Input Ready Int, but SEC_IPC_INPUT_STATUS_RDY is 0.\n");
+-			goto end;
+-		}
+ 
++		/* get the real register value */
++		dev->hbuf_is_ready = mei_hbuf_is_ready(dev);
+ 		rets = mei_irq_write_handler(dev, &complete_list);
+-		if (rets)
+-			dev_err(&dev->pdev->dev,
+-				"mei_irq_write_handler ret = %d.\n", rets);
++		if (rets && rets != -EMSGSIZE)
++			dev_err(&dev->pdev->dev, "mei_irq_write_handler ret = %d.\n",
++				rets);
++		dev->hbuf_is_ready = mei_hbuf_is_ready(dev);
+ 	}
+ 
+-
+-
+ 	mei_irq_compl_handler(dev, &complete_list);
+ 
+ end:
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 6c4597e..aed03ef 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -446,10 +446,10 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 	s32 slots;
+ 	int ret;
+ 
+-	if (!mei_hbuf_is_ready(dev)) {
+-		dev_dbg(&dev->pdev->dev, "host buffer is not empty.\n");
++
++	if (!mei_hbuf_acquire(dev))
+ 		return 0;
+-	}
++
+ 	slots = mei_hbuf_empty_slots(dev);
+ 	if (slots <= 0)
+ 		return -EMSGSIZE;
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 030b29e..52499bc 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -630,6 +630,8 @@ static inline int mei_count_full_read_slots(struct mei_device *dev)
+ 	return dev->ops->rdbuf_full_slots(dev);
+ }
+ 
++bool mei_hbuf_acquire(struct mei_device *dev);
++
+ #if IS_ENABLED(CONFIG_DEBUG_FS)
+ int mei_dbgfs_register(struct mei_device *dev, const char *name);
+ void mei_dbgfs_deregister(struct mei_device *dev);
+diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
+index 8c30282..afe976a 100644
+--- a/drivers/misc/mei/wd.c
++++ b/drivers/misc/mei/wd.c
+@@ -158,9 +158,8 @@ int mei_wd_stop(struct mei_device *dev)
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	if (ret && dev->hbuf_is_ready) {
++	if (ret && mei_hbuf_acquire(dev)) {
+ 		ret = 0;
+-		dev->hbuf_is_ready = false;
+ 
+ 		if (!mei_wd_send(dev)) {
+ 			ret = mei_cl_flow_ctrl_reduce(&dev->wd_cl);
+@@ -265,8 +264,8 @@ static int mei_wd_ops_stop(struct watchdog_device *wd_dev)
+  */
+ static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
+ {
+-	int ret = 0;
+ 	struct mei_device *dev;
++	int ret;
+ 
+ 	dev = watchdog_get_drvdata(wd_dev);
+ 	if (!dev)
+@@ -282,10 +281,12 @@ static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
+ 
+ 	dev->wd_state = MEI_WD_RUNNING;
+ 
++	ret = mei_cl_flow_ctrl_creds(&dev->wd_cl);
++	if (ret < 0)
++		goto end;
+ 	/* Check if we can send the ping to HW*/
+-	if (dev->hbuf_is_ready && mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
++	if (ret && mei_hbuf_acquire(dev)) {
+ 
+-		dev->hbuf_is_ready = false;
+ 		dev_dbg(&dev->pdev->dev, "wd: sending ping\n");
+ 
+ 		if (mei_wd_send(dev)) {
+@@ -295,8 +296,7 @@ static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
+ 		}
+ 
+ 		if (mei_cl_flow_ctrl_reduce(&dev->wd_cl)) {
+-			dev_err(&dev->pdev->dev,
+-				"wd: mei_cl_flow_ctrl_reduce() failed.\n");
++			dev_err(&dev->pdev->dev, "wd: mei_cl_flow_ctrl_reduce() failed.\n");
+ 			ret = -EIO;
+ 			goto end;
+ 		}
 -- 
-tejun
+1.8.5.3
+
