@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990AbaBSTYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:24:16 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:47848 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754776AbaBSTYO (ORCPT
+	id S1755073AbaBSTZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:25:14 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:56742 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402AbaBSTZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:24:14 -0500
-Message-ID: <530512F1.3060304@cogentembedded.com>
-Date: Wed, 19 Feb 2014 23:24:17 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 19 Feb 2014 14:25:12 -0500
+Message-ID: <53050501.3070101@hp.com>
+Date: Wed, 19 Feb 2014 14:24:49 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Peter Chen <Peter.Chen@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] usb: chipidea: msm: Add device tree support
-References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>		 <1392729681-21022-3-git-send-email-iivanov@mm-sol.com>		 <53039E2E.2030503@cogentembedded.com>	 <1392743648.17130.17.camel@iivanov-dev>	 <5303A71B.7060208@cogentembedded.com> <1392824921.17130.71.camel@iivanov-dev>
-In-Reply-To: <1392824921.17130.71.camel@iivanov-dev>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com> <20140218073111.GW27965@twins.programming.kicks-ass.net> <5303B4C4.2040907@hp.com> <20140218212827.GR14089@laptop.programming.kicks-ass.net> <5303FDEC.9060001@hp.com> <20140219085107.GG27965@twins.programming.kicks-ass.net>
+In-Reply-To: <20140219085107.GG27965@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 02/19/2014 03:51 AM, Peter Zijlstra wrote:
+> On Tue, Feb 18, 2014 at 07:42:20PM -0500, Waiman Long wrote:
+>> On 02/18/2014 04:28 PM, Peter Zijlstra wrote:
+>>> On Tue, Feb 18, 2014 at 02:30:12PM -0500, Waiman Long wrote:
+>>>> I will start looking at how to make it work with paravirt. Hopefully, it
+>>>> won't take too long.
+>>> The cheap way out is to simply switch to the test-and-set spinlock on
+>>> whatever X86_FEATURE_ indicates a guest I suppose.
+>> I don't think there is X86_FEATURE flag that indicates running in a guest.
+>> In fact, a guest should never find out if it is running virtualized.
+> No it very much should; how else is paravirt ever going to work?
 
-On 02/19/2014 06:48 PM, Ivan T. Ivanov wrote:
+We do have a CONFIG_PARAVIRT macro that turns on or off PV support. The 
+queue spinlock can be easily changed into an unfair lock which allows 
+lock stealing. We could have a config option to make it unfair in the 
+PARAVIRT environment, but I don't think Linus like the idea of an unfair 
+lock.
 
->>>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-
->>>>> Allows controller to be specified via device tree.
->>>>> Pass PHY phandle specified in DT to core driver.
-
->>>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->>>>> ---
->>>>>     drivers/usb/chipidea/ci_hdrc_msm.c |   23 ++++++++++++++++++++++-
->>>>>     1 file changed, 22 insertions(+), 1 deletion(-)
-
->>>>       You also need to describe the binding you're creating in
->>>> Documentation/devicetree/bindings/usb/<file>.txt.
-
->>> Did you check "[PATCH v2 1/3]"?
-
->>      Did you send it to 'linux-usb'?
-
-> Opps, sorry. get_maintainer.pl did not list linux-usb and I forgot
-> to add it. Would like to resend it?
-
-    I guess so, since the binding document would go in thru the USB tree 
-anyway, IIUC.
-
-> Regards,
-> Ivan
-
-WBR, Sergei
-
+-Longman
