@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaBSD2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 22:28:11 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42296 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaBSD1m (ORCPT
+	id S1751848AbaBSDcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 22:32:54 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:35854 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaBSDcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 22:27:42 -0500
-Message-ID: <530423CB.5060105@linux.vnet.ibm.com>
-Date: Wed, 19 Feb 2014 08:53:55 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 18 Feb 2014 22:32:53 -0500
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Preeti Murthy <preeti.lkml@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+In-Reply-To: <1392777974-26254-1-git-send-email-festevam@gmail.com>
+References: <1392777974-26254-1-git-send-email-festevam@gmail.com>
+Date: Wed, 19 Feb 2014 09:02:52 +0530
+Message-ID: <CAK9yfHzaUhBTooqF8+ywGgAS4kob7MTxOv0ncLifmYws0crpAA@mail.gmail.com>
+Subject: Re: [PATCH] pfuze100-regulator: Fix of_node_get() parameter
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT Pull] timer fixes for 3.14
-References: <alpine.DEB.2.02.1402152005210.21991@ionos.tec.linutronix.de> <CAM4v1pNDbiC54Ot6J2Tpc9t4BgT3fY7jgZkb6Fem4OfedwvV-w@mail.gmail.com> <alpine.DEB.2.02.1402181938140.4468@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1402181938140.4468@ionos.tec.linutronix.de>
+        Fabio Estevam <fabio.estevam@freescale.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021903-0928-0000-0000-00000692A5AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 12:10 AM, Thomas Gleixner wrote:
-> On Tue, 18 Feb 2014, Preeti Murthy wrote:
-> 
->> Hi Thomas,
->>
->> With regard to the patch: "tick: Clear broadcast pending bit when
->> switching to oneshot"
->> isn't BROADCAST_EXIT called atleast after initializing the high
->> resolution timers while
->> handling the broadcast IPI and before re-entering idle? This should
->> clear the cpu bit
->> in the pending mask right?
->>
->> idle()
->> |__BROADCAST_ENTER
->>     |__halt()
->>       |__broadcast_ipi
->>           |__init_highres()->clear oneshot mask
->>               |__return from interrupt->BROADCAST_EXIT (clear pending mask)
-> 
-> Unfortunately not:
-> 
->      if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
->      	  clear pending mask;
->      }
-> 
->>                    |__re-enter idle
-> 
-> Go figure :)
+On 19 February 2014 08:16, Fabio Estevam <festevam@gmail.com> wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+>
+> Since commit d7857c42 (regulator: pfuze100: Use of_get_child_by_name) we get
+> the following probe failure:
+>
+> pfuze100-regulator 1-0008: Full layer: 1, Metal layer: 0
+> pfuze100-regulator 1-0008: FAB: 0, FIN: 0
+> pfuze100-regulator 1-0008: regulators node not found
+> pfuze100-regulator: probe of 1-0008 failed with error -22
+>
+> Now that of_get_child_by_name() is used we should adjust the device_node pointer
+> 'np' to not get the parent node anymore.
+>
+> Suggested-by: Shawn Guo <shawn.guo@linaro.org>
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-Ah right! Thanks :)
+Thanks for the fix Fabio.
+Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-Regards
-Preeti U Murthy
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+Mark,
+There are a few more instances that should be fixed like this one. How would you
+prefer to handle them - Resend the complete patch or send just the
+incremental fix?
 
+-- 
+With warm regards,
+Sachin
