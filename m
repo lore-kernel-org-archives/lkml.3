@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaBSJxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 04:53:24 -0500
-Received: from nbl-ex10-fe01.nebula.fi ([188.117.32.121]:57262 "EHLO
-	ex10.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753229AbaBSJxV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 04:53:21 -0500
-Message-ID: <53047F0E.7040705@tuxera.com>
-Date: Wed, 19 Feb 2014 11:53:18 +0200
-From: sougata santra <sougata@tuxera.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753421AbaBSJyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 04:54:36 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:1964 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753187AbaBSJyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 04:54:33 -0500
+X-IronPort-AV: E=Sophos;i="4.97,504,1389744000"; 
+   d="scan'208";a="103834096"
+Message-ID: <1392803670.23084.100.camel@kazak.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH net-next v5 2/9] xen-netback: Change TX path
+ from grant copy to mapping
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <jonathan.davies@citrix.com>, <wei.liu2@citrix.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Date: Wed, 19 Feb 2014 09:54:30 +0000
+In-Reply-To: <5303AA97.3010202@citrix.com>
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
+		<1390253069-25507-3-git-send-email-zoltan.kiss@citrix.com>
+	 <1392745235.23084.60.camel@kazak.uk.xensource.com>
+	 <5303AA97.3010202@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Christoph Hellwig <hch@lst.de>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Joe Perches <joe@perches.com>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>
-Subject: Re: [PATCH] hfsplus: fix concurrent acess of alloc_blocks
-References: <1392639647.29849.11.camel@ultrabook> <20140218140642.fdc6a406f22de69bdf73e66e@linux-foundation.org>
-In-Reply-To: <20140218140642.fdc6a406f22de69bdf73e66e@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [194.100.106.164]
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 12:06 AM, Andrew Morton wrote:
-> On Mon, 17 Feb 2014 14:20:47 +0200 Sougata Santra <sougata@tuxera.com> wrote:
->
->>
->> Concurrent access to alloc_blocks in hfsplus_inode_info is
->> protected by extents_lock mutex. This patch fixes two
->> instances where alloc_blocks modification was not protected
->> with this lock. This fixes possible allocation bitmap
->> corruption in race conditions while extending and truncating
->> files.
->>
->> ...
->>
->> --- a/fs/hfsplus/extents.c
->> +++ b/fs/hfsplus/extents.c
->> @@ -498,11 +498,13 @@ int hfsplus_file_extend(struct inode *inode)
->>   			goto insert_extent;
->>   	}
->>   out:
->> -	mutex_unlock(&hip->extents_lock);
->>   	if (!res) {
->>   		hip->alloc_blocks += len;
->> +		mutex_unlock(&hip->extents_lock);
->>   		hfsplus_mark_inode_dirty(inode, HFSPLUS_I_ALLOC_DIRTY);
->> +		return 0;
->>   	}
->> +	mutex_unlock(&hip->extents_lock);
->>   	return res;
->>
->
-> This looks OK.
->
->> @@ -592,9 +594,9 @@ void hfsplus_file_truncate(struct inode *inode)
->>   		hfs_brec_remove(&fd);
->>   	}
->>   	hfs_find_exit(&fd);
->> -	mutex_unlock(&hip->extents_lock);
->>
->>   	hip->alloc_blocks = blk_cnt;
->> +	mutex_unlock(&hip->extents_lock);
->>   out:
->>   	hip->phys_size = inode->i_size;
->>   	hip->fs_blocks = (inode->i_size + sb->s_blocksize - 1) >>
->
-> But this does not.  To provide locking for
-> hfsplus_inode_info.alloc_blocks, we must take the lock *before* taking
-> a local copy of ->alloc_blocks.
->
-> Please review:
->
-> --- a/fs/hfsplus/extents.c~hfsplus-fix-concurrent-acess-of-alloc_blocks-fix
-> +++ a/fs/hfsplus/extents.c
-> @@ -556,11 +556,13 @@ void hfsplus_file_truncate(struct inode
->
->   	blk_cnt = (inode->i_size + HFSPLUS_SB(sb)->alloc_blksz - 1) >>
->   			HFSPLUS_SB(sb)->alloc_blksz_shift;
-> +
-> +	mutex_lock(&hip->extents_lock);
-> +
->   	alloc_cnt = hip->alloc_blocks;
->   	if (blk_cnt == alloc_cnt)
-> -		goto out;
-> +		goto out_unlock;
->
-> -	mutex_lock(&hip->extents_lock);
->   	res = hfs_find_init(HFSPLUS_SB(sb)->ext_tree, &fd);
->   	if (res) {
->   		mutex_unlock(&hip->extents_lock);
-> @@ -594,6 +596,7 @@ void hfsplus_file_truncate(struct inode
->   	hfs_find_exit(&fd);
->
->   	hip->alloc_blocks = blk_cnt;
-> +out_unlock:
->   	mutex_unlock(&hip->extents_lock);
->   out:
-We can also remove this label ?
->   	hip->phys_size = inode->i_size;
-> _
->
+On Tue, 2014-02-18 at 18:46 +0000, David Vrabel wrote:
+> On 18/02/14 17:40, Ian Campbell wrote:
+> > On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
+> >> 
+> >> @@ -344,8 +346,26 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+> >>  	vif->pending_prod = MAX_PENDING_REQS;
+> >>  	for (i = 0; i < MAX_PENDING_REQS; i++)
+> >>  		vif->pending_ring[i] = i;
+> >> -	for (i = 0; i < MAX_PENDING_REQS; i++)
+> >> -		vif->mmap_pages[i] = NULL;
+> >> +	spin_lock_init(&vif->dealloc_lock);
+> >> +	spin_lock_init(&vif->response_lock);
+> >> +	/* If ballooning is disabled, this will consume real memory, so you
+> >> +	 * better enable it.
+> > 
+> > Almost no one who would be affected by this is going to read this
+> > comment. And it doesn't just require enabling ballooning, but actually
+> > booting with some maxmem "slack" to leave space.
+> > 
+> > Classic-xen kernels used to add 8M of slop to the physical address space
+> > to leave a suitable pool for exactly this sort of thing. I never liked
+> > that but perhaps it should be reconsidered (or at least raised as a
+> > possibility with the core-Xen Linux guys).
+> 
+> I plan to fix the balloon memory hotplug stuff to do the right thing
+
+Which is for alloc_xenballoon_pages to hotplug a new empty region,
+rather than inflating the balloon if it doesn't have enough pages to
+satisfy the allocation? Or something else?
+
+> (it's almost there -- it just tries to overlap the new memory with
+> existing stuff).
+> 
+> David
+
 
