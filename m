@@ -1,80 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaBSGbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 01:31:47 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:53106 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaBSGbq (ORCPT
+	id S1752355AbaBSGfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 01:35:30 -0500
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:64148 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781AbaBSGf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 01:31:46 -0500
-Date: Wed, 19 Feb 2014 14:31:31 +0800
-From: Kevin Hao <haokexin@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 4/4] of: Add self test for of_match_node()
-Message-ID: <20140219063130.GC14031@pek-khao-d1.corp.ad.wrs.com>
-References: <1392762680-1498-1-git-send-email-grant.likely@linaro.org>
- <1392762680-1498-5-git-send-email-grant.likely@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6zdv2QT/q3FMhpsV"
-Content-Disposition: inline
-In-Reply-To: <1392762680-1498-5-git-send-email-grant.likely@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 19 Feb 2014 01:35:29 -0500
+From: Hsin-Yu Chao <hychao@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Dylan Reid <dgreid@chromium.org>,
+        Chih-Chung Chang <chihchung@chromium.org>, Xi Wang <xi.wang@gmail.com>,
+        Hsin-Yu Chao <hychao@chromium.org>,
+        Ian Minett <ian_minett@creativelabs.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ALSA: hda/ca0132 - setup/cleanup streams
+Date: Wed, 19 Feb 2014 14:27:07 +0800
+Message-Id: <1392791227-16810-1-git-send-email-hychao@chromium.org>
+X-Mailer: git-send-email 1.9.0.rc1.175.g0b1dcb5
+In-Reply-To: <s5hppmztbvl.wl%tiwai@suse.de>
+References: <s5hppmztbvl.wl%tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When a HDMI stream is opened with the same stream tag
+as a following opened stream to ca0132, audio will be
+heard from two ports simultaneously.
+Fix this issue by change to use snd_hda_codec_setup_stream
+and snd_hda_codec_cleanup_stream instead, so that an
+inactive stream can be marked as 'dirty' when found
+with a conflict stream tag, and then get purified.
 
---6zdv2QT/q3FMhpsV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Hsin-Yu Chao <hychao@chromium.org>
+Reviewed-by: Chih-Chung Chang <chihchung@chromium.org>
+---
+ sound/pci/hda/patch_ca0132.c | 66 +++++---------------------------------------
+ 1 file changed, 7 insertions(+), 59 deletions(-)
 
-On Tue, Feb 18, 2014 at 10:31:20PM +0000, Grant Likely wrote:
-> Adds a selftest function for the of_match_node function. of_match_node
-> is supposed to handle precedence for the compatible property as well as
-> the name and device_type values. This patch adds some test case data and
-> a function that makes sure each test node matches against the correct
-> entry of an of_device_id table.
->=20
-> This code was written to verify the new of_match_node() implementation
-> that is an earlier part of this series.
->=20
-> Currently all but one test passes. There is one scenario where the empty
-> "b/name2" node is getting matched against an entry without any
-> device_type property at all. It is unknown why this is, but it needs to
-> be solved before this patch can be committed. (However, this is testing
-> the new of_match_table implementation, which still does far better than
-> the old implementation which gets the precedence completely wrong.)
+diff --git a/sound/pci/hda/patch_ca0132.c b/sound/pci/hda/patch_ca0132.c
+index 54d1479..0aa72ee 100644
+--- a/sound/pci/hda/patch_ca0132.c
++++ b/sound/pci/hda/patch_ca0132.c
+@@ -2662,60 +2662,6 @@ static bool dspload_wait_loaded(struct hda_codec *codec)
+ }
+ 
+ /*
+- * PCM stuffs
+- */
+-static void ca0132_setup_stream(struct hda_codec *codec, hda_nid_t nid,
+-				 u32 stream_tag,
+-				 int channel_id, int format)
+-{
+-	unsigned int oldval, newval;
+-
+-	if (!nid)
+-		return;
+-
+-	snd_printdd(
+-		   "ca0132_setup_stream: NID=0x%x, stream=0x%x, "
+-		   "channel=%d, format=0x%x\n",
+-		   nid, stream_tag, channel_id, format);
+-
+-	/* update the format-id if changed */
+-	oldval = snd_hda_codec_read(codec, nid, 0,
+-				    AC_VERB_GET_STREAM_FORMAT,
+-				    0);
+-	if (oldval != format) {
+-		msleep(20);
+-		snd_hda_codec_write(codec, nid, 0,
+-				    AC_VERB_SET_STREAM_FORMAT,
+-				    format);
+-	}
+-
+-	oldval = snd_hda_codec_read(codec, nid, 0, AC_VERB_GET_CONV, 0);
+-	newval = (stream_tag << 4) | channel_id;
+-	if (oldval != newval) {
+-		snd_hda_codec_write(codec, nid, 0,
+-				    AC_VERB_SET_CHANNEL_STREAMID,
+-				    newval);
+-	}
+-}
+-
+-static void ca0132_cleanup_stream(struct hda_codec *codec, hda_nid_t nid)
+-{
+-	unsigned int val;
+-
+-	if (!nid)
+-		return;
+-
+-	snd_printdd(KERN_INFO "ca0132_cleanup_stream: NID=0x%x\n", nid);
+-
+-	val = snd_hda_codec_read(codec, nid, 0, AC_VERB_GET_CONV, 0);
+-	if (!val)
+-		return;
+-
+-	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_STREAM_FORMAT, 0);
+-	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_CHANNEL_STREAMID, 0);
+-}
+-
+-/*
+  * PCM callbacks
+  */
+ static int ca0132_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
+@@ -2726,7 +2672,7 @@ static int ca0132_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
+ {
+ 	struct ca0132_spec *spec = codec->spec;
+ 
+-	ca0132_setup_stream(codec, spec->dacs[0], stream_tag, 0, format);
++	snd_hda_codec_setup_stream(codec, spec->dacs[0], stream_tag, 0, format);
+ 
+ 	return 0;
+ }
+@@ -2745,7 +2691,7 @@ static int ca0132_playback_pcm_cleanup(struct hda_pcm_stream *hinfo,
+ 	if (spec->effects_switch[PLAY_ENHANCEMENT - EFFECT_START_NID])
+ 		msleep(50);
+ 
+-	ca0132_cleanup_stream(codec, spec->dacs[0]);
++	snd_hda_codec_cleanup_stream(codec, spec->dacs[0]);
+ 
+ 	return 0;
+ }
+@@ -2824,8 +2770,8 @@ static int ca0132_capture_pcm_prepare(struct hda_pcm_stream *hinfo,
+ {
+ 	struct ca0132_spec *spec = codec->spec;
+ 
+-	ca0132_setup_stream(codec, spec->adcs[substream->number],
+-			    stream_tag, 0, format);
++	snd_hda_codec_setup_stream(codec, spec->adcs[substream->number],
++				   stream_tag, 0, format);
+ 
+ 	return 0;
+ }
+@@ -2839,7 +2785,7 @@ static int ca0132_capture_pcm_cleanup(struct hda_pcm_stream *hinfo,
+ 	if (spec->dsp_state == DSP_DOWNLOADING)
+ 		return 0;
+ 
+-	ca0132_cleanup_stream(codec, hinfo->nid);
++	snd_hda_codec_cleanup_stream(codec, hinfo->nid);
+ 	return 0;
+ }
+ 
+@@ -4742,6 +4688,8 @@ static int patch_ca0132(struct hda_codec *codec)
+ 		return err;
+ 
+ 	codec->patch_ops = ca0132_patch_ops;
++	codec->pcm_format_first = 1;
++	codec->no_sticky_stream = 1;
+ 
+ 	return 0;
+ }
+-- 
+1.8.3.2
 
-We can drop the above paragraph now since all the test cases passed on
-the new version of of_match_node().
-
->=20
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> Cc: Kevin Hau <haokexin@gmail.com>
-
-s/Hau/Hao/
-
-Thanks,
-Kevin
-
---6zdv2QT/q3FMhpsV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAEBAgAGBQJTBE/CAAoJEJNY7TDerrFxSrUH/3Jr8oBBifVwicj6UbNkWpwA
-7qCsikQdidZLBq79gSbUVWA8maUumULh8oLUG8DMMyraVU1eFs9rvO7Wd7GMmTkN
-+r2oFwTFxVumTNcvi2QYkbENwk2Z3477/dLCfIbJIUYKYKFf+Mxr4VS2kggd2qlw
-bK7jVWChOQrPWBqWCJYwFhZeIfVwLwL/0SXm8VpYlPKs9GMMMF0H35Sr5pD6/w/i
-Rvssz9XzmfMSpkVLzhRHhDhDLX40dshrrg3huKqIZ3D+5ORo2ZRdeBCUsILYardf
-F8QCkPfbi2jpTBjWbGRoxPV+kP7QcVgHrjT1BgUk0SnszJ/QK/4d8NtiJfi/34E=
-=/94d
------END PGP SIGNATURE-----
-
---6zdv2QT/q3FMhpsV--
