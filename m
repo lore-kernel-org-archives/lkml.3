@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaBSDJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 22:09:47 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:36578 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaBSDJp (ORCPT
+	id S1752767AbaBSDMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 22:12:23 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58026 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059AbaBSDMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 22:09:45 -0500
+	Tue, 18 Feb 2014 22:12:22 -0500
+Message-ID: <5304210B.9060604@linux.vnet.ibm.com>
+Date: Wed, 19 Feb 2014 11:12:11 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1392752362.2165.31.camel@flatline.rdu.redhat.com>
-References: <CALCETrU6M=Abo1z2cRoZy07-=3bwKiK84gCSMcBPLA1TkXPb8A@mail.gmail.com>
- <CACM3HyHwrKQAWZRhE2N1VtGKu1xSvcGeuMG1Ag+vzP2BA111cQ@mail.gmail.com>
- <CALCETrXXnSdyc5VpT8f6uu6kbO1cq4QwdKqr9z8AOhY_wsoBLA@mail.gmail.com> <1392752362.2165.31.camel@flatline.rdu.redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 18 Feb 2014 19:09:24 -0800
-Message-ID: <CALCETrXnLfqo=VyaM7TyDAmjXyZDoztzmaNxkLudoSN7OZBd4Q@mail.gmail.com>
-Subject: Re: [ARCH question] Do syscall_get_nr and syscall_get_arguments
- always work?
-To: Eric Paris <eparis@redhat.com>
-Cc: Jonas Bonn <jonas.bonn@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-arch <linux-arch@vger.kernel.org>, linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Steve Grubb <sgrubb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: paulus@samba.org, Ingo Molnar <mingo@redhat.com>, acme@ghostprotocols.net,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] sched: tip/master show panic while booting/rebooting
+References: <5302EBA3.10909@linux.vnet.ibm.com> <20140218112230.GA27965@twins.programming.kicks-ass.net>
+In-Reply-To: <20140218112230.GA27965@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021903-5816-0000-0000-00000C58E7EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 11:39 AM, Eric Paris <eparis@redhat.com> wrote:
-> On Fri, 2014-02-07 at 08:40 -0800, Andy Lutomirski wrote:
->> On Fri, Feb 7, 2014 at 4:58 AM, Jonas Bonn <jonas.bonn@gmail.com> wrote:
->> > Hi Andy,
->> >
->> > On 5 February 2014 00:50, Andy Lutomirski <luto@amacapital.net> wrote:
->> >>
->> >> I can't even find the system call entry point on mips.
->> >>
->> >>
->> >> Is there a semi-official answer here?
->> >
->> > I don't have an official answer for you, but when I wanted to do
->> > something with these entry points a couple of years back I discovered
->> > that they aren't very thoroughly implemented across the various
->> > architectures.  I started cleaning this up and can probably dig up
->> > some of this for you if you need it.
+On 02/18/2014 07:22 PM, Peter Zijlstra wrote:
+> On Tue, Feb 18, 2014 at 01:12:03PM +0800, Michael wang wrote:
+>> Hi, Folks
 >>
->> The syscall_get_xyz functions are certainly implemented and functional
->> in all relevant architectures -- the audit code is already using them.
->>  The thing I'm uncertain about is whether they are usable with no
->> syscall slow path bits set.
->>
->> I guess that, if the syscall restart logic needs to read the argument
->> registers, then they're probably reliably saved...
->
-> Al just indicated to me that on at least ia64, syscall_get_arguments()
-> is really expensive.  So maybe not a deal breaker, but sounds like we'd
-> lose a lot of performance trying to get them at syscall exit...
->
+>> Got below panic while testing tip/master on x86 box, it randomly
+>> occur while booting or rebooting, any ideas?
+> 
+> The obvious pick would be the relocation of the idle_balance call, but
+> I'm not sure how that'll end up stalling.
 
-I wonder how slow syscall_get_arguments has to be before it's a real
-problem.  Remember that we only need to call it when we already know
-that an audit record needs to be written (or if a syscall argument is
-used in a filter rule, I suppose -- I'm sure sure whether that's
-possible).  As long as syscall_get_nr is fast, which I think it is on
-ia64, then the tradeoff might still be a win.
+I've review the code again, seems like it was caused by the same issue
+we discussed (RT/DL enqueued issue), I found that idle_balance() will
+return 1 in such cases:
 
-But I think this is still a bit of a lost cause.  Currently, if I'm
-reading the code correctly, signal delivery to a non-auditd process
-can result in writing an audit event.  If the signal is delivered
-during a syscall, then current code will write an audit record for
-that syscall on syscall exit.
+        /*
+         * While browsing the domains, we released the rq lock.
+         * A task could have be enqueued in the meantime
+         */
+        if (this_rq->nr_running && !pulled_task)
+                return 1;
 
-If we want to preserve that behavior without a syscall audit hook,
-then the signal delivery code needs to know whether it's in the middle
-of a syscall.  AFAIK this is not possible.
+And if no more fair task to be pulled, we will do balance again and
+again in pick_next_task_fair() until panic in NMI...
 
-On the other hand, most interesting signals are probably *not* the
-result of a syscall anyway, so it may make sense to just remove that
-code entirely.
+The solution we discussed could solve the problem I suppose, it was
+already in progress, correct?
 
-TBH, as long as something happens to get rid of audit overhead when
-there are no rules, my interest in personally writing something fancy
-to make the nonzero-number-of-rules case have less overhead is rather
-low.
+Please let me know if there are any thing I could help with ;-)
 
---Andy
+Regards,
+Michael Wang
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
