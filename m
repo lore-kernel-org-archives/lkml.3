@@ -1,44 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889AbaBSUNb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 15:13:31 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51110 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847AbaBSUN3 (ORCPT
+	id S1755053AbaBSUNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 15:13:40 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:51464 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692AbaBSUNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 15:13:29 -0500
-Message-ID: <53051067.1010908@codeaurora.org>
-Date: Wed, 19 Feb 2014 12:13:27 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: arm@kernel.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@linaro.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Subject: Re: [GIT PULL] qcom cleanups for v3.15
-References: <alpine.DEB.2.00.1402101722170.12284@galak-ubuntu.qualcomm.com> <5303F56A.9010107@codeaurora.org> <FE60A8A0-B1C4-46F2-96E8-95FE25503DAF@codeaurora.org> <5304FE4B.1020408@codeaurora.org> <E25A5939-BFC3-44AF-9A7D-C7E8013720A6@codeaurora.org>
-In-Reply-To: <E25A5939-BFC3-44AF-9A7D-C7E8013720A6@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Feb 2014 15:13:35 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Markus Mayer <markus.mayer@linaro.org>,
+        Tim Kryger <tim.kryger@linaro.org>, Alex Elder <elder@linaro.org>
+Subject: [PATCH] ARM: dts: remove bcm11351-brt.dts
+Date: Wed, 19 Feb 2014 15:13:28 -0500
+Message-Id: <1392840808-28214-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/14 11:30, Kumar Gala wrote:
-> On Feb 19, 2014, at 12:56 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->
->> Yes the copyright one.
-> Was going to send that as a separate patch.  So no reason to hold up this pull request on it.
->
->
+The BCM11351 BRT board will never see the light of day. Remove the BRT
+dts since it is not maintainable.
 
-Ok sounds good.
+Signed-off-by: Matt Porter <mporter@linaro.org>
+---
+ arch/arm/boot/dts/bcm11351-brt.dts | 54 --------------------------------------
+ 1 file changed, 54 deletions(-)
+ delete mode 100644 arch/arm/boot/dts/bcm11351-brt.dts
 
+diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
+deleted file mode 100644
+index 396b704..0000000
+--- a/arch/arm/boot/dts/bcm11351-brt.dts
++++ /dev/null
+@@ -1,54 +0,0 @@
+-/*
+- * Copyright (C) 2012 Broadcom Corporation
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License as
+- * published by the Free Software Foundation version 2.
+- *
+- * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+- * kind, whether express or implied; without even the implied warranty
+- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-/dts-v1/;
+-
+-#include "bcm11351.dtsi"
+-
+-/ {
+-	model = "BCM11351 BRT board";
+-	compatible = "brcm,bcm11351-brt", "brcm,bcm11351";
+-
+-	memory {
+-		reg = <0x80000000 0x40000000>; /* 1 GB */
+-	};
+-
+-	uart@3e000000 {
+-		status = "okay";
+-	};
+-
+-	sdio1: sdio@3f180000 {
+-		max-frequency = <48000000>;
+-		status = "okay";
+-	};
+-
+-	sdio2: sdio@3f190000 {
+-		non-removable;
+-		max-frequency = <48000000>;
+-		status = "okay";
+-	};
+-
+-	sdio4: sdio@3f1b0000 {
+-		max-frequency = <48000000>;
+-		cd-gpios = <&gpio 14 0>;
+-		status = "okay";
+-	};
+-
+-	usbotg: usb@3f120000 {
+-		status = "okay";
+-	};
+-
+-	usbphy: usb-phy@3f130000 {
+-		status = "okay";
+-	};
+-};
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.4
 
