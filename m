@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaBSQIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 11:08:12 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51093 "EHLO
+	id S1754235AbaBSQGb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 11:06:31 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51038 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754231AbaBSQGc (ORCPT
+	by vger.kernel.org with ESMTP id S1753684AbaBSQG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 11:06:32 -0500
+	Wed, 19 Feb 2014 11:06:28 -0500
 From: Sudeep Holla <sudeep.holla@arm.com>
 To: linux-kernel@vger.kernel.org
-Cc: sudeep.holla@arm.com, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH RFC/RFT v3 6/9] powerpc: move cacheinfo sysfs to generic cacheinfo infrastructure
-Date: Wed, 19 Feb 2014 16:06:13 +0000
-Message-Id: <1392825976-17633-7-git-send-email-sudeep.holla@arm.com>
+Cc: sudeep.holla@arm.com, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+Subject: [PATCH RFC/RFT v3 5/9] x86: move cacheinfo sysfs to generic cacheinfo infrastructure
+Date: Wed, 19 Feb 2014 16:06:12 +0000
+Message-Id: <1392825976-17633-6-git-send-email-sudeep.holla@arm.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com>
 References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com>
@@ -26,995 +26,881 @@ From: Sudeep Holla <sudeep.holla@arm.com>
 This patch removes the redundant sysfs cacheinfo code by making use of
 the newly introduced generic cacheinfo infrastructure.
 
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
----
- arch/powerpc/kernel/cacheinfo.c | 831 ++++++----------------------------------
- arch/powerpc/kernel/cacheinfo.h |   8 -
- arch/powerpc/kernel/sysfs.c     |   4 -
- 3 files changed, 109 insertions(+), 734 deletions(-)
- delete mode 100644 arch/powerpc/kernel/cacheinfo.h
+The private pointer provided by the cache_info is used to implement
+the AMD L3 cache specific attributes.
 
-diff --git a/arch/powerpc/kernel/cacheinfo.c b/arch/powerpc/kernel/cacheinfo.c
-index 2912b87..05b7580 100644
---- a/arch/powerpc/kernel/cacheinfo.c
-+++ b/arch/powerpc/kernel/cacheinfo.c
-@@ -10,38 +10,10 @@
-  * 2 as published by the Free Software Foundation.
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: x86@kernel.org
+---
+ arch/x86/kernel/cpu/intel_cacheinfo.c | 647 ++++++++--------------------------
+ 1 file changed, 147 insertions(+), 500 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index 0641113..03fc10d 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -7,16 +7,14 @@
+  *	Andi Kleen / Andreas Herrmann	: CPUID4 emulation on AMD.
   */
  
+-#include <linux/init.h>
+ #include <linux/slab.h>
+-#include <linux/device.h>
+-#include <linux/compiler.h>
 +#include <linux/cacheinfo.h>
  #include <linux/cpu.h>
--#include <linux/cpumask.h>
- #include <linux/kernel.h>
--#include <linux/kobject.h>
--#include <linux/list.h>
--#include <linux/notifier.h>
- #include <linux/of.h>
--#include <linux/percpu.h>
--#include <linux/slab.h>
--#include <asm/prom.h>
--
--#include "cacheinfo.h"
--
--/* per-cpu object for tracking:
-- * - a "cache" kobject for the top-level directory
-- * - a list of "index" objects representing the cpu's local cache hierarchy
-- */
--struct cache_dir {
--	struct kobject *kobj; /* bare (not embedded) kobject for cache
--			       * directory */
--	struct cache_index_dir *index; /* list of index objects */
--};
--
--/* "index" object: each cpu's cache directory has an index
-- * subdirectory corresponding to a cache object associated with the
-- * cpu.  This object's lifetime is managed via the embedded kobject.
-- */
--struct cache_index_dir {
--	struct kobject kobj;
--	struct cache_index_dir *next; /* next index in parent directory */
--	struct cache *cache;
--};
+ #include <linux/sched.h>
++#include <linux/sysfs.h>
+ #include <linux/pci.h>
  
- /* Template for determining which OF properties to query for a given
-  * cache type */
-@@ -60,11 +32,6 @@ struct cache_type_info {
- 	const char *nr_sets_prop;
+ #include <asm/processor.h>
+-#include <linux/smp.h>
+ #include <asm/amd_nb.h>
+ #include <asm/smp.h>
+ 
+@@ -116,10 +114,10 @@ static const struct _cache_table cache_table[] =
+ 
+ 
+ enum _cache_type {
+-	CACHE_TYPE_NULL	= 0,
+-	CACHE_TYPE_DATA = 1,
+-	CACHE_TYPE_INST = 2,
+-	CACHE_TYPE_UNIFIED = 3
++	CTYPE_NULL = 0,
++	CTYPE_DATA = 1,
++	CTYPE_INST = 2,
++	CTYPE_UNIFIED = 3
  };
  
--/* These are used to index the cache_type_info array. */
--#define CACHE_TYPE_UNIFIED     0
--#define CACHE_TYPE_INSTRUCTION 1
--#define CACHE_TYPE_DATA        2
--
- static const struct cache_type_info cache_type_info[] = {
- 	{
- 		/* PowerPC Processor binding says the [di]-cache-*
-@@ -77,246 +44,115 @@ static const struct cache_type_info cache_type_info[] = {
- 		.nr_sets_prop    = "d-cache-sets",
- 	},
- 	{
--		.name            = "Instruction",
--		.size_prop       = "i-cache-size",
--		.line_size_props = { "i-cache-line-size",
--				     "i-cache-block-size", },
--		.nr_sets_prop    = "i-cache-sets",
--	},
--	{
- 		.name            = "Data",
- 		.size_prop       = "d-cache-size",
- 		.line_size_props = { "d-cache-line-size",
- 				     "d-cache-block-size", },
- 		.nr_sets_prop    = "d-cache-sets",
- 	},
-+	{
-+		.name            = "Instruction",
-+		.size_prop       = "i-cache-size",
-+		.line_size_props = { "i-cache-line-size",
-+				     "i-cache-block-size", },
-+		.nr_sets_prop    = "i-cache-sets",
-+	},
+ union _cpuid4_leaf_eax {
+@@ -159,12 +157,7 @@ struct _cpuid4_info_regs {
+ 	struct amd_northbridge *nb;
  };
  
--/* Cache object: each instance of this corresponds to a distinct cache
-- * in the system.  There are separate objects for Harvard caches: one
-- * each for instruction and data, and each refers to the same OF node.
-- * The refcount of the OF node is elevated for the lifetime of the
-- * cache object.  A cache object is released when its shared_cpu_map
-- * is cleared (see cache_cpu_clear).
-- *
-- * A cache object is on two lists: an unsorted global list
-- * (cache_list) of cache objects; and a singly-linked list
-- * representing the local cache hierarchy, which is ordered by level
-- * (e.g. L1d -> L1i -> L2 -> L3).
-- */
--struct cache {
--	struct device_node *ofnode;    /* OF node for this cache, may be cpu */
--	struct cpumask shared_cpu_map; /* online CPUs using this cache */
--	int type;                      /* split cache disambiguation */
--	int level;                     /* level not explicit in device tree */
--	struct list_head list;         /* global list of cache objects */
--	struct cache *next_local;      /* next cache of >= level */
+-struct _cpuid4_info {
+-	struct _cpuid4_info_regs base;
+-	DECLARE_BITMAP(shared_cpu_map, NR_CPUS);
 -};
 -
--static DEFINE_PER_CPU(struct cache_dir *, cache_dir_pcpu);
--
--/* traversal/modification of this list occurs only at cpu hotplug time;
-- * access is serialized by cpu hotplug locking
-- */
--static LIST_HEAD(cache_list);
--
--static struct cache_index_dir *kobj_to_cache_index_dir(struct kobject *k)
--{
--	return container_of(k, struct cache_index_dir, kobj);
--}
--
--static const char *cache_type_string(const struct cache *cache)
-+static inline int get_cacheinfo_idx(enum cache_type type)
- {
--	return cache_type_info[cache->type].name;
--}
--
--static void cache_init(struct cache *cache, int type, int level,
--		       struct device_node *ofnode)
--{
--	cache->type = type;
--	cache->level = level;
--	cache->ofnode = of_node_get(ofnode);
--	INIT_LIST_HEAD(&cache->list);
--	list_add(&cache->list, &cache_list);
--}
--
--static struct cache *new_cache(int type, int level, struct device_node *ofnode)
--{
--	struct cache *cache;
--
--	cache = kzalloc(sizeof(*cache), GFP_KERNEL);
--	if (cache)
--		cache_init(cache, type, level, ofnode);
--
--	return cache;
--}
--
--static void release_cache_debugcheck(struct cache *cache)
--{
--	struct cache *iter;
--
--	list_for_each_entry(iter, &cache_list, list)
--		WARN_ONCE(iter->next_local == cache,
--			  "cache for %s(%s) refers to cache for %s(%s)\n",
--			  iter->ofnode->full_name,
--			  cache_type_string(iter),
--			  cache->ofnode->full_name,
--			  cache_type_string(cache));
--}
--
--static void release_cache(struct cache *cache)
--{
--	if (!cache)
--		return;
--
--	pr_debug("freeing L%d %s cache for %s\n", cache->level,
--		 cache_type_string(cache), cache->ofnode->full_name);
--
--	release_cache_debugcheck(cache);
--	list_del(&cache->list);
--	of_node_put(cache->ofnode);
--	kfree(cache);
--}
--
--static void cache_cpu_set(struct cache *cache, int cpu)
--{
--	struct cache *next = cache;
--
--	while (next) {
--		WARN_ONCE(cpumask_test_cpu(cpu, &next->shared_cpu_map),
--			  "CPU %i already accounted in %s(%s)\n",
--			  cpu, next->ofnode->full_name,
--			  cache_type_string(next));
--		cpumask_set_cpu(cpu, &next->shared_cpu_map);
--		next = next->next_local;
--	}
-+	if (type == CACHE_TYPE_UNIFIED)
-+		return 0;
-+	else
-+		return type;
+-unsigned short			num_cache_leaves;
++unsigned short                 num_cache_leaves;
+ 
+ /* AMD doesn't have CPUID4. Emulate it here to report the same
+    information to the user.  This makes some assumptions about the machine:
+@@ -291,14 +284,9 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_eax *eax,
+ 		(ebx->split.ways_of_associativity + 1) - 1;
  }
  
--static int cache_size(const struct cache *cache, unsigned int *ret)
-+static int cache_size(struct cache_info *this_leaf)
+-struct _cache_attr {
+-	struct attribute attr;
+-	ssize_t (*show)(struct _cpuid4_info *, char *, unsigned int);
+-	ssize_t (*store)(struct _cpuid4_info *, const char *, size_t count,
+-			 unsigned int);
+-};
+-
+ #if defined(CONFIG_AMD_NB) && defined(CONFIG_SYSFS)
++
++static struct attribute **amd_l3_attrs;
+ /*
+  * L3 cache descriptors
+  */
+@@ -325,6 +313,7 @@ static void amd_calc_l3_indices(struct amd_northbridge *nb)
+ 	l3->indices = (max(max3(sc0, sc1, sc2), sc3) << 10) - 1;
+ }
+ 
++static void init_amd_l3_attrs(void);
+ static void amd_init_l3_cache(struct _cpuid4_info_regs *this_leaf, int index)
  {
- 	const char *propname;
- 	const __be32 *cache_size;
-+	int ct_idx;
+ 	int node;
+@@ -335,8 +324,10 @@ static void amd_init_l3_cache(struct _cpuid4_info_regs *this_leaf, int index)
  
--	propname = cache_type_info[cache->type].size_prop;
--
--	cache_size = of_get_property(cache->ofnode, propname, NULL);
--	if (!cache_size)
--		return -ENODEV;
--
--	*ret = of_read_number(cache_size, 1);
--	return 0;
--}
--
--static int cache_size_kb(const struct cache *cache, unsigned int *ret)
--{
--	unsigned int size;
-+	ct_idx = get_cacheinfo_idx(this_leaf->type);
-+	propname = cache_type_info[ct_idx].size_prop;
- 
--	if (cache_size(cache, &size))
-+	cache_size = of_get_property(this_leaf->of_node, propname, NULL);
-+	if (!cache_size) {
-+		this_leaf->size = 0;
- 		return -ENODEV;
--
--	*ret = size / 1024;
--	return 0;
-+	} else {
-+		this_leaf->size = of_read_number(cache_size, 1);
-+		return 0;
+ 	node = amd_get_nb_id(smp_processor_id());
+ 	this_leaf->nb = node_to_amd_nb(node);
+-	if (this_leaf->nb && !this_leaf->nb->l3_cache.indices)
++	if (this_leaf->nb && !this_leaf->nb->l3_cache.indices) {
+ 		amd_calc_l3_indices(this_leaf->nb);
++		init_amd_l3_attrs();
 +	}
  }
  
- /* not cache_line_size() because that's a macro in include/linux/cache.h */
--static int cache_get_line_size(const struct cache *cache, unsigned int *ret)
-+static int cache_get_line_size(struct cache_info *this_leaf)
+ /*
+@@ -359,15 +350,16 @@ int amd_get_l3_disable_slot(struct amd_northbridge *nb, unsigned slot)
+ 	return -1;
+ }
+ 
+-static ssize_t show_cache_disable(struct _cpuid4_info *this_leaf, char *buf,
++static ssize_t show_cache_disable(struct cache_info *this_leaf, char *buf,
+ 				  unsigned int slot)
  {
- 	const __be32 *line_size;
--	int i, lim;
-+	int i, lim, ct_idx;
+ 	int index;
++	struct amd_northbridge *nb = this_leaf->priv;
  
--	lim = ARRAY_SIZE(cache_type_info[cache->type].line_size_props);
-+	ct_idx = get_cacheinfo_idx(this_leaf->type);
-+	lim = ARRAY_SIZE(cache_type_info[ct_idx].line_size_props);
+-	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
++	if (!nb || !amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
+ 		return -EINVAL;
  
- 	for (i = 0; i < lim; i++) {
- 		const char *propname;
+-	index = amd_get_l3_disable_slot(this_leaf->base.nb, slot);
++	index = amd_get_l3_disable_slot(nb, slot);
+ 	if (index >= 0)
+ 		return sprintf(buf, "%d\n", index);
  
--		propname = cache_type_info[cache->type].line_size_props[i];
--		line_size = of_get_property(cache->ofnode, propname, NULL);
-+		propname = cache_type_info[ct_idx].line_size_props[i];
-+		line_size = of_get_property(this_leaf->of_node, propname, NULL);
- 		if (line_size)
- 			break;
- 	}
+@@ -376,9 +368,10 @@ static ssize_t show_cache_disable(struct _cpuid4_info *this_leaf, char *buf,
  
--	if (!line_size)
-+	if (!line_size) {
-+		this_leaf->coherency_line_size = 0;
- 		return -ENODEV;
+ #define SHOW_CACHE_DISABLE(slot)					\
+ static ssize_t								\
+-show_cache_disable_##slot(struct _cpuid4_info *this_leaf, char *buf,	\
+-			  unsigned int cpu)				\
++cache_disable_##slot##_show(struct device *dev,				\
++			    struct device_attribute *attr, char *buf)	\
+ {									\
++	struct cache_info *this_leaf = dev_get_drvdata(dev);		\
+ 	return show_cache_disable(this_leaf, buf, slot);		\
+ }
+ SHOW_CACHE_DISABLE(0)
+@@ -446,25 +439,26 @@ int amd_set_l3_disable_slot(struct amd_northbridge *nb, int cpu, unsigned slot,
+ 	return 0;
+ }
+ 
+-static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
+-				  const char *buf, size_t count,
+-				  unsigned int slot)
++static ssize_t store_cache_disable(struct cache_info *this_leaf,
++				   const char *buf, size_t count,
++				   unsigned int slot)
+ {
+ 	unsigned long val = 0;
+ 	int cpu, err = 0;
++	struct amd_northbridge *nb = this_leaf->priv;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+-	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
++	if (!nb || !amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
+ 		return -EINVAL;
+ 
+-	cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
++	cpu = cpumask_first(&this_leaf->shared_cpu_map);
+ 
+ 	if (strict_strtoul(buf, 10, &val) < 0)
+ 		return -EINVAL;
+ 
+-	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
++	err = amd_set_l3_disable_slot(nb, cpu, slot, val);
+ 	if (err) {
+ 		if (err == -EEXIST)
+ 			pr_warning("L3 slot %d in use/index already disabled!\n",
+@@ -476,39 +470,39 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
+ 
+ #define STORE_CACHE_DISABLE(slot)					\
+ static ssize_t								\
+-store_cache_disable_##slot(struct _cpuid4_info *this_leaf,		\
+-			   const char *buf, size_t count,		\
+-			   unsigned int cpu)				\
++cache_disable_##slot##_store(struct device *dev,			\
++			     struct device_attribute *attr,		\
++			     const char *buf, size_t count)		\
+ {									\
++	struct cache_info *this_leaf = dev_get_drvdata(dev);		\
+ 	return store_cache_disable(this_leaf, buf, count, slot);	\
+ }
+ STORE_CACHE_DISABLE(0)
+ STORE_CACHE_DISABLE(1)
+ 
+-static struct _cache_attr cache_disable_0 = __ATTR(cache_disable_0, 0644,
+-		show_cache_disable_0, store_cache_disable_0);
+-static struct _cache_attr cache_disable_1 = __ATTR(cache_disable_1, 0644,
+-		show_cache_disable_1, store_cache_disable_1);
 -
--	*ret = of_read_number(line_size, 1);
--	return 0;
-+	} else {
-+		this_leaf->coherency_line_size = of_read_number(line_size, 1);
-+		return 0;
+-static ssize_t
+-show_subcaches(struct _cpuid4_info *this_leaf, char *buf, unsigned int cpu)
++static ssize_t subcaches_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
+ {
+-	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
++	struct cache_info *this_leaf = dev_get_drvdata(dev);
++	int cpu = cpumask_first(&this_leaf->shared_cpu_map);
++	if (!this_leaf->priv || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+ 		return -EINVAL;
+ 
+ 	return sprintf(buf, "%x\n", amd_get_subcaches(cpu));
+ }
+ 
+-static ssize_t
+-store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
+-		unsigned int cpu)
++static ssize_t subcaches_store(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t count)
+ {
++	struct cache_info *this_leaf = dev_get_drvdata(dev);
++	int cpu = cpumask_first(&this_leaf->shared_cpu_map);
+ 	unsigned long val;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+-	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
++	if (!this_leaf->priv || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+ 		return -EINVAL;
+ 
+ 	if (strict_strtoul(buf, 16, &val) < 0)
+@@ -520,9 +514,46 @@ store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
+ 	return count;
+ }
+ 
+-static struct _cache_attr subcaches =
+-	__ATTR(subcaches, 0644, show_subcaches, store_subcaches);
++#define define_one_rw(_name) \
++	static DEVICE_ATTR_RW(_name)
++
++define_one_rw(cache_disable_0);
++define_one_rw(cache_disable_1);
++define_one_rw(subcaches);
++
++static void init_amd_l3_attrs(void)
++{
++	int n = 0;
++
++	if (amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
++		n += 2;
++	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
++		n += 1;
++
++	amd_l3_attrs = kzalloc(n * sizeof(struct attribute *), GFP_KERNEL);
++	if (!amd_l3_attrs)
++		return;
++
++	n = 0;
++	if (amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE)) {
++		amd_l3_attrs[n++] = &dev_attr_cache_disable_0.attr;
++		amd_l3_attrs[n++] = &dev_attr_cache_disable_1.attr;
 +	}
- }
- 
--static int cache_nr_sets(const struct cache *cache, unsigned int *ret)
-+static int cache_nr_sets(struct cache_info *this_leaf)
- {
- 	const char *propname;
- 	const __be32 *nr_sets;
-+	int ct_idx;
- 
--	propname = cache_type_info[cache->type].nr_sets_prop;
-+	ct_idx = get_cacheinfo_idx(this_leaf->type);
-+	propname = cache_type_info[ct_idx].nr_sets_prop;
- 
--	nr_sets = of_get_property(cache->ofnode, propname, NULL);
--	if (!nr_sets)
-+	nr_sets = of_get_property(this_leaf->of_node, propname, NULL);
-+	if (!nr_sets) {
-+		this_leaf->number_of_sets = 0;
- 		return -ENODEV;
--
--	*ret = of_read_number(nr_sets, 1);
--	return 0;
-+	} else {
-+		this_leaf->number_of_sets = of_read_number(nr_sets, 1);
++	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
++		amd_l3_attrs[n++] = &dev_attr_subcaches.attr;
++
++	return;
++}
++
++int cache_add_private_attributes(struct device *cache_idx_dev)
++{
++	struct cache_info *this_leaf = dev_get_drvdata(cache_idx_dev);
++	if (!this_leaf->priv || !amd_l3_attrs)
 +		return 0;
-+	}
- }
  
--static int cache_associativity(const struct cache *cache, unsigned int *ret)
-+static int cache_associativity(struct cache_info *this_leaf)
- {
--	unsigned int line_size;
--	unsigned int nr_sets;
--	unsigned int size;
--
--	if (cache_nr_sets(cache, &nr_sets))
--		goto err;
-+	unsigned int line_size = this_leaf->coherency_line_size;
-+	unsigned int nr_sets = this_leaf->number_of_sets;
-+	unsigned int size = this_leaf->size;
- 
- 	/* If the cache is fully associative, there is no need to
- 	 * check the other properties.
- 	 */
- 	if (nr_sets == 1) {
--		*ret = 0;
-+		this_leaf->ways_of_associativity = 0;
- 		return 0;
++	return sysfs_create_files(&cache_idx_dev->kobj,
++				  (const struct attribute **)amd_l3_attrs);
++}
+ #else
+ #define amd_init_l3_cache(x, y)
+ #endif  /* CONFIG_AMD_NB && CONFIG_SYSFS */
+@@ -546,7 +577,7 @@ cpuid4_cache_lookup_regs(int index, struct _cpuid4_info_regs *this_leaf)
+ 		cpuid_count(4, index, &eax.full, &ebx.full, &ecx.full, &edx);
  	}
  
--	if (cache_get_line_size(cache, &line_size))
--		goto err;
--	if (cache_size(cache, &size))
--		goto err;
--
--	if (!(nr_sets > 0 && size > 0 && line_size > 0))
--		goto err;
--
--	*ret = (size / nr_sets) / line_size;
--	return 0;
--err:
--	return -ENODEV;
--}
--
--/* helper for dealing with split caches */
--static struct cache *cache_find_first_sibling(struct cache *cache)
--{
--	struct cache *iter;
--
--	if (cache->type == CACHE_TYPE_UNIFIED)
--		return cache;
--
--	list_for_each_entry(iter, &cache_list, list)
--		if (iter->ofnode == cache->ofnode && iter->next_local == cache)
--			return iter;
--
--	return cache;
--}
--
--/* return the first cache on a local list matching node */
--static struct cache *cache_lookup_by_node(const struct device_node *node)
--{
--	struct cache *cache = NULL;
--	struct cache *iter;
--
--	list_for_each_entry(iter, &cache_list, list) {
--		if (iter->ofnode != node)
--			continue;
--		cache = cache_find_first_sibling(iter);
--		break;
-+	if (!(nr_sets > 0 && size > 0 && line_size > 0)) {
-+		this_leaf->ways_of_associativity = 0;
-+		return -ENODEV;
-+	} else {
-+		this_leaf->ways_of_associativity = (size / nr_sets) / line_size;
-+		return 0;
- 	}
--
--	return cache;
+-	if (eax.split.type == CACHE_TYPE_NULL)
++	if (eax.split.type == CTYPE_NULL)
+ 		return -EIO; /* better error ? */
+ 
+ 	this_leaf->eax = eax;
+@@ -575,7 +606,7 @@ static int find_num_cache_leaves(struct cpuinfo_x86 *c)
+ 		/* Do cpuid(op) loop to find out num_cache_leaves */
+ 		cpuid_count(op, i, &eax, &ebx, &ecx, &edx);
+ 		cache_eax.full = eax;
+-	} while (cache_eax.split.type != CACHE_TYPE_NULL);
++	} while (cache_eax.split.type != CTYPE_NULL);
+ 	return i;
  }
  
- static bool cache_node_is_unified(const struct device_node *np)
-@@ -324,523 +160,74 @@ static bool cache_node_is_unified(const struct device_node *np)
- 	return of_get_property(np, "cache-unified", NULL);
+@@ -626,9 +657,9 @@ unsigned int init_intel_cacheinfo(struct cpuinfo_x86 *c)
+ 
+ 			switch (this_leaf.eax.split.level) {
+ 			case 1:
+-				if (this_leaf.eax.split.type == CACHE_TYPE_DATA)
++				if (this_leaf.eax.split.type == CTYPE_DATA)
+ 					new_l1d = this_leaf.size/1024;
+-				else if (this_leaf.eax.split.type == CACHE_TYPE_INST)
++				else if (this_leaf.eax.split.type == CTYPE_INST)
+ 					new_l1i = this_leaf.size/1024;
+ 				break;
+ 			case 2:
+@@ -735,55 +766,46 @@ unsigned int init_intel_cacheinfo(struct cpuinfo_x86 *c)
+ 	return l2;
  }
  
--static struct cache *cache_do_one_devnode_unified(struct device_node *node,
--						  int level)
--{
--	struct cache *cache;
+-#ifdef CONFIG_SYSFS
 -
--	pr_debug("creating L%d ucache for %s\n", level, node->full_name);
+-/* pointer to _cpuid4_info array (for each cache leaf) */
+-static DEFINE_PER_CPU(struct _cpuid4_info *, ici_cpuid4_info);
+-#define CPUID4_INFO_IDX(x, y)	(&((per_cpu(ici_cpuid4_info, x))[y]))
 -
--	cache = new_cache(CACHE_TYPE_UNIFIED, level, node);
+-#ifdef CONFIG_SMP
 -
--	return cache;
--}
--
--static struct cache *cache_do_one_devnode_split(struct device_node *node,
--						int level)
--{
--	struct cache *dcache, *icache;
--
--	pr_debug("creating L%d dcache and icache for %s\n", level,
--		 node->full_name);
--
--	dcache = new_cache(CACHE_TYPE_DATA, level, node);
--	icache = new_cache(CACHE_TYPE_INSTRUCTION, level, node);
--
--	if (!dcache || !icache)
--		goto err;
--
--	dcache->next_local = icache;
--
--	return dcache;
--err:
--	release_cache(dcache);
--	release_cache(icache);
--	return NULL;
--}
--
--static struct cache *cache_do_one_devnode(struct device_node *node, int level)
--{
--	struct cache *cache;
--
--	if (cache_node_is_unified(node))
--		cache = cache_do_one_devnode_unified(node, level);
--	else
--		cache = cache_do_one_devnode_split(node, level);
--
--	return cache;
--}
--
--static struct cache *cache_lookup_or_instantiate(struct device_node *node,
--						 int level)
--{
--	struct cache *cache;
--
--	cache = cache_lookup_by_node(node);
--
--	WARN_ONCE(cache && cache->level != level,
--		  "cache level mismatch on lookup (got %d, expected %d)\n",
--		  cache->level, level);
--
--	if (!cache)
--		cache = cache_do_one_devnode(node, level);
--
--	return cache;
--}
--
--static void link_cache_lists(struct cache *smaller, struct cache *bigger)
--{
--	while (smaller->next_local) {
--		if (smaller->next_local == bigger)
--			return; /* already linked */
--		smaller = smaller->next_local;
--	}
--
--	smaller->next_local = bigger;
--}
--
--static void do_subsidiary_caches_debugcheck(struct cache *cache)
--{
--	WARN_ON_ONCE(cache->level != 1);
--	WARN_ON_ONCE(strcmp(cache->ofnode->type, "cpu"));
--}
--
--static void do_subsidiary_caches(struct cache *cache)
--{
--	struct device_node *subcache_node;
--	int level = cache->level;
--
--	do_subsidiary_caches_debugcheck(cache);
--
--	while ((subcache_node = of_find_next_cache_node(cache->ofnode))) {
--		struct cache *subcache;
--
--		level++;
--		subcache = cache_lookup_or_instantiate(subcache_node, level);
--		of_node_put(subcache_node);
--		if (!subcache)
--			break;
--
--		link_cache_lists(cache, subcache);
--		cache = subcache;
--	}
--}
--
--static struct cache *cache_chain_instantiate(unsigned int cpu_id)
--{
--	struct device_node *cpu_node;
--	struct cache *cpu_cache = NULL;
--
--	pr_debug("creating cache object(s) for CPU %i\n", cpu_id);
--
--	cpu_node = of_get_cpu_node(cpu_id, NULL);
--	WARN_ONCE(!cpu_node, "no OF node found for CPU %i\n", cpu_id);
--	if (!cpu_node)
--		goto out;
--
--	cpu_cache = cache_lookup_or_instantiate(cpu_node, 1);
--	if (!cpu_cache)
--		goto out;
--
--	do_subsidiary_caches(cpu_cache);
--
--	cache_cpu_set(cpu_cache, cpu_id);
--out:
--	of_node_put(cpu_node);
--
--	return cpu_cache;
--}
--
--static struct cache_dir *cacheinfo_create_cache_dir(unsigned int cpu_id)
--{
--	struct cache_dir *cache_dir;
--	struct device *dev;
--	struct kobject *kobj = NULL;
--
--	dev = get_cpu_device(cpu_id);
--	WARN_ONCE(!dev, "no dev for CPU %i\n", cpu_id);
--	if (!dev)
--		goto err;
--
--	kobj = kobject_create_and_add("cache", &dev->kobj);
--	if (!kobj)
--		goto err;
--
--	cache_dir = kzalloc(sizeof(*cache_dir), GFP_KERNEL);
--	if (!cache_dir)
--		goto err;
--
--	cache_dir->kobj = kobj;
--
--	WARN_ON_ONCE(per_cpu(cache_dir_pcpu, cpu_id) != NULL);
--
--	per_cpu(cache_dir_pcpu, cpu_id) = cache_dir;
--
--	return cache_dir;
--err:
--	kobject_put(kobj);
--	return NULL;
--}
--
--static void cache_index_release(struct kobject *kobj)
--{
--	struct cache_index_dir *index;
--
--	index = kobj_to_cache_index_dir(kobj);
--
--	pr_debug("freeing index directory for L%d %s cache\n",
--		 index->cache->level, cache_type_string(index->cache));
--
--	kfree(index);
--}
--
--static ssize_t cache_index_show(struct kobject *k, struct attribute *attr, char *buf)
-+static void ci_leaf_init(struct cache_info *this_leaf,
-+				enum cache_type type, unsigned int level)
+-static int cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
++static int __cache_amd_cpumap_setup(unsigned int cpu, int index,
++				    struct _cpuid4_info_regs *base)
  {
--	struct kobj_attribute *kobj_attr;
--
--	kobj_attr = container_of(attr, struct kobj_attribute, attr);
--
--	return kobj_attr->show(k, kobj_attr, buf);
--}
--
--static struct cache *index_kobj_to_cache(struct kobject *k)
--{
--	struct cache_index_dir *index;
--
--	index = kobj_to_cache_index_dir(k);
--
--	return index->cache;
-+	this_leaf->level = level;
-+	this_leaf->type = type;
-+	cache_size(this_leaf);
-+	cache_get_line_size(this_leaf);
-+	cache_nr_sets(this_leaf);
-+	cache_associativity(this_leaf);
- }
- 
--static ssize_t size_show(struct kobject *k, struct kobj_attribute *attr, char *buf)
-+int init_cache_level(unsigned int cpu)
- {
--	unsigned int size_kb;
--	struct cache *cache;
-+	struct device_node *np;
-+	struct device *cpu_dev = get_cpu_device(cpu);
+-	struct _cpuid4_info *this_leaf;
 +	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+	unsigned int level = 0, leaves = 0;
++	struct cache_info *this_leaf;
+ 	int i, sibling;
  
--	cache = index_kobj_to_cache(k);
+ 	if (cpu_has_topoext) {
+ 		unsigned int apicid, nshared, first, last;
+ 
+-		if (!per_cpu(ici_cpuid4_info, cpu))
+-			return 0;
 -
--	if (cache_size_kb(cache, &size_kb))
-+	if (!cpu_dev) {
-+		pr_err("No cpu device for CPU %d\n", cpu);
- 		return -ENODEV;
--
--	return sprintf(buf, "%uK\n", size_kb);
--}
--
--static struct kobj_attribute cache_size_attr =
--	__ATTR(size, 0444, size_show, NULL);
--
--
--static ssize_t line_size_show(struct kobject *k, struct kobj_attribute *attr, char *buf)
--{
--	unsigned int line_size;
--	struct cache *cache;
--
--	cache = index_kobj_to_cache(k);
--
--	if (cache_get_line_size(cache, &line_size))
--		return -ENODEV;
--
--	return sprintf(buf, "%u\n", line_size);
--}
--
--static struct kobj_attribute cache_line_size_attr =
--	__ATTR(coherency_line_size, 0444, line_size_show, NULL);
--
--static ssize_t nr_sets_show(struct kobject *k, struct kobj_attribute *attr, char *buf)
--{
--	unsigned int nr_sets;
--	struct cache *cache;
--
--	cache = index_kobj_to_cache(k);
--
--	if (cache_nr_sets(cache, &nr_sets))
--		return -ENODEV;
--
--	return sprintf(buf, "%u\n", nr_sets);
--}
--
--static struct kobj_attribute cache_nr_sets_attr =
--	__ATTR(number_of_sets, 0444, nr_sets_show, NULL);
--
--static ssize_t associativity_show(struct kobject *k, struct kobj_attribute *attr, char *buf)
--{
--	unsigned int associativity;
--	struct cache *cache;
--
--	cache = index_kobj_to_cache(k);
--
--	if (cache_associativity(cache, &associativity))
--		return -ENODEV;
--
--	return sprintf(buf, "%u\n", associativity);
--}
--
--static struct kobj_attribute cache_assoc_attr =
--	__ATTR(ways_of_associativity, 0444, associativity_show, NULL);
--
--static ssize_t type_show(struct kobject *k, struct kobj_attribute *attr, char *buf)
--{
--	struct cache *cache;
--
--	cache = index_kobj_to_cache(k);
--
--	return sprintf(buf, "%s\n", cache_type_string(cache));
--}
--
--static struct kobj_attribute cache_type_attr =
--	__ATTR(type, 0444, type_show, NULL);
--
--static ssize_t level_show(struct kobject *k, struct kobj_attribute *attr, char *buf)
--{
--	struct cache_index_dir *index;
--	struct cache *cache;
--
--	index = kobj_to_cache_index_dir(k);
--	cache = index->cache;
--
--	return sprintf(buf, "%d\n", cache->level);
--}
--
--static struct kobj_attribute cache_level_attr =
--	__ATTR(level, 0444, level_show, NULL);
--
--static ssize_t shared_cpu_map_show(struct kobject *k, struct kobj_attribute *attr, char *buf)
--{
--	struct cache_index_dir *index;
--	struct cache *cache;
--	int len;
--	int n = 0;
--
--	index = kobj_to_cache_index_dir(k);
--	cache = index->cache;
--	len = PAGE_SIZE - 2;
--
--	if (len > 1) {
--		n = cpumask_scnprintf(buf, len, &cache->shared_cpu_map);
--		buf[n++] = '\n';
--		buf[n] = '\0';
+-		this_leaf = CPUID4_INFO_IDX(cpu, index);
+-		nshared = this_leaf->base.eax.split.num_threads_sharing + 1;
++		this_leaf = this_cpu_ci->info_list + index;
++		nshared = base->eax.split.num_threads_sharing + 1;
+ 		apicid = cpu_data(cpu).apicid;
+ 		first = apicid - (apicid % nshared);
+ 		last = first + nshared - 1;
+ 
+ 		for_each_online_cpu(i) {
++			this_cpu_ci = get_cpu_cacheinfo(i);
+ 			apicid = cpu_data(i).apicid;
+ 			if ((apicid < first) || (apicid > last))
+ 				continue;
+-			if (!per_cpu(ici_cpuid4_info, i))
+-				continue;
+-			this_leaf = CPUID4_INFO_IDX(i, index);
++			this_leaf = this_cpu_ci->info_list + index;
+ 
+ 			for_each_online_cpu(sibling) {
+ 				apicid = cpu_data(sibling).apicid;
+ 				if ((apicid < first) || (apicid > last))
+ 					continue;
+-				set_bit(sibling, this_leaf->shared_cpu_map);
++				cpumask_set_cpu(sibling,
++						&this_leaf->shared_cpu_map);
+ 			}
+ 		}
+ 	} else if (index == 3) {
+ 		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
+-			if (!per_cpu(ici_cpuid4_info, i))
+-				continue;
+-			this_leaf = CPUID4_INFO_IDX(i, index);
++			this_cpu_ci = get_cpu_cacheinfo(i);
++			this_leaf = this_cpu_ci->info_list + index;
+ 			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
+ 				if (!cpu_online(sibling))
+ 					continue;
+-				set_bit(sibling, this_leaf->shared_cpu_map);
++				cpumask_set_cpu(sibling,
++						&this_leaf->shared_cpu_map);
+ 			}
+ 		}
+ 	} else
+@@ -792,456 +814,81 @@ static int cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
+ 	return 1;
+ }
+ 
+-static void cache_shared_cpu_map_setup(unsigned int cpu, int index)
++static void __cache_cpumap_setup(unsigned int cpu, int index,
++				 struct _cpuid4_info_regs *base)
+ {
+-	struct _cpuid4_info *this_leaf, *sibling_leaf;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	struct cache_info *this_leaf, *sibling_leaf;
+ 	unsigned long num_threads_sharing;
+ 	int index_msb, i;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ 
+ 	if (c->x86_vendor == X86_VENDOR_AMD) {
+-		if (cache_shared_amd_cpu_map_setup(cpu, index))
++		if (__cache_amd_cpumap_setup(cpu, index, base))
+ 			return;
  	}
--	return n;
+ 
+-	this_leaf = CPUID4_INFO_IDX(cpu, index);
+-	num_threads_sharing = 1 + this_leaf->base.eax.split.num_threads_sharing;
++	this_leaf = this_cpu_ci->info_list + index;
++	num_threads_sharing = 1 + base->eax.split.num_threads_sharing;
+ 
++	cpumask_set_cpu(cpu, &this_leaf->shared_cpu_map);
+ 	if (num_threads_sharing == 1)
+-		cpumask_set_cpu(cpu, to_cpumask(this_leaf->shared_cpu_map));
+-	else {
+-		index_msb = get_count_order(num_threads_sharing);
+-
+-		for_each_online_cpu(i) {
+-			if (cpu_data(i).apicid >> index_msb ==
+-			    c->apicid >> index_msb) {
+-				cpumask_set_cpu(i,
+-					to_cpumask(this_leaf->shared_cpu_map));
+-				if (i != cpu && per_cpu(ici_cpuid4_info, i))  {
+-					sibling_leaf =
+-						CPUID4_INFO_IDX(i, index);
+-					cpumask_set_cpu(cpu, to_cpumask(
+-						sibling_leaf->shared_cpu_map));
+-				}
+-			}
+-		}
+-	}
+-}
+-static void cache_remove_shared_cpu_map(unsigned int cpu, int index)
+-{
+-	struct _cpuid4_info	*this_leaf, *sibling_leaf;
+-	int sibling;
+-
+-	this_leaf = CPUID4_INFO_IDX(cpu, index);
+-	for_each_cpu(sibling, to_cpumask(this_leaf->shared_cpu_map)) {
+-		sibling_leaf = CPUID4_INFO_IDX(sibling, index);
+-		cpumask_clear_cpu(cpu,
+-				  to_cpumask(sibling_leaf->shared_cpu_map));
+-	}
+-}
+-#else
+-static void cache_shared_cpu_map_setup(unsigned int cpu, int index)
+-{
 -}
 -
--static struct kobj_attribute cache_shared_cpu_map_attr =
--	__ATTR(shared_cpu_map, 0444, shared_cpu_map_show, NULL);
--
--/* Attributes which should always be created -- the kobject/sysfs core
-- * does this automatically via kobj_type->default_attrs.  This is the
-- * minimum data required to uniquely identify a cache.
-- */
--static struct attribute *cache_index_default_attrs[] = {
--	&cache_type_attr.attr,
--	&cache_level_attr.attr,
--	&cache_shared_cpu_map_attr.attr,
--	NULL,
--};
--
--/* Attributes which should be created if the cache device node has the
-- * right properties -- see cacheinfo_create_index_opt_attrs
-- */
--static struct kobj_attribute *cache_index_opt_attrs[] = {
--	&cache_size_attr,
--	&cache_line_size_attr,
--	&cache_nr_sets_attr,
--	&cache_assoc_attr,
--};
--
--static const struct sysfs_ops cache_index_ops = {
--	.show = cache_index_show,
--};
--
--static struct kobj_type cache_index_type = {
--	.release = cache_index_release,
--	.sysfs_ops = &cache_index_ops,
--	.default_attrs = cache_index_default_attrs,
--};
--
--static void cacheinfo_create_index_opt_attrs(struct cache_index_dir *dir)
+-static void cache_remove_shared_cpu_map(unsigned int cpu, int index)
 -{
--	const char *cache_name;
--	const char *cache_type;
--	struct cache *cache;
--	char *buf;
+-}
+-#endif
+-
+-static void free_cache_attributes(unsigned int cpu)
+-{
 -	int i;
 -
--	buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
--	if (!buf)
--		return;
+-	for (i = 0; i < num_cache_leaves; i++)
+-		cache_remove_shared_cpu_map(cpu, i);
 -
--	cache = dir->cache;
--	cache_name = cache->ofnode->full_name;
--	cache_type = cache_type_string(cache);
+-	kfree(per_cpu(ici_cpuid4_info, cpu));
+-	per_cpu(ici_cpuid4_info, cpu) = NULL;
+-}
 -
--	/* We don't want to create an attribute that can't provide a
--	 * meaningful value.  Check the return value of each optional
--	 * attribute's ->show method before registering the
--	 * attribute.
--	 */
--	for (i = 0; i < ARRAY_SIZE(cache_index_opt_attrs); i++) {
--		struct kobj_attribute *attr;
--		ssize_t rc;
+-static void get_cpu_leaves(void *_retval)
+-{
+-	int j, *retval = _retval, cpu = smp_processor_id();
 -
--		attr = cache_index_opt_attrs[i];
--
--		rc = attr->show(&dir->kobj, attr, buf);
--		if (rc <= 0) {
--			pr_debug("not creating %s attribute for "
--				 "%s(%s) (rc = %zd)\n",
--				 attr->attr.name, cache_name,
--				 cache_type, rc);
--			continue;
--		}
--		if (sysfs_create_file(&dir->kobj, &attr->attr))
--			pr_debug("could not create %s attribute for %s(%s)\n",
--				 attr->attr.name, cache_name, cache_type);
-+	np = cpu_dev->of_node;
-+	if (!np) {
-+		pr_err("Failed to find cpu%d device node\n", cpu);
-+		return -ENOENT;
- 	}
+-	/* Do cpuid and store the results */
+-	for (j = 0; j < num_cache_leaves; j++) {
+-		struct _cpuid4_info *this_leaf = CPUID4_INFO_IDX(cpu, j);
++		return;
  
--	kfree(buf);
--}
--
--static void cacheinfo_create_index_dir(struct cache *cache, int index,
--				       struct cache_dir *cache_dir)
--{
--	struct cache_index_dir *index_dir;
--	int rc;
--
--	index_dir = kzalloc(sizeof(*index_dir), GFP_KERNEL);
--	if (!index_dir)
--		goto err;
--
--	index_dir->cache = cache;
--
--	rc = kobject_init_and_add(&index_dir->kobj, &cache_index_type,
--				  cache_dir->kobj, "index%d", index);
--	if (rc)
--		goto err;
--
--	index_dir->next = cache_dir->index;
--	cache_dir->index = index_dir;
--
--	cacheinfo_create_index_opt_attrs(index_dir);
--
--	return;
--err:
--	kfree(index_dir);
--}
--
--static void cacheinfo_sysfs_populate(unsigned int cpu_id,
--				     struct cache *cache_list)
--{
--	struct cache_dir *cache_dir;
--	struct cache *cache;
--	int index = 0;
--
--	cache_dir = cacheinfo_create_cache_dir(cpu_id);
--	if (!cache_dir)
--		return;
--
--	cache = cache_list;
--	while (cache) {
--		cacheinfo_create_index_dir(cache, index, cache_dir);
--		index++;
--		cache = cache->next_local;
-+	while (np) {
-+		leaves += cache_node_is_unified(np) ? 1 : 2;
-+		level++;
-+		of_node_put(np);
-+		np = of_find_next_cache_node(np);
- 	}
--}
--
--void cacheinfo_cpu_online(unsigned int cpu_id)
--{
--	struct cache *cache;
--
--	cache = cache_chain_instantiate(cpu_id);
--	if (!cache)
--		return;
--
--	cacheinfo_sysfs_populate(cpu_id, cache);
--}
--
--#ifdef CONFIG_HOTPLUG_CPU /* functions needed for cpu offline */
--
--static struct cache *cache_lookup_by_cpu(unsigned int cpu_id)
--{
--	struct device_node *cpu_node;
--	struct cache *cache;
--
--	cpu_node = of_get_cpu_node(cpu_id, NULL);
--	WARN_ONCE(!cpu_node, "no OF node found for CPU %i\n", cpu_id);
--	if (!cpu_node)
--		return NULL;
--
--	cache = cache_lookup_by_node(cpu_node);
--	of_node_put(cpu_node);
-+	this_cpu_ci->num_levels = level;
-+	this_cpu_ci->num_leaves = leaves;
+-		*retval = cpuid4_cache_lookup_regs(j, &this_leaf->base);
+-		if (unlikely(*retval < 0)) {
+-			int i;
++	index_msb = get_count_order(num_threads_sharing);
  
--	return cache;
-+	return 0;
+-			for (i = 0; i < j; i++)
+-				cache_remove_shared_cpu_map(cpu, i);
+-			break;
++	for_each_online_cpu(i)
++		if (cpu_data(i).apicid >> index_msb == c->apicid >> index_msb) {
++			struct cpu_cacheinfo *sib_cpu_ci = get_cpu_cacheinfo(i);
++			if (i == cpu || !sib_cpu_ci->info_list)
++				continue;/* skip if itself or no cacheinfo */
++			sibling_leaf = sib_cpu_ci->info_list + index;
++			cpumask_set_cpu(i, &this_leaf->shared_cpu_map);
++			cpumask_set_cpu(cpu, &sibling_leaf->shared_cpu_map);
+ 		}
+-		cache_shared_cpu_map_setup(cpu, j);
+-	}
  }
  
--static void remove_index_dirs(struct cache_dir *cache_dir)
+-static int detect_cache_attributes(unsigned int cpu)
++static void ci_leaf_init(struct cache_info *this_leaf,
++				struct _cpuid4_info_regs *base)
+ {
+-	int			retval;
+-
+-	if (num_cache_leaves == 0)
+-		return -ENOENT;
+-
+-	per_cpu(ici_cpuid4_info, cpu) = kzalloc(
+-	    sizeof(struct _cpuid4_info) * num_cache_leaves, GFP_KERNEL);
+-	if (per_cpu(ici_cpuid4_info, cpu) == NULL)
+-		return -ENOMEM;
+-
+-	smp_call_function_single(cpu, get_cpu_leaves, &retval, true);
+-	if (retval) {
+-		kfree(per_cpu(ici_cpuid4_info, cpu));
+-		per_cpu(ici_cpuid4_info, cpu) = NULL;
+-	}
+-
+-	return retval;
+-}
+-
+-#include <linux/kobject.h>
+-#include <linux/sysfs.h>
+-#include <linux/cpu.h>
+-
+-/* pointer to kobject for cpuX/cache */
+-static DEFINE_PER_CPU(struct kobject *, ici_cache_kobject);
+-
+-struct _index_kobject {
+-	struct kobject kobj;
+-	unsigned int cpu;
+-	unsigned short index;
+-};
+-
+-/* pointer to array of kobjects for cpuX/cache/indexY */
+-static DEFINE_PER_CPU(struct _index_kobject *, ici_index_kobject);
+-#define INDEX_KOBJECT_PTR(x, y)		(&((per_cpu(ici_index_kobject, x))[y]))
+-
+-#define show_one_plus(file_name, object, val)				\
+-static ssize_t show_##file_name(struct _cpuid4_info *this_leaf, char *buf, \
+-				unsigned int cpu)			\
+-{									\
+-	return sprintf(buf, "%lu\n", (unsigned long)this_leaf->object + val); \
+-}
+-
+-show_one_plus(level, base.eax.split.level, 0);
+-show_one_plus(coherency_line_size, base.ebx.split.coherency_line_size, 1);
+-show_one_plus(physical_line_partition, base.ebx.split.physical_line_partition, 1);
+-show_one_plus(ways_of_associativity, base.ebx.split.ways_of_associativity, 1);
+-show_one_plus(number_of_sets, base.ecx.split.number_of_sets, 1);
+-
+-static ssize_t show_size(struct _cpuid4_info *this_leaf, char *buf,
+-			 unsigned int cpu)
+-{
+-	return sprintf(buf, "%luK\n", this_leaf->base.size / 1024);
+-}
+-
+-static ssize_t show_shared_cpu_map_func(struct _cpuid4_info *this_leaf,
+-					int type, char *buf)
+-{
+-	ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf;
+-	int n = 0;
+-
+-	if (len > 1) {
+-		const struct cpumask *mask;
+-
+-		mask = to_cpumask(this_leaf->shared_cpu_map);
+-		n = type ?
+-			cpulist_scnprintf(buf, len-2, mask) :
+-			cpumask_scnprintf(buf, len-2, mask);
+-		buf[n++] = '\n';
+-		buf[n] = '\0';
+-	}
+-	return n;
++	this_leaf->level = base->eax.split.level;
++	this_leaf->type = base->eax.split.type;
++	this_leaf->coherency_line_size = base->ebx.split.coherency_line_size;
++	this_leaf->ways_of_associativity =
++				base->ebx.split.ways_of_associativity;
++	this_leaf->size = base->size;
++	this_leaf->number_of_sets = base->ecx.split.number_of_sets;
++	this_leaf->physical_line_partition =
++				base->ebx.split.physical_line_partition;
++	this_leaf->priv = base->nb;
+ }
+ 
+-static inline ssize_t show_shared_cpu_map(struct _cpuid4_info *leaf, char *buf,
+-					  unsigned int cpu)
++int init_cache_level(unsigned int cpu)
+ {
+-	return show_shared_cpu_map_func(leaf, 0, buf);
+-}
+-
+-static inline ssize_t show_shared_cpu_list(struct _cpuid4_info *leaf, char *buf,
+-					   unsigned int cpu)
+-{
+-	return show_shared_cpu_map_func(leaf, 1, buf);
+-}
+-
+-static ssize_t show_type(struct _cpuid4_info *this_leaf, char *buf,
+-			 unsigned int cpu)
+-{
+-	switch (this_leaf->base.eax.split.type) {
+-	case CACHE_TYPE_DATA:
+-		return sprintf(buf, "Data\n");
+-	case CACHE_TYPE_INST:
+-		return sprintf(buf, "Instruction\n");
+-	case CACHE_TYPE_UNIFIED:
+-		return sprintf(buf, "Unified\n");
+-	default:
+-		return sprintf(buf, "Unknown\n");
+-	}
+-}
+-
+-#define to_object(k)	container_of(k, struct _index_kobject, kobj)
+-#define to_attr(a)	container_of(a, struct _cache_attr, attr)
+-
+-#define define_one_ro(_name) \
+-static struct _cache_attr _name = \
+-	__ATTR(_name, 0444, show_##_name, NULL)
+-
+-define_one_ro(level);
+-define_one_ro(type);
+-define_one_ro(coherency_line_size);
+-define_one_ro(physical_line_partition);
+-define_one_ro(ways_of_associativity);
+-define_one_ro(number_of_sets);
+-define_one_ro(size);
+-define_one_ro(shared_cpu_map);
+-define_one_ro(shared_cpu_list);
+-
+-static struct attribute *default_attrs[] = {
+-	&type.attr,
+-	&level.attr,
+-	&coherency_line_size.attr,
+-	&physical_line_partition.attr,
+-	&ways_of_associativity.attr,
+-	&number_of_sets.attr,
+-	&size.attr,
+-	&shared_cpu_map.attr,
+-	&shared_cpu_list.attr,
+-	NULL
+-};
+-
+-#ifdef CONFIG_AMD_NB
+-static struct attribute **amd_l3_attrs(void)
+-{
+-	static struct attribute **attrs;
+-	int n;
+-
+-	if (attrs)
+-		return attrs;
+-
+-	n = ARRAY_SIZE(default_attrs);
+-
+-	if (amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
+-		n += 2;
+-
+-	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+-		n += 1;
+-
+-	attrs = kzalloc(n * sizeof (struct attribute *), GFP_KERNEL);
+-	if (attrs == NULL)
+-		return attrs = default_attrs;
+-
+-	for (n = 0; default_attrs[n]; n++)
+-		attrs[n] = default_attrs[n];
+-
+-	if (amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE)) {
+-		attrs[n++] = &cache_disable_0.attr;
+-		attrs[n++] = &cache_disable_1.attr;
+-	}
+-
+-	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+-		attrs[n++] = &subcaches.attr;
+-
+-	return attrs;
+-}
+-#endif
+-
+-static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+-{
+-	struct _cache_attr *fattr = to_attr(attr);
+-	struct _index_kobject *this_leaf = to_object(kobj);
+-	ssize_t ret;
+-
+-	ret = fattr->show ?
+-		fattr->show(CPUID4_INFO_IDX(this_leaf->cpu, this_leaf->index),
+-			buf, this_leaf->cpu) :
+-		0;
+-	return ret;
+-}
+-
+-static ssize_t store(struct kobject *kobj, struct attribute *attr,
+-		     const char *buf, size_t count)
+-{
+-	struct _cache_attr *fattr = to_attr(attr);
+-	struct _index_kobject *this_leaf = to_object(kobj);
+-	ssize_t ret;
+-
+-	ret = fattr->store ?
+-		fattr->store(CPUID4_INFO_IDX(this_leaf->cpu, this_leaf->index),
+-			buf, count, this_leaf->cpu) :
+-		0;
+-	return ret;
+-}
+-
+-static const struct sysfs_ops sysfs_ops = {
+-	.show   = show,
+-	.store  = store,
+-};
+-
+-static struct kobj_type ktype_cache = {
+-	.sysfs_ops	= &sysfs_ops,
+-	.default_attrs	= default_attrs,
+-};
+-
+-static struct kobj_type ktype_percpu_entry = {
+-	.sysfs_ops	= &sysfs_ops,
+-};
+-
+-static void cpuid4_cache_sysfs_exit(unsigned int cpu)
+-{
+-	kfree(per_cpu(ici_cache_kobject, cpu));
+-	kfree(per_cpu(ici_index_kobject, cpu));
+-	per_cpu(ici_cache_kobject, cpu) = NULL;
+-	per_cpu(ici_index_kobject, cpu) = NULL;
+-	free_cache_attributes(cpu);
+-}
+-
+-static int cpuid4_cache_sysfs_init(unsigned int cpu)
+-{
+-	int err;
+-
+-	if (num_cache_leaves == 0)
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	if (!num_cache_leaves)
+ 		return -ENOENT;
++	if (!this_cpu_ci)
++		return -EINVAL;
+ 
+-	err = detect_cache_attributes(cpu);
+-	if (err)
+-		return err;
+-
+-	/* Allocate all required memory */
+-	per_cpu(ici_cache_kobject, cpu) =
+-		kzalloc(sizeof(struct kobject), GFP_KERNEL);
+-	if (unlikely(per_cpu(ici_cache_kobject, cpu) == NULL))
+-		goto err_out;
+-
+-	per_cpu(ici_index_kobject, cpu) = kzalloc(
+-	    sizeof(struct _index_kobject) * num_cache_leaves, GFP_KERNEL);
+-	if (unlikely(per_cpu(ici_index_kobject, cpu) == NULL))
+-		goto err_out;
+-
++	this_cpu_ci->num_levels = 3;
++	this_cpu_ci->num_leaves = num_cache_leaves;
+ 	return 0;
+-
+-err_out:
+-	cpuid4_cache_sysfs_exit(cpu);
+-	return -ENOMEM;
+ }
+ 
+-static DECLARE_BITMAP(cache_dev_map, NR_CPUS);
+-
+-/* Add/Remove cache interface for CPU device */
+-static int cache_add_dev(struct device *dev)
 +int populate_cache_leaves(unsigned int cpu)
  {
--	struct cache_index_dir *index;
+-	unsigned int cpu = dev->id;
+-	unsigned long i, j;
+-	struct _index_kobject *this_object;
+-	struct _cpuid4_info   *this_leaf;
+-	int retval;
 -
--	index = cache_dir->index;
+-	retval = cpuid4_cache_sysfs_init(cpu);
+-	if (unlikely(retval < 0))
+-		return retval;
+-
+-	retval = kobject_init_and_add(per_cpu(ici_cache_kobject, cpu),
+-				      &ktype_percpu_entry,
+-				      &dev->kobj, "%s", "cache");
+-	if (retval < 0) {
+-		cpuid4_cache_sysfs_exit(cpu);
+-		return retval;
+-	}
++	unsigned int idx, ret;
 +	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
 +	struct cache_info *this_leaf = this_cpu_ci->info_list;
-+	struct device *cpu_dev = get_cpu_device(cpu);
-+	struct device_node *np;
-+	unsigned int level, idx;
++	struct _cpuid4_info_regs id4_regs = {};
  
--	while (index) {
--		struct cache_index_dir *next;
+-	for (i = 0; i < num_cache_leaves; i++) {
+-		this_object = INDEX_KOBJECT_PTR(cpu, i);
+-		this_object->cpu = cpu;
+-		this_object->index = i;
 -
--		next = index->next;
--		kobject_put(&index->kobj);
--		index = next;
-+	np = of_node_get(cpu_dev->of_node);
-+	if (!np) {
-+		pr_err("Failed to find cpu%d device node\n", cpu);
-+		return -ENOENT;
+-		this_leaf = CPUID4_INFO_IDX(cpu, i);
+-
+-		ktype_cache.default_attrs = default_attrs;
+-#ifdef CONFIG_AMD_NB
+-		if (this_leaf->base.nb)
+-			ktype_cache.default_attrs = amd_l3_attrs();
+-#endif
+-		retval = kobject_init_and_add(&(this_object->kobj),
+-					      &ktype_cache,
+-					      per_cpu(ici_cache_kobject, cpu),
+-					      "index%1lu", i);
+-		if (unlikely(retval)) {
+-			for (j = 0; j < i; j++)
+-				kobject_put(&(INDEX_KOBJECT_PTR(cpu, j)->kobj));
+-			kobject_put(per_cpu(ici_cache_kobject, cpu));
+-			cpuid4_cache_sysfs_exit(cpu);
+-			return retval;
+-		}
+-		kobject_uevent(&(this_object->kobj), KOBJ_ADD);
++	for (idx = 0; idx < this_cpu_ci->num_leaves; idx++) {
++		ret = cpuid4_cache_lookup_regs(idx, &id4_regs);
++		if (ret)
++			return ret;
++		ci_leaf_init(this_leaf++, &id4_regs);
++		__cache_cpumap_setup(cpu, idx, &id4_regs);
  	}
+-	cpumask_set_cpu(cpu, to_cpumask(cache_dev_map));
+-
+-	kobject_uevent(per_cpu(ici_cache_kobject, cpu), KOBJ_ADD);
+ 	return 0;
+ }
+-
+-static void cache_remove_dev(struct device *dev)
+-{
+-	unsigned int cpu = dev->id;
+-	unsigned long i;
+-
+-	if (per_cpu(ici_cpuid4_info, cpu) == NULL)
+-		return;
+-	if (!cpumask_test_cpu(cpu, to_cpumask(cache_dev_map)))
+-		return;
+-	cpumask_clear_cpu(cpu, to_cpumask(cache_dev_map));
+-
+-	for (i = 0; i < num_cache_leaves; i++)
+-		kobject_put(&(INDEX_KOBJECT_PTR(cpu, i)->kobj));
+-	kobject_put(per_cpu(ici_cache_kobject, cpu));
+-	cpuid4_cache_sysfs_exit(cpu);
 -}
 -
--static void remove_cache_dir(struct cache_dir *cache_dir)
+-static int cacheinfo_cpu_callback(struct notifier_block *nfb,
+-				  unsigned long action, void *hcpu)
 -{
--	remove_index_dirs(cache_dir);
- 
--	/* Remove cache dir from sysfs */
--	kobject_del(cache_dir->kobj);
+-	unsigned int cpu = (unsigned long)hcpu;
+-	struct device *dev;
 -
--	kobject_put(cache_dir->kobj);
--
--	kfree(cache_dir);
+-	dev = get_cpu_device(cpu);
+-	switch (action) {
+-	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+-		cache_add_dev(dev);
+-		break;
+-	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
+-		cache_remove_dev(dev);
+-		break;
+-	}
+-	return NOTIFY_OK;
 -}
 -
--static void cache_cpu_clear(struct cache *cache, int cpu)
+-static struct notifier_block cacheinfo_cpu_notifier = {
+-	.notifier_call = cacheinfo_cpu_callback,
+-};
+-
+-static int __init cache_sysfs_init(void)
 -{
--	while (cache) {
--		struct cache *next = cache->next_local;
+-	int i;
 -
--		WARN_ONCE(!cpumask_test_cpu(cpu, &cache->shared_cpu_map),
--			  "CPU %i not accounted in %s(%s)\n",
--			  cpu, cache->ofnode->full_name,
--			  cache_type_string(cache));
+-	if (num_cache_leaves == 0)
+-		return 0;
 -
--		cpumask_clear_cpu(cpu, &cache->shared_cpu_map);
+-	for_each_online_cpu(i) {
+-		int err;
+-		struct device *dev = get_cpu_device(i);
 -
--		/* Release the cache object if all the cpus using it
--		 * are offline */
--		if (cpumask_empty(&cache->shared_cpu_map))
--			release_cache(cache);
--
--		cache = next;
-+	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
-+			idx < this_cpu_ci->num_leaves; idx++, level++) {
-+		if (!this_leaf)
-+			return -EINVAL;
-+
-+		this_leaf->of_node = np;
-+		if (cache_node_is_unified(np)) {
-+			ci_leaf_init(this_leaf++, CACHE_TYPE_UNIFIED, level);
-+		} else {
-+			ci_leaf_init(this_leaf++, CACHE_TYPE_DATA, level);
-+			ci_leaf_init(this_leaf++, CACHE_TYPE_INST, level);
-+		}
-+		np = of_find_next_cache_node(np);
- 	}
-+	return 0;
- }
- 
--void cacheinfo_cpu_offline(unsigned int cpu_id)
--{
--	struct cache_dir *cache_dir;
--	struct cache *cache;
--
--	/* Prevent userspace from seeing inconsistent state - remove
--	 * the sysfs hierarchy first */
--	cache_dir = per_cpu(cache_dir_pcpu, cpu_id);
--
--	/* careful, sysfs population may have failed */
--	if (cache_dir)
--		remove_cache_dir(cache_dir);
--
--	per_cpu(cache_dir_pcpu, cpu_id) = NULL;
--
--	/* clear the CPU's bit in its cache chain, possibly freeing
--	 * cache objects */
--	cache = cache_lookup_by_cpu(cpu_id);
--	if (cache)
--		cache_cpu_clear(cache, cpu_id);
+-		err = cache_add_dev(dev);
+-		if (err)
+-			return err;
+-	}
+-	register_hotcpu_notifier(&cacheinfo_cpu_notifier);
+-	return 0;
 -}
--#endif /* CONFIG_HOTPLUG_CPU */
-diff --git a/arch/powerpc/kernel/cacheinfo.h b/arch/powerpc/kernel/cacheinfo.h
-deleted file mode 100644
-index a7b74d3..0000000
---- a/arch/powerpc/kernel/cacheinfo.h
-+++ /dev/null
-@@ -1,8 +0,0 @@
--#ifndef _PPC_CACHEINFO_H
--#define _PPC_CACHEINFO_H
 -
--/* These are just hooks for sysfs.c to use. */
--extern void cacheinfo_cpu_online(unsigned int cpu_id);
--extern void cacheinfo_cpu_offline(unsigned int cpu_id);
+-device_initcall(cache_sysfs_init);
 -
--#endif /* _PPC_CACHEINFO_H */
-diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-index 97e1dc9..2bc61d3 100644
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -19,8 +19,6 @@
- #include <asm/pmc.h>
- #include <asm/firmware.h>
- 
--#include "cacheinfo.h"
--
- #ifdef CONFIG_PPC64
- #include <asm/paca.h>
- #include <asm/lppaca.h>
-@@ -730,7 +728,6 @@ static void register_cpu_online(unsigned int cpu)
- 		device_create_file(s, &dev_attr_altivec_idle_wait_time);
- 	}
- #endif
--	cacheinfo_cpu_online(cpu);
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -811,7 +808,6 @@ static void unregister_cpu_online(unsigned int cpu)
- 		device_remove_file(s, &dev_attr_altivec_idle_wait_time);
- 	}
- #endif
--	cacheinfo_cpu_offline(cpu);
- }
- 
- #ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
+-#endif
 -- 
 1.8.3.2
 
