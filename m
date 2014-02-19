@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537AbaBSXQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 18:16:27 -0500
-Received: from ip-64-139-1-69.sjc.megapath.net ([64.139.1.69]:55110 "EHLO
-	ip-64-139-1-69.sjc.megapath.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752456AbaBSXQY (ORCPT
+	id S1751668AbaBSXUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 18:20:39 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36330 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227AbaBSXUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 18:16:24 -0500
-X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Feb 2014 18:16:24 EST
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3
-To: Peter Hurley <peter@hurleysoftware.com>
-cc: Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
-From: Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
-Subject: Re: locking changes in tty broke low latency feature
-In-Reply-To: Message from Stanislaw Gruszka <sgruszka@redhat.com>
-   of "Wed, 19 Feb 2014 14:03:09 +0100." <20140219130308.GC1851@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Date: Wed, 19 Feb 2014 15:06:23 -0800
-Message-Id: <20140219230623.736E8406062@ip-64-139-1-69.sjc.megapath.net>
+	Wed, 19 Feb 2014 18:20:38 -0500
+Date: Thu, 20 Feb 2014 01:47:47 +0900
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <david.chen@diasemi.com>
+Message-ID: <20140219164747.GB2669@sirena.org.uk>
+References: <201402191637.s1JGb4t9017699@swsrvapps-02.lan>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mech2hSDWJXuRHhb"
+Content-Disposition: inline
+In-Reply-To: <201402191637.s1JGb4t9017699@swsrvapps-02.lan>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 113.32.54.66
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V1 3/3] REGULATOR: da9052: Add new DA9053 BC chip variant
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can you give me an idea of your device's average and minimum required
-> latency (please be specific)?  Is your target arch x86 [so I can evaluate the
-> the impact of bus-locked instructions relative to your expected]?
 
-The code I'm familiar with is ntpd and gpsd.  They run on almost any hardware 
-or OS and talk to a wide collection of devices.
+--mech2hSDWJXuRHhb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-There is no hard requirement for latency.  They just work better with lower 
-latency.  The lower the better.
+On Wed, Feb 19, 2014 at 04:32:47PM +0000, Opensource [Anthony Olech] wrote:
+> Add support for a new BC variant of the DA9053 PMIC.
 
-People gripe about the latency due to USB polling which is about a ms.
+Acked-by: Mark Brown <broonie@linaro.org>
 
-I can easily notice a few 10s of microseconds.  I probably wouldn't notice a 
-few microseconds, but there are people who would.  The latency isn't 
-critical, it's the jitter.  (ntpd has fudge factors to correct for a fixed 
-offset.)  Yes, down at the microsecond level luck-of-the-cache is important.
+> There is one difference between it and the AA, BA and BB.
 
+Which is...?  :)
 
-> Also, how painful would it be if unsupported termios changes were rejected
-> if the port was in low_latency mode and/or if low_latency setting was
-> disallowed because of termios state?
+--mech2hSDWJXuRHhb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-What does "unsupported termios changes" mean?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-ntpd has only a few places where it opens a serial port.  I'll collect a list 
-of the options that are used if that will help.  The common cases are either 
-raw binary, or lines of text.  It doesn't need any fancy editing.
+iQIcBAEBAgAGBQJTBOAwAAoJELSic+t+oim9l5sP/2WNMoOLZpYb9Ns6AMZxKh/j
+BoYc5ao7N+c3X37mjteo7y6S6u26AagulDxVYkzSQ24fikvMfnwEAg4UJ6iZmSM3
+N0SaCBZY7WOT+rz2v5IwCpbQNUyP53tZNI2Re/jscnnBQsf6eMwaUWCpX5tvnneZ
+u03T13Ufg1rxIa9HsX04njqHVCcl/AkXp/DnhDAnr9MoowxohG0d58BnHc0ZmToi
+qF18wOiR9ECmMCJjyzhHIZouBQLi6wxN1dNQkIEDmh7KHIq4CCONswwjWFhmMb/C
+C8cx2KmBRUQm9tI51SPnQcfQUWygyNZInRpVRofsQmY/FJP3iT2h0dUBVb+4GiDB
+0+VVDsegFGhPtOFyxRj567iGNCtDS8ugH3goaJmqUct3QaXBWKYkuYenwRERxJqF
+F8cKxmCswfyLlwi40xjmmZRKx3cCNYrPZqmljB8j90+8sDVZKDVG1MUx7U9U6od+
+BEuR929jR8fTePOcRtWGU5jV/3GBOmLGZecw5cx1w1zgBO7sPzHLcsNBOxJV9XoL
+SVJrQRhMiyFDdmzVJBxKIUJhhj3pTvvv9KfF/WHyiE1naLJRwBa2e76bZlTxTd3X
+lQTl16xD6l0db/FtP0QBrvxI0ZcjzGDNcrujxR7tJJwQDw6zUpzgUPqRxFqRhU73
+9XUTSLr4FAbBh1YDb7Xi
+=sNJI
+-----END PGP SIGNATURE-----
 
-
-> It would be pointless to throttle low_latency, yes?
-
-What does "throttle" mean?  If you mean what I call flow-control, then no, 
-it's not interesting.
-
-There shouldn't be any problem with ntpd or gpsd grabbing all the data 
-promptly.
-
-
-> What would be an acceptable outcome of being unable to accept input?
-> Corrupted overrun? Dropped i/o? Queued for later? Please explain with
-> comparison to the outcome of missed minimum latency.
-
-Corruption would be evil.  Longer latency would be OK, especially if it 
-didn't happen often.  (ntpd has code to discard outliers.)  3% of the time 
-would probably not be a problem.  25% might cause problems.
-
-We can allocate a bigger buffer if that helps.
-
---------
-
-gpsd uses TIOCMIWAIT to get a wakeup from a PPS signal connected to a modem 
-control line.  That path might have the same problem and/or some ideas on how 
-to handle the data case.
-
-
-
--- 
-These are my opinions.  I hate spam.
-
-
-
+--mech2hSDWJXuRHhb--
