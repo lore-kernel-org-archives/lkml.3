@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbaBSHux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 02:50:53 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60809 "EHLO
+	id S1752704AbaBSHvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 02:51:03 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60826 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504AbaBSHuw (ORCPT
+	with ESMTP id S1751353AbaBSHvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 02:50:52 -0500
-Date: Wed, 19 Feb 2014 16:50:15 +0900
+	Wed, 19 Feb 2014 02:51:00 -0500
+Date: Wed, 19 Feb 2014 14:00:49 +0900
 From: Mark Brown <broonie@kernel.org>
-To: Nenghua Cao <nhcao@marvell.com>
-Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140219075015.GF2669@sirena.org.uk>
-References: <1392787197-29411-1-git-send-email-nhcao@marvell.com>
- <5304410B.9010207@marvell.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Keerthy <j-keerthy@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140219050049.GE2669@sirena.org.uk>
+References: <1392726059.13262.0.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EhL9IO3QiJLbitD/"
+	protocol="application/pgp-signature"; boundary="wGsBW1q6OHQ8jQvR"
 Content-Disposition: inline
-In-Reply-To: <5304410B.9010207@marvell.com>
+In-Reply-To: <1392726059.13262.0.camel@phoenix>
 X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 106.188.145.86
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] driver: regmap: add regmap_parse_val api
+Subject: Re: [PATCH 1/2] regulator: tps65218: Add terminate entry for
+ of_device_id table
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,36 +32,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---EhL9IO3QiJLbitD/
+--wGsBW1q6OHQ8jQvR
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Feb 19, 2014 at 01:28:43PM +0800, Nenghua Cao wrote:
->    Update Liam and Mark's mail.
+On Tue, Feb 18, 2014 at 08:20:59PM +0800, Axel Lin wrote:
+> Fixes below build error:
+> FATAL: drivers/regulator/tps65218-regulator: struct of_device_id is not terminated with a NULL entry!
 
-I can't do anything useful with patches that are quoted, sorry.  None of
-the tools know how to strip out quotes.
+This is good (though I'm not seeing a build time error myself...).
 
---EhL9IO3QiJLbitD/
+> Also remove of_match_ptr as this is a DT-only driver.
+
+This should really have been split out as a separate change.  We
+probably also need an OF dependency in the Kconfig for this (there may
+be one on the MFD but having one here if the driver specficaly depends
+on DT is better to avoid bisection issues if the MFD gets updated).
+
+--wGsBW1q6OHQ8jQvR
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTBGIvAAoJELSic+t+oim9Fg0P/0T9NBbIkaMnzaLxOe7h2D9a
-AvGpo0+Do2L8PajZRcl8faR8uZmC9bSrCozU3Z+CtiGm8vwByxVFSrbJbM79eTFk
-HqjU0llq5eqMIX3WfHKyXQVIF78RMDcu+RPmcHl9O1Ch7RhVXEt40y2RtHqP8jG6
-Iop0TlGz3wDYUEV6OYtyIdDaRTq04Y71+bcGGRnt0jiTe3WCBBMIxHRSg2BedMsE
-0wO00vs20UgNBCHKa3ZrURO5IBvjGF2FO959AFC1mrBXHxNprFhpd96eMl7AxGVz
-S5Hsh6zFQ07w9GxJTlntYzEbVDm09WfbgwW60C3kQtzexJ181yYbuhaFuKWhEZQ4
-nGSQpr7mn7p8cnv9gOAFoXATUJq5OU1wTf8LYG0KPtJZqmikibWXvmpBOMwZFPUq
-w/XAEDQ98X1gk3OUkD+/pURJUChAjFAkBYfhpFA5iMKKJN32GLj221bdWIWpjepZ
-kagTanLGe5S0vvc0zCy43iesNwp/V9lshN7z3yuK/hs65viPnYeRNysxjYNLiHXd
-6sctOL5564uDMNIVuLN1dUA4NX716unh8DDeik2IJNVFevCU60OL5xVsj92UFUyI
-Rmzc9IBN+Kgnm2xYpaLht47SDWqInoqde2LcgpIJ+4kdMno6bdhdDL99tL8XlhXx
-o84dva8rmjXOQj8hkK9s
-=ucCG
+iQIcBAEBAgAGBQJTBDp+AAoJELSic+t+oim9DbMP/iCEqIg16ciNcdvL0VOKeyMk
+6pkDY3H22LcxJzbkPpsS2y2mnf+6lA0B64QjqjKrG51Mb2V9zRGv061HJYyNk9kn
+yAFx3ztrJRSF1SV91yj7lsbRl08ajV2ZPrLW/tlzThGTYbffNxju8QHSYTFv9IdB
+z2/WAoK9S+lOBZyAYoI70xjN0VAHylDoLyMfdHqfKPta+VU1e60ZW4Q0jhLLOKYQ
+YP/K3HxOeQXBFQGZv5l6jXjuy6RHaZfPvNC3egQSSOFbpKSDC2PZr9TmZtmjrR3Z
+QGOLJpwRF/0gWyNPl2aMvUxPOejenE90aT/gbJTKYMaiYMn3QbWgvEQJ7D7Chk25
+BgTiQknAAWJZfPQ4PTwM0UQo8ulj5zd49yktaDrDphVgYjSA1e1/Q2JI1b3kkOt1
+0+vRXksWdDtCxHiJ/6CRkhN2F8QA/p65ics07gMLi6Sx+27gBi3D8iwWK9TkofaC
+rK6K6gkz+uoWiw74nhx5dU/77jh0z68ynIPFjRMsOVv33cOpWDKxzWQw6b8szoZx
+iw7U/BwFPKa98MDQyHWYTK4ufRghF6V9xdEwZfepEajM5aNYC+h68Q3M45YpQMYX
+uSSAZsajpnQg9VK+Z19+/gASkmNsiaPljRiLfRjiwGRr0J4ifqdPnzcxeaVRP9jh
+ugIbuLBlq+v8nD3zwYHE
+=2PqO
 -----END PGP SIGNATURE-----
 
---EhL9IO3QiJLbitD/--
+--wGsBW1q6OHQ8jQvR--
