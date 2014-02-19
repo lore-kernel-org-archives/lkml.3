@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaBSAxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 19:53:47 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:40990 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaBSAxp (ORCPT
+	id S1751914AbaBSAyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 19:54:22 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:64466 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592AbaBSAyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 19:53:45 -0500
-Message-ID: <53040096.6010100@acm.org>
-Date: Tue, 18 Feb 2014 18:53:42 -0600
-From: Corey Minyard <minyard@acm.org>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 18 Feb 2014 19:54:20 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-CC: "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
-References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com> <1920764.8Poj9R8nZQ@vostro.rjw.lan> <1392765901.3488.4.camel@x230.lan> <2013495.SnSbjHoB2r@vostro.rjw.lan>
-In-Reply-To: <2013495.SnSbjHoB2r@vostro.rjw.lan>
+In-Reply-To: <20140218141934.902737c24a0b46ef42e6ea9a@linux-foundation.org>
+References: <1392624815-20759-1-git-send-email-21cnbao@gmail.com> <20140218141934.902737c24a0b46ef42e6ea9a@linux-foundation.org>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 19 Feb 2014 08:54:00 +0800
+Message-ID: <CAGsJ_4zyfCWhTKsspXC9DV3hR7jYvv1k=MMBSLJsd0aeTs+svQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers/rpmsg/virtio_rpmsg_bus.c: fix the return value of rpmsg_init
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, LKML <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Wei Chen <Wei.Chen@csr.com>, Barry Song <Baohua.Song@csr.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just queued it up, too, but that's fine.  This seems to be a good idea
-with the way ACPI is going.
-
-Acked-by: Corey Minyard <cminyard@mvista.com>
-
-On 02/18/2014 06:45 PM, Rafael J. Wysocki wrote:
-> On Tuesday, February 18, 2014 11:25:02 PM Matthew Garrett wrote:
->> On Wed, 2014-02-19 at 00:35 +0100, Rafael J. Wysocki wrote:
->>> On Tuesday, February 18, 2014 11:15:08 PM Matthew Garrett wrote:
->>>> For example, if you load the ACPI power meter driver before you've
->>>> installed the ACPI IPMI driver you'll typically get failures (most
->>>> vendors implement it via IPMI).
->>> Well, any specific machine from any specific vendor?
->> The Dell R720 and HP DL385 both seem to have this configuration. I
->> believe some Ciscos do, too.
-> I've queued this up for 3.15 (with the above info added to the changelog).
+2014-02-19 6:19 GMT+08:00 Andrew Morton <akpm@linux-foundation.org>:
+> On Mon, 17 Feb 2014 16:13:34 +0800 Barry Song <21cnbao@gmail.com> wrote:
 >
-> Thanks!
+>> From: Wei Chen <Wei.Chen@csr.com>
+>>
+>> rpmsg_init() always return ERROR code or random integer now, this patch fixes
+>> it.
+>>
+>> ...
+>>
+>> --- a/drivers/rpmsg/virtio_rpmsg_bus.c
+>> +++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+>> @@ -1096,9 +1096,10 @@ static int __init rpmsg_init(void)
+>>       if (ret) {
+>>               pr_err("failed to register virtio driver: %d\n", ret);
+>>               bus_unregister(&rpmsg_bus);
+>> +             return ret;
+>>       }
+>>
+>> -     return ret;
+>> +     return 0;
+>>  }
 >
+> Look more closely.  This patch has no effect...
 
+yes, when i look again i find it does have no effect as successful
+bus_register() has made ret 0. but the codes are much unreadable
+then....
+
+static int __init rpmsg_init(void)
+{
+        int ret;
+
+        ret = bus_register(&rpmsg_bus);
+        if (ret) {
+                pr_err("failed to register rpmsg bus: %d\n", ret);
+                return ret;
+        }
+
+        ret = register_virtio_driver(&virtio_ipc_driver);
+        if (ret) {
+                pr_err("failed to register virtio driver: %d\n", ret);
+                bus_unregister(&rpmsg_bus);
+        }
+
+        return ret;
+}
+subsys_initcall(rpmsg_init);
+
+-barry
