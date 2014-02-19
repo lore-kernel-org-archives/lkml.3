@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791AbaBSGJk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 01:09:40 -0500
+	id S1752520AbaBSGHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 01:07:37 -0500
 Received: from mga09.intel.com ([134.134.136.24]:18482 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703AbaBSGHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 01:07:41 -0500
+	id S1752451AbaBSGHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 01:07:34 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,504,1389772800"; 
-   d="scan'208";a="485626683"
+   d="scan'208";a="485626618"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -19,9 +19,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part2 V2 12/17] iommu/vt-d: introduce macro for_each_dev_scope() to walk device scope entries
-Date: Wed, 19 Feb 2014 14:07:32 +0800
-Message-Id: <1392790057-32434-13-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part2 V2 10/17] iommu/vt-d: check for NULL pointer when freeing IOMMU data structure
+Date: Wed, 19 Feb 2014 14:07:30 +0800
+Message-Id: <1392790057-32434-11-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1392790057-32434-1-git-send-email-jiang.liu@linux.intel.com>
@@ -29,275 +29,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce for_each_dev_scope()/for_each_active_dev_scope() to walk
-{active} device scope entries. This will help following RCU lock
-related patches.
+Domain id 0 will be assigned to invalid translation without allocating
+domain data structure if DMAR unit supports caching mode. So in function
+free_dmar_iommu(), we should check whether the domain pointer is NULL,
+otherwise it will cause system crash as below:
+[    6.790519] BUG: unable to handle kernel NULL pointer dereference at 00000000000000c8
+[    6.799520] IP: [<ffffffff810e2dc8>] __lock_acquire+0x11f8/0x1430
+[    6.806493] PGD 0
+[    6.817972] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[    6.823303] Modules linked in:
+[    6.826862] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc1+ #126
+[    6.834252] Hardware name: Intel Corporation BRICKLAND/BRICKLAND, BIOS BRIVTIN1.86B.0047.R00.1402050741 02/05/2014
+[    6.845951] task: ffff880455a80000 ti: ffff880455a88000 task.ti: ffff880455a88000
+[    6.854437] RIP: 0010:[<ffffffff810e2dc8>]  [<ffffffff810e2dc8>] __lock_acquire+0x11f8/0x1430
+[    6.864154] RSP: 0000:ffff880455a89ce0  EFLAGS: 00010046
+[    6.870179] RAX: 0000000000000046 RBX: 0000000000000002 RCX: 0000000000000000
+[    6.878249] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 00000000000000c8
+[    6.886318] RBP: ffff880455a89d40 R08: 0000000000000002 R09: 0000000000000001
+[    6.894387] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880455a80000
+[    6.902458] R13: 0000000000000000 R14: 00000000000000c8 R15: 0000000000000000
+[    6.910520] FS:  0000000000000000(0000) GS:ffff88045b800000(0000) knlGS:0000000000000000
+[    6.919687] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[    6.926198] CR2: 00000000000000c8 CR3: 0000000001e0e000 CR4: 00000000001407f0
+[    6.934269] Stack:
+[    6.936588]  ffffffffffffff10 ffffffff810f59db 0000000000000010 0000000000000246
+[    6.945219]  ffff880455a89d10 0000000000000000 ffffffff82bcb980 0000000000000046
+[    6.953850]  0000000000000000 0000000000000000 0000000000000002 0000000000000000
+[    6.962482] Call Trace:
+[    6.965300]  [<ffffffff810f59db>] ? vprintk_emit+0x4fb/0x5a0
+[    6.971716]  [<ffffffff810e3185>] lock_acquire+0x185/0x200
+[    6.977941]  [<ffffffff821fbbee>] ? init_dmars+0x839/0xa1d
+[    6.984167]  [<ffffffff81870b06>] _raw_spin_lock_irqsave+0x56/0x90
+[    6.991158]  [<ffffffff821fbbee>] ? init_dmars+0x839/0xa1d
+[    6.997380]  [<ffffffff821fbbee>] init_dmars+0x839/0xa1d
+[    7.003410]  [<ffffffff8147d575>] ? pci_get_dev_by_id+0x75/0xd0
+[    7.010119]  [<ffffffff821fc146>] intel_iommu_init+0x2f0/0x502
+[    7.016735]  [<ffffffff821a7947>] ? iommu_setup+0x27d/0x27d
+[    7.023056]  [<ffffffff821a796f>] pci_iommu_init+0x28/0x52
+[    7.029282]  [<ffffffff81002162>] do_one_initcall+0xf2/0x220
+[    7.035702]  [<ffffffff810a4a29>] ? parse_args+0x2c9/0x450
+[    7.041919]  [<ffffffff8219d1b1>] kernel_init_freeable+0x1c9/0x25b
+[    7.048919]  [<ffffffff8219c8d2>] ? do_early_param+0x8a/0x8a
+[    7.055336]  [<ffffffff8184d3f0>] ? rest_init+0x150/0x150
+[    7.061461]  [<ffffffff8184d3fe>] kernel_init+0xe/0x100
+[    7.067393]  [<ffffffff8187b5fc>] ret_from_fork+0x7c/0xb0
+[    7.073518]  [<ffffffff8184d3f0>] ? rest_init+0x150/0x150
+[    7.079642] Code: 01 76 18 89 05 46 04 36 01 41 be 01 00 00 00 e9 2f 02 00 00 0f 1f 80 00 00 00 00 41 be 01 00 00 00 e9 1d 02 00 00 0f 1f 44 00 00 <49> 81 3e c0 31 34 82 b8 01 00 00 00 0f 44 d8 41 83 ff 01 0f 87
+[    7.104944] RIP  [<ffffffff810e2dc8>] __lock_acquire+0x11f8/0x1430
+[    7.112008]  RSP <ffff880455a89ce0>
+[    7.115988] CR2: 00000000000000c8
+[    7.119784] ---[ end trace 13d756f0f462c538 ]---
+[    7.125034] note: swapper/0[1] exited with preempt_count 1
+[    7.131285] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
+[    7.131285]
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/dmar.c        |   14 +++---
- drivers/iommu/intel-iommu.c |  100 +++++++++++++++++++++----------------------
- include/linux/dmar.h        |    6 +++
- 3 files changed, 64 insertions(+), 56 deletions(-)
+ drivers/iommu/intel-iommu.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 58dde75..4ae6df2 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -170,9 +170,12 @@ int __init dmar_parse_dev_scope(void *start, void *end, int *cnt,
- 
- void dmar_free_dev_scope(struct pci_dev ***devices, int *cnt)
- {
-+	int i;
-+	struct pci_dev *tmp_dev;
-+
- 	if (*devices && *cnt) {
--		while (--*cnt >= 0)
--			pci_dev_put((*devices)[*cnt]);
-+		for_each_active_dev_scope(*devices, *cnt, i, tmp_dev)
-+			pci_dev_put(tmp_dev);
- 		kfree(*devices);
- 		*devices = NULL;
- 		*cnt = 0;
-@@ -402,10 +405,11 @@ static int dmar_pci_device_match(struct pci_dev *devices[], int cnt,
- 			  struct pci_dev *dev)
- {
- 	int index;
-+	struct pci_dev *tmp;
- 
- 	while (dev) {
--		for (index = 0; index < cnt; index++)
--			if (dev == devices[index])
-+		for_each_active_dev_scope(devices, cnt, index, tmp)
-+			if (dev == tmp)
- 				return 1;
- 
- 		/* Check our parent */
-@@ -452,7 +456,7 @@ int __init dmar_dev_scope_init(void)
- 	if (list_empty(&dmar_drhd_units))
- 		goto fail;
- 
--	list_for_each_entry(drhd, &dmar_drhd_units, list) {
-+	for_each_drhd_unit(drhd) {
- 		ret = dmar_parse_dev(drhd);
- 		if (ret)
- 			goto fail;
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 7732c43..bb98e37 100644
+index a27d3eb..afbc8d6 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -654,29 +654,31 @@ static void domain_update_iommu_cap(struct dmar_domain *domain)
- static struct intel_iommu *device_to_iommu(int segment, u8 bus, u8 devfn)
- {
- 	struct dmar_drhd_unit *drhd = NULL;
-+	struct intel_iommu *iommu;
-+	struct pci_dev *dev;
- 	int i;
+@@ -1297,6 +1297,13 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
  
--	for_each_active_drhd_unit(drhd) {
-+	for_each_active_iommu(iommu, drhd) {
- 		if (segment != drhd->segment)
- 			continue;
- 
--		for (i = 0; i < drhd->devices_cnt; i++) {
--			if (drhd->devices[i] &&
--			    drhd->devices[i]->bus->number == bus &&
--			    drhd->devices[i]->devfn == devfn)
--				return drhd->iommu;
--			if (drhd->devices[i] &&
--			    drhd->devices[i]->subordinate &&
--			    drhd->devices[i]->subordinate->number <= bus &&
--			    drhd->devices[i]->subordinate->busn_res.end >= bus)
--				return drhd->iommu;
-+		for_each_active_dev_scope(drhd->devices,
-+					  drhd->devices_cnt, i, dev) {
-+			if (dev->bus->number == bus && dev->devfn == devfn)
-+				goto out;
-+			if (dev->subordinate &&
-+			    dev->subordinate->number <= bus &&
-+			    dev->subordinate->busn_res.end >= bus)
-+				goto out;
- 		}
- 
- 		if (drhd->include_all)
--			return drhd->iommu;
-+			goto out;
- 	}
-+	iommu = NULL;
-+out:
- 
--	return NULL;
-+	return iommu;
- }
- 
- static void domain_flush_cache(struct dmar_domain *domain,
-@@ -2333,17 +2335,19 @@ static int domain_add_dev_info(struct dmar_domain *domain,
- static bool device_has_rmrr(struct pci_dev *dev)
- {
- 	struct dmar_rmrr_unit *rmrr;
-+	struct pci_dev *tmp;
- 	int i;
- 
- 	for_each_rmrr_units(rmrr) {
--		for (i = 0; i < rmrr->devices_cnt; i++) {
--			/*
--			 * Return TRUE if this RMRR contains the device that
--			 * is passed in.
--			 */
--			if (rmrr->devices[i] == dev)
-+		/*
-+		 * Return TRUE if this RMRR contains the device that
-+		 * is passed in.
-+		 */
-+		for_each_active_dev_scope(rmrr->devices,
-+					  rmrr->devices_cnt, i, tmp)
-+			if (tmp == dev) {
- 				return true;
--		}
-+			}
- 	}
- 	return false;
- }
-@@ -2593,14 +2597,9 @@ static int __init init_dmars(void)
- 	 */
- 	printk(KERN_INFO "IOMMU: Setting RMRR:\n");
- 	for_each_rmrr_units(rmrr) {
--		for (i = 0; i < rmrr->devices_cnt; i++) {
--			pdev = rmrr->devices[i];
--			/*
--			 * some BIOS lists non-exist devices in DMAR
--			 * table.
--			 */
--			if (!pdev)
--				continue;
-+		/* some BIOS lists non-exist devices in DMAR table. */
-+		for_each_active_dev_scope(rmrr->devices, rmrr->devices_cnt,
-+					  i, pdev) {
- 			ret = iommu_prepare_rmrr_dev(rmrr, pdev);
- 			if (ret)
- 				printk(KERN_ERR
-@@ -3288,13 +3287,14 @@ DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB, quir
- static void __init init_no_remapping_devices(void)
- {
- 	struct dmar_drhd_unit *drhd;
-+	struct pci_dev *dev;
-+	int i;
- 
- 	for_each_drhd_unit(drhd) {
- 		if (!drhd->include_all) {
--			int i;
--			for (i = 0; i < drhd->devices_cnt; i++)
--				if (drhd->devices[i] != NULL)
--					break;
-+			for_each_active_dev_scope(drhd->devices,
-+						  drhd->devices_cnt, i, dev)
-+				break;
- 			/* ignore DMAR unit if no pci devices exist */
- 			if (i == drhd->devices_cnt)
- 				drhd->ignored = 1;
-@@ -3302,15 +3302,13 @@ static void __init init_no_remapping_devices(void)
- 	}
- 
- 	for_each_active_drhd_unit(drhd) {
--		int i;
- 		if (drhd->include_all)
- 			continue;
- 
--		for (i = 0; i < drhd->devices_cnt; i++)
--			if (drhd->devices[i] &&
--			    !IS_GFX_DEVICE(drhd->devices[i]))
-+		for_each_active_dev_scope(drhd->devices,
-+					  drhd->devices_cnt, i, dev)
-+			if (!IS_GFX_DEVICE(dev))
- 				break;
--
- 		if (i < drhd->devices_cnt)
- 			continue;
- 
-@@ -3320,11 +3318,9 @@ static void __init init_no_remapping_devices(void)
- 			intel_iommu_gfx_mapped = 1;
- 		} else {
- 			drhd->ignored = 1;
--			for (i = 0; i < drhd->devices_cnt; i++) {
--				if (!drhd->devices[i])
--					continue;
--				drhd->devices[i]->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
--			}
-+			for_each_active_dev_scope(drhd->devices,
-+						  drhd->devices_cnt, i, dev)
-+				dev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
- 		}
- 	}
- }
-@@ -3560,9 +3556,9 @@ static void intel_iommu_free_dmars(void)
- 
- int dmar_find_matched_atsr_unit(struct pci_dev *dev)
- {
--	int i;
-+	int i, ret = 1;
- 	struct pci_bus *bus;
--	struct pci_dev *bridge = NULL;
-+	struct pci_dev *bridge = NULL, *tmp;
- 	struct acpi_dmar_atsr *atsr;
- 	struct dmar_atsr_unit *atsru;
- 
-@@ -3583,22 +3579,24 @@ int dmar_find_matched_atsr_unit(struct pci_dev *dev)
- 		if (atsr->segment != pci_domain_nr(dev->bus))
- 			continue;
- 
--		for (i = 0; i < atsru->devices_cnt; i++)
--			if (atsru->devices[i] == bridge)
--				return 1;
-+		for_each_dev_scope(atsru->devices, atsru->devices_cnt, i, tmp)
-+			if (tmp == bridge)
-+				goto out;
- 
- 		if (atsru->include_all)
--			return 1;
-+			goto out;
- 	}
-+	ret = 0;
-+out:
- 
--	return 0;
-+	return ret;
- }
- 
- int __init dmar_parse_rmrr_atsr_dev(void)
- {
- 	struct dmar_rmrr_unit *rmrr;
- 	struct dmar_atsr_unit *atsr;
--	int ret = 0;
-+	int ret;
- 
- 	list_for_each_entry(rmrr, &dmar_rmrr_units, list) {
- 		ret = rmrr_parse_dev(rmrr);
-@@ -3612,7 +3610,7 @@ int __init dmar_parse_rmrr_atsr_dev(void)
- 			return ret;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- /*
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index ea599d4..4b77fd8 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -65,6 +65,12 @@ extern struct list_head dmar_drhd_units;
- 	list_for_each_entry(drhd, &dmar_drhd_units, list)		\
- 		if (i=drhd->iommu, 0) {} else 
- 
-+#define	for_each_dev_scope(a, c, p, d)	\
-+	for ((p) = 0; ((d) = (p) < (c) ? (a)[(p)] : NULL, (p) < (c)); (p)++)
+ 	if ((iommu->domains) && (iommu->domain_ids)) {
+ 		for_each_set_bit(i, iommu->domain_ids, cap_ndoms(iommu->cap)) {
++			/*
++			 * Domain id 0 is reserved for invalid translation
++			 * if hardware supports caching mode.
++			 */
++			if (cap_caching_mode(iommu->cap) && i == 0)
++				continue;
 +
-+#define	for_each_active_dev_scope(a, c, p, d)	\
-+	for_each_dev_scope((a), (c), (p), (d))	if (!(d)) { continue; } else
-+
- extern int dmar_table_init(void);
- extern int dmar_dev_scope_init(void);
- extern int dmar_parse_dev_scope(void *start, void *end, int *cnt,
+ 			domain = iommu->domains[i];
+ 			clear_bit(i, iommu->domain_ids);
+ 
 -- 
 1.7.10.4
 
