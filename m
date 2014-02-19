@@ -1,236 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaBSOzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 09:55:00 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:52753 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667AbaBSOy6 (ORCPT
+	id S1754011AbaBSO5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 09:57:51 -0500
+Received: from relay.parallels.com ([195.214.232.42]:58019 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734AbaBSO5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 09:54:58 -0500
+	Wed, 19 Feb 2014 09:57:49 -0500
+Message-ID: <5304C66A.4030603@parallels.com>
+Date: Wed, 19 Feb 2014 18:57:46 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1392819290-1044-3-git-send-email-grant.likely@linaro.org>
-References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
-	<1392819290-1044-3-git-send-email-grant.likely@linaro.org>
-Date: Wed, 19 Feb 2014 08:54:57 -0600
-Message-ID: <CAL_JsqLbjK02Z1qzfP9K+Grp2WwAth8rMctK9myf8ZwJA6PUGQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/4] of: reimplement the matching method for __of_match_node()
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hao <haokexin@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Weng Meiling <wengmeiling.weng@huawei.com>, <greg@kroah.com>,
+        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd superblock's
+ one
+References: <20131230142339.16166.28243.stgit@localhost.localdomain> <20140103222226.GD5164@fieldses.org> <52FEC818.7030604@huawei.com> <20140217221900.GA8401@fieldses.org> <53037A03.4020603@parallels.com> <20140218154406.GD4319@fieldses.org> <530486D9.7010502@parallels.com> <20140219145043.GC8401@fieldses.org>
+In-Reply-To: <20140219145043.GC8401@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.29.29]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 8:14 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> From: Kevin Hao <haokexin@gmail.com>
+19.02.2014 18:50, J. Bruce Fields пишет:
+> On Wed, Feb 19, 2014 at 02:26:33PM +0400, Stanislav Kinsbursky wrote:
+>> 18.02.2014 19:44, J. Bruce Fields пишет:
+>>> On Tue, Feb 18, 2014 at 07:19:31PM +0400, Stanislav Kinsbursky wrote:
+>>>> 18.02.2014 02:19, J. Bruce Fields пишет:
+>>>>> On Sat, Feb 15, 2014 at 09:51:20AM +0800, Weng Meiling wrote:
+>>>>>> Hi Bruce,
+>>>>>>
+>>>>>> The upstream has merged your git tree for-3.14, but there is no this patch?
+>>>>>> Do you forget this patch?
+>>>>>
+>>>>> Apologies, I'm not sure what happened.
+>>>>>
+>>>>> Looking back at it....  The patch causes all my pynfs reboot recovery
+>>>>> tests to fail.  They're just doing a "systemctl restart
+>>>>> nfs-server.service", and "systemctl status nfs-server.service" shows in
+>>>>> part
+>>>>>
+>>>>> 	ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS $RPCNFSDCOUNT (code=exited, status=1/FAILURE)
+>>>>>
+>>>>> So the patch is causing rpc.nfsd to fail?  No network namespaces should
+>>>>> be involved.
+>>>>>
+>>>>> I haven't investigated any further.
+>>>>>
+>>>>
+>>>> Hi Bruce,
+>>>> Are you sure, that exactly this patch broke your pynfs tests?
+>>>> BTW, systemd manipulates namespaces. Maybe the patch revealed some pynfs internal bugs?
+>>>> What do you think?
+>>>
+>>> It's really just "systemctl restart nfs-server.service" that the patch
+>>> breaks, pynfs isn't involved much.
+>>>
+>>> The patch I'm actually using follows, but I believe the only difference
+>>> is in the printk message?
+>>>
+>>
+>> Yep, looks true.
+>> That's strange: "systemctl restart nfs-server.service" works for me on Fedora 18 with kernel, based on your repo.
 >
-> In the current implementation of __of_match_node(), it will compare
-> each given match entry against all the node's compatible strings
-> with of_device_is_compatible().
+> OK, I'll take a closer look and let you know what I find.
 >
-> To achieve multiple compatible strings per node with ordering from
-> specific to generic, this requires given matches to be ordered from
-> specific to generic. For most of the drivers this is not true and
-> also an alphabetical ordering is more sane there.
->
-> Therefore, we define a following priority order for the match, and
-> then scan all the entries to find the best match.
->   1. specific compatible && type && name
->   2. specific compatible && type
->   3. specific compatible && name
->   4. specific compatible
->   5. general compatible && type && name
->   6. general compatible && type
->   7. general compatible && name
->   8. general compatible
->   9. type && name
->   10. type
->   11. name
 
-While I agree this should be the right order, I worry that this may be
-changing the matching in some case as all previous attempts have done.
+Thank you, Bruce!
 
+> --b.
 >
-> v4: Short-circuit failure cases instead of mucking with score, and
->     remove extra __of_device_is_compatible() wrapper stub.
->     Move scoring logic directly into __of_device_is_compatible()
->
-> v3: Also need to bail out when there does have a compatible member in match
->     entry, but it doesn't match with the device node's compatible.
->
-> v2: Fix the bug such as we get the same score for the following two match
->     entries with the empty node 'name2 { };'
->         struct of_device_id matches[] = {
->                 {.name = "name2", },
->                 {.name = "name2", .type = "type1", },
->                 {}
->         };
->
-> Signed-off-by: Kevin Hao <haokexin@gmail.com>
-> [grant.likely: added v4 changes]
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> ---
->  drivers/of/base.c | 108 +++++++++++++++++++++++++++++++++++++-----------------
->  1 file changed, 74 insertions(+), 34 deletions(-)
->
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index ba195fbce4c6..30ffc291d0a0 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -342,27 +342,73 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
->  }
->  EXPORT_SYMBOL(of_get_cpu_node);
->
-> -/** Checks if the given "compat" string matches one of the strings in
-> - * the device's "compatible" property
-> +/**
-> + * __of_device_is_compatible() - Check if the node matches given constraints
-> + * @device: pointer to node
-> + * @compat: required compatible string, NULL or "" for any match
-> + * @type: required device_type value, NULL or "" for any match
-> + * @name: required node name, NULL or "" for any match
-> + *
-> + * Checks if the given @compat, @type and @name strings match the
-> + * properties of the given @device. A constraints can be skipped by
-> + * passing NULL or an empty string as the constraint.
-> + *
-> + * Returns 0 for no match, and a positive integer on match. The return
-> + * value is a relative score with larger values indicating better
-> + * matches. The score is weighted for the most specific compatible value
-> + * to get the highest score. Matching type is next, followed by matching
-> + * name. Practically speaking, this results in the following priority
-> + * order for matches:
-> + *
-> + * 1. specific compatible && type && name
-> + * 2. specific compatible && type
-> + * 3. specific compatible && name
-> + * 4. specific compatible
-> + * 5. general compatible && type && name
-> + * 6. general compatible && type
-> + * 7. general compatible && name
-> + * 8. general compatible
-> + * 9. type && name
-> + * 10. type
-> + * 11. name
->   */
->  static int __of_device_is_compatible(const struct device_node *device,
-> -                                    const char *compat)
-> +                                    const char *compat, const char *type, const char *name)
->  {
->         const char* cp;
-> -       int cplen, l;
-> +       int cplen, l, index, score = 0;
->
-> -       cp = __of_get_property(device, "compatible", &cplen);
-> -       if (cp == NULL)
-> -               return 0;
-> -       while (cplen > 0) {
-> -               if (of_compat_cmp(cp, compat, strlen(compat)) == 0)
-> -                       return 1;
-> -               l = strlen(cp) + 1;
-> -               cp += l;
-> -               cplen -= l;
-> +       /* Compatible match has highest priority */
-> +       if (compat && compat[0]) {
-> +               cp = __of_get_property(device, "compatible", &cplen);
-> +               if (!cp)
-> +                       return 0;
-> +               for (index = 0; cplen > 0; index++, cp += l, cplen -= l) {
-> +                       l = strlen(cp) + 1;
+>>
+>>> --b
+>>>
+>>> commit e1f2922c12cb59baba0f2c7726bee992a0861310
+>>> Author: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>>> Date:   Mon Dec 30 17:23:59 2013 +0300
+>>>
+>>>      nfsd: check passed socket's net matches the NFSd superblock's
+>>>
+>>>      The file descriptor written to the nfsd/portlist file could be for a
+>>>      socket in a different network namespace from the network namespace that
+>>>      the nfsd filesystem was mounted in, and this can cause a crash.
+>>>
+>>>      For example: "ip netns exec" creates a new network and mount namespace,
+>>>      which duplicates the nfsd mount point which was created in the init_net
+>>>      context.  Thus NFS server stop in the nested network context leads to
+>>>      RPCBIND client destruction in init_net.  Then, on nfsd start in the
+>>>      nested network context, the rpc.nfsd process creates a socket in the
+>>>      nested net and passes it into "write_ports", which leads to RPCBIND
+>>>      socket creation in init_net context for the same reason (the nfsd mount
+>>>      point was created in the init_net context). An attempt to register
+>>>      passed socket in nested net leads to panic, because no RPCBIND client is
+>>>      present in the nested network namespace.
+>>>
+>>>      This patch adds a check that the passed the socket's net matches the
+>>>      nfsd superblock's net, and returns -EINVAL error to user space if not.
+>>>
+>>>      Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
+>>>      Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>>>      Cc: stable@vger.kernel.org
+>>>      Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+>>>
+>>> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+>>> index 7f55517..1331766 100644
+>>> --- a/fs/nfsd/nfsctl.c
+>>> +++ b/fs/nfsd/nfsctl.c
+>>> @@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
+>>>   	if (err != 0 || fd < 0)
+>>>   		return -EINVAL;
+>>>
+>>> +	if (svc_alien_sock(net, fd)) {
+>>> +		printk(KERN_ERR "%s: socket net is different from NFSd's\n", __func__);
+>>> +		return -EINVAL;
+>>> +	}
+>>> +
+>>>   	err = nfsd_create_serv(net);
+>>>   	if (err != 0)
+>>>   		return err;
+>>> diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
+>>> index 62fd1b7..947009e 100644
+>>> --- a/include/linux/sunrpc/svcsock.h
+>>> +++ b/include/linux/sunrpc/svcsock.h
+>>> @@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
+>>>   int		svc_send(struct svc_rqst *);
+>>>   void		svc_drop(struct svc_rqst *);
+>>>   void		svc_sock_update_bufs(struct svc_serv *serv);
+>>> +bool		svc_alien_sock(struct net *net, int fd);
+>>>   int		svc_addsock(struct svc_serv *serv, const int fd,
+>>>   					char *name_return, const size_t len);
+>>>   void		svc_init_xprt_sock(void);
+>>> diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+>>> index b6e59f0..3ba5b87 100644
+>>> --- a/net/sunrpc/svcsock.c
+>>> +++ b/net/sunrpc/svcsock.c
+>>> @@ -1397,6 +1397,17 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
+>>>   	return svsk;
+>>>   }
+>>>
+>>> +bool svc_alien_sock(struct net *net, int fd)
+>>> +{
+>>> +	int err;
+>>> +	struct socket *sock = sockfd_lookup(fd, &err);
+>>> +
+>>> +	if (sock && (sock_net(sock->sk) != net))
+>>> +		return true;
+>>> +	return false;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(svc_alien_sock);
+>>> +
+>>>   /**
+>>>    * svc_addsock - add a listener socket to an RPC service
+>>>    * @serv: pointer to RPC service to which to add a new listener
+>>>
+>>
+>>
+>> --
+>> Best regards,
+>> Stanislav Kinsbursky
 
-This could use of_property_for_each_string.
 
-> +                       if (of_compat_cmp(cp, compat, strlen(compat)) == 0) {
-> +                               score = INT_MAX/2 - (index << 2);
-> +                               break;
-> +                       }
-> +               }
-> +               if (!score)
-> +                       return 0;
->         }
->
-> -       return 0;
-> +       /* Matching type is better than matching name */
-> +       if (type && type[0]) {
-> +               if (!device->type || of_node_cmp(type, device->type))
-> +                       return 0;
-> +               score += 2;
-> +       }
-> +
-> +       /* Matching name is a bit better than not */
-> +       if (name && name[0]) {
-> +               if (!device->name || of_node_cmp(name, device->name))
-> +                       return 0;
-> +               score++;
-> +       }
-> +
-> +       return score;
->  }
->
->  /** Checks if the given "compat" string matches one of the strings in
-> @@ -375,7 +421,7 @@ int of_device_is_compatible(const struct device_node *device,
->         int res;
->
->         raw_spin_lock_irqsave(&devtree_lock, flags);
-> -       res = __of_device_is_compatible(device, compat);
-> +       res = __of_device_is_compatible(device, compat, NULL, NULL);
->         raw_spin_unlock_irqrestore(&devtree_lock, flags);
->         return res;
->  }
-> @@ -681,10 +727,7 @@ struct device_node *of_find_compatible_node(struct device_node *from,
->         raw_spin_lock_irqsave(&devtree_lock, flags);
->         np = from ? from->allnext : of_allnodes;
->         for (; np; np = np->allnext) {
-> -               if (type
-> -                   && !(np->type && (of_node_cmp(np->type, type) == 0)))
-> -                       continue;
-> -               if (__of_device_is_compatible(np, compatible) &&
-> +               if (__of_device_is_compatible(np, compatible, type, NULL) &&
->                     of_node_get(np))
->                         break;
->         }
-> @@ -734,25 +777,22 @@ static
->  const struct of_device_id *__of_match_node(const struct of_device_id *matches,
->                                            const struct device_node *node)
->  {
-> +       const struct of_device_id *best_match = NULL;
-> +       int score, best_score = 0;
-> +
->         if (!matches)
->                 return NULL;
->
-> -       while (matches->name[0] || matches->type[0] || matches->compatible[0]) {
-> -               int match = 1;
-> -               if (matches->name[0])
-> -                       match &= node->name
-> -                               && !strcmp(matches->name, node->name);
-> -               if (matches->type[0])
-> -                       match &= node->type
-> -                               && !strcmp(matches->type, node->type);
-> -               if (matches->compatible[0])
-> -                       match &= __of_device_is_compatible(node,
-> -                                                          matches->compatible);
-> -               if (match)
-> -                       return matches;
-> -               matches++;
-> +       for (; matches->name[0] || matches->type[0] || matches->compatible[0]; matches++) {
-> +               score = __of_device_is_compatible(node, matches->compatible,
-> +                                                 matches->type, matches->name);
-> +               if (score > best_score) {
-> +                       best_match = matches;
-> +                       best_score = score;
-> +               }
->         }
-> -       return NULL;
-> +
-> +       return best_match;
->  }
->
->  /**
-> --
-> 1.8.3.2
->
+-- 
+Best regards,
+Stanislav Kinsbursky
