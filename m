@@ -1,111 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaBSP1F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:27:05 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32390 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753503AbaBSP1E (ORCPT
+	id S1753964AbaBSP2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:28:43 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:48057 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804AbaBSP2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:27:04 -0500
-Date: Wed, 19 Feb 2014 10:27:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>, Ulrich Obergfell <uobergfe@redhat.com>
-Subject: Re: [PATCH RT] kernel/hrtimer: be non-freezeable in cpu_chill()
-Message-ID: <20140219102700.04de1195@gandalf.local.home>
-In-Reply-To: <20140219115353.GA28909@linutronix.de>
-References: <20140205115125.3cc950ce@gandalf.local.home>
-	<20140207113006.GD23668@linutronix.de>
-	<20140207090834.72774272@gandalf.local.home>
-	<20140207091313.097f9059@gandalf.local.home>
-	<20140219115353.GA28909@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 19 Feb 2014 10:28:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Date: Wed, 19 Feb 2014 10:28:40 -0500
+Message-ID: <CAHqbYQtLG0yE98kCHkCaec+oHF7c2Pwiqrsi5C2eHnGfbsR+sQ@mail.gmail.com>
+Subject: How pte_mkspecial makes zero-page COW on x86 ARCH
+From: Hu Yaohui <loki2441@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014 12:53:53 +0100
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+Hi All,
+I read the code in do_anonymous_page of the latest linux kernel.
+I am pretty confused how pte_mkspecial to make the zero-page COW on
+x86 architecture
+<code>
+static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+                unsigned long address, pte_t *page_table, pmd_t *pmd,
+                unsigned int flags)
+{
+.....
+        /* Use the zero-page for reads */
+        if (!(flags & FAULT_FLAG_WRITE)) {
+                entry = pte_mkspecial(pfn_pte(my_zero_pfn(address),
+                                                vma->vm_page_prot));
+                page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
+                if (!pte_none(*page_table))
+                        goto unlock;
+                goto setpte;
+        }
+......
+}
+</code>
+In the previous linux kernel, this is done by pte_wrprotect to make page COW.
+Thanks for your time!
 
-> Since we replaced msleep() by hrtimer I see now and then (rarely) this:
-> 
-> | [....] Waiting for /dev to be fully populated...
-> | =====================================
-> | [ BUG: udevd/229 still has locks held! ]
-> | 3.12.11-rt17 #23 Not tainted
-> | -------------------------------------
-> | 1 lock held by udevd/229:
-> |  #0:  (&type->i_mutex_dir_key#2){+.+.+.}, at: lookup_slow+0x28/0x98
-> |
-> | stack backtrace:
-> | CPU: 0 PID: 229 Comm: udevd Not tainted 3.12.11-rt17 #23
-> | (unwind_backtrace+0x0/0xf8) from (show_stack+0x10/0x14)
-> | (show_stack+0x10/0x14) from (dump_stack+0x74/0xbc)
-> | (dump_stack+0x74/0xbc) from (do_nanosleep+0x120/0x160)
-> | (do_nanosleep+0x120/0x160) from (hrtimer_nanosleep+0x90/0x110)
-> | (hrtimer_nanosleep+0x90/0x110) from (cpu_chill+0x30/0x38)
-> | (cpu_chill+0x30/0x38) from (dentry_kill+0x158/0x1ec)
-> | (dentry_kill+0x158/0x1ec) from (dput+0x74/0x15c)
-> | (dput+0x74/0x15c) from (lookup_real+0x4c/0x50)
-> | (lookup_real+0x4c/0x50) from (__lookup_hash+0x34/0x44)
-> | (__lookup_hash+0x34/0x44) from (lookup_slow+0x38/0x98)
-> | (lookup_slow+0x38/0x98) from (path_lookupat+0x208/0x7fc)
-> | (path_lookupat+0x208/0x7fc) from (filename_lookup+0x20/0x60)
-> | (filename_lookup+0x20/0x60) from (user_path_at_empty+0x50/0x7c)
-> | (user_path_at_empty+0x50/0x7c) from (user_path_at+0x14/0x1c)
-> | (user_path_at+0x14/0x1c) from (vfs_fstatat+0x48/0x94)
-> | (vfs_fstatat+0x48/0x94) from (SyS_stat64+0x14/0x30)
-> | (SyS_stat64+0x14/0x30) from (ret_fast_syscall+0x0/0x48)
-> 
-> For now I see no better way but to disable the freezer for the sleep period.
-
-Hmm, I wonder if this is because msleep() sets the tasks state to
-TASK_UNINTERRUPTIBLE, and hrtimer_nanosleep sets it to
-TASK_INTERRUPTIBLE.
-
-> 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  kernel/hrtimer.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index 5c26d2c..083815d 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -1899,8 +1899,12 @@ void cpu_chill(void)
->  	struct timespec tu = {
->  		.tv_nsec = NSEC_PER_MSEC,
->  	};
-> +	unsigned int freeze_flag = current->flags & PF_NOFREEZE;
->  
-> +	current->flags |= PF_NOFREEZE;
->  	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-> +	if (!freeze_flag)
-> +		current->flags &= ~PF_NOFREEZE;
-
-We could remove the branch with:
-
-	current->flags &= ~PF_NOFREEZE | freeze_flag;
-
-But as we just slept for a millisecond, that optimization may not be
-worth anything ;-)
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
->  }
->  EXPORT_SYMBOL(cpu_chill);
->  #endif
-
+Best Wishes,
+Yaohui
