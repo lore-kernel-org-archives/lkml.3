@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017AbaBSTRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:17:37 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33380 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034AbaBSTRf (ORCPT
+	id S1755063AbaBSTSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:18:52 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:39223 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754906AbaBSTSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:17:35 -0500
-Date: Wed, 19 Feb 2014 19:17:17 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Grant Edwards <grant.b.edwards@gmail.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: locking changes in tty broke low latency feature
-Message-ID: <20140219191717.486ac4d0@alan.etchedpixels.co.uk>
-In-Reply-To: <5304EC33.5040502@hurleysoftware.com>
-References: <20140218093829.GC1741@redhat.com>
-	<5303DABD.9000302@hurleysoftware.com>
-	<20140219130308.GC1851@redhat.com>
-	<le2nmd$p1$1@ger.gmane.org>
-	<5304EC33.5040502@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 19 Feb 2014 14:18:49 -0500
+Message-ID: <530511AC.7030907@cogentembedded.com>
+Date: Wed, 19 Feb 2014 23:18:52 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Florian Fainelli <f.fainelli@gmail.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+CC: Grant Likely <grant.likely@linaro.org>,
+        linux-kernel <linux-kernel@lists.codethink.co.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH] of_mdio: fix phy interrupt passing
+References: <1392654580-3706-1-git-send-email-ben.dooks@codethink.co.uk> <CAGVrzcYeuTA0Yd5YyOTuWQfnwLw9zP87MaYJOLwprZRCtvuaXw@mail.gmail.com> <530249EF.4060803@codethink.co.uk> <CAGVrzcZGW05uNj75VG7w4iSGre4OzEMhHedQfaynekrbhP4NLQ@mail.gmail.com>
+In-Reply-To: <CAGVrzcZGW05uNj75VG7w4iSGre4OzEMhHedQfaynekrbhP4NLQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How can the requirement be for both must-handle-in-minimum-time data
-> (low_latency) and the-userspace-reader-isn't-reading-fast-enough-
-> so-its-ok-to-halt-transmission ?
+Hello.
 
-Because low latency is about *turn around* time. There are plenty of
-protocols that can flow control, do flow control and want low latency
-because they are not windowed. It's not mutually exclusive by any means.
+On 02/17/2014 08:48 PM, Florian Fainelli wrote:
 
-> But first I'd like some hard data on whether or not a low latency
-> mode is even necessary (at least for user-space).
+>>>> The of_mdiobus_register_phy() is not setting phy->irq this causing
+>>>> some drivers to incorrectly assume that the PHY does not have an
+>>>> IRQ associated with it or install an interrupt handler for the
+>>>> PHY.
 
-The easy way to simulate the annoying as crap worst cases from dumbass
-firmware downloaders and the like is to set up a link between two PCs and
-time 2000+ repetitions of
+>>>> Simplify the code setting irq and set the phy->irq at the same
+>>>> time so that the case if mdio->irq is not NULL is easier to read.
 
-send 64 bytes
-wait for a Y
-send 64 bytes
-wait for a Y
-....
+>>> The real bug fix, which is not properly explained here, is that
+>>> irq_of_parse_and_map() should return values > 0 when the interrupt is
+>>> valid, so this makes me wonder why we are not propagating the return
+>>> value from irq_of_parse_and_map() in case the call to
+>>> of_irq_parse_one() does return something non-zero?
 
-and the matching far end being a box running an existing kernel or a PIC
-or something doing the responses.
+>> No, the first issue is phy->dev never gets set, which causes the
+>> issue. The cleanup was added as it seemed easier to put it in with
+>> this.
 
-Historically we used to lose about 20mS per cycle which over 2000 got to
-be a bit of a PITA.
+> Ok, that really needs to be mentioned in the commit message, even
+> being quite familiar (and possibly dumb too) with the code, I could
+> not figure this out by reading your patch.
 
-Low latency goes back to the days of flip buffers, bottom halves an a
-100Hz clock. There are certainly better ways to do it now if its needed.
+    Yes, the main issue was that phy->irq wasn't overridden from the value set 
+by phy_device_create().
 
-Alan
+>> I think phy->irq is already initialised to PHY_POLL and thus there
+>> is no need to set phy->irq if the irq_of_parse_and_map() fails.
+
+> That is correct, the reason why I introduced 7d97637 ("net: of_mdio:
+> do not overwrite PHY interrupt configuration") was that you are also
+> allowed to change the irq type before calling into
+> of_mdiobus_register(),
+
+    Not really: of_mdiobus_register() init's all of mdio->irq[] with IRQ_POLL, 
+thus wiping out all of the previous initialization, so I don't know what you 
+did achieve with the aforementioned commit.
+
+> so we want to preserve other irq values being
+> set here, such as PHY_IGNORE_INTERRUPT. Your patch does take care of
+> that since it only overrides the irq in case we could parse it.
+
+    And it should have stayed that way. The latter change was unnecessary.
+
+WBR, Sergei
 
