@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaBSAUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Feb 2014 19:20:47 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:42223 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaBSAUp (ORCPT
+	id S1751976AbaBSAXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Feb 2014 19:23:54 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:40231 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaBSAXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Feb 2014 19:20:45 -0500
-Date: Tue, 18 Feb 2014 16:20:43 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 2/4] devicetree: bindings: Document Krait CPU/L1 EDAC
-Message-ID: <20140219002043.GE14769@codeaurora.org>
-References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
- <1389735034-21430-3-git-send-email-sboyd@codeaurora.org>
- <20140115102701.GA27314@e102568-lin.cambridge.arm.com>
- <20140115165623.GJ14405@codeaurora.org>
- <20140116013840.GA674@codeaurora.org>
- <20140116113332.GC25540@e102568-lin.cambridge.arm.com>
- <20140116180505.GA30925@codeaurora.org>
- <20140116183326.GG25540@e102568-lin.cambridge.arm.com>
- <20140116192617.GA13785@codeaurora.org>
- <20140117102109.GA22544@e102568-lin.cambridge.arm.com>
+	Tue, 18 Feb 2014 19:23:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140117102109.GA22544@e102568-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140219000352.GP21483@n2100.arm.linux.org.uk>
+References: <20140217234644.GA5171@rmk-PC.arm.linux.org.uk>
+	<CA+55aFy7ApiQRudxPAd3v5k_apppxRnePHb1HZPH13erqhmX=g@mail.gmail.com>
+	<20140219000352.GP21483@n2100.arm.linux.org.uk>
+Date: Tue, 18 Feb 2014 16:23:51 -0800
+X-Google-Sender-Auth: yTpTt7mTpJuaYbabsp8VenQnkRQ
+Message-ID: <CA+55aFxZz9ubkj72KHy8PhpsjZb6D7LD+v6jHJTtsD4N6AWPzw@mail.gmail.com>
+Subject: Re: [GIT PULL] ARM fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, ARM SoC <arm@kernel.org>,
+        xen-devel@lists.xenproject.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry, this discussion stalled due to merge window + life events)
+On Tue, Feb 18, 2014 at 4:03 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+>
+> Almost, but not quite.  If we're going to avoid u64, then dma_addr_t
+> woudl be the right type here because we're talking about DMA addresses.
 
-On 01/17, Lorenzo Pieralisi wrote:
-> On Thu, Jan 16, 2014 at 07:26:17PM +0000, Stephen Boyd wrote:
-> > On 01/16, Lorenzo Pieralisi wrote:
-> > > On Thu, Jan 16, 2014 at 06:05:05PM +0000, Stephen Boyd wrote:
-> > > > On 01/16, Lorenzo Pieralisi wrote:
-> > > > > Do we really want to do that ? I am not sure. A cpus node is supposed to
-> > > > > be a container node, we should not define this binding just because we
-> > > > > know the kernel creates a platform device for it then.
-> > > > 
-> > > > This is just copying more of the ePAPR spec into this document.
-> > > > It just so happens that having a compatible field here allows a
-> > > > platform device to be created. I don't see why that's a problem.
-> > > 
-> > > I do not see why you cannot define a node like pmu or arch-timer and stick
-> > > a compatible property in there. cpus node does not represent a device, and
-> > > must not be created as a platform device, that's my opinion.
-> > > 
-> > 
-> > I had what you're suggesting before in the original revision of
-> > this patch. Please take a look at the original patch series[1]. I
-> > suppose it could be tweaked slightly to still have a cache node
-> > for the L2 interrupt and the next-level-cache pointer from the
-> > CPUs.
-> 
-> Ok, sorry, we are running around in circles here, basically you moved
-> the node to cpus according to reviews. I still think that treating cpus
-> as a device is not a great idea, even though I am in the same
-> position with C-states and probably will add C-state tables in the cpus
-> node.
-> 
-> http://comments.gmane.org/gmane.linux.power-management.general/41012
-> 
-> I just would like to see under cpus nodes and properties that apply to
-> all ARM systems, and avoid defining properties (eg interrupts) that
-> have different meanings for different ARM cores.
-> 
-> The question related to why the kernel should create a platform device
-> out of cpus is still open. I really do not want to block your series
-> for these simple issues but we have to make a decision and stick to that,
-> I am fine either way if we have a plan.
-> 
+Well, phys_addr_t had better be as big as dma_addr_t, because that's
+what the resource management handles.
 
-Do you just want a backup plan in case we don't make a platform
-device out of the cpus node? I believe we can always add code
-somewhere to create a platform device at runtime if we detect the
-cpus node has a compatible string equal to "qcom,krait". We could
-probably change this driver's module_init() to scan the DT for
-such a compatible string and create the platform device right
-there. If we get more than one interrupt in the cpus node we can
-add interrupt-names and then have software look for interrupts by
-name instead of number.
+> We could also switch to keeping this as PFNs - block internally converts
+> it to a PFN anyway:
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Yeah, that definitely sounds like it would be a good idea.
+
+> Maybe blk_queue_bounce_pfn_limit() so we ensure all users get caught?
+>
+>> That said, it's admittedly a disgusting name, and I wonder if we
+>> should introduce a nicer-named "pfn_to_phys()" that matches the other
+>> "xyz_to_abc()" functions we have (including "pfn_to_virt()")
+>
+> We have these on ARM:
+>
+> arch/arm/include/asm/memory.h:#define   __pfn_to_phys(pfn)      ((phys_addr_t)(pfn) << PAGE_SHIFT)
+> arch/arm/include/asm/memory.h:#define   __phys_to_pfn(paddr)    ((unsigned long)((paddr) >> PAGE_SHIFT))
+>
+> it probably makes sense to pick those right out, maybe losing the
+> __ prefix on them.
+
+Yup.
+
+>>   __va(PFN_PHYS(page_to_pfn(page)));
+>
+> Wow.  Two things spring to mind there... highmem pages, and don't we
+> already have page_address() for that?
+
+Well, that code clearly cannot handle highmem anyway, but yes, it
+really smells like xen should use page_address().
+
+Adding Xen people who I didn't add the last time around.
+
+             Linus
