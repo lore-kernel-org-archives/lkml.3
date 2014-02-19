@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaBSNC7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 08:02:59 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50779 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbaBSNC6 (ORCPT
+	id S1753643AbaBSNFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 08:05:20 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43045 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231AbaBSNFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 08:02:58 -0500
-Date: Wed, 19 Feb 2014 14:03:00 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Thomas Renninger <trenn@suse.de>
-cc: "Moore, Robert" <robert.moore@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "ck@conrad-kostecki.de" <ck@conrad-kostecki.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: Re: [Devel] ACPI: Also allow ACPI table adding via initrd not only
- overriding
-In-Reply-To: <2779111.V9OOdv2fEJ@skinner>
-Message-ID: <alpine.DEB.2.02.1402191356320.4468@ionos.tec.linutronix.de>
-References: <530265A3.3020302@zytor.com> <139301482.3RWgg14omZ@skinner> <94F2FBAB4432B54E8AACC7DFDE6C92E37C7D78A7@ORSMSX103.amr.corp.intel.com> <2779111.V9OOdv2fEJ@skinner>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 19 Feb 2014 08:05:18 -0500
+Date: Wed, 19 Feb 2014 22:05:00 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        kernel@pengutronix.de
+Message-ID: <20140219130500.GS2669@sirena.org.uk>
+References: <1391697321-14231-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MgsldsnE3DYXgZCe"
+Content-Disposition: inline
+In-Reply-To: <1391697321-14231-1-git-send-email-p.zabel@pengutronix.de>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.144.10
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: da9052: Add ramp speed information for the
+ DVC regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014, Thomas Renninger wrote:
 
-> On Tuesday, February 18, 2014 07:59:17 PM Moore, Robert wrote:
-> > Maybe not exactly "running", but at the very least, ACPICA must be
-> > initialized.
-> > 
-> > All of this of course depends on how early the table needs to be loaded.
-> 
-> I'd say as early as possible.
-> Not sure about Thomas' use case.
+--MgsldsnE3DYXgZCe
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The case is a BIOS with complete lack of ACPI tables. So we have no
-data about IOAPIC, HPET and other stuff.
+On Thu, Feb 06, 2014 at 03:35:21PM +0100, Philipp Zabel wrote:
+> Some LDOs and DCDCs have a fixed ramp speed of 6.25 mV/=B5s. This patch a=
+dds
+> the set_voltage_time_sel function to let consumers know about this.
 
-The current acpi_initrd_override() call is sufficient, because its
-called before acpi_boot_table_init(), which is the first function
-accessing any of the tables.
+Applied, thanks.
 
-Thanks,
+--MgsldsnE3DYXgZCe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	tglx
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTBKv5AAoJELSic+t+oim9dj4P/0tNKtfP9E3Vw16VAfDeg6yd
+V++Qz0R657X8mqGHPOKEoJTgaad/r+nOkRRQbmMBTK9jAFPfathpXlVEOxagY5RE
+8G08GaPBIY+CxxZh9DDY61kk8VjlXUMDQxXqeuhh3a8YBDl4M1Lw5apiWAM+/CyW
+Kr3AxypBXSgEir55Ib4ps2K5KQTxJ7iA8bBc4yVAz+wGaMjgdgQ+xMl7AJkhUoKU
+t02btiAm+6/0desq8pIeQQgbKUYeM/0P7786kPV/gP2eBhoRpOyo0/5zaLY/3TcB
+6/jIGB8LWjAnnlh+T/3PqbGU4+Pi8diRllPzWlq2PUzzWUpO8PKdZmTXGwvfzB1o
+4RtsAxz4rY9q0UNQQHTLf0ks2P0eyf9uqItFZdXI7YgNWTtoTHAWOAReSiu/BLKB
+cxyO8BhljqZhDwj2w6Oh1hfQGkh2bmT6lj373dbJPGeoVeVx3y2u7dGiaGFTq0fP
+o/GItXhP48NYxXzvTsnPn9ELnCWITmO48VrJVm92tR7Fl1EYOoAKGIH0nlJ95k+T
+IU/7tFjIhHzE7s2QMOTR2DxcMBjFqz3e70IMov2a2rzZjrCwidmACdnv6AMLEjJ1
+scoe/kA4QkD2n04CVcIP9m2WmU29s2FiEQaDt0YFOm20ijVO4r9HW+rvhrjlAaYR
+q5EOC8pZWRoGWS3DBPbV
+=Qk/z
+-----END PGP SIGNATURE-----
+
+--MgsldsnE3DYXgZCe--
