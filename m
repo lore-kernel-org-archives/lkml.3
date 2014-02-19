@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015AbaBST7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:59:11 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:59448 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640AbaBST7J (ORCPT
+	id S1755114AbaBSUCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 15:02:06 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:43049 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaBSUCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:59:09 -0500
+	Wed, 19 Feb 2014 15:02:04 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [PATCH] drivers/tty/serial: deal with 8250_core.c uninitialized warning for good
+Date: Wed, 19 Feb 2014 15:00:13 -0500
+Message-ID: <1392840013-15957-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-In-Reply-To: <20140219183623.GL27965@twins.programming.kicks-ass.net>
-References: <20140210221758.GB11542@dreric01-Precision-T1600>
-	<20140218101831.GB4178@mudshark.cambridge.arm.com>
-	<20140219162819.GP15586@twins.programming.kicks-ass.net>
-	<CABPqkBQS355_XW-2KthkdZkzQnApRvOpANkB3SnfFyac-qsJaw@mail.gmail.com>
-	<20140219183623.GL27965@twins.programming.kicks-ass.net>
-Date: Wed, 19 Feb 2014 20:59:08 +0100
-Message-ID: <CABPqkBS15h1p4gaaqJ0ExE35QcoFQ5dsVKeYcXi=jZ_9GB-BHg@mail.gmail.com>
-Subject: Re: Perf Oops on 3.14-rc2
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Drew Richardson <drew.richardson@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo <acme@redhat.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Wade Cherry <Wade.Cherry@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 7:36 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Feb 19, 2014 at 07:03:13PM +0100, Stephane Eranian wrote:
->> I am trying to understand the context here.
->> Are you saying, we may call an offline CPU?
->
-> Yes, that is what's happening.
->
->> I saw that sometimes you retry, sometimes you don't.
->
-> I tried to do exactly what we do for the task case which is far more
-> likely to fail. Could be I messed up.
->
-I am not sure why you need to retry. If the CPU is offline, it is offline.
-Or are you saying, you get an error, but you don't know the exact
-reason, thus you keep trying? But how do you get out of this if
-the CPU stays offline?
+Every couple of months, someone sends a patch to fix:
 
+drivers/tty/serial/8250/8250_core.c: In function 'serial_unlink_irq_chain':
+drivers/tty/serial/8250/8250_core.c:1712:2: warning: 'i' may be used uninitialized in this function [-Wuninitialized]
 
-> I should probably write the function differently and have a common retry
-> path instead of duplicating everything.
->
->> For perf_cgroup_attach(), we invoke task_function_call()
->> to force a PMU context switch on the task which is now monitored in cgroup mode.
->> If the CPU is offline then, the task is switched out and monitoring
->> has been stoppe,
->>  no need to retry or do anything more.
->>
->> For perf_cgroup_exit(), this is pretty much the same logic.
->>
->> am I missing anything else?
->
-> Don't think so; I'll add a comment there. I was just too tired to make
-> sense of things.
+and they in turn get a NACK for their efforts, and are told that
+their compiler is broken.  This has been going on since at least
+the year 2008:  https://lkml.org/lkml/2008/11/24/433
+
+Lets add a comment, so that subsequent patches don't get as far as
+the maintainers or the mailing lists.
+
+Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 69932b7556cf..747073b8c38a 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -1694,6 +1694,10 @@ static int serial_link_irq_chain(struct uart_8250_port *up)
+ 
+ static void serial_unlink_irq_chain(struct uart_8250_port *up)
+ {
++	/*
++	 * yes, some broken gcc emit "warning: 'i' may be used uninitialized"
++	 * but no, we are not going to take a patch that assigns NULL below.
++	 */
+ 	struct irq_info *i;
+ 	struct hlist_node *n;
+ 	struct hlist_head *h;
+-- 
+1.8.5.2
+
