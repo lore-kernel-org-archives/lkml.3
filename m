@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaBSPhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 10:37:14 -0500
+	id S1754294AbaBSPhz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 10:37:55 -0500
 Received: from mga02.intel.com ([134.134.136.20]:15745 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753928AbaBSPhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 10:37:09 -0500
+	id S1754229AbaBSPhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 10:37:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,506,1389772800"; 
-   d="scan'208";a="485868937"
+   d="scan'208";a="485868926"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 5/5 RESEND] mei: wd: fix stop completion failure
-Date: Wed, 19 Feb 2014 17:35:51 +0200
-Message-Id: <1392824151-5886-5-git-send-email-tomas.winkler@intel.com>
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [char-misc-next 4/5 RESEND] mei: wd: simplify wd_send command
+Date: Wed, 19 Feb 2014 17:35:50 +0200
+Message-Id: <1392824151-5886-4-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392824151-5886-1-git-send-email-tomas.winkler@intel.com>
 References: <1392824151-5886-1-git-send-email-tomas.winkler@intel.com>
@@ -23,102 +24,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While running Documentation/watchdog/src/watchdog-simple.c
-and quiting by Ctrl-C, fallowing error is displayed:
-mei_me 0000:00:16.0: wd: stop failed to complete ret=-512.
+Add reduce credits to wd_send to remove code
+repetition and simplify error handling
 
-The whatchdog core framework is not able to propagate
--ESYSRESTART or -EINTR. Also There is no much sense in
-restarting the close system call so instead of using
-wait_event_interruptible_timeout we can use wait_event_timeout
-with reasonable 10 msecs timeout.
-
-Reported-by: Prarit Bhargava <prarit@redhat.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 ---
- drivers/misc/mei/interrupt.c |  2 +-
- drivers/misc/mei/wd.c        | 32 +++++++++++++++++---------------
- 2 files changed, 18 insertions(+), 16 deletions(-)
+ drivers/misc/mei/interrupt.c |  7 +++---
+ drivers/misc/mei/wd.c        | 52 +++++++++++++++++++++++---------------------
+ 2 files changed, 30 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 834220a..5aab335 100644
+index 31cb345..834220a 100644
 --- a/drivers/misc/mei/interrupt.c
 +++ b/drivers/misc/mei/interrupt.c
-@@ -474,7 +474,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- 
- 	if (dev->wd_state == MEI_WD_STOPPING) {
- 		dev->wd_state = MEI_WD_IDLE;
--		wake_up_interruptible(&dev->wait_stop_wd);
-+		wake_up(&dev->wait_stop_wd);
- 	}
- 
+@@ -480,10 +480,9 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
  	if (mei_cl_is_connected(&dev->wd_cl)) {
+ 		if (dev->wd_pending &&
+ 		    mei_cl_flow_ctrl_creds(&dev->wd_cl) > 0) {
+-			if (mei_wd_send(dev))
+-				dev_dbg(&dev->pdev->dev, "wd send failed.\n");
+-			else if (mei_cl_flow_ctrl_reduce(&dev->wd_cl))
+-				return -EIO;
++			ret = mei_wd_send(dev);
++			if (ret)
++				return ret;
+ 			dev->wd_pending = false;
+ 		}
+ 	}
 diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index 13bb7a9..e084adf 100644
+index 4644b62..13bb7a9 100644
 --- a/drivers/misc/mei/wd.c
 +++ b/drivers/misc/mei/wd.c
-@@ -155,9 +155,11 @@ int mei_wd_send(struct mei_device *dev)
-  * @dev: the device structure
-  * @preserve: indicate if to keep the timeout value
-  *
-- * returns 0 if success,
-- *	-EIO when message send fails
-+ * returns 0 if success
-+ * on error:
-+ *	-EIO    when message send fails
+@@ -111,13 +111,16 @@ int mei_wd_host_init(struct mei_device *dev)
+  * returns 0 if success,
+  *	-EIO when message send fails
   *	-EINVAL when invalid message is to be sent
-+ *	-ETIME  on message timeout
++ *	-ENODEV on flow control failure
   */
- int mei_wd_stop(struct mei_device *dev)
+ int mei_wd_send(struct mei_device *dev)
  {
-@@ -173,12 +175,12 @@ int mei_wd_stop(struct mei_device *dev)
++	struct mei_cl *cl = &dev->wd_cl;
+ 	struct mei_msg_hdr hdr;
++	int ret;
  
- 	ret = mei_cl_flow_ctrl_creds(&dev->wd_cl);
- 	if (ret < 0)
--		goto out;
-+		goto err;
+-	hdr.host_addr = dev->wd_cl.host_client_id;
+-	hdr.me_addr = dev->wd_cl.me_client_id;
++	hdr.host_addr = cl->host_client_id;
++	hdr.me_addr = cl->me_client_id;
+ 	hdr.msg_complete = 1;
+ 	hdr.reserved = 0;
+ 	hdr.internal = 0;
+@@ -126,10 +129,24 @@ int mei_wd_send(struct mei_device *dev)
+ 		hdr.length = MEI_WD_START_MSG_SIZE;
+ 	else if (!memcmp(dev->wd_data, mei_stop_wd_params, MEI_WD_HDR_SIZE))
+ 		hdr.length = MEI_WD_STOP_MSG_SIZE;
+-	else
++	else {
++		dev_err(&dev->pdev->dev, "wd: invalid message is to be sent, aborting\n");
+ 		return -EINVAL;
++	}
++
++	ret = mei_write_message(dev, &hdr, dev->wd_data);
++	if (ret) {
++		dev_err(&dev->pdev->dev, "wd: write message failed\n");
++		return ret;
++	}
+ 
+-	return mei_write_message(dev, &hdr, dev->wd_data);
++	ret = mei_cl_flow_ctrl_reduce(cl);
++	if (ret) {
++		dev_err(&dev->pdev->dev, "wd: flow_ctrl_reduce failed.\n");
++		return ret;
++	}
++
++	return 0;
+ }
+ 
+ /**
+@@ -159,16 +176,9 @@ int mei_wd_stop(struct mei_device *dev)
+ 		goto out;
  
  	if (ret && mei_hbuf_acquire(dev)) {
- 		ret = mei_wd_send(dev);
- 		if (ret)
--			goto out;
-+			goto err;
+-		ret = 0;
+-
+-		if (!mei_wd_send(dev)) {
+-			ret = mei_cl_flow_ctrl_reduce(&dev->wd_cl);
+-			if (ret)
+-				goto out;
+-		} else {
+-			dev_err(&dev->pdev->dev, "wd: send stop failed\n");
+-		}
+-
++		ret = mei_wd_send(dev);
++		if (ret)
++			goto out;
  		dev->wd_pending = false;
  	} else {
  		dev->wd_pending = true;
-@@ -186,21 +188,21 @@ int mei_wd_stop(struct mei_device *dev)
+@@ -289,18 +299,10 @@ static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
  
- 	mutex_unlock(&dev->device_lock);
+ 		dev_dbg(&dev->pdev->dev, "wd: sending ping\n");
  
--	ret = wait_event_interruptible_timeout(dev->wait_stop_wd,
--					dev->wd_state == MEI_WD_IDLE,
--					msecs_to_jiffies(MEI_WD_STOP_TIMEOUT));
-+	ret = wait_event_timeout(dev->wait_stop_wd,
-+				dev->wd_state == MEI_WD_IDLE,
-+				msecs_to_jiffies(MEI_WD_STOP_TIMEOUT));
- 	mutex_lock(&dev->device_lock);
--	if (dev->wd_state == MEI_WD_IDLE) {
--		dev_dbg(&dev->pdev->dev, "wd: stop completed ret=%d.\n", ret);
--		ret = 0;
--	} else {
--		if (!ret)
--			ret = -ETIME;
-+	if (dev->wd_state != MEI_WD_IDLE) {
-+		/* timeout */
-+		ret = -ETIME;
- 		dev_warn(&dev->pdev->dev,
- 			"wd: stop failed to complete ret=%d.\n", ret);
-+		goto err;
- 	}
+-		if (mei_wd_send(dev)) {
+-			dev_err(&dev->pdev->dev, "wd: send failed.\n");
+-			ret = -EIO;
++		ret = mei_wd_send(dev);
++		if (ret)
+ 			goto end;
+-		}
 -
--out:
-+	dev_dbg(&dev->pdev->dev, "wd: stop completed after %u msec\n",
-+			MEI_WD_STOP_TIMEOUT - jiffies_to_msecs(ret));
-+	return 0;
-+err:
- 	return ret;
- }
- 
+-		if (mei_cl_flow_ctrl_reduce(&dev->wd_cl)) {
+-			dev_err(&dev->pdev->dev, "wd: mei_cl_flow_ctrl_reduce() failed.\n");
+-			ret = -EIO;
+-			goto end;
+-		}
+-
++		dev->wd_pending = false;
+ 	} else {
+ 		dev->wd_pending = true;
+ 	}
 -- 
 1.8.5.3
 
