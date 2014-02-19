@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190AbaBSUYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 15:24:51 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41560 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754895AbaBSUYu (ORCPT
+	id S1755210AbaBSUZH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 15:25:07 -0500
+Received: from yotta.elopez.com.ar ([31.220.24.173]:47343 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747AbaBSUZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 15:24:50 -0500
-Date: Wed, 19 Feb 2014 21:24:43 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Drew Richardson <drew.richardson@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo <acme@redhat.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Wade Cherry <Wade.Cherry@arm.com>
-Subject: Re: Perf Oops on 3.14-rc2
-Message-ID: <20140219202443.GK6835@laptop.programming.kicks-ass.net>
-References: <20140210221758.GB11542@dreric01-Precision-T1600>
- <20140218101831.GB4178@mudshark.cambridge.arm.com>
- <20140219162819.GP15586@twins.programming.kicks-ass.net>
- <CABPqkBQS355_XW-2KthkdZkzQnApRvOpANkB3SnfFyac-qsJaw@mail.gmail.com>
- <20140219183623.GL27965@twins.programming.kicks-ass.net>
- <CABPqkBS15h1p4gaaqJ0ExE35QcoFQ5dsVKeYcXi=jZ_9GB-BHg@mail.gmail.com>
+	Wed, 19 Feb 2014 15:25:04 -0500
+Message-ID: <53051308.5040202@elopez.com.ar>
+Date: Wed, 19 Feb 2014 17:24:40 -0300
+From: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBS15h1p4gaaqJ0ExE35QcoFQ5dsVKeYcXi=jZ_9GB-BHg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140205183457.GW8533@titan.lakedaemon.net> <20140217141336.GA2765@localhost> <53021BD2.3090301@free-electrons.com> <20140217152147.GC2765@localhost> <53022AA9.8090606@free-electrons.com> <20140217154421.GD2765@localhost> <530231C5.8090905@free-electrons.com> <20140217181902.GG2765@localhost> <53032C14.9020502@free-electrons.com>
+In-Reply-To: <53032C14.9020502@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 08:59:08PM +0100, Stephane Eranian wrote:
-> On Wed, Feb 19, 2014 at 7:36 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, Feb 19, 2014 at 07:03:13PM +0100, Stephane Eranian wrote:
-> >> I am trying to understand the context here.
-> >> Are you saying, we may call an offline CPU?
-> >
-> > Yes, that is what's happening.
-> >
-> >> I saw that sometimes you retry, sometimes you don't.
-> >
-> > I tried to do exactly what we do for the task case which is far more
-> > likely to fail. Could be I messed up.
-> >
-> I am not sure why you need to retry. If the CPU is offline, it is offline.
-> Or are you saying, you get an error, but you don't know the exact
-> reason, thus you keep trying? But how do you get out of this if
-> the CPU stays offline?
+Hi Gregory,
 
-Ah, so take perf_remove_from_context() as before the patch; if the
-cpu_function_call() fails because the CPU is offline, it doesn't call
-list_del_event().
+El 18/02/14 06:47, Gregory CLEMENT escribió:
+(snip)
+> (...) what would be an acceptable
+> version would be the something like the patch attached. There will be still
+> an issue if old dtb is used with recent kernel, but at least the user will
+> be warned.
 
-Now the offline function is supposed to take them off the list, but it
-doesn't actually in case they're grouped.
+The patch you attached is similar in spirit to what I suggested, but 
+with way more warnings sprinkled around. I don't really mind either way, 
+and if you prefer big warnings so be it; it's your driver after all :-)
 
-This leaves a free()d event on the offline cpu's context list.
+> This code only fix the Armada 370 case, a complete solution should modify
+> the dtsi for Armada XP, Armada 375, Armada 38x, Kirkwood and Dove. It should
+> also make the outputname mandatory for gate-clk for consistency.
 
-After that things quickly go downwards.
+Again, all of them are your calls. Fix the issue as you see fit; as long 
+as it's a technically sound I'm ok with it. But please don't reinvent 
+the wheel on framework code under a principle that has no proven reason 
+to be to cover up for a buggy driver.
 
-But before I got there I was led down a few too many rabbit holes trying
-to figure out wtf happened.
+Cheers, and have a great Wednesday :)
 
+Emilio
 
-We could probably fix it differently though. But by the time I more or
-less understood things I was too tired to make something pretty.
-
-Anyway; if you get to do something if cpu_function_call() fails; you
-have to also check if it got back up since you tried; at which point
-you've got the same pattern as we have for task_function_call().
+PS: I'd really appreciate it if you could keep me cc'ed on respins of 
+patches I comment on in the future.
