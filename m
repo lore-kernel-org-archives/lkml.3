@@ -1,48 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaBSTTf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 14:19:35 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:39004 "EHLO SMTP.CITRIX.COM"
+	id S1755146AbaBSTU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 14:20:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39094 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754704AbaBSTTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 14:19:34 -0500
-X-IronPort-AV: E=Sophos;i="4.97,507,1389744000"; 
-   d="scan'208";a="104018867"
-Message-ID: <530503C3.4050307@citrix.com>
-Date: Wed, 19 Feb 2014 19:19:31 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754604AbaBSTU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 14:20:56 -0500
+Date: Wed, 19 Feb 2014 20:22:55 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] ntb: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140219192255.GA20609@dhcp-26-207.brq.redhat.com>
+References: <1392804931-30671-1-git-send-email-agordeev@redhat.com>
+ <20140219180926.GA1333@jonmason-lab>
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map definitions
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>	 <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com> <1392744286.23084.52.camel@kazak.uk.xensource.com>
-In-Reply-To: <1392744286.23084.52.camel@kazak.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140219180926.GA1333@jonmason-lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/02/14 17:24, Ian Campbell wrote:
-> On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
->>
->> +       spinlock_t dealloc_lock;
->> +       spinlock_t response_lock;
->
-> Please add comments to both of these describing what bits of the
-> datastructure they are locking.
->
-> You might find it is clearer to group the locks and the things they
-> protect together rather than grouping the locks together.
+On Wed, Feb 19, 2014 at 11:09:27AM -0700, Jon Mason wrote:
+> > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+> > index 170e8e6..fda37eb 100644
+> > --- a/drivers/ntb/ntb_hw.c
+> > +++ b/drivers/ntb/ntb_hw.c
+> > @@ -1085,21 +1085,15 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+> >  	struct msix_entry *msix;
+> >  	int msix_entries;
+> >  	int rc, i;
+> > -	u16 val;
+> >  
+> > -	if (!pdev->msix_cap) {
+> > -		rc = -EIO;
+> > -		goto err;
+> > -	}
+> > -
+> > -	rc = pci_read_config_word(pdev, pdev->msix_cap + PCI_MSIX_FLAGS, &val);
+> > -	if (rc)
+> > +	rc = pci_msix_vec_count(pdev);
+> 
+> Nit, you should probably use msix_entries instead of rc in this case.
 
-Ok, I'll give more description here. The response_lock is actually quite 
-relevant to be here, but indeed that's not obvious, I'll explain that as 
-well.
+This way it resembles the code few lines below, so the style looks more
+consistent. Whichever you wish, though ;)
 
-Zoli
+> > +	if (rc < 0) {
+> >  		goto err;
+> > -
+> > -	msix_entries = msix_table_size(val);
+> > -	if (msix_entries > ndev->limits.msix_cnt) {
+> > +	} else if (rc > ndev->limits.msix_cnt) {
+> >  		rc = -EINVAL;
+> >  		goto err;
+> > +	} else {
+> > +		msix_entries = rc;
+> >  	}
+> 
+> Style Nit.  Braces with only one line.  If you make the change above,
+> then it is moot.
 
+Not on the top of my head, but do we mix bracing this way?
+
+> >  
+> >  	ndev->msix_entries = kmalloc(sizeof(struct msix_entry) * msix_entries,
+> > @@ -1112,26 +1106,21 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+> >  	for (i = 0; i < msix_entries; i++)
+> >  		ndev->msix_entries[i].entry = i;
+> >  
+> > -	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+> > -	if (rc < 0)
+> > -		goto err1;
+> > -	if (rc > 0) {
+> > +	if (ndev->hw_type != BWD_HW)
+> >  		/* On SNB, the link interrupt is always tied to 4th vector.  If
+> >  		 * we can't get all 4, then we can't use MSI-X.
+> >  		 */
+> > -		if (ndev->hw_type != BWD_HW) {
+> > -			rc = -EIO;
+> > -			goto err1;
+> > -		}
+> > -
+> > -		dev_warn(&pdev->dev,
+> > -			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
+> > -			 rc);
+> > +		rc = pci_enable_msix_range(pdev, ndev->msix_entries,
+> > +					   msix_entries, msix_entries);
+> > +	else
+> > +		rc = pci_enable_msix_range(pdev, ndev->msix_entries,
+> > +					   1, msix_entries);
+> 
+> Actually, this must be 2 for the min.  One for the Data and one for
+> the Link.  If you look a few lines after this in the original code,
+> there is a grabbing of the last vector for the link.  I realize there
+> is currently no check for this in the driver and a potential error
+> case occurs.  I can make a separate patch to correct this issue if
+> this patch is not going through my tree.
+
+Well, I can re-post with a separate fix with this condition updated...
+
+	} else if (rc < 2 || rc > ndev->limits.msix_cnt) {
+		rc = -EINVAL;
+		goto err;
+	}
+
+...and the original patch with call to pci_enable_msix_range( ...,
+2, ndev->limits.msix_cnt)
+
+Will it work with both BWD_HW and non-BWD_HW hardware?
+
+> Thanks,
+> Jon
+> 
+> 
+> > +	if (rc < 0)
+> > +		goto err1;
+> > +	else if (rc < msix_entries) {
+> > +		dev_warn(&pdev->dev, "Only %d MSI-X vectors. "
+> > +			 "Limiting the number of queues to that number.\n", rc);
+> >  		msix_entries = rc;
+> > -
+> > -		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+> > -		if (rc)
+> > -			goto err1;
+> >  	}
+> >  
+> >  	for (i = 0; i < msix_entries; i++) {
+> > diff --git a/drivers/ntb/ntb_hw.h b/drivers/ntb/ntb_hw.h
+> > index bbdb7ed..d307107 100644
+> > --- a/drivers/ntb/ntb_hw.h
+> > +++ b/drivers/ntb/ntb_hw.h
+> > @@ -60,8 +60,6 @@
+> >  #define PCI_DEVICE_ID_INTEL_NTB_SS_HSX		0x2F0F
+> >  #define PCI_DEVICE_ID_INTEL_NTB_B2B_BWD		0x0C4E
+> >  
+> > -#define msix_table_size(control)	((control & PCI_MSIX_FLAGS_QSIZE)+1)
+> > -
+> >  #ifndef readq
+> >  static inline u64 readq(void __iomem *addr)
+> >  {
+> > -- 
+> > 1.7.7.6
+> > 
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
