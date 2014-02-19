@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaBSXfe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 18:35:34 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33606 "EHLO
+	id S1751830AbaBSXpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 18:45:16 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33624 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaBSXfc (ORCPT
+	with ESMTP id S1751300AbaBSXpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 18:35:32 -0500
-Date: Wed, 19 Feb 2014 23:35:11 +0000
+	Wed, 19 Feb 2014 18:45:15 -0500
+Date: Wed, 19 Feb 2014 23:42:18 +0000
 From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: locking changes in tty broke low latency feature
-Message-ID: <20140219233511.2467cdc8@alan.etchedpixels.co.uk>
-In-Reply-To: <20140219230623.736E8406062@ip-64-139-1-69.sjc.megapath.net>
-References: <20140219130308.GC1851@redhat.com>
-	<20140219230623.736E8406062@ip-64-139-1-69.sjc.megapath.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kelley Nielsen <kelleynnn@gmail.com>, riel@surriel.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        opw-kernel@googlegroups.com, jamieliu@google.com,
+        sjenning@linux.vnet.ibm.com, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC] mm:prototype for the updated swapoff implementation
+Message-ID: <20140219234218.51c84c08@alan.etchedpixels.co.uk>
+In-Reply-To: <20140219132757.58b61f07bad914b3848275e9@linux-foundation.org>
+References: <20140219003522.GA8887@kelleynnn-virtual-machine>
+	<20140219132757.58b61f07bad914b3848275e9@linux-foundation.org>
 Organization: Intel Corporation
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
@@ -27,11 +28,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> gpsd uses TIOCMIWAIT to get a wakeup from a PPS signal connected to a modem 
-> control line.  That path might have the same problem and/or some ideas on how 
-> to handle the data case.
+> Do you have situations in which swapoff is taking an unacceptable
+> amount of time?  If so, please update the changelog to provide full
+> details on this, with before-and-after timing measurements.
 
-TIOCMIWAIT should be fine. The data processing is deferred but very few
-devices defer processing of modem change events.
+Yes - because now and then (about once a month) with 3.10 or so + and
+encrypted swap my box with 16GB RAM gets into a weird 'slow swapping'
+state and only swapoff/swapon gets it back to sanity.
+
+In those cases (and in general) swapoff can take half an hour to run.
+
+There is a reproducer for the swap hang at
+https://bugzilla.kernel.org/show_bug.cgi?id=62321
+
+The case I see in normal use (gimp of 1200dpi+ A3 images) hits a crawl
+not a hang and does recover but only if you swapoff/swapon again
 
 Alan
