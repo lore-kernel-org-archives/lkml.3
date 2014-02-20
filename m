@@ -1,142 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857AbaBTSTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 13:19:15 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:62266 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755815AbaBTSTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 13:19:13 -0500
-X-IronPort-AV: E=Sophos;i="4.97,513,1389744000"; 
-   d="scan'208";a="104424703"
-Message-ID: <5306471D.1080809@citrix.com>
-Date: Thu, 20 Feb 2014 18:19:09 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1755169AbaBTSXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 13:23:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42363 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634AbaBTSXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 13:23:08 -0500
+Date: Thu, 20 Feb 2014 19:23:00 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: x86_pmu_start WARN_ON.
+Message-ID: <20140220182300.GN9987@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
+ <20140217152859.GF15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
+ <20140219101949.GG15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
+ <20140220100830.GN6835@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
-        Jan Beulich <jbeulich@suse.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v9] xen/grant-table: Avoid m2p_override during mapping
-References: <1392238453-26147-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1402161828380.4307@kaball.uk.xensource.com> <5301F74E.3070107@citrix.com> <alpine.DEB.2.02.1402201724430.15812@kaball.uk.xensource.com> <53063D2B.1040502@citrix.com> <alpine.DEB.2.02.1402201746560.15812@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1402201746560.15812@kaball.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/02/14 18:17, Stefano Stabellini wrote:
-> On Thu, 20 Feb 2014, Zoltan Kiss wrote:
->> On 20/02/14 17:26, Stefano Stabellini wrote:
->>> On Mon, 17 Feb 2014, Zoltan Kiss wrote:
->>>> On 16/02/14 18:36, Stefano Stabellini wrote:
->>>>> On Wed, 12 Feb 2014, Zoltan Kiss wrote:
->>>>>> diff --git a/arch/arm/include/asm/xen/page.h
->>>>>> b/arch/arm/include/asm/xen/page.h
->>>>>> index e0965ab..4eaeb3f 100644
->>>>>> --- a/arch/arm/include/asm/xen/page.h
->>>>>> +++ b/arch/arm/include/asm/xen/page.h
->>>>>> @@ -97,16 +97,15 @@ static inline pte_t *lookup_address(unsigned long
->>>>>> address, unsigned int *level)
->>>>>>    	return NULL;
->>>>>>    }
->>>>>>
->>>>>> -static inline int m2p_add_override(unsigned long mfn, struct page
->>>>>> *page,
->>>>>> -		struct gnttab_map_grant_ref *kmap_op)
->>>>>> -{
->>>>>> -	return 0;
->>>>>> -}
->>>>>> -
->>>>>> -static inline int m2p_remove_override(struct page *page, bool
->>>>>> clear_pte)
->>>>>> -{
->>>>>> -	return 0;
->>>>>> -}
->>>>>> +extern int set_foreign_p2m_mapping(struct gnttab_map_grant_ref
->>>>>> *map_ops,
->>>>>> +				   struct gnttab_map_grant_ref
->>>>>> *kmap_ops,
->>>>>> +				   struct page **pages, unsigned int
->>>>>> count,
->>>>>> +				   bool m2p_override);
->>>>>> +
->>>>>> +extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref
->>>>>> *unmap_ops,
->>>>>> +				     struct gnttab_map_grant_ref
->>>>>> *kmap_ops,
->>>>>> +				     struct page **pages, unsigned int
->>>>>> count,
->>>>>> +				     bool m2p_override);
->>>>>
->>>>> Much much better.
->>>>> The only comment I have is about this m2p_override boolean parameter.
->>>>> m2p_override is now meaningless in this context, what we really want to
->>>>> let the arch specific implementation know is whether the mapping is a
->>>>> kernel only mapping or a userspace mapping.
->>>>> Testing for kmap_ops != NULL might even be enough, but it would not
->>>>> improve the interface.
->>>> gntdev is the only user of this, the kmap_ops parameter there is:
->>>> use_ptemod ? map->kmap_ops + offset : NULL
->>>> where:
->>>> use_ptemod = !xen_feature(XENFEAT_auto_translated_physmap);
->>>> So I think we can't rely on kmap_ops to decide whether we should
->>>> m2p_override
->>>> or not.
->>>>
->>>>> Is it possible to realize if the mapping is a userspace mapping by
->>>>> checking for GNTMAP_application_map in map_ops?
->>>>> Otherwise I would keep the boolean and rename it to user_mapping.
->>>> Sounds better, but as far as I see gntdev set that flag in
->>>> find_grant_ptes,
->>>> which is called only
->>>>
->>>> if (use_ptemod) {
->>>> 	err = apply_to_page_range(vma->vm_mm, vma->vm_start,
->>>> 				  vma->vm_end - vma->vm_start,
->>>> 				  find_grant_ptes, map);
->>>>
->>>> So if xen_feature(XENFEAT_auto_translated_physmap), we don't have
->>>> kmap_ops,
->>>> and GNTMAP_application_map is not set as well, but I guess we still need
->>>> m2p_override. Or not? I'm a bit confused, maybe because of Monday ...
->>>
->>> If xen_feature(XENFEAT_auto_translated_physmap) we shouldn't need the
->>> m2p_override.
->>>
->>
->> So it's safe to assume that we need m2p_override only if kmap_ops != NULL, and
->> we can avoid the extra bool parameter, is that correct? At least with the
->> current users of grant mapping it seems to be true.
->> In which case we don't need the wrappers for gnttab_[un]map_refs as well.
->> Actually the most of m2p_add/remove_override takes effect only if there is a
->> kmap_op parameter, but what about the rest of the code there?
-> 
-> It is safe to assume that we only need the m2p_override if
-> !xen_feature(XENFEAT_auto_translated_physmap).
-> I wouldn't make any assumptions on kmap_ops != NULL.
+On Thu, Feb 20, 2014 at 01:03:16PM -0500, Vince Weaver wrote:
+> attached, it's not very big.
 
-I think it is -- we only need the m2p override if we have userspace
-mappings (where kmap_ops != 0).
-> 
-> I would remove the bool m2p_override parameter completely and determine
-> whether we need to call the m2p_override functions from the x86
-> implementation of set/clear_foreign_p2m_mapping by checking
-> xen_feature(XENFEAT_auto_translated_physmap).
-> 
-> David, does it seem reasonable to you?
+This is I think the relevant bit:
 
-That would miss the point of this patch which is to avoid adding to the
-m2p_override for kernel only mappings.
+   pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
+   pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
+   pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+   pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+   pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
+   pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
+   pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
+   pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+   pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
+   pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
+   pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
+   pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
+   pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
+   pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
+   pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+   pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+   pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
+   pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
+   pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
+   pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+   pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
+   pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
+   pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
+   pec_1076_warn-2804  [000] d...   147.926191: x86_pmu_enable: starting: 0
 
-David
+so it does indeed look like n_added got scrambled; we started out with 1
+event on disable; we've got 2 events on enable, but n_added is also 2,
+which would suggest we had 0 on disable.
 
+That makes us want to (re)start the NMI counter alright.
+
+I've got to go run errands for a bit; hopefully I can find a bit of time
+later tonight to look this over.
