@@ -1,85 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693AbaBTPuz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:50:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37441 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154AbaBTPuy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:50:54 -0500
-Date: Thu, 20 Feb 2014 16:50:41 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: Re: Another preempt folding issue?
-Message-ID: <20140220155041.GG9987@twins.programming.kicks-ass.net>
-References: <52FCFA23.4060701@canonical.com>
- <20140213173852.GH6835@laptop.programming.kicks-ass.net>
- <52FD090C.7010408@canonical.com>
- <20140213182605.GC14089@laptop.programming.kicks-ass.net>
- <20140214133428.GB26356@pd.tnic>
- <52FE2709.3050505@canonical.com>
- <20140214144700.GC26356@pd.tnic>
- <52FE4C28.1080500@canonical.com>
- <20140214172157.GJ6835@laptop.programming.kicks-ass.net>
- <53062165.3040202@canonical.com>
+	id S1754756AbaBTPvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:51:04 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33135 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753651AbaBTPvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 10:51:00 -0500
+Message-ID: <5306241D.1030108@ti.com>
+Date: Thu, 20 Feb 2014 17:49:49 +0200
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53062165.3040202@canonical.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Rob Herring <robherring2@gmail.com>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "grygorii.strashko@ti.com" <grygorii.strashko@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "nsekhar@ti.com" <nsekhar@ti.com>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 2/2] memory: ti-aemif: add bindings for AEMIF driver
+References: <1392817210-14312-1-git-send-email-ivan.khoronzhuk@ti.com>	<1392817210-14312-3-git-send-email-ivan.khoronzhuk@ti.com>	<20140219181152.GG25079@e106331-lin.cambridge.arm.com>	<5305F898.6020401@ti.com> <CAL_JsqJ5hoQ3vWaQTo8--jiPPQ64OW_b4zKTe7aPLXN0td4DrA@mail.gmail.com>
+In-Reply-To: <CAL_JsqJ5hoQ3vWaQTo8--jiPPQ64OW_b4zKTe7aPLXN0td4DrA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 04:38:13PM +0100, Stefan Bader wrote:
-> On 14.02.2014 18:21, Peter Zijlstra wrote:
-> > On Fri, Feb 14, 2014 at 06:02:32PM +0100, Stefan Bader wrote:
-> >> One thing I likely should do is to reinstall the exact same laptop with 64bit
-> >> kernel and userspace... maybe only 64bit kernel first... and make sure on my
-> >> side that this does not show up on 64bit, too. I took the word of reporters for
-> >> that (and the impression that otherwise many more people would have complained).
-> > 
-> > Yeha, I'm going to try and install some 32bit userspace on a usb
-> > harddisk I've got and see if I can boot my Core2 laptop from that to try
-> > and reproduce.
-> > 
-> > But all that is probably going to be Monday :/
-> > 
-> *sigh* Already Thursday...
-> 
-> Peter, did you get to reproduce this locally? Unfortunately I had some
-> interruption and have not more Information than on last Friday (which is that
-> the same hw but 64bit kernel does not show it).
 
-I got side-tracked as well, someone reported crashes, which come above
-weird behaviour :/
+On 02/20/2014 03:44 PM, Rob Herring wrote:
+> On Thu, Feb 20, 2014 at 6:44 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
+>> On 02/19/2014 08:11 PM, Mark Rutland wrote:
+>>> On Wed, Feb 19, 2014 at 01:40:10PM +0000, Ivan Khoronzhuk wrote:
+>>>> Add bindings for TI Async External Memory Interface (AEMIF) controller.
+>>>>
+>>>> The Async External Memory Interface (EMIF16/AEMIF) controller is intended
+>>>> to
+>>>> provide a glue-less interface to a variety of asynchronous memory devices
+>>>> like
+>>>> ASRA M, NOR and NAND memory. A total of 256M bytes of any of these
+>>>> memories
+>>>> can be accessed via 4 chip selects with 64M byte access per chip select.
+>>>>
+>>>> We are not encoding CS number in reg property, it's memory partition
+>>>> number.
+>>>> The CS number is encoded for Davinci NAND node using standalone property
+>>>> "ti,davinci-chipselect" and we need to provide two memory ranges to it,
+>>>> as result we can't encode CS number in "reg" for AEMIF child devices
+>>>> (NAND/NOR/etc), as it will break bindings compatibility.
+>>>>
+>>>> In this patch, NAND node is used just as an example of child node.
+>>>>
+>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>>> ---
+>>>>    .../bindings/memory-controllers/ti-aemif.txt       | 210
+>>>> +++++++++++++++++++++
+>>>>    1 file changed, 210 insertions(+)
+>>>>    create mode 100644
+>>>> Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>>> [...]
+>>>
+>>>> +- ranges:              Contains memory regions. There are two types of
+>>>> +                       ranges/partitions:
+>>>> +                       - CS-specific partition/range. If continuous,
+>>>> must be
+>>>> +                       set up to reflect the memory layout for 4
+>>>> chipselects,
+>>>> +                       if not then additional range/partition can be
+>>>> added and
+>>>> +                       child device can select the proper one.
+>>>> +                       - control partition which is common for all CS
+>>>> +                       interfaces.
+>>> This really doesn't sound anything like the typical meaning of ranges on
+>>> a bus.
+>>>
+>>> Why isn't this information encoded in reg properties on the child nodes?
+>>>
+>>> [...]
+>>
+>> Note that we do not introduce NAND device bindings here.
+>> The Davinci NAND bindings was introduced and accepted more then one year
+>> ago.
+>> And the CS number is encoded for Davinci NAND node using standalone property
+>>
+>> "ti,davinci-chipselect" and we need to provide two memory ranges to it,
+>> as result we can't encode CS number in "reg" for AEMIF child devices
+>> (NAND/NOR/etc),
+>> as it will break bindings compatibility.
+>>
+>> In this document, NAND node is used just as an example of child node.
+>>
+>>
+>>>> +- ti,cs-ss:            enable/disable select strobe mode
+>>>> +                               In select strobe mode chip select behaves
+>>>> as
+>>>> +                               the strobe and is active only during the
+>>>> strobe
+>>>> +                               period. If present then enable.
+>>>> +
+>>>> +- ti,cs-ew:            enable/disable extended wait mode
+>>>> +                               if set, the controller monitors the
+>>>> EMIFWAIT pin
+>>>> +                               mapped to that chip select to determine
+>>>> if the
+>>>> +                               device wants to extend the strobe period.
+>>>> If
+>>>> +                               present then enable.
+>>> When would you have these two in the DT and when wouldn't you? Why can't
+>>> the driver decide?
+>>
+>> These are properties of cs node, not the driver itself.
+>> The driver cannot know what child device you are going to attach to cs node
+>> , as result it cannot decide what settings you are using for particular cs
+>> node.
+>>
+>>
+>>> These names are also opaque. We can clearly do better.
+>>
+>> I propose the following names?:
+>>
+>> ti,cs-ss  --> ti,cs-select-strobe-mode
+>> ti,cs-ew --> ti,cs-extended-waite-mode
+>>
+>> Are you OK with it?
+>>
+>>
+>>>> +
+>>>> +- ti,cs-ta:            minimum turn around time, ns
+>>>> +                               Time between the end of one asynchronous
+>>>> memory
+>>>> +                               access and the start of another
+>>>> asynchronous
+>>>> +                               memory access. This delay is not incurred
+>>>> +                               between a read followed by read or a
+>>>> write
+>>>> +                               followed by a write to same chip select.
+>>> The name is opaque. How about ti,min-turnaround-time-ns ?
+>>
+>> I like without -ns suffix and with cs- prefix:
+>> ti,cs-ta --> ti,cs-min-turnaround-time
+>>
+>> Is it OK?
+>>
+>>
+>>>> +
+>>>> +- ti,cs-rsetup:                read setup width, ns
+>>>> +                               Time between the beginning of a memory
+>>>> cycle
+>>>> +                               and the activation of read strobe.
+>>>> +                               Minimum value is 1 (0 treated as 1).
+>>>> +
+>>>> +- ti,cs-rstobe:                read strobe width, ns
+>>>> +                               Time between the activation and
+>>>> deactivation of
+>>>> +                               the read strobe.
+>>>> +                               Minimum value is 1 (0 treated as 1).
+>>>> +
+>>>> +- ti,cs-rhold:         read hold width, ns
+>>>> +                               Time between the deactivation of the read
+>>>> +                               strobe and the end of the cycle (which
+>>>> may be
+>>>> +                               either an address change or the
+>>>> deactivation of
+>>>> +                               the chip select signal.
+>>>> +                               Minimum value is 1 (0 treated as 1).
+>>>> +
+>>>> +- ti,cs-wsetup:                write setup width, ns
+>>>> +                               Time between the beginning of a memory
+>>>> cycle
+>>>> +                               and the activation of write strobe.
+>>>> +                               Minimum value is 1 (0 treated as 1).
+>>>> +
+>>>> +- ti,cs-wstrobe:       write strobe width, ns
+>>>> +                               Time between the activation and
+>>>> deactivation of
+>>>> +                               the write strobe.
+>>>> +                               Minimum value is 1 (0 treated as 1).
+>>>> +
+>>>> +- ti,cs-whold:         write hold width, ns
+>>>> +                               Time between the deactivation of the
+>>>> write
+>>>> +                               strobe and the end of the cycle (which
+>>>> may be
+>>>> +                               either an address change or the
+>>>> deactivation of
+>>>> +                               the chip select signal.
+>>>> +                               Minimum value is 1 (0 treated as 1).
+>>> Likewise I think these can be given more descriptive names.
+>>
+>> Ok. How about:
+>>
+>> ti,cs-rsetup --> ti,cs-read-setup-time
+>> ti,cs-rstobe --> ti,cs-read-strobe-time
+>> ti,cs-rhold  --> ti,cs-read-hold-time
+>> ti,cs-wsetup --> ti,cs-write-setup-time
+>> ti,cs-wstrobe --> ti,cs-write-strobe-time
+>> ti,cs-whold --> ti,cs-write-hold-time
+> Properties that have a unit of measure should have that unit in the
+> name. So replace "time" with "ns".
+>
+> Rob
 
-> Meanwhile I wonder whether it would make sense to push the following (or more?)
-> to stable for 3.13.y:
-> 
-> 1) 16824255394f55adf31b9a96a9965d8c15bdac4c
->    x86, acpi, idle: Restructure the mwait idle routines
-> 2) 7e98b71920464b8d15fa95c74366416cd3c88861
->    x86, idle: Use static_cpu_has() for CLFLUSH workaround, add barriers
-> 3) 8cb75e0c4ec9786b81439761eac1d18d4a931af3
->    sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
-> 4) 215393bc1fab3d61a5a296838bdffce22f27ffda
->    sched/preempt/x86: Fix voluntary preempt for x86
-> 
-> 1+2 would be to avoid touching 3 too much and looked to be improvements on their
-> own. 3+4 would be cherry-picks if not for some fuzz 2.
+Ok, I will replace
 
-I'll not object; but if someone wants a smaller set you could do with
-just the idle.c hunk from 3.
+Thanks!
 
-> I saw a few more things labelled preempt between 3.13 and current HEAD but am
-> not sure whether or which of those are strictly required. Namely some fixing to
-> preempt_enable_no_resched() mis-usage and maybe one fixing an issue of ftrace
-> locking up.
+-- 
+Regards,
+Ivan Khoronzhuk
 
-Yeah, that's all fresh breakage and doesn't go back to 3.13 I think.
