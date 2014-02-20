@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247AbaBTXvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:51:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45546 "EHLO
+	id S1756872AbaBUAsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:48:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45562 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219AbaBTXvd (ORCPT
+	with ESMTP id S1755246AbaBTXvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:33 -0500
+	Thu, 20 Feb 2014 18:51:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        poma <pomidorabelisima@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Olaf Hering <olaf@aepfle.de>,
-        Dave Jones <davej@redhat.com>, "Justin M. Forbes" <jforbes@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [PATCH 3.10 56/66] tick: Clear broadcast pending bit when switching to oneshot
-Date: Thu, 20 Feb 2014 15:51:55 -0800
-Message-Id: <20140220234911.088010400@linuxfoundation.org>
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 59/66] time: Fix overflow when HZ is smaller than 60
+Date: Thu, 20 Feb 2014 15:51:58 -0800
+Message-Id: <20140220234911.182760668@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -31,81 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit dd5fd9b91a77b4c9c28b7ef9c181b1a875820d0a upstream.
+commit 80d767d770fd9c697e434fd080c2db7b5c60c6dd upstream.
 
-AMD systems which use the C1E workaround in the amd_e400_idle routine
-trigger the WARN_ON_ONCE in the broadcast code when onlining a CPU.
+When compiling for the IA-64 ski emulator, HZ is set to 32 because the
+emulation is slow and we don't want to waste too many cycles processing
+timers. Alpha also has an option to set HZ to 32.
 
-The reason is that the idle routine of those AMD systems switches the
-cpu into forced broadcast mode early on before the newly brought up
-CPU can switch over to high resolution / NOHZ mode. The timer related
-CPU1 bringup looks like this:
+This causes integer underflow in
+kernel/time/jiffies.c:
+kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
+  ^
 
-  clockevent_register_device(local_apic);
-  tick_setup(local_apic);
-  ...
-  idle()
-	tick_broadcast_on_off(FORCE);
-	tick_broadcast_oneshot_control(ENTER)
-	  cpumask_set(cpu, broadcast_oneshot_mask);
-	halt();
+This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
 
-Now the broadcast interrupt on CPU0 sets CPU1 in the
-broadcast_pending_mask and wakes CPU1. So CPU1 continues:
-
-	local_apic_timer_interrupt()
-	   tick_handle_periodic();
-	   softirq()
-	     tick_init_highres();
-	       cpumask_clr(cpu, broadcast_oneshot_mask);
-
-	tick_broadcast_oneshot_control(ENTER)
-	   WARN_ON(cpumask_test(cpu, broadcast_pending_mask);
-
-So while we remove CPU1 from the broadcast_oneshot_mask when we switch
-over to highres mode, we do not clear the pending bit, which then
-triggers the warning when we go back to idle.
-
-The reason why this is only visible on C1E affected AMD systems is
-that the other machines enter the deep sleep states via
-acpi_idle/intel_idle and exit the broadcast mode before executing the
-remote triggered local_apic_timer_interrupt. So the pending bit is
-already cleared when the switch over to highres mode is clearing the
-oneshot mask.
-
-The solution is simple: Clear the pending bit together with the mask
-bit when we switch over to highres mode.
-
-Stanislaw came up independently with the same patch by enforcing the
-C1E workaround and debugging the fallout. I picked mine, because mine
-has a changelog :)
-
-Reported-by: poma <pomidorabelisima@gmail.com>
-Debugged-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Olaf Hering <olaf@aepfle.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Justin M. Forbes <jforbes@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1402111434180.21991@ionos.tec.linutronix.de
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Link: http://lkml.kernel.org/r/alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-broadcast.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/jiffies.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -745,6 +745,7 @@ out:
- static void tick_broadcast_clear_oneshot(int cpu)
- {
- 	cpumask_clear_cpu(cpu, tick_broadcast_oneshot_mask);
-+	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
- }
+--- a/kernel/time/jiffies.c
++++ b/kernel/time/jiffies.c
+@@ -51,7 +51,13 @@
+  * HZ shrinks, so values greater than 8 overflow 32bits when
+  * HZ=100.
+  */
++#if HZ < 34
++#define JIFFIES_SHIFT	6
++#elif HZ < 67
++#define JIFFIES_SHIFT	7
++#else
+ #define JIFFIES_SHIFT	8
++#endif
  
- static void tick_broadcast_init_next_event(struct cpumask *mask,
+ static cycle_t jiffies_read(struct clocksource *cs)
+ {
 
 
