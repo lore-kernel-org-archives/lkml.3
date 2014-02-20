@@ -1,150 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaBTCB3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 21:01:29 -0500
-Received: from mail.windriver.com ([147.11.1.11]:58831 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaBTCB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 21:01:28 -0500
-Date: Wed, 19 Feb 2014 21:02:13 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: Dipankar Sarma <dipankar@in.ibm.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used
- stand-alone
-Message-ID: <20140220020213.GA9907@windriver.com>
-References: <20140219185850.GA23050@linux.vnet.ibm.com>
- <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
- <20140220015317.GL4250@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140220015317.GL4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752946AbaBTCDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 21:03:46 -0500
+Received: from ozlabs.org ([203.10.76.45]:54227 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752276AbaBTCDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 21:03:45 -0500
+Date: Thu, 20 Feb 2014 13:03:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jikos@jikos.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Barksdale <dbarksdale@uplogix.com>,
+        Dinesh Ram <Dinesh.Ram@cern.ch>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: linux-next: manual merge of the hid tree with Linus' tree
+Message-Id: <20140220130329.cbf82034cb246805a4fd59ca@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__20_Feb_2014_13_03_29_+1100_pS8HYIV0sYRndiGw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used stand-alone] On 19/02/2014 (Wed 17:53) Paul E. McKenney wrote:
+--Signature=_Thu__20_Feb_2014_13_03_29_+1100_pS8HYIV0sYRndiGw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Feb 19, 2014 at 02:33:27PM -0500, Paul Gortmaker wrote:
-> > The kbuild test bot uncovered an implicit dependence on the
-> > trace header being present before rcu.h in ia64 allmodconfig
-> > that looks like this:
-> > 
-> > In file included from kernel/ksysfs.c:22:0:
-> > kernel/rcu/rcu.h: In function '__rcu_reclaim':
-> > kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
-> > kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
-> > cc1: some warnings being treated as errors
-> > 
-> > Looking at other rcu.h users, we can find that they all
-> > were sourcing the trace header in advance of rcu.h itself,
-> > as seen in the context of this diff.  There were also some
-> > inconsistencies as to whether it was or wasn't sourced based
-> > on the parent tracing Kconfig.
-> > 
-> > Rather than "fix" it at each use site, and have inconsistent
-> > use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
-> > lets just source the trace header just once, in the actual consumer
-> > of it, which is rcu.h itself.  We include it unconditionally, as
-> > build testing shows us that is a hard requirement for some files.
-> > 
-> > Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> 
-> Queued for 3.16, thank you, Paul!
+Hi Jiri,
 
-Thanks!
+Today's linux-next merge of the hid tree got a conflict in
+drivers/hid/hid-ids.h between commits adc232592337 ("[media] si4713: HID
+blacklist Si4713 USB development board") and 3db187e7bf76 ("HID:
+multitouch: add FocalTech FTxxxx support") from Linus' tree and commit
+e932d8178667 ("HID: add hid-cp2112 driver") from the hid tree.
 
-I'm assuming you meant 3.15 -- unless of course you are allowing
-for an insurance policy for me possibly breaking the build.  ;)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-P.
---
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> 							Thanx, Paul
-> 
-> > ---
-> > 
-> > [v2: move the #include <trace/events/rcu.h> outside of the scope
-> >  of #ifdef CONFIG_RCU_TRACE so it is unconditionally included.]
-> > 
-> >  kernel/rcu/rcu.h    | 1 +
-> >  kernel/rcu/srcu.c   | 2 --
-> >  kernel/rcu/tiny.c   | 4 ----
-> >  kernel/rcu/tree.c   | 2 --
-> >  kernel/rcu/update.c | 1 -
-> >  5 files changed, 1 insertion(+), 9 deletions(-)
-> > 
-> > diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
-> > index 1bd787fddcb2..3d2a037332b2 100644
-> > --- a/kernel/rcu/rcu.h
-> > +++ b/kernel/rcu/rcu.h
-> > @@ -23,6 +23,7 @@
-> >  #ifndef __LINUX_RCU_H
-> >  #define __LINUX_RCU_H
-> > 
-> > +#include <trace/events/rcu.h>
-> >  #ifdef CONFIG_RCU_TRACE
-> >  #define RCU_TRACE(stmt) stmt
-> >  #else /* #ifdef CONFIG_RCU_TRACE */
-> > diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
-> > index 5db7e9272d37..8e66b05bfd82 100644
-> > --- a/kernel/rcu/srcu.c
-> > +++ b/kernel/rcu/srcu.c
-> > @@ -36,8 +36,6 @@
-> >  #include <linux/delay.h>
-> >  #include <linux/srcu.h>
-> > 
-> > -#include <trace/events/rcu.h>
-> > -
-> >  #include "rcu.h"
-> > 
-> >  /*
-> > diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-> > index 53b95bbf4abb..d9efcc13008c 100644
-> > --- a/kernel/rcu/tiny.c
-> > +++ b/kernel/rcu/tiny.c
-> > @@ -37,10 +37,6 @@
-> >  #include <linux/prefetch.h>
-> >  #include <linux/ftrace_event.h>
-> > 
-> > -#ifdef CONFIG_RCU_TRACE
-> > -#include <trace/events/rcu.h>
-> > -#endif /* #else #ifdef CONFIG_RCU_TRACE */
-> > -
-> >  #include "rcu.h"
-> > 
-> >  /* Forward declarations for tiny_plugin.h. */
-> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> > index c7a00dbe768b..351faba48b91 100644
-> > --- a/kernel/rcu/tree.c
-> > +++ b/kernel/rcu/tree.c
-> > @@ -58,8 +58,6 @@
-> >  #include <linux/suspend.h>
-> > 
-> >  #include "tree.h"
-> > -#include <trace/events/rcu.h>
-> > -
-> >  #include "rcu.h"
-> > 
-> >  MODULE_ALIAS("rcutree");
-> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> > index fd0d5b5b8e7c..4c0a9b0af469 100644
-> > --- a/kernel/rcu/update.c
-> > +++ b/kernel/rcu/update.c
-> > @@ -49,7 +49,6 @@
-> >  #include <linux/module.h>
-> > 
-> >  #define CREATE_TRACE_POINTS
-> > -#include <trace/events/rcu.h>
-> > 
-> >  #include "rcu.h"
-> > 
-> > -- 
-> > 1.8.5.2
-> > 
-> 
+diff --cc drivers/hid/hid-ids.h
+index 22f28d6b33a8,00be0d0f0dde..000000000000
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@@ -241,9 -240,7 +241,10 @@@
+ =20
+  #define USB_VENDOR_ID_CYGNAL		0x10c4
+  #define USB_DEVICE_ID_CYGNAL_RADIO_SI470X	0x818a
+ +#define USB_DEVICE_ID_FOCALTECH_FTXXXX_MULTITOUCH	0x81b9
+ +
+ +#define USB_DEVICE_ID_CYGNAL_RADIO_SI4713       0x8244
++ #define USB_DEVICE_ID_CYGNAL_CP2112	0xea90
+ =20
+  #define USB_VENDOR_ID_CYPRESS		0x04b4
+  #define USB_DEVICE_ID_CYPRESS_MOUSE	0x0001
+
+--Signature=_Thu__20_Feb_2014_13_03_29_+1100_pS8HYIV0sYRndiGw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTBWJ1AAoJEMDTa8Ir7ZwVZsYP/3gPNObwoiVAGYkH8H7RwewC
+8G+1D7p/ocwnHwV/GnWgyUzqb/8nwFJRtMcuCBoyJ5MjsjWCk6gYYPTEAABVlImS
++TzM/XThT7xBdKmDwuW4KS9IBLNQ7GG727CjFGzN+rVLI73sYM4o0JECTZKD7wIw
+FqvZ41rlklUxCqcNv+uoy0tahPXlXaWA3kQyyCrN/aZ3g6DBjeZvZAfQLB332wXM
+EXTHkzJFpnBWRNfstGnDkUBeKEgYRUWhoLJwud3Pz7XKLuE8yizxEmUPGoMa2dMw
+71xO2PtD0JRG7gTe0bAqo+cmZZbVJ+9m1+apr1DTebR3Bv5jQBIoEJYGDx8XRidI
+y2nWMiWBMv4gK6kkr2WAd99d3wtoxtyqQ6Oyl779BCK0GVti7KD17lIxojzGSenU
+a8UMbyGFiy2+eISSjDkeYtTqUd1Rt9679KB48gU8FkHOZhBnOstch8vMMIAP6cIm
+sNYseSQUA0WJc9rUonecImGpToB1MNHqB4e0HeBIvX57j7i/RB905qDiRSlD/Abe
+yiQJC9cNRM5KzI19UNXlJDGUk4Wa7XyVGgFzJ76nLDSbIVU3cCc9tXkxmtbptl4w
+j0RMoFYPIhuRtc8Iv/iVSgjgN/TzsVG1gK5/3xO6XgqnmUg/L2x64MXkZurZYcS7
+wp1K7GvK8WlVD2sB6RVf
+=CWgg
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_Feb_2014_13_03_29_+1100_pS8HYIV0sYRndiGw--
