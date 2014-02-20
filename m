@@ -1,166 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257AbaBTJBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:01:23 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:32959 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191AbaBTJAp (ORCPT
+	id S1755048AbaBTI7r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 03:59:47 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:42219 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755009AbaBTI7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:00:45 -0500
-Date: Thu, 20 Feb 2014 01:00:39 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used
- stand-alone
-Message-ID: <20140220090039.GQ4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140219185850.GA23050@linux.vnet.ibm.com>
- <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
- <20140220015317.GL4250@linux.vnet.ibm.com>
- <20140220020213.GA9907@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140220020213.GA9907@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022009-1344-0000-0000-000005E9C597
+	Thu, 20 Feb 2014 03:59:44 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, lgirdwood@gmail.com, sachin.kamat@linaro.org,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH 18/23] regulator: tps65910: Remove redundant error message
+Date: Thu, 20 Feb 2014 14:23:18 +0530
+Message-Id: <1392886403-10640-18-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392886403-10640-1-git-send-email-sachin.kamat@linaro.org>
+References: <1392886403-10640-1-git-send-email-sachin.kamat@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 09:02:13PM -0500, Paul Gortmaker wrote:
-> [Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used stand-alone] On 19/02/2014 (Wed 17:53) Paul E. McKenney wrote:
-> 
-> > On Wed, Feb 19, 2014 at 02:33:27PM -0500, Paul Gortmaker wrote:
-> > > The kbuild test bot uncovered an implicit dependence on the
-> > > trace header being present before rcu.h in ia64 allmodconfig
-> > > that looks like this:
-> > > 
-> > > In file included from kernel/ksysfs.c:22:0:
-> > > kernel/rcu/rcu.h: In function '__rcu_reclaim':
-> > > kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
-> > > kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
-> > > cc1: some warnings being treated as errors
-> > > 
-> > > Looking at other rcu.h users, we can find that they all
-> > > were sourcing the trace header in advance of rcu.h itself,
-> > > as seen in the context of this diff.  There were also some
-> > > inconsistencies as to whether it was or wasn't sourced based
-> > > on the parent tracing Kconfig.
-> > > 
-> > > Rather than "fix" it at each use site, and have inconsistent
-> > > use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
-> > > lets just source the trace header just once, in the actual consumer
-> > > of it, which is rcu.h itself.  We include it unconditionally, as
-> > > build testing shows us that is a hard requirement for some files.
-> > > 
-> > > Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> > > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > 
-> > Queued for 3.16, thank you, Paul!
-> 
-> Thanks!
-> 
-> I'm assuming you meant 3.15 -- unless of course you are allowing
-> for an insurance policy for me possibly breaking the build.  ;)
+kzalloc prints its own OOM message upon failure.
 
-Well, it does seem to be doing better in testing.  ;-)
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Graeme Gregory <gg@slimlogic.co.uk>
+---
+ drivers/regulator/tps65910-regulator.c |   21 +++++----------------
+ 1 file changed, 5 insertions(+), 16 deletions(-)
 
-I split off the stuff for the 3.15 merge window a few days back, but
-if the lack of this patch is causing a problem, I could be talked into
-slipping it in.
-
-							Thanx, Paul
-
-> P.
-> --
-> 
-> > 
-> > 							Thanx, Paul
-> > 
-> > > ---
-> > > 
-> > > [v2: move the #include <trace/events/rcu.h> outside of the scope
-> > >  of #ifdef CONFIG_RCU_TRACE so it is unconditionally included.]
-> > > 
-> > >  kernel/rcu/rcu.h    | 1 +
-> > >  kernel/rcu/srcu.c   | 2 --
-> > >  kernel/rcu/tiny.c   | 4 ----
-> > >  kernel/rcu/tree.c   | 2 --
-> > >  kernel/rcu/update.c | 1 -
-> > >  5 files changed, 1 insertion(+), 9 deletions(-)
-> > > 
-> > > diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
-> > > index 1bd787fddcb2..3d2a037332b2 100644
-> > > --- a/kernel/rcu/rcu.h
-> > > +++ b/kernel/rcu/rcu.h
-> > > @@ -23,6 +23,7 @@
-> > >  #ifndef __LINUX_RCU_H
-> > >  #define __LINUX_RCU_H
-> > > 
-> > > +#include <trace/events/rcu.h>
-> > >  #ifdef CONFIG_RCU_TRACE
-> > >  #define RCU_TRACE(stmt) stmt
-> > >  #else /* #ifdef CONFIG_RCU_TRACE */
-> > > diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
-> > > index 5db7e9272d37..8e66b05bfd82 100644
-> > > --- a/kernel/rcu/srcu.c
-> > > +++ b/kernel/rcu/srcu.c
-> > > @@ -36,8 +36,6 @@
-> > >  #include <linux/delay.h>
-> > >  #include <linux/srcu.h>
-> > > 
-> > > -#include <trace/events/rcu.h>
-> > > -
-> > >  #include "rcu.h"
-> > > 
-> > >  /*
-> > > diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-> > > index 53b95bbf4abb..d9efcc13008c 100644
-> > > --- a/kernel/rcu/tiny.c
-> > > +++ b/kernel/rcu/tiny.c
-> > > @@ -37,10 +37,6 @@
-> > >  #include <linux/prefetch.h>
-> > >  #include <linux/ftrace_event.h>
-> > > 
-> > > -#ifdef CONFIG_RCU_TRACE
-> > > -#include <trace/events/rcu.h>
-> > > -#endif /* #else #ifdef CONFIG_RCU_TRACE */
-> > > -
-> > >  #include "rcu.h"
-> > > 
-> > >  /* Forward declarations for tiny_plugin.h. */
-> > > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> > > index c7a00dbe768b..351faba48b91 100644
-> > > --- a/kernel/rcu/tree.c
-> > > +++ b/kernel/rcu/tree.c
-> > > @@ -58,8 +58,6 @@
-> > >  #include <linux/suspend.h>
-> > > 
-> > >  #include "tree.h"
-> > > -#include <trace/events/rcu.h>
-> > > -
-> > >  #include "rcu.h"
-> > > 
-> > >  MODULE_ALIAS("rcutree");
-> > > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> > > index fd0d5b5b8e7c..4c0a9b0af469 100644
-> > > --- a/kernel/rcu/update.c
-> > > +++ b/kernel/rcu/update.c
-> > > @@ -49,7 +49,6 @@
-> > >  #include <linux/module.h>
-> > > 
-> > >  #define CREATE_TRACE_POINTS
-> > > -#include <trace/events/rcu.h>
-> > > 
-> > >  #include "rcu.h"
-> > > 
-> > > -- 
-> > > 1.8.5.2
-> > > 
-> > 
-> 
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index f50dd847eebc..fa7db8847578 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -1011,11 +1011,8 @@ static struct tps65910_board *tps65910_parse_dt_reg_data(
+ 
+ 	pmic_plat_data = devm_kzalloc(&pdev->dev, sizeof(*pmic_plat_data),
+ 					GFP_KERNEL);
+-
+-	if (!pmic_plat_data) {
+-		dev_err(&pdev->dev, "Failure to alloc pdata for regulators.\n");
++	if (!pmic_plat_data)
+ 		return NULL;
+-	}
+ 
+ 	np = of_node_get(pdev->dev.parent->of_node);
+ 	regulators = of_get_child_by_name(np, "regulators");
+@@ -1098,10 +1095,8 @@ static int tps65910_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	pmic = devm_kzalloc(&pdev->dev, sizeof(*pmic), GFP_KERNEL);
+-	if (!pmic) {
+-		dev_err(&pdev->dev, "Memory allocation failed for pmic\n");
++	if (!pmic)
+ 		return -ENOMEM;
+-	}
+ 
+ 	pmic->mfd = tps65910;
+ 	platform_set_drvdata(pdev, pmic);
+@@ -1130,24 +1125,18 @@ static int tps65910_probe(struct platform_device *pdev)
+ 
+ 	pmic->desc = devm_kzalloc(&pdev->dev, pmic->num_regulators *
+ 			sizeof(struct regulator_desc), GFP_KERNEL);
+-	if (!pmic->desc) {
+-		dev_err(&pdev->dev, "Memory alloc fails for desc\n");
++	if (!pmic->desc)
+ 		return -ENOMEM;
+-	}
+ 
+ 	pmic->info = devm_kzalloc(&pdev->dev, pmic->num_regulators *
+ 			sizeof(struct tps_info *), GFP_KERNEL);
+-	if (!pmic->info) {
+-		dev_err(&pdev->dev, "Memory alloc fails for info\n");
++	if (!pmic->info)
+ 		return -ENOMEM;
+-	}
+ 
+ 	pmic->rdev = devm_kzalloc(&pdev->dev, pmic->num_regulators *
+ 			sizeof(struct regulator_dev *), GFP_KERNEL);
+-	if (!pmic->rdev) {
+-		dev_err(&pdev->dev, "Memory alloc fails for rdev\n");
++	if (!pmic->rdev)
+ 		return -ENOMEM;
+-	}
+ 
+ 	for (i = 0; i < pmic->num_regulators && i < TPS65910_NUM_REGS;
+ 			i++, info++) {
+-- 
+1.7.9.5
 
