@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591AbaBUBLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:11:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45274 "EHLO
+	id S1756422AbaBUBLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:11:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45270 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaBTXu3 (ORCPT
+	with ESMTP id S1754381AbaBTXu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 18:50:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Raymond Wanyoike <raymond.wanyoike@gmail.com>
-Subject: [PATCH 3.4 16/25] usb: option: blacklist ZTE MF667 net interface
-Date: Thu, 20 Feb 2014 15:51:32 -0800
-Message-Id: <20140220234842.937273780@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thomas Raschbacher <lordvan@lordvan.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [PATCH 3.4 15/25] usb-storage: enable multi-LUN scanning when needed
+Date: Thu, 20 Feb 2014 15:51:31 -0800
+Message-Id: <20140220234842.909436251@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -28,31 +31,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 3635c7e2d59f7861afa6fa5e87e2a58860ff514d upstream.
+commit 823d12c95c666fa7ab7dad208d735f6bc6afabdc upstream.
 
-Interface #5 of 19d2:1270 is a net interface which has been submitted to the
-qmi_wwan driver so consequently remove it from the option driver.
+People sometimes create their own custom-configured kernels and forget
+to enable CONFIG_SCSI_MULTI_LUN.  This causes problems when they plug
+in a USB storage device (such as a card reader) with more than one
+LUN.
 
-Signed-off-by: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+Fortunately, we can tell fairly easily when a storage device claims to
+have more than one LUN.  When that happens, this patch asks the SCSI
+layer to probe all the LUNs automatically, regardless of the config
+setting.
+
+The patch also updates the Kconfig help text for usb-storage,
+explaining that CONFIG_SCSI_MULTI_LUN may be necessary.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Thomas Raschbacher <lordvan@lordvan.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/storage/Kconfig    |    4 +++-
+ drivers/usb/storage/scsiglue.c |    6 ++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1376,7 +1376,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1267, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1268, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1269, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1271, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1272, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1273, 0xff, 0xff, 0xff) },
+--- a/drivers/usb/storage/Kconfig
++++ b/drivers/usb/storage/Kconfig
+@@ -19,7 +19,9 @@ config USB_STORAGE
+ 
+ 	  This option depends on 'SCSI' support being enabled, but you
+ 	  probably also need 'SCSI device support: SCSI disk support'
+-	  (BLK_DEV_SD) for most USB storage devices.
++	  (BLK_DEV_SD) for most USB storage devices.  Some devices also
++	  will require 'Probe all LUNs on each SCSI device'
++	  (SCSI_MULTI_LUN).
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called usb-storage.
+--- a/drivers/usb/storage/scsiglue.c
++++ b/drivers/usb/storage/scsiglue.c
+@@ -78,6 +78,8 @@ static const char* host_info(struct Scsi
+ 
+ static int slave_alloc (struct scsi_device *sdev)
+ {
++	struct us_data *us = host_to_us(sdev->host);
++
+ 	/*
+ 	 * Set the INQUIRY transfer length to 36.  We don't use any of
+ 	 * the extra data and many devices choke if asked for more or
+@@ -102,6 +104,10 @@ static int slave_alloc (struct scsi_devi
+ 	 */
+ 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
+ 
++	/* Tell the SCSI layer if we know there is more than one LUN */
++	if (us->protocol == USB_PR_BULK && us->max_lun > 0)
++		sdev->sdev_bflags |= BLIST_FORCELUN;
++
+ 	return 0;
+ }
+ 
 
 
