@@ -1,142 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbaBTBxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:53:24 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45913 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaBTBxW (ORCPT
+	id S1752656AbaBTB4F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:56:05 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:56372 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751790AbaBTB4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:53:22 -0500
-Date: Wed, 19 Feb 2014 17:53:17 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used
- stand-alone
-Message-ID: <20140220015317.GL4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140219185850.GA23050@linux.vnet.ibm.com>
- <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 19 Feb 2014 20:56:03 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+X-FB-SS: 0,
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <broonie@linaro.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH Resend] regmap: fix _regmap_update_bits()
+Date: Thu, 20 Feb 2014 08:50:10 +0800
+Message-ID: <1392857410-9068-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022001-9332-0000-0000-00000329FB33
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 02:33:27PM -0500, Paul Gortmaker wrote:
-> The kbuild test bot uncovered an implicit dependence on the
-> trace header being present before rcu.h in ia64 allmodconfig
-> that looks like this:
-> 
-> In file included from kernel/ksysfs.c:22:0:
-> kernel/rcu/rcu.h: In function '__rcu_reclaim':
-> kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
-> kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> 
-> Looking at other rcu.h users, we can find that they all
-> were sourcing the trace header in advance of rcu.h itself,
-> as seen in the context of this diff.  There were also some
-> inconsistencies as to whether it was or wasn't sourced based
-> on the parent tracing Kconfig.
-> 
-> Rather than "fix" it at each use site, and have inconsistent
-> use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
-> lets just source the trace header just once, in the actual consumer
-> of it, which is rcu.h itself.  We include it unconditionally, as
-> build testing shows us that is a hard requirement for some files.
-> 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Since sometimes the 'config' parameter has no use, it should be NULL.
+And make the code simplifier.
 
-Queued for 3.16, thank you, Paul!
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
 
-							Thanx, Paul
+This resend version just rewrites the commit comment.
 
-> ---
-> 
-> [v2: move the #include <trace/events/rcu.h> outside of the scope
->  of #ifdef CONFIG_RCU_TRACE so it is unconditionally included.]
-> 
->  kernel/rcu/rcu.h    | 1 +
->  kernel/rcu/srcu.c   | 2 --
->  kernel/rcu/tiny.c   | 4 ----
->  kernel/rcu/tree.c   | 2 --
->  kernel/rcu/update.c | 1 -
->  5 files changed, 1 insertion(+), 9 deletions(-)
-> 
-> diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
-> index 1bd787fddcb2..3d2a037332b2 100644
-> --- a/kernel/rcu/rcu.h
-> +++ b/kernel/rcu/rcu.h
-> @@ -23,6 +23,7 @@
->  #ifndef __LINUX_RCU_H
->  #define __LINUX_RCU_H
-> 
-> +#include <trace/events/rcu.h>
->  #ifdef CONFIG_RCU_TRACE
->  #define RCU_TRACE(stmt) stmt
->  #else /* #ifdef CONFIG_RCU_TRACE */
-> diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
-> index 5db7e9272d37..8e66b05bfd82 100644
-> --- a/kernel/rcu/srcu.c
-> +++ b/kernel/rcu/srcu.c
-> @@ -36,8 +36,6 @@
->  #include <linux/delay.h>
->  #include <linux/srcu.h>
-> 
-> -#include <trace/events/rcu.h>
-> -
->  #include "rcu.h"
-> 
->  /*
-> diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-> index 53b95bbf4abb..d9efcc13008c 100644
-> --- a/kernel/rcu/tiny.c
-> +++ b/kernel/rcu/tiny.c
-> @@ -37,10 +37,6 @@
->  #include <linux/prefetch.h>
->  #include <linux/ftrace_event.h>
-> 
-> -#ifdef CONFIG_RCU_TRACE
-> -#include <trace/events/rcu.h>
-> -#endif /* #else #ifdef CONFIG_RCU_TRACE */
-> -
->  #include "rcu.h"
-> 
->  /* Forward declarations for tiny_plugin.h. */
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index c7a00dbe768b..351faba48b91 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -58,8 +58,6 @@
->  #include <linux/suspend.h>
-> 
->  #include "tree.h"
-> -#include <trace/events/rcu.h>
-> -
->  #include "rcu.h"
-> 
->  MODULE_ALIAS("rcutree");
-> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> index fd0d5b5b8e7c..4c0a9b0af469 100644
-> --- a/kernel/rcu/update.c
-> +++ b/kernel/rcu/update.c
-> @@ -49,7 +49,6 @@
->  #include <linux/module.h>
-> 
->  #define CREATE_TRACE_POINTS
-> -#include <trace/events/rcu.h>
-> 
->  #include "rcu.h"
-> 
-> -- 
-> 1.8.5.2
-> 
+
+ drivers/base/regmap/regmap.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 6a19515..099522b 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1966,9 +1966,11 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+ 
+ 	if (tmp != orig) {
+ 		ret = _regmap_write(map, reg, tmp);
+-		*change = true;
++		if (change)
++			*change = true;
+ 	} else {
+-		*change = false;
++		if (change)
++			*change = false;
+ 	}
+ 
+ 	return ret;
+@@ -1987,11 +1989,10 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ 		       unsigned int mask, unsigned int val)
+ {
+-	bool change;
+ 	int ret;
+ 
+ 	map->lock(map->lock_arg);
+-	ret = _regmap_update_bits(map, reg, mask, val, &change);
++	ret = _regmap_update_bits(map, reg, mask, val, NULL);
+ 	map->unlock(map->lock_arg);
+ 
+ 	return ret;
+@@ -2016,14 +2017,13 @@ EXPORT_SYMBOL_GPL(regmap_update_bits);
+ int regmap_update_bits_async(struct regmap *map, unsigned int reg,
+ 			     unsigned int mask, unsigned int val)
+ {
+-	bool change;
+ 	int ret;
+ 
+ 	map->lock(map->lock_arg);
+ 
+ 	map->async = true;
+ 
+-	ret = _regmap_update_bits(map, reg, mask, val, &change);
++	ret = _regmap_update_bits(map, reg, mask, val, NULL);
+ 
+ 	map->async = false;
+ 
+-- 
+1.8.4
+
 
