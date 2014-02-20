@@ -1,94 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904AbaBTB61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:58:27 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:30185 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181AbaBTB60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:58:26 -0500
-X-IronPort-AV: E=Sophos;i="4.97,509,1389715200"; 
-   d="scan'208";a="9563898"
-Message-ID: <530561DF.90304@cn.fujitsu.com>
-Date: Thu, 20 Feb 2014 10:01:03 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752660AbaBTCB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 21:01:29 -0500
+Received: from mail.windriver.com ([147.11.1.11]:58831 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaBTCB2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 21:01:28 -0500
+Date: Wed, 19 Feb 2014 21:02:13 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Dipankar Sarma <dipankar@in.ibm.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used
+ stand-alone
+Message-ID: <20140220020213.GA9907@windriver.com>
+References: <20140219185850.GA23050@linux.vnet.ibm.com>
+ <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
+ <20140220015317.GL4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: Fix possible unexpectedly worker wakeup before
- started
-References: <1392781678-31952-1-git-send-email-laijs@cn.fujitsu.com> <20140220001142.GV10134@htj.dyndns.org> <53055F6F.6060909@cn.fujitsu.com>
-In-Reply-To: <53055F6F.6060909@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/20 09:56:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/20 09:56:14,
-	Serialize complete at 2014/02/20 09:56:14
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140220015317.GL4250@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 09:50 AM, Lai Jiangshan wrote:
-> On 02/20/2014 08:11 AM, Tejun Heo wrote:
->> Hello, Lai.
->>
->> On Wed, Feb 19, 2014 at 11:47:58AM +0800, Lai Jiangshan wrote:
->>> If a worker is wokenup unexpectedly, it will start to work incorretly.
->>> Although it hardly happen, we should catch it and wait for being started
->>> if it does happen.
->>
->> Can this actually happen?  If so, how?
-> 
-> I don't think it can happen.
-> It depends on the system outside of workqueue.
-> 
-> I'm afraid someone see the task and wake up it.
-> workqueue protect itself.
+[Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used stand-alone] On 19/02/2014 (Wed 17:53) Paul E. McKenney wrote:
 
-I was extremely nervously, please drop the patch.
-I also don't like too much protective code in workqueue.
+> On Wed, Feb 19, 2014 at 02:33:27PM -0500, Paul Gortmaker wrote:
+> > The kbuild test bot uncovered an implicit dependence on the
+> > trace header being present before rcu.h in ia64 allmodconfig
+> > that looks like this:
+> > 
+> > In file included from kernel/ksysfs.c:22:0:
+> > kernel/rcu/rcu.h: In function '__rcu_reclaim':
+> > kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
+> > kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
+> > cc1: some warnings being treated as errors
+> > 
+> > Looking at other rcu.h users, we can find that they all
+> > were sourcing the trace header in advance of rcu.h itself,
+> > as seen in the context of this diff.  There were also some
+> > inconsistencies as to whether it was or wasn't sourced based
+> > on the parent tracing Kconfig.
+> > 
+> > Rather than "fix" it at each use site, and have inconsistent
+> > use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
+> > lets just source the trace header just once, in the actual consumer
+> > of it, which is rcu.h itself.  We include it unconditionally, as
+> > build testing shows us that is a hard requirement for some files.
+> > 
+> > Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> 
+> Queued for 3.16, thank you, Paul!
+
+Thanks!
+
+I'm assuming you meant 3.15 -- unless of course you are allowing
+for an insurance policy for me possibly breaking the build.  ;)
+
+P.
+--
 
 > 
->>
->>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->>> ---
->>>  kernel/workqueue.c |    6 ++++++
->>>  1 files changed, 6 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
->>> index 82ef9f3..bee5fe1 100644
->>> --- a/kernel/workqueue.c
->>> +++ b/kernel/workqueue.c
->>> @@ -2284,6 +2284,12 @@ static int worker_thread(void *__worker)
->>>  	struct worker *worker = __worker;
->>>  	struct worker_pool *pool = worker->pool;
->>>  
->>> +	if (WARN_ON_ONCE(!(worker->flags & WORKER_STARTED))) {
->>
->> And if this is something which can legitimately happen, why are we
->> triggering WARN on it?
+> 							Thanx, Paul
 > 
-> If it happens, it means there is something wrong in the system.
+> > ---
+> > 
+> > [v2: move the #include <trace/events/rcu.h> outside of the scope
+> >  of #ifdef CONFIG_RCU_TRACE so it is unconditionally included.]
+> > 
+> >  kernel/rcu/rcu.h    | 1 +
+> >  kernel/rcu/srcu.c   | 2 --
+> >  kernel/rcu/tiny.c   | 4 ----
+> >  kernel/rcu/tree.c   | 2 --
+> >  kernel/rcu/update.c | 1 -
+> >  5 files changed, 1 insertion(+), 9 deletions(-)
+> > 
+> > diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
+> > index 1bd787fddcb2..3d2a037332b2 100644
+> > --- a/kernel/rcu/rcu.h
+> > +++ b/kernel/rcu/rcu.h
+> > @@ -23,6 +23,7 @@
+> >  #ifndef __LINUX_RCU_H
+> >  #define __LINUX_RCU_H
+> > 
+> > +#include <trace/events/rcu.h>
+> >  #ifdef CONFIG_RCU_TRACE
+> >  #define RCU_TRACE(stmt) stmt
+> >  #else /* #ifdef CONFIG_RCU_TRACE */
+> > diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
+> > index 5db7e9272d37..8e66b05bfd82 100644
+> > --- a/kernel/rcu/srcu.c
+> > +++ b/kernel/rcu/srcu.c
+> > @@ -36,8 +36,6 @@
+> >  #include <linux/delay.h>
+> >  #include <linux/srcu.h>
+> > 
+> > -#include <trace/events/rcu.h>
+> > -
+> >  #include "rcu.h"
+> > 
+> >  /*
+> > diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
+> > index 53b95bbf4abb..d9efcc13008c 100644
+> > --- a/kernel/rcu/tiny.c
+> > +++ b/kernel/rcu/tiny.c
+> > @@ -37,10 +37,6 @@
+> >  #include <linux/prefetch.h>
+> >  #include <linux/ftrace_event.h>
+> > 
+> > -#ifdef CONFIG_RCU_TRACE
+> > -#include <trace/events/rcu.h>
+> > -#endif /* #else #ifdef CONFIG_RCU_TRACE */
+> > -
+> >  #include "rcu.h"
+> > 
+> >  /* Forward declarations for tiny_plugin.h. */
+> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> > index c7a00dbe768b..351faba48b91 100644
+> > --- a/kernel/rcu/tree.c
+> > +++ b/kernel/rcu/tree.c
+> > @@ -58,8 +58,6 @@
+> >  #include <linux/suspend.h>
+> > 
+> >  #include "tree.h"
+> > -#include <trace/events/rcu.h>
+> > -
+> >  #include "rcu.h"
+> > 
+> >  MODULE_ALIAS("rcutree");
+> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> > index fd0d5b5b8e7c..4c0a9b0af469 100644
+> > --- a/kernel/rcu/update.c
+> > +++ b/kernel/rcu/update.c
+> > @@ -49,7 +49,6 @@
+> >  #include <linux/module.h>
+> > 
+> >  #define CREATE_TRACE_POINTS
+> > -#include <trace/events/rcu.h>
+> > 
+> >  #include "rcu.h"
+> > 
+> > -- 
+> > 1.8.5.2
+> > 
 > 
->>
->>> +		/* The worker is wokenup unexpectedly before started */
->>> +		mutex_lock(&pool->manager_mutex);
->>> +		mutex_unlock(&pool->manager_mutex);
->>
->> And what does these mutex cycling achieve (they need comment)?
-> 
-> Synchronize the manager to finish.
-> 
->>
->> Thanks.
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
