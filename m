@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595AbaBUBC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:02:56 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54035 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756717AbaBUBCx (ORCPT
+	id S1756729AbaBUBDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:03:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45360 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747AbaBTXut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 20:02:53 -0500
-Message-ID: <5306A5BC.8010409@codeaurora.org>
-Date: Thu, 20 Feb 2014 17:02:52 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Feb 2014 18:50:49 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 12/66] ath9k_htc: make ->sta_rc_update atomic for most calls
+Date: Thu, 20 Feb 2014 15:51:11 -0800
+Message-Id: <20140220234909.835079558@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
+References: <20140220234909.482516304@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm-perf
- tree
-References: <20140221115857.3ea3d7277d03c5b6b4d26488@canb.auug.org.au>
-In-Reply-To: <20140221115857.3ea3d7277d03c5b6b4d26488@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/14 16:58, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/boot/dts/qcom-msm8960-cdp.dts between commit a1d711938959 ("ARM:
-> dts: msm: Add krait-pmu to platforms with Krait CPUs") from the arm-perf
-> tree and commit cc60a1a4d47a ("ARM: dts: msm: split out msm8660 and
-> msm8960 soc into dts include") from the arm-soc tree.
->
-> I fixed it up (probably not the best way ... see below) and can carry the
-> fix as necessary (no action is required).
->
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-It's good enough to be correct, but it would be better if the pmu node
-went into the arch/arm/boot/dts/qcom-msm8960.dtsi file in the arm-soc tree.
+------------------
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+
+commit 2fa4cb905605c863bf570027233af7afd8149ae4 upstream.
+
+sta_rc_update() callback must be atomic, hence we can not take mutexes
+or do other operations, which can sleep in ath9k_htc_sta_rc_update().
+
+I think we can just return from ath9k_htc_sta_rc_update(), if it is
+called without IEEE80211_RC_SUPP_RATES_CHANGED bit. That will help
+with scheduling while atomic bug for most cases (except mesh and IBSS
+modes).
+
+For mesh and IBSS I do not see other solution like creating additional
+workqueue, because sending firmware command require us to sleep, but
+this can be done in additional patch.
+
+Patch partially fixes bug:
+https://bugzilla.redhat.com/show_bug.cgi?id=990955
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
+
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -1331,21 +1331,22 @@ static void ath9k_htc_sta_rc_update(stru
+ 	struct ath_common *common = ath9k_hw_common(priv->ah);
+ 	struct ath9k_htc_target_rate trate;
+ 
++	if (!(changed & IEEE80211_RC_SUPP_RATES_CHANGED))
++		return;
++
+ 	mutex_lock(&priv->mutex);
+ 	ath9k_htc_ps_wakeup(priv);
+ 
+-	if (changed & IEEE80211_RC_SUPP_RATES_CHANGED) {
+-		memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
+-		ath9k_htc_setup_rate(priv, sta, &trate);
+-		if (!ath9k_htc_send_rate_cmd(priv, &trate))
+-			ath_dbg(common, CONFIG,
+-				"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
+-				sta->addr, be32_to_cpu(trate.capflags));
+-		else
+-			ath_dbg(common, CONFIG,
+-				"Unable to update supported rates for sta: %pM\n",
+-				sta->addr);
+-	}
++	memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
++	ath9k_htc_setup_rate(priv, sta, &trate);
++	if (!ath9k_htc_send_rate_cmd(priv, &trate))
++		ath_dbg(common, CONFIG,
++			"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
++			sta->addr, be32_to_cpu(trate.capflags));
++	else
++		ath_dbg(common, CONFIG,
++			"Unable to update supported rates for sta: %pM\n",
++			sta->addr);
+ 
+ 	ath9k_htc_ps_restore(priv);
+ 	mutex_unlock(&priv->mutex);
+
 
