@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688AbaBTXw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
+	id S1756351AbaBUAbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:31:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45810 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551AbaBTXwS (ORCPT
+	with ESMTP id S1755551AbaBTXw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:18 -0500
+	Thu, 20 Feb 2014 18:52:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Beomho Seo <beomho.seo@samsung.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.12 42/82] iio: ak8975: Fix calculation formula for convert micro tesla to gauss unit
-Date: Thu, 20 Feb 2014 15:52:25 -0800
-Message-Id: <20140220235020.733502592@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.12 54/82] usb-storage: restrict bcdDevice range for Super Top in Cypress ATACB
+Date: Thu, 20 Feb 2014 15:52:37 -0800
+Message-Id: <20140220235021.106403836@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,68 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Beomho Seo <beomho.seo@samsung.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit bef44abccb2677e8d16e50b75316d4fd1061be81 upstream.
+commit a9c143c82608bee2a36410caa56d82cd86bdc7fa upstream.
 
-This effects the reported scale of the raw values, and thus userspace
-applications that use this value.
+The Cypress ATACB unusual-devs entry for the Super Top SATA bridge
+causes problems.  Although it was originally reported only for
+bcdDevice = 0x160, its range was much larger.  This resulted in a bug
+report for bcdDevice 0x220, so the range was capped at 0x219.  Now
+Milan reports errors with bcdDevice 0x150.
 
-One micro tesla equal 0.01 gauss. So I have fixed calculation formula And add RAW_TO_GAUSS macro.
-ASA is in the range of 0 to 255. If multiply 0.003, calculation result(in_magn_[*]_scale) is
-always 0. So multiply 3000 and return and IIO_VAL_INT_PLUS_MICRO.
-As a result, read_raw call back function return accurate scale value.
+Therefore this patch restricts the range to just 0x160.
 
-Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Milan Svoboda <milan.svoboda@centrum.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/magnetometer/ak8975.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/usb/storage/unusual_cypress.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iio/magnetometer/ak8975.c
-+++ b/drivers/iio/magnetometer/ak8975.c
-@@ -85,6 +85,7 @@
- #define AK8975_MAX_CONVERSION_TIMEOUT	500
- #define AK8975_CONVERSION_DONE_POLL_TIME 10
- #define AK8975_DATA_READY_TIMEOUT	((100*HZ)/1000)
-+#define RAW_TO_GAUSS(asa) ((((asa) + 128) * 3000) / 256)
+--- a/drivers/usb/storage/unusual_cypress.h
++++ b/drivers/usb/storage/unusual_cypress.h
+@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
+ 		"Cypress ISD-300LP",
+ 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
  
- /*
-  * Per-instance context data for the device.
-@@ -265,15 +266,15 @@ static int ak8975_setup(struct i2c_clien
-  *
-  * Since 1uT = 100 gauss, our final scale factor becomes:
-  *
-- * Hadj = H * ((ASA + 128) / 256) * 3/10 * 100
-- * Hadj = H * ((ASA + 128) * 30 / 256
-+ * Hadj = H * ((ASA + 128) / 256) * 3/10 * 1/100
-+ * Hadj = H * ((ASA + 128) * 0.003) / 256
-  *
-  * Since ASA doesn't change, we cache the resultant scale factor into the
-  * device context in ak8975_setup().
-  */
--	data->raw_to_gauss[0] = ((data->asa[0] + 128) * 30) >> 8;
--	data->raw_to_gauss[1] = ((data->asa[1] + 128) * 30) >> 8;
--	data->raw_to_gauss[2] = ((data->asa[2] + 128) * 30) >> 8;
-+	data->raw_to_gauss[0] = RAW_TO_GAUSS(data->asa[0]);
-+	data->raw_to_gauss[1] = RAW_TO_GAUSS(data->asa[1]);
-+	data->raw_to_gauss[2] = RAW_TO_GAUSS(data->asa[2]);
- 
- 	return 0;
- }
-@@ -428,8 +429,9 @@ static int ak8975_read_raw(struct iio_de
- 	case IIO_CHAN_INFO_RAW:
- 		return ak8975_read_axis(indio_dev, chan->address, val);
- 	case IIO_CHAN_INFO_SCALE:
--		*val = data->raw_to_gauss[chan->address];
--		return IIO_VAL_INT;
-+		*val = 0;
-+		*val2 = data->raw_to_gauss[chan->address];
-+		return IIO_VAL_INT_PLUS_MICRO;
- 	}
- 	return -EINVAL;
- }
+-UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
++UNUSUAL_DEV( 0x14cd, 0x6116, 0x0160, 0x0160,
+ 		"Super Top",
+ 		"USB 2.0  SATA BRIDGE",
+ 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
 
 
