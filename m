@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366AbaBTAQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:16:25 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:63582 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636AbaBTANG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752630AbaBTANG (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 19 Feb 2014 19:13:06 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:38470 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022AbaBTAND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 19:13:03 -0500
 From: Alex Elder <elder@linaro.org>
 To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
         robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -14,82 +14,72 @@ To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
         linux@arm.linux.org.uk
 Cc: bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/12] clk: bcm281xx: change some symbol names
-Date: Wed, 19 Feb 2014 18:12:53 -0600
-Message-Id: <1392855182-21155-4-git-send-email-elder@linaro.org>
+Subject: [PATCH 00/12] clk: bcm281xx: updates for 3.14
+Date: Wed, 19 Feb 2014 18:12:50 -0600
+Message-Id: <1392855182-21155-1-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392855182-21155-1-git-send-email-elder@linaro.org>
-References: <1392855182-21155-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I developed the bcm281xx clock code I understood there were
-restrictions on device tree "compatible" strings names, and as a
-result "bcm11351" was used in places despite the part family being
-more properly called "bcm281xx".  This can be a little confusing.
+This series includes updates for the bcm281xx clock code to be 
+considered for kernel 3.14.  I've held off posting this because
+a mixup caused the code to which this applies to be dropped at
+the last minute from the 3.13 release, and I wanted to make sure
+the dust had settled on getting that resolved.  The patches are
+available here:
+    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+    Branch review/bcm-clk-next
 
-In some cases I went to far and needlessly named things using
-"bcm11351" when that was not necessary.
+These are based on three patches that implement the baseline
+bcm281xx clock functionality, which I re-posted last week.
+    https://lkml.org/lkml/2014/2/14/449
+    https://lkml.org/lkml/2014/2/14/456
+    https://lkml.org/lkml/2014/2/14/451
 
-This patch remedies this.  It renames the symbol used to define the
-"compatible" string (but not its value) so it uses "BCM281XX".
-Similarly, the name names provided to the CLK_OF_DECLARE() macro
-are changed, hoping to minimize the number of places that the
-confusing "11351" string is used.
+I've grouped them, and offer a little explanation of each of the
+groups below.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- drivers/clk/bcm/clk-bcm281xx.c |   27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+					-Alex
 
-diff --git a/drivers/clk/bcm/clk-bcm281xx.c b/drivers/clk/bcm/clk-bcm281xx.c
-index 3c66de6..bb947af 100644
---- a/drivers/clk/bcm/clk-bcm281xx.c
-+++ b/drivers/clk/bcm/clk-bcm281xx.c
-@@ -15,12 +15,17 @@
- #include "clk-kona.h"
- #include "dt-bindings/clock/bcm281xx.h"
- 
--/* bcm11351 CCU device tree "compatible" strings */
--#define BCM11351_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
--#define BCM11351_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
--#define BCM11351_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
--#define BCM11351_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
--#define BCM11351_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
-+/*
-+ * These are the bcm281xx CCU device tree "compatible" strings.
-+ * We're stuck with using "bcm11351" in the string because wild
-+ * cards aren't allowed, and that name was the first one defined
-+ * in this family of devices.
-+ */
-+#define BCM281XX_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
-+#define BCM281XX_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
-+#define BCM281XX_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
-+#define BCM281XX_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
-+#define BCM281XX_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
- 
- /* Root CCU clocks */
- 
-@@ -404,13 +409,13 @@ static void __init kona_dt_slave_ccu_setup(struct device_node *node)
- 	kona_dt_ccu_setup(node, bcm281xx_slave_ccu_clks_setup);
- }
- 
--CLK_OF_DECLARE(bcm11351_root_ccu, BCM11351_DT_ROOT_CCU_COMPAT,
-+CLK_OF_DECLARE(bcm281xx_root_ccu, BCM281XX_DT_ROOT_CCU_COMPAT,
- 			kona_dt_root_ccu_setup);
--CLK_OF_DECLARE(bcm11351_aon_ccu, BCM11351_DT_AON_CCU_COMPAT,
-+CLK_OF_DECLARE(bcm281xx_aon_ccu, BCM281XX_DT_AON_CCU_COMPAT,
- 			kona_dt_aon_ccu_setup);
--CLK_OF_DECLARE(bcm11351_hub_ccu, BCM11351_DT_HUB_CCU_COMPAT,
-+CLK_OF_DECLARE(bcm281xx_hub_ccu, BCM281XX_DT_HUB_CCU_COMPAT,
- 			kona_dt_hub_ccu_setup);
--CLK_OF_DECLARE(bcm11351_master_ccu, BCM11351_DT_MASTER_CCU_COMPAT,
-+CLK_OF_DECLARE(bcm281xx_master_ccu, BCM281XX_DT_MASTER_CCU_COMPAT,
- 			kona_dt_master_ccu_setup);
--CLK_OF_DECLARE(bcm11351_slave_ccu, BCM11351_DT_SLAVE_CCU_COMPAT,
-+CLK_OF_DECLARE(bcm281xx_slave_ccu, BCM281XX_DT_SLAVE_CCU_COMPAT,
- 			kona_dt_slave_ccu_setup);
--- 
-1.7.9.5
+Alex Elder (12):
+  clk: bcm281xx: warn if ccu_wait_bit() fails
+  clk: bcm281xx: use init_data.name for clock name
+       Two small improvements to the code.
+
+  clk: bcm281xx: change some symbol names
+  mach-bcm: bcm281xx: more symbol cleanup
+	Improve clarity by using "281xx" rather than "11351" in
+	symbols; support for the bcm11351 board is going away, and
+	in these cases there's no reason not to use "281xx" instead.
+
+  clk: bcm281xx: initialize CCU structures statically
+  clk: bcm281xx: define CCU clock data statically
+  	This rearranges the way CCUs and the clocks they provide are
+	defined, so that they're defined statically to the extent
+	possible rather than allocating and initializing things
+	at runtime.
+
+  clk: bcm281xx: add clock policy support
+  clk: bcm281xx: add clock hysteresis support
+  clk: bcm281xx: add an initialized flag
+  clk: bcm281xx: implement prerequisite clocks
+  clk: bcm281xx: add bus clock support
+  clk: bcm281xx: define a bus clock
+  	This series adds a few new features, ultimately for the
+	purpose of adding support for another type of Kona clock.
+	Currently only peripheral clocks are supported; this adds
+	the ability to define and control bus clocks.  In addition,
+	support is added for clocks to identify a prerequisite
+	clock; a clock won't be initialized until after its
+	prerequisite has been.
+
+ arch/arm/boot/dts/bcm11351.dtsi      |    3 +-
+ arch/arm/mach-bcm/board_bcm281xx.c   |    9 +-
+ drivers/clk/bcm/clk-bcm281xx.c       |  254 ++++++++++++--------------
+ drivers/clk/bcm/clk-kona-setup.c     |  331 +++++++++++++++++++++++++++-------
+ drivers/clk/bcm/clk-kona.c           |  331 ++++++++++++++++++++++++++++++++--
+ drivers/clk/bcm/clk-kona.h           |  189 ++++++++++++++++---
+ include/dt-bindings/clock/bcm281xx.h |    3 +-
+ 7 files changed, 878 insertions(+), 242 deletions(-)
 
