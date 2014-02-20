@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841AbaBUAS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:18:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46011 "EHLO
+	id S932130AbaBTXxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45978 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138AbaBTXxK (ORCPT
+	with ESMTP id S932087AbaBTXxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:10 -0500
+	Thu, 20 Feb 2014 18:53:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.13 18/99] s390/dump: Fix dump memory detection
-Date: Thu, 20 Feb 2014 15:52:13 -0800
-Message-Id: <20140220235118.743120942@linuxfoundation.org>
+        Eliad Peller <eliad@wizery.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.13 10/99] mac80211: move roc cookie assignment earlier
+Date: Thu, 20 Feb 2014 15:52:05 -0800
+Message-Id: <20140220235118.512886173@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,62 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
+commit 2f617435c3a6fe3f39efb9ae2baa77de2d6c97b8 upstream.
 
-Dumps created by kdump or zfcpdump can contain invalid memory holes when
-dumping z/VM systems that have memory pressure.
+ieee80211_start_roc_work() might add a new roc
+to existing roc, and tell cfg80211 it has already
+started.
 
-For example:
+However, this might happen before the roc cookie
+was set, resulting in REMAIN_ON_CHANNEL (started)
+event with null cookie. Consequently, it can make
+wpa_supplicant go out of sync.
 
-   # zgetdump -i /proc/vmcore.
-   Memory map:
-   0000000000000000 - 0000000000bfffff (12 MB)
-   0000000000e00000 - 00000000014fffff (7 MB)
-   000000000bd00000 - 00000000f3bfffff (3711 MB)
+Fix it by setting the roc cookie earlier.
 
-The memory detection function find_memory_chunks() issues tprot to
-find valid memory chunks. In case of CMM it can happen that pages are
-marked as unstable via set_page_unstable() in arch_free_page().
-If z/VM has released that pages, tprot returns -EFAULT and indicates
-a memory hole.
-
-So fix this and switch off CMM in case of kdump or zfcpdump.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/mm/page-states.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ net/mac80211/cfg.c |   36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
---- a/arch/s390/mm/page-states.c
-+++ b/arch/s390/mm/page-states.c
-@@ -12,6 +12,8 @@
- #include <linux/mm.h>
- #include <linux/gfp.h>
- #include <linux/init.h>
-+#include <asm/setup.h>
-+#include <asm/ipl.h>
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -2608,6 +2608,24 @@ static int ieee80211_start_roc_work(stru
+ 	INIT_DELAYED_WORK(&roc->work, ieee80211_sw_roc_work);
+ 	INIT_LIST_HEAD(&roc->dependents);
  
- #define ESSA_SET_STABLE		1
- #define ESSA_SET_UNUSED		2
-@@ -41,6 +43,14 @@ void __init cmma_init(void)
- 
- 	if (!cmma_flag)
- 		return;
 +	/*
-+	 * Disable CMM for dump, otherwise  the tprot based memory
-+	 * detection can fail because of unstable pages.
++	 * cookie is either the roc cookie (for normal roc)
++	 * or the SKB (for mgmt TX)
 +	 */
-+	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
-+		cmma_flag = 0;
-+		return;
++	if (!txskb) {
++		/* local->mtx protects this */
++		local->roc_cookie_counter++;
++		roc->cookie = local->roc_cookie_counter;
++		/* wow, you wrapped 64 bits ... more likely a bug */
++		if (WARN_ON(roc->cookie == 0)) {
++			roc->cookie = 1;
++			local->roc_cookie_counter++;
++		}
++		*cookie = roc->cookie;
++	} else {
++		*cookie = (unsigned long)txskb;
 +	}
- 	asm volatile(
- 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
- 		"0:     la      %0,0\n"
++
+ 	/* if there's one pending or we're scanning, queue this one */
+ 	if (!list_empty(&local->roc_list) ||
+ 	    local->scanning || local->radar_detect_enabled)
+@@ -2742,24 +2760,6 @@ static int ieee80211_start_roc_work(stru
+ 	if (!queued)
+ 		list_add_tail(&roc->list, &local->roc_list);
+ 
+-	/*
+-	 * cookie is either the roc cookie (for normal roc)
+-	 * or the SKB (for mgmt TX)
+-	 */
+-	if (!txskb) {
+-		/* local->mtx protects this */
+-		local->roc_cookie_counter++;
+-		roc->cookie = local->roc_cookie_counter;
+-		/* wow, you wrapped 64 bits ... more likely a bug */
+-		if (WARN_ON(roc->cookie == 0)) {
+-			roc->cookie = 1;
+-			local->roc_cookie_counter++;
+-		}
+-		*cookie = roc->cookie;
+-	} else {
+-		*cookie = (unsigned long)txskb;
+-	}
+-
+ 	return 0;
+ }
+ 
 
 
