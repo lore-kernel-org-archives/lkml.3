@@ -1,228 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaBTNov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:44:51 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:42182 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978AbaBTNot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:44:49 -0500
+	id S1754743AbaBTNtT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:49:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53460 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754141AbaBTNtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 08:49:15 -0500
+Date: Thu, 20 Feb 2014 14:48:18 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Richard Genoud <richard.genoud@gmail.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trivial: gpiolib: typo in gpiochip_is_requested
+ comment
+In-Reply-To: <1392136001-913-1-git-send-email-richard.genoud@gmail.com>
+Message-ID: <alpine.LNX.2.00.1402201448070.1192@pobox.suse.cz>
+References: <1392136001-913-1-git-send-email-richard.genoud@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <5305F898.6020401@ti.com>
-References: <1392817210-14312-1-git-send-email-ivan.khoronzhuk@ti.com>
-	<1392817210-14312-3-git-send-email-ivan.khoronzhuk@ti.com>
-	<20140219181152.GG25079@e106331-lin.cambridge.arm.com>
-	<5305F898.6020401@ti.com>
-Date: Thu, 20 Feb 2014 07:44:48 -0600
-Message-ID: <CAL_JsqJ5hoQ3vWaQTo8--jiPPQ64OW_b4zKTe7aPLXN0td4DrA@mail.gmail.com>
-Subject: Re: [PATCH v5 2/2] memory: ti-aemif: add bindings for AEMIF driver
-From: Rob Herring <robherring2@gmail.com>
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grygorii.strashko@ti.com" <grygorii.strashko@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "nsekhar@ti.com" <nsekhar@ti.com>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 6:44 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
->
-> On 02/19/2014 08:11 PM, Mark Rutland wrote:
->>
->> On Wed, Feb 19, 2014 at 01:40:10PM +0000, Ivan Khoronzhuk wrote:
->>>
->>> Add bindings for TI Async External Memory Interface (AEMIF) controller.
->>>
->>> The Async External Memory Interface (EMIF16/AEMIF) controller is intended
->>> to
->>> provide a glue-less interface to a variety of asynchronous memory devices
->>> like
->>> ASRA M, NOR and NAND memory. A total of 256M bytes of any of these
->>> memories
->>> can be accessed via 4 chip selects with 64M byte access per chip select.
->>>
->>> We are not encoding CS number in reg property, it's memory partition
->>> number.
->>> The CS number is encoded for Davinci NAND node using standalone property
->>> "ti,davinci-chipselect" and we need to provide two memory ranges to it,
->>> as result we can't encode CS number in "reg" for AEMIF child devices
->>> (NAND/NOR/etc), as it will break bindings compatibility.
->>>
->>> In this patch, NAND node is used just as an example of child node.
->>>
->>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>> ---
->>>   .../bindings/memory-controllers/ti-aemif.txt       | 210
->>> +++++++++++++++++++++
->>>   1 file changed, 210 insertions(+)
->>>   create mode 100644
->>> Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
->>
->> [...]
->>
->>> +- ranges:              Contains memory regions. There are two types of
->>> +                       ranges/partitions:
->>> +                       - CS-specific partition/range. If continuous,
->>> must be
->>> +                       set up to reflect the memory layout for 4
->>> chipselects,
->>> +                       if not then additional range/partition can be
->>> added and
->>> +                       child device can select the proper one.
->>> +                       - control partition which is common for all CS
->>> +                       interfaces.
->>
->> This really doesn't sound anything like the typical meaning of ranges on
->> a bus.
->>
->> Why isn't this information encoded in reg properties on the child nodes?
->>
->> [...]
->
->
-> Note that we do not introduce NAND device bindings here.
-> The Davinci NAND bindings was introduced and accepted more then one year
-> ago.
-> And the CS number is encoded for Davinci NAND node using standalone property
->
-> "ti,davinci-chipselect" and we need to provide two memory ranges to it,
-> as result we can't encode CS number in "reg" for AEMIF child devices
-> (NAND/NOR/etc),
-> as it will break bindings compatibility.
->
-> In this document, NAND node is used just as an example of child node.
->
->
->>> +- ti,cs-ss:            enable/disable select strobe mode
->>> +                               In select strobe mode chip select behaves
->>> as
->>> +                               the strobe and is active only during the
->>> strobe
->>> +                               period. If present then enable.
->>> +
->>> +- ti,cs-ew:            enable/disable extended wait mode
->>> +                               if set, the controller monitors the
->>> EMIFWAIT pin
->>> +                               mapped to that chip select to determine
->>> if the
->>> +                               device wants to extend the strobe period.
->>> If
->>> +                               present then enable.
->>
->> When would you have these two in the DT and when wouldn't you? Why can't
->> the driver decide?
->
->
-> These are properties of cs node, not the driver itself.
-> The driver cannot know what child device you are going to attach to cs node
-> , as result it cannot decide what settings you are using for particular cs
-> node.
->
->
->> These names are also opaque. We can clearly do better.
->
->
-> I propose the following names?:
->
-> ti,cs-ss  --> ti,cs-select-strobe-mode
-> ti,cs-ew --> ti,cs-extended-waite-mode
->
-> Are you OK with it?
->
->
->>> +
->>> +- ti,cs-ta:            minimum turn around time, ns
->>> +                               Time between the end of one asynchronous
->>> memory
->>> +                               access and the start of another
->>> asynchronous
->>> +                               memory access. This delay is not incurred
->>> +                               between a read followed by read or a
->>> write
->>> +                               followed by a write to same chip select.
->>
->> The name is opaque. How about ti,min-turnaround-time-ns ?
->
->
-> I like without -ns suffix and with cs- prefix:
-> ti,cs-ta --> ti,cs-min-turnaround-time
->
-> Is it OK?
->
->
->>> +
->>> +- ti,cs-rsetup:                read setup width, ns
->>> +                               Time between the beginning of a memory
->>> cycle
->>> +                               and the activation of read strobe.
->>> +                               Minimum value is 1 (0 treated as 1).
->>> +
->>> +- ti,cs-rstobe:                read strobe width, ns
->>> +                               Time between the activation and
->>> deactivation of
->>> +                               the read strobe.
->>> +                               Minimum value is 1 (0 treated as 1).
->>> +
->>> +- ti,cs-rhold:         read hold width, ns
->>> +                               Time between the deactivation of the read
->>> +                               strobe and the end of the cycle (which
->>> may be
->>> +                               either an address change or the
->>> deactivation of
->>> +                               the chip select signal.
->>> +                               Minimum value is 1 (0 treated as 1).
->>> +
->>> +- ti,cs-wsetup:                write setup width, ns
->>> +                               Time between the beginning of a memory
->>> cycle
->>> +                               and the activation of write strobe.
->>> +                               Minimum value is 1 (0 treated as 1).
->>> +
->>> +- ti,cs-wstrobe:       write strobe width, ns
->>> +                               Time between the activation and
->>> deactivation of
->>> +                               the write strobe.
->>> +                               Minimum value is 1 (0 treated as 1).
->>> +
->>> +- ti,cs-whold:         write hold width, ns
->>> +                               Time between the deactivation of the
->>> write
->>> +                               strobe and the end of the cycle (which
->>> may be
->>> +                               either an address change or the
->>> deactivation of
->>> +                               the chip select signal.
->>> +                               Minimum value is 1 (0 treated as 1).
->>
->> Likewise I think these can be given more descriptive names.
->
->
-> Ok. How about:
->
-> ti,cs-rsetup --> ti,cs-read-setup-time
-> ti,cs-rstobe --> ti,cs-read-strobe-time
-> ti,cs-rhold  --> ti,cs-read-hold-time
-> ti,cs-wsetup --> ti,cs-write-setup-time
-> ti,cs-wstrobe --> ti,cs-write-strobe-time
-> ti,cs-whold --> ti,cs-write-hold-time
+On Tue, 11 Feb 2014, Richard Genoud wrote:
 
-Properties that have a unit of measure should have that unit in the
-name. So replace "time" with "ns".
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> ---
+>  drivers/gpio/gpiolib.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 80da9f1940c9..a0b96695c519 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1646,7 +1646,7 @@ void gpio_free_array(const struct gpio *array, size_t num)
+>  EXPORT_SYMBOL_GPL(gpio_free_array);
+>  
+>  /**
+> - * gpiochip_is_requested - return string iff signal was requested
+> + * gpiochip_is_requested - return string if signal was requested
 
-Rob
+Why do you believe this is correct, please?
+
+-- 
+Jiri Kosina
+SUSE Labs
