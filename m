@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306AbaBUA3s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:29:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45837 "EHLO
+	id S1755711AbaBTXwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731AbaBTXwf (ORCPT
+	with ESMTP id S1755608AbaBTXwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:35 -0500
+	Thu, 20 Feb 2014 18:52:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.12 59/82] Revert "xhci: Set scatter-gather limit to avoid failed block writes."
-Date: Thu, 20 Feb 2014 15:52:42 -0800
-Message-Id: <20140220235021.258145054@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.12 43/82] x86, smap: Dont enable SMAP if CONFIG_X86_SMAP is disabled
+Date: Thu, 20 Feb 2014 15:52:26 -0800
+Message-Id: <20140220235020.762281188@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,49 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 1386ff75797a187df324062fb4e929152392da88 upstream.
+commit 03bbd596ac04fef47ce93a730b8f086d797c3021 upstream.
 
-This reverts commit f2d9b991c549f159dc9ae81f77d8206c790cbfee.
+If SMAP support is not compiled into the kernel, don't enable SMAP in
+CR4 -- in fact, we should clear it, because the kernel doesn't contain
+the proper STAC/CLAC instructions for SMAP support.
 
-We are ripping out commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e "usb:
-xhci: Link TRB must not occur within a USB payload burst" because it's a
-hack that caused regressions in the usb-storage and userspace USB
-drivers that use usbfs and libusb.  This commit attempted to fix the
-issues with that patch.
+Found by Fengguang Wu's test system.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    4 ++--
- drivers/usb/host/xhci.h |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/common.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4727,8 +4727,8 @@ int xhci_gen_setup(struct usb_hcd *hcd,
- 	struct device		*dev = hcd->self.controller;
- 	int			retval;
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -284,8 +284,13 @@ static __always_inline void setup_smap(s
+ 	raw_local_save_flags(eflags);
+ 	BUG_ON(eflags & X86_EFLAGS_AC);
  
--	/* Limit the block layer scatter-gather lists to half a segment. */
--	hcd->self.sg_tablesize = TRBS_PER_SEGMENT / 2;
-+	/* Accept arbitrarily long scatter-gather lists */
-+	hcd->self.sg_tablesize = ~0;
+-	if (cpu_has(c, X86_FEATURE_SMAP))
++	if (cpu_has(c, X86_FEATURE_SMAP)) {
++#ifdef CONFIG_X86_SMAP
+ 		set_in_cr4(X86_CR4_SMAP);
++#else
++		clear_in_cr4(X86_CR4_SMAP);
++#endif
++	}
+ }
  
- 	/* XHCI controllers don't stop the ep queue on short packets :| */
- 	hcd->self.no_stop_on_short = 1;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1262,7 +1262,7 @@ union xhci_trb {
-  * since the command ring is 64-byte aligned.
-  * It must also be greater than 16.
-  */
--#define TRBS_PER_SEGMENT	256
-+#define TRBS_PER_SEGMENT	64
- /* Allow two commands + a link TRB, along with any reserved command TRBs */
- #define MAX_RSVD_CMD_TRBS	(TRBS_PER_SEGMENT - 3)
- #define TRB_SEGMENT_SIZE	(TRBS_PER_SEGMENT*16)
+ /*
 
 
