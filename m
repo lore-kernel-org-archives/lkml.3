@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959AbaBTXxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46039 "EHLO
+	id S1756784AbaBUAOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:14:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939AbaBTXxR (ORCPT
+	with ESMTP id S1755955AbaBTXxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:17 -0500
+	Thu, 20 Feb 2014 18:53:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oren Givon <oren.givon@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.13 25/99] iwlwifi: add more 7265 HW IDs
-Date: Thu, 20 Feb 2014 15:52:20 -0800
-Message-Id: <20140220235118.947575131@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 29/99] spi: nuc900: Set SPI_LSB_FIRST for master->mode_bits if hw->pdata->lsb is true
+Date: Thu, 20 Feb 2014 15:52:24 -0800
+Message-Id: <20140220235119.064275524@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,48 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oren Givon <oren.givon@intel.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit f7690915ccce98553c5425b51e6b5a6c51e27f4e upstream.
+commit f7db1588d6028c97c098bb6445eaabc56a25fed8 upstream.
 
-Add 6 new HW IDs for the 7265 series.
+Otherwise, spi_setup() fails with unsupported mode bits message.
 
-Signed-off-by: Oren Givon <oren.givon@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/pcie/drv.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/spi/spi-nuc900.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -354,20 +354,25 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- /* 7265 Series */
- 	{IWL_PCI_DEVICE(0x095A, 0x5010, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5110, iwl7265_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x095A, 0x5112, iwl7265_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x095A, 0x5100, iwl7265_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x095A, 0x510A, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095B, 0x5310, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095B, 0x5302, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095B, 0x5210, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5012, iwl7265_2ac_cfg)},
--	{IWL_PCI_DEVICE(0x095A, 0x500A, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5410, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5400, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x1010, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5000, iwl7265_2n_cfg)},
-+	{IWL_PCI_DEVICE(0x095A, 0x500A, iwl7265_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x095B, 0x5200, iwl7265_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x5002, iwl7265_n_cfg)},
- 	{IWL_PCI_DEVICE(0x095B, 0x5202, iwl7265_n_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9010, iwl7265_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x095A, 0x9012, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9110, iwl7265_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x095A, 0x9112, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9210, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9510, iwl7265_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x095A, 0x9310, iwl7265_2ac_cfg)},
+--- a/drivers/spi/spi-nuc900.c
++++ b/drivers/spi/spi-nuc900.c
+@@ -363,6 +363,8 @@ static int nuc900_spi_probe(struct platf
+ 	init_completion(&hw->done);
+ 
+ 	master->mode_bits          = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
++	if (hw->pdata->lsb)
++		master->mode_bits |= SPI_LSB_FIRST;
+ 	master->num_chipselect     = hw->pdata->num_cs;
+ 	master->bus_num            = hw->pdata->bus_num;
+ 	hw->bitbang.master         = hw->master;
 
 
