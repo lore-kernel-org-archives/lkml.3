@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaBTDBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 22:01:50 -0500
-Received: from ozlabs.org ([203.10.76.45]:48168 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753200AbaBTDBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 22:01:44 -0500
-Date: Thu, 20 Feb 2014 14:01:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lars-Peter Clausen" <lars@metafoo.de>
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20140220140140.9a4f1c90d27e77161116af8d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Feb_2014_14_01_40_+1100_HPVUxE9FnRKPVCh1"
+	id S1753121AbaBTDD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 22:03:57 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45896 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638AbaBTDD4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 22:03:56 -0500
+From: "Zhao\, Gang" <gamerh2o@gmail.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: devel@driverdev.osuosl.org, mark.einon@gmail.com,
+        linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: Re: [PATCH] et131x: fix allocation failures
+References: <20140217141252.26738.33549.stgit@alan.etchedpixels.co.uk>
+	<874n3v52fo.fsf@will.lan>
+	<20140219114315.5af78dfe@alan.etchedpixels.co.uk>
+Date: Thu, 20 Feb 2014 11:03:45 +0800
+In-Reply-To: <20140219114315.5af78dfe@alan.etchedpixels.co.uk> (One Thousand
+	Gnomes's message of "Wed, 19 Feb 2014 11:43:15 +0000")
+Message-ID: <8738jefpta.fsf@will.lan>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Feb_2014_14_01_40_+1100_HPVUxE9FnRKPVCh1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-02-19 at 19:43:15 +0800, One Thousand Gnomes wrote:
+> On Wed, 19 Feb 2014 09:14:19 +0800
+> "Zhao\, Gang" <gamerh2o@gmail.com> wrote:
+>
+>> Alan, thanks for resending this patch. But it seems you overlooked
+>> something we discussed earlier.
+>> 
+>> On Mon, 2014-02-17 at 22:13:08 +0800, Alan wrote:
+>> > We should check the ring allocations don't fail.
+>> > If we get a fail we need to clean up properly. The allocator assumes the
+>> > deallocator will be used on failure, but it isn't. Make sure the
+>> > right deallocator is always called and add a missing check against
+>> > fbr allocation failure.
+>> >
+>> > [v2]: Correct check logic
+>> >
+>> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+>> > ---
+>> >  drivers/staging/et131x/et131x.c |    9 +++++++--
+>> >  1 file changed, 7 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+>> > index 6413500..cc600df 100644
+>> > --- a/drivers/staging/et131x/et131x.c
+>> > +++ b/drivers/staging/et131x/et131x.c
+>> > @@ -2124,7 +2124,11 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+>> >  
+>> >  	/* Alloc memory for the lookup table */
+>> >  	rx_ring->fbr[0] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
+>> > +	if (rx_ring->fbr[0] == NULL)
+>> > +		return -ENOMEM;
+>> >  	rx_ring->fbr[1] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
+>> > +	if (rx_ring->fbr[1] == NULL)
+>> > +		return -ENOMEM;
+>> 
+>> Shouldn't rx_ring->fbr[0] be freed when allocation of rx_ring->fbr[1]
+>> fails ? Or we will leak memory here.
+>
+> No.. the tx_dma_memory_free and rx_dma_memory_free functions are
+> designed to handle incomplete set up. They are now called on incomplete
+> setup and will clean up all the resources.
+>
 
-Hi all,
+Yes, you are right. By calling {tx, rx}_dma_memory_free the memory will
+be freed.
 
-After merging the sound-asoc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+But I think a comment is needed here, to make this more clear ? Without
+proper comment the above code looks a little strange to let one think
+it's right. :)
 
-ERROR: "snd_pcm_hw_constraint_mask64" [sound/soc/codecs/snd-soc-adau1977.ko=
-] undefined!
 
-Caused by commit 603597c9375b ("ASoC: Add ADAU1977 CODEC driver").
-
-I have used the sound-asoc tree from next-20140219 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__20_Feb_2014_14_01_40_+1100_HPVUxE9FnRKPVCh1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTBXAUAAoJEMDTa8Ir7ZwV9AAQAJP57sZawXymiLvEg8FepD9I
-/oTMY+Rs8XOug5cBmcfhHgIGLuUG8Nk9H0uG4V+HCr3YQwVpRl+Qt/uwnBOxKOgT
-Udef0oi7DrAdRIVPoF8qb1Mlx4ZQ6Wsdplx1f7f3qTzd6jeQ0xbjDfgmwyF893Vj
-LKIsND+HyXqCTSiW9KOYAZWsGp/y9LGlEy9zDbOgTAeNtuOcoWKI0VxvbV6xN1bM
-2eMlQIDexR6xnePo01HJYQ6ALGDof9wcm+a5qyT8er05vFRTW75oSgu8Mvmtv104
-pGpU/E2FcXOHUJAOFelWxaCLNi5gxjeqpeZ6xGQ0jlvmQCJ31nmAOkVoDvZrBelp
-DPqKQA7cM6Mj9BoegDNkB8csK/J3RJFiKA+O5Mz64i28gaZ1MpTShyNUNeNMlmJD
-ZDWowJJeLceCacggz5+vwYaiJG6lKmGJhnGusgMwomOHuG3j4aQtGrLwxo8b07Yx
-zIRI7wwvdyzp/pjJSp7FgINanuP3Ha8v5N/QSlnFv5c9x5hsMmBOBvxashuCDUAe
-8Piwbs6E7lJmH1PUV3/CbpoK8L364ACggPdxF36qAGU+MKBSfHbSdrfujRywPj0G
-2djSNGZZxzxgUIa0JKb0rDwfYEBVlNBvHhSFlynQ6PnXwz+rIJfCdVylmyx9gtiL
-Vi2WXY1/L4YtKR+vHOvi
-=RYS5
------END PGP SIGNATURE-----
-
---Signature=_Thu__20_Feb_2014_14_01_40_+1100_HPVUxE9FnRKPVCh1--
+>> > @@ -3591,6 +3595,7 @@ static int et131x_adapter_memory_alloc(struct et131x_adapter *adapter)
+>> >  	if (status) {
+>> >  		dev_err(&adapter->pdev->dev,
+>> >  			  "et131x_tx_dma_memory_alloc FAILED\n");
+>> > +		et131x_tx_dma_memory_free(adapter);
+>> >  		return status;
+>> >  	}
+>> >  	/* Receive buffer memory allocation */
+>> > @@ -3598,7 +3603,7 @@ static int et131x_adapter_memory_alloc(struct et131x_adapter *adapter)
+>> >  	if (status) {
+>> >  		dev_err(&adapter->pdev->dev,
+>> >  			  "et131x_rx_dma_memory_alloc FAILED\n");
+>> > -		et131x_tx_dma_memory_free(adapter);
+>> > +		et131x_adapter_memory_free(adapter);
+>> >  		return status;
+>> >  	}
+>> >  
+>
+> Which is what these changes are about.
+>
+> Whoever wrote the allocator and cleanup methods arranged (except for the
+> rx_ring->fbr cases) that the free method should be called on a failure.
+> It looks as if somewhere along the line of the driver development whoever
+> wrote the higher level bits didn't understand that.
+>
+> Alan
