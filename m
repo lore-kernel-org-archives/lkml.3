@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891AbaBUAjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:39:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45693 "EHLO
+	id S1757223AbaBUAkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:40:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45689 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497AbaBTXwE (ORCPT
+	with ESMTP id S1755493AbaBTXwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:04 -0500
+	Thu, 20 Feb 2014 18:52:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 03/82] fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
-Date: Thu, 20 Feb 2014 15:51:46 -0800
-Message-Id: <20140220235019.588988495@linuxfoundation.org>
+        Qipan Li <Qipan.Li@csr.com>, Barry Song <Baohua.Song@csr.com>
+Subject: [PATCH 3.12 25/82] serial: sirf: fix kernel panic caused by unpaired spinlock
+Date: Thu, 20 Feb 2014 15:52:08 -0800
+Message-Id: <20140220235020.231871475@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -33,64 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Qipan Li <Qipan.Li@csr.com>
 
-commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
+commit fb78b811422cd2d8c8605949cc4cc13618347ad5 upstream.
 
-Recently due to a spike in connections per second memcached on 3
-separate boxes triggered the OOM killer from accept.  At the time the
-OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
-problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
-hold a bitmap, and there was sufficient fragmentation that the largest
-page available was 8KiB.
+commit 8b9ade9f74f8a279 coming from Viresh Kumar "tty: serial: sirfsoc: drop
+uart_port->lock before calling tty_flip_buffer_push()" broke sirfsoc uart
+driver by knic:
 
-I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
-but I do agree that order 3 allocations are very likely to succeed.
+	[    5.129122] BUG: spinlock already unlocked on CPU#0, ip6tables/1331
+	[    5.132554]  lock: sirfsoc_uart_ports+0x4/0x8a0, .magic: dead4ead,
+	.owner: <none>/-1, .owner_cpu: -1
+	[    5.141651] CPU: 0 PID: 1331 Comm: ip6tables Tainted: G
+	W  O 3.10.16 #3
+	[    5.148866] [<c0013528>] (unwind_backtrace+0x0/0xe0) from
+	[<c0010e70>] (show_stack+0x10/0x14)
+	[    5.157362] [<c0010e70>] (show_stack+0x10/0x14) from
+	[<c01a5e68>] (do_raw_spin_unlock+0x40/0xc8)
+	[    5.166125] [<c01a5e68>] (do_raw_spin_unlock+0x40/0xc8) from
+	[<c03ff8b4>] (_raw_spin_unlock+0x8/0x40)
+	[    5.175322] [<c03ff8b4>] (_raw_spin_unlock+0x8/0x40) from
+	[<c0203fcc>] (sirfsoc_uart_pio_rx_chars+0xa4/0xc0)
+	[    5.185120] [<c0203fcc>]
+	(sirfsoc_uart_pio_rx_chars+0xa4/0xc0) from [<c0204fb8>]
+	(sirfsoc_rx_tmo_process_tl+0xdc/0x1e0)
+	[    5.195875] [<c0204fb8>]
+	(sirfsoc_rx_tmo_process_tl+0xdc/0x1e0) from [<c0024b50>]
+	(tasklet_action+0x8c/0xec)
+	[    5.205673] [<c0024b50>] (tasklet_action+0x8c/0xec) from
+	[<c00242a8>] (__do_softirq+0xec/0x1d4)
+	[    5.214347] [<c00242a8>] (__do_softirq+0xec/0x1d4) from
+	[<c0024428>] (do_softirq+0x48/0x54)
+	[    5.222674] [<c0024428>] (do_softirq+0x48/0x54) from
+	[<c0024690>] (irq_exit+0x74/0xc0)
+	[    5.230573] [<c0024690>] (irq_exit+0x74/0xc0) from
+	[<c000e1e8>] (handle_IRQ+0x6c/0x90)
+	[    5.238465] [<c000e1e8>] (handle_IRQ+0x6c/0x90) from
+	[<c000d500>] (__irq_svc+0x40/0x70)
+	[    5.246446] [<c000d500>] (__irq_svc+0x40/0x70) from
+	[<c0092e7c>] (mark_page_accessed+0xc/0x68)
+	[    5.255034] [<c0092e7c>] (mark_page_accessed+0xc/0x68) from
+	[<c00a2a4c>] (unmap_single_vma+0x3bc/0x550)
+	[    5.264402] [<c00a2a4c>] (unmap_single_vma+0x3bc/0x550) from
+	[<c00a3b4c>] (unmap_vmas+0x44/0x54)
+	[    5.273164] [<c00a3b4c>] (unmap_vmas+0x44/0x54) from
+	[<c00a81a8>] (exit_mmap+0xc4/0x1e0)
+	[    5.281233] [<c00a81a8>] (exit_mmap+0xc4/0x1e0) from
+	[<c001bb78>] (mmput+0x3c/0xdc)
+	[    5.288868] [<c001bb78>] (mmput+0x3c/0xdc) from [<c0021b0c>]
+	(do_exit+0x30c/0x828)
+	[    5.296413] [<c0021b0c>] (do_exit+0x30c/0x828) from
+	[<c0022dac>] (do_group_exit+0x4c/0xb0)
+	[    5.304653] [<c0022dac>] (do_group_exit+0x4c/0xb0) from
+	[<c0022e20>] (__wake_up_parent+0x0/0x18)
 
-There are always pathologies where order > 0 allocations can fail when
-there are copious amounts of free memory available.  Using the pigeon
-hole principle it is easy to show that it requires 1 page more than 50%
-of the pages being free to guarantee an order 1 (8KiB) allocation will
-succeed, 1 page more than 75% of the pages being free to guarantee an
-order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
-the pages being free to guarantee an order 3 allocate will succeed.
+Root cause:
+the commit dropped uart_port->lock before calling tty_flip_buffer_push(), but in sirfsoc-uart,
+sirfsoc_uart_pio_rx_chars() can be called by sirfsoc_rx_tmo_process_tl(). here uart_port->lock
+has not been taken yet. so that caused unpaired lock/unlock.
 
-A server churning memory with a lot of small requests and replies like
-memcached is a common case that if anything can will skew the odds
-against large pages being available.
+Solution:
+This patch is doing a quick fix for that, it adds spin_lock/unlock(&port->lock) protect to
+sirfsoc_uart_pio_rx_chars() in sirfsoc_rx_tmo_process_tl() to keep spin_lock/unlock in pair.
 
-Therefore let's not give external applications a practical way to kill
-linux server applications, and specify __GFP_NORETRY to the kmalloc in
-alloc_fdmem.  Unless I am misreading the code and by the time the code
-reaches should_alloc_retry in __alloc_pages_slowpath (where
-__GFP_NORETRY becomes signification).  We have already tried everything
-reasonable to allocate a page and the only thing left to do is wait.  So
-not waiting and falling back to vmalloc immediately seems like the
-reasonable thing to do even if there wasn't a chance of triggering the
-OOM killer.
-
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Qipan Li <Qipan.Li@csr.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/sirfsoc_uart.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -34,7 +34,7 @@ static void *alloc_fdmem(size_t size)
- 	 * vmalloc() if the allocation size will be considered "large" by the VM.
- 	 */
- 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
--		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
- 		if (data != NULL)
- 			return data;
- 	}
+--- a/drivers/tty/serial/sirfsoc_uart.c
++++ b/drivers/tty/serial/sirfsoc_uart.c
+@@ -540,8 +540,10 @@ static void sirfsoc_rx_tmo_process_tl(un
+ 	wr_regl(port, ureg->sirfsoc_rx_dma_io_ctrl,
+ 			rd_regl(port, ureg->sirfsoc_rx_dma_io_ctrl) |
+ 			SIRFUART_IO_MODE);
+-	sirfsoc_uart_pio_rx_chars(port, 4 - sirfport->rx_io_count);
+ 	spin_unlock_irqrestore(&sirfport->rx_lock, flags);
++	spin_lock(&port->lock);
++	sirfsoc_uart_pio_rx_chars(port, 4 - sirfport->rx_io_count);
++	spin_unlock(&port->lock);
+ 	if (sirfport->rx_io_count == 4) {
+ 		spin_lock_irqsave(&sirfport->rx_lock, flags);
+ 		sirfport->rx_io_count = 0;
 
 
