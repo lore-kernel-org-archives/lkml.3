@@ -1,35 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488AbaBTSZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 13:25:47 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:46630 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754333AbaBTSZp (ORCPT
+	id S1755506AbaBTS0g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 13:26:36 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34686 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634AbaBTS0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 13:25:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392918576.18779.10198.camel@triegel.csb>
-References: <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	<1392666947.18779.6838.camel@triegel.csb>
-	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	<20140218030002.GA15857@linux.vnet.ibm.com>
-	<CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
-	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
-	<1392740258.18779.7732.camel@triegel.csb>
-	<CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
-	<1392752867.18779.8120.camel@triegel.csb>
-	<CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
-	<20140220040102.GM4250@linux.vnet.ibm.com>
-	<CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
-	<1392918576.18779.10198.camel@triegel.csb>
-Date: Thu, 20 Feb 2014 10:25:44 -0800
-X-Google-Sender-Auth: nXBMrSztbnotnJXZ1ED4Vet3neQ
-Message-ID: <CA+55aFwV3pH+CP7Anv_YXzChL5V3_zre0+Ry-a1tJGYsbn-3iQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
+	Thu, 20 Feb 2014 13:26:34 -0500
+Date: Thu, 20 Feb 2014 10:26:28 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
         David Howells <dhowells@redhat.com>,
@@ -37,133 +18,95 @@ Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>, Mark Batty <mbatty@cl.cam.ac.uk>,
+        Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140220182628.GW4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+ <20140218030002.GA15857@linux.vnet.ibm.com>
+ <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+ <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+ <1392740258.18779.7732.camel@triegel.csb>
+ <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+ <1392752867.18779.8120.camel@triegel.csb>
+ <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+ <1392916492.18779.10136.camel@triegel.csb>
+ <CA+55aFyEEUrAz2r=nKxZxUtPVs7zoER9HukQq11UixnrYWbsjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyEEUrAz2r=nKxZxUtPVs7zoER9HukQq11UixnrYWbsjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022018-7164-0000-0000-000006429B41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 9:49 AM, Torvald Riegel <triegel@redhat.com> wrote:
->
-> Yes, mo_consume is more tricky than mo_acquire.
->
-> However, that has an advantage because you can avoid getting stronger
-> barriers if you don't need them (ie, you can avoid the "auto-update to
-> acquire" you seem to have in mind).
+On Thu, Feb 20, 2014 at 09:34:57AM -0800, Linus Torvalds wrote:
+> On Thu, Feb 20, 2014 at 9:14 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> >>
+> >> So the clarification is basically to the statement that the "if
+> >> (consume(p)) a" version *would* have an ordering guarantee between the
+> >> read of "p" and "a", but the "consume(p) ? a : b" would *not* have
+> >> such an ordering guarantee. Yes?
+> >
+> > Not as I understand it.  If my reply above wasn't clear, let me know and
+> > I'll try to rephrase it into something that is.
+> 
+> Yeah, so you and Paul agree. And as I mentioned in the email that
+> crossed with yours, I think that means that the standard is overly
+> complex, hard to understand, fragile, and all *pointlessly* so.
+> 
+> Btw, there are many ways that "use a consume as an input to a
+> conditional" can happen. In particular, even if the result is actually
+> *used* like a pointer as far as the programmer is concerned, tricks
+> like pointer compression etc can well mean that the "pointer" is
+> actually at least partly implemented using conditionals, so that some
+> paths end up being only dependent through a comparison of the pointer
+> value.
+> 
+> So I very much did *not* want to complicate the "litmus test" code
+> snippet when Paul tried to make it more complex, but I do think that
+> there are cases where code that "looks" like pure pointer chasing
+> actually is not for some cases, and then can become basically that
+> litmus test for some path.
+> 
+> Just to give you an example: in simple list handling it is not at all
+> unusual to have a special node that is discovered by comparing the
+> address, not by just loading from the pointer and following the list
+> itself. Examples of that would be a HEAD node in a doubly linked list
+> (Linux uses this concept quite widely, it's our default list
+> implementation), or it could be a place-marker ("cursor" entry) in the
+> list for safe traversal in the presence of concurrent deletes etc.
 
-Oh, I agree about that part - I very much understand the reason for
-"consume", and I can see how it is more relaxed than "acquire" under
-many circumstances.
+Yep, good example.  And also an example where the comparison does not
+need to create any particular ordering.
 
-I just think that you actually *do* want to have "consume" even for
-flag values, exactly *because* it is potentially cheaper than acquire.
+> And obviously there is the already much earlier mentioned
+> compiler-induced compare, due to value speculation, that can basically
+> create such sequences even wherethey did not originally exist in the
+> source code itself.
+> 
+> So even if you work with "pointer dereferences", and thus match that
+> particular consume pattern, I really don't see why anybody would think
+> that "hey, we can ignore any control dependencies" is a good idea.
+> It's a *TERRIBLE* idea.
+> 
+> And as mentioned, it's a terrible idea with no upsides. It doesn't
+> help compiler optimizations for the case it's *intended* to help,
+> since those optimizations can still be done without the horribly
+> broken semantics. It doesn't help compiler writers, it just confuses
+> them.
+> 
+> And it sure as hell doesn't help users.
 
-In fact, I'd argue that making consume reliable in the face of control
-dependencies is actually a *good* thing. It may not matter for
-something like x86, where consume and acquire end up with the same
-simple load, but even there it might relax instruction scheduling a
-bit, since a 'consume' would have a barrier just to the *users* of the
-value loaded, while 'acquire' would still have a scheduling barrier to
-any subsequent operations.
+Yep.  And in 2014 we know a lot more about the hardware, so could make a
+reasonable proposal.  In contrast, back in 2007 and 2008 memory ordering
+was much more of a dark art, and proposals for control dependencies
+therefore didn't get very far.
 
-So I claim that for a sequence like my example, where the reader
-basically does something like
+							Thanx, Paul
 
-   load_atomic(&initialized, consume) ? value : -1;
-
-the "consume" version can actually generate better code than "acquire"
-- if "consume" is specified the way *I* specified it.
-
-The way the C standard specifies it, the above code is *buggy*.
-Agreed? It's really really subtly buggy, and I think that bug is not
-only a real danger, I think it is logically hard to understand why.
-The bug only makes sense to people who understand how memory ordering
-and branch prediction interacts.
-
-The way *I* suggested "consume" be implemented, the above not only
-works and is sensible, it actually generates possibly better code than
-forcing the programmer to use the (illogical) "acquire" operation.
-
-Why? Let me give you another - completely realistic, even if obviously
-a bit made up - example:
-
-   int return_expensive_system_value(void)
-   {
-        static atomic_t initialized;
-        static int calculated;
-
-        if (atomic_read(&initialized, mo_consume))
-            return calculated;
-
-        //let's say that this code opens /proc/cpuinfo and counts
-number of CPU's or whatever ...
-        calculated = read_value_from_system_files();
-        atomic_write(&initialized, 1, mo_release);
-        return calculated;
-    }
-
-and let's all agree that this is a somewhat realistic example, and we
-can imagine why/how somebody would write code like this. It's
-basically a very common lazy initialization pattern, you'll find this
-in libraries, in kernels, in application code yadda yadda. No
-argument?
-
-Now, let's assume that it turns out that this value ends up being
-really performance-critical, so the programmer makes the fast-path an
-inline function, tells the compiler that "initialized" read is likely,
-and generally wants the compiler to optimize it to hell and back.
-Still sounds reasonable and realistic?
-
-In other words, the *expected* code sequence for this is (on x86,
-which doesn't need any barriers):
-
-    cmpl $0, initialized
-    je unlikely_out_of_line_case
-    movl calculated, eax
-
-and on ARM/power you'd see a 'sync' instruction or whatever.
-
-So far 'acquire' and 'consume' have exacly the same code generation on
-power of x86, so your argument can be: "Ok, so let's just use the
-inconvenient and hard-to-understand 'consume' semantics that the
-current standard has, and tell the programmer that he should use
-'acquire' and not worry his little head about the difference because
-he will never understand it anyway".
-
-Sure, that would be an inconvencience for programmers, but hey,
-they're programming in C or C++, so they are *expected* to be manly
-men or womanly women, and a little illogical inconvenience never hurt
-anybody. After all, compared to the aliasing rules, that "use acquire,
-not consume" rule is positively *simple*, no?
-
-Are we all in agreement so far?
-
-But no, the "consume" thing can actually generate better code. Trivial example:
-
-    int my_threads_value;
-    extern int magic_system_multiplier;
-
-    my_thread_value = return_expensive_system_value();
-    my_thread_value *= magic_system_multiplier;
-
-and in the "acquire" model, the "acquire" itself means that the load
-from magic_system_multiplier is now constrained by the acquire memory
-ordering on "initialized".
-
-While in my *sane* model, where you can consume things even if they
-then result in control dependencies, there will still eventually be a
-"sync" instruction on powerpc (because you really need one between the
-load of 'initialized' and the load of 'calculated'), but the compiler
-would be free to schedule the load of 'magic_system_multiplier'
-earlier.
-
-So as far as I can tell, we want the 'consume' memory ordering to
-honor *all* dependencies, because
- - it's simpler
- - it's more logical
- - it's less error-prone
- - and it allows better code generation
-
-Hmm?
-
-              Linus
