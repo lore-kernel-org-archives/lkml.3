@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaBTFty (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 00:49:54 -0500
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:1912 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750770AbaBTFtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 00:49:52 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AswVAKCWBVNXQzWw/2dsb2JhbABZKIJewQUCAoEUF3SCJQEBBAEnExwjBQsIAw4KLjkeBhOHfQwBzh8XjmQHhDgBA4lGhHqJbwGSJIM6Lw
-Date: Thu, 20 Feb 2014 05:51:15 +0800
-From: Fabian Frederick <fabf@skynet.be>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] fs: xattr: Don't display attributes without read
- access
-Message-Id: <20140220055115.9cf0cf8200efa03f1136b642@skynet.be>
-In-Reply-To: <20140218151650.02fb2d6034deb2d3d11ccc7a@linux-foundation.org>
-References: <20140216203101.bf432a8b7b40703197a91462@skynet.be>
-	<20140218151650.02fb2d6034deb2d3d11ccc7a@linux-foundation.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752422AbaBTFyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 00:54:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42951 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750705AbaBTFyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 00:54:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,510,1389772800"; 
+   d="scan'208";a="486357519"
+From: Jenny TC <jenny.tc@intel.com>
+To: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Jenny TC <jenny.tc@intel.com>, Kim Milo <Milo.Kim@ti.com>,
+        Lee Jones <lee.jones@linaro.org>, Jingoo Han <jg1.han@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        freemangordon@abv.bg, linux-omap@vger.kernel.org
+Subject: [PATCH v6 0/4] power_supply: Introduce power supply charging driver
+Date: Thu, 20 Feb 2014 11:23:56 +0530
+Message-Id: <1392875640-29230-1-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Feb 2014 15:16:50 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+v1: introduced feature as a framework within power supply class driver with
+	separate files for battid framework and charging framework
+v2: fixed review comments, moved macros and inline functions to power_supply.h
+v3: moved the feature as a separate driver, combined battid framework and
+	charging framework inside the power supply charging driver. Moved
+	charger specific properties to power_supply_charger.h and plugged the
+	driver with power supply subsystem using power_supply_notifier
+	introduced in my previous patch. Also a sample charger chip driver
+	(bq24261) patch added to give more idea on the psy charging driver
+	usage
+v4: Fixed review comments, no major design changes.
+v5: Fixed makefile inconsistencies, removed unused pdata callbacks
+v6: Fixed nested loops, commenting style
 
-> On Sun, 16 Feb 2014 20:31:01 +0800 Fabian Frederick <fabf@skynet.be> wrote:
-> 
-> > Any user can display extented attribute names without read
-> > access.
-> > 
-> > eg: attr -l <filename>
-> > 
-> > This patch checks inode_permission in listxattr common
-> > function before executing vfs_listxattr.
-> > 
-> > ...
-> >
-> > --- a/fs/xattr.c
-> > +++ b/fs/xattr.c
-> > @@ -543,6 +543,10 @@ listxattr(struct dentry *d, char __user *list, size_t size)
-> >  	char *klist = NULL;
-> >  	char *vlist = NULL;	/* If non-NULL, we used vmalloc() */
-> >  
-> > +	error = inode_permission(d->d_inode, MAY_READ);
-> > +	if (error)
-> > +		return error;
-> > +
-> >  	if (size) {
-> >  		if (size > XATTR_LIST_MAX)
-> >  			size = XATTR_LIST_MAX;
-> 
-> erk.  Doesn't this mean that if existing userspace is relying on the
-> current behaviour, this patch will cause breakage?
-> 
-FYI, I just noticed FreeBSD was giving the expected result : no attribute name revealed
- without read access .... 
+The Power Supply charging driver connects multiple subsystems
+to do charging in a generic way. The subsystems involves power_supply,
+thermal and battery communication subsystems (1wire).With this the charging is
+handled in a generic way.
+
+The driver makes use of different new features - Battery Identification
+interfaces, pluggable charging algorithms, charger cable arbitrations etc.
+The patch also introduces generic interface for charger cable notifications.
+Charger cable events and capabilities can be notified using the generic
+power_supply_notifier chain.
+
+Overall this driver removes the charging logic out of the charger chip driver
+and the charger chip driver can just listen to the request from the power
+supply charging driver to set the charger properties. This can be implemented
+by exposing get_property and set property callbacks.
+
+Jenny TC (4):
+  power_supply: Add inlmt,iterm, min/max temp props
+  power_supply: Introduce generic psy charging driver
+  power_supply: Introduce PSE compliant algorithm
+  power_supply: bq24261 charger driver
+
+ Documentation/power/power_supply_charger.txt |  353 +++++++
+ Documentation/power/power_supply_class.txt   |    6 +
+ drivers/power/Kconfig                        |   31 +
+ drivers/power/Makefile                       |    3 +
+ drivers/power/bq24261-charger.c              | 1350 ++++++++++++++++++++++++++
+ drivers/power/charging_algo_pse.c            |  204 ++++
+ drivers/power/power_supply_charger.c         | 1186 ++++++++++++++++++++++
+ drivers/power/power_supply_charger.h         |  218 +++++
+ drivers/power/power_supply_core.c            |    3 +
+ drivers/power/power_supply_sysfs.c           |    4 +
+ include/linux/power/bq24261-charger.h        |   25 +
+ include/linux/power/power_supply_charger.h   |  235 +++++
+ include/linux/power_supply.h                 |  164 ++++
+ 13 files changed, 3782 insertions(+)
+ create mode 100644 Documentation/power/power_supply_charger.txt
+ create mode 100644 drivers/power/bq24261-charger.c
+ create mode 100644 drivers/power/charging_algo_pse.c
+ create mode 100644 drivers/power/power_supply_charger.c
+ create mode 100644 drivers/power/power_supply_charger.h
+ create mode 100644 include/linux/power/bq24261-charger.h
+ create mode 100644 include/linux/power/power_supply_charger.h
+
+-- 
+1.7.9.5
+
