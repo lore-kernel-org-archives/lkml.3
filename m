@@ -1,30 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661AbaBTQPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 11:15:14 -0500
-Received: from xedge1.campus.tue.nl ([131.155.2.92]:14255 "EHLO
-	XEDGE1.campus.tue.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618AbaBTQPN convert rfc822-to-8bit (ORCPT
+	id S1755054AbaBTQSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 11:18:48 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:65425 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939AbaBTQSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 11:15:13 -0500
-X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Feb 2014 11:15:12 EST
-From: "Zheng, C." <c.zheng@student.tue.nl>
-CC: "inf@ph.ph" <inf@ph.ph>
-Subject: 
-Thread-Index: Ac8uVi3TA5mGU43yT1S7/IrSFh4YkQ==
-Date: Thu, 20 Feb 2014 16:09:48 +0000
-Message-ID: <D71EBF9B0ADF0041B0A0B02334174CA00419CA7E@XSERVER22B.campus.tue.nl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [41.203.67.135]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Feb 2014 11:18:46 -0500
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
+References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
+	<1392907779-22053-5-git-send-email-geert@linux-m68k.org>
+	<CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
+Date: Thu, 20 Feb 2014 17:18:43 +0100
+X-Google-Sender-Auth: znWM__JRRaKd0Km7FGrkP43zhEI
+Message-ID: <CAMuHMdWMJFpV_uvi4mNZYc9R8qVWqQf3QGRhdPyc+hj=6XMoJw@mail.gmail.com>
+Subject: Re: [PATCH 04/11] ARM: shmobile: lager legacy: Add MSIOF support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tengo un proyecto de caridad (500,000.00 euros) que tienes que ayudarme completa debido a mi enfermedad. Póngase en contacto conmigo en: al-shayeb_00@xd.ae<mailto:al-shayeb_00@xd.ae>
+Hi Magnus,
+
+On Thu, Feb 20, 2014 at 4:48 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> +/* MSIOF */
+>> +static const struct resource sh_msiof0_resources[] __initconst = {
+>> +       DEFINE_RES_MEM(0xe6e20000, 0x0064),
+>> +       DEFINE_RES_IRQ(gic_spi(156)),
+>> +};
+>> +
+>> +static const struct resource sh_msiof1_resources[] __initconst = {
+>> +       DEFINE_RES_MEM(0xe6e10000, 0x0064),
+>> +       DEFINE_RES_IRQ(gic_spi(157)),
+>> +};
+>> +
+>> +static const struct resource sh_msiof2_resources[] __initconst = {
+>> +       DEFINE_RES_MEM(0xe6e00000, 0x0064),
+>> +       DEFINE_RES_IRQ(gic_spi(158)),
+>> +};
+>> +
+>> +static const struct resource sh_msiof3_resources[] __initconst = {
+>> +       DEFINE_RES_MEM(0xe6c90000, 0x0064),
+>> +       DEFINE_RES_IRQ(gic_spi(159)),
+>> +};
+>> +
+>> +static const struct sh_msiof_spi_info sh_msiof_info __initconst = {
+>> +       .rx_fifo_override       = 256,
+>> +       .num_chipselect         = 1,
+>> +};
+>> +
+>> +#define r8a7790_register_msiof(idx)                                    \
+>> +       platform_device_register_resndata(&platform_bus,                \
+>> +                               "spi_r8a7790_msiof",                    \
+>> +                               (idx+1), sh_msiof##idx##_resources,     \
+>> +                               ARRAY_SIZE(sh_msiof##idx##_resources),  \
+>> +                               &sh_msiof_info,                         \
+>> +                               sizeof(struct sh_msiof_spi_info))
+>
+> That for your efforts - it's good to see the MSIOF being integrated as
+> well! I have one comment on this legacy board integration code.
+>
+> Since only MSIOF1 is used on Lager (correct me if i'm wrong), isn't it
+> best to omit the unused resources from above? In case of DT I think it
+> makes sense to define all channels in the SoC.dtsi and let the
+> SoC-board.dts just enable the channels that are used. But in this case
+> with legacy code  I think we should keep thing simple and small and
+> just enable the bits that are used on the particular board.
+>
+> The same obviously applies to the Koelsch legacy code as well. =)
+
+Note that while all resources are present, only MSIOF1 is registered on
+Lager (MSIOF0 on Koelsch). This is similar to i2c on Koelsch, which also
+has all resources, but only registers active devices.
+
+It's your preference, though, so I can adapt if you want.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
