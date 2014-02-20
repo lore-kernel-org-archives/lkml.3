@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaBTAfM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:35:12 -0500
-Received: from mga11.intel.com ([192.55.52.93]:40218 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846AbaBTAfK convert rfc822-to-8bit (ORCPT
+	id S1752731AbaBTAgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 19:36:55 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47318 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120AbaBTAgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 19:35:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,509,1389772800"; 
-   d="scan'208";a="484495810"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>
-Subject: RE: [PATCH 1/2] genirq: Fix the possible synchronize_irq()
- wait-forever
-Thread-Topic: [PATCH 1/2] genirq: Fix the possible synchronize_irq()
- wait-forever
-Thread-Index: AQHPJj5B6RR7q2/ZEEeL9ThZbool8Jq9WElg
-Date: Thu, 20 Feb 2014 00:34:51 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01C269E8@SHSMSX101.ccr.corp.intel.com>
-References: <y> <1392020037-5484-1-git-send-email-chuansheng.liu@intel.com>
- <alpine.DEB.2.02.1402100951290.21991@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1402100951290.21991@ionos.tec.linutronix.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Feb 2014 19:36:53 -0500
+Date: Thu, 20 Feb 2014 09:36:39 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Message-ID: <20140220003639.GF2669@sirena.org.uk>
+References: <20140218224433.337299968@linuxfoundation.org>
+ <53054956.4010602@samsung.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4n+RFTT0RsAMCzk1"
+Content-Disposition: inline
+In-Reply-To: <53054956.4010602@samsung.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.224.205
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3.13 00/40] 3.13.4-stable review
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas,
 
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Monday, February 10, 2014 4:58 PM
-> To: Liu, Chuansheng
-> Cc: linux-kernel@vger.kernel.org; Wang, Xiaoming
-> Subject: Re: [PATCH 1/2] genirq: Fix the possible synchronize_irq() wait-forever
-> 
-> On Mon, 10 Feb 2014, Chuansheng Liu wrote:
-> > There is below race between irq handler and irq thread:
-> > irq handler                             irq thread
-> >
-> > irq_wake_thread()                       irq_thread()
-> >   set bit RUNTHREAD
-> >   ...                                    clear bit RUNTHREAD
-> >                                          thread_fn()
-> >                                          [A]test_and_decrease
-> >                                                thread_active
-> >   [B]increase thread_active
-> >
-> > If action A is before action B, after that the thread_active
-> > will be always > 0, and for synchronize_irq() calling, which
-> > will be waiting there forever.
-> 
-> No. thread_active is 0, simply because after the atomic_dec_and_test()
-> it is -1 and the atomic_inc on the other side will bring it back to 0.
-> 
-Yes, you are right. The thread_active is back to 0 at last.
+--4n+RFTT0RsAMCzk1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The case we meet is:
-1/ T1: blocking at disable_irq() -- > sync_irq() -- > wait_event()
-[  142.678681]  [<c1a5b353>] schedule+0x23/0x60
-[  142.683466]  [<c12b24c5>] synchronize_irq+0x75/0xb0
-[  142.688931]  [<c125fad0>] ? wake_up_bit+0x30/0x30
-[  142.694201]  [<c12b33ab>] disable_irq+0x1b/0x20
-[  142.699278]  [<c17a79bc>] smb347_shutdown+0x2c/0x50
-[  142.704744]  [<c1789f7d>] i2c_device_shutdown+0x2d/0x40
-[  142.710597]  [<c1601734>] device_shutdown+0x14/0x140
-[  142.716161]  [<c12535f2>] kernel_restart_prepare+0x32/0x40
-[  142.722307]  [<c1253613>] kernel_restart+0x13/0x60
+On Wed, Feb 19, 2014 at 05:16:22PM -0700, Shuah Khan wrote:
 
-2/ The corresponding irq thread is at sleep state:
-[  587.552408] irq/388-SMB0349 S f1c47620  7276   119      2 0x00000000
-[  587.552439]  f1d6bf20 00000046 f1c47a48 f1c47620 f1d6bec4 9e91731c 00000001 c1a5f3a5
-[  587.552468]  c20469c0 00000001 c20469c0 f36559c0 f1c47620 f307bde0 c20469c0 f1d6bef0
-[  587.552497]  00000296 00000000 00000296 f1d6bef0 c1a5bfa6 f1c47620 f1d6bf14 c126e329
-[  587.552501] Call Trace:
-[  587.552519]  [<c1a5f3a5>] ? sub_preempt_count+0x55/0xe0
-[  587.552535]  [<c1a5bfa6>] ? _raw_spin_unlock_irqrestore+0x26/0x50
-[  587.552548]  [<c126e329>] ? set_cpus_allowed_ptr+0x59/0xe0
-[  587.552563]  [<c1a5b093>] schedule+0x23/0x60
-[  587.552576]  [<c12b2ae1>] irq_thread+0xa1/0x130
-[  587.552588]  [<c12b27f0>] ? irq_thread_dtor+0xa0/0xa0
+> On Intel systems, there are no dmesg regressions: emerg, crit,
+> alert, err are clean. No regressions in warn.
 
-3/ All the cpus are in the idle task;
+> On AMD systems, the following new error messages - suspect is to
+> drivers/regulator/core.c - patch
 
-So we guess the thread_active is not 0 at that time, but irq thread is doing nothing at that time.
-Thought for a long time, but there is no idea, and it is just hit once.
+> 3.13.4 - amd:
+> > sdhci-pci 0000:02:00.1: dummy supplies not allowed
+> > sdhci-pci 0000:02:00.1: dummy supplies not allowed
+> drivers/regulator/core.c - patch
 
-Appreciated if you have some idea, thanks.
+This is nothing to do with AMD or Intel, it's to do with if your system
+has a sdhci-pci device in it.  This shouldn't result in a change in
+actual behaviour, it's just a warning caused by the fact that we now do
+provide dummies for other devices.
 
+--4n+RFTT0RsAMCzk1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTBU4UAAoJELSic+t+oim9rysQAIxH/zhmycBC/JBTOU9bI0V3
+imBSbaSsgm50tNrLVQKW/+ibwJ1dZyU5sLQEjy11JvLKcIM7LMNiVm9pm8wkeMy6
+mg7TDuNYe85w6rYil938u34lxbSzqZ5jwvajxh8f5Fd8KTZeKC1k0MO6uwshPgxd
+oA1lHLbm6TupCm0k5ILo7A9PjOfbvCUpUle1FMZyTlwoX1z07C0UT8pnKg4LFYHM
+dh2L++v8uDj1AHLZgSjOfqCR7iSySGmqYRTP8ppjL01TB386R0EqlrCHhOPqk3Xi
+B4gD0I3srjopZESTMYl7iCRVpJUWmISH1fDURqzkha3T/iFh0rQYlt4UCwSj8I+j
+82AqXabgKFJIR16isXXOu0RRSonQipHL+dBaOlOdARj/aI7U4GVAfVB5MmOmGO09
+cxdRecwRZmS40+SLig2qv+hg9jOCprtOeY5cEx89FS0U/15CYj/yHaYV8lOkY4HV
+nk9iQg+0W959WXKROmjLEgO5vdWH7nQW0hxz1t+X2MI6AUGjboJi9Ka7JR5PK8M6
+sfq79MV5ut236Ee/XVAZIR8JxUxG/MoVpA2qSU06mbTMsKx4TCu0q0VO+V9tR2LX
+oKC/pvNyyWoSBi8771O0nnFtewhSpUpygNbu39KxVvGJtg5PcgVURjvm1WDTr+G6
+IsgVxJBHe1haf2efl9vo
+=eqTf
+-----END PGP SIGNATURE-----
+
+--4n+RFTT0RsAMCzk1--
