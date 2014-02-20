@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366AbaBTKd6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 05:33:58 -0500
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:49172 "EHLO
+	id S1753332AbaBTKd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 05:33:57 -0500
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:49174 "EHLO
 	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751622AbaBTKdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752334AbaBTKdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 05:33:11 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: rostedt@goodmis.org
 Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 4/6] ftrace: do not pass data to ftrace_dyn_arch_init
-Date: Thu, 20 Feb 2014 11:33:05 +0100
-Message-Id: <1392892387-26826-4-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 3/6] ftrace: pass retval through return in ftrace_dyn_arch_init
+Date: Thu, 20 Feb 2014 11:33:04 +0100
+Message-Id: <1392892387-26826-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1392892387-26826-1-git-send-email-jslaby@suse.cz>
 References: <1392892387-26826-1-git-send-email-jslaby@suse.cz>
@@ -21,238 +21,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the data parameter is not really used by any ftrace_dyn_arch_init,
-remove that from ftrace_dyn_arch_init. This also removes the addr
-local variable from ftrace_init which is now unused.
+No ftrace_dyn_arch_init uses the value in the "data" parameter in any
+way, it just sets the value to 0. And this is used as a return value
+in the caller -- ftrace_init, which just checks the retval against
+zero.
 
-Note the documentation was imprecise as it did not suggest to set
-(*data) to 0.
+Note there is also "return 0" in every ftrace_dyn_arch_init.  So it is
+enough to check the retval and remove all the indirect sets of data on
+all archs.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
 ---
- Documentation/trace/ftrace-design.txt | 2 +-
- arch/arm/kernel/ftrace.c              | 2 +-
- arch/blackfin/kernel/ftrace.c         | 2 +-
- arch/ia64/kernel/ftrace.c             | 2 +-
- arch/metag/kernel/ftrace.c            | 2 +-
- arch/microblaze/kernel/ftrace.c       | 2 +-
- arch/mips/kernel/ftrace.c             | 2 +-
- arch/powerpc/kernel/ftrace.c          | 2 +-
- arch/s390/kernel/ftrace.c             | 2 +-
- arch/sh/kernel/ftrace.c               | 2 +-
- arch/sparc/kernel/ftrace.c            | 2 +-
- arch/tile/kernel/ftrace.c             | 2 +-
- arch/x86/kernel/ftrace.c              | 2 +-
- include/linux/ftrace.h                | 2 +-
- kernel/trace/ftrace.c                 | 7 ++-----
- 15 files changed, 16 insertions(+), 19 deletions(-)
+ Documentation/trace/ftrace-design.txt | 3 ---
+ arch/arm/kernel/ftrace.c              | 2 --
+ arch/blackfin/kernel/ftrace.c         | 3 ---
+ arch/ia64/kernel/ftrace.c             | 2 --
+ arch/metag/kernel/ftrace.c            | 3 ---
+ arch/microblaze/kernel/ftrace.c       | 3 ---
+ arch/mips/kernel/ftrace.c             | 3 ---
+ arch/powerpc/kernel/ftrace.c          | 5 -----
+ arch/s390/kernel/ftrace.c             | 1 -
+ arch/sh/kernel/ftrace.c               | 3 ---
+ arch/sparc/kernel/ftrace.c            | 4 ----
+ arch/tile/kernel/ftrace.c             | 2 --
+ arch/x86/kernel/ftrace.c              | 3 ---
+ kernel/trace/ftrace.c                 | 6 ++----
+ 14 files changed, 2 insertions(+), 41 deletions(-)
 
 diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
-index 117168884023..3f669b9e8852 100644
+index 79fcafc7fd64..117168884023 100644
 --- a/Documentation/trace/ftrace-design.txt
 +++ b/Documentation/trace/ftrace-design.txt
-@@ -358,7 +358,7 @@ Every arch has an init callback function.  If you need to do something early on
- to initialize some state, this is the time to do that.  Otherwise, this simple
- function below should be sufficient for most people:
+@@ -360,9 +360,6 @@ function below should be sufficient for most people:
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	/* return value is done indirectly via data */
+-	*(unsigned long *)data = 0;
+-
  	return 0;
  }
+ 
 diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
-index 5cd0d05edf35..c108ddcb9ba4 100644
+index 34e56647dcee..5cd0d05edf35 100644
 --- a/arch/arm/kernel/ftrace.c
 +++ b/arch/arm/kernel/ftrace.c
-@@ -156,7 +156,7 @@ int ftrace_make_nop(struct module *mod,
- 	return ret;
- }
+@@ -158,8 +158,6 @@ int ftrace_make_nop(struct module *mod,
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	*(unsigned long *)data = 0;
+-
  	return 0;
  }
+ #endif /* CONFIG_DYNAMIC_FTRACE */
 diff --git a/arch/blackfin/kernel/ftrace.c b/arch/blackfin/kernel/ftrace.c
-index f74c5ae6a25b..095de0fa044d 100644
+index 9277905b82cf..f74c5ae6a25b 100644
 --- a/arch/blackfin/kernel/ftrace.c
 +++ b/arch/blackfin/kernel/ftrace.c
-@@ -65,7 +65,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 	return ftrace_modify_code(ip, call, sizeof(call));
- }
+@@ -67,9 +67,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	/* return value is done indirectly via data */
+-	*(unsigned long *)data = 0;
+-
  	return 0;
  }
+ 
 diff --git a/arch/ia64/kernel/ftrace.c b/arch/ia64/kernel/ftrace.c
-index cfaa93a8bbdf..3b0c2aa07857 100644
+index 7fc8c961b1f7..cfaa93a8bbdf 100644
 --- a/arch/ia64/kernel/ftrace.c
 +++ b/arch/ia64/kernel/ftrace.c
-@@ -198,7 +198,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- }
- 
+@@ -200,7 +200,5 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
  /* run from kstop_machine */
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	*(unsigned long *)data = 0;
+-
  	return 0;
  }
 diff --git a/arch/metag/kernel/ftrace.c b/arch/metag/kernel/ftrace.c
-index bf593932b353..ed1d685157c2 100644
+index a774f321643f..bf593932b353 100644
 --- a/arch/metag/kernel/ftrace.c
 +++ b/arch/metag/kernel/ftrace.c
-@@ -117,7 +117,7 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
- }
- 
+@@ -119,8 +119,5 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
  /* run from kstop_machine */
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	/* The return code is returned via data */
+-	writel(0, data);
+-
  	return 0;
  }
 diff --git a/arch/microblaze/kernel/ftrace.c b/arch/microblaze/kernel/ftrace.c
-index ffa595c7fec2..bbcd2533766c 100644
+index e8a5e9cf4ed1..ffa595c7fec2 100644
 --- a/arch/microblaze/kernel/ftrace.c
 +++ b/arch/microblaze/kernel/ftrace.c
-@@ -171,7 +171,7 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
- 	return ret;
- }
+@@ -173,9 +173,6 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	/* The return code is retured via data */
+-	*(unsigned long *)data = 0;
+-
  	return 0;
  }
+ 
 diff --git a/arch/mips/kernel/ftrace.c b/arch/mips/kernel/ftrace.c
-index 42a675ae0155..ee7ecb170d7f 100644
+index ddcc3500248d..42a675ae0155 100644
 --- a/arch/mips/kernel/ftrace.c
 +++ b/arch/mips/kernel/ftrace.c
-@@ -202,7 +202,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 	return ftrace_modify_code(FTRACE_CALL_IP, new);
- }
+@@ -210,9 +210,6 @@ int __init ftrace_dyn_arch_init(void *data)
+ 	/* Remove "b ftrace_stub" to ensure ftrace_caller() is executed */
+ 	ftrace_modify_code(MCOUNT_ADDR, INSN_NOP);
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
- {
- 	/* Encode the instructions when booting */
- 	ftrace_dyn_arch_init_insns();
+-	/* The return code is retured via data */
+-	*(unsigned long *)data = 0;
+-
+ 	return 0;
+ }
+ #endif	/* CONFIG_DYNAMIC_FTRACE */
 diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
-index d059664cdf16..71ce4cbb7e9f 100644
+index 9b27b293a922..d059664cdf16 100644
 --- a/arch/powerpc/kernel/ftrace.c
 +++ b/arch/powerpc/kernel/ftrace.c
-@@ -531,7 +531,7 @@ void arch_ftrace_update_code(int command)
- 		ftrace_disable_ftrace_graph_caller();
- }
+@@ -533,11 +533,6 @@ void arch_ftrace_update_code(int command)
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	/* caller expects data to be zero */
+-	unsigned long *p = data;
+-
+-	*p = 0;
+-
  	return 0;
  }
+ #endif /* CONFIG_DYNAMIC_FTRACE */
 diff --git a/arch/s390/kernel/ftrace.c b/arch/s390/kernel/ftrace.c
-index 77b2f3a1f50a..54d6493c4a56 100644
+index 224db03e9518..77b2f3a1f50a 100644
 --- a/arch/s390/kernel/ftrace.c
 +++ b/arch/s390/kernel/ftrace.c
-@@ -130,7 +130,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+@@ -132,7 +132,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 
+ int __init ftrace_dyn_arch_init(void *data)
+ {
+-	*(unsigned long *) data = 0;
  	return 0;
  }
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
- {
- 	return 0;
- }
 diff --git a/arch/sh/kernel/ftrace.c b/arch/sh/kernel/ftrace.c
-index 493997541d2c..3c74f53db6db 100644
+index 30e13196d35b..493997541d2c 100644
 --- a/arch/sh/kernel/ftrace.c
 +++ b/arch/sh/kernel/ftrace.c
-@@ -272,7 +272,7 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
- 	return ftrace_modify_code(rec->ip, old, new);
- }
+@@ -274,9 +274,6 @@ int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	/* The return code is retured via data */
+-	__raw_writel(0, (unsigned long)data);
+-
  	return 0;
  }
+ #endif /* CONFIG_DYNAMIC_FTRACE */
 diff --git a/arch/sparc/kernel/ftrace.c b/arch/sparc/kernel/ftrace.c
-index ee813b82da49..0a2d2ddff543 100644
+index 03ab022e51c5..ee813b82da49 100644
 --- a/arch/sparc/kernel/ftrace.c
 +++ b/arch/sparc/kernel/ftrace.c
-@@ -82,7 +82,7 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 	return ftrace_modify_code(ip, old, new);
- }
+@@ -84,10 +84,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	unsigned long *p = data;
+-
+-	*p = 0;
+-
  	return 0;
  }
+ #endif
 diff --git a/arch/tile/kernel/ftrace.c b/arch/tile/kernel/ftrace.c
-index 34d9ea0bca9f..8d52d83cc516 100644
+index f1c452092eeb..34d9ea0bca9f 100644
 --- a/arch/tile/kernel/ftrace.c
 +++ b/arch/tile/kernel/ftrace.c
-@@ -167,7 +167,7 @@ int ftrace_make_nop(struct module *mod,
- 	return ret;
- }
+@@ -169,8 +169,6 @@ int ftrace_make_nop(struct module *mod,
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	*(unsigned long *)data = 0;
+-
  	return 0;
  }
+ #endif /* CONFIG_DYNAMIC_FTRACE */
 diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index a41f31f1cdc1..e69c177d3496 100644
+index e6253195a301..a41f31f1cdc1 100644
 --- a/arch/x86/kernel/ftrace.c
 +++ b/arch/x86/kernel/ftrace.c
-@@ -678,7 +678,7 @@ void arch_ftrace_update_code(int command)
- 	atomic_dec(&modifying_ftrace_code);
- }
+@@ -680,9 +680,6 @@ void arch_ftrace_update_code(int command)
  
--int __init ftrace_dyn_arch_init(void *data)
-+int __init ftrace_dyn_arch_init(void)
+ int __init ftrace_dyn_arch_init(void *data)
  {
+-	/* The return code is retured via data */
+-	*(unsigned long *)data = 0;
+-
  	return 0;
  }
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index f4233b195dab..c0e7df8b4cf0 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -409,7 +409,7 @@ ftrace_set_early_filter(struct ftrace_ops *ops, char *buf, int enable);
- 
- /* defined in arch */
- extern int ftrace_ip_converted(unsigned long ip);
--extern int ftrace_dyn_arch_init(void *data);
-+extern int ftrace_dyn_arch_init(void);
- extern void ftrace_replace_code(int enable);
- extern int ftrace_update_ftrace_func(ftrace_func_t func);
- extern void ftrace_caller(void);
+ #endif
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 73ba52907cd9..6e30412a5902 100644
+index 2938a14ae326..73ba52907cd9 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -4334,14 +4334,11 @@ void __init ftrace_init(void)
- {
- 	extern unsigned long __start_mcount_loc[];
- 	extern unsigned long __stop_mcount_loc[];
--	unsigned long count, addr, flags;
-+	unsigned long count, flags;
- 	int ret;
+@@ -4341,11 +4341,9 @@ void __init ftrace_init(void)
+ 	addr = (unsigned long)ftrace_stub;
  
--	/* Keep the ftrace pointer to the stub */
--	addr = (unsigned long)ftrace_stub;
--
  	local_irq_save(flags);
--	ret = ftrace_dyn_arch_init(&addr);
-+	ret = ftrace_dyn_arch_init();
+-	ftrace_dyn_arch_init(&addr);
++	ret = ftrace_dyn_arch_init(&addr);
  	local_irq_restore(flags);
- 	if (ret)
+-
+-	/* ftrace_dyn_arch_init places the return code in addr */
+-	if (addr)
++	if (ret)
  		goto failed;
+ 
+ 	count = __stop_mcount_loc - __start_mcount_loc;
 -- 
 1.8.5.2
 
