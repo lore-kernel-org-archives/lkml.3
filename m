@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaBTUQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:16:27 -0500
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:51747
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752516AbaBTUQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:16:25 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "rja@sgi.com" <rja@sgi.com>
-CC: "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "minyard@acm.org" <minyard@acm.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
-Thread-Topic: [PATCH V2] Change ACPI IPMI support to "default y"
-Thread-Index: AQHPLMZ9xGM3QUTlOk+rIS3zgvGkBZq+l00AgAAAY4A=
-Date: Thu, 20 Feb 2014 20:16:22 +0000
-Message-ID: <1392927381.20109.0.camel@x230>
-References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
-	 <20140220201458.GA7099@sgi.com>
-In-Reply-To: <20140220201458.GA7099@sgi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 01283822F8
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(377424004)(199002)(189002)(24454002)(80976001)(47976001)(76786001)(85306002)(77982001)(46102001)(47446002)(86362001)(87936001)(49866001)(81542001)(4396001)(95666003)(92726001)(87266001)(19580405001)(83322001)(69226001)(31966008)(81342001)(74662001)(74502001)(33716001)(74366001)(19580395003)(85852003)(51856001)(93136001)(56816005)(92566001)(65816001)(90146001)(80022001)(94316002)(63696002)(76482001)(77096001)(54316002)(2656002)(76796001)(47736001)(50986001)(79102001)(33646001)(59766001)(83072002)(93516002)(54356001)(53806001)(74706001)(95416001)(56776001)(81816001)(94946001)(81686001)(74876001)(3826001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB422;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:F50F0ED.18128C2B.2D70954E.84E2BA79.20105;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <03BC048BC73B2748AE00745B7268741B@namprd05.prod.outlook.com>
+	id S1752288AbaBTUYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:24:31 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:64654 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaBTUY3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 15:24:29 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+In-Reply-To: <20140220091958.62a8b444@nehalam.linuxnetplumber.net>
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
+ <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com>
+ <20140216105754.63738163@nehalam.linuxnetplumber.net> <CAB=NE6WwbOXNLO_Mn42i7y62pEsmDOWd35B621eiJk4iaE3Hfg@mail.gmail.com>
+ <1392803559.23084.99.camel@kazak.uk.xensource.com> <5304C13F.3030802@citrix.com>
+ <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com>
+ <20140219090855.610c0e04@nehalam.linuxnetplumber.net> <CAB=NE6UAqoiFAJdckE1d7cgMZnU6_=8X+N=tSc6qH2bgH08M7Q@mail.gmail.com>
+ <20140220091958.62a8b444@nehalam.linuxnetplumber.net>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 20 Feb 2014 12:24:06 -0800
+X-Google-Sender-Auth: OtBwFC_pfcZ9FKghoEwF8OFUnAs
+Message-ID: <CAB=NE6WnMFkH7JPNt+ROiWEvhvZ03vdGr21STf75DV9fRaK=PA@mail.gmail.com>
+Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
+ from becoming the root bridge
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        bridge@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel@lists.xenproject.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1KKGVwk021249
 
-On Thu, 2014-02-20 at 14:14 -0600, Russ Anderson wrote:
+On Thu, Feb 20, 2014 at 9:19 AM, Stephen Hemminger
+<stephen@networkplumber.org> wrote:
+> On Wed, 19 Feb 2014 09:59:33 -0800 "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
+>> On Wed, Feb 19, 2014 at 9:08 AM, Stephen Hemminger <stephen@networkplumber.org> wrote:
+>> >
+>> > Please only use the netlink/sysfs flags fields that already exist
+>> > for new features.
+>>
+>> Sure, but what if we know a driver in most cases wants the root block
+>> and we'd want to make it the default, thereby only requiring userspace
+>> for toggling it off.
+>
+> Something in userspace has to put the device into the bridge.
+> Fix the port setup in that tool via the netlink or sysfs flags in
+> the bridge. It should not have to be handled in the bridge looking
+> at magic flags in the device.
 
-> The distro that added this change created all sorts of support
-> problems.  Problems include kipmi0 spinning at 100% of cpu
-> (creating a performance hit) and long boot delays (as the
-> kernel tries to talk to a BMC that will never respond).
-> It has been a big mess.
+Agreed that's the best strategy and I'll work on sending patches to
+brctl to enable the root_block preference. This approach however also
+requires a userspace upgrade. I'm trying to see if we can get an
+old-nasty-cryptic-hack practice removed from the kernel and we'd try
+to prevent future drivers from using it -- without requiring userspace
+upgrade. In this case the bad practice is to using a high static MAC
+address for mimicking a root block default preference. In order to
+remove that *without* requiring a userspace upgrade the dev->priv_flag
+approach is the only thing I can think of. If this would go in we'd
+replace the high static MAC address with a random MAC address to
+prevent IPv6 SLAAC / DAD conflicts. I'd document this flag and
+indicate with preference for userspace to be the one tuning these
+knobs.
 
-Why is the BMC not responding? Why is kipmi0 at 100%? Why are we not
-fixing those bugs?
+Without this we'd have to keep the high static MAC address on upstream
+drivers and let userspace do the random'ization if it confirms the
+userspace knob to turn the root block flag is available. Is the
+priv_flag approach worth the compromise to remove the root block hack
+practice?
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+  Luis
