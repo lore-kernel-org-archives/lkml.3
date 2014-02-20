@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114AbaBUAMl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:12:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46086 "EHLO
+	id S1755978AbaBTXxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46042 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990AbaBTXx1 (ORCPT
+	with ESMTP id S1755940AbaBTXxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:27 -0500
+	Thu, 20 Feb 2014 18:53:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
-        David Herrmann <dh.herrmann@gmail.com>, Werner Fink <werner@suse.de>,
-        Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 3.13 35/99] tty: Set correct tty name in active sysfs attribute
-Date: Thu, 20 Feb 2014 15:52:30 -0800
-Message-Id: <20140220235119.236520201@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.13 26/99] iwlwifi: mvm: BT Coex - disable BT when TXing probe request in scan
+Date: Thu, 20 Feb 2014 15:52:21 -0800
+Message-Id: <20140220235118.974945667@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -31,91 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit d8a5dc3033af2fd6d16030d2ee4fbd073460fe54 upstream.
+commit 8e2a866ef214af4e104ec8d593e3269d8fe66d19 upstream.
 
-The 'active' sysfs attribute should refer to the currently active tty
-devices the console is running on, not the currently active console.
+Not doing so will let BT kill our probe requests leading to
+failures in scan.
 
-The console structure doesn't refer to any device in sysfs, only the tty
-the console is running on has.  So we need to print out the tty names in
-'active', not the console names.
-
-This resolves an issue on s390 platforms in determining the correct
-console device to use.
-
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Werner Fink <werner@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/ABI/testing/sysfs-tty |    3 ++-
- drivers/tty/tty_io.c                |   25 ++++++++++++++++++-------
- 2 files changed, 20 insertions(+), 8 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/scan.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/Documentation/ABI/testing/sysfs-tty
-+++ b/Documentation/ABI/testing/sysfs-tty
-@@ -3,7 +3,8 @@ Date:		Nov 2010
- Contact:	Kay Sievers <kay.sievers@vrfy.org>
- Description:
- 		 Shows the list of currently configured
--		 console devices, like 'tty1 ttyS0'.
-+		 tty devices used for the console,
-+		 like 'tty1 ttyS0'.
- 		 The last entry in the file is the active
- 		 device connected to /dev/console.
- 		 The file supports poll() to detect virtual
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1267,16 +1267,17 @@ static void pty_line_name(struct tty_dri
-  *	@p: output buffer of at least 7 bytes
-  *
-  *	Generate a name from a driver reference and write it to the output
-- *	buffer.
-+ *	buffer. Return the number of bytes written.
-  *
-  *	Locking: None
-  */
--static void tty_line_name(struct tty_driver *driver, int index, char *p)
-+static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
- {
- 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
--		strcpy(p, driver->name);
-+		return sprintf(p, "%s", driver->name);
- 	else
--		sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+		return sprintf(p, "%s%d", driver->name,
-+			       index + driver->name_base);
- }
+--- a/drivers/net/wireless/iwlwifi/mvm/scan.c
++++ b/drivers/net/wireless/iwlwifi/mvm/scan.c
+@@ -325,7 +325,8 @@ int iwl_mvm_scan_request(struct iwl_mvm
  
- /**
-@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct d
- 		if (i >= ARRAY_SIZE(cs))
- 			break;
- 	}
--	while (i--)
--		count += sprintf(buf + count, "%s%d%c",
--				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
-+	while (i--) {
-+		struct tty_driver *driver;
-+		const char *name = cs[i]->name;
-+		int index = cs[i]->index;
-+
-+		driver = cs[i]->device(cs[i], &index);
-+		if (driver) {
-+			count += tty_line_name(driver, index, buf + count);
-+			count += sprintf(buf + count, "%c", i ? ' ':'\n');
-+		} else
-+			count += sprintf(buf + count, "%s%d%c",
-+					 name, index, i ? ' ':'\n');
-+	}
- 	console_unlock();
+ 	iwl_mvm_scan_fill_ssids(cmd, req, basic_ssid ? 1 : 0);
  
- 	return count;
+-	cmd->tx_cmd.tx_flags = cpu_to_le32(TX_CMD_FLG_SEQ_CTL);
++	cmd->tx_cmd.tx_flags = cpu_to_le32(TX_CMD_FLG_SEQ_CTL |
++					   TX_CMD_FLG_BT_DIS);
+ 	cmd->tx_cmd.sta_id = mvm->aux_sta.sta_id;
+ 	cmd->tx_cmd.life_time = cpu_to_le32(TX_CMD_LIFE_TIME_INFINITE);
+ 	cmd->tx_cmd.rate_n_flags =
 
 
