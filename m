@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665AbaBTXw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45775 "EHLO
+	id S1755969AbaBUAcb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:32:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45802 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610AbaBTXwV (ORCPT
+	with ESMTP id S1755610AbaBTXw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:21 -0500
+	Thu, 20 Feb 2014 18:52:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.12 45/82] ftrace/x86: Use breakpoints for converting function graph caller
-Date: Thu, 20 Feb 2014 15:52:28 -0800
-Message-Id: <20140220235020.827159739@linuxfoundation.org>
+        Ulrich Hahn <uhahn@eanco.de>, Johan Hovold <johan@hovold.com>
+Subject: [PATCH 3.12 52/82] USB: ftdi_sio: add Tagsys RFID Reader IDs
+Date: Thu, 20 Feb 2014 15:52:35 -0800
+Message-Id: <20140220235021.047079352@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,189 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Ulrich Hahn <uhahn@eanco.de>
 
-commit 87fbb2ac6073a7039303517546a76074feb14c84 upstream.
+commit 76f24e3f39a1a94bab0d54e98899d64abcd9f69c upstream.
 
-When the conversion was made to remove stop machine and use the breakpoint
-logic instead, the modification of the function graph caller is still
-done directly as though it was being done under stop machine.
+Adding two more IDs to the ftdi_sio usb serial driver.
+It now connects Tagsys RFID readers.
+There might be more IDs out there for other Tagsys models.
 
-As it is not converted via stop machine anymore, there is a possibility
-that the code could be layed across cache lines and if another CPU is
-accessing that function graph call when it is being updated, it could
-cause a General Protection Fault.
-
-Convert the update of the function graph caller to use the breakpoint
-method as well.
-
-Cc: H. Peter Anvin <hpa@zytor.com>
-Fixes: 08d636b6d4fb "ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Ulrich Hahn <uhahn@eanco.de>
+Cc: Johan Hovold <johan@hovold.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ftrace.c |   83 ++++++++++++++++++++++++++---------------------
- 1 file changed, 47 insertions(+), 36 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -77,8 +77,7 @@ within(unsigned long addr, unsigned long
- 	return addr >= start && addr < end;
- }
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -193,6 +193,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_LP101_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_P200X_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_LENZ_LIUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_632_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_634_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -364,6 +364,12 @@
+ /* Sprog II (Andrew Crosland's SprogII DCC interface) */
+ #define FTDI_SPROG_II		0xF0C8
  
--static int
--do_ftrace_mod_code(unsigned long ip, const void *new_code)
-+static unsigned long text_ip_addr(unsigned long ip)
- {
- 	/*
- 	 * On x86_64, kernel text mappings are mapped read-only with
-@@ -91,7 +90,7 @@ do_ftrace_mod_code(unsigned long ip, con
- 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
- 		ip = (unsigned long)__va(__pa_symbol(ip));
- 
--	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
-+	return ip;
- }
- 
- static const unsigned char *ftrace_nop_replace(void)
-@@ -123,8 +122,10 @@ ftrace_modify_code_direct(unsigned long
- 	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
- 		return -EINVAL;
- 
-+	ip = text_ip_addr(ip);
++/*
++ * Two of the Tagsys RFID Readers
++ */
++#define FTDI_TAGSYS_LP101_PID	0xF0E9	/* Tagsys L-P101 RFID*/
++#define FTDI_TAGSYS_P200X_PID	0xF0EE	/* Tagsys Medio P200x RFID*/
 +
- 	/* replace the text with the new text */
--	if (do_ftrace_mod_code(ip, new_code))
-+	if (probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE))
- 		return -EPERM;
+ /* an infrared receiver for user access control with IR tags */
+ #define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
  
- 	sync_core();
-@@ -221,37 +222,51 @@ int ftrace_modify_call(struct dyn_ftrace
- 	return -EINVAL;
- }
- 
--int ftrace_update_ftrace_func(ftrace_func_t func)
-+static unsigned long ftrace_update_func;
-+
-+static int update_ftrace_func(unsigned long ip, void *new)
- {
--	unsigned long ip = (unsigned long)(&ftrace_call);
--	unsigned char old[MCOUNT_INSN_SIZE], *new;
-+	unsigned char old[MCOUNT_INSN_SIZE];
- 	int ret;
- 
--	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
--	new = ftrace_call_replace(ip, (unsigned long)func);
-+	memcpy(old, (void *)ip, MCOUNT_INSN_SIZE);
-+
-+	ftrace_update_func = ip;
-+	/* Make sure the breakpoints see the ftrace_update_func update */
-+	smp_wmb();
- 
- 	/* See comment above by declaration of modifying_ftrace_code */
- 	atomic_inc(&modifying_ftrace_code);
- 
- 	ret = ftrace_modify_code(ip, old, new);
- 
-+	atomic_dec(&modifying_ftrace_code);
-+
-+	return ret;
-+}
-+
-+int ftrace_update_ftrace_func(ftrace_func_t func)
-+{
-+	unsigned long ip = (unsigned long)(&ftrace_call);
-+	unsigned char *new;
-+	int ret;
-+
-+	new = ftrace_call_replace(ip, (unsigned long)func);
-+	ret = update_ftrace_func(ip, new);
-+
- 	/* Also update the regs callback function */
- 	if (!ret) {
- 		ip = (unsigned long)(&ftrace_regs_call);
--		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
- 		new = ftrace_call_replace(ip, (unsigned long)func);
--		ret = ftrace_modify_code(ip, old, new);
-+		ret = update_ftrace_func(ip, new);
- 	}
- 
--	atomic_dec(&modifying_ftrace_code);
--
- 	return ret;
- }
- 
- static int is_ftrace_caller(unsigned long ip)
- {
--	if (ip == (unsigned long)(&ftrace_call) ||
--		ip == (unsigned long)(&ftrace_regs_call))
-+	if (ip == ftrace_update_func)
- 		return 1;
- 
- 	return 0;
-@@ -677,45 +692,41 @@ int __init ftrace_dyn_arch_init(void *da
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern void ftrace_graph_call(void);
- 
--static int ftrace_mod_jmp(unsigned long ip,
--			  int old_offset, int new_offset)
-+static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
- {
--	unsigned char code[MCOUNT_INSN_SIZE];
-+	static union ftrace_code_union calc;
- 
--	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
-+	/* Jmp not a call (ignore the .e8) */
-+	calc.e8		= 0xe9;
-+	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- 
--	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
--		return -EINVAL;
-+	/*
-+	 * ftrace external locks synchronize the access to the static variable.
-+	 */
-+	return calc.code;
-+}
- 
--	*(int *)(&code[1]) = new_offset;
-+static int ftrace_mod_jmp(unsigned long ip, void *func)
-+{
-+	unsigned char *new;
- 
--	if (do_ftrace_mod_code(ip, &code))
--		return -EPERM;
-+	new = ftrace_jmp_replace(ip, (unsigned long)func);
- 
--	return 0;
-+	return update_ftrace_func(ip, new);
- }
- 
- int ftrace_enable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
--
--	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_mod_jmp(ip, &ftrace_graph_caller);
- }
- 
- int ftrace_disable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
--
--	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_mod_jmp(ip, &ftrace_stub);
- }
- 
- #endif /* !CONFIG_DYNAMIC_FTRACE */
 
 
