@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586AbaBTMPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 07:15:12 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31373 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562AbaBTMPK (ORCPT
+	id S1752882AbaBTMXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 07:23:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59688 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214AbaBTMXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 07:15:10 -0500
-Date: Thu, 20 Feb 2014 15:14:35 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: =?utf-8?B?6buD5riF6ZqG?= <ching2048@areca.com.tw>
-Cc: jejb@kernel.com, jbottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com,
-        Tomas Henzl <thenzl@redhat.com>,
-        =?utf-8?B?5ZCz56Kn5ra8?= <billion.wu@areca.com.tw>
-Subject: Re: [PATCH v1.3 1/11] arcmsr: Revise interrupt service routine to
- fix command timeout
-Message-ID: <20140220121435.GY26776@mwanda>
-References: <CAKiknE9pf-hQOTcxbw8WnHECDJDZMHJA-TBEPeg7+q5nb+AoCA@mail.gmail.com>
+	Thu, 20 Feb 2014 07:23:30 -0500
+Date: Thu, 20 Feb 2014 13:23:13 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lei Wen <leiwen@marvell.com>
+Cc: mingo@redhat.com, preeti.lkml@gmail.com, daniel.lezcano@linaro.org,
+        viresh.kumar@linaro.org, xjian@marvell.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: keep quiescent cpu out of idle balance loop
+Message-ID: <20140220122311.GO27965@twins.programming.kicks-ass.net>
+References: <20140220085017.GL6835@laptop.programming.kicks-ass.net>
+ <1392887824-20138-1-git-send-email-leiwen@marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKiknE9pf-hQOTcxbw8WnHECDJDZMHJA-TBEPeg7+q5nb+AoCA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1392887824-20138-1-git-send-email-leiwen@marvell.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 08:05:05PM +0800, 黃清隆 wrote:
-> From: Ching <ching2048@areca.com.tw>
+On Thu, Feb 20, 2014 at 05:17:04PM +0800, Lei Wen wrote:
+> +++ b/kernel/sched/fair.c
+> @@ -6883,6 +6883,13 @@ void nohz_balance_enter_idle(int cpu)
+>  	if (!cpu_active(cpu))
+>  		return;
+>  
+> +	/*
+> +	 * If this cpu is kept outside of root domain, we don't bother
+> +	 * to ask it for nohz balance.
+> +	 */
+> +	if (!cpumask_test_cpu(cpu, this_rq()->rd.span))
+
+ rd->span
+
+Otherwise the compiler gets upset. Fixed it.
+
+> +		return;
+> +
+>  	if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
+>  		return;
+>  
+> -- 
+> 1.8.3.2
 > 
-> Rewrite interrupt service routine to fix command timeout on controller too
-> heavy loading.
-> 
-> Singed-off-by: Ching <ching2048@areca.com.tw>
-
-Your email client screwed up the whitespace completely.  Read
-Documentation/email-clients.txt or use `git send-email`
-http://www.freedesktop.org/wiki/Software/PulseAudio/HowToUseGitSendEmail/
-
-There are also many unrelated white space changes in this patch.
-
-regards,
-dan carpenter
-
