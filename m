@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889AbaBUAYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:24:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45943 "EHLO
+	id S1756892AbaBUAY1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:24:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45937 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876AbaBTXw4 (ORCPT
+	with ESMTP id S1755866AbaBTXwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:56 -0500
+	Thu, 20 Feb 2014 18:52:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH 3.12 74/82] i2c: mv64xxx: refactor message start to ensure proper initialization
-Date: Thu, 20 Feb 2014 15:52:57 -0800
-Message-Id: <20140220235021.701011869@linuxfoundation.org>
+        linux-raid@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.12 73/82] md/raid5: Fix CPU hotplug callback registration
+Date: Thu, 20 Feb 2014 15:52:56 -0800
+Message-Id: <20140220235021.672984378@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,97 +30,196 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 79970db213344b4a4034645db5ebfc31571f3fa3 upstream.
+commit 789b5e0315284463617e106baad360cb9e8db3ac upstream.
 
-Because the offload mechanism can fall back to a standard transfer,
-having two seperate initialization states is unfortunate. Let's just
-have one state which does things consistently. This fixes a bug where
-some preparation was missing when the fallback happened. And it makes
-the code much easier to follow. To implement this, we put the check
-if offload is possible at the top of the offload setup function.
+Subsystems that want to register CPU hotplug callbacks, as well as perform
+initialization for the CPUs that are already online, often do it as shown
+below:
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
+	get_online_cpus();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	register_cpu_notifier(&foobar_cpu_notifier);
+
+	put_online_cpus();
+
+This is wrong, since it is prone to ABBA deadlocks involving the
+cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+with CPU hotplug operations).
+
+Interestingly, the raid5 code can actually prevent double initialization and
+hence can use the following simplified form of callback registration:
+
+	register_cpu_notifier(&foobar_cpu_notifier);
+
+	get_online_cpus();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	put_online_cpus();
+
+A hotplug operation that occurs between registering the notifier and calling
+get_online_cpus(), won't disrupt anything, because the code takes care to
+perform the memory allocations only once.
+
+So reorganize the code in raid5 this way to fix the deadlock with callback
+registration.
+
+Cc: linux-raid@vger.kernel.org
+Fixes: 36d1c6476be51101778882897b315bd928c8c7b5
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+[Srivatsa: Fixed the unregister_cpu_notifier() deadlock, added the
+free_scratch_buffer() helper to condense code further and wrote the changelog.]
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-mv64xxx.c |   33 ++++++++++++++-------------------
- 1 file changed, 14 insertions(+), 19 deletions(-)
+ drivers/md/raid5.c |   90 +++++++++++++++++++++++++----------------------------
+ 1 file changed, 44 insertions(+), 46 deletions(-)
 
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -97,7 +97,6 @@ enum {
- enum {
- 	MV64XXX_I2C_ACTION_INVALID,
- 	MV64XXX_I2C_ACTION_CONTINUE,
--	MV64XXX_I2C_ACTION_OFFLOAD_SEND_START,
- 	MV64XXX_I2C_ACTION_SEND_START,
- 	MV64XXX_I2C_ACTION_SEND_RESTART,
- 	MV64XXX_I2C_ACTION_OFFLOAD_RESTART,
-@@ -204,6 +203,9 @@ static int mv64xxx_i2c_offload_msg(struc
- 	unsigned long ctrl_reg;
- 	struct i2c_msg *msg = drv_data->msgs;
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -5351,23 +5351,43 @@ raid5_size(struct mddev *mddev, sector_t
+ 	return sectors * (raid_disks - conf->max_degraded);
+ }
  
-+	if (!drv_data->offload_enabled)
-+		return -EOPNOTSUPP;
++static void free_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
++{
++	safe_put_page(percpu->spare_page);
++	kfree(percpu->scribble);
++	percpu->spare_page = NULL;
++	percpu->scribble = NULL;
++}
 +
- 	drv_data->msg = msg;
- 	drv_data->byte_posn = 0;
- 	drv_data->bytes_left = msg->len;
-@@ -433,8 +435,7 @@ mv64xxx_i2c_do_action(struct mv64xxx_i2c
++static int alloc_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
++{
++	if (conf->level == 6 && !percpu->spare_page)
++		percpu->spare_page = alloc_page(GFP_KERNEL);
++	if (!percpu->scribble)
++		percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
++
++	if (!percpu->scribble || (conf->level == 6 && !percpu->spare_page)) {
++		free_scratch_buffer(conf, percpu);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
+ static void raid5_free_percpu(struct r5conf *conf)
+ {
+-	struct raid5_percpu *percpu;
+ 	unsigned long cpu;
  
- 		drv_data->msgs++;
- 		drv_data->num_msgs--;
--		if (!(drv_data->offload_enabled &&
--				mv64xxx_i2c_offload_msg(drv_data))) {
-+		if (mv64xxx_i2c_offload_msg(drv_data) < 0) {
- 			drv_data->cntl_bits |= MV64XXX_I2C_REG_CONTROL_START;
- 			writel(drv_data->cntl_bits,
- 			drv_data->reg_base + drv_data->reg_offsets.control);
-@@ -458,15 +459,14 @@ mv64xxx_i2c_do_action(struct mv64xxx_i2c
- 			drv_data->reg_base + drv_data->reg_offsets.control);
- 		break;
+ 	if (!conf->percpu)
+ 		return;
  
--	case MV64XXX_I2C_ACTION_OFFLOAD_SEND_START:
--		if (!mv64xxx_i2c_offload_msg(drv_data))
--			break;
--		else
--			drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
--		/* FALLTHRU */
- 	case MV64XXX_I2C_ACTION_SEND_START:
--		writel(drv_data->cntl_bits | MV64XXX_I2C_REG_CONTROL_START,
--			drv_data->reg_base + drv_data->reg_offsets.control);
-+		/* Can we offload this msg ? */
-+		if (mv64xxx_i2c_offload_msg(drv_data) < 0) {
-+			/* No, switch to standard path */
-+			mv64xxx_i2c_prepare_for_io(drv_data, drv_data->msgs);
-+			writel(drv_data->cntl_bits | MV64XXX_I2C_REG_CONTROL_START,
-+				drv_data->reg_base + drv_data->reg_offsets.control);
-+		}
- 		break;
- 
- 	case MV64XXX_I2C_ACTION_SEND_ADDR_1:
-@@ -625,15 +625,10 @@ mv64xxx_i2c_execute_msg(struct mv64xxx_i
- 	unsigned long	flags;
- 
- 	spin_lock_irqsave(&drv_data->lock, flags);
--	if (drv_data->offload_enabled) {
--		drv_data->action = MV64XXX_I2C_ACTION_OFFLOAD_SEND_START;
--		drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
--	} else {
--		mv64xxx_i2c_prepare_for_io(drv_data, msg);
- 
--		drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
--		drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
+-	get_online_cpus();
+-	for_each_possible_cpu(cpu) {
+-		percpu = per_cpu_ptr(conf->percpu, cpu);
+-		safe_put_page(percpu->spare_page);
+-		kfree(percpu->scribble);
 -	}
-+	drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
-+	drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	unregister_cpu_notifier(&conf->cpu_notify);
+ #endif
 +
- 	drv_data->send_stop = is_last;
- 	drv_data->block = 1;
- 	mv64xxx_i2c_do_action(drv_data);
++	get_online_cpus();
++	for_each_possible_cpu(cpu)
++		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+ 	put_online_cpus();
+ 
+ 	free_percpu(conf->percpu);
+@@ -5394,15 +5414,7 @@ static int raid456_cpu_notify(struct not
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 	case CPU_UP_PREPARE_FROZEN:
+-		if (conf->level == 6 && !percpu->spare_page)
+-			percpu->spare_page = alloc_page(GFP_KERNEL);
+-		if (!percpu->scribble)
+-			percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
+-
+-		if (!percpu->scribble ||
+-		    (conf->level == 6 && !percpu->spare_page)) {
+-			safe_put_page(percpu->spare_page);
+-			kfree(percpu->scribble);
++		if (alloc_scratch_buffer(conf, percpu)) {
+ 			pr_err("%s: failed memory allocation for cpu%ld\n",
+ 			       __func__, cpu);
+ 			return notifier_from_errno(-ENOMEM);
+@@ -5410,10 +5422,7 @@ static int raid456_cpu_notify(struct not
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+-		safe_put_page(percpu->spare_page);
+-		kfree(percpu->scribble);
+-		percpu->spare_page = NULL;
+-		percpu->scribble = NULL;
++		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+ 		break;
+ 	default:
+ 		break;
+@@ -5425,40 +5434,29 @@ static int raid456_cpu_notify(struct not
+ static int raid5_alloc_percpu(struct r5conf *conf)
+ {
+ 	unsigned long cpu;
+-	struct page *spare_page;
+-	struct raid5_percpu __percpu *allcpus;
+-	void *scribble;
+-	int err;
++	int err = 0;
+ 
+-	allcpus = alloc_percpu(struct raid5_percpu);
+-	if (!allcpus)
++	conf->percpu = alloc_percpu(struct raid5_percpu);
++	if (!conf->percpu)
+ 		return -ENOMEM;
+-	conf->percpu = allcpus;
++
++#ifdef CONFIG_HOTPLUG_CPU
++	conf->cpu_notify.notifier_call = raid456_cpu_notify;
++	conf->cpu_notify.priority = 0;
++	err = register_cpu_notifier(&conf->cpu_notify);
++	if (err)
++		return err;
++#endif
+ 
+ 	get_online_cpus();
+-	err = 0;
+ 	for_each_present_cpu(cpu) {
+-		if (conf->level == 6) {
+-			spare_page = alloc_page(GFP_KERNEL);
+-			if (!spare_page) {
+-				err = -ENOMEM;
+-				break;
+-			}
+-			per_cpu_ptr(conf->percpu, cpu)->spare_page = spare_page;
+-		}
+-		scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
+-		if (!scribble) {
+-			err = -ENOMEM;
++		err = alloc_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
++		if (err) {
++			pr_err("%s: failed memory allocation for cpu%ld\n",
++			       __func__, cpu);
+ 			break;
+ 		}
+-		per_cpu_ptr(conf->percpu, cpu)->scribble = scribble;
+ 	}
+-#ifdef CONFIG_HOTPLUG_CPU
+-	conf->cpu_notify.notifier_call = raid456_cpu_notify;
+-	conf->cpu_notify.priority = 0;
+-	if (err == 0)
+-		err = register_cpu_notifier(&conf->cpu_notify);
+-#endif
+ 	put_online_cpus();
+ 
+ 	return err;
 
 
