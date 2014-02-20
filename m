@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaBTXfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:35:48 -0500
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:59246
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752997AbaBTXfq convert rfc822-to-8bit (ORCPT
+	id S1754114AbaBTXgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:36:38 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47781 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015AbaBTXgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:35:46 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Fix a bug in getting ACPI
- specified resources
-Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Fix a bug in getting ACPI
- specified resources
-Thread-Index: AQHPLo6cDXgO0PHR/UiXiUkawW4KVJq+w40AgAAHCWA=
-Date: Thu, 20 Feb 2014 23:35:28 +0000
-Message-ID: <103ed01150444453ba4f0346b44595e2@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1392939912-7446-1-git-send-email-kys@microsoft.com>
- <20140220230606.GA20053@kroah.com>
-In-Reply-To: <20140220230606.GA20053@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.192.172]
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-forefront-prvs: 01283822F8
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(377454003)(199002)(189002)(13464003)(24454002)(85852003)(95416001)(85306002)(2656002)(76576001)(56776001)(81816001)(92566001)(94946001)(94316002)(63696002)(77982001)(49866001)(59766001)(86612001)(80022001)(90146001)(76796001)(87936001)(76786001)(54316002)(81686001)(83072002)(74706001)(81342001)(66066001)(87266001)(93136001)(56816005)(47976001)(86362001)(4396001)(51856001)(65816001)(47736001)(54356001)(50986001)(74662001)(31966008)(76482001)(74502001)(74316001)(81542001)(47446002)(19580405001)(83322001)(19580395003)(33646001)(69226001)(53806001)(46102001)(93516002)(79102001)(74876001)(74366001)(80976001)(95666003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB596;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:131.107.192.172;FPR:B89B59B2.2EDF9C06.B3F70B68.C6E39C8.2015E;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Feb 2014 18:36:37 -0500
+Date: Fri, 21 Feb 2014 08:36:22 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Message-ID: <20140220233622.GE12197@sirena.org.uk>
+References: <1392926295-23735-1-git-send-email-shuah.kh@samsung.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cPi+lWm09sJ+d57q"
+Content-Disposition: inline
+In-Reply-To: <1392926295-23735-1-git-send-email-shuah.kh@samsung.com>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.141.82
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Change dummy supplies error message to
+ a warning
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--cPi+lWm09sJ+d57q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, February 20, 2014 3:06 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
-> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Fix a bug in getting ACPI specified
-> resources
-> 
-> On Thu, Feb 20, 2014 at 03:45:12PM -0800, K. Y. Srinivasan wrote:
-> > Fix a bug in the resource walking code.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > ---
-> >  drivers/hv/vmbus_drv.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> Is this for 3.14-final or 3.15?
-> 
-> I ask this every time, someday you will let me know ahead of time...
+On Thu, Feb 20, 2014 at 12:58:15PM -0700, Shuah Khan wrote:
+> Change "dummy supplies not allowed" error message to warning instead, as this
+> is a just warning message with no change to the behavior.
 
-I am sorry Greg. This is for 3.14-final.
+Applied, thanks.  I added a CC to stable since people are going to
+notice it on PCs with the other bug fixes.
 
-Regards,
+--cPi+lWm09sJ+d57q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-K. Y
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBpFzAAoJELSic+t+oim9RkcQAJLe7ePHGVVOBgX/8hzgxhmv
+/b5m8nNZ8LPG23AEs7FhgvaE1+s8Nt73qZOfhMOodID540CmB33TleqEZLDfmMJR
+Pk7p+WW9CwZWi3EaMv3LFzWRThq9mZnzgrVqFez4fyrXGrGI7Ajel5b8M5pC3YH1
+DgSQs0gkdZmE7BDTVt3y9sSeZCTbSExPjWTb4JuXuyiuBmTw+bWG0UrnU/6kFqXT
+DXSfGdj9py2TjV628PEmBiH+fdGLjvdrgyKYcbdUmw9T0bpYN6hUHMxRJOOKN+2Q
+ihrxZ97HUlOkcrRqy5RZLX+Z4mECzTzhsmzMO/DOF8AM7i9PuPheCiFsk29se39b
+2fvEy77c+ivtnLzfeRyctypJpArJlXpYOMUVord14WkeU4ooj+PccFG1o7MNU4UF
+JkiX9gKs0jbb1rf7MKYbB0f1hvQSgExYOeyZhm070vbLB37J1hUQip6pK0RIz1Et
+keb/z5LNl/FnrLTQQrxeBiuAUAXc1nOGuj8VvACoEFPgmn1Eyjy/NTqSnv7S0JNm
+GbRWt97b/HHRqUQqa2SRr5f/S7AVWxcgzxlgdCjhVU1x1zMaEeh7PQ6W2XHFereO
+TNQPB0S7d8cYlfUZXhy42KSFRIX78ZSC8jhr2T/iNKPi5SV/64qmCE3iyojHr9C2
+WUYdQJz4cZZfRw/c7Q3+
+=MJ2S
+-----END PGP SIGNATURE-----
+
+--cPi+lWm09sJ+d57q--
