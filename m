@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069AbaBTXyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:54:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46264 "EHLO
+	id S1755895AbaBUACV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:02:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047AbaBTXyE (ORCPT
+	with ESMTP id S1756063AbaBTXyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:04 -0500
+	Thu, 20 Feb 2014 18:54:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.13 77/99] Revert "usb: xhci: Link TRB must not occur within a USB payload burst"
-Date: Thu, 20 Feb 2014 15:53:12 -0800
-Message-Id: <20140220235120.435346701@linuxfoundation.org>
+        David Milburn <dmilburn@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.13 81/99] block: Fix nr_vecs for inline integrity vectors
+Date: Thu, 20 Feb 2014 15:53:16 -0800
+Message-Id: <20140220235120.556613625@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,97 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit 3d4b81eda2211f32886e2978daf6f39885042fc4 upstream.
+commit 087787959ce851d7bbb19f10f6e9241b7f85a3ca upstream.
 
-This reverts commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e.  It's a
-hack that caused regressions in the usb-storage and userspace USB
-drivers that use usbfs and libusb.  Commit 70cabb7d992f "xhci 1.0: Limit
-arbitrarily-aligned scatter gather." should fix the issues seen with the
-ax88179_178a driver on xHCI 1.0 hosts, without causing regressions.
+Commit 9f060e2231ca changed the way we handle allocations for the
+integrity vectors. When the vectors are inline there is no associated
+slab and consequently bvec_nr_vecs() returns 0. Ensure that we check
+against BIP_INLINE_VECS in that case.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: David Milburn <dmilburn@redhat.com>
+Tested-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |   54 +------------------------------------------
- include/linux/usb.h          |    2 -
- 2 files changed, 2 insertions(+), 54 deletions(-)
+ fs/bio-integrity.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2973,58 +2973,8 @@ static int prepare_ring(struct xhci_hcd
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -114,6 +114,14 @@ void bio_integrity_free(struct bio *bio)
+ }
+ EXPORT_SYMBOL(bio_integrity_free);
+ 
++static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
++{
++	if (bip->bip_slab == BIO_POOL_NONE)
++		return BIP_INLINE_VECS;
++
++	return bvec_nr_vecs(bip->bip_slab);
++}
++
+ /**
+  * bio_integrity_add_page - Attach integrity metadata
+  * @bio:	bio to update
+@@ -129,7 +137,7 @@ int bio_integrity_add_page(struct bio *b
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_vec *iv;
+ 
+-	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
++	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
+ 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
+ 		return 0;
  	}
- 
- 	while (1) {
--		if (room_on_ring(xhci, ep_ring, num_trbs)) {
--			union xhci_trb *trb = ep_ring->enqueue;
--			unsigned int usable = ep_ring->enq_seg->trbs +
--					TRBS_PER_SEGMENT - 1 - trb;
--			u32 nop_cmd;
--
--			/*
--			 * Section 4.11.7.1 TD Fragments states that a link
--			 * TRB must only occur at the boundary between
--			 * data bursts (eg 512 bytes for 480M).
--			 * While it is possible to split a large fragment
--			 * we don't know the size yet.
--			 * Simplest solution is to fill the trb before the
--			 * LINK with nop commands.
--			 */
--			if (num_trbs == 1 || num_trbs <= usable || usable == 0)
--				break;
--
--			if (ep_ring->type != TYPE_BULK)
--				/*
--				 * While isoc transfers might have a buffer that
--				 * crosses a 64k boundary it is unlikely.
--				 * Since we can't add NOPs without generating
--				 * gaps in the traffic just hope it never
--				 * happens at the end of the ring.
--				 * This could be fixed by writing a LINK TRB
--				 * instead of the first NOP - however the
--				 * TRB_TYPE_LINK_LE32() calls would all need
--				 * changing to check the ring length.
--				 */
--				break;
--
--			if (num_trbs >= TRBS_PER_SEGMENT) {
--				xhci_err(xhci, "Too many fragments %d, max %d\n",
--						num_trbs, TRBS_PER_SEGMENT - 1);
--				return -ENOMEM;
--			}
--
--			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
--					ep_ring->cycle_state);
--			ep_ring->num_trbs_free -= usable;
--			do {
--				trb->generic.field[0] = 0;
--				trb->generic.field[1] = 0;
--				trb->generic.field[2] = 0;
--				trb->generic.field[3] = nop_cmd;
--				trb++;
--			} while (--usable);
--			ep_ring->enqueue = trb;
--			if (room_on_ring(xhci, ep_ring, num_trbs))
--				break;
--		}
-+		if (room_on_ring(xhci, ep_ring, num_trbs))
-+			break;
- 
- 		if (ep_ring == xhci->cmd_ring) {
- 			xhci_err(xhci, "Do not support expand command ring\n");
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -1264,8 +1264,6 @@ typedef void (*usb_complete_t)(struct ur
-  * @sg: scatter gather buffer list, the buffer size of each element in
-  * 	the list (except the last) must be divisible by the endpoint's
-  * 	max packet size if no_sg_constraint isn't set in 'struct usb_bus'
-- * 	(FIXME: scatter-gather under xHCI is broken for periodic transfers.
-- * 	Do not use urb->sg for interrupt endpoints for now, only bulk.)
-  * @num_mapped_sgs: (internal) number of mapped sg entries
-  * @num_sgs: number of entries in the sg list
-  * @transfer_buffer_length: How big is transfer_buffer.  The transfer may
 
 
