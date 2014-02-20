@@ -1,114 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420AbaBTPsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:48:12 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:45452 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809AbaBTPsI (ORCPT
+	id S1754693AbaBTPuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:50:55 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37441 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154AbaBTPuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:48:08 -0500
+	Thu, 20 Feb 2014 10:50:54 -0500
+Date: Thu, 20 Feb 2014 16:50:41 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: Another preempt folding issue?
+Message-ID: <20140220155041.GG9987@twins.programming.kicks-ass.net>
+References: <52FCFA23.4060701@canonical.com>
+ <20140213173852.GH6835@laptop.programming.kicks-ass.net>
+ <52FD090C.7010408@canonical.com>
+ <20140213182605.GC14089@laptop.programming.kicks-ass.net>
+ <20140214133428.GB26356@pd.tnic>
+ <52FE2709.3050505@canonical.com>
+ <20140214144700.GC26356@pd.tnic>
+ <52FE4C28.1080500@canonical.com>
+ <20140214172157.GJ6835@laptop.programming.kicks-ass.net>
+ <53062165.3040202@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <1392907779-22053-5-git-send-email-geert@linux-m68k.org>
-References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
-	<1392907779-22053-5-git-send-email-geert@linux-m68k.org>
-Date: Fri, 21 Feb 2014 00:48:06 +0900
-Message-ID: <CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
-Subject: Re: [PATCH 04/11] ARM: shmobile: lager legacy: Add MSIOF support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53062165.3040202@canonical.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Thu, Feb 20, 2014 at 04:38:13PM +0100, Stefan Bader wrote:
+> On 14.02.2014 18:21, Peter Zijlstra wrote:
+> > On Fri, Feb 14, 2014 at 06:02:32PM +0100, Stefan Bader wrote:
+> >> One thing I likely should do is to reinstall the exact same laptop with 64bit
+> >> kernel and userspace... maybe only 64bit kernel first... and make sure on my
+> >> side that this does not show up on 64bit, too. I took the word of reporters for
+> >> that (and the impression that otherwise many more people would have complained).
+> > 
+> > Yeha, I'm going to try and install some 32bit userspace on a usb
+> > harddisk I've got and see if I can boot my Core2 laptop from that to try
+> > and reproduce.
+> > 
+> > But all that is probably going to be Monday :/
+> > 
+> *sigh* Already Thursday...
+> 
+> Peter, did you get to reproduce this locally? Unfortunately I had some
+> interruption and have not more Information than on last Friday (which is that
+> the same hw but 64bit kernel does not show it).
 
-On Thu, Feb 20, 2014 at 11:49 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->
-> Add MSIOF resources, platform data, platform device, pinctrl, and SPI
-> child device.
->
->   - Platform device numbering is 1-based for compatibility with the BSP,
->     as QSPI uses zero.
->   - Only MSIOF1 is in use, and thus registered. Its bus contains a single
->     device (a Renesas R2A11302FT PMIC).
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> ---
->  arch/arm/mach-shmobile/board-lager.c |   64 ++++++++++++++++++++++++++++++----
->  1 file changed, 58 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/arm/mach-shmobile/board-lager.c b/arch/arm/mach-shmobile/board-lager.c
-> index f0104bfe544e..6062bcbda366 100644
-> --- a/arch/arm/mach-shmobile/board-lager.c
-> +++ b/arch/arm/mach-shmobile/board-lager.c
-> @@ -55,6 +55,7 @@
->  #include <linux/mtd/mtd.h>
->  #include <linux/spi/flash.h>
->  #include <linux/spi/rspi.h>
-> +#include <linux/spi/sh_msiof.h>
->  #include <linux/spi/spi.h>
->  #include <sound/rcar_snd.h>
->  #include <sound/simple_card.h>
-> @@ -287,6 +288,40 @@ static const struct platform_device_info ether_info __initconst = {
->         .dma_mask       = DMA_BIT_MASK(32),
->  };
->
-> +/* MSIOF */
-> +static const struct resource sh_msiof0_resources[] __initconst = {
-> +       DEFINE_RES_MEM(0xe6e20000, 0x0064),
-> +       DEFINE_RES_IRQ(gic_spi(156)),
-> +};
-> +
-> +static const struct resource sh_msiof1_resources[] __initconst = {
-> +       DEFINE_RES_MEM(0xe6e10000, 0x0064),
-> +       DEFINE_RES_IRQ(gic_spi(157)),
-> +};
-> +
-> +static const struct resource sh_msiof2_resources[] __initconst = {
-> +       DEFINE_RES_MEM(0xe6e00000, 0x0064),
-> +       DEFINE_RES_IRQ(gic_spi(158)),
-> +};
-> +
-> +static const struct resource sh_msiof3_resources[] __initconst = {
-> +       DEFINE_RES_MEM(0xe6c90000, 0x0064),
-> +       DEFINE_RES_IRQ(gic_spi(159)),
-> +};
-> +
-> +static const struct sh_msiof_spi_info sh_msiof_info __initconst = {
-> +       .rx_fifo_override       = 256,
-> +       .num_chipselect         = 1,
-> +};
-> +
-> +#define r8a7790_register_msiof(idx)                                    \
-> +       platform_device_register_resndata(&platform_bus,                \
-> +                               "spi_r8a7790_msiof",                    \
-> +                               (idx+1), sh_msiof##idx##_resources,     \
-> +                               ARRAY_SIZE(sh_msiof##idx##_resources),  \
-> +                               &sh_msiof_info,                         \
-> +                               sizeof(struct sh_msiof_spi_info))
+I got side-tracked as well, someone reported crashes, which come above
+weird behaviour :/
 
-Hi Geert,
+> Meanwhile I wonder whether it would make sense to push the following (or more?)
+> to stable for 3.13.y:
+> 
+> 1) 16824255394f55adf31b9a96a9965d8c15bdac4c
+>    x86, acpi, idle: Restructure the mwait idle routines
+> 2) 7e98b71920464b8d15fa95c74366416cd3c88861
+>    x86, idle: Use static_cpu_has() for CLFLUSH workaround, add barriers
+> 3) 8cb75e0c4ec9786b81439761eac1d18d4a931af3
+>    sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
+> 4) 215393bc1fab3d61a5a296838bdffce22f27ffda
+>    sched/preempt/x86: Fix voluntary preempt for x86
+> 
+> 1+2 would be to avoid touching 3 too much and looked to be improvements on their
+> own. 3+4 would be cherry-picks if not for some fuzz 2.
 
-That for your efforts - it's good to see the MSIOF being integrated as
-well! I have one comment on this legacy board integration code.
+I'll not object; but if someone wants a smaller set you could do with
+just the idle.c hunk from 3.
 
-Since only MSIOF1 is used on Lager (correct me if i'm wrong), isn't it
-best to omit the unused resources from above? In case of DT I think it
-makes sense to define all channels in the SoC.dtsi and let the
-SoC-board.dts just enable the channels that are used. But in this case
-with legacy code  I think we should keep thing simple and small and
-just enable the bits that are used on the particular board.
+> I saw a few more things labelled preempt between 3.13 and current HEAD but am
+> not sure whether or which of those are strictly required. Namely some fixing to
+> preempt_enable_no_resched() mis-usage and maybe one fixing an issue of ftrace
+> locking up.
 
-The same obviously applies to the Koelsch legacy code as well. =)
-
-Thanks,
-
-/ magnus
+Yeah, that's all fresh breakage and doesn't go back to 3.13 I think.
