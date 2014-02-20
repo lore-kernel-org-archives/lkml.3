@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710AbaBTXR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:17:58 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:51154 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101AbaBTXR5 (ORCPT
+	id S1753739AbaBTXXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:23:17 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59553 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522AbaBTXXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:17:57 -0500
-Date: Thu, 20 Feb 2014 15:17:55 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Marcelo Tosatti <mtosatti@redhat.com>
-cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-In-Reply-To: <20140220213854.GB11486@amt.cnet>
-Message-ID: <alpine.DEB.2.02.1402201516140.30647@chino.kir.corp.google.com>
-References: <1392339728-13487-5-git-send-email-lcapitulino@redhat.com> <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com> <20140214225810.57e854cb@redhat.com> <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com> <20140217085622.39b39cac@redhat.com>
- <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com> <20140218123013.GA20609@amt.cnet> <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com> <20140220022254.GA25898@amt.cnet> <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
- <20140220213854.GB11486@amt.cnet>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 20 Feb 2014 18:23:16 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 01/11] ARM: shmobile: r8a7791 dtsi: Fix typo in msiof2 clock output name
+Date: Fri, 21 Feb 2014 00:24:26 +0100
+Message-ID: <2331215.fbDlSseAe0@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392907779-22053-2-git-send-email-geert@linux-m68k.org>
+References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org> <1392907779-22053-2-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014, Marcelo Tosatti wrote:
+Hi Geert,
 
-> > I'm not sure it's interesting to talk about since this patchset is 
-> > unnecessary if you can do it at runtime, but since "hugepagesz=" and 
-> > "hugepages=" have existed for many kernel releases, we must maintain 
-> > backwards compatibility.  Thus, it seems, the easiest addition would have 
-> > been "hugepagesnode=" which I've mentioned several times, there's no 
-> > reason to implement yet another command line option purely as a shorthand 
-> > which hugepage_node=1:2:1G is and in a very cryptic way.
-> 
-> There is one point from Davidlohr Bueso in favour of the proposed
-> command line interface. Did you consider that aspect?
-> 
+(CC'ing Linus Walleij)
 
-I did before he posted it, in 
-http://marc.info/?l=linux-kernel&m=139267940609315.  I don't think "large 
-machines" open up the use case for 4 1GB hugepages on node 0, 12 2MB 
-hugepages on node 0, 6 1GB hugepages on node 1, 24 2MB hugepages on node 
-1, 2 1GB hugepages on node 2, 100 2MB hugepages on node 3, etc.
+Thank you for the patch.
+
+On Thursday 20 February 2014 15:49:29 Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> Introduced in commit cded80f869aef94853e056ab9c21e305b0c26138 ("ARM:
+> shmobile: r8a7791: Add MSIOF clocks in device tree").
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> ---
+>  arch/arm/boot/dts/r8a7791.dtsi |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/r8a7791.dtsi b/arch/arm/boot/dts/r8a7791.dtsi
+> index 1ab4f3d5a8c2..224f4a7ee52a 100644
+> --- a/arch/arm/boot/dts/r8a7791.dtsi
+> +++ b/arch/arm/boot/dts/r8a7791.dtsi
+> @@ -667,7 +667,7 @@
+>  				R8A7791_CLK_MSIOF1 R8A7791_CLK_SCIFB2
+> 
+>  			>;
+> 
+>  			clock-output-names =
+> -				"scifa2", "scifa1", "scifa0", "misof2", "scifb0",
+> +				"scifa2", "scifa1", "scifa0", "msiof2", "scifb0",
+>  				"scifb1", "msiof1", "scifb2";
+>  		};
+>  		mstp3_clks: mstp3_clks@e615013c {
+
+-- 
+Regards,
+
+Laurent Pinchart
+
