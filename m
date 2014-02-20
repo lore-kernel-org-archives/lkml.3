@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760AbaBTXwi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45819 "EHLO
+	id S1755840AbaBTXwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45889 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608AbaBTXwb (ORCPT
+	with ESMTP id S1755820AbaBTXwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:31 -0500
+	Thu, 20 Feb 2014 18:52:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars Poeschel <poeschel@lemonage.de>
-Subject: [PATCH 3.12 29/82] tty: n_gsm: Fix for modems with brk in modem status control
-Date: Thu, 20 Feb 2014 15:52:12 -0800
-Message-Id: <20140220235020.352092425@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.12 31/82] drm/radeon: fix UVD IRQ support on 7xx
+Date: Thu, 20 Feb 2014 15:52:14 -0800
+Message-Id: <20140220235020.408763466@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,59 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars Poeschel <poeschel@lemonage.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 3ac06b905655b3ef2fd2196bab36e4587e1e4e4f upstream.
+commit 858a41c853cef2cb01de34dae334c19c1c15b237 upstream.
 
-3GPP TS 07.10 states in section 5.4.6.3.7:
-"The length byte contains the value 2 or 3 ... depending on the break
-signal." The break byte is optional and if it is sent, the length is
-3. In fact the driver was not able to work with modems that send this
-break byte in their modem status control message. If the modem just
-sends the break byte if it is really set, then weird things might
-happen.
-The code for deconding the modem status to the internal linux
-presentation in gsm_process_modem has already a big comment about
-this 2 or 3 byte length thing and it is already able to decode the
-brk, but the code calling the gsm_process_modem function in
-gsm_control_modem does not encode it and hand it over the right way.
-This patch fixes this.
-Without this fix if the modem sends the brk byte in it's modem status
-control message the driver will hang when opening a muxed channel.
+Otherwise decoding isn't really useable.
 
-Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/gpu/drm/radeon/r600.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1089,6 +1089,7 @@ static void gsm_control_modem(struct gsm
- {
- 	unsigned int addr = 0;
- 	unsigned int modem = 0;
-+	unsigned int brk = 0;
- 	struct gsm_dlci *dlci;
- 	int len = clen;
- 	u8 *dp = data;
-@@ -1115,6 +1116,16 @@ static void gsm_control_modem(struct gsm
- 		if (len == 0)
- 			return;
- 	}
-+	len--;
-+	if (len > 0) {
-+		while (gsm_read_ea(&brk, *dp++) == 0) {
-+			len--;
-+			if (len == 0)
-+				return;
-+		}
-+		modem <<= 7;
-+		modem |= (brk & 0x7f);
-+	}
- 	tty = tty_port_tty_get(&dlci->port);
- 	gsm_process_modem(tty, dlci, modem, clen);
- 	if (tty) {
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -3854,6 +3854,10 @@ restart_ih:
+ 				break;
+ 			}
+ 			break;
++		case 124: /* UVD */
++			DRM_DEBUG("IH: UVD int: 0x%08x\n", src_data);
++			radeon_fence_process(rdev, R600_RING_TYPE_UVD_INDEX);
++			break;
+ 		case 176: /* CP_INT in ring buffer */
+ 		case 177: /* CP_INT in IB1 */
+ 		case 178: /* CP_INT in IB2 */
 
 
