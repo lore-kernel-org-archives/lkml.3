@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbaBUAlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:41:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45673 "EHLO
+	id S1755453AbaBTXv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45663 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338AbaBTXwA (ORCPT
+	with ESMTP id S1755338AbaBTXv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:00 -0500
+	Thu, 20 Feb 2014 18:51:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.12 21/82] iwlwifi: mvm: print the version of the firmware when it asserts
-Date: Thu, 20 Feb 2014 15:52:04 -0800
-Message-Id: <20140220235020.117540285@linuxfoundation.org>
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 19/82] spi: Fix crash with double message finalisation on error handling
+Date: Thu, 20 Feb 2014 15:52:02 -0800
+Message-Id: <20140220235020.057445711@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,33 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-commit b900a87b2eb90c0b9586496c82a323a1b8832d73 upstream.
+commit 1f802f8249a0da536877842c43c7204064c4de8b upstream.
 
-This can be useful to be able to spot the firmware version
-from the error reports without needing to fetch it from
-another place.
+This reverts commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+It causes a NULL pointer dereference with drivers using the generic
+spi_transfer_one_message(), which always calls
+spi_finalize_current_message(), which zeroes master->cur_msg.
+
+Drivers implementing transfer_one_message() theirselves must always call
+spi_finalize_current_message(), even if the transfer failed:
+
+ * @transfer_one_message: the subsystem calls the driver to transfer a single
+ *      message while queuing transfers that arrive in the meantime. When the
+ *      driver is finished with this message, it must call
+ *      spi_finalize_current_message() so the subsystem can issue the next
+ *      transfer
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/utils.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/spi/spi.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/utils.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/utils.c
-@@ -411,6 +411,8 @@ void iwl_mvm_dump_nic_error_log(struct i
- 			mvm->status, table.valid);
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -600,9 +600,7 @@ static void spi_pump_messages(struct kth
+ 	ret = master->transfer_one_message(master, master->cur_msg);
+ 	if (ret) {
+ 		dev_err(&master->dev,
+-			"failed to transfer one message from queue: %d\n", ret);
+-		master->cur_msg->status = ret;
+-		spi_finalize_current_message(master);
++			"failed to transfer one message from queue\n");
+ 		return;
  	}
- 
-+	IWL_ERR(mvm, "Loaded firmware version: %s\n", mvm->fw->fw_version);
-+
- 	trace_iwlwifi_dev_ucode_error(trans->dev, table.error_id, table.tsf_low,
- 				      table.data1, table.data2, table.data3,
- 				      table.blink1, table.blink2, table.ilink1,
+ }
 
 
