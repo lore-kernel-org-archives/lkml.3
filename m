@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508AbaBTPlY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:41:24 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:65267 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468AbaBTPlW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:41:22 -0500
+	id S1753636AbaBTPrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:47:32 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38911 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913AbaBTPra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 10:47:30 -0500
+Date: Thu, 20 Feb 2014 09:46:10 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] usb: musb: host: fixes for 3.14-rc
+Message-ID: <20140220154549.GB23217@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1391520349-26192-1-git-send-email-rogerq@ti.com>
+ <5305E01A.3020905@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1392907389-21798-8-git-send-email-geert@linux-m68k.org>
-References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
-	<1392907389-21798-8-git-send-email-geert@linux-m68k.org>
-Date: Fri, 21 Feb 2014 00:41:18 +0900
-Message-ID: <CANqRtoQVJzEgo_AdVxrPSRUY6ocyPaQ=RKQJyxoExDrfYxiJ3w@mail.gmail.com>
-Subject: Re: [PATCH 07/10] spi: sh-msiof: Add support for R-Car H2 and M2
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Brown <broonie@kernel.org>, Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        linux-spi@vger.kernel.org, SH-Linux <linux-sh@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mSxgbZZZvrAyzONB"
+Content-Disposition: inline
+In-Reply-To: <5305E01A.3020905@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 11:43 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->
-> Add support for the MSIOF variant in the R-Car H2 (r8a7790) and M2
-> (r8a7791) SoCs.
->
-> Binding documentation:
->   - Add future-proof "renesas,msiof-<soctype>" compatible values,
->   - Add example bindings.
->
-> Implementation:
->   - MSIOF on R-Car H2 and M2 requires the transmission of dummy data if
->     data is being received only (cfr. "Set SICTR.TSCKE to 1" and "Write
->     dummy transmission data to SITFDR" in paragraph "Transmit and Receive
->     Procedures" of the Hardware User's Manual).
->   - As RX depends on TX, MSIOF on R-Car H2 and M2 also lacks the RSCR
->     register (Receive Clock Select Register), and some bits in the RMDR1
->     (Receive Mode Register 1) and TMDR2 (Transmit Mode Register 2)
->     registers.
->   - Use the recently introduced SPI_MASTER_MUST_TX flag to enable support
->     for dummy transmission in the SPI core, and to differentiate from other
->     MSIOF implementations in code paths that need this.
->   - New DT compatible values ("renesas,msiof-r8a7790" and
->     "renesas,msiof-r8a7791") are added, as well as new platform device
->     names ("spi_r8a7790_msiof" and "spi_r8a7791_msiof").
->   - Hardware features are indicated using a new struct sh_msiof_chipdata,
->     which is used for both DT and legacy binding. For now this contains the
->     SPI master flags only.
->
-> This is loosely based on a set of patches from Takashi Yoshii
-> <takasi-y@ops.dti.ne.jp>.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
-> Cc: devicetree@vger.kernel.org
-> ---
->  Documentation/devicetree/bindings/spi/sh-msiof.txt |   21 +++++++-
->  drivers/spi/spi-sh-msiof.c                         |   57 ++++++++++++++++----
->  2 files changed, 66 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
-> index 92515c1ececa..31624fb4997d 100644
-> --- a/drivers/spi/spi-sh-msiof.c
-> +++ b/drivers/spi/spi-sh-msiof.c
-> @@ -659,6 +671,23 @@ static u32 sh_msiof_spi_txrx_word(struct spi_device *spi, unsigned nsecs,
->  }
->
->  #ifdef CONFIG_OF
-> +static const struct sh_msiof_chipdata sh_data = {
-> +       .master_flags = 0,
-> +};
-> +
-> +static const struct sh_msiof_chipdata r8a779x_data = {
-> +       .master_flags = SPI_MASTER_MUST_TX,
-> +};
-> +
-> +static const struct of_device_id sh_msiof_match[] = {
-> +       { .compatible = "renesas,sh-msiof",        .data = &sh_data },
-> +       { .compatible = "renesas,sh-mobile-msiof", .data = &sh_data },
-> +       { .compatible = "renesas,msiof-r8a7790",   .data = &r8a779x_data },
-> +       { .compatible = "renesas,msiof-r8a7791",   .data = &r8a779x_data },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, sh_msiof_match);
+--mSxgbZZZvrAyzONB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Geert,
+Hi,
 
-Thanks for your patches. They all look good in general I think.
+On Thu, Feb 20, 2014 at 12:59:38PM +0200, Roger Quadros wrote:
+> Hi Felipe,
+>=20
+> Hope you had a good vacation :).
 
-On thing stuck out a bit with the bindings. I can see that you specify
-both fifo size and use the SoC suffix for the r8a7790 and r8a7791
-bindings. Isn't that a bit of redundant information there, if we know
-that the SoC is r8a7790 or r8a7791 then can't we simply put that
-information in r8a779x_data above and perhaps keep the binding
-simpler? Perhaps same thing applies to other properties as well?
+sure had.
 
-Cheers,
+> Could you please take a look at these two fixes? Thanks.
 
-/ magnus
+you should have received my confirmation email ;-)
+
+--=20
+balbi
+
+--mSxgbZZZvrAyzONB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTBiNCAAoJEIaOsuA1yqRETu0P/1tDTT5H3jLcHtGIjikZlPdr
+MUHdht+1oUnbfB+ds85yNzvtJeJxpgmww8EIb9UPqMsRzbvzYxPZGea8IwIFY9uH
+DpdEr4GEJ0Er6yj0nbGqL6jq+GkdmxXtJyoqcFofdRL5KLihvbq+U67fq9S2nO97
+wO1wDtJxpeSQjKWO0g2OUC0rRDeerBrLyDfSZFJ3U6V/gitIlacdDfNlciiVLaob
+3WFXIdUjMdxNDZdRDZKMMvgkLhI37aSUGceWfIHsrrG3kHV04FKud648wtrtwUiE
+k59fBzWTbdiPlVwUBIQRoSyMfRhhGTLiDTuBlZ4UnbF+sOHZuggD6peEJ5rH3nU2
+KH7iOhB4RRPtLI9Eddd0+PG+pUMCzDhtT6JYsbfiqNiopm0Kw6gkcAEZLPX5Y3Va
+9cM0I+7sz/PXoG7JnlUAFF/drL9PMSHAAwNBrjMD9nY5UawdONtv0z0N4FRXD7n4
+h82XlHrV4aycDVpfFoUx28Bivlizj4uB2fkJWe52MoQQxYWEiLwbClhlrZFvWoc9
+5TVuCBO+qRR5na5fOsYz5eHgpF36Fa8a2Q1vqrVQ8+S4fgAMvDtJ15M8dP87mzKV
+yA0pMNbT5Rz6CaDo1WSpzTzFjogI/XMN1tEDf7Xqq6YbtiHmtd+eHz9UBoyYZAkC
++iq/OO6bvbIBdFm9S1kj
+=ijDS
+-----END PGP SIGNATURE-----
+
+--mSxgbZZZvrAyzONB--
