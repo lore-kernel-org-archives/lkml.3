@@ -1,125 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaBTB1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:27:50 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57941 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751717AbaBTB1q (ORCPT
+	id S1752318AbaBTBac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:30:32 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:50437 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaBTBaa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:27:46 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PM / sleep: New flag to speed up suspend-resume of suspended devices
-Date: Thu, 20 Feb 2014 02:42:38 +0100
-Message-ID: <2436342.FaiucBZtkf@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1757715.oeT3oQZ2Zz@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1402191137350.1133-100000@iolanthe.rowland.org> <1757715.oeT3oQZ2Zz@vostro.rjw.lan>
+	Wed, 19 Feb 2014 20:30:30 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140219192646.1a62521d@alan.etchedpixels.co.uk>
+References: <cover.1387588711.git.luto@amacapital.net> <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
+ <20140219151626.GA13973@katana> <CALCETrVBPzGqaXbZVgUZMw7D5U5YnUMJOEsw1r=TceLYjJ39JA@mail.gmail.com>
+ <20140219192646.1a62521d@alan.etchedpixels.co.uk>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 19 Feb 2014 17:30:09 -0800
+Message-ID: <CALCETrWEexCqH5486Qfyt22i5+MZjpETJEMTyg6FO6xOwXuraQ@mail.gmail.com>
+Subject: Re: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rui Wang <ruiv.wang@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 20, 2014 02:23:30 AM Rafael J. Wysocki wrote:
-> On Wednesday, February 19, 2014 12:01:20 PM Alan Stern wrote:
-> > On Mon, 17 Feb 2014, Rafael J. Wysocki wrote:
-> > 
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> > > resume all runtime-suspended devices during system suspend, mostly
-> > > because those devices may need to be reprogrammed due to different
-> > > wakeup settings for system sleep and for runtime PM.  However, at
-> > > least in some cases, that isn't really necessary, because the wakeup
-> > > settings may not be really different.
-> > > 
-> > > The idea here is that subsystems should know whether or not it is
-> > > necessary to reprogram a given device during system suspend and they
-> > > should be able to tell the PM core about that.  For this reason,
-> > > modify the PM core so that if the .prepare() callback returns a
-> > > positive value for certain device, the core will set a new
-> > > power.fast_suspend flag for it.  Then, if that flag is set, the core
-> > > will skip all of the subsequent suspend callbacks for that device.
-> > > It also will skip all of the system resume callbacks for the device
-> > > during the subsequent system resume and pm_request_resume() will be
-> > > executed to trigger a runtime PM resume of the device after the
-> > > system device resume sequence has been finished.
-> 
-> I was worried that you wouldn't comment at all. ;-)
-> 
-> > Does the PM core really need to get involved in this?
-> 
-> Yes, it does, in my opinion, and the reason is because it may be necessary
-> to resume parents in order to reprogram their children and the parents and
-> the children may be on different bus types.
-> 
-> > Can't the subsystem do the right thing on its own?
-> 
-> No, I don't think so.
-> 
-> > In the USB subsystem, the .suspend routine checks the required wakeup
-> > settings.  If they are different for runtime suspend and system
-> > suspend, and if the device is runtime suspended, then we call
-> > pm_runtime_resume.  After that, if the device is still in runtime
-> > suspend then we return immediately.
-> > 
-> > Of course, this addresses only the suspend side of the issue.  Skipping 
-> > the resume callbacks is a separate matter, and the USB subsystem 
-> > doesn't try to do it.  Still, I don't see any reason why we couldn't 
-> > take care of that as well.
-> 
-> What about USB controllers that are PCI devices?
-> 
-> > > However, since parents may need to be resumed so that their children
-> > > can be reprogrammed, make the PM core clear power.fast_suspend for
-> > > devices whose children don't have power.fast_suspend set (the
-> > > power.ignore_children flag doesn't matter here, because a parent
-> > > whose children are normally ignored for runtime PM may still need to
-> > > be accessible for their children to be prepare for system suspend
-> > > properly).
-> > 
-> > I have run across a similar issue.  It's a general problem that a
-> > device may try to remain in runtime suspend during a system resume, but
-> > a descendant of the device may need to perform I/O as part of its own
-> > resume routine.  A natural solution would be to use the regular runtime
-> > PM facilities to wake up the device.  But since the PM work queue is
-> > frozen, we can't rely on pm_runtime_get or the equivalent.  I'm not
-> > sure what the best solution will be.
-> 
-> We can rely on pm_runtime_get_sync(), though, which would be the right thing to
-> use here.
-> 
-> However, given that the parent's .prepare() has run already, I'm not sure
-> if we want runtime PM to be involved at all.
-> 
-> > After a quick look, I noticed a couple of questionable things in this
-> > patch.  This is after reading just the second half...
-> > 
-> > > @@ -1296,8 +1301,10 @@ static int __device_suspend(struct devic
-> > >  	 * for it, this is equivalent to the device signaling wakeup, so the
-> > >  	 * system suspend operation should be aborted.
-> > >  	 */
-> > > -	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-> > > +	if (pm_runtime_barrier(dev) && device_may_wakeup(dev)) {
-> > >  		pm_wakeup_event(dev, 0);
-> > > +		dev->power.fast_suspend = false;
-> > > +	}
-> > 
-> > Is this change needed?  We're aborting the sleep transition anyway, 
-> > right?
-> 
-> Yes, we are.  The goal was to ensure that power.fast_suspend would be cleared
-> in that case, but dpm_resume_end() should take care of this anyway.
+On Wed, Feb 19, 2014 at 11:26 AM, One Thousand Gnomes
+<gnomes@lxorguk.ukuu.org.uk> wrote:
+>> example, lots of graphics drivers provide i2c busses, and those busses
+>> often contain eeproms, and, in theory, things should know that the
+>> eeprom is associated with a particular graphics port, for example.
+>> Unfortunately, the i2c core does not know that, things like
+>> decode-dimms will try to decode it, sensors-detect will scan graphics
+>> ports for motherboard sensors, etc.
+>
+> ACPI does now try to describe what is on an i²c bus. We perhaps don't use
+> that information well but on a modern PC class box at least for onboard
+> devices most of the info is there for the munching.
 
-Sorry, I wanted to say "the clearing of it in device_prepare()", not sure why
-I mentioned dpm_resume_end().  Well, maybe I'm too tired ...
+I'm discussing the in-kernel representation, not where the information
+comes from.  Presumably there should be something in the kernel that
+works for ACPI, DT, and directly-enumerated busses (see below).
 
-Rafael
+>
+>> For extra fun, there could be drivers for different types of i2c_port.
+>>  One of them could be the "DIMM bus" driver, which would know how to
+>> probe the i2c adapter associated with a DIMM port.  Another could be
+>> the graphics port driver, which (maybe with some extra configuration
+>> hints from the graphics driver) could look for EDID-related things.
+>
+> Busses are not necessarily that tidily organised. There isn't anything
+> saying you can't sneak multiple things on the same bus. In the graphics
+> case its unlikely but I wouldn't rule even that out for a display panel.
+> Once you get onto phones and tablets it seems anything goes 8)
+>
 
+I'm suggesting identifying a range of addresses on a bus with a "port"
+(or whatever it should be called).  Multiple ports could claim
+non-overlapping ranges on the same bus.
+
+>> I wonder if this would fit in well with the device tree stuff, too --
+>> DT has ways to say "this node links to that one", right?
+>
+> ACPI basically tries to describe the heirarchy of devices on the bus, but
+> as you say the "real" device can be a rambling mix of GPIO, I²C, SPI,
+> PCI (quite probably fake PCI at that) and other resources.
+>
+> If there is a legitimate use case for poking around with memory dimm i2c
+> on these boards then really there needs to be a proper defined interface
+> for doing so that covers firmware and OS users.
+
+The legitimate use case is NV-DIMMs.  They have control registers that
+are accessed via smbus.  BIOS is likely to poke at those registers
+early in boot, but the kernel and/or userspace will need them, too.
+It would be nice to know which DIMM slot they map to.
+
+In this particular case (Intel LGA2011 systems), there's only one sane
+way to wire up the busses, since the memory controller *is* the smbus
+master.  According to the JEDEC spec, each DIMM slot is has three pins
+that indicate which slot it is on its channel, and the onboard smbus
+hardware uses those pins to select its addresses.  (This maps directly
+to three of the seven address bits.)  Each memory controller supports
+two RAM channels and two i2c channels, and, if you wire them backwards
+(or mix them up between controllers), then I would be amazed if the
+system works.  So this particular driver really does know the topology
+a priori.
+
+On the other hand, nothing rules out having NV-DIMMs in non-LGA2011
+systems where the smbus/i2c topology is less certain.  But I think it
+would be silly for an eventual NVDIMM driver to specifically depend on
+ACPI, since ACPI isn't needed for existing LGA2011 NVDIMM systems.
+
+(Knowing which physical memory addresses map to which DIMM is a
+different story.  I think that the sb-edac driver knows the mapping,
+though.)
+
+--Andy
