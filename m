@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaBTV1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 16:27:50 -0500
-Received: from mga09.intel.com ([134.134.136.24]:31960 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828AbaBTV1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 16:27:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,514,1389772800"; 
-   d="scan'208";a="459078457"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH 2/2] x86/AVX-512: Enable AVX-512 States Context Switch
-Date: Thu, 20 Feb 2014 13:24:51 -0800
-Message-Id: <1392931491-33237-2-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1392931491-33237-1-git-send-email-fenghua.yu@intel.com>
-References: <1392931491-33237-1-git-send-email-fenghua.yu@intel.com>
+	id S1753074AbaBTV25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 16:28:57 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:56334 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751838AbaBTV24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 16:28:56 -0500
+Date: Thu, 20 Feb 2014 15:28:54 -0600
+From: Russ Anderson <rja@sgi.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Message-ID: <20140220212854.GO17949@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com> <20140220201458.GA7099@sgi.com> <1392927381.20109.0.camel@x230> <20140220204028.GJ17949@sgi.com> <1392929163.20109.5.camel@x230> <20140220205901.GM17949@sgi.com> <1392930047.20109.6.camel@x230>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392930047.20109.6.camel@x230>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+On Thu, Feb 20, 2014 at 09:00:48PM +0000, Matthew Garrett wrote:
+> On Thu, 2014-02-20 at 14:59 -0600, Russ Anderson wrote:
+> > On Thu, Feb 20, 2014 at 08:46:04PM +0000, Matthew Garrett wrote:
+> > > On Thu, 2014-02-20 at 14:40 -0600, Russ Anderson wrote:
+> > > 
+> > > > This is also a problem for systems with functional BMCs.  Our
+> > > > large cluster systems do all IPMI traffic (monitoring) through
+> > > > a system controller back door.  We do not want the kernel
+> > > > doing IPMI commands on those systems.
+> > > 
+> > > Why not?
+> > 
+> > Because some customers want to use cpu cycles for their
+> > application and let the ipmi monitoring go on through
+> > the system controller network.
+> 
+> Why is it generating any significant amount of CPU load? We're not
+> talking about a high-bandwidth interface here.
 
-This patch enables Opmask, ZMM_Hi256, and Hi16_ZMM AVX-512 states for
-xstate context switch.
+For some customers _any_ amount is significant, especially
+on large clustered systems where the amount is multiplied
+by tens or hundreds of thousands of nodes.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/include/asm/xsave.h | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+You many not think wasting their cpu cycles is important, but they do.
 
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 5547389..82173f6 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -6,11 +6,14 @@
- 
- #define XSTATE_CPUID		0x0000000d
- 
--#define XSTATE_FP	0x1
--#define XSTATE_SSE	0x2
--#define XSTATE_YMM	0x4
--#define XSTATE_BNDREGS	0x8
--#define XSTATE_BNDCSR	0x10
-+#define XSTATE_FP		0x1
-+#define XSTATE_SSE		0x2
-+#define XSTATE_YMM		0x4
-+#define XSTATE_BNDREGS		0x8
-+#define XSTATE_BNDCSR		0x10
-+#define XSTATE_OPMASK		0x20
-+#define XSTATE_ZMM_Hi256	0x40
-+#define XSTATE_Hi16_ZMM		0x80
- 
- #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
- 
-@@ -23,7 +26,8 @@
- #define XSAVE_YMM_OFFSET    (XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET)
- 
- /* Supported features which support lazy state saving */
--#define XSTATE_LAZY	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-+#define XSTATE_LAZY	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM		      \
-+			| XSTATE_OPMASK | XSTATE_ZMM_Hi256 | XSTATE_Hi16_ZMM)
- 
- /* Supported features which require eager state saving */
- #define XSTATE_EAGER	(XSTATE_BNDREGS | XSTATE_BNDCSR)
+
 -- 
-1.8.1.2
-
+Russ Anderson,  Kernel and Performance Software Team Manager
+SGI - Silicon Graphics Inc          rja@sgi.com
