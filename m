@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbaBTNSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:18:38 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47440 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753759AbaBTNSh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:18:37 -0500
-Date: Thu, 20 Feb 2014 22:17:45 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Markus Pargmann <mpa@pengutronix.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        stable@vger.kernel.org
-Message-ID: <20140220131744.GR2669@sirena.org.uk>
-References: <1392894472-11956-1-git-send-email-mpa@pengutronix.de>
- <1392894472-11956-3-git-send-email-mpa@pengutronix.de>
- <20140220125130.GQ2669@sirena.org.uk>
- <20140220130108.GD21048@pengutronix.de>
+	id S1754557AbaBTNT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:19:28 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:10042 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753787AbaBTNT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 08:19:26 -0500
+X-IronPort-AV: E=Sophos;i="4.97,512,1389744000"; 
+   d="scan'208";a="104297584"
+Message-ID: <530600C5.3070107@citrix.com>
+Date: Thu, 20 Feb 2014 13:19:01 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3FmRlnZT3MJ0iQxE"
-Content-Disposition: inline
-In-Reply-To: <20140220130108.GD21048@pengutronix.de>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.156.234
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/2] regulator: core: Replace direct ops->disable usage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+CC: Ian Campbell <Ian.Campbell@citrix.com>, <kvm@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <bridge@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
+ from becoming the root bridge
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com> <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com> <20140216105754.63738163@nehalam.linuxnetplumber.net> <CAB=NE6WwbOXNLO_Mn42i7y62pEsmDOWd35B621eiJk4iaE3Hfg@mail.gmail.com> <1392803559.23084.99.camel@kazak.uk.xensource.com> <5304C13F.3030802@citrix.com> <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com>
+In-Reply-To: <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19/02/14 17:02, Luis R. Rodriguez wrote:
+> On Wed, Feb 19, 2014 at 6:35 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
+>> On 19/02/14 09:52, Ian Campbell wrote:
+>>> Can't we arrange things in the Xen hotplug scripts such that if the
+>>> root_block stuff isn't available/doesn't work we fallback to the
+>>> existing fe:ff:ff:ff:ff usage?
+>>>
+>>> That would avoid concerns about forward/backwards compat I think. It
+>>> wouldn't solve the issue you are targeting on old systems, but it also
+>>> doesn't regress them any further.
+>>
+>> I agree, I think this problem could be better handled from userspace: if it
+>> can set root_block then change the default MAC to a random one, if it can't,
+>> then stay with the default one. Or if someone doesn't care about STP but DAD
+>> is still important, userspace can have a force_random_mac option somewhere
+>> to change to a random MAC regardless of root_block presence.
+>
+> Folks, what if I repurpose my patch to use the IFF_BRIDGE_NON_ROOT (or
+> relabel to IFF_ROOT_BLOCK_DEF) flag for a default driver preference
+> upon initialization so that root block will be used once the device
+> gets added to a bridge. The purpose would be to avoid drivers from
+> using the high MAC address hack, streamline to use a random MAC
+> address thereby avoiding the possible duplicate address situation for
+> IPv6. In the STP use case for these interfaces we'd just require
+> userspace to unset the root block. I'd consider the STP use case the
+> most odd of all. The caveat to this approach is 3.8 would be needed
+> (or its the root block patches cherry picked) for base kernels older
+> than 3.8.
 
---3FmRlnZT3MJ0iQxE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+How about this: netback sets the root_block flag and a random MAC by 
+default. So the default behaviour won't change, DAD will be happy, and 
+userspace don't have to do anything unless it's using netback for STP 
+root bridge (I don't think there are too many toolstacks doing that), in 
+which case it has to remove the root_block flag instead of setting a 
+random MAC.
 
-On Thu, Feb 20, 2014 at 02:01:08PM +0100, Markus Pargmann wrote:
-
-> I am using this function from _regulator_force_disable(), which calls
-> _notifier_call_chain() with one additional flag
-> "REGULATOR_EVENT_FORCE_DISABLE". To prevent calling
-> _notifier_call_chain() twice for the force_disable case, I moved that
-> function call out of _regulator_do_disable().
-
-OK, put that in the changelog please.
-
---3FmRlnZT3MJ0iQxE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTBgB1AAoJELSic+t+oim9IaAP/03K9n/F3VLTO6wORyzmcD4G
-kWSWEHJJJVDJFwtXBshNjYW/n+zvdw4YDcE5eiQixO6s5OLJbMMfIJGtJopW/Km1
-xevYoQ7iWRaNqWtsQCTlc+0o3GlxqMYL0qHlU3oNtHUQnnNnguq7ZYYwaYkA73Vi
-R+yHl5HIcz9MPRr4YRtJXAf7tMnIV+8pzXrGW91tjtg1W3yBleHqv1UyiAc0jUCe
-zGIGaT9mbZe3EpyL8DDpTo7mP9F6OvDXHb89w7vvD9cTlnunZIK4VkGL52GCWM40
-6jAq3n3w5QFlyAM+b1dSQQ4bGkbJWR72FTnUI6rMBocQ6ffpQFc/tEpZwEA7oKg9
-5sQ1VQ95Bxjqp8izlHvpdLEcS51WN5VHeLN1GLDYKRoztT1PQWqbmkMXDnmR9vQn
-iD3Fn66tA3uriXWr4QwkYalPRnjUoNOd236/hxNGqXgwlgM3+pELCaCQ76zfYopH
-dZ6FEDITLkagD1V38bkQdyN4aqGFWbTh1Ca+aGqlD42SYTgOK0+eGJUsA8gf+ZAY
-LtDl6/sVqDu8BXr2GLa6pxa+n+6MzvuKMRT4XPh4UQnyCUCV/J5Qjr/Qb9OXeDGR
-wQGMKHIx+WqWOtfBVHj/3be5GmLFrcAg7FZmfRGyPZRskCbUzRR+unGP7EH95IIc
-1DjYLrhnJYOReesmbrVV
-=TK5Q
------END PGP SIGNATURE-----
-
---3FmRlnZT3MJ0iQxE--
+Zoli
