@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708AbaBTRbW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:31:22 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47339 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755313AbaBTRbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:31:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,513,1389772800"; 
-   d="scan'208";a="458962673"
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: x86_pmu_start WARN_ON.
-References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
-	<20140217152859.GF15586@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
-	<20140219101949.GG15586@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
-	<20140220100830.GN6835@laptop.programming.kicks-ass.net>
-	<87r46xdbw4.fsf@tassilo.jf.intel.com>
-	<20140220155416.GH9987@twins.programming.kicks-ass.net>
-Date: Thu, 20 Feb 2014 09:31:19 -0800
-In-Reply-To: <20140220155416.GH9987@twins.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Thu, 20 Feb 2014 16:54:16 +0100")
-Message-ID: <87mwhld72w.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755654AbaBTRfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:35:01 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:37841 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaBTRe6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 12:34:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1392916492.18779.10136.camel@triegel.csb>
+References: <1392321837.18779.3249.camel@triegel.csb>
+	<20140214020144.GO4250@linux.vnet.ibm.com>
+	<1392352981.18779.3800.camel@triegel.csb>
+	<20140214172920.GQ4250@linux.vnet.ibm.com>
+	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	<1392486310.18779.6447.camel@triegel.csb>
+	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	<1392666947.18779.6838.camel@triegel.csb>
+	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	<20140218030002.GA15857@linux.vnet.ibm.com>
+	<CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	<1392740258.18779.7732.camel@triegel.csb>
+	<CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+	<1392752867.18779.8120.camel@triegel.csb>
+	<CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+	<1392916492.18779.10136.camel@triegel.csb>
+Date: Thu, 20 Feb 2014 09:34:57 -0800
+X-Google-Sender-Auth: 6SNDSLXxR_-y1Dul7UmmhgtxYxk
+Message-ID: <CA+55aFyEEUrAz2r=nKxZxUtPVs7zoER9HukQq11UixnrYWbsjA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>, Mark Batty <mbatty@cl.cam.ac.uk>,
+        Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+On Thu, Feb 20, 2014 at 9:14 AM, Torvald Riegel <triegel@redhat.com> wrote:
+>>
+>> So the clarification is basically to the statement that the "if
+>> (consume(p)) a" version *would* have an ordering guarantee between the
+>> read of "p" and "a", but the "consume(p) ? a : b" would *not* have
+>> such an ordering guarantee. Yes?
 >
-> It will; trace_printk() works without -pg, I think you didn't read the
-> instructions very well.
+> Not as I understand it.  If my reply above wasn't clear, let me know and
+> I'll try to rephrase it into something that is.
 
-Ok, you enable and disable it again.  I won't guess why you do that.
+Yeah, so you and Paul agree. And as I mentioned in the email that
+crossed with yours, I think that means that the standard is overly
+complex, hard to understand, fragile, and all *pointlessly* so.
 
->
-> And there's a very good reason not to apply your patch; you can route
-> the function tracer into perf, guess what happens when perf calls the
-> function tracer again :-)
+Btw, there are many ways that "use a consume as an input to a
+conditional" can happen. In particular, even if the result is actually
+*used* like a pointer as far as the programmer is concerned, tricks
+like pointer compression etc can well mean that the "pointer" is
+actually at least partly implemented using conditionals, so that some
+paths end up being only dependent through a comparison of the pointer
+value.
 
-How? 
+So I very much did *not* want to complicate the "litmus test" code
+snippet when Paul tried to make it more complex, but I do think that
+there are cases where code that "looks" like pure pointer chasing
+actually is not for some cases, and then can become basically that
+litmus test for some path.
 
--Andi
+Just to give you an example: in simple list handling it is not at all
+unusual to have a special node that is discovered by comparing the
+address, not by just loading from the pointer and following the list
+itself. Examples of that would be a HEAD node in a doubly linked list
+(Linux uses this concept quite widely, it's our default list
+implementation), or it could be a place-marker ("cursor" entry) in the
+list for safe traversal in the presence of concurrent deletes etc.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+And obviously there is the already much earlier mentioned
+compiler-induced compare, due to value speculation, that can basically
+create such sequences even wherethey did not originally exist in the
+source code itself.
+
+So even if you work with "pointer dereferences", and thus match that
+particular consume pattern, I really don't see why anybody would think
+that "hey, we can ignore any control dependencies" is a good idea.
+It's a *TERRIBLE* idea.
+
+And as mentioned, it's a terrible idea with no upsides. It doesn't
+help compiler optimizations for the case it's *intended* to help,
+since those optimizations can still be done without the horribly
+broken semantics. It doesn't help compiler writers, it just confuses
+them.
+
+And it sure as hell doesn't help users.
+
+                  Linus
