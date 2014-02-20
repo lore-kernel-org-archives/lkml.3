@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351AbaBUAbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:31:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45810 "EHLO
+	id S932357AbaBUAbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:31:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45805 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551AbaBTXw3 (ORCPT
+	with ESMTP id S1755681AbaBTXw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 18:52:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.12 54/82] usb-storage: restrict bcdDevice range for Super Top in Cypress ATACB
-Date: Thu, 20 Feb 2014 15:52:37 -0800
-Message-Id: <20140220235021.106403836@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
+Subject: [PATCH 3.12 53/82] usb-storage: add unusual-devs entry for BlackBerry 9000
+Date: Thu, 20 Feb 2014 15:52:36 -0800
+Message-Id: <20140220235021.077832344@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -30,34 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Stern <stern@rowland.harvard.edu>
 
-commit a9c143c82608bee2a36410caa56d82cd86bdc7fa upstream.
+commit c5637e5119c43452a00e27c274356b072263ecbb upstream.
 
-The Cypress ATACB unusual-devs entry for the Super Top SATA bridge
-causes problems.  Although it was originally reported only for
-bcdDevice = 0x160, its range was much larger.  This resulted in a bug
-report for bcdDevice 0x220, so the range was capped at 0x219.  Now
-Milan reports errors with bcdDevice 0x150.
-
-Therefore this patch restricts the range to just 0x160.
+This patch adds an unusual-devs entry for the BlackBerry 9000.  This
+fixes Bugzilla #22442.
 
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Milan Svoboda <milan.svoboda@centrum.cz>
+Reported-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
+Tested-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_cypress.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/storage/unusual_cypress.h
-+++ b/drivers/usb/storage/unusual_cypress.h
-@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
- 		"Cypress ISD-300LP",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1455,6 +1455,13 @@ UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_FIX_CAPACITY ),
  
--UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
-+UNUSUAL_DEV( 0x14cd, 0x6116, 0x0160, 0x0160,
- 		"Super Top",
- 		"USB 2.0  SATA BRIDGE",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
++/* Reported by Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de> */
++UNUSUAL_DEV(  0x0fca, 0x8004, 0x0201, 0x0201,
++		"Research In Motion",
++		"BlackBerry Bold 9000",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
++
+ /* Reported by Michael Stattmann <michael@stattmann.com> */
+ UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
+ 		"Sony Ericsson",
 
 
