@@ -1,58 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595AbaBUAVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:21:22 -0500
-Received: from imap.thunk.org ([74.207.234.97]:60610 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756247AbaBUAVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:21:19 -0500
-Date: Thu, 20 Feb 2014 19:21:07 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jan Kara <jack@suse.cz>
-Cc: Maxim Patlasov <MPatlasov@parallels.com>, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: avoid exposure of stale data in ext4_punch_hole()
- -v2
-Message-ID: <20140221002107.GB7232@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-	Maxim Patlasov <MPatlasov@parallels.com>, adilger.kernel@dilger.ca,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20130926173113.23276.77451.stgit@dhcp-10-30-17-2.sw.ru>
- <20130927155329.3272.64086.stgit@dhcp-10-30-17-2.sw.ru>
- <20130927160517.GA5777@quack.suse.cz>
+	id S932111AbaBTXxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45970 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086AbaBTXxC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:53:02 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steven Noonan <steven@uplinklabs.net>,
+        Elena Ufimtseva <ufimtseva@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 01/99] xen: properly account for _PAGE_NUMA during xen pte translations
+Date: Thu, 20 Feb 2014 15:51:56 -0800
+Message-Id: <20140220235118.235816834@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
+References: <20140220235118.191692546@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130927160517.GA5777@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 06:05:17PM +0200, Jan Kara wrote:
-> On Fri 27-09-13 19:54:03, Maxim Patlasov wrote:
-> > While handling punch-hole fallocate, it's useless to truncate page cache
-> > before removing the range from extent tree (or block map in indirect case)
-> > because page cache can be re-populated (by read-ahead or read(2) or mmap-ed
-> > read) immediately after truncating page cache, but before updating extent
-> > tree (or block map). In that case the user will see stale data even after
-> > fallocate is completed.
-> > 
-> > Changed in v2 (Thanks to Jan Kara):
-> >  - Until the problem of data corruption resulting from pages backed by
-> >    already freed blocks is fully resolved, the simple thing we can do now
-> >    is to add another truncation of pagecache after punch hole is done.
->   The patch looks good. You can add:
-> Reviewed-by: Jan Kara <jack@suse.cz>
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-I was going through old patches, and it looks like this one got
-dropped.  My apologies.
+------------------
 
-As far as I can tell, the underlying problem in the VFS/MM layer
-hasn't been solved yet (Jan, can you confirm?), so I've queued this
-patch for the next merge window.
+From: Mel Gorman <mgorman@suse.de>
 
-					- Ted
+commit a9c8e4beeeb64c22b84c803747487857fe424b68 upstream.
+
+Steven Noonan forwarded a users report where they had a problem starting
+vsftpd on a Xen paravirtualized guest, with this in dmesg:
+
+  BUG: Bad page map in process vsftpd  pte:8000000493b88165 pmd:e9cc01067
+  page:ffffea00124ee200 count:0 mapcount:-1 mapping:     (null) index:0x0
+  page flags: 0x2ffc0000000014(referenced|dirty)
+  addr:00007f97eea74000 vm_flags:00100071 anon_vma:ffff880e98f80380 mapping:          (null) index:7f97eea74
+  CPU: 4 PID: 587 Comm: vsftpd Not tainted 3.12.7-1-ec2 #1
+  Call Trace:
+    dump_stack+0x45/0x56
+    print_bad_pte+0x22e/0x250
+    unmap_single_vma+0x583/0x890
+    unmap_vmas+0x65/0x90
+    exit_mmap+0xc5/0x170
+    mmput+0x65/0x100
+    do_exit+0x393/0x9e0
+    do_group_exit+0xcc/0x140
+    SyS_exit_group+0x14/0x20
+    system_call_fastpath+0x1a/0x1f
+  Disabling lock debugging due to kernel taint
+  BUG: Bad rss-counter state mm:ffff880e9ca60580 idx:0 val:-1
+  BUG: Bad rss-counter state mm:ffff880e9ca60580 idx:1 val:1
+
+The issue could not be reproduced under an HVM instance with the same
+kernel, so it appears to be exclusive to paravirtual Xen guests.  He
+bisected the problem to commit 1667918b6483 ("mm: numa: clear numa
+hinting information on mprotect") that was also included in 3.12-stable.
+
+The problem was related to how xen translates ptes because it was not
+accounting for the _PAGE_NUMA bit.  This patch splits pte_present to add
+a pteval_present helper for use by xen so both bare metal and xen use
+the same code when checking if a PTE is present.
+
+[mgorman@suse.de: wrote changelog, proposed minor modifications]
+[akpm@linux-foundation.org: fix typo in comment]
+Reported-by: Steven Noonan <steven@uplinklabs.net>
+Tested-by: Steven Noonan <steven@uplinklabs.net>
+Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/include/asm/pgtable.h |   14 ++++++++++++--
+ arch/x86/xen/mmu.c             |    4 ++--
+ 2 files changed, 14 insertions(+), 4 deletions(-)
+
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -445,10 +445,20 @@ static inline int pte_same(pte_t a, pte_
+ 	return a.pte == b.pte;
+ }
+ 
++static inline int pteval_present(pteval_t pteval)
++{
++	/*
++	 * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
++	 * way clearly states that the intent is that protnone and numa
++	 * hinting ptes are considered present for the purposes of
++	 * pagetable operations like zapping, protection changes, gup etc.
++	 */
++	return pteval & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
++}
++
+ static inline int pte_present(pte_t a)
+ {
+-	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
+-			       _PAGE_NUMA);
++	return pteval_present(pte_flags(a));
+ }
+ 
+ #define pte_accessible pte_accessible
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct
+ /* Assume pteval_t is equivalent to all the other *val_t types. */
+ static pteval_t pte_mfn_to_pfn(pteval_t val)
+ {
+-	if (val & _PAGE_PRESENT) {
++	if (pteval_present(val)) {
+ 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+ 		unsigned long pfn = mfn_to_pfn(mfn);
+ 
+@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t
+ 
+ static pteval_t pte_pfn_to_mfn(pteval_t val)
+ {
+-	if (val & _PAGE_PRESENT) {
++	if (pteval_present(val)) {
+ 		unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+ 		pteval_t flags = val & PTE_FLAGS_MASK;
+ 		unsigned long mfn;
+
+
