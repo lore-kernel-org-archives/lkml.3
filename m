@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413AbaBTX7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:59:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46328 "EHLO
+	id S1756484AbaBTX74 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:59:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46316 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756123AbaBTXyS (ORCPT
+	with ESMTP id S1756110AbaBTXyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:18 -0500
+	Thu, 20 Feb 2014 18:54:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Tom Stellard <thomas.stellard@amd.com>
-Subject: [PATCH 3.13 42/99] drm/radeon: consolidate sdma hdp flushing code for CIK
-Date: Thu, 20 Feb 2014 15:52:37 -0800
-Message-Id: <20140220235119.436777687@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 3.13 49/99] staging: r8188eu: Fix typo in USB_DEVICE list
+Date: Thu, 20 Feb 2014 15:52:44 -0800
+Message-Id: <20140220235119.631389265@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,78 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit ca113f6baeb314a66463c35565b4f7955c484000 upstream.
+commit 08951f10ae146d0c4114ac508310ad316b6f8798 upstream.
 
-It's used in several places so move to a common shared
-function.
+There is a typo in the device list that interchanges the vendor and
+product codes for one of the entries. This exchange was determined
+by noticing that the vendor code is 0x07b8 for Abocom at
+http://www.linux-usb.org/usb.ids.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: Tom Stellard <thomas.stellard@amd.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cik_sdma.c |   35 +++++++++++++++++++++++------------
- 1 file changed, 23 insertions(+), 12 deletions(-)
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/cik_sdma.c
-+++ b/drivers/gpu/drm/radeon/cik_sdma.c
-@@ -88,6 +88,27 @@ void cik_sdma_ring_ib_execute(struct rad
- }
- 
- /**
-+ * cik_sdma_hdp_flush_ring_emit - emit an hdp flush on the DMA ring
-+ *
-+ * @rdev: radeon_device pointer
-+ * @ridx: radeon ring index
-+ *
-+ * Emit an hdp flush packet on the requested DMA ring.
-+ */
-+static void cik_sdma_hdp_flush_ring_emit(struct radeon_device *rdev,
-+					 int ridx)
-+{
-+	struct radeon_ring *ring = &rdev->ring[ridx];
-+
-+	/* We should be using the new POLL_REG_MEM special op packet here
-+	 * but it causes sDMA to hang sometimes
-+	 */
-+	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_SRBM_WRITE, 0, 0xf000));
-+	radeon_ring_write(ring, HDP_MEM_COHERENCY_FLUSH_CNTL >> 2);
-+	radeon_ring_write(ring, 0);
-+}
-+
-+/**
-  * cik_sdma_fence_ring_emit - emit a fence on the DMA ring
-  *
-  * @rdev: radeon_device pointer
-@@ -111,12 +132,7 @@ void cik_sdma_fence_ring_emit(struct rad
- 	/* generate an interrupt */
- 	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_TRAP, 0, 0));
- 	/* flush HDP */
--	/* We should be using the new POLL_REG_MEM special op packet here
--	 * but it causes sDMA to hang sometimes
--	 */
--	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_SRBM_WRITE, 0, 0xf000));
--	radeon_ring_write(ring, HDP_MEM_COHERENCY_FLUSH_CNTL >> 2);
--	radeon_ring_write(ring, 0);
-+	cik_sdma_hdp_flush_ring_emit(rdev, fence->ring);
- }
- 
- /**
-@@ -747,12 +763,7 @@ void cik_dma_vm_flush(struct radeon_devi
- 	radeon_ring_write(ring, VMID(0));
- 
- 	/* flush HDP */
--	/* We should be using the new POLL_REG_MEM special op packet here
--	 * but it causes sDMA to hang sometimes
--	 */
--	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_SRBM_WRITE, 0, 0xf000));
--	radeon_ring_write(ring, HDP_MEM_COHERENCY_FLUSH_CNTL >> 2);
--	radeon_ring_write(ring, 0);
-+	cik_sdma_hdp_flush_ring_emit(rdev, ridx);
- 
- 	/* flush TLB */
- 	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_SRBM_WRITE, 0, 0xf000));
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -53,7 +53,7 @@ static struct usb_device_id rtw_usb_id_t
+ 	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0x0179)}, /* 8188ETV */
+ 	/*=== Customer ID ===*/
+ 	/****** 8188EUS ********/
+-	{USB_DEVICE(0x8179, 0x07B8)}, /* Abocom - Abocom */
++	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
+ 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
+ 	{}	/* Terminating entry */
+ };
 
 
