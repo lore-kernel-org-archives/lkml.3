@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877AbaBTJPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:15:35 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:40246 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162AbaBTJP1 (ORCPT
+	id S1754504AbaBTJRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:17:42 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:57827 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753832AbaBTJRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:15:27 -0500
-MIME-Version: 1.0
+	Thu, 20 Feb 2014 04:17:39 -0500
+From: Lei Wen <leiwen@marvell.com>
+To: Peter Zijlstra <peterz@infradead.org>, Lei Wen <leiwen@marvell.com>,
+        <mingo@redhat.com>, <preeti.lkml@gmail.com>,
+        <daniel.lezcano@linaro.org>, <viresh.kumar@linaro.org>,
+        <xjian@marvell.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: keep quiescent cpu out of idle balance loop
+Date: Thu, 20 Feb 2014 17:17:04 +0800
+Message-ID: <1392887824-20138-1-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20140220085017.GL6835@laptop.programming.kicks-ass.net>
-References: <1392787230-17986-1-git-send-email-leiwen@marvell.com>
-	<20140219090415.GK27965@twins.programming.kicks-ass.net>
-	<CALZhoSQpbJGSEaoOKO_sQQNFBU9UHYQ4bPCXEFfAz=iUm+D7_g@mail.gmail.com>
-	<20140220085017.GL6835@laptop.programming.kicks-ass.net>
-Date: Thu, 20 Feb 2014 17:15:26 +0800
-Message-ID: <CALZhoSSOWE54X8rAz-2VMhYN-N_3rzthTfRvTQcA5_dQqgoA3w@mail.gmail.com>
-Subject: Re: [PATCH] sched: keep quiescent cpu out of idle balance loop
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lei Wen <leiwen@marvell.com>, mingo@redhat.com, preeti.lkml@gmail.com,
-        daniel.lezcano@linaro.org, viresh.kumar@linaro.org, xjian@marvell.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+References: <20140220085017.GL6835@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-20_02:2014-02-18,2014-02-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402200010
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 4:50 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Feb 20, 2014 at 10:42:51AM +0800, Lei Wen wrote:
->> >> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
->> >> +     int ilb;
->> >> +     int cpu = smp_processor_id();
->> >> +     struct sched_domain *tmp;
->> >>
->> >> -     if (ilb < nr_cpu_ids && idle_cpu(ilb))
->> >> -             return ilb;
->> >> +     for_each_domain(cpu, tmp) {
->> >> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
->> >> +                             sched_domain_span(tmp));
->> >> +             if (ilb < nr_cpu_ids && idle_cpu(ilb))
->> >> +                     return ilb;
->> >> +     }
->> >
->> > The ILB code is bad; but you just made it horrible. Don't add pointless
->> > for_each_domain() iterations.
->> >
->> > I'm thinking something like:
->> >
->> >   ilb = cpumask_first_and(nohz.idle_cpus_mask, this_rq()->rd.span);
->> >
->> > Should work just fine, no?
->>
->> Yes, it has the same result as my previous patch did.
->>
->> >
->> > Better still would be to maybe not participate in the ILB in the first
->> > place and leave this selection loop alone.
->>
->> Not quitely get your point here...
->> Do you mean that you want idle cpu selection be put in earlier place
->> than current find_new_ilb is?
->
-> I meant that if you stop an idle CPU setting its bit in
-> nohz.idle_cpus_mask, you don't have to mask it out either.
+Cpu which is put into quiescent mode, would remove itself
+from kernel's sched_domain, and want others not disturb its
+task running. But current scheduler would not checking whether
+that cpu is setting in such mode, and still insist the quiescent
+cpu to response the nohz load balance.
 
-Understand it.
-I would reformat my previous patch according to your suggestion.
+Fix it by preventing such cpu set nohz.idle_cpus_mask in the
+first place.
 
-Thanks,
-Lei
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/sched/fair.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 235cfa7..bc85022 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6883,6 +6883,13 @@ void nohz_balance_enter_idle(int cpu)
+ 	if (!cpu_active(cpu))
+ 		return;
+ 
++	/*
++	 * If this cpu is kept outside of root domain, we don't bother
++	 * to ask it for nohz balance.
++	 */
++	if (!cpumask_test_cpu(cpu, this_rq()->rd.span))
++		return;
++
+ 	if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
+ 		return;
+ 
+-- 
+1.8.3.2
+
