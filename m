@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309AbaBTX5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:57:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46352 "EHLO
+	id S1756357AbaBTX6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:58:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46337 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146AbaBTXyW (ORCPT
+	with ESMTP id S1756138AbaBTXyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:22 -0500
+	Thu, 20 Feb 2014 18:54:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.13 99/99] EDAC: Correct workqueue setup path
-Date: Thu, 20 Feb 2014 15:53:34 -0800
-Message-Id: <20140220235121.072459537@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.13 96/99] genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=n
+Date: Thu, 20 Feb 2014 15:53:31 -0800
+Message-Id: <20140220235120.987607792@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,67 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@suse.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit cb6ef42e516cb8948f15e4b70dc03af8020050a2 upstream.
+commit 2c45aada341121438affc4cb8d5b4cfaa2813d3d upstream.
 
-We're using edac_mc_workq_setup() both on the init path, when
-we load an edac driver and when we change the polling period
-(edac_mc_reset_delay_period) through /sys/.../edac_mc_poll_msec.
+In allmodconfig builds for sparc and any other arch which does
+not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
 
-On that second path we don't need to init the workqueue which has been
-initialized already.
+  CC [M]  lib/cpu-notifier-error-inject.o
+  CC [M]  lib/pm-notifier-error-inject.o
+ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
+make[2]: *** [__modpost] Error 1
 
-Thanks to Tejun for workqueue insights.
+This happens because commit 3911ff30f5 ("genirq: export
+handle_edge_irq() and irq_to_desc()") added one export for it, but
+there were actually two instances of it, in an if/else clause for
+CONFIG_SPARSE_IRQ.  Add the second one.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Link: http://lkml.kernel.org/r/1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_mc.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ kernel/irq/irqdesc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -559,7 +559,8 @@ static void edac_mc_workq_function(struc
-  *
-  *		called with the mem_ctls_mutex held
-  */
--static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
-+static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
-+				bool init)
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned in
  {
- 	edac_dbg(0, "\n");
- 
-@@ -567,7 +568,9 @@ static void edac_mc_workq_setup(struct m
- 	if (mci->op_state != OP_RUNNING_POLL)
- 		return;
- 
--	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+	if (init)
-+		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+
- 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
+ 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
  }
++EXPORT_SYMBOL(irq_to_desc);
  
-@@ -611,7 +614,7 @@ void edac_mc_reset_delay_period(unsigned
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
- 
--		edac_mc_workq_setup(mci, value);
-+		edac_mc_workq_setup(mci, value, false);
- 	}
- 
- 	mutex_unlock(&mem_ctls_mutex);
-@@ -782,7 +785,7 @@ int edac_mc_add_mc(struct mem_ctl_info *
- 		/* This instance is NOW RUNNING */
- 		mci->op_state = OP_RUNNING_POLL;
- 
--		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
-+		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
- 	} else {
- 		mci->op_state = OP_RUNNING_INTERRUPT;
- 	}
+ static void free_desc(unsigned int irq)
+ {
 
 
