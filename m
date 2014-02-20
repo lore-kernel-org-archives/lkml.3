@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070AbaBUAjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:39:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45717 "EHLO
+	id S1756282AbaBUAj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:39:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45714 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515AbaBTXwI (ORCPT
+	with ESMTP id S1755509AbaBTXwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:08 -0500
+	Thu, 20 Feb 2014 18:52:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve French <smfrench@gmail.com>,
-        Shirish Pargaonkar <spargaonkar@suse.com>
-Subject: [PATCH 3.12 07/82] Add protocol specific operation for CIFS xattrs
-Date: Thu, 20 Feb 2014 15:51:50 -0800
-Message-Id: <20140220235019.703981537@linuxfoundation.org>
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.12 06/82] CIFS: Fix SMB2 mounts so they dont try to set or get xattrs via cifs
+Date: Thu, 20 Feb 2014 15:51:49 -0800
+Message-Id: <20140220235019.675584089@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -31,65 +30,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steve French <smfrench@gmail.com>
 
-commit d979f3b0a1f0b5499ab85e68cdf02b56852918b6 upstream.
+commit 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 upstream.
 
-Changeset 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 added protocol
-operations for get/setxattr to avoid calling cifs operations
-on smb2/smb3 mounts for xattr operations and this changeset
-adds the calls to cifs specific protocol operations for xattrs
-(in order to reenable cifs support for xattrs which was
-temporarily disabled by the previous changeset.  We do not
-have SMB2/SMB3 worker function for setting xattrs yet so
-this only enables it for cifs.
-
-CCing stable since without these two small changsets (its
-small coreq 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 is
-also needed) calling getfattr/setfattr on smb2/smb3 mounts
-causes problems.
+When mounting with smb2 (or smb2.1 or smb3) we need to check to make
+sure that attempts to query or set extended attributes do not
+attempt to send the request with the older cifs protocol instead
+(eventually we also need to add the support in SMB2
+to query/set extended attributes but this patch prevents us from
+using the wrong protocol for extended attribute operations).
 
 Signed-off-by: Steve French <smfrench@gmail.com>
-Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/inode.c   |   13 +++++++++----
- fs/cifs/smb1ops.c |    4 ++++
- 2 files changed, 13 insertions(+), 4 deletions(-)
+ fs/cifs/cifsglob.h |    6 ++++++
+ fs/cifs/xattr.c    |   49 ++++++++++++++++++++++++++++++-------------------
+ 2 files changed, 36 insertions(+), 19 deletions(-)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -518,10 +518,15 @@ static int cifs_sfu_mode(struct cifs_fat
- 		return PTR_ERR(tlink);
- 	tcon = tlink_tcon(tlink);
- 
--	rc = CIFSSMBQAllEAs(xid, tcon, path, "SETFILEBITS",
--			    ea_value, 4 /* size of buf */, cifs_sb->local_nls,
--			    cifs_sb->mnt_cifs_flags &
--				CIFS_MOUNT_MAP_SPECIAL_CHR);
-+	if (tcon->ses->server->ops->query_all_EAs == NULL) {
-+		cifs_put_tlink(tlink);
-+		return -EOPNOTSUPP;
-+	}
-+
-+	rc = tcon->ses->server->ops->query_all_EAs(xid, tcon, path,
-+			"SETFILEBITS", ea_value, 4 /* size of buf */,
-+			cifs_sb->local_nls,
-+			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
- 	cifs_put_tlink(tlink);
- 	if (rc < 0)
- 		return (int)rc;
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -1003,6 +1003,10 @@ struct smb_version_operations smb1_opera
- 	.push_mand_locks = cifs_push_mandatory_locks,
- 	.query_mf_symlink = open_query_close_cifs_symlink,
- 	.is_read_op = cifs_is_read_op,
-+#ifdef CONFIG_CIFS_XATTR
-+	.query_all_EAs = CIFSSMBQAllEAs,
-+	.set_EA = CIFSSMBSetEA,
-+#endif /* CIFS_XATTR */
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -379,6 +379,12 @@ struct smb_version_operations {
+ 	char * (*create_lease_buf)(u8 *, u8);
+ 	/* parse lease context buffer and return oplock/epoch info */
+ 	__u8 (*parse_lease_buf)(void *, unsigned int *);
++	ssize_t (*query_all_EAs)(const unsigned int, struct cifs_tcon *,
++			const unsigned char *, const unsigned char *, char *,
++			size_t, const struct nls_table *, int);
++	int (*set_EA)(const unsigned int, struct cifs_tcon *, const char *,
++			const char *, const void *, const __u16,
++			const struct nls_table *, int);
  };
  
- struct smb_version_values smb1_values = {
+ struct smb_version_values {
+--- a/fs/cifs/xattr.c
++++ b/fs/cifs/xattr.c
+@@ -82,9 +82,11 @@ int cifs_removexattr(struct dentry *dire
+ 			goto remove_ea_exit;
+ 
+ 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+-		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, NULL,
+-			(__u16)0, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->set_EA)
++			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
++				full_path, ea_name, NULL, (__u16)0,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	}
+ remove_ea_exit:
+ 	kfree(full_path);
+@@ -149,18 +151,22 @@ int cifs_setxattr(struct dentry *direntr
+ 			cifs_dbg(FYI, "attempt to set cifs inode metadata\n");
+ 
+ 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+-		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
+-			(__u16)value_size, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->set_EA)
++			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
++				full_path, ea_name, ea_value, (__u16)value_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	} else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)
+ 		   == 0) {
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto set_ea_exit;
+ 
+ 		ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
+-		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
+-			(__u16)value_size, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->set_EA)
++			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
++				full_path, ea_name, ea_value, (__u16)value_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	} else if (strncmp(ea_name, CIFS_XATTR_CIFS_ACL,
+ 			strlen(CIFS_XATTR_CIFS_ACL)) == 0) {
+ #ifdef CONFIG_CIFS_ACL
+@@ -272,17 +278,21 @@ ssize_t cifs_getxattr(struct dentry *dir
+ 			/* revalidate/getattr then populate from inode */
+ 		} /* BB add else when above is implemented */
+ 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+-		rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
+-			buf_size, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->query_all_EAs)
++			rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
++				full_path, ea_name, ea_value, buf_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	} else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto get_ea_exit;
+ 
+ 		ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
+-		rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
+-			buf_size, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->query_all_EAs)
++			rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
++				full_path, ea_name, ea_value, buf_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	} else if (strncmp(ea_name, POSIX_ACL_XATTR_ACCESS,
+ 			  strlen(POSIX_ACL_XATTR_ACCESS)) == 0) {
+ #ifdef CONFIG_CIFS_POSIX
+@@ -400,11 +410,12 @@ ssize_t cifs_listxattr(struct dentry *di
+ 	/* if proc/fs/cifs/streamstoxattr is set then
+ 		search server for EAs or streams to
+ 		returns as xattrs */
+-	rc = CIFSSMBQAllEAs(xid, pTcon, full_path, NULL, data,
+-				buf_size, cifs_sb->local_nls,
+-				cifs_sb->mnt_cifs_flags &
+-					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 
++	if (pTcon->ses->server->ops->query_all_EAs)
++		rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
++				full_path, NULL, data, buf_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ list_ea_exit:
+ 	kfree(full_path);
+ 	free_xid(xid);
 
 
