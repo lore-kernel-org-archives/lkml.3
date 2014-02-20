@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaBTJyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:54:45 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:34766 "EHLO extserv.mm-sol.com"
+	id S1752711AbaBTJzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:55:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48002 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751560AbaBTJyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:54:38 -0500
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH RESEND v2 1/3] usb: chipidea: msm: Add device tree binding information
-Date: Thu, 20 Feb 2014 11:53:08 +0200
-Message-Id: <1392889988-24312-1-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <530512F1.3060304@cogentembedded.com>
-References: <530512F1.3060304@cogentembedded.com>
+	id S1751560AbaBTJzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 04:55:37 -0500
+Date: Thu, 20 Feb 2014 10:55:34 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, Anton Blanchard <anton@samba.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ppc: RECLAIM_DISTANCE 10?
+Message-ID: <20140220095534.GC12451@dhcp22.suse.cz>
+References: <20140218090658.GA28130@dhcp22.suse.cz>
+ <20140218233404.GB10844@linux.vnet.ibm.com>
+ <20140218235800.GC10844@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1402181737530.17521@chino.kir.corp.google.com>
+ <20140219162438.GB27108@linux.vnet.ibm.com>
+ <20140219163345.GD27108@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140219163345.GD27108@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Wed 19-02-14 08:33:45, Nishanth Aravamudan wrote:
+> On 19.02.2014 [08:24:38 -0800], Nishanth Aravamudan wrote:
+> > On 18.02.2014 [17:43:38 -0800], David Rientjes wrote:
+> > > On Tue, 18 Feb 2014, Nishanth Aravamudan wrote:
+> > > 
+> > > > How about the following?
+> > > > 
+> > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > index 5de4337..1a0eced 100644
+> > > > --- a/mm/page_alloc.c
+> > > > +++ b/mm/page_alloc.c
+> > > > @@ -1854,7 +1854,8 @@ static void __paginginit init_zone_allows_reclaim(int nid)
+> > > >         int i;
+> > > >  
+> > > >         for_each_online_node(i)
+> > > > -               if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+> > > > +               if (node_distance(nid, i) <= RECLAIM_DISTANCE ||
+> > > > +                                       !NODE_DATA(i)->node_present_pages)
+> > > >                         node_set(i, NODE_DATA(nid)->reclaim_nodes);
+> > > >                 else
+> > > >                         zone_reclaim_mode = 1;
+> > > 
+> > >  [ I changed the above from NODE_DATA(nid) -> NODE_DATA(i) as you caught 
+> > >    so we're looking at the right code. ]
+> > > 
+> > > That can't be right, it would allow reclaiming from a memoryless node.  I 
+> > > think what you want is
+> > 
+> > Gah, you're right.
+> > 
+> > > 	for_each_online_node(i) {
+> > > 		if (!node_present_pages(i))
+> > > 			continue;
+> > > 		if (node_distance(nid, i) <= RECLAIM_DISTANCE) {
+> > > 			node_set(i, NODE_DATA(nid)->reclaim_nodes);
+> > > 			continue;
+> > > 		}
+> > > 		/* Always try to reclaim locally */
+> > > 		zone_reclaim_mode = 1;
+> > > 	}
+> > > 
+> > > but we really should be able to do for_each_node_state(i, N_MEMORY) here 
+> > > and memoryless nodes should already be excluded from that mask.
+> > 
+> > Yep, I found that afterwards, which simplifies the logic. I'll add this
+> > to my series :)
+> 
+> In looking at the code, I am wondering about the following:
+> 
+> init_zone_allows_reclaim() is called for each nid from
+> free_area_init_node(). Which means that calculate_node_totalpages for
+> other "later" nids and check_for_memory() [which sets up the N_MEMORY
+> nodemask] hasn't been called yet.
+> 
+> So, would it make sense to pull up the
+>                 /* Any memory on that node */
+>                 if (pgdat->node_present_pages)
+>                         node_set_state(nid, N_MEMORY);
+>                 check_for_memory(pgdat, nid);
+> into free_area_init_node()?
 
-Document device tree binding information as required by
-the Qualcomm USB controller.
+Dunno, but it shouldn't be needed because nodes are set N_MEMORY earlier
+in early_calculate_totalpages as mentioned in other email.
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- .../devicetree/bindings/usb/msm-hsusb.txt          |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-index 5ea26c6..d4e7e41 100644
---- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-+++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-@@ -15,3 +15,20 @@ Example EHCI controller device node:
- 		usb-phy = <&usb_otg>;
- 	};
- 
-+CI13xxx (Chipidea) USB controllers
-+
-+Required properties:
-+- compatible:   should contain "qcom,ci-hdrc"
-+- reg:          offset and length of the register set in the memory map
-+- interrupts:   interrupt-specifier for the controller interrupt.
-+- usb-phy:      phandle for the PHY device
-+- dr_mode:      Sould be "peripheral"
-+
-+	gadget@f9a55000 {
-+		compatible = "qcom,ci-hdrc";
-+		reg = <0xf9a55000 0x400>;
-+		dr_mode = "peripheral";
-+		interrupts = <0 134 0>;
-+		usb-phy = <&usb_otg>;
-+	};
-+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
