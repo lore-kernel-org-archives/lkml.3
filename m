@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaBTPTQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:19:16 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:24636 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683AbaBTPTO (ORCPT
+	id S1754391AbaBTPY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:24:28 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:61131 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaBTPY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:19:14 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-5e-53061cef2cca
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] regulator: max14577: Fix invalid return value on DT parse
- success
-Date: Thu, 20 Feb 2014 16:19:01 +0100
-Message-id: <1392909541-10285-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKJMWRmVeSWpSXmKPExsVy+t/xq7rvZdiCDXZvsLCY+vAJm8XrF4YW
-	3650MFlc3jWHzYHFY+esu+wem1Z1snn0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxrOLogUn
-	OSrm37jM2sDYy97FyMkhIWAi0XlnAhuELSZx4d56IJuDQ0hgKaPEbtkuRi4gs49JYuaqZ6wg
-	NWwCxhKbly8BqxcRyJDYPG8qWJxZwFDi57s/YDOFBUIkPu6czwRiswioShxp28MMYvMKuEvM
-	PLGABWS+hICCxJxJNhMYuRcwMqxiFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECPH61x2MS49Z
-	HWIU4GBU4uE9KcUWLMSaWFZcmXuIUYKDWUmEN0oaKMSbklhZlVqUH19UmpNafIiRiYNTqoFx
-	08bmxV8aE9frzS47GrA7PuiW1oVVhyoUrjSUWN14t/js3UenhTQ+rtm/X2Y669x3X0yfJv9P
-	nMP49ueNv98eHD1nsGr++R8mwe6SkbN1GMM/Wx2pUPpUzmdXt9asq3fnwRSxrdk3P2VMk3ZO
-	tNF95pD3ITUu27SmZPrtxeb/jOWqX7tnrtzWrMRSnJFoqMVcVJwIAHmd60/YAQAA
+	Thu, 20 Feb 2014 10:24:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH] rename HAS_IOPORT to HAS_IOPORT_MAP
+Date: Thu, 20 Feb 2014 16:24:19 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+References: <1392854190-29596-1-git-send-email-u.kleine-koenig@pengutronix.de>
+In-Reply-To: <1392854190-29596-1-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201402201624.19922.arnd@arndb.de>
+X-Provags-ID: V02:K0:wh6qHUWObMUv/vn0TNA/w7VQIhc3yOLA4LyKfcmcXGv
+ UPZgRloJt3KTbqtBH7Xr/L3ttfjJu5BwAl+wxObufe8rt/e0Va
+ +jGBYz9+O4eTZybbHDNEFzBgDrcXNQrHSFqODZ5LLNjQAab98N
+ SGhyFnG+VG6FqxRTHN4Ec2ertwgAdKUygppC66cJm9U3b7oKBE
+ Zl8TQHVyxLkr0hK/hfUbIztCtAP0ImuBDGAEMJK+pYMlI/WMVv
+ Lfht0D90K76MLwzDYIjlIJfBhDOsW+TEe7Bel6CaihzFKXa2aO
+ jDm3m2rjKz8nvZZK9k7DZPWYk6PdynloEzoPEIJBlI6Pq1Xhna
+ W+nFSEDkBhipISnwMh6c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes bug introduced in 667a6b7a (regulator: max14577: Add missing
-of_node_put). The DTS parsing function returned number of matched
-regulators as success status which then was compared against 0 in probe.
+On Thursday 20 February 2014, Uwe Kleine-König wrote:
+> If the renamed symbol is defined lib/iomap.c implements ioport_map and
+> ioport_unmap and currently (nearly) all platforms define the port
+> accessor functions outb/inb and friend unconditionally. So
+> HAS_IOPORT_MAP is the better name for this. Consequently NO_IOPORT is
+> renamed to NO_IOPORT_MAP.
+> 
+> The motivation for this change is to reintroduce a symbol HAS_IOPORT
+> that signals if outb/int et al are available. I will address that
+> at least one merge window later though to keep surprises to a minimum
+> and catch new introductions of (HAS|NO)_IOPORT.
+> 
+> The changes in this commit were done using:
+> 
+>         $ git grep -l -E '(NO|HAS)_IOPORT' | xargs perl -p -i -e 's/\b((?:CONFIG_)?(?:NO|HAS)_IOPORT)\b/$1_MAP/'
+> 
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-Result was a probe fail after successful parsing the DTS:
-max14577-regulator: probe of max14577-regulator failed with error 2
+Thanks for taking up that work, I had a similar patch series
+some years ago but never followed through with getting it upstream.
+If there are no objections, I hope Andrew can queue it up for -mm.
+Unfortunately I can't think of a good way to split up the patch
+into smaller units that could go through subsystem maintainer
+trees, since we want to start reusing the symbol as soon as possible.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/regulator/max14577.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
-index 186df8785a91..6ba11a8dd23d 100644
---- a/drivers/regulator/max14577.c
-+++ b/drivers/regulator/max14577.c
-@@ -168,11 +168,13 @@ static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev)
- 			MAX14577_REG_MAX);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n", ret);
-+		of_node_put(np);
-+		return ret;
- 	}
- 
- 	of_node_put(np);
- 
--	return ret;
-+	return 0;
- }
- 
- static inline struct regulator_init_data *match_init_data(int index)
--- 
-1.7.9.5
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
