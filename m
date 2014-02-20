@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaBTOrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 09:47:13 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:29499 "EHLO SMTP.CITRIX.COM"
+	id S1755280AbaBTOrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:47:42 -0500
+Received: from dliviu.plus.com ([80.229.23.120]:52028 "EHLO smtp.dudau.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691AbaBTOrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 09:47:10 -0500
-X-IronPort-AV: E=Sophos;i="4.97,512,1389744000"; 
-   d="scan'208";a="104327797"
-Message-ID: <5306156B.4070105@citrix.com>
-Date: Thu, 20 Feb 2014 14:47:07 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754014AbaBTOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 09:47:12 -0500
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Feb 2014 09:47:11 EST
+Date: Thu, 20 Feb 2014 14:38:29 +0000
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] arm64: Add architecture support for PCI
+Message-ID: <20140220143829.GA1556@bart.dudau.co.uk>
+Mail-Followup-To: Yijing Wang <wangyijing@huawei.com>,
+	Liviu Dudau <Liviu.Dudau@arm.com>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	Arnd Bergmann <arnd@arndb.de>
+References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com>
+ <1391453028-23191-2-git-send-email-Liviu.Dudau@arm.com>
+ <5302FED1.80903@huawei.com>
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <bridge@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
- from becoming the root bridge
-References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com> <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com> <53024C58.4010900@citrix.com> <CAB=NE6XYjOd2vRpQCZOG-S5ZW4xjam+FOPAYzribNQpb50Q5pg@mail.gmail.com>
-In-Reply-To: <CAB=NE6XYjOd2vRpQCZOG-S5ZW4xjam+FOPAYzribNQpb50Q5pg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5302FED1.80903@huawei.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Thu Feb 20 14:40:18 2014
+X-DSPAM-Confidence: 1.0000
+X-DSPAM-Probability: 0.0023
+X-DSPAM-Signature: 530613d23191259912610
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/02/14 16:45, Luis R. Rodriguez wrote:
-> On Mon, Feb 17, 2014 at 9:52 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
->> On 15/02/14 02:59, Luis R. Rodriguez wrote:
->>>
->>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->>>
->>> It doesn't make sense for some interfaces to become a root bridge
->>> at any point in time. One example is virtual backend interfaces
->>> which rely on other entities on the bridge for actual physical
->>> connectivity. They only provide virtual access.
->>
->> It is possible that a guest bridge together to VIF, either from the same
->> Dom0 bridge or from different ones. In that case using STP on VIFs sound
->> sensible to me.
->
-> You seem to describe a case whereby it can make sense for xen-netback
-> interfaces to end up becoming the root port of a bridge. Can you
-> elaborate a little more on that as it was unclear the use case.
-Well, I might be wrong on that, but the scenario I was thinking: a guest 
-(let's say domain 1) can have multiple interfaces on different Dom0 (or 
-driver domain) bridges, let's say vif1.0 is plugged into xenbr0 and 
-vif1.1 is in xenbr1. If the guest wants to make a bridge of this two, 
-then using STP makes sense. I wanted to bring up CloudStack's virtual 
-router as an example, but then I realized it's probably doesn't do such 
-thing. However I don't think we should hardcode that a netback interface 
-can't be RP ever.
+On Tue, Feb 18, 2014 at 02:33:53PM +0800, Yijing Wang wrote:
+> > +#include <linux/init.h>
+> > +#include <linux/io.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/mm.h>
+> > +#include <linux/of_pci.h>
+> > +#include <linux/of_platform.h>
+> > +#include <linux/slab.h>
+> > +
+> > +#include <asm/pci-bridge.h>
+> > +
+> > +
+> > +/*
+> > + * Return the domain number for this bus
+> > + */
+> > +int pci_domain_nr(struct pci_bus *bus)
+> > +{
+> > +	struct pci_host_bridge *bridge = to_pci_host_bridge(bus->bridge);
 
->
-> Additionally if such cases exist then under the current upstream
-> implementation one would simply need to change the MAC address in
-> order to enable a vif to become the root port.  Stephen noted there is
-> a way to avoid nominating an interface for a root port through the
-> root block flag. We should use that instead of the MAC address hacks.
-> Let's keep in mind that part of the motivation for this series is to
-> avoid a duplicate IPv6 address left in place by use cases whereby the
-> MAC address of the backend vif was left static. The use case your are
-> explaining likely describes the more prevalent use case where address
-> conflicts can occur, perhaps when administrators for got to change the
-> backend MAC address. If we embrace a random MAC address we'd avoid
-> that issue, and but we'd need to update userspace to use the root
-> block on topologies where desired.
-If I understand you correctly, this is the same I suggested in my 
-another email sent 1.5 hour ago.
+Hi Yijing,
 
-Zoli
+> 
+> Here bus is specific to root bus ? or, what about use find_pci_host_bridge() to get the pci_host_bridge
+> instead.
+
+Yes, the call should be to find_pci_host_bridge(). I sort of implied that the
+bus is always the root bus, which is obviously not correct. Thanks for pointing it out.
+
+> 
+> > +
+> > +	if (bridge)
+> > +		return bridge->domain_nr;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +int pci_proc_domain(struct pci_bus *bus)
+> > +{
+> > +	return pci_domain_nr(bus);
+> > +}
+> > +
+> > +/*
+> > + * Called after each bus is probed, but before its children are examined
+> > + */
+> > +void pcibios_fixup_bus(struct pci_bus *bus)
+> > +{
+> > +	struct pci_dev *dev;
+> > +	struct resource *res;
+> > +	int i;
+> > +
+> > +	if (bus->self != NULL) {
+> 
+> What about use !pci_is_root_bus() ?
+
+Again, good call, will change.
+
+> 
+> > +		pci_read_bridge_bases(bus);
+> > +
+> > +		pci_bus_for_each_resource(bus, res, i) {
+> > +			if (!res || !res->flags || res->parent)
+> > +				continue;
+> > +
+> > +			/*
+> > +			 * If we are going to reassign everything, we can
+> > +			 * shrink the P2P resource to have zero size to
+> > +			 * save space
+> > +			 */
+> > +			if (pci_has_flag(PCI_REASSIGN_ALL_RSRC)) {
+> > +				res->flags |= IORESOURCE_UNSET;
+> > +				res->start = 0;
+> > +				res->end = -1;
+> > +				continue;
+> > +			}
+> > +		}
+> > +	}
+> > +
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
