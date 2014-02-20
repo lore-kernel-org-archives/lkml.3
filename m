@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739AbaBTXXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:23:17 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59553 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522AbaBTXXQ (ORCPT
+	id S1753908AbaBTXXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:23:38 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:53843 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462AbaBTXXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:23:16 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 01/11] ARM: shmobile: r8a7791 dtsi: Fix typo in msiof2 clock output name
-Date: Fri, 21 Feb 2014 00:24:26 +0100
-Message-ID: <2331215.fbDlSseAe0@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1392907779-22053-2-git-send-email-geert@linux-m68k.org>
-References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org> <1392907779-22053-2-git-send-email-geert@linux-m68k.org>
+	Thu, 20 Feb 2014 18:23:36 -0500
+Date: Thu, 20 Feb 2014 15:23:32 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 00/40] 3.13.4-stable review
+Message-ID: <20140220232332.GA3584@roeck-us.net>
+References: <20140218224433.337299968@linuxfoundation.org>
+ <20140219043026.GA15371@roeck-us.net>
+ <20140220183220.GD15290@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140220183220.GD15290@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-(CC'ing Linus Walleij)
-
-Thank you for the patch.
-
-On Thursday 20 February 2014 15:49:29 Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-> Introduced in commit cded80f869aef94853e056ab9c21e305b0c26138 ("ARM:
-> shmobile: r8a7791: Add MSIOF clocks in device tree").
+On Thu, Feb 20, 2014 at 10:32:20AM -0800, Greg Kroah-Hartman wrote:
+> On Tue, Feb 18, 2014 at 08:30:26PM -0800, Guenter Roeck wrote:
+> > On Tue, Feb 18, 2014 at 02:47:01PM -0800, Greg Kroah-Hartman wrote:
+> > > This is the start of the stable review cycle for the 3.13.4 release.
+> > > There are 40 patches in this series, all will be posted as a response
+> > > to this one.  If anyone has any issues with these being applied, please
+> > > let me know.
+> > > 
+> > > Responses should be made by Thu Feb 20 22:44:22 UTC 2014.
+> > > Anything received after that time might be too late.
+> > > 
+> > 
+> > Build results:
+> >     total: 126 pass: 122 skipped: 4 fail: 0
+> > 
+> > qemu tests all passed.
+> > 
+> > Details are available at http://server.roeck-us.net:8010/builders.
+> > 
+> > Results are as expected.
 > 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> ---
->  arch/arm/boot/dts/r8a7791.dtsi |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Thanks for testing and letting me know.  Interesting that the pstate
+> buggy patch didn't hit your build system testing...
 > 
-> diff --git a/arch/arm/boot/dts/r8a7791.dtsi b/arch/arm/boot/dts/r8a7791.dtsi
-> index 1ab4f3d5a8c2..224f4a7ee52a 100644
-> --- a/arch/arm/boot/dts/r8a7791.dtsi
-> +++ b/arch/arm/boot/dts/r8a7791.dtsi
-> @@ -667,7 +667,7 @@
->  				R8A7791_CLK_MSIOF1 R8A7791_CLK_SCIFB2
-> 
->  			>;
-> 
->  			clock-output-names =
-> -				"scifa2", "scifa1", "scifa0", "misof2", "scifb0",
-> +				"scifa2", "scifa1", "scifa0", "msiof2", "scifb0",
->  				"scifb1", "msiof1", "scifb2";
->  		};
->  		mstp3_clks: mstp3_clks@e615013c {
+Nothing is perfect :-(. You mean the one where your builder
+takes much more time to build the kernel with the patch applied,
+or was here another one ?
 
--- 
-Regards,
-
-Laurent Pinchart
-
+Guenter
