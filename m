@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422AbaBUAuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:50:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45539 "EHLO
+	id S1755204AbaBTXvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45502 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075AbaBTXvc (ORCPT
+	with ESMTP id S1755075AbaBTXvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:32 -0500
+	Thu, 20 Feb 2014 18:51:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
-        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>
-Subject: [PATCH 3.10 20/66] of: fix PCI bus match for PCIe slots
-Date: Thu, 20 Feb 2014 15:51:19 -0800
-Message-Id: <20140220234910.067560477@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@intel.com>,
+        Sergey Galanov <sergey.e.galanov@gmail.com>
+Subject: [PATCH 3.10 48/66] Revert "usbcore: set lpm_capable field for LPM capable root hubs"
+Date: Thu, 20 Feb 2014 15:51:47 -0800
+Message-Id: <20140220234910.866210304@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -29,45 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 14e2abb732e485ee57d9d5b2cb8884652238e5c1 upstream.
+commit 140e3026a57ab7d830dab2f2c57796c222db0ea9 upstream.
 
-On IBM pseries systems the device_type device-tree property of a PCIe
-bridge contains the string "pciex". The of_bus_pci_match() function was
-looking only for "pci" on this property, so in such cases the bus
-matching code was falling back to the default bus, causing problems on
-functions that should be using "assigned-addresses" for region address
-translation. This patch fixes the problem by also looking for "pciex" on
-the PCI bus match function.
+Commit 9df89d85b407690afa46ddfbccc80bec6869971d "usbcore: set
+lpm_capable field for LPM capable root hubs" was created under the
+assumption that all USB host controllers should have USB 3.0 Link PM
+enabled for all devices under the hosts.
 
-v2: added comment
+Unfortunately, that's not the case.  The xHCI driver relies on knowledge
+of the host hardware scheduler to calculate the LPM U1/U2 timeout
+values, and it only sets lpm_capable to one for Intel host controllers
+(that have the XHCI_LPM_SUPPORT quirk set).
 
-Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Rob Herring <robh@kernel.org>
+When LPM is enabled for some Fresco Logic hosts, it causes failures with
+a AgeStar 3UBT USB 3.0 hard drive dock:
+
+Jan 11 13:59:03 sg-laptop kernel: usb 3-1: new SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:03 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U1 failed.
+Jan 11 13:59:08 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U2 failed.
+Jan 11 13:59:08 sg-laptop kernel: usb-storage 3-1:1.0: USB Mass Storage device detected
+Jan 11 13:59:08 sg-laptop mtp-probe[613]: checking bus 3, device 2: "/sys/devices/pci0000:00/0000:00:1c.3/0000:04:00.0/usb3/3-1"
+Jan 11 13:59:08 sg-laptop mtp-probe[613]: bus: 3, device: 2 was not an MTP device
+Jan 11 13:59:08 sg-laptop kernel: scsi6 : usb-storage 3-1:1.0
+Jan 11 13:59:13 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U1 failed.
+Jan 11 13:59:18 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U2 failed.
+Jan 11 13:59:18 sg-laptop kernel: usbcore: registered new interface driver usb-storage
+Jan 11 13:59:40 sg-laptop kernel: usb 3-1: reset SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:41 sg-laptop kernel: usb 3-1: device descriptor read/8, error -71
+Jan 11 13:59:41 sg-laptop kernel: usb 3-1: reset SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:46 sg-laptop kernel: usb 3-1: device descriptor read/8, error -110
+Jan 11 13:59:46 sg-laptop kernel: scsi 6:0:0:0: Device offlined - not ready after error recovery
+Jan 11 13:59:46 sg-laptop kernel: usb 3-1: USB disconnect, device number 2
+
+lspci for the affected host:
+
+04:00.0 0c03: 1b73:1000 (rev 04) (prog-if 30 [XHCI])
+        Subsystem: 1043:1039
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 19
+        Region 0: Memory at dd200000 (32-bit, non-prefetchable) [size=64K]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [68] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [80] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <2us, L1 <32us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 unlimited
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Kernel driver in use: xhci_hcd
+        Kernel modules: xhci_hcd
+
+The commit was backported to stable kernels, and will need to be
+reverted there as well.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@intel.com>
+Reported-by: Sergey Galanov <sergey.e.galanov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/address.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/core/hcd.c |    1 -
+ drivers/usb/core/hub.c |    7 +------
+ drivers/usb/core/usb.h |    1 -
+ 3 files changed, 1 insertion(+), 8 deletions(-)
 
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -99,11 +99,12 @@ static unsigned int of_bus_default_get_f
- static int of_bus_pci_match(struct device_node *np)
- {
- 	/*
-+ 	 * "pciex" is PCI Express
- 	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
- 	 * "ht" is hypertransport
- 	 */
--	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
--		!strcmp(np->type, "ht");
-+	return !strcmp(np->type, "pci") || !strcmp(np->type, "pciex") ||
-+		!strcmp(np->type, "vci") || !strcmp(np->type, "ht");
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1010,7 +1010,6 @@ static int register_root_hub(struct usb_
+ 					dev_name(&usb_dev->dev), retval);
+ 			return retval;
+ 		}
+-		usb_dev->lpm_capable = usb_device_supports_lpm(usb_dev);
+ 	}
+ 
+ 	retval = usb_new_device (usb_dev);
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -135,7 +135,7 @@ struct usb_hub *usb_hub_to_struct_hub(st
+ 	return usb_get_intfdata(hdev->actconfig->interface[0]);
  }
  
- static void of_bus_pci_count_cells(struct device_node *np,
+-int usb_device_supports_lpm(struct usb_device *udev)
++static int usb_device_supports_lpm(struct usb_device *udev)
+ {
+ 	/* USB 2.1 (and greater) devices indicate LPM support through
+ 	 * their USB 2.0 Extended Capabilities BOS descriptor.
+@@ -156,11 +156,6 @@ int usb_device_supports_lpm(struct usb_d
+ 				"Power management will be impacted.\n");
+ 		return 0;
+ 	}
+-
+-	/* udev is root hub */
+-	if (!udev->parent)
+-		return 1;
+-
+ 	if (udev->parent->lpm_capable)
+ 		return 1;
+ 
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -35,7 +35,6 @@ extern int usb_get_device_descriptor(str
+ 		unsigned int size);
+ extern int usb_get_bos_descriptor(struct usb_device *dev);
+ extern void usb_release_bos_descriptor(struct usb_device *dev);
+-extern int usb_device_supports_lpm(struct usb_device *udev);
+ extern char *usb_cache_string(struct usb_device *udev, int index);
+ extern int usb_set_configuration(struct usb_device *dev, int configuration);
+ extern int usb_choose_configuration(struct usb_device *udev);
 
 
