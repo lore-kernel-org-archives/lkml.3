@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784AbaBUAOp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:14:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46055 "EHLO
+	id S1756798AbaBUAPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:15:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755955AbaBTXxV (ORCPT
+	with ESMTP id S1755948AbaBTXxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:21 -0500
+	Thu, 20 Feb 2014 18:53:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 29/99] spi: nuc900: Set SPI_LSB_FIRST for master->mode_bits if hw->pdata->lsb is true
-Date: Thu, 20 Feb 2014 15:52:24 -0800
-Message-Id: <20140220235119.064275524@linuxfoundation.org>
+        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
+        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>
+Subject: [PATCH 3.13 28/99] of: fix PCI bus match for PCIe slots
+Date: Thu, 20 Feb 2014 15:52:23 -0800
+Message-Id: <20140220235119.036762417@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,30 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
 
-commit f7db1588d6028c97c098bb6445eaabc56a25fed8 upstream.
+commit 14e2abb732e485ee57d9d5b2cb8884652238e5c1 upstream.
 
-Otherwise, spi_setup() fails with unsupported mode bits message.
+On IBM pseries systems the device_type device-tree property of a PCIe
+bridge contains the string "pciex". The of_bus_pci_match() function was
+looking only for "pci" on this property, so in such cases the bus
+matching code was falling back to the default bus, causing problems on
+functions that should be using "assigned-addresses" for region address
+translation. This patch fixes the problem by also looking for "pciex" on
+the PCI bus match function.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+v2: added comment
+
+Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-nuc900.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/of/address.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/spi/spi-nuc900.c
-+++ b/drivers/spi/spi-nuc900.c
-@@ -363,6 +363,8 @@ static int nuc900_spi_probe(struct platf
- 	init_completion(&hw->done);
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -99,11 +99,12 @@ static unsigned int of_bus_default_get_f
+ static int of_bus_pci_match(struct device_node *np)
+ {
+ 	/*
++ 	 * "pciex" is PCI Express
+ 	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
+ 	 * "ht" is hypertransport
+ 	 */
+-	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
+-		!strcmp(np->type, "ht");
++	return !strcmp(np->type, "pci") || !strcmp(np->type, "pciex") ||
++		!strcmp(np->type, "vci") || !strcmp(np->type, "ht");
+ }
  
- 	master->mode_bits          = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
-+	if (hw->pdata->lsb)
-+		master->mode_bits |= SPI_LSB_FIRST;
- 	master->num_chipselect     = hw->pdata->num_cs;
- 	master->bus_num            = hw->pdata->bus_num;
- 	hw->bitbang.master         = hw->master;
+ static void of_bus_pci_count_cells(struct device_node *np,
 
 
