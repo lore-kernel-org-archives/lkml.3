@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377AbaBUArm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:47:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45588 "EHLO
+	id S1755275AbaBTXvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45566 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219AbaBTXvl (ORCPT
+	with ESMTP id S1755219AbaBTXvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:41 -0500
+	Thu, 20 Feb 2014 18:51:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 16/66] spi: Fix crash with double message finalisation on error handling
-Date: Thu, 20 Feb 2014 15:51:15 -0800
-Message-Id: <20140220234909.947078513@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 21/66] raw: test against runtime value of max_raw_minors
+Date: Thu, 20 Feb 2014 15:51:20 -0800
+Message-Id: <20140220234910.095907262@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -29,45 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 1f802f8249a0da536877842c43c7204064c4de8b upstream.
+commit 5bbb2ae3d6f896f8d2082d1eceb6131c2420b7cf upstream.
 
-This reverts commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d.
+bind_get() checks the device number it is called with. It uses
+MAX_RAW_MINORS for the upper bound. But MAX_RAW_MINORS is set at compile
+time while the actual number of raw devices can be set at runtime. This
+means the test can either be too strict or too lenient. And if the test
+ends up being too lenient bind_get() might try to access memory beyond
+what was allocated for "raw_devices".
 
-It causes a NULL pointer dereference with drivers using the generic
-spi_transfer_one_message(), which always calls
-spi_finalize_current_message(), which zeroes master->cur_msg.
+So check against the runtime value (max_raw_minors) in this function.
 
-Drivers implementing transfer_one_message() theirselves must always call
-spi_finalize_current_message(), even if the transfer failed:
-
- * @transfer_one_message: the subsystem calls the driver to transfer a single
- *      message while queuing transfers that arrive in the meantime. When the
- *      driver is finished with this message, it must call
- *      spi_finalize_current_message() so the subsystem can issue the next
- *      transfer
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/char/raw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -584,9 +584,7 @@ static void spi_pump_messages(struct kth
- 	ret = master->transfer_one_message(master, master->cur_msg);
- 	if (ret) {
- 		dev_err(&master->dev,
--			"failed to transfer one message from queue: %d\n", ret);
--		master->cur_msg->status = ret;
--		spi_finalize_current_message(master);
-+			"failed to transfer one message from queue\n");
- 		return;
- 	}
- }
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *d
+ 	struct raw_device_data *rawdev;
+ 	struct block_device *bdev;
+ 
+-	if (number <= 0 || number >= MAX_RAW_MINORS)
++	if (number <= 0 || number >= max_raw_minors)
+ 		return -EINVAL;
+ 
+ 	rawdev = &raw_devices[number];
 
 
