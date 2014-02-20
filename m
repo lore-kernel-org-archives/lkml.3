@@ -1,41 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaBTVbD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 16:31:03 -0500
-Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.105]:12958
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751706AbaBTVbA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 16:31:00 -0500
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1753366AbaBTVbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 16:31:33 -0500
+Received: from fieldses.org ([174.143.236.118]:32879 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667AbaBTVbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 16:31:32 -0500
+Date: Thu, 20 Feb 2014 16:31:24 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>, greg@kroah.com,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd
+ superblock's one
+Message-ID: <20140220213124.GC13433@fieldses.org>
+References: <20131230142339.16166.28243.stgit@localhost.localdomain>
+ <20140103222226.GD5164@fieldses.org>
+ <52FEC818.7030604@huawei.com>
+ <20140217221900.GA8401@fieldses.org>
+ <53037A03.4020603@parallels.com>
+ <20140218154406.GD4319@fieldses.org>
+ <530486D9.7010502@parallels.com>
+ <20140219145043.GC8401@fieldses.org>
+ <5304C66A.4030603@parallels.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Mein Vorschlag
-To: Recipients <pet6@gwonpet.onmicrosoft.com>
-From: Peter Wong <pet6@gwonpet.onmicrosoft.com>
-Date: Thu, 20 Feb 2014 22:29:27 +0100
-Reply-To: <ppwong12@aol.jp>
-Message-ID: <ef4d4040-944f-4643-9685-1d3f5cf99a15@AMXPR03MB312.eurprd03.prod.outlook.com>
-X-Originating-IP: [202.56.13.170]
-X-ClientProxiedBy: SINPR02CA019.apcprd02.prod.outlook.com (10.141.109.14) To
- AMXPR03MB312.eurprd03.prod.outlook.com (10.242.68.27)
-X-Forefront-PRVS: 01283822F8
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(6009001)(6049001)(199002)(189002)(85306002)(74876001)(87266001)(74706001)(325944007)(74316001)(76176001)(33646001)(90146001)(74366001)(56816005)(221733001)(81686001)(79102001)(53256004)(81816001)(23756003)(95666003)(43066001)(74662001)(47446002)(74502001)(59766001)(47736001)(69226001)(49866001)(4396001)(50986001)(47976001)(77982001)(89136004)(64872006)(95416001)(81342001)(86902001)(86632001)(80022001)(80976001)(81542001)(93136001)(76482001)(66066001)(42186004)(19580395003)(31696002)(54356001)(94946001)(50466002)(87976001)(47776003)(94316002)(63696002)(92726001)(77096001)(83072002)(76786001)(76796001)(76576001)(85852003)(86362001)(65816001)(56776001)(51856001)(83322001)(93516002)(19580405001)(54316002)(46102001)(86442001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:AMXPR03MB312;H:[172.16.10.231];CLIP:202.56.13.170;FPR:78A64664.2173952B.C1E2EB8B.65FFC8EA.200FD;MLV:spm;PTR:InfoNoRecords;A:0;MX:1;LANG:de;
-X-OriginatorOrg: gwonpet.onmicrosoft.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5304C66A.4030603@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACHTUNG 
+On Wed, Feb 19, 2014 at 06:57:46PM +0400, Stanislav Kinsbursky wrote:
+> 19.02.2014 18:50, J. Bruce Fields пишет:
+> >On Wed, Feb 19, 2014 at 02:26:33PM +0400, Stanislav Kinsbursky wrote:
+> >>18.02.2014 19:44, J. Bruce Fields пишет:
+> >>>On Tue, Feb 18, 2014 at 07:19:31PM +0400, Stanislav Kinsbursky wrote:
+> >>>>18.02.2014 02:19, J. Bruce Fields пишет:
+> >>>>>On Sat, Feb 15, 2014 at 09:51:20AM +0800, Weng Meiling wrote:
+> >>>>>>Hi Bruce,
+> >>>>>>
+> >>>>>>The upstream has merged your git tree for-3.14, but there is no this patch?
+> >>>>>>Do you forget this patch?
+> >>>>>
+> >>>>>Apologies, I'm not sure what happened.
+> >>>>>
+> >>>>>Looking back at it....  The patch causes all my pynfs reboot recovery
+> >>>>>tests to fail.  They're just doing a "systemctl restart
+> >>>>>nfs-server.service", and "systemctl status nfs-server.service" shows in
+> >>>>>part
+> >>>>>
+> >>>>>	ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS $RPCNFSDCOUNT (code=exited, status=1/FAILURE)
+> >>>>>
+> >>>>>So the patch is causing rpc.nfsd to fail?  No network namespaces should
+> >>>>>be involved.
+> >>>>>
+> >>>>>I haven't investigated any further.
+> >>>>>
+> >>>>
+> >>>>Hi Bruce,
+> >>>>Are you sure, that exactly this patch broke your pynfs tests?
+> >>>>BTW, systemd manipulates namespaces. Maybe the patch revealed some pynfs internal bugs?
+> >>>>What do you think?
+> >>>
+> >>>It's really just "systemctl restart nfs-server.service" that the patch
+> >>>breaks, pynfs isn't involved much.
+> >>>
+> >>>The patch I'm actually using follows, but I believe the only difference
+> >>>is in the printk message?
+> >>>
+> >>
+> >>Yep, looks true.
+> >>That's strange: "systemctl restart nfs-server.service" works for me on Fedora 18 with kernel, based on your repo.
+> >
+> >OK, I'll take a closer look and let you know what I find.
+> >
+> 
+> Thank you, Bruce!
 
-Ich habe ein Investment-Portfolio, die Geld in der Bank in China hinterlegt, die ich leicht auf Sie �bertragen als Beg�nstigter bringt. Die Transaktion ist ohne Risiko, da es strategisch geplant abgeschlossen 
-erfolgreich. 
+rpc.nfsd's attempt to bind port 2049 the second time is failing with
+EADDRINUSE.
 
-Kontaktieren Sie mich auf meiner E-Mail-Adresse unten f�r weitere Details. 
+svc_alien_sock isn't failing, so the only different here is that we're
+running sockfd_lookup....
 
-Mit freundlichen Gr��en, 
+Does that take a reference on the fd or the sock that needs to be put?
 
-Peter Wong 
-E-Mail: ppwong12@aol.jp
+--b.
