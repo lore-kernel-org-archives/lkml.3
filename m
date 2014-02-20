@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229AbaBTXyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:54:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46381 "EHLO
+	id S1756215AbaBTXyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:54:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262AbaBTXy2 (ORCPT
+	with ESMTP id S1756046AbaBTXya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:28 -0500
+	Thu, 20 Feb 2014 18:54:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.13 94/99] ring-buffer: Fix first commit on sub-buffer having non-zero delta
-Date: Thu, 20 Feb 2014 15:53:29 -0800
-Message-Id: <20140220235120.930211208@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.13 95/99] target: Fix free-after-use regression in PR unregister
+Date: Thu, 20 Feb 2014 15:53:30 -0800
+Message-Id: <20140220235120.957943005@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,47 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
+commit fc09149df6e20cfbb0bb86f10899607c321a31eb upstream.
 
-Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
-that page use a 27 bit delta against that timestamp in order to save on
-bits written to the ring buffer. If the time between events is larger than
-what the 27 bits can hold, a "time extend" event is added to hold the
-entire 64 bit timestamp again and the events after that hold a delta from
-that timestamp.
+This patch addresses a >= v3.11 free-after-use regression
+in core_scsi3_emulate_pro_register() that was introduced
+in the following commit:
 
-As a "time extend" is always paired with an event, it is logical to just
-allocate the event with the time extend, to make things a bit more efficient.
+commit bc118fe4c4a8cfa453491ba77c0a146a6d0e73e0
+Author: Andy Grover <agrover@redhat.com>
+Date:   Thu May 16 10:41:04 2013 -0700
 
-Unfortunately, when the pairing code was written, it removed the "delta = 0"
-from the first commit on a page, causing the events on the page to be
-slightly skewed.
+    target: Further refactoring of core_scsi3_emulate_pro_register()
 
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+To avoid the free-after-use, save an type value before hand, and
+only call core_scsi3_put_pr_reg() with a valid *pr_reg.
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/target/target_core_pr.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2397,6 +2397,13 @@ __rb_reserve_next(struct ring_buffer_per
- 	write &= RB_WRITE_MASK;
- 	tail = write - length;
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -2009,7 +2009,7 @@ core_scsi3_emulate_pro_register(struct s
+ 	struct t10_reservation *pr_tmpl = &dev->t10_pr;
+ 	unsigned char isid_buf[PR_REG_ISID_LEN], *isid_ptr = NULL;
+ 	sense_reason_t ret = TCM_NO_SENSE;
+-	int pr_holder = 0;
++	int pr_holder = 0, type;
  
-+	/*
-+	 * If this is the first commit on the page, then it has the same
-+	 * timestamp as the page itself.
-+	 */
-+	if (!tail)
-+		delta = 0;
-+
- 	/* See if we shot pass the end of this buffer page */
- 	if (unlikely(write > BUF_PAGE_SIZE))
- 		return rb_move_tail(cpu_buffer, length, tail,
+ 	if (!se_sess || !se_lun) {
+ 		pr_err("SPC-3 PR: se_sess || struct se_lun is NULL!\n");
+@@ -2131,6 +2131,7 @@ core_scsi3_emulate_pro_register(struct s
+ 			ret = TCM_RESERVATION_CONFLICT;
+ 			goto out;
+ 		}
++		type = pr_reg->pr_res_type;
+ 
+ 		spin_lock(&pr_tmpl->registration_lock);
+ 		/*
+@@ -2161,6 +2162,7 @@ core_scsi3_emulate_pro_register(struct s
+ 		 * Release the calling I_T Nexus registration now..
+ 		 */
+ 		__core_scsi3_free_registration(cmd->se_dev, pr_reg, NULL, 1);
++		pr_reg = NULL;
+ 
+ 		/*
+ 		 * From spc4r17, section 5.7.11.3 Unregistering
+@@ -2174,8 +2176,8 @@ core_scsi3_emulate_pro_register(struct s
+ 		 * RESERVATIONS RELEASED.
+ 		 */
+ 		if (pr_holder &&
+-		    (pr_reg->pr_res_type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
+-		     pr_reg->pr_res_type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
++		    (type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
++		     type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
+ 			list_for_each_entry(pr_reg_p,
+ 					&pr_tmpl->registration_list,
+ 					pr_reg_list) {
+@@ -2194,7 +2196,8 @@ core_scsi3_emulate_pro_register(struct s
+ 	ret = core_scsi3_update_and_write_aptpl(dev, aptpl);
+ 
+ out:
+-	core_scsi3_put_pr_reg(pr_reg);
++	if (pr_reg)
++		core_scsi3_put_pr_reg(pr_reg);
+ 	return ret;
+ }
+ 
 
 
