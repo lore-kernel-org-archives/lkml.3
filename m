@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995AbaBUA21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:28:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
+	id S932195AbaBUA2o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:28:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45846 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768AbaBTXwk (ORCPT
+	with ESMTP id S1755754AbaBTXwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:40 -0500
+	Thu, 20 Feb 2014 18:52:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Milburn <dmilburn@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.12 65/82] block: Fix nr_vecs for inline integrity vectors
-Date: Thu, 20 Feb 2014 15:52:48 -0800
-Message-Id: <20140220235021.430688890@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@intel.com>,
+        Sergey Galanov <sergey.e.galanov@gmail.com>
+Subject: [PATCH 3.12 62/82] Revert "usbcore: set lpm_capable field for LPM capable root hubs"
+Date: Thu, 20 Feb 2014 15:52:45 -0800
+Message-Id: <20140220235021.345434394@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -30,50 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 087787959ce851d7bbb19f10f6e9241b7f85a3ca upstream.
+commit 140e3026a57ab7d830dab2f2c57796c222db0ea9 upstream.
 
-Commit 9f060e2231ca changed the way we handle allocations for the
-integrity vectors. When the vectors are inline there is no associated
-slab and consequently bvec_nr_vecs() returns 0. Ensure that we check
-against BIP_INLINE_VECS in that case.
+Commit 9df89d85b407690afa46ddfbccc80bec6869971d "usbcore: set
+lpm_capable field for LPM capable root hubs" was created under the
+assumption that all USB host controllers should have USB 3.0 Link PM
+enabled for all devices under the hosts.
 
-Reported-by: David Milburn <dmilburn@redhat.com>
-Tested-by: David Milburn <dmilburn@redhat.com>
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Unfortunately, that's not the case.  The xHCI driver relies on knowledge
+of the host hardware scheduler to calculate the LPM U1/U2 timeout
+values, and it only sets lpm_capable to one for Intel host controllers
+(that have the XHCI_LPM_SUPPORT quirk set).
+
+When LPM is enabled for some Fresco Logic hosts, it causes failures with
+a AgeStar 3UBT USB 3.0 hard drive dock:
+
+Jan 11 13:59:03 sg-laptop kernel: usb 3-1: new SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:03 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U1 failed.
+Jan 11 13:59:08 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U2 failed.
+Jan 11 13:59:08 sg-laptop kernel: usb-storage 3-1:1.0: USB Mass Storage device detected
+Jan 11 13:59:08 sg-laptop mtp-probe[613]: checking bus 3, device 2: "/sys/devices/pci0000:00/0000:00:1c.3/0000:04:00.0/usb3/3-1"
+Jan 11 13:59:08 sg-laptop mtp-probe[613]: bus: 3, device: 2 was not an MTP device
+Jan 11 13:59:08 sg-laptop kernel: scsi6 : usb-storage 3-1:1.0
+Jan 11 13:59:13 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U1 failed.
+Jan 11 13:59:18 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U2 failed.
+Jan 11 13:59:18 sg-laptop kernel: usbcore: registered new interface driver usb-storage
+Jan 11 13:59:40 sg-laptop kernel: usb 3-1: reset SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:41 sg-laptop kernel: usb 3-1: device descriptor read/8, error -71
+Jan 11 13:59:41 sg-laptop kernel: usb 3-1: reset SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:46 sg-laptop kernel: usb 3-1: device descriptor read/8, error -110
+Jan 11 13:59:46 sg-laptop kernel: scsi 6:0:0:0: Device offlined - not ready after error recovery
+Jan 11 13:59:46 sg-laptop kernel: usb 3-1: USB disconnect, device number 2
+
+lspci for the affected host:
+
+04:00.0 0c03: 1b73:1000 (rev 04) (prog-if 30 [XHCI])
+        Subsystem: 1043:1039
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 19
+        Region 0: Memory at dd200000 (32-bit, non-prefetchable) [size=64K]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [68] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [80] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <2us, L1 <32us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 unlimited
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Kernel driver in use: xhci_hcd
+        Kernel modules: xhci_hcd
+
+The commit was backported to stable kernels, and will need to be
+reverted there as well.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@intel.com>
+Reported-by: Sergey Galanov <sergey.e.galanov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/bio-integrity.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/usb/core/hcd.c |    1 -
+ drivers/usb/core/hub.c |    7 +------
+ drivers/usb/core/usb.h |    1 -
+ 3 files changed, 1 insertion(+), 8 deletions(-)
 
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -114,6 +114,14 @@ void bio_integrity_free(struct bio *bio)
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1033,7 +1033,6 @@ static int register_root_hub(struct usb_
+ 					dev_name(&usb_dev->dev), retval);
+ 			return retval;
+ 		}
+-		usb_dev->lpm_capable = usb_device_supports_lpm(usb_dev);
+ 	}
+ 
+ 	retval = usb_new_device (usb_dev);
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -135,7 +135,7 @@ struct usb_hub *usb_hub_to_struct_hub(st
+ 	return usb_get_intfdata(hdev->actconfig->interface[0]);
  }
- EXPORT_SYMBOL(bio_integrity_free);
  
-+static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
-+{
-+	if (bip->bip_slab == BIO_POOL_NONE)
-+		return BIP_INLINE_VECS;
-+
-+	return bvec_nr_vecs(bip->bip_slab);
-+}
-+
- /**
-  * bio_integrity_add_page - Attach integrity metadata
-  * @bio:	bio to update
-@@ -129,7 +137,7 @@ int bio_integrity_add_page(struct bio *b
- 	struct bio_integrity_payload *bip = bio->bi_integrity;
- 	struct bio_vec *iv;
- 
--	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
-+	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
- 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
+-int usb_device_supports_lpm(struct usb_device *udev)
++static int usb_device_supports_lpm(struct usb_device *udev)
+ {
+ 	/* USB 2.1 (and greater) devices indicate LPM support through
+ 	 * their USB 2.0 Extended Capabilities BOS descriptor.
+@@ -156,11 +156,6 @@ int usb_device_supports_lpm(struct usb_d
+ 				"Power management will be impacted.\n");
  		return 0;
  	}
+-
+-	/* udev is root hub */
+-	if (!udev->parent)
+-		return 1;
+-
+ 	if (udev->parent->lpm_capable)
+ 		return 1;
+ 
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -35,7 +35,6 @@ extern int usb_get_device_descriptor(str
+ 		unsigned int size);
+ extern int usb_get_bos_descriptor(struct usb_device *dev);
+ extern void usb_release_bos_descriptor(struct usb_device *dev);
+-extern int usb_device_supports_lpm(struct usb_device *udev);
+ extern char *usb_cache_string(struct usb_device *udev, int index);
+ extern int usb_set_configuration(struct usb_device *dev, int configuration);
+ extern int usb_choose_configuration(struct usb_device *udev);
 
 
