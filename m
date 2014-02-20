@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677AbaBTUov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:44:51 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:56399 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482AbaBTUop (ORCPT
+	id S1753583AbaBTUot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:44:49 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:49559 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723AbaBTUoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:44:45 -0500
+	Thu, 20 Feb 2014 15:44:46 -0500
 From: Tejun Heo <tj@kernel.org>
 To: laijs@cn.fujitsu.com
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 5/9] usb: don't use PREPARE_DELAYED_WORK
-Date: Thu, 20 Feb 2014 15:44:27 -0500
-Message-Id: <1392929071-16555-6-git-send-email-tj@kernel.org>
+        Matthew Wilcox <willy@linux.intel.com>, linux-nvme@lists.infradead.org
+Subject: [PATCH 6/9] nvme: don't use PREPARE_WORK
+Date: Thu, 20 Feb 2014 15:44:28 -0500
+Message-Id: <1392929071-16555-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392929071-16555-1-git-send-email-tj@kernel.org>
 References: <1392929071-16555-1-git-send-email-tj@kernel.org>
@@ -27,87 +26,101 @@ and a nasty surprise in terms of reentrancy guarantee as workqueue
 considers work items to be different if they don't have the same work
 function.
 
-usb_hub->init_work is multiplexed with multiple work functions.
-Introduce hub_init_workfn() which invokes usb_hub->init_workfn and
+nvme_dev->reset_work is multiplexed with multiple work functions.
+Introduce nvme_reset_workfn() which invokes nvme_dev->reset_workfn and
 always use it as the work function and update the users to set the
-->init_workfn field instead of overriding the work function using
-PREPARE_DELAYED_WORK().
-
-It looks like that the work items are never queued while in-flight, so
-simply using INIT_DELAYED_WORK() before each queueing could be enough.
-This patch performs equivalent conversion just in case but we probably
-wanna clean it up later if that's the case.
+->reset_workfn field instead of overriding the work function using
+PREPARE_WORK().
 
 It would probably be best to route this with other related updates
 through the workqueue tree.
 
-Lightly tested.
+Compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Cc: linux-nvme@lists.infradead.org
 ---
- drivers/usb/core/hub.c | 13 ++++++++++---
- drivers/usb/core/hub.h |  1 +
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/block/nvme-core.c | 18 ++++++++++++------
+ include/linux/nvme.h      |  1 +
+ 2 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 64ea219..2bc61c0 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1040,7 +1040,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
- 		 */
- 		if (type == HUB_INIT) {
- 			delay = hub_power_on(hub, false);
--			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func2);
-+			hub->init_workfn = hub_init_func2;
- 			schedule_delayed_work(&hub->init_work,
- 					msecs_to_jiffies(delay));
- 
-@@ -1194,7 +1194,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
- 
- 		/* Don't do a long sleep inside a workqueue routine */
- 		if (type == HUB_INIT2) {
--			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func3);
-+			hub->init_workfn = hub_init_func3;
- 			schedule_delayed_work(&hub->init_work,
- 					msecs_to_jiffies(delay));
- 			return;		/* Continues at init3: below */
-@@ -1634,6 +1634,13 @@ static void hub_disconnect(struct usb_interface *intf)
- 	kref_put(&hub->kref, hub_release);
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index 51824d1..8459e4e 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -993,7 +993,7 @@ static void nvme_abort_cmd(int cmdid, struct nvme_queue *nvmeq)
+ 		dev_warn(&dev->pci_dev->dev,
+ 			"I/O %d QID %d timeout, reset controller\n", cmdid,
+ 								nvmeq->qid);
+-		PREPARE_WORK(&dev->reset_work, nvme_reset_failed_dev);
++		dev->reset_workfn = nvme_reset_failed_dev;
+ 		queue_work(nvme_workq, &dev->reset_work);
+ 		return;
+ 	}
+@@ -1696,8 +1696,7 @@ static int nvme_kthread(void *data)
+ 				list_del_init(&dev->node);
+ 				dev_warn(&dev->pci_dev->dev,
+ 					"Failed status, reset controller\n");
+-				PREPARE_WORK(&dev->reset_work,
+-							nvme_reset_failed_dev);
++				dev->reset_workfn = nvme_reset_failed_dev;
+ 				queue_work(nvme_workq, &dev->reset_work);
+ 				continue;
+ 			}
+@@ -2406,7 +2405,7 @@ static int nvme_dev_resume(struct nvme_dev *dev)
+ 		return ret;
+ 	if (ret == -EBUSY) {
+ 		spin_lock(&dev_list_lock);
+-		PREPARE_WORK(&dev->reset_work, nvme_remove_disks);
++		dev->reset_workfn = nvme_remove_disks;
+ 		queue_work(nvme_workq, &dev->reset_work);
+ 		spin_unlock(&dev_list_lock);
+ 	}
+@@ -2435,6 +2434,12 @@ static void nvme_reset_failed_dev(struct work_struct *ws)
+ 	nvme_dev_reset(dev);
  }
  
-+static void hub_init_workfn(struct work_struct *work)
++static void nvme_reset_workfn(struct work_struct *work)
 +{
-+	struct usb_hub *hub = container_of(to_delayed_work(work),
-+					   struct usb_hub, init_work);
-+	hub->init_workfn(work);
++	struct nvme_dev *dev = container_of(work, struct nvme_dev, reset_work);
++	dev->reset_workfn(work);
 +}
 +
- static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
+ static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
  {
- 	struct usb_host_interface *desc;
-@@ -1728,7 +1735,7 @@ descriptor_error:
- 	hub->intfdev = &intf->dev;
- 	hub->hdev = hdev;
- 	INIT_DELAYED_WORK(&hub->leds, led_work);
--	INIT_DELAYED_WORK(&hub->init_work, NULL);
-+	INIT_DELAYED_WORK(&hub->init_work, hub_init_workfn);
- 	usb_get_intf(intf);
+ 	int result = -ENOMEM;
+@@ -2453,7 +2458,8 @@ static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 		goto free;
  
- 	usb_set_intfdata (intf, hub);
-diff --git a/drivers/usb/core/hub.h b/drivers/usb/core/hub.h
-index df629a3..ef81463 100644
---- a/drivers/usb/core/hub.h
-+++ b/drivers/usb/core/hub.h
-@@ -72,6 +72,7 @@ struct usb_hub {
- 	unsigned		has_indicators:1;
- 	u8			indicator[USB_MAXCHILDREN];
- 	struct delayed_work	leds;
-+	work_func_t		init_workfn;
- 	struct delayed_work	init_work;
- 	struct usb_port		**ports;
- };
+ 	INIT_LIST_HEAD(&dev->namespaces);
+-	INIT_WORK(&dev->reset_work, nvme_reset_failed_dev);
++	dev->reset_workfn = nvme_reset_failed_dev;
++	INIT_WORK(&dev->reset_work, nvme_reset_workfn);
+ 	dev->pci_dev = pdev;
+ 	pci_set_drvdata(pdev, dev);
+ 	result = nvme_set_instance(dev);
+@@ -2553,7 +2559,7 @@ static int nvme_resume(struct device *dev)
+ 	struct nvme_dev *ndev = pci_get_drvdata(pdev);
+ 
+ 	if (nvme_dev_resume(ndev) && !work_busy(&ndev->reset_work)) {
+-		PREPARE_WORK(&ndev->reset_work, nvme_reset_failed_dev);
++		ndev->reset_workfn = nvme_reset_failed_dev;
+ 		queue_work(nvme_workq, &ndev->reset_work);
+ 	}
+ 	return 0;
+diff --git a/include/linux/nvme.h b/include/linux/nvme.h
+index 69ae03f..6b9aafe 100644
+--- a/include/linux/nvme.h
++++ b/include/linux/nvme.h
+@@ -87,6 +87,7 @@ struct nvme_dev {
+ 	struct list_head namespaces;
+ 	struct kref kref;
+ 	struct miscdevice miscdev;
++	work_func_t reset_workfn;
+ 	struct work_struct reset_work;
+ 	char name[12];
+ 	char serial[20];
 -- 
 1.8.5.3
 
