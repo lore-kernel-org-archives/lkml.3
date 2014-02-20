@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082AbaBTXxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45954 "EHLO
+	id S1756854AbaBUAWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:22:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45963 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820AbaBTXw6 (ORCPT
+	with ESMTP id S932070AbaBTXxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:58 -0500
+	Thu, 20 Feb 2014 18:53:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.12 77/82] ring-buffer: Fix first commit on sub-buffer having non-zero delta
-Date: Thu, 20 Feb 2014 15:53:00 -0800
-Message-Id: <20140220235021.787380002@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.12 79/82] genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=n
+Date: Thu, 20 Feb 2014 15:53:02 -0800
+Message-Id: <20140220235021.843843276@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,47 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
+commit 2c45aada341121438affc4cb8d5b4cfaa2813d3d upstream.
 
-Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
-that page use a 27 bit delta against that timestamp in order to save on
-bits written to the ring buffer. If the time between events is larger than
-what the 27 bits can hold, a "time extend" event is added to hold the
-entire 64 bit timestamp again and the events after that hold a delta from
-that timestamp.
+In allmodconfig builds for sparc and any other arch which does
+not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
 
-As a "time extend" is always paired with an event, it is logical to just
-allocate the event with the time extend, to make things a bit more efficient.
+  CC [M]  lib/cpu-notifier-error-inject.o
+  CC [M]  lib/pm-notifier-error-inject.o
+ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
+make[2]: *** [__modpost] Error 1
 
-Unfortunately, when the pairing code was written, it removed the "delta = 0"
-from the first commit on a page, causing the events on the page to be
-slightly skewed.
+This happens because commit 3911ff30f5 ("genirq: export
+handle_edge_irq() and irq_to_desc()") added one export for it, but
+there were actually two instances of it, in an if/else clause for
+CONFIG_SPARSE_IRQ.  Add the second one.
 
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Link: http://lkml.kernel.org/r/1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ kernel/irq/irqdesc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2397,6 +2397,13 @@ __rb_reserve_next(struct ring_buffer_per
- 	write &= RB_WRITE_MASK;
- 	tail = write - length;
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned in
+ {
+ 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
+ }
++EXPORT_SYMBOL(irq_to_desc);
  
-+	/*
-+	 * If this is the first commit on the page, then it has the same
-+	 * timestamp as the page itself.
-+	 */
-+	if (!tail)
-+		delta = 0;
-+
- 	/* See if we shot pass the end of this buffer page */
- 	if (unlikely(write > BUF_PAGE_SIZE))
- 		return rb_move_tail(cpu_buffer, length, tail,
+ static void free_desc(unsigned int irq)
+ {
 
 
