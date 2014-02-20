@@ -1,88 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaBTBut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:50:49 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:38529 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312AbaBTBur convert rfc822-to-8bit (ORCPT
+	id S1752987AbaBTBxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:53:24 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45913 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaBTBxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:50:47 -0500
-Content-Type: text/plain;
-	charset=us-ascii
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
-From: Linaro <viresh.kumar@linaro.org>
-X-Mailer: iPad Mail (11B554a)
-In-Reply-To: <90EA67AE-7F57-4F43-8967-642903AD72AC@linaro.org>
-Date: Thu, 20 Feb 2014 07:20:35 +0530
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
-        "jinchoi@broadcom.com" <jinchoi@broadcom.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BEC64F5C-76E8-40C3-81BE-59096C3838F3@linaro.org>
-References: <cover.1392273722.git.viresh.kumar@linaro.org> <52FE71BD.3020103@wwwdotorg.org> <2869027.iYHxWOSS2C@vostro.rjw.lan> <52FEAECA.5080905@wwwdotorg.org> <CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com> <5303C018.1020707@wwwdotorg.org> <CAKohponF7ag-tfv77JK0pDVukS6v3QeSY+G_br3FJGskMDCvVw@mail.gmail.com> <5304E93C.9000104@wwwdotorg.org> <90EA67AE-7F57-4F43-8967-642903AD72AC@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
+	Wed, 19 Feb 2014 20:53:22 -0500
+Date: Wed, 19 Feb 2014 17:53:17 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used
+ stand-alone
+Message-ID: <20140220015317.GL4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140219185850.GA23050@linux.vnet.ibm.com>
+ <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022001-9332-0000-0000-00000329FB33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 19, 2014 at 02:33:27PM -0500, Paul Gortmaker wrote:
+> The kbuild test bot uncovered an implicit dependence on the
+> trace header being present before rcu.h in ia64 allmodconfig
+> that looks like this:
+> 
+> In file included from kernel/ksysfs.c:22:0:
+> kernel/rcu/rcu.h: In function '__rcu_reclaim':
+> kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
+> kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> 
+> Looking at other rcu.h users, we can find that they all
+> were sourcing the trace header in advance of rcu.h itself,
+> as seen in the context of this diff.  There were also some
+> inconsistencies as to whether it was or wasn't sourced based
+> on the parent tracing Kconfig.
+> 
+> Rather than "fix" it at each use site, and have inconsistent
+> use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
+> lets just source the trace header just once, in the actual consumer
+> of it, which is rcu.h itself.  We include it unconditionally, as
+> build testing shows us that is a hard requirement for some files.
+> 
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
+Queued for 3.16, thank you, Paul!
 
-> On 20-Feb-2014, at 7:19 am, Linaro <viresh.kumar@linaro.org> wrote:
-> 
-> 
-> 
->>> On 19-Feb-2014, at 10:56 pm, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> 
->>>> On 02/18/2014 09:15 PM, Viresh Kumar wrote:
->>>>> On 19-Feb-2014 1:48 AM, "Stephen Warren" <swarren@wwwdotorg.org> wrote:
->>>>> 
->>>>>> On 02/17/2014 02:20 AM, Viresh Kumar wrote:
->>>>>> On 15 February 2014 05:33, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>>>>> On 02/14/2014 03:23 PM, Rafael J. Wysocki wrote:
->>>>> 
->>>>>>> Well, it would be good to verify which part, then.
->>>>>> 
->>>>>> Patch 2/7 appears to stop that message from being printed during
->>>>>> suspend, and perhaps reduce the number of times it's printed during
->>>>>> resume. Patch 7/7 stops the message being printed at all.
->>>>>> 
->>>>>> Looking at patch 7, I wonder if it's simply because tegra_target() was
->>>>>> modified never to return -EBUSY, so the bug is still there, but it's
->>>>>> just been hidden.
->>>>> 
->>>>> No, the bug is removed now. Its hidden in current linus/master :)
->>>> 
->>>> I'm not sure what that means; I still see the message:
->>> 
->>> I have given a better reply in one of the earlier mails in this thread.
->>> And skipped a more elaborative reply now.
->>> 
->>> So this failure was always there since long time, as you disable your
->>> target() fn early in suspend. But the message wasn't printed earlier.
->>> 
->>> A recently added core patch started printing this, so not a new bug.
->>> But this series fixes suspend resume completely and you wouldn't see it
->>> anymore.
->> 
->> OK, so I suppose we have two options:
->> 
->> a) Just ignore the kernel error spew since it's a known issue.
->> 
->> b) If I make the Tegra driver return 0 rather than -EBUSY, would that
->> work? It would certainly silence the error. However, I wonder if it
->> would cause the cpufreq core to get out of sync with HW; the core would
->> think that it'd set some frequency, which the driver ignored, and if it
->> later wanted to switch frequency, the call might get skipped because the
->> core thought the HW was already set to that frequency?
-> 
-> Option is the one you need.
+							Thanx, Paul
 
-Option a..
+> ---
+> 
+> [v2: move the #include <trace/events/rcu.h> outside of the scope
+>  of #ifdef CONFIG_RCU_TRACE so it is unconditionally included.]
+> 
+>  kernel/rcu/rcu.h    | 1 +
+>  kernel/rcu/srcu.c   | 2 --
+>  kernel/rcu/tiny.c   | 4 ----
+>  kernel/rcu/tree.c   | 2 --
+>  kernel/rcu/update.c | 1 -
+>  5 files changed, 1 insertion(+), 9 deletions(-)
+> 
+> diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
+> index 1bd787fddcb2..3d2a037332b2 100644
+> --- a/kernel/rcu/rcu.h
+> +++ b/kernel/rcu/rcu.h
+> @@ -23,6 +23,7 @@
+>  #ifndef __LINUX_RCU_H
+>  #define __LINUX_RCU_H
+> 
+> +#include <trace/events/rcu.h>
+>  #ifdef CONFIG_RCU_TRACE
+>  #define RCU_TRACE(stmt) stmt
+>  #else /* #ifdef CONFIG_RCU_TRACE */
+> diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
+> index 5db7e9272d37..8e66b05bfd82 100644
+> --- a/kernel/rcu/srcu.c
+> +++ b/kernel/rcu/srcu.c
+> @@ -36,8 +36,6 @@
+>  #include <linux/delay.h>
+>  #include <linux/srcu.h>
+> 
+> -#include <trace/events/rcu.h>
+> -
+>  #include "rcu.h"
+> 
+>  /*
+> diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
+> index 53b95bbf4abb..d9efcc13008c 100644
+> --- a/kernel/rcu/tiny.c
+> +++ b/kernel/rcu/tiny.c
+> @@ -37,10 +37,6 @@
+>  #include <linux/prefetch.h>
+>  #include <linux/ftrace_event.h>
+> 
+> -#ifdef CONFIG_RCU_TRACE
+> -#include <trace/events/rcu.h>
+> -#endif /* #else #ifdef CONFIG_RCU_TRACE */
+> -
+>  #include "rcu.h"
+> 
+>  /* Forward declarations for tiny_plugin.h. */
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index c7a00dbe768b..351faba48b91 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -58,8 +58,6 @@
+>  #include <linux/suspend.h>
+> 
+>  #include "tree.h"
+> -#include <trace/events/rcu.h>
+> -
+>  #include "rcu.h"
+> 
+>  MODULE_ALIAS("rcutree");
+> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> index fd0d5b5b8e7c..4c0a9b0af469 100644
+> --- a/kernel/rcu/update.c
+> +++ b/kernel/rcu/update.c
+> @@ -49,7 +49,6 @@
+>  #include <linux/module.h>
+> 
+>  #define CREATE_TRACE_POINTS
+> -#include <trace/events/rcu.h>
+> 
+>  #include "rcu.h"
+> 
+> -- 
+> 1.8.5.2
+> 
+
