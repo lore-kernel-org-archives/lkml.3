@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbaBUApK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:45:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45627 "EHLO
+	id S1756819AbaBUApi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:45:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362AbaBTXvt (ORCPT
+	with ESMTP id S1755349AbaBTXvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:49 -0500
+	Thu, 20 Feb 2014 18:51:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.12 10/82] mac80211: release the channel in error path in start_ap
-Date: Thu, 20 Feb 2014 15:51:53 -0800
-Message-Id: <20140220235019.795083526@linuxfoundation.org>
+        Steven Noonan <steven@uplinklabs.net>,
+        Elena Ufimtseva <ufimtseva@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 01/82] xen: properly account for _PAGE_NUMA during xen pte translations
+Date: Thu, 20 Feb 2014 15:51:44 -0800
+Message-Id: <20140220235019.526774892@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,42 +33,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 0297ea17bf7879fb5846fafd1be4c0471e72848d upstream.
+commit a9c8e4beeeb64c22b84c803747487857fe424b68 upstream.
 
-When the driver cannot start the AP or when the assignement
-of the beacon goes wrong, we need to unassign the vif.
+Steven Noonan forwarded a users report where they had a problem starting
+vsftpd on a Xen paravirtualized guest, with this in dmesg:
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+  BUG: Bad page map in process vsftpd  pte:8000000493b88165 pmd:e9cc01067
+  page:ffffea00124ee200 count:0 mapcount:-1 mapping:     (null) index:0x0
+  page flags: 0x2ffc0000000014(referenced|dirty)
+  addr:00007f97eea74000 vm_flags:00100071 anon_vma:ffff880e98f80380 mapping:          (null) index:7f97eea74
+  CPU: 4 PID: 587 Comm: vsftpd Not tainted 3.12.7-1-ec2 #1
+  Call Trace:
+    dump_stack+0x45/0x56
+    print_bad_pte+0x22e/0x250
+    unmap_single_vma+0x583/0x890
+    unmap_vmas+0x65/0x90
+    exit_mmap+0xc5/0x170
+    mmput+0x65/0x100
+    do_exit+0x393/0x9e0
+    do_group_exit+0xcc/0x140
+    SyS_exit_group+0x14/0x20
+    system_call_fastpath+0x1a/0x1f
+  Disabling lock debugging due to kernel taint
+  BUG: Bad rss-counter state mm:ffff880e9ca60580 idx:0 val:-1
+  BUG: Bad rss-counter state mm:ffff880e9ca60580 idx:1 val:1
+
+The issue could not be reproduced under an HVM instance with the same
+kernel, so it appears to be exclusive to paravirtual Xen guests.  He
+bisected the problem to commit 1667918b6483 ("mm: numa: clear numa
+hinting information on mprotect") that was also included in 3.12-stable.
+
+The problem was related to how xen translates ptes because it was not
+accounting for the _PAGE_NUMA bit.  This patch splits pte_present to add
+a pteval_present helper for use by xen so both bare metal and xen use
+the same code when checking if a PTE is present.
+
+[mgorman@suse.de: wrote changelog, proposed minor modifications]
+[akpm@linux-foundation.org: fix typo in comment]
+Reported-by: Steven Noonan <steven@uplinklabs.net>
+Tested-by: Steven Noonan <steven@uplinklabs.net>
+Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/cfg.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/pgtable.h |   14 ++++++++++++--
+ arch/x86/xen/mmu.c             |    4 ++--
+ 2 files changed, 14 insertions(+), 4 deletions(-)
 
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -995,8 +995,10 @@ static int ieee80211_start_ap(struct wip
- 					IEEE80211_P2P_OPPPS_ENABLE_BIT;
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -445,10 +445,20 @@ static inline int pte_same(pte_t a, pte_
+ 	return a.pte == b.pte;
+ }
  
- 	err = ieee80211_assign_beacon(sdata, &params->beacon);
--	if (err < 0)
-+	if (err < 0) {
-+		ieee80211_vif_release_channel(sdata);
- 		return err;
-+	}
- 	changed |= err;
++static inline int pteval_present(pteval_t pteval)
++{
++	/*
++	 * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
++	 * way clearly states that the intent is that protnone and numa
++	 * hinting ptes are considered present for the purposes of
++	 * pagetable operations like zapping, protection changes, gup etc.
++	 */
++	return pteval & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
++}
++
+ static inline int pte_present(pte_t a)
+ {
+-	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
+-			       _PAGE_NUMA);
++	return pteval_present(pte_flags(a));
+ }
  
- 	err = drv_start_ap(sdata->local, sdata);
-@@ -1005,6 +1007,7 @@ static int ieee80211_start_ap(struct wip
- 		if (old)
- 			kfree_rcu(old, rcu_head);
- 		RCU_INIT_POINTER(sdata->u.ap.beacon, NULL);
-+		ieee80211_vif_release_channel(sdata);
- 		return err;
- 	}
+ #define pte_accessible pte_accessible
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct
+ /* Assume pteval_t is equivalent to all the other *val_t types. */
+ static pteval_t pte_mfn_to_pfn(pteval_t val)
+ {
+-	if (val & _PAGE_PRESENT) {
++	if (pteval_present(val)) {
+ 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+ 		unsigned long pfn = mfn_to_pfn(mfn);
  
+@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t
+ 
+ static pteval_t pte_pfn_to_mfn(pteval_t val)
+ {
+-	if (val & _PAGE_PRESENT) {
++	if (pteval_present(val)) {
+ 		unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+ 		pteval_t flags = val & PTE_FLAGS_MASK;
+ 		unsigned long mfn;
 
 
