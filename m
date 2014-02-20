@@ -1,103 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbaBTU1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:27:53 -0500
-Received: from mga09.intel.com ([134.134.136.24]:61319 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750705AbaBTU1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:27:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,514,1389772800"; 
-   d="scan'208";a="486795515"
-Message-ID: <53066544.8030404@intel.com>
-Date: Thu, 20 Feb 2014 21:27:48 +0100
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
- 173, 80-298 Gdansk
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752696AbaBTU3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:29:01 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:48026 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbaBTU27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 15:28:59 -0500
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
-        Emil Velikov <emil.l.velikov@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nouveau, ACPI: fix regression caused by b072e53
-References: <1392888200-27567-1-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1392888200-27567-1-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5306156B.4070105@citrix.com>
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
+ <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com>
+ <53024C58.4010900@citrix.com> <CAB=NE6XYjOd2vRpQCZOG-S5ZW4xjam+FOPAYzribNQpb50Q5pg@mail.gmail.com>
+ <5306156B.4070105@citrix.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 20 Feb 2014 12:28:37 -0800
+X-Google-Sender-Auth: nfbVyPGq7YKnjaBDf_M-VjsdcnM
+Message-ID: <CAB=NE6U7WsN80SOoDrDYvEj9tYYdmcLriCtS-tvLDVeqGmdfwA@mail.gmail.com>
+Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
+ from becoming the root bridge
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>, kvm@vger.kernel.org,
+        bridge@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        xen-devel@lists.xenproject.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/20/2014 10:23 AM, Jiang Liu wrote:
-> Fix regression caused by commit b072e53, which breaks loading nouveau
-> driver on optimus laptops.
+On Thu, Feb 20, 2014 at 6:47 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
+> On 19/02/14 16:45, Luis R. Rodriguez wrote:
 >
-> On some platforms, ACPI _DSM method (nouveau_op_dsm_muid, function 0)
-> has special requirements on the fourth parameter, which is different
-> from ACPI specifications. So revert to the private implementation
-> to check availability of _DSM functions instead of using common
-> acpi_check_dsm() interface.
+>> You seem to describe a case whereby it can make sense for xen-netback
+>> interfaces to end up becoming the root port of a bridge. Can you
+>> elaborate a little more on that as it was unclear the use case.
 >
-> Reported-and-Tested-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Well, I might be wrong on that, but the scenario I was thinking: a guest
+> (let's say domain 1) can have multiple interfaces on different Dom0 (or
+> driver domain) bridges, let's say vif1.0 is plugged into xenbr0 and vif1.1
+> is in xenbr1. If the guest wants to make a bridge of this two, then using
+> STP makes sense.
 
-I'm taking this, because the commit that introduced the regression went 
-in through my tree.
+The bridging would happen on the front end in that case no?
 
-In the future I'll appreciate CCing ACPI-related patches to linux-acpi, 
-however.
+>  I wanted to bring up CloudStack's virtual router as an
+> example, but then I realized it's probably doesn't do such thing. However I
+> don't think we should hardcode that a netback interface can't be RP ever.
 
-Thanks,
-Rafael
+My patch did allow for this but the root block flag that Stephen
+mentioned can always be lifted.
 
-
-> ---
->   drivers/gpu/drm/nouveau/nouveau_acpi.c |   26 ++++++++++++++++++++++++--
->   1 file changed, 24 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-> index 4ef83df..83face3 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-> @@ -106,6 +106,29 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
->   	return 0;
->   }
->   
-> +/*
-> + * On some platforms, _DSM(nouveau_op_dsm_muid, func0) has special
-> + * requirements on the fourth parameter, so a private implementation
-> + * instead of using acpi_check_dsm().
-> + */
-> +static int nouveau_check_optimus_dsm(acpi_handle handle)
-> +{
-> +	int result;
-> +
-> +	/*
-> +	 * Function 0 returns a Buffer containing available functions.
-> +	 * The args parameter is ignored for function 0, so just put 0 in it
-> +	 */
-> +	if (nouveau_optimus_dsm(handle, 0, 0, &result))
-> +		return 0;
-> +
-> +	/*
-> +	 * ACPI Spec v4 9.14.1: if bit 0 is zero, no function is supported.
-> +	 * If the n-th bit is enabled, function n is supported
-> +	 */
-> +	return result & 1 && result & (1 << NOUVEAU_DSM_OPTIMUS_CAPS);
-> +}
-> +
->   static int nouveau_dsm(acpi_handle handle, int func, int arg)
->   {
->   	int ret = 0;
-> @@ -207,8 +230,7 @@ static int nouveau_dsm_pci_probe(struct pci_dev *pdev)
->   			   1 << NOUVEAU_DSM_POWER))
->   		retval |= NOUVEAU_DSM_HAS_MUX;
->   
-> -	if (acpi_check_dsm(dhandle, nouveau_op_dsm_muid, 0x00000100,
-> -			   1 << NOUVEAU_DSM_OPTIMUS_CAPS))
-> +	if (nouveau_check_optimus_dsm(dhandle))
->   		retval |= NOUVEAU_DSM_HAS_OPT;
->   
->   	if (retval & NOUVEAU_DSM_HAS_OPT) {
-
+  Luis
