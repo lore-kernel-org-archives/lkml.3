@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaBTX1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:27:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46307 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903AbaBTX1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:27:41 -0500
-Message-ID: <53068F5C.9000008@zytor.com>
-Date: Thu, 20 Feb 2014 15:27:24 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754014AbaBTXaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:30:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44903 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414AbaBTXad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:30:33 -0500
+Date: Thu, 20 Feb 2014 15:32:01 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 00/40] 3.13.4-stable review
+Message-ID: <20140220233201.GA6349@kroah.com>
+References: <20140218224433.337299968@linuxfoundation.org>
+ <20140219043026.GA15371@roeck-us.net>
+ <20140220183220.GD15290@kroah.com>
+ <20140220232332.GA3584@roeck-us.net>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: "m" constraints, jumps,  and alternatives
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140220232332.GA3584@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, Feb 20, 2014 at 03:23:32PM -0800, Guenter Roeck wrote:
+> On Thu, Feb 20, 2014 at 10:32:20AM -0800, Greg Kroah-Hartman wrote:
+> > On Tue, Feb 18, 2014 at 08:30:26PM -0800, Guenter Roeck wrote:
+> > > On Tue, Feb 18, 2014 at 02:47:01PM -0800, Greg Kroah-Hartman wrote:
+> > > > This is the start of the stable review cycle for the 3.13.4 release.
+> > > > There are 40 patches in this series, all will be posted as a response
+> > > > to this one.  If anyone has any issues with these being applied, please
+> > > > let me know.
+> > > > 
+> > > > Responses should be made by Thu Feb 20 22:44:22 UTC 2014.
+> > > > Anything received after that time might be too late.
+> > > > 
+> > > 
+> > > Build results:
+> > >     total: 126 pass: 122 skipped: 4 fail: 0
+> > > 
+> > > qemu tests all passed.
+> > > 
+> > > Details are available at http://server.roeck-us.net:8010/builders.
+> > > 
+> > > Results are as expected.
+> > 
+> > Thanks for testing and letting me know.  Interesting that the pstate
+> > buggy patch didn't hit your build system testing...
+> > 
+> Nothing is perfect :-(. You mean the one where your builder
+> takes much more time to build the kernel with the patch applied,
+> or was here another one ?
 
-The alternatives mechanism suffers from problems whenever there are
-PC-relative items in the instruction stream.  We currently have a hack
-in the alternatives mechanism where we detect the opcode of a call or
-jmp instruction and adjust the offset, but that only works if the
-replacement code consists solely of a call or jmp.
-
-Well, when there are "m" contraints, we could end up with PC-relative
-offsets if someone were to point the function in question at a global
-variable on 64 bits.  This is much harder to decode at runtime; doing so
-would require pretty much a full x86 decoder (which we do have one in
-the kernel now, but it would be pretty slow I would think.)
-
-I talked with H.J. about this, and one way to do this would be to do
-post-linkage fixup of the alternatives section.  This does, however,
-would seem to not work easily with kernel modules, as the kernel module
-is left pre-link.  We could, of course, do equivalent fixup in the
-kernel at module insertion time, since the module will include the
-relocations.
-
-Another option is to say "don't do that then", and weed out the current
-uses of "m" and instead force the pointer in question explicitly into a
-register.
-
-What do you guys think?
-
-	-hpa
-
+That same patch caused a bunch of boot-time failures on some systems.
+But not all of them, I think it depended on the hardware present.
