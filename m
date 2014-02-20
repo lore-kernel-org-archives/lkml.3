@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195AbaBUA2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:28:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45846 "EHLO
+	id S932288AbaBUA3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:29:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45844 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754AbaBTXwh (ORCPT
+	with ESMTP id S1755741AbaBTXwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:37 -0500
+	Thu, 20 Feb 2014 18:52:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@intel.com>,
-        Sergey Galanov <sergey.e.galanov@gmail.com>
-Subject: [PATCH 3.12 62/82] Revert "usbcore: set lpm_capable field for LPM capable root hubs"
-Date: Thu, 20 Feb 2014 15:52:45 -0800
-Message-Id: <20140220235021.345434394@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.12 61/82] Revert "usb: xhci: Link TRB must not occur within a USB payload burst"
+Date: Thu, 20 Feb 2014 15:52:44 -0800
+Message-Id: <20140220235021.316989508@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -31,122 +30,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 140e3026a57ab7d830dab2f2c57796c222db0ea9 upstream.
+commit 3d4b81eda2211f32886e2978daf6f39885042fc4 upstream.
 
-Commit 9df89d85b407690afa46ddfbccc80bec6869971d "usbcore: set
-lpm_capable field for LPM capable root hubs" was created under the
-assumption that all USB host controllers should have USB 3.0 Link PM
-enabled for all devices under the hosts.
+This reverts commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e.  It's a
+hack that caused regressions in the usb-storage and userspace USB
+drivers that use usbfs and libusb.  Commit 70cabb7d992f "xhci 1.0: Limit
+arbitrarily-aligned scatter gather." should fix the issues seen with the
+ax88179_178a driver on xHCI 1.0 hosts, without causing regressions.
 
-Unfortunately, that's not the case.  The xHCI driver relies on knowledge
-of the host hardware scheduler to calculate the LPM U1/U2 timeout
-values, and it only sets lpm_capable to one for Intel host controllers
-(that have the XHCI_LPM_SUPPORT quirk set).
-
-When LPM is enabled for some Fresco Logic hosts, it causes failures with
-a AgeStar 3UBT USB 3.0 hard drive dock:
-
-Jan 11 13:59:03 sg-laptop kernel: usb 3-1: new SuperSpeed USB device number 2 using xhci_hcd
-Jan 11 13:59:03 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U1 failed.
-Jan 11 13:59:08 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U2 failed.
-Jan 11 13:59:08 sg-laptop kernel: usb-storage 3-1:1.0: USB Mass Storage device detected
-Jan 11 13:59:08 sg-laptop mtp-probe[613]: checking bus 3, device 2: "/sys/devices/pci0000:00/0000:00:1c.3/0000:04:00.0/usb3/3-1"
-Jan 11 13:59:08 sg-laptop mtp-probe[613]: bus: 3, device: 2 was not an MTP device
-Jan 11 13:59:08 sg-laptop kernel: scsi6 : usb-storage 3-1:1.0
-Jan 11 13:59:13 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U1 failed.
-Jan 11 13:59:18 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U2 failed.
-Jan 11 13:59:18 sg-laptop kernel: usbcore: registered new interface driver usb-storage
-Jan 11 13:59:40 sg-laptop kernel: usb 3-1: reset SuperSpeed USB device number 2 using xhci_hcd
-Jan 11 13:59:41 sg-laptop kernel: usb 3-1: device descriptor read/8, error -71
-Jan 11 13:59:41 sg-laptop kernel: usb 3-1: reset SuperSpeed USB device number 2 using xhci_hcd
-Jan 11 13:59:46 sg-laptop kernel: usb 3-1: device descriptor read/8, error -110
-Jan 11 13:59:46 sg-laptop kernel: scsi 6:0:0:0: Device offlined - not ready after error recovery
-Jan 11 13:59:46 sg-laptop kernel: usb 3-1: USB disconnect, device number 2
-
-lspci for the affected host:
-
-04:00.0 0c03: 1b73:1000 (rev 04) (prog-if 30 [XHCI])
-        Subsystem: 1043:1039
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0, Cache Line Size: 64 bytes
-        Interrupt: pin A routed to IRQ 19
-        Region 0: Memory at dd200000 (32-bit, non-prefetchable) [size=64K]
-        Capabilities: [50] Power Management version 3
-                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-        Capabilities: [68] MSI: Enable- Count=1/1 Maskable- 64bit+
-                Address: 0000000000000000  Data: 0000
-        Capabilities: [80] Express (v1) Endpoint, MSI 00
-                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <2us, L1 <32us
-                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-                        MaxPayload 128 bytes, MaxReadReq 512 bytes
-                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 unlimited
-                        ClockPM- Surprise- LLActRep- BwNot-
-                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-        Kernel driver in use: xhci_hcd
-        Kernel modules: xhci_hcd
-
-The commit was backported to stable kernels, and will need to be
-reverted there as well.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@intel.com>
-Reported-by: Sergey Galanov <sergey.e.galanov@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hcd.c |    1 -
- drivers/usb/core/hub.c |    7 +------
- drivers/usb/core/usb.h |    1 -
- 3 files changed, 1 insertion(+), 8 deletions(-)
+ drivers/usb/host/xhci-ring.c |   54 +------------------------------------------
+ include/linux/usb.h          |    2 -
+ 2 files changed, 2 insertions(+), 54 deletions(-)
 
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1033,7 +1033,6 @@ static int register_root_hub(struct usb_
- 					dev_name(&usb_dev->dev), retval);
- 			return retval;
- 		}
--		usb_dev->lpm_capable = usb_device_supports_lpm(usb_dev);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2929,58 +2929,8 @@ static int prepare_ring(struct xhci_hcd
  	}
  
- 	retval = usb_new_device (usb_dev);
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -135,7 +135,7 @@ struct usb_hub *usb_hub_to_struct_hub(st
- 	return usb_get_intfdata(hdev->actconfig->interface[0]);
- }
- 
--int usb_device_supports_lpm(struct usb_device *udev)
-+static int usb_device_supports_lpm(struct usb_device *udev)
- {
- 	/* USB 2.1 (and greater) devices indicate LPM support through
- 	 * their USB 2.0 Extended Capabilities BOS descriptor.
-@@ -156,11 +156,6 @@ int usb_device_supports_lpm(struct usb_d
- 				"Power management will be impacted.\n");
- 		return 0;
- 	}
+ 	while (1) {
+-		if (room_on_ring(xhci, ep_ring, num_trbs)) {
+-			union xhci_trb *trb = ep_ring->enqueue;
+-			unsigned int usable = ep_ring->enq_seg->trbs +
+-					TRBS_PER_SEGMENT - 1 - trb;
+-			u32 nop_cmd;
 -
--	/* udev is root hub */
--	if (!udev->parent)
--		return 1;
+-			/*
+-			 * Section 4.11.7.1 TD Fragments states that a link
+-			 * TRB must only occur at the boundary between
+-			 * data bursts (eg 512 bytes for 480M).
+-			 * While it is possible to split a large fragment
+-			 * we don't know the size yet.
+-			 * Simplest solution is to fill the trb before the
+-			 * LINK with nop commands.
+-			 */
+-			if (num_trbs == 1 || num_trbs <= usable || usable == 0)
+-				break;
 -
- 	if (udev->parent->lpm_capable)
- 		return 1;
+-			if (ep_ring->type != TYPE_BULK)
+-				/*
+-				 * While isoc transfers might have a buffer that
+-				 * crosses a 64k boundary it is unlikely.
+-				 * Since we can't add NOPs without generating
+-				 * gaps in the traffic just hope it never
+-				 * happens at the end of the ring.
+-				 * This could be fixed by writing a LINK TRB
+-				 * instead of the first NOP - however the
+-				 * TRB_TYPE_LINK_LE32() calls would all need
+-				 * changing to check the ring length.
+-				 */
+-				break;
+-
+-			if (num_trbs >= TRBS_PER_SEGMENT) {
+-				xhci_err(xhci, "Too many fragments %d, max %d\n",
+-						num_trbs, TRBS_PER_SEGMENT - 1);
+-				return -ENOMEM;
+-			}
+-
+-			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
+-					ep_ring->cycle_state);
+-			ep_ring->num_trbs_free -= usable;
+-			do {
+-				trb->generic.field[0] = 0;
+-				trb->generic.field[1] = 0;
+-				trb->generic.field[2] = 0;
+-				trb->generic.field[3] = nop_cmd;
+-				trb++;
+-			} while (--usable);
+-			ep_ring->enqueue = trb;
+-			if (room_on_ring(xhci, ep_ring, num_trbs))
+-				break;
+-		}
++		if (room_on_ring(xhci, ep_ring, num_trbs))
++			break;
  
---- a/drivers/usb/core/usb.h
-+++ b/drivers/usb/core/usb.h
-@@ -35,7 +35,6 @@ extern int usb_get_device_descriptor(str
- 		unsigned int size);
- extern int usb_get_bos_descriptor(struct usb_device *dev);
- extern void usb_release_bos_descriptor(struct usb_device *dev);
--extern int usb_device_supports_lpm(struct usb_device *udev);
- extern char *usb_cache_string(struct usb_device *udev, int index);
- extern int usb_set_configuration(struct usb_device *dev, int configuration);
- extern int usb_choose_configuration(struct usb_device *udev);
+ 		if (ep_ring == xhci->cmd_ring) {
+ 			xhci_err(xhci, "Do not support expand command ring\n");
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -1262,8 +1262,6 @@ typedef void (*usb_complete_t)(struct ur
+  * @sg: scatter gather buffer list, the buffer size of each element in
+  * 	the list (except the last) must be divisible by the endpoint's
+  * 	max packet size if no_sg_constraint isn't set in 'struct usb_bus'
+- * 	(FIXME: scatter-gather under xHCI is broken for periodic transfers.
+- * 	Do not use urb->sg for interrupt endpoints for now, only bulk.)
+  * @num_mapped_sgs: (internal) number of mapped sg entries
+  * @num_sgs: number of entries in the sg list
+  * @transfer_buffer_length: How big is transfer_buffer.  The transfer may
 
 
