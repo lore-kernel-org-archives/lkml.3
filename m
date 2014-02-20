@@ -1,156 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaBTAAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:00:12 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56004 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566AbaBTAAK (ORCPT
+	id S1751932AbaBTADd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 19:03:33 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:36969 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaBTADb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 19:00:10 -0500
-Date: Thu, 20 Feb 2014 01:00:05 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>
-cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org
-Subject: Re: [PATCH] softirq: stable v3.1[23] (others?) have screaming tasklet
- disease - ksoftirqd[random] eats 100% CPU
-In-Reply-To: <1392833773.5423.142.camel@marge.simpson.net>
-Message-ID: <alpine.DEB.2.02.1402192119480.4468@ionos.tec.linutronix.de>
-References: <1392833773.5423.142.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 19 Feb 2014 19:03:31 -0500
+X-AuditID: cbfec37a-b7ef66d000004f2b-e7-530546513c27
+Message-id: <53054648.3090400@samsung.com>
+Date: Wed, 19 Feb 2014 17:03:20 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org, lizefan@huawei.com,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.4 00/24] 3.4.81-stable review
+References: <20140218224550.221535225@linuxfoundation.org>
+In-reply-to: <20140218224550.221535225@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.5]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9hX91AN9Zgg30T5SzmrF/DZtG8eD2b
+	xeVdc9gsJnX0slt8/elgsWDjI0aLR31v2R3YPXbOusvu0XLkLavHiRm/WTz2z13D7vF5k1wA
+	axSXTUpqTmZZapG+XQJXxu5Tj1gLXrFXvLqv28A4k62LkZNDQsBEYuq9tywQtpjEhXvrweJC
+	AssYJR5OjoKwe5kkXi8T6mLkArI3MErM/r+evYuRg4NXQEui4T4HSA2LgKrEzXuXweawCahL
+	fH69gx2iV06iaclqZhBbVCBC4tXZiWA1vAKCEj8m3wOzRQSCJdZ+XcgIMp9ZYA+jxINrm8ES
+	wgLGEsv7P7JCDLKSaGreAhbnFLCWmP/jBdihzED2yknbGCFseYnNa94yQ9QrS/y5fIoJ4jEF
+	iRsLl7FOYBSZhWT3LCTts5C0L2BkXsUoVlqcXFCclJ5aYahXnJhbXJqXrpecn7uJERJDVTsY
+	73y1OcQowMGoxMMbcZ0lWIg1say4MvcQowQHs5IIbzQba7AQb0piZVVqUX58UWlOavEhRiYO
+	TqkGxqg7L7bq/lLyPWTeyrFhzf3XFUZNT6oM3z84cCd6srlSK1PRi5/zZU/7ha5bYmegfapp
+	qnLUgkMBH6OUWnn4SvVCSzZvVuoKy5qss9vp6FPOi9oPEncXnLQwDrnhV++9K++FwL0l18wM
+	5BPfsuhvqo/5aZNy6t+vROYNT46uPnCp7jXjwQfO3kosxRmJhlrMRcWJAKy2sNl/AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014, Mike Galbraith wrote:
-> I'm seeing ksoftirqd chewing 100% CPU on one or more CPUs in both 3.12
-> and 3.13, as below in a 40 core (+smt) box.  It should look very
-> familiar to CCs, especially Ingo.
-> 
-> Below, tasklet is disabled by ioat2_free_chan_resources, and what I
-> presume was systemd-udevd-1050 starts screaming when it meets same,
-> until debug patchlet turns tracing off.  Once the box was up such that I
-> could login, 1050 was long gone, and ksoftirqd had taken over.
-> 
->    systemd-udevd-976   [016] ....    27.467534: ioat_init_channel: tasklet_disable_nosync ffff880465b8bee8
->    systemd-udevd-976   [016] ....    27.467649: ioat2_alloc_chan_resources: tasklet_enable ffff880465b8bee8
->           <idle>-0     [072] ..s.    27.467659: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
->           <idle>-0     [072] .Ns.    27.467667: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
->           <idle>-0     [072] .Ns.    27.467673: tasklet_action: LOOP processed ffff880465b8bee8
->    systemd-udevd-976   [016] ....    27.467679: ioat2_free_chan_resources: tasklet_disable_nosync ffff880465b8bee8
->    systemd-udevd-1034  [000] .Ns.    27.467917: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
->    systemd-udevd-1034  [000] .Ns.    27.467918: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
->            <...>-1050  [000] ..s.    27.468203: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
->            <...>-1050  [000] ..s.    27.468204: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
->            <...>-1050  [000] ..s.    27.468204: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
->            <...>-1050  [000] ..s.    27.468205: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
-> ... much no processing, see tasklet disabled, raise softirq - wash rinse repeat
->            <...>-1050  [000] ..s.    27.469561: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
->            <...>-1050  [000] ..s.    27.469562: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
->            <...>-1050  [000] ..s.    27.469563: tasklet_action: LOOP tasklet disabled ffff880465b8bee8 - It's dead Jim
-> 
-> Hm, he says, now where have I seen text describing that trace?  Right,
-> RT, and the below fixes screaming NOPREEMPT kernels.
-> 
-> Taken from 3.12-rt, and applied to screaming 3.12.11-virgin
+On 02/18/2014 03:46 PM, Greg Kroah-Hartman wrote:
+> Many thanks to Li Zefan for digging up a bunch of these patches, that
+> work is much appreciated.
+>
+> This is the start of the stable review cycle for the 3.4.81 release.
+> There are 24 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Feb 20 22:45:38 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.81-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-Indeed. That's a very similar issue just for different reasons. The RT
-case is special as the mainline usage side of tasklets do not expect
-the preemption scenario.
+Compile tests and boot tests passed. No dmesg regressions: emerg, crit, 
+alert, err are clean. No regressions in warn.
 
-But this one is clearly a driver issue.
+-- Shuah
 
-The window where you can bring a machine into that state is infinite
-large. Lets look at the tasklet_schedule --> softirq sequence:
 
-tasklet_schedule(t)
-  set_bit(TASKLET_STATE_SCHED, &t->state);
-  queue_tasklet_on_cpu_list(t);
-  raise_softirq();
-
-softirq()
-  splice_tasklet_cpu_list(cpu_list, list);
-  while (list) {
-    t = list;
-    list = t->next;
-    /* Sets the TASKLET_STATE_RUN bit ! */
-    if (tasklet_trylock(t) {
-      if (!atomic_read(&t->count)) {               <----- 
-	clear_bit(TASKLET_STATE_SCHED, &t->state);
-	t->func();
-	/* Clear the TASKLET_STATE_RUN bit */
-	tasklet_unlock();
-	continue;
-      }
-    tasklet_unlock();
-    queue_tasklet_on_cpu_list(t);
-    raise_softirq();
-  }  
-
-So up to the atomic_read in the softirq all calls to tasklet_disable()
-even if issued eons before that point are going to put the softirq
-into an infinite loop when the tasklet is scheduled.
-
-Even if we would put a check for the disabled state into
-tasklet_schedule there would be still the window between the schedule
-and the actual softirq handling. And we even can't add that check
-because that would break "sane" use sites of tasklet_disable.
-
-tasklet_disable/enable is only meant for temporary, i.e. over a very
-short code sequence, preventing the execution of the tasklet.
-
-The usage of tasklet_disable() in teardown scenarios is completely
-broken. The only way to do that is to have a proper serialization of
-the teardown versus the interrupt which schedules the tasklet:
-
-    	/*
-	 * First step.
-	 */
-    	disable_interrupt_at_device_or_irq_line_level();
-
-	/*
-	 * This makes sure that even a spurious interrupt which
-	 * arrives _AFTER_ the synchronize_irq() cannot schedule
-	 * the tasklet anymore.
-	 */
-	tell_interrupt_to_not_schedule_tasklet();
-
-	/* Make sure that no interrupt is on the fly */
-	synchronize_irq();
-
-	/* 
-	 * Kill the tasklet, which also waits for an already
-	 * scheduled one to complete.
-	 */
-	tasklet_kill();
-
-I tried to find something like that in the ioat code but I failed
-miserably.
-
-Instead of that it uses tasklet_disable/enable for the setup/teardown
-which is completely buggered and obviously written by people who have
-no clue about the tasklet semantics at all.
-
-What's worse is that at the point where this code was written it was
-already well known that tasklets are a steaming pile of crap and
-should die.
-
-I know why and how the RT patch works around that issue, but do we
-really want to make it simpler to (ab)use and introduce new users of
-tasklets instead of getting rid of them? Definitely NOT!
-
-Seriously, people who still use tasklets without being aware of their
-subtle issues and without an extremly good reason to use them at all
-should use a wire cutter or some other appropriate tool to render
-their keyboard unusable and get a job in a bakery where they can eat
-the mess they produce themself.
-
-Thanks,
-
-	tglx
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
