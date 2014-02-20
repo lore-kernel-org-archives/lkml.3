@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605AbaBUBLu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:11:50 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:34864 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454AbaBUBLs (ORCPT
+	id S1754375AbaBTXu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:50:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45245 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985AbaBTXuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 20:11:48 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: JBottomley@parallels.com
-Cc: jayamohan.kallickal@emulex.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [SCSI] be2iscsi: make beiscsi_process_mcc() as static
-Date: Fri, 21 Feb 2014 10:11:40 +0900
-Message-ID: <4848622.esnnEkYuHI@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Thu, 20 Feb 2014 18:50:23 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.4 01/25] xen-blkfront: handle backend CLOSED without CLOSING
+Date: Thu, 20 Feb 2014 15:51:17 -0800
+Message-Id: <20140220234842.525918279@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
+References: <20140220234842.483343851@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 137a2f619f1fa93fc497d891954d83c6cb307d11 Mon Sep 17 00:00:00 2001
-From: Daeseok Youn <daeseok.youn@gmail.com>
-Date: Fri, 21 Feb 2014 08:43:56 +0900
-Subject: [PATCH] [SCSI] be2iscsi: make beiscsi_process_mcc() as static
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-beiscsi_process_mcc() is only referenced in this file.
+------------------
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+From: David Vrabel <david.vrabel@citrix.com>
+
+commit 3661371701e714f0cea4120f6a365340858fb4e4 upstream.
+
+Backend drivers shouldn't transistion to CLOSED unless the frontend is
+CLOSED.  If a backend does transition to CLOSED too soon then the
+frontend may not see the CLOSING state and will not properly shutdown.
+
+So, treat an unexpected backend CLOSED state the same as CLOSING.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/scsi/be2iscsi/be_cmds.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/xen-blkfront.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/be2iscsi/be_cmds.c b/drivers/scsi/be2iscsi/be_cmds.c
-index 1ec9793..d4fff8a 100644
---- a/drivers/scsi/be2iscsi/be_cmds.c
-+++ b/drivers/scsi/be2iscsi/be_cmds.c
-@@ -398,7 +398,7 @@ static void beiscsi_cq_notify(struct beiscsi_hba *phba, u16 qid, bool arm,
- }
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1303,13 +1303,16 @@ static void blkback_changed(struct xenbu
+ 	case XenbusStateReconfiguring:
+ 	case XenbusStateReconfigured:
+ 	case XenbusStateUnknown:
+-	case XenbusStateClosed:
+ 		break;
  
+ 	case XenbusStateConnected:
+ 		blkfront_connect(info);
+ 		break;
  
--int beiscsi_process_mcc(struct beiscsi_hba *phba)
-+static int beiscsi_process_mcc(struct beiscsi_hba *phba)
- {
- 	struct be_mcc_compl *compl;
- 	int num = 0, status = 0;
--- 
-1.7.9.5
++	case XenbusStateClosed:
++		if (dev->state == XenbusStateClosed)
++			break;
++		/* Missed the backend's Closing state -- fallthrough */
+ 	case XenbusStateClosing:
+ 		blkfront_closing(info);
+ 		break;
 
 
