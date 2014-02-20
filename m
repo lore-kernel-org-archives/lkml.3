@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaBTXvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:51:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45453 "EHLO
+	id S932249AbaBUAyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:54:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45481 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755001AbaBTXvK (ORCPT
+	with ESMTP id S1755086AbaBTXvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:10 -0500
+	Thu, 20 Feb 2014 18:51:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 18/66] iwlwifi: mvm: print the version of the firmware when it asserts
-Date: Thu, 20 Feb 2014 15:51:17 -0800
-Message-Id: <20140220234910.007888743@linuxfoundation.org>
+        Ulrich Hahn <uhahn@eanco.de>, Johan Hovold <johan@hovold.com>
+Subject: [PATCH 3.10 43/66] USB: ftdi_sio: add Tagsys RFID Reader IDs
+Date: Thu, 20 Feb 2014 15:51:42 -0800
+Message-Id: <20140220234910.725432142@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -29,33 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Ulrich Hahn <uhahn@eanco.de>
 
-commit b900a87b2eb90c0b9586496c82a323a1b8832d73 upstream.
+commit 76f24e3f39a1a94bab0d54e98899d64abcd9f69c upstream.
 
-This can be useful to be able to spot the firmware version
-from the error reports without needing to fetch it from
-another place.
+Adding two more IDs to the ftdi_sio usb serial driver.
+It now connects Tagsys RFID readers.
+There might be more IDs out there for other Tagsys models.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Ulrich Hahn <uhahn@eanco.de>
+Cc: Johan Hovold <johan@hovold.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/utils.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/mvm/utils.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/utils.c
-@@ -401,6 +401,8 @@ void iwl_mvm_dump_nic_error_log(struct i
- 			mvm->status, table.valid);
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -195,6 +195,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_LP101_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_P200X_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_LENZ_LIUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_632_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_634_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -364,6 +364,12 @@
+ /* Sprog II (Andrew Crosland's SprogII DCC interface) */
+ #define FTDI_SPROG_II		0xF0C8
  
-+	IWL_ERR(mvm, "Loaded firmware version: %s\n", mvm->fw->fw_version);
++/*
++ * Two of the Tagsys RFID Readers
++ */
++#define FTDI_TAGSYS_LP101_PID	0xF0E9	/* Tagsys L-P101 RFID*/
++#define FTDI_TAGSYS_P200X_PID	0xF0EE	/* Tagsys Medio P200x RFID*/
 +
- 	trace_iwlwifi_dev_ucode_error(trans->dev, table.error_id, table.tsf_low,
- 				      table.data1, table.data2, table.data3,
- 				      table.blink1, table.blink2, table.ilink1,
+ /* an infrared receiver for user access control with IR tags */
+ #define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
+ 
 
 
