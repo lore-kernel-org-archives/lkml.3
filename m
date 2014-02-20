@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaBTBdr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:33:47 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58001 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935AbaBTBdE (ORCPT
+	id S1752815AbaBTBh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:37:27 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:22967
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751877AbaBTBh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:33:04 -0500
-X-AuditID: 9c93016f-b7c65ae000004a2a-50-53055b4b2123
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 2/4] perf tools: Destroy unused symsrcs
-Date: Thu, 20 Feb 2014 10:32:54 +0900
-Message-Id: <1392859976-32760-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1392859976-32760-1-git-send-email-namhyung@kernel.org>
-References: <1392859976-32760-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 19 Feb 2014 20:37:26 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(z579ehz98dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 20 Feb 2014 09:37:18 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/4] Add audio card DT node support for Vybird-TWR
+ board
+Message-ID: <20140220013714.GL3010@S2101-09.ap.freescale.net>
+References: <1392795751-13351-1-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1392795751-13351-1-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephane reported that perf report and annotate failed to process data
-using lots of (> 500) shared libraries.  It was because of the limit
-on number of open files (ulimit -n).
+On Wed, Feb 19, 2014 at 03:42:27PM +0800, Xiubo Li wrote:
+> Xiubo Li (4):
+>   ARM: dts: vf610: Add edma mux Tx and Rx support for SAI node.
+>   ARM: dts: vf610-twr: Enable SAI ALSA SoC DAI device
+>   ARM: dts: vf610-twr: Enable SGTL5000 codec.
+>   ARM: dts: vf610-twr: Add simple-card support.
 
-Currently when perf loads dso, it'll look for normal and dynamic
-symbol tables.  And if it failed to find out both tables, it'll
-iterate all of possible symtab types.  But many of them are useless
-since they have no additional information and the problem is that it's
-not close those files even though they're not used.  Fix it.
-
-Reported-by: Stephane Eranian <eranian@google.com>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/symbol.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 46e2ede12c51..c3b014712fce 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1336,6 +1336,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 
- 			if (syms_ss && runtime_ss)
- 				break;
-+		} else {
-+			symsrc__destroy(ss);
- 		}
- 
- 	}
--- 
-1.7.11.7
+Applied all, thanks.
 
