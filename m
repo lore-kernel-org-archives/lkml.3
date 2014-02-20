@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510AbaBUAxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:53:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45496 "EHLO
+	id S1755118AbaBTXvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45459 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967AbaBTXvW (ORCPT
+	with ESMTP id S1754967AbaBTXvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:22 -0500
+	Thu, 20 Feb 2014 18:51:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thomas Raschbacher <lordvan@lordvan.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [PATCH 3.10 46/66] usb-storage: enable multi-LUN scanning when needed
-Date: Thu, 20 Feb 2014 15:51:45 -0800
-Message-Id: <20140220234910.807728036@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 36/66] ftrace/x86: Use breakpoints for converting function graph caller
+Date: Thu, 20 Feb 2014 15:51:35 -0800
+Message-Id: <20140220234910.532167318@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -31,68 +28,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 823d12c95c666fa7ab7dad208d735f6bc6afabdc upstream.
+commit 87fbb2ac6073a7039303517546a76074feb14c84 upstream.
 
-People sometimes create their own custom-configured kernels and forget
-to enable CONFIG_SCSI_MULTI_LUN.  This causes problems when they plug
-in a USB storage device (such as a card reader) with more than one
-LUN.
+When the conversion was made to remove stop machine and use the breakpoint
+logic instead, the modification of the function graph caller is still
+done directly as though it was being done under stop machine.
 
-Fortunately, we can tell fairly easily when a storage device claims to
-have more than one LUN.  When that happens, this patch asks the SCSI
-layer to probe all the LUNs automatically, regardless of the config
-setting.
+As it is not converted via stop machine anymore, there is a possibility
+that the code could be layed across cache lines and if another CPU is
+accessing that function graph call when it is being updated, it could
+cause a General Protection Fault.
 
-The patch also updates the Kconfig help text for usb-storage,
-explaining that CONFIG_SCSI_MULTI_LUN may be necessary.
+Convert the update of the function graph caller to use the breakpoint
+method as well.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Thomas Raschbacher <lordvan@lordvan.com>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Fixes: 08d636b6d4fb "ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/Kconfig    |    4 +++-
- drivers/usb/storage/scsiglue.c |    6 ++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ arch/x86/kernel/ftrace.c |   83 ++++++++++++++++++++++++++---------------------
+ 1 file changed, 47 insertions(+), 36 deletions(-)
 
---- a/drivers/usb/storage/Kconfig
-+++ b/drivers/usb/storage/Kconfig
-@@ -18,7 +18,9 @@ config USB_STORAGE
- 
- 	  This option depends on 'SCSI' support being enabled, but you
- 	  probably also need 'SCSI device support: SCSI disk support'
--	  (BLK_DEV_SD) for most USB storage devices.
-+	  (BLK_DEV_SD) for most USB storage devices.  Some devices also
-+	  will require 'Probe all LUNs on each SCSI device'
-+	  (SCSI_MULTI_LUN).
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called usb-storage.
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -78,6 +78,8 @@ static const char* host_info(struct Scsi
- 
- static int slave_alloc (struct scsi_device *sdev)
- {
-+	struct us_data *us = host_to_us(sdev->host);
-+
- 	/*
- 	 * Set the INQUIRY transfer length to 36.  We don't use any of
- 	 * the extra data and many devices choke if asked for more or
-@@ -102,6 +104,10 @@ static int slave_alloc (struct scsi_devi
- 	 */
- 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
- 
-+	/* Tell the SCSI layer if we know there is more than one LUN */
-+	if (us->protocol == USB_PR_BULK && us->max_lun > 0)
-+		sdev->sdev_bflags |= BLIST_FORCELUN;
-+
- 	return 0;
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -77,8 +77,7 @@ within(unsigned long addr, unsigned long
+ 	return addr >= start && addr < end;
  }
  
+-static int
+-do_ftrace_mod_code(unsigned long ip, const void *new_code)
++static unsigned long text_ip_addr(unsigned long ip)
+ {
+ 	/*
+ 	 * On x86_64, kernel text mappings are mapped read-only with
+@@ -91,7 +90,7 @@ do_ftrace_mod_code(unsigned long ip, con
+ 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+ 		ip = (unsigned long)__va(__pa_symbol(ip));
+ 
+-	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
++	return ip;
+ }
+ 
+ static const unsigned char *ftrace_nop_replace(void)
+@@ -123,8 +122,10 @@ ftrace_modify_code_direct(unsigned long
+ 	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
+ 		return -EINVAL;
+ 
++	ip = text_ip_addr(ip);
++
+ 	/* replace the text with the new text */
+-	if (do_ftrace_mod_code(ip, new_code))
++	if (probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE))
+ 		return -EPERM;
+ 
+ 	sync_core();
+@@ -221,37 +222,51 @@ int ftrace_modify_call(struct dyn_ftrace
+ 	return -EINVAL;
+ }
+ 
+-int ftrace_update_ftrace_func(ftrace_func_t func)
++static unsigned long ftrace_update_func;
++
++static int update_ftrace_func(unsigned long ip, void *new)
+ {
+-	unsigned long ip = (unsigned long)(&ftrace_call);
+-	unsigned char old[MCOUNT_INSN_SIZE], *new;
++	unsigned char old[MCOUNT_INSN_SIZE];
+ 	int ret;
+ 
+-	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
+-	new = ftrace_call_replace(ip, (unsigned long)func);
++	memcpy(old, (void *)ip, MCOUNT_INSN_SIZE);
++
++	ftrace_update_func = ip;
++	/* Make sure the breakpoints see the ftrace_update_func update */
++	smp_wmb();
+ 
+ 	/* See comment above by declaration of modifying_ftrace_code */
+ 	atomic_inc(&modifying_ftrace_code);
+ 
+ 	ret = ftrace_modify_code(ip, old, new);
+ 
++	atomic_dec(&modifying_ftrace_code);
++
++	return ret;
++}
++
++int ftrace_update_ftrace_func(ftrace_func_t func)
++{
++	unsigned long ip = (unsigned long)(&ftrace_call);
++	unsigned char *new;
++	int ret;
++
++	new = ftrace_call_replace(ip, (unsigned long)func);
++	ret = update_ftrace_func(ip, new);
++
+ 	/* Also update the regs callback function */
+ 	if (!ret) {
+ 		ip = (unsigned long)(&ftrace_regs_call);
+-		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
+ 		new = ftrace_call_replace(ip, (unsigned long)func);
+-		ret = ftrace_modify_code(ip, old, new);
++		ret = update_ftrace_func(ip, new);
+ 	}
+ 
+-	atomic_dec(&modifying_ftrace_code);
+-
+ 	return ret;
+ }
+ 
+ static int is_ftrace_caller(unsigned long ip)
+ {
+-	if (ip == (unsigned long)(&ftrace_call) ||
+-		ip == (unsigned long)(&ftrace_regs_call))
++	if (ip == ftrace_update_func)
+ 		return 1;
+ 
+ 	return 0;
+@@ -677,45 +692,41 @@ int __init ftrace_dyn_arch_init(void *da
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ extern void ftrace_graph_call(void);
+ 
+-static int ftrace_mod_jmp(unsigned long ip,
+-			  int old_offset, int new_offset)
++static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
+ {
+-	unsigned char code[MCOUNT_INSN_SIZE];
++	static union ftrace_code_union calc;
+ 
+-	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
+-		return -EFAULT;
++	/* Jmp not a call (ignore the .e8) */
++	calc.e8		= 0xe9;
++	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
+ 
+-	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
+-		return -EINVAL;
++	/*
++	 * ftrace external locks synchronize the access to the static variable.
++	 */
++	return calc.code;
++}
+ 
+-	*(int *)(&code[1]) = new_offset;
++static int ftrace_mod_jmp(unsigned long ip, void *func)
++{
++	unsigned char *new;
+ 
+-	if (do_ftrace_mod_code(ip, &code))
+-		return -EPERM;
++	new = ftrace_jmp_replace(ip, (unsigned long)func);
+ 
+-	return 0;
++	return update_ftrace_func(ip, new);
+ }
+ 
+ int ftrace_enable_ftrace_graph_caller(void)
+ {
+ 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
+-	int old_offset, new_offset;
+-
+-	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
+-	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
+ 
+-	return ftrace_mod_jmp(ip, old_offset, new_offset);
++	return ftrace_mod_jmp(ip, &ftrace_graph_caller);
+ }
+ 
+ int ftrace_disable_ftrace_graph_caller(void)
+ {
+ 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
+-	int old_offset, new_offset;
+-
+-	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
+-	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
+ 
+-	return ftrace_mod_jmp(ip, old_offset, new_offset);
++	return ftrace_mod_jmp(ip, &ftrace_stub);
+ }
+ 
+ #endif /* !CONFIG_DYNAMIC_FTRACE */
 
 
