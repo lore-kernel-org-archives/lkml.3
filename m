@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaBTWGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 17:06:15 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:57725 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751350AbaBTWGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 17:06:13 -0500
-Message-ID: <53067C50.9010708@hurleysoftware.com>
-Date: Thu, 20 Feb 2014 17:06:08 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753197AbaBTWHB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 17:07:01 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:55690 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752412AbaBTWHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 17:07:00 -0500
+Date: Thu, 20 Feb 2014 16:06:57 -0600
+From: Russ Anderson <rja@sgi.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Message-ID: <20140220220656.GT17949@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com> <20140220201458.GA7099@sgi.com> <1392927381.20109.0.camel@x230> <20140220204028.GJ17949@sgi.com> <1392929163.20109.5.camel@x230> <20140220205901.GM17949@sgi.com> <1392930047.20109.6.camel@x230> <20140220212854.GO17949@sgi.com> <1392932363.20109.11.camel@x230>
 MIME-Version: 1.0
-To: Grant Edwards <grant.b.edwards@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-rt-users@vger.kernel.org,
-        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: Re: locking changes in tty broke low latency feature
-References: <20140219230623.736E8406062@ip-64-139-1-69.sjc.megapath.net> <53056E99.9070900@hurleysoftware.com> <53064672.3000807@hurleysoftware.com> <le5laq$40s$1@ger.gmane.org>
-In-Reply-To: <le5laq$40s$1@ger.gmane.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392932363.20109.11.camel@x230>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 02:33 PM, Grant Edwards wrote:
-> On 2014-02-20, Peter Hurley <peter@hurleysoftware.com> wrote:
->> Sender completes 2000 loops in 160ms total run time;
->> that's 80us average per complete round-trip.
->
-> If I understand correctly, that 80us _includes_ the actual time for
-> the bits on the wire (which means the actual "baud rate" involved is
-> high enough that it's negligible).
+On Thu, Feb 20, 2014 at 09:39:23PM +0000, Matthew Garrett wrote:
+> On Thu, 2014-02-20 at 15:28 -0600, Russ Anderson wrote:
+> 
+> > For some customers _any_ amount is significant, especially
+> > on large clustered systems where the amount is multiplied
+> > by tens or hundreds of thousands of nodes.
+> > 
+> > You many not think wasting their cpu cycles is important, but they do.
+> 
+> Then they should be running locally built kernels in order to ensure
 
-Yes, 80us includes the transmit time.
+Why don't YOU run a locally built kernel?
 
->> I think this shows that low_latency is unnecessary and should
->> just be removed/ignored by the tty core.
->
-> If that's the sort of latency that you get for typical kernel
-> configurations for typical distros, then I agree that the low_latency
-> flag is not needed by the tty later.
+> that there's no problematic code running at all. Distribution kernels
+> will always contain code that some customers won't be interested in, and
+> some of that code will end up executing.
 
-Stock ubuntu kernel config but preempt and 250hz (and debugging stuff).
+We support multiple distros so if one does something the customer
+does not like/need we can steer them to other distros.
 
-> However, it might still be useful for the lower-level tty or
-> serial-core driver to control CPU usage vs. latency trade-offs (for
-> exaple, one of my drivers uses it to decide where to set the rx FIFO
-> threshold).
+> If you have specific bug reports, that would be helpful. But you're not
+> describing actual failure conditions or showing any willingness to
+> figure out what the underlying problem is.
 
-Sure, it could be left for driver consumption.
+You can't fix your problem without creating problems for
+others to fix?
 
-Regards,
-Peter Hurley
 
+-- 
+Russ Anderson,  Kernel and Performance Software Team Manager
+SGI - Silicon Graphics Inc          rja@sgi.com
