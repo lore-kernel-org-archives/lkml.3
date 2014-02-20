@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201AbaBTJNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:13:51 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:59188 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754799AbaBTJNk (ORCPT
+	id S1755230AbaBTJOQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:14:16 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:63944 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754799AbaBTJOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:13:40 -0500
-Message-ID: <1392887617.5070.43.camel@x220>
-Subject: [PATCH 1/2] advansys: change buildtime warning into runtime error
+	Thu, 20 Feb 2014 04:14:06 -0500
+Message-ID: <1392887643.5070.44.camel@x220>
+Subject: [PATCH 2/2] MAINTAINERS: mark Advansys Orphan
 From: Paul Bolle <pebolle@tiscali.nl>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Josh Boyer <jwboyer@fedoraproject.org>,
         Hans de Goede <hdegoede@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
         "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 20 Feb 2014 10:13:37 +0100
+Date: Thu, 20 Feb 2014 10:14:03 +0100
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Feb 2014 09:13:37.0725 (UTC) FILETIME=[09E8D6D0:01CF2E1C]
+X-OriginalArrivalTime: 20 Feb 2014 09:14:03.0994 (UTC) FILETIME=[19912BA0:01CF2E1C]
 X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building advansys.o triggers this warning:
-    drivers/scsi/advansys.c:71:2: warning: #warning this driver is still not properly converted to the DMA API [-Wcpp]
-
-This warning can be traced back to a patch called "advansys: add warning
-and convert #includes" which was included in v2.6.10. That patch also
-marked the driver as BROKEN.
-
-Commit 4661e3eace2c7b8433476b5bf0ee437ab3c7dfd4 ("[SCSI] advansys
-driver: limp along on x86") enabled this driver for x86-32. And commit
-9d511a4b29de6764931343d03e493f2e04df0271 ("[SCSI] advansys: Changes to
-work on parisc") enabled this driver for all architectures. But the
-commit explanation stated:
-    I haven't removed the #warning yet because virt_to_bus/bus_to_virt are
-    only eliminated for narrow boards.  Wide boards need more work.
-
-Six years have passed and, apparently, those wide boards still need
-more work. So let's change the buildtime warning into a runtime error,
-only printed for those wide boards. Perhaps that might push the people
-using those wide boards to convert this driver. And for all others
-there's now one less buildtime warning to ignore.
+Matthew Wilcox hasn't touched the Advansys driver since v2.6.29. I have
+not been able to get Matthew to respond to a trivial patch I'd like to
+see go in. Mark this driver Orphan and add this driver to Matthew's
+CREDITS entry.
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
-Compile tested only. I don't have any Advansys SCSI boards (neither
-narrow nor wide).
+ CREDITS     | 2 +-
+ MAINTAINERS | 3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
- drivers/scsi/advansys.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/advansys.c b/drivers/scsi/advansys.c
-index d814588..5999c60 100644
---- a/drivers/scsi/advansys.c
-+++ b/drivers/scsi/advansys.c
-@@ -68,7 +68,6 @@
-  *  7. advansys_info is not safe against multiple simultaneous callers
-  *  8. Add module_param to override ISA/VLB ioport array
-  */
--#warning this driver is still not properly converted to the DMA API
+diff --git a/CREDITS b/CREDITS
+index e371c55..4adbf38 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -3805,7 +3805,7 @@ N: Matthew Wilcox
+ E: matthew@wil.cx
+ W: ftp://ftp.uk.linux.org/pub/linux/people/willy/
+ D: Linux/PARISC hacker.  Filesystem hacker.  Random other hacking.  Custom
+-D: PPC port hacking.
++D: PPC port hacking.  Advansys SCSI driver.
  
- /* Enable driver /proc statistics. */
- #define ADVANSYS_STATS
-@@ -12260,6 +12259,7 @@ static int advansys_pci_probe(struct pci_dev *pdev,
- 	    pdev->device == PCI_DEVICE_ID_38C0800_REV1 ||
- 	    pdev->device == PCI_DEVICE_ID_38C1600_REV1) {
- 		board->flags |= ASC_IS_WIDE_BOARD;
-+		pr_err("This driver is still not properly converted to the DMA API");
- 	}
+ N: G\"unter Windau
+ E: gunter@mbfys.kun.nl
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fb08dce..c45d72e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -426,9 +426,8 @@ S:	Supported
+ F:	drivers/input/misc/adxl34x.c
  
- 	err = advansys_board_found(shost, ioport, ASC_IS_PCI);
+ ADVANSYS SCSI DRIVER
+-M:	Matthew Wilcox <matthew@wil.cx>
+ L:	linux-scsi@vger.kernel.org
+-S:	Maintained
++S:	Orphan
+ F:	Documentation/scsi/advansys.txt
+ F:	drivers/scsi/advansys.c
+ 
 -- 
 1.8.5.3
 
