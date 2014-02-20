@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661AbaBUAIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:08:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46161 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932166AbaBTXxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932205AbaBTXxl (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Feb 2014 18:53:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46145 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932166AbaBTXxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:53:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hartmut Knaack <knaack.h@gmx.de>, Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.13 53/99] staging:iio:ad799x fix typo in ad799x_events[]
-Date: Thu, 20 Feb 2014 15:52:48 -0800
-Message-Id: <20140220235119.742667390@linuxfoundation.org>
+        Steve French <smfrench@gmail.com>,
+        Shirish Pargaonkar <spargaonkar@suse.com>
+Subject: [PATCH 3.13 09/99] retrieving CIFS ACLs when mounted with SMB2 fails dropping session
+Date: Thu, 20 Feb 2014 15:52:04 -0800
+Message-Id: <20140220235118.478665343@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,30 +29,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hartmut Knaack <knaack.h@gmx.de>
+From: Steve French <smfrench@gmail.com>
 
-commit d180371d412627a10dc31d675ef8bc777567df09 upstream.
+commit 83e3bc23ef9ce7c03b7b4e5d3d790246ea59db3e upstream.
 
-This patch fixes a typo in ad799x_events[], which caused the error "Failed to register event set".
+The get/set ACL xattr support for CIFS ACLs attempts to send old
+cifs dialect protocol requests even when mounted with SMB2 or later
+dialects. Sending cifs requests on an smb2 session causes problems -
+the server drops the session due to the illegal request.
 
-Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This patch makes CIFS ACL operations protocol specific to fix that.
+
+Attempting to query/set CIFS ACLs for SMB2 will now return
+EOPNOTSUPP (until we add worker routines for sending query
+ACL requests via SMB2) instead of sending invalid (cifs)
+requests.
+
+A separate followon patch will be needed to fix cifs_acl_to_fattr
+(which takes a cifs specific u16 fid so can't be abstracted
+to work with SMB2 until that is changed) and will be needed
+to fix mount problems when "cifsacl" is specified on mount
+with e.g. vers=2.1
+
+Signed-off-by: Steve French <smfrench@gmail.com>
+Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/adc/ad799x_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifsacl.c  |   28 ++++++++++++++++++++++++----
+ fs/cifs/cifsglob.h |    4 ++++
+ fs/cifs/smb1ops.c  |    4 ++++
+ fs/cifs/xattr.c    |   15 +++++++++++----
+ 4 files changed, 43 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/iio/adc/ad799x_core.c
-+++ b/drivers/staging/iio/adc/ad799x_core.c
-@@ -393,7 +393,7 @@ static const struct iio_event_spec ad799
- 	}, {
- 		.type = IIO_EV_TYPE_THRESH,
- 		.dir = IIO_EV_DIR_FALLING,
--		.mask_separate = BIT(IIO_EV_INFO_VALUE),
-+		.mask_separate = BIT(IIO_EV_INFO_VALUE) |
- 			BIT(IIO_EV_INFO_ENABLE),
- 	}, {
- 		.type = IIO_EV_TYPE_THRESH,
+--- a/fs/cifs/cifsacl.c
++++ b/fs/cifs/cifsacl.c
+@@ -1027,15 +1027,30 @@ id_mode_to_cifs_acl(struct inode *inode,
+ 	__u32 secdesclen = 0;
+ 	struct cifs_ntsd *pntsd = NULL; /* acl obtained from server */
+ 	struct cifs_ntsd *pnntsd = NULL; /* modified acl to be sent to server */
++	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
++	struct tcon_link *tlink = cifs_sb_tlink(cifs_sb);
++	struct cifs_tcon *tcon;
++
++	if (IS_ERR(tlink))
++		return PTR_ERR(tlink);
++	tcon = tlink_tcon(tlink);
+ 
+ 	cifs_dbg(NOISY, "set ACL from mode for %s\n", path);
+ 
+ 	/* Get the security descriptor */
+-	pntsd = get_cifs_acl(CIFS_SB(inode->i_sb), inode, path, &secdesclen);
++
++	if (tcon->ses->server->ops->get_acl == NULL) {
++		cifs_put_tlink(tlink);
++		return -EOPNOTSUPP;
++	}
++
++	pntsd = tcon->ses->server->ops->get_acl(cifs_sb, inode, path,
++						&secdesclen);
+ 	if (IS_ERR(pntsd)) {
+ 		rc = PTR_ERR(pntsd);
+ 		cifs_dbg(VFS, "%s: error %d getting sec desc\n", __func__, rc);
+-		goto out;
++		cifs_put_tlink(tlink);
++		return rc;
+ 	}
+ 
+ 	/*
+@@ -1048,6 +1063,7 @@ id_mode_to_cifs_acl(struct inode *inode,
+ 	pnntsd = kmalloc(secdesclen, GFP_KERNEL);
+ 	if (!pnntsd) {
+ 		kfree(pntsd);
++		cifs_put_tlink(tlink);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1056,14 +1072,18 @@ id_mode_to_cifs_acl(struct inode *inode,
+ 
+ 	cifs_dbg(NOISY, "build_sec_desc rc: %d\n", rc);
+ 
++	if (tcon->ses->server->ops->set_acl == NULL)
++		rc = -EOPNOTSUPP;
++
+ 	if (!rc) {
+ 		/* Set the security descriptor */
+-		rc = set_cifs_acl(pnntsd, secdesclen, inode, path, aclflag);
++		rc = tcon->ses->server->ops->set_acl(pnntsd, secdesclen, inode,
++						     path, aclflag);
+ 		cifs_dbg(NOISY, "set_cifs_acl rc: %d\n", rc);
+ 	}
++	cifs_put_tlink(tlink);
+ 
+ 	kfree(pnntsd);
+ 	kfree(pntsd);
+-out:
+ 	return rc;
+ }
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -391,6 +391,10 @@ struct smb_version_operations {
+ 	int (*set_EA)(const unsigned int, struct cifs_tcon *, const char *,
+ 			const char *, const void *, const __u16,
+ 			const struct nls_table *, int);
++	struct cifs_ntsd * (*get_acl)(struct cifs_sb_info *, struct inode *,
++			const char *, u32 *);
++	int (*set_acl)(struct cifs_ntsd *, __u32, struct inode *, const char *,
++			int);
+ };
+ 
+ struct smb_version_values {
+--- a/fs/cifs/smb1ops.c
++++ b/fs/cifs/smb1ops.c
+@@ -1015,6 +1015,10 @@ struct smb_version_operations smb1_opera
+ 	.query_all_EAs = CIFSSMBQAllEAs,
+ 	.set_EA = CIFSSMBSetEA,
+ #endif /* CIFS_XATTR */
++#ifdef CONFIG_CIFS_ACL
++	.get_acl = get_cifs_acl,
++	.set_acl = set_cifs_acl,
++#endif /* CIFS_ACL */
+ };
+ 
+ struct smb_version_values smb1_values = {
+--- a/fs/cifs/xattr.c
++++ b/fs/cifs/xattr.c
+@@ -176,8 +176,12 @@ int cifs_setxattr(struct dentry *direntr
+ 			rc = -ENOMEM;
+ 		} else {
+ 			memcpy(pacl, ea_value, value_size);
+-			rc = set_cifs_acl(pacl, value_size,
+-				direntry->d_inode, full_path, CIFS_ACL_DACL);
++			if (pTcon->ses->server->ops->set_acl)
++				rc = pTcon->ses->server->ops->set_acl(pacl,
++						value_size, direntry->d_inode,
++						full_path, CIFS_ACL_DACL);
++			else
++				rc = -EOPNOTSUPP;
+ 			if (rc == 0) /* force revalidate of the inode */
+ 				CIFS_I(direntry->d_inode)->time = 0;
+ 			kfree(pacl);
+@@ -323,8 +327,11 @@ ssize_t cifs_getxattr(struct dentry *dir
+ 			u32 acllen;
+ 			struct cifs_ntsd *pacl;
+ 
+-			pacl = get_cifs_acl(cifs_sb, direntry->d_inode,
+-						full_path, &acllen);
++			if (pTcon->ses->server->ops->get_acl == NULL)
++				goto get_ea_exit; /* rc already EOPNOTSUPP */
++
++			pacl = pTcon->ses->server->ops->get_acl(cifs_sb,
++					direntry->d_inode, full_path, &acllen);
+ 			if (IS_ERR(pacl)) {
+ 				rc = PTR_ERR(pacl);
+ 				cifs_dbg(VFS, "%s: error %zd getting sec desc\n",
 
 
