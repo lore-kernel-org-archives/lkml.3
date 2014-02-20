@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347AbaBUA0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:26:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45896 "EHLO
+	id S1756563AbaBUA0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:26:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767AbaBTXwr (ORCPT
+	with ESMTP id S1755806AbaBTXwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:47 -0500
+	Thu, 20 Feb 2014 18:52:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.12 33/82] drm/i915: Pair va_copy with va_end in i915_error_vprintf
-Date: Thu, 20 Feb 2014 15:52:16 -0800
-Message-Id: <20140220235020.464667467@linuxfoundation.org>
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.12 69/82] IB/qib: Add missing serdes init sequence
+Date: Thu, 20 Feb 2014 15:52:52 -0800
+Message-Id: <20140220235021.545536776@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -30,43 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit 1d2cb9a54abc6e1d239f28f07661366d5662a94a upstream.
+commit 2f75e12c4457a9b3d042c0a0d748fa198dc2ffaf upstream.
 
-Each invocation of va_copy() must be matched by a corresponding
-invocation of va_end() in the same function.
+Research has shown that commit a77fcf895046 ("IB/qib: Use a single
+txselect module parameter for serdes tuning") missed a key serdes init
+sequence.
 
-This regression has been introduced in
+This patch add that sequence.
 
-commit e29bb4ebbf000ff9ac081d29784a3331618f012e
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Fri Sep 20 10:20:59 2013 +0100
-
-    drm/i915: Use a temporary va_list for two-pass string handling
-
-Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gpu_error.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/qib/qib_iba7322.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_gpu_error.c
-+++ b/drivers/gpu/drm/i915/i915_gpu_error.c
-@@ -146,7 +146,10 @@ static void i915_error_vprintf(struct dr
- 		va_list tmp;
+--- a/drivers/infiniband/hw/qib/qib_iba7322.c
++++ b/drivers/infiniband/hw/qib/qib_iba7322.c
+@@ -2395,6 +2395,11 @@ static int qib_7322_bringup_serdes(struc
+ 	qib_write_kreg_port(ppd, krp_ibcctrl_a, ppd->cpspec->ibcctrl_a);
+ 	qib_write_kreg(dd, kr_scratch, 0ULL);
  
- 		va_copy(tmp, args);
--		if (!__i915_error_seek(e, vsnprintf(NULL, 0, f, tmp)))
-+		len = vsnprintf(NULL, 0, f, tmp);
-+		va_end(tmp);
++	/* ensure previous Tx parameters are not still forced */
++	qib_write_kreg_port(ppd, krp_tx_deemph_override,
++		SYM_MASK(IBSD_TX_DEEMPHASIS_OVERRIDE_0,
++		reset_tx_deemphasis_override));
 +
-+		if (!__i915_error_seek(e, len))
- 			return;
- 	}
- 
+ 	if (qib_compat_ddr_negotiate) {
+ 		ppd->cpspec->ibdeltainprog = 1;
+ 		ppd->cpspec->ibsymsnap = read_7322_creg32_port(ppd,
 
 
