@@ -1,40 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbaBTNXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:23:23 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55882 "EHLO arroyo.ext.ti.com"
+	id S1754701AbaBTNYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:24:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64661 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100AbaBTNXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:23:19 -0500
-Message-ID: <53060169.2050207@ti.com>
-Date: Thu, 20 Feb 2014 18:51:45 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1753584AbaBTNYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 08:24:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,512,1389772800"; 
+   d="scan'208";a="484833469"
+From: "Compostella\, Jeremy" <jeremy.compostella@gmail.com>
+To: <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Android / binder: Fix broken walk in binder_node_release()
+CC: "Gross, Mark" <mark.gross@intel.com>, "Ernst, Eric" <eric.ernst@intel.com>,
+        "Arve" <arve@android.com>, "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Mirsal Ennaime" <mirsal@mirsal.fr>
+Date: Thu, 20 Feb 2014 14:22:53 +0100
+Message-ID: <87ob21x6j6.fsf@tldlab276.tl.intel.com>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Chris Ball <chris@printf.net>,
-        <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH V2 2/2] ARM: dts: omap3-ldp: fix mmc configuration
-References: <1392356749-32091-1-git-send-email-nm@ti.com> <1392356749-32091-3-git-send-email-nm@ti.com>
-In-Reply-To: <1392356749-32091-3-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 February 2014 11:15 AM, Nishanth Menon wrote:
-> MMC1 is the only MMC interface available on the platform. Further,
-> since the platform is based on older revision of SoC which is not
-> capable of doing multi-block reads, mark it with compatibility for the
-> same and add pinmux to ensure that all relevant pins are configured
-> for non-MMC boot mode.
->
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+From: "Compostella, Jeremy" <jeremy.compostella@intel.com>
 
-looks good to me
-Acked-by: Balaji T K <balajitk@ti.com>
+This bug can manifest itself in several situations, here is the one that made me
+hunt it last week:
 
+When an Android device is encrypted, Android starts all the init services of
+core and main levels, then it asks for the password and checks it trying to
+mount /data.  On success, it kills all the main services, mount /data and
+restart all the main services.
+
+Unfortunately, on restart of those main services we observe :
+
+DisplayManager       Could not get display information from display manager.
+DisplayManager       android.os.DeadObjectException
+DisplayManager       at android.os.BinderProxy.transact(Native Method)
+DisplayManager       at android.hardware.display.IDisplayManager$Stub$Proxy.getDisplayInfo(IDisplayManager.java:228)
+DisplayManager       at android.hardware.display.DisplayManagerGlobal.getDisplayInfo(DisplayManagerGlobal.java:117)
+DisplayManager       at android.hardware.display.DisplayManagerGlobal.getCompatibleDisplay(DisplayManagerGlobal.java:176)
+DisplayManager       at android.app.ResourcesManager.getDisplayMetricsLocked(ResourcesManager.java:96)
+DisplayManager       at android.app.ResourcesManager.getDisplayMetricsLocked(ResourcesManager.java:74)
+[...]
+
+Which means that the 'display' service is registered into the service_manager
+but point to a dead object (understand died process).  This error is the first
+one of a chain of missing "remote" objects causing the death of processes until
+the system can recovery by itself a few seconds later.
+
+The binder driver allows a "process" to ask a notification when a particular
+reference die.  In that case, the binder driver associate a death object to this
+reference.
+
+When the system_server process died, the file descriptor to the binder driver is
+automatically released and the binder driver will walk all the references
+associated to this process to unallocate them.  When such a reference has a
+death object associated it will execute a task to notify the death to the
+previously register process usually the service_manager process.
+
+The bug is that this walk on all the references is broken due to an
+unfornate refactoring made by the following patch :
+
+        commit 008fa749e0fe5b2fffd20b7fe4891bb80d072c6a
+        Author: Mirsal Ennaime <mirsal@mirsal.fr>
+        Date:   Tue Mar 12 11:41:59 2013 +0100
+
+which break the loop if the current reference does not have a death object
+instead of continuing to the next reference.  As a consequence all the next
+references will not be correctly unallocate and no death notification will be
+sent for them.
+
+Signed-off-by: Jeremy Compostella <jeremy.compostella@intel.com>
+---
+ drivers/staging/android/binder.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index eaec1da..1432d95 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -2904,7 +2904,7 @@ static int binder_node_release(struct binder_node *node, int refs)
+ 		refs++;
+ 
+ 		if (!ref->death)
+-			goto out;
++			continue;
+ 
+ 		death++;
+ 
+@@ -2917,7 +2917,6 @@ static int binder_node_release(struct binder_node *node, int refs)
+ 			BUG();
+ 	}
+ 
+-out:
+ 	binder_debug(BINDER_DEBUG_DEAD_BINDER,
+ 		     "node %d now dead, refs %d, death %d\n",
+ 		     node->debug_id, refs, death);
+-- 
+1.7.10.4
