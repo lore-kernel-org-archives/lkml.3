@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354AbaBUBBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:01:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45381 "EHLO
+	id S932386AbaBUBBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:01:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818AbaBTXux (ORCPT
+	with ESMTP id S1754808AbaBTXuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:53 -0500
+	Thu, 20 Feb 2014 18:50:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frediano Ziglio <frediano.ziglio@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>
-Subject: [PATCH 3.10 03/66] xen: Fix possible user space selector corruption
-Date: Thu, 20 Feb 2014 15:51:02 -0800
-Message-Id: <20140220234909.587548746@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 3.10 02/66] xen/p2m: check MFN is in range before using the m2p table
+Date: Thu, 20 Feb 2014 15:51:01 -0800
+Message-Id: <20140220234909.560087729@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -30,62 +32,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frediano Ziglio <frediano.ziglio@citrix.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 7cde9b27e7b3a2e09d647bb4f6d94e842698d2d5 upstream.
+commit 0160676bba69523e8b0ac83f306cce7d342ed7c8 upstream.
 
-Due to the way kernel is initialized under Xen is possible that the
-ring1 selector used by the kernel for the boot cpu end up to be copied
-to userspace leading to segmentation fault in the userspace.
+On hosts with more than 168 GB of memory, a 32-bit guest may attempt
+to grant map an MFN that is error cannot lookup in its mapping of the
+m2p table.  There is an m2p lookup as part of m2p_add_override() and
+m2p_remove_override().  The lookup falls off the end of the mapped
+portion of the m2p and (because the mapping is at the highest virtual
+address) wraps around and the lookup causes a fault on what appears to
+be a user space address.
 
-Xen code in the kernel initialize no-boot cpus with correct selectors (ds
-and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
-On task context switch (switch_to) we assume that ds, es and cs already
-point to __USER_DS and __KERNEL_CSso these selector are not changed.
+do_page_fault() (thinking it's a fault to a userspace address), tries
+to lock mm->mmap_sem.  If the gntdev device is used for the grant map,
+m2p_add_override() is called from from gnttab_mmap() with mm->mmap_sem
+already locked.  do_page_fault() then deadlocks.
 
-If processor is an Intel that support sysenter instruction sysenter/sysexit
-is used so ds and es are not restored switching back from kernel to
-userspace. In the case the selectors point to a ring1 instead of __USER_DS
-the userspace code will crash on first memory access attempt (to be
-precise Xen on the emulated iret used to do sysexit will detect and set ds
-and es to zero which lead to GPF anyway).
+The deadlock would most commonly occur when a 64-bit guest is started
+and xenconsoled attempts to grant map its console ring.
 
-Now if an userspace process call kernel using sysenter and get rescheduled
-(for me it happen on a specific init calling wait4) could happen that the
-ring1 selector is set to ds and es.
+Introduce mfn_to_pfn_no_overrides() which checks the MFN is within the
+mapped portion of the m2p table before accessing the table and use
+this in m2p_add_override(), m2p_remove_override(), and mfn_to_pfn()
+(which already had the correct range check).
 
-This is quite hard to detect cause after a while these selectors are fixed
-(__USER_DS seems sticky).
+All faults caused by accessing the non-existant parts of the m2p are
+thus within the kernel address space and exception_fixup() is called
+without trying to lock mm->mmap_sem.
 
-Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
-to be the first one that have this issue.
+This means that for MFNs that are outside the mapped range of the m2p
+then mfn_to_pfn() will always look in the m2p overrides.  This is
+correct because it must be a foreign MFN (and the PFN in the m2p in
+this case is only relevant for the other domain).
 
-Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
+v3: check for auto_translated_physmap in mfn_to_pfn_no_overrides()
+v2: in mfn_to_pfn() look in m2p_overrides if the MFN is out of
+    range as it's probably foreign.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@citrix.com>
+Cc: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/smp.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/include/asm/xen/page.h |   31 ++++++++++++++++++++-----------
+ arch/x86/xen/p2m.c              |   10 ++++------
+ 2 files changed, 24 insertions(+), 17 deletions(-)
 
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -245,6 +245,15 @@ static void __init xen_smp_prepare_boot_
- 	   old memory can be recycled */
- 	make_lowmem_page_readwrite(xen_initial_gdt);
- 
-+#ifdef CONFIG_X86_32
-+	/*
-+	 * Xen starts us with XEN_FLAT_RING1_DS, but linux code
-+	 * expects __USER_DS
-+	 */
-+	loadsegment(ds, __USER_DS);
-+	loadsegment(es, __USER_DS);
-+#endif
-+
- 	xen_filter_cpu_maps();
- 	xen_setup_vcpu_info_placement();
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -79,30 +79,38 @@ static inline int phys_to_machine_mappin
+ 	return get_phys_to_machine(pfn) != INVALID_P2M_ENTRY;
  }
+ 
+-static inline unsigned long mfn_to_pfn(unsigned long mfn)
++static inline unsigned long mfn_to_pfn_no_overrides(unsigned long mfn)
+ {
+ 	unsigned long pfn;
+-	int ret = 0;
++	int ret;
+ 
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return mfn;
+ 
+-	if (unlikely(mfn >= machine_to_phys_nr)) {
+-		pfn = ~0;
+-		goto try_override;
+-	}
+-	pfn = 0;
++	if (unlikely(mfn >= machine_to_phys_nr))
++		return ~0;
++
+ 	/*
+ 	 * The array access can fail (e.g., device space beyond end of RAM).
+ 	 * In such cases it doesn't matter what we return (we return garbage),
+ 	 * but we must handle the fault without crashing!
+ 	 */
+ 	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+-try_override:
+-	/* ret might be < 0 if there are no entries in the m2p for mfn */
+ 	if (ret < 0)
+-		pfn = ~0;
+-	else if (get_phys_to_machine(pfn) != mfn)
++		return ~0;
++
++	return pfn;
++}
++
++static inline unsigned long mfn_to_pfn(unsigned long mfn)
++{
++	unsigned long pfn;
++
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return mfn;
++
++	pfn = mfn_to_pfn_no_overrides(mfn);
++	if (get_phys_to_machine(pfn) != mfn) {
+ 		/*
+ 		 * If this appears to be a foreign mfn (because the pfn
+ 		 * doesn't map back to the mfn), then check the local override
+@@ -111,6 +119,7 @@ try_override:
+ 		 * m2p_find_override_pfn returns ~0 if it doesn't find anything.
+ 		 */
+ 		pfn = m2p_find_override_pfn(mfn, ~0);
++	}
+ 
+ 	/* 
+ 	 * pfn is ~0 if there are no entries in the m2p for mfn or if the
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -878,7 +878,6 @@ int m2p_add_override(unsigned long mfn,
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
+-	int ret = 0;
+ 
+ 	pfn = page_to_pfn(page);
+ 	if (!PageHighMem(page)) {
+@@ -925,8 +924,8 @@ int m2p_add_override(unsigned long mfn,
+ 	 * frontend pages while they are being shared with the backend,
+ 	 * because mfn_to_pfn (that ends up being called by GUPF) will
+ 	 * return the backend pfn rather than the frontend pfn. */
+-	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+-	if (ret == 0 && get_phys_to_machine(pfn) == mfn)
++	pfn = mfn_to_pfn_no_overrides(mfn);
++	if (get_phys_to_machine(pfn) == mfn)
+ 		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
+ 
+ 	return 0;
+@@ -941,7 +940,6 @@ int m2p_remove_override(struct page *pag
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
+-	int ret = 0;
+ 
+ 	pfn = page_to_pfn(page);
+ 	mfn = get_phys_to_machine(pfn);
+@@ -1019,8 +1017,8 @@ int m2p_remove_override(struct page *pag
+ 	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
+ 	 * pfn again. */
+ 	mfn &= ~FOREIGN_FRAME_BIT;
+-	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+-	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
++	pfn = mfn_to_pfn_no_overrides(mfn);
++	if (get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
+ 			m2p_find_override(mfn) == NULL)
+ 		set_phys_to_machine(pfn, mfn);
+ 
 
 
