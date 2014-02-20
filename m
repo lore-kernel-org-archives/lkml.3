@@ -1,198 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaBTJdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:33:36 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:2928 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635AbaBTJdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:33:31 -0500
-X-IronPort-AV: E=Sophos;i="4.97,511,1389744000"; 
-   d="scan'208";a="102556648"
-Message-ID: <1392888808.22494.21.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map
- definitions
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Date: Thu, 20 Feb 2014 09:33:28 +0000
-In-Reply-To: <53050BF5.1060009@citrix.com>
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
-			 <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>
-		 <1392743214.23084.38.camel@kazak.uk.xensource.com>
-		 <5303C44D.4070500@citrix.com>
-	 <1392804319.23084.109.camel@kazak.uk.xensource.com>
-	 <53050BF5.1060009@citrix.com>
-Organization: Citrix Systems, Inc.
+	id S1752214AbaBTJeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:34:19 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:50107 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635AbaBTJeP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 04:34:15 -0500
+Message-ID: <1392888839.6846.6.camel@marge.simpson.net>
+Subject: Re: [PATCH] ioat: fix tasklet tear down
+From: Mike Galbraith <bitbucket@online.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: dmaengine@vger.kernel.org, Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        stable@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Thu, 20 Feb 2014 10:33:59 +0100
+In-Reply-To: <20140220071145.21609.89019.stgit@viggo.jf.intel.com>
+References: <20140220071145.21609.89019.stgit@viggo.jf.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:MSOLPiNN8S1hPuXJ7/vRzD5ZFWrhuTTU1T+UzM4XnMB
+ toF5dptl3t7kMGVxmezvEGajD4LkupmRbqYKIg5dO39EStcxmH
+ zSDH7SxZnncmFkZl+mLgGYWJJaOprNrw3nq6ulVYqPgc+DVpiZ
+ C9t2Dv9R+PNDx7bhcwjPb8YWqD+5NbID9Jfu6TORgZX9c1cunz
+ 2b1A7pfvEUqNoRkylxbpr7RSzPs7HqjXoHGS+XauqVJ2iNoPe8
+ erMOguEG7ZIKXOVxYm7agnHRB4TGQxY0vNfK9h8jlKanAZTIDT
+ 03pJ8D6wuvy9b4tu9A+4ztO7545NSCcSSNnqnxkaFcktGxLm+c
+ /1getUWEIrnQWL2fzgwso7OpBdxRPxkAlJDB5JZp4/KTzaZwSF
+ PVqCMv908om2A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-19 at 19:54 +0000, Zoltan Kiss wrote:
-> On 19/02/14 10:05, Ian Campbell wrote:
-> > On Tue, 2014-02-18 at 20:36 +0000, Zoltan Kiss wrote:
-> >> On 18/02/14 17:06, Ian Campbell wrote:
-> >>> On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
-> >>>> This patch contains the new definitions necessary for grant mapping.
-> >>>
-> >>> Is this just adding a bunch of (currently) unused functions? That's a
-> >>> slightly odd way to structure a series. They don't seem to be "generic
-> >>> helpers" or anything so it would be more normal to introduce these as
-> >>> they get used -- it's a bit hard to review them out of context.
-> >> I've created two patches because they are quite huge even now,
-> >> separately. Together they would be a ~500 line change. That was the best
-> >> I could figure out keeping in mind that bisect should work. But as I
-> >> wrote in the first email, I welcome other suggestions. If you and Wei
-> >> prefer this two patch in one big one, I merge them in the next version.
-> >
-> > I suppose it is hard to split a change like this up in a sensible way,
-> > but it is rather hard to review something which is split in two parts
-> > sensibly.
-> >
-> > If the combined patch too large to fit on the lists?
-> Well, it's ca. 30 kb, ~500 lines changed. I guess it's possible. It's up 
-> to you and Wei, if you would like them to be merged, I can do that.
+That was quick.  Afflicted box is now a happy camper.
 
-30kb doesn't sound too bad to me.
+(gee, systemd isn't _completely_ evil, it dug up a bug;)
 
-Patches #1 and #2 are, respectively:
+Tested-by: Mike Galbraith <bitbucket@online.de>
 
- drivers/net/xen-netback/common.h    |   30 ++++++-
- drivers/net/xen-netback/interface.c |    1 +
- drivers/net/xen-netback/netback.c   |  161 +++++++++++++++++++++++++++++++++++
- 3 files changed, 191 insertions(+), 1 deletion(-)
-
- drivers/net/xen-netback/interface.c |   63 ++++++++-
- drivers/net/xen-netback/netback.c   |  254 ++++++++++++++---------------------
- 2 files changed, 160 insertions(+), 157 deletions(-)
-
-I don't think combining those would be terrible, although I'm willing to
-be proven wrong ;-)
-
-> >>>
-> >>>> +		vif->dealloc_prod++;
-> >>>
-> >>> What happens if the dealloc ring becomes full, will this wrap and cause
-> >>> havoc?
-> >> Nope, if the dealloc ring is full, the value of the last increment won't
-> >> be used to index the dealloc ring again until some space made available.
-> >
-> > I don't follow -- what makes this the case?
-> The dealloc ring has the same size as the pending ring, and you can only 
-> add slots to it which are already on the pending ring (the pending_idx 
-> comes from ubuf->desc), as you are essentially free up slots here on the 
-> pending ring.
-> So if the dealloc ring becomes full, vif->dealloc_prod - 
-> vif->dealloc_cons will be 256, which would be bad. But the while loop 
-> should exit here, as we shouldn't have any more pending slots. And if we 
-> dealloc and create free pending slots in dealloc_action, dealloc_cons 
-> will also advance.
-
-OK, so this is limited by the size of the pending array, makes sense,
-assuming that array is itself correctly guarded...
-
-> >> Of course if something broke and we have more pending slots than tx ring
-> >> or dealloc slots then it can happen. Do you suggest a
-> >> BUG_ON(vif->dealloc_prod - vif->dealloc_cons >= MAX_PENDING_REQS)?
-> >
-> > A
-> >           BUG_ON(space in dealloc ring < number of slots needed to dealloc this skb)
-> > would seem to be the right thing, if that really is the invariant the
-> > code is supposed to be implementing.
-> Not exactly, it means BUG_ON(number of slots to dealloc > 
-> MAX_PENDING_REQS), and it should be at the end of the loop, without '='.
-
-OK.
-
-> >
-> >>>
-> >>>> +		}
-> >>>> +
-> >>>> +	} while (dp != vif->dealloc_prod);
-> >>>> +
-> >>>> +	vif->dealloc_cons = dc;
-> >>>
-> >>> No barrier here?
-> >> dealloc_cons only used in the dealloc_thread. dealloc_prod is used by
-> >> the callback and the thread as well, that's why we need mb() in
-> >> previous. Btw. this function comes from classic's net_tx_action_dealloc
-> >
-> > Is this code close enough to that code architecturally that you can
-> > infer correctness due to that though?
-> Nope, I've just mentioned it because knowing that old code can help to 
-> understand this new, as their logic is very similar some places, like here.
+On Wed, 2014-02-19 at 23:13 -0800, Dan Williams wrote: 
+> Since commit 77873803363c "net_dma: mark broken" we no longer pin dma
+> engines active for the network-receive-offload use case.  As a result
+> the ->free_chan_resources() that occurs after the driver self-test no
+> longer has a NET_DMA induced ->alloc_chan_resources() to back it up.  A
+> late firing irq can lead to ksoftirqd spinning indefinitely due to the
+> tasklet_disable() performed by ->free_chan_resources().  Only
+> ->alloc_chan_resources() can clear this condition in affected kernels.
 > 
-> > So long as you have considered the barrier semantics in the context of
-> > the current code and you think it is correct to not have one here then
-> > I'm ok. But if you have just assumed it is OK because some older code
-> > didn't have it then I'll have to ask you to consider it again...
-> Nope, as I mentioned above, dealloc_cons only accessed in that funcion, 
-> from the same thread. Dealloc_prod is written in the callback and read 
-> out here, that's why we need the barrier there.
-
-OK.
-
-Although this may no longer be true if you added some BUG_ONs as
-discussed above?
-
+> This problem has been present since commit 3e037454bcfa "I/OAT: Add
+> support for MSI and MSI-X" in 2.6.24, but is now exposed. Given the
+> NET_DMA use case is deprecated we can revisit moving the driver to use
+> threaded irqs.  For now, just tear down the irq and tasklet properly by:
 > 
-> >
-> >>>> +				netdev_err(vif->dev,
-> >>>> +					   " host_addr: %llx handle: %x status: %d\n",
-> >>>> +					   gop[i].host_addr,
-> >>>> +					   gop[i].handle,
-> >>>> +					   gop[i].status);
-> >>>> +			}
-> >>>> +			BUG();
-> >>>> +		}
-> >>>> +	}
-> >>>> +
-> >>>> +	for (i = 0; i < gop - vif->tx_unmap_ops; ++i)
-> >>>> +		xenvif_idx_release(vif, pending_idx_release[i],
-> >>>> +				   XEN_NETIF_RSP_OKAY);
-> >>>> +}
-> >>>> +
-> >>>> +
-> >>>>    /* Called after netfront has transmitted */
-> >>>>    int xenvif_tx_action(struct xenvif *vif, int budget)
-> >>>>    {
-> >>>> @@ -1678,6 +1793,25 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
-> >>>>    	vif->mmap_pages[pending_idx] = NULL;
-> >>>>    }
-> >>>>
-> >>>> +void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
-> >>>
-> >>> This is a single shot version of the batched xenvif_tx_dealloc_action
-> >>> version? Why not just enqueue the idx to be unmapped later?
-> >> This is called only from the NAPI instance. Using the dealloc ring
-> >> require synchronization with the callback which can increase lock
-> >> contention. On the other hand, if the guest sends small packets
-> >> (<PAGE_SIZE), the TLB flushing can cause performance penalty.
-> >
-> > Right. When/How often is this called from the NAPI instance?
-> When grant mapping error detected in xenvif_tx_check_gop, and if a 
-> packet smaller than PKT_PROT_LEN is sent. The latter would be removed if 
-> we will grant copy such packets entirely.
+> 1/ Disable the irq from triggering the tasklet
 > 
-> > Is the locking contention from this case so severe that it out weighs
-> > the benefits of batching the unmaps? That would surprise me. After all
-> > the locking contention is there for the zerocopy_callback case too
-> >
-> >>   The above
-> >> mentioned upcoming patch which gntcopy the header can prevent that
-> >
-> > So this is only called when doing the pull-up to the linear area?
-> Yes, as mentioned above.
+> 2/ Disable the irq from re-arming
+> 
+> 3/ Flush inflight interrupts
+> 
+> 4/ Flush the timer
+> 
+> 5/ Flush inflight tasklets
+> 
+> References:
+> https://lkml.org/lkml/2014/1/27/282
+> https://lkml.org/lkml/2014/2/19/672
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: <stable@vger.kernel.org>
+> Reported-by: Mike Galbraith <bitbucket@online.de>
+> Reported-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> ---
+> 
+> Passes my testing, but would appreciate a tested-by.
+> 
+>  drivers/dma/ioat/dma.c    |   52 +++++++++++++++++++++++++++++++++++++++------
+>  drivers/dma/ioat/dma.h    |    1 +
+>  drivers/dma/ioat/dma_v2.c |   11 ++++------
+>  drivers/dma/ioat/dma_v3.c |    3 +++
+>  4 files changed, 54 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+> index 87529181efcc..4e3549a16132 100644
+> --- a/drivers/dma/ioat/dma.c
+> +++ b/drivers/dma/ioat/dma.c
+> @@ -77,7 +77,8 @@ static irqreturn_t ioat_dma_do_interrupt(int irq, void *data)
+>  	attnstatus = readl(instance->reg_base + IOAT_ATTNSTATUS_OFFSET);
+>  	for_each_set_bit(bit, &attnstatus, BITS_PER_LONG) {
+>  		chan = ioat_chan_by_index(instance, bit);
+> -		tasklet_schedule(&chan->cleanup_task);
+> +		if (test_bit(IOAT_RUN, &chan->state))
+> +			tasklet_schedule(&chan->cleanup_task);
+>  	}
+>  
+>  	writeb(intrctrl, instance->reg_base + IOAT_INTRCTRL_OFFSET);
+> @@ -93,7 +94,8 @@ static irqreturn_t ioat_dma_do_interrupt_msix(int irq, void *data)
+>  {
+>  	struct ioat_chan_common *chan = data;
+>  
+> -	tasklet_schedule(&chan->cleanup_task);
+> +	if (test_bit(IOAT_RUN, &chan->state))
+> +		tasklet_schedule(&chan->cleanup_task);
+>  
+>  	return IRQ_HANDLED;
+>  }
+> @@ -116,7 +118,6 @@ void ioat_init_channel(struct ioatdma_device *device, struct ioat_chan_common *c
+>  	chan->timer.function = device->timer_fn;
+>  	chan->timer.data = data;
+>  	tasklet_init(&chan->cleanup_task, device->cleanup_fn, data);
+> -	tasklet_disable(&chan->cleanup_task);
+>  }
+>  
+>  /**
+> @@ -354,13 +355,49 @@ static int ioat1_dma_alloc_chan_resources(struct dma_chan *c)
+>  	writel(((u64) chan->completion_dma) >> 32,
+>  	       chan->reg_base + IOAT_CHANCMP_OFFSET_HIGH);
+>  
+> -	tasklet_enable(&chan->cleanup_task);
+> +	set_bit(IOAT_RUN, &chan->state);
+>  	ioat1_dma_start_null_desc(ioat);  /* give chain to dma device */
+>  	dev_dbg(to_dev(chan), "%s: allocated %d descriptors\n",
+>  		__func__, ioat->desccount);
+>  	return ioat->desccount;
+>  }
+>  
+> +void ioat_stop(struct ioat_chan_common *chan)
+> +{
+> +	struct ioatdma_device *device = chan->device;
+> +	struct pci_dev *pdev = device->pdev;
+> +	int chan_id = chan_num(chan);
+> +	struct msix_entry *msix;
+> +
+> +	/* 1/ stop irq from firing tasklets
+> +	 * 2/ stop the tasklet from re-arming irqs
+> +	 */
+> +	clear_bit(IOAT_RUN, &chan->state);
+> +
+> +	/* flush inflight interrupts */
+> +	switch (device->irq_mode) {
+> +	case IOAT_MSIX:
+> +		msix = &device->msix_entries[chan_id];
+> +		synchronize_irq(msix->vector);
+> +		break;
+> +	case IOAT_MSI:
+> +	case IOAT_INTX:
+> +		synchronize_irq(pdev->irq);
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	/* flush inflight timers */
+> +	del_timer_sync(&chan->timer);
+> +
+> +	/* flush inflight tasklet runs */
+> +	tasklet_kill(&chan->cleanup_task);
+> +
+> +	/* final cleanup now that everything is quiesced and can't re-arm */
+> +	device->cleanup_fn((unsigned long) &chan->common);
+> +}
+> +
+>  /**
+>   * ioat1_dma_free_chan_resources - release all the descriptors
+>   * @chan: the channel to be cleaned
+> @@ -379,9 +416,7 @@ static void ioat1_dma_free_chan_resources(struct dma_chan *c)
+>  	if (ioat->desccount == 0)
+>  		return;
+>  
+> -	tasklet_disable(&chan->cleanup_task);
+> -	del_timer_sync(&chan->timer);
+> -	ioat1_cleanup(ioat);
+> +	ioat_stop(chan);
+>  
+>  	/* Delay 100ms after reset to allow internal DMA logic to quiesce
+>  	 * before removing DMA descriptor resources.
+> @@ -526,8 +561,11 @@ ioat1_dma_prep_memcpy(struct dma_chan *c, dma_addr_t dma_dest,
+>  static void ioat1_cleanup_event(unsigned long data)
+>  {
+>  	struct ioat_dma_chan *ioat = to_ioat_chan((void *) data);
+> +	struct ioat_chan_common *chan = &ioat->base;
+>  
+>  	ioat1_cleanup(ioat);
+> +	if (!test_bit(IOAT_RUN, &chan->state))
+> +		return;
+>  	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+>  }
+>  
+> diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
+> index 11fb877ddca9..e982f00a9843 100644
+> --- a/drivers/dma/ioat/dma.h
+> +++ b/drivers/dma/ioat/dma.h
+> @@ -356,6 +356,7 @@ bool ioat_cleanup_preamble(struct ioat_chan_common *chan,
+>  void ioat_kobject_add(struct ioatdma_device *device, struct kobj_type *type);
+>  void ioat_kobject_del(struct ioatdma_device *device);
+>  int ioat_dma_setup_interrupts(struct ioatdma_device *device);
+> +void ioat_stop(struct ioat_chan_common *chan);
+>  extern const struct sysfs_ops ioat_sysfs_ops;
+>  extern struct ioat_sysfs_entry ioat_version_attr;
+>  extern struct ioat_sysfs_entry ioat_cap_attr;
+> diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+> index 5d3affe7e976..8d1058085eeb 100644
+> --- a/drivers/dma/ioat/dma_v2.c
+> +++ b/drivers/dma/ioat/dma_v2.c
+> @@ -190,8 +190,11 @@ static void ioat2_cleanup(struct ioat2_dma_chan *ioat)
+>  void ioat2_cleanup_event(unsigned long data)
+>  {
+>  	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
+> +	struct ioat_chan_common *chan = &ioat->base;
+>  
+>  	ioat2_cleanup(ioat);
+> +	if (!test_bit(IOAT_RUN, &chan->state))
+> +		return;
+>  	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+>  }
+>  
+> @@ -553,10 +556,10 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
+>  	ioat->issued = 0;
+>  	ioat->tail = 0;
+>  	ioat->alloc_order = order;
+> +	set_bit(IOAT_RUN, &chan->state);
+>  	spin_unlock_bh(&ioat->prep_lock);
+>  	spin_unlock_bh(&chan->cleanup_lock);
+>  
+> -	tasklet_enable(&chan->cleanup_task);
+>  	ioat2_start_null_desc(ioat);
+>  
+>  	/* check that we got off the ground */
+> @@ -566,7 +569,6 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
+>  	} while (i++ < 20 && !is_ioat_active(status) && !is_ioat_idle(status));
+>  
+>  	if (is_ioat_active(status) || is_ioat_idle(status)) {
+> -		set_bit(IOAT_RUN, &chan->state);
+>  		return 1 << ioat->alloc_order;
+>  	} else {
+>  		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+> @@ -809,11 +811,8 @@ void ioat2_free_chan_resources(struct dma_chan *c)
+>  	if (!ioat->ring)
+>  		return;
+>  
+> -	tasklet_disable(&chan->cleanup_task);
+> -	del_timer_sync(&chan->timer);
+> -	device->cleanup_fn((unsigned long) c);
+> +	ioat_stop(chan);
+>  	device->reset_hw(chan);
+> -	clear_bit(IOAT_RUN, &chan->state);
+>  
+>  	spin_lock_bh(&chan->cleanup_lock);
+>  	spin_lock_bh(&ioat->prep_lock);
+> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+> index 820817e97e62..b9b38a1cf92f 100644
+> --- a/drivers/dma/ioat/dma_v3.c
+> +++ b/drivers/dma/ioat/dma_v3.c
+> @@ -464,8 +464,11 @@ static void ioat3_cleanup(struct ioat2_dma_chan *ioat)
+>  static void ioat3_cleanup_event(unsigned long data)
+>  {
+>  	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
+> +	struct ioat_chan_common *chan = &ioat->base;
+>  
+>  	ioat3_cleanup(ioat);
+> +	if (!test_bit(IOAT_RUN, &chan->state))
+> +		return;
+>  	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+>  }
+>  
+> 
 
-I'm not sure why you don't just enqueue the dealloc with the other
-normal ones though.
-
-Ian.
 
