@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaBTAeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:34:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34157 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaBTAeM (ORCPT
+	id S1752670AbaBTAfM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 19:35:12 -0500
+Received: from mga11.intel.com ([192.55.52.93]:40218 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750846AbaBTAfK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 19:34:12 -0500
-Date: Wed, 19 Feb 2014 16:35:37 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Commit fcb6a15c2e7e (intel_pstate: Take core C0 time into
- account for core busy calculation) sucks rocks
-Message-ID: <20140220003537.GA4671@kroah.com>
-References: <20140219224752.GA370@kroah.com>
- <5305465C.7060806@gmail.com>
+	Wed, 19 Feb 2014 19:35:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,509,1389772800"; 
+   d="scan'208";a="484495810"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Subject: RE: [PATCH 1/2] genirq: Fix the possible synchronize_irq()
+ wait-forever
+Thread-Topic: [PATCH 1/2] genirq: Fix the possible synchronize_irq()
+ wait-forever
+Thread-Index: AQHPJj5B6RR7q2/ZEEeL9ThZbool8Jq9WElg
+Date: Thu, 20 Feb 2014 00:34:51 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01C269E8@SHSMSX101.ccr.corp.intel.com>
+References: <y> <1392020037-5484-1-git-send-email-chuansheng.liu@intel.com>
+ <alpine.DEB.2.02.1402100951290.21991@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402100951290.21991@ionos.tec.linutronix.de>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5305465C.7060806@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 04:03:40PM -0800, Dirk Brandewie wrote:
-> On 02/19/2014 02:47 PM, Greg KH wrote:
-> >Hi Dirk,
-> >
-> >I've been having some huge slowdowns on my box building kernels, and I
-> >took the time to bisect it down to commit
-> >fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 (intel_pstate: Take core C0
-> >time into account for core busy calculation).  With that patch reverted
-> >on Linus's current tree, my build speeds are back up to the normal rate.
-> >
-> >The difference is huge, 2 minutes to do a kernel build with that patch
-> >reverted, 8-10 minutes with it applied!  With all of the stable kernel
-> >builds and other trees, this is a huge problem for my workload (all I do
-> >is kernel builds it seems...)
-> >
-> >I see some patches you marked as "fixes" that you sent to Rafael, do you
-> >want me to test any of those?  How am I the only one seeing this
-> >problem, do you need my cpu information or anything else?
+Hello Thomas,
+
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Monday, February 10, 2014 4:58 PM
+> To: Liu, Chuansheng
+> Cc: linux-kernel@vger.kernel.org; Wang, Xiaoming
+> Subject: Re: [PATCH 1/2] genirq: Fix the possible synchronize_irq() wait-forever
 > 
-> Can you give me a description of you build system?  CPU, number of sockets,
+> On Mon, 10 Feb 2014, Chuansheng Liu wrote:
+> > There is below race between irq handler and irq thread:
+> > irq handler                             irq thread
+> >
+> > irq_wake_thread()                       irq_thread()
+> >   set bit RUNTHREAD
+> >   ...                                    clear bit RUNTHREAD
+> >                                          thread_fn()
+> >                                          [A]test_and_decrease
+> >                                                thread_active
+> >   [B]increase thread_active
+> >
+> > If action A is before action B, after that the thread_active
+> > will be always > 0, and for synchronize_irq() calling, which
+> > will be waiting there forever.
+> 
+> No. thread_active is 0, simply because after the atomic_dec_and_test()
+> it is -1 and the atomic_inc on the other side will bring it back to 0.
+> 
+Yes, you are right. The thread_active is back to 0 at last.
 
-The last processor in /proc/cpuinfo:
+The case we meet is:
+1/ T1: blocking at disable_irq() -- > sync_irq() -- > wait_event()
+[  142.678681]  [<c1a5b353>] schedule+0x23/0x60
+[  142.683466]  [<c12b24c5>] synchronize_irq+0x75/0xb0
+[  142.688931]  [<c125fad0>] ? wake_up_bit+0x30/0x30
+[  142.694201]  [<c12b33ab>] disable_irq+0x1b/0x20
+[  142.699278]  [<c17a79bc>] smb347_shutdown+0x2c/0x50
+[  142.704744]  [<c1789f7d>] i2c_device_shutdown+0x2d/0x40
+[  142.710597]  [<c1601734>] device_shutdown+0x14/0x140
+[  142.716161]  [<c12535f2>] kernel_restart_prepare+0x32/0x40
+[  142.722307]  [<c1253613>] kernel_restart+0x13/0x60
 
-processor       : 7
-vendor_id       : GenuineIntel
-cpu family      : 6
-model           : 60
-model name      : Intel(R) Core(TM) i7-4770K CPU @ 3.50GHz
-stepping        : 3
-microcode       : 0x9
-cpu MHz         : 3556.464
-cache size      : 8192 KB
-physical id     : 0
-siblings        : 8
-core id         : 3
-cpu cores       : 4
-apicid          : 7
-initial apicid  : 7
-fpu             : yes
-fpu_exception   : yes
-cpuid level     : 13
-wp              : yes
-flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 fma cx16 xtpr pdcm pcid sse4_1 sse4_2 movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid
-bogomips        : 7000.78
-clflush size    : 64
-cache_alignment : 64
-address sizes   : 39 bits physical, 48 bits virtual
+2/ The corresponding irq thread is at sleep state:
+[  587.552408] irq/388-SMB0349 S f1c47620  7276   119      2 0x00000000
+[  587.552439]  f1d6bf20 00000046 f1c47a48 f1c47620 f1d6bec4 9e91731c 00000001 c1a5f3a5
+[  587.552468]  c20469c0 00000001 c20469c0 f36559c0 f1c47620 f307bde0 c20469c0 f1d6bef0
+[  587.552497]  00000296 00000000 00000296 f1d6bef0 c1a5bfa6 f1c47620 f1d6bf14 c126e329
+[  587.552501] Call Trace:
+[  587.552519]  [<c1a5f3a5>] ? sub_preempt_count+0x55/0xe0
+[  587.552535]  [<c1a5bfa6>] ? _raw_spin_unlock_irqrestore+0x26/0x50
+[  587.552548]  [<c126e329>] ? set_cpus_allowed_ptr+0x59/0xe0
+[  587.552563]  [<c1a5b093>] schedule+0x23/0x60
+[  587.552576]  [<c12b2ae1>] irq_thread+0xa1/0x130
+[  587.552588]  [<c12b27f0>] ? irq_thread_dtor+0xa0/0xa0
 
-> building from/to local media.  Any special setup I should use here for my test?
+3/ All the cpus are in the idle task;
 
-I build on a SSD-like disk (flash media on PCI Express slot), so I
-should have almost no i/o time.
+So we guess the thread_active is not 0 at that time, but irq thread is doing nothing at that time.
+Thought for a long time, but there is no idea, and it is just hit once.
 
-I build with 'make -j16'
+Appreciated if you have some idea, thanks.
 
-> If you have time having the output of turbostat for a build with and
-> without would be very useful.
 
- $ ./turbostat
- turbostat: no /dev/cpu/0/msr
- Try "# modprobe msr": No such file or directory
 
-Bah, I'll rebuild with msr and get you that info...
-
-thanks,
-
-greg k-h
