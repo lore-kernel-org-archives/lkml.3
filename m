@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056AbaBTIua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 03:50:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53638 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161AbaBTIu3 (ORCPT
+	id S1754104AbaBTIwW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 03:52:22 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:36260 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254AbaBTIwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 03:50:29 -0500
-Date: Thu, 20 Feb 2014 09:50:17 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: Lei Wen <leiwen@marvell.com>, mingo@redhat.com, preeti.lkml@gmail.com,
-        daniel.lezcano@linaro.org, viresh.kumar@linaro.org, xjian@marvell.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: keep quiescent cpu out of idle balance loop
-Message-ID: <20140220085017.GL6835@laptop.programming.kicks-ass.net>
-References: <1392787230-17986-1-git-send-email-leiwen@marvell.com>
- <20140219090415.GK27965@twins.programming.kicks-ass.net>
- <CALZhoSQpbJGSEaoOKO_sQQNFBU9UHYQ4bPCXEFfAz=iUm+D7_g@mail.gmail.com>
+	Thu, 20 Feb 2014 03:52:20 -0500
+Message-ID: <5305C249.3080502@linux.vnet.ibm.com>
+Date: Thu, 20 Feb 2014 09:52:25 +0100
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALZhoSQpbJGSEaoOKO_sQQNFBU9UHYQ4bPCXEFfAz=iUm+D7_g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Yuan Pengfei <coolypf@qq.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gcov: fix memory allocation problem in gcov_info_dup
+References: <tencent_074552B42B4D25D2329613D8@qq.com> <530470E4.2040104@linux.vnet.ibm.com> <tencent_791B676E6E166A343D8CB154@qq.com>
+In-Reply-To: <tencent_791B676E6E166A343D8CB154@qq.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022008-0342-0000-0000-000007DA7524
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 10:42:51AM +0800, Lei Wen wrote:
-> >> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
-> >> +     int ilb;
-> >> +     int cpu = smp_processor_id();
-> >> +     struct sched_domain *tmp;
-> >>
-> >> -     if (ilb < nr_cpu_ids && idle_cpu(ilb))
-> >> -             return ilb;
-> >> +     for_each_domain(cpu, tmp) {
-> >> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
-> >> +                             sched_domain_span(tmp));
-> >> +             if (ilb < nr_cpu_ids && idle_cpu(ilb))
-> >> +                     return ilb;
-> >> +     }
-> >
-> > The ILB code is bad; but you just made it horrible. Don't add pointless
-> > for_each_domain() iterations.
-> >
-> > I'm thinking something like:
-> >
-> >   ilb = cpumask_first_and(nohz.idle_cpus_mask, this_rq()->rd.span);
-> >
-> > Should work just fine, no?
-> 
-> Yes, it has the same result as my previous patch did.
-> 
-> >
-> > Better still would be to maybe not participate in the ILB in the first
-> > place and leave this selection loop alone.
-> 
-> Not quitely get your point here...
-> Do you mean that you want idle cpu selection be put in earlier place
-> than current find_new_ilb is?
+On 19.02.2014 11:38, Yuan Pengfei wrote:
+> Using -fprofile-values is one case that will cause the memory allocation
+> problem. More changes are needed to fully support -fprofile-values. I
+> submit this patch first because I think it is obvious and does no harm.
+>> I'm unaware of any user of -fprofile-values in the kernel. Are you
+>> trying to extend gcov-kernel to also support -fprofile-values? I would
+>> expect that additional changes to the .gcda file creation logic are
+>> required to fully support this GCC option.
 
-I meant that if you stop an idle CPU setting its bit in
-nohz.idle_cpus_mask, you don't have to mask it out either.
+If there is a way to trigger the problem of gcov_info.values == NULL
+using the existing gcov-kernel infrastructure then I agree that this
+should be fixed. If not, then I would rather see the suggested change as
+part of a patch series that enables other profiling types.
+
+-- 
+Peter Oberparleiter
+Linux on System z Development - IBM Germany
+
