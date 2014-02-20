@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341AbaBUAq3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:46:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45601 "EHLO
+	id S1757352AbaBUAqv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:46:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45596 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325AbaBTXvo (ORCPT
+	with ESMTP id S1755251AbaBTXvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:44 -0500
+	Thu, 20 Feb 2014 18:51:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.10 63/66] EDAC: Replace strict_strtol() with kstrtol()
-Date: Thu, 20 Feb 2014 15:52:02 -0800
-Message-Id: <20140220234911.293415057@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 62/66] genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=n
+Date: Thu, 20 Feb 2014 15:52:01 -0800
+Message-Id: <20140220234911.265789232@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -28,35 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jingoo Han <jg1.han@samsung.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit c542b53da9ffa4fe9de61149818a06aacae531f8 upstream.
+commit 2c45aada341121438affc4cb8d5b4cfaa2813d3d upstream.
 
-The usage of strict_strtol() is not preferred, because strict_strtol()
-is obsolete. Thus, kstrtol() should be used.
+In allmodconfig builds for sparc and any other arch which does
+not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+  CC [M]  lib/cpu-notifier-error-inject.o
+  CC [M]  lib/pm-notifier-error-inject.o
+ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
+make[2]: *** [__modpost] Error 1
+
+This happens because commit 3911ff30f5 ("genirq: export
+handle_edge_irq() and irq_to_desc()") added one export for it, but
+there were actually two instances of it, in an if/else clause for
+CONFIG_SPARSE_IRQ.  Add the second one.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Link: http://lkml.kernel.org/r/1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_mc_sysfs.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/irq/irqdesc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -58,8 +58,10 @@ static int edac_set_poll_msec(const char
- 	if (!val)
- 		return -EINVAL;
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned in
+ {
+ 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
+ }
++EXPORT_SYMBOL(irq_to_desc);
  
--	ret = strict_strtol(val, 0, &l);
--	if (ret == -EINVAL || ((int)l != l))
-+	ret = kstrtol(val, 0, &l);
-+	if (ret)
-+		return ret;
-+	if ((int)l != l)
- 		return -EINVAL;
- 	*((int *)kp->arg) = l;
- 
+ static void free_desc(unsigned int irq)
+ {
 
 
