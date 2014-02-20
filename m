@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299AbaBTXxy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46204 "EHLO
+	id S1756601AbaBUAEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:04:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264AbaBTXxv (ORCPT
+	with ESMTP id S932290AbaBTXxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:51 -0500
+	Thu, 20 Feb 2014 18:53:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.13 63/99] mei: dont unset read cb ptr on reset
-Date: Thu, 20 Feb 2014 15:52:58 -0800
-Message-Id: <20140220235120.036454832@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.13 66/99] Drivers: hv: vmbus: Dont timeout during the initial connection with host
+Date: Thu, 20 Feb 2014 15:53:01 -0800
+Message-Id: <20140220235120.120218782@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,66 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 5cb906c7035f03a3a44fecece9d3ff8fcc75d6e0 upstream.
+commit 269f979467cf49f2ea8132316c1f00f8c9678f7c upstream.
 
-Don't set read callback to NULL during reset as
-this leads to memory leak of both cb and its buffer.
-The memory is correctly freed during mei_release.
+When the guest attempts to connect with the host when there may already be a
+connection with the host (as would be the case during the kdump/kexec path),
+it is difficult to guarantee timely response from the host. Starting with
+WS2012 R2, the host supports this ability to re-connect with the host
+(explicitly to support kexec). Prior to responding to the guest, the host
+needs to ensure that device states based on the previous connection to
+the host have been properly torn down. This may introduce unbounded delays.
+To deal with this issue, don't do a timed wait during the initial connect
+with the host.
 
-The memory leak is detectable by kmemleak if
-application has open read call while system is going through
-suspend/resume.
-
-unreferenced object 0xecead780 (size 64):
-  comm "AsyncTask #1", pid 1018, jiffies 4294949621 (age 152.440s)
-  hex dump (first 32 bytes):
-    00 01 10 00 00 02 20 00 00 bf 30 f1 00 00 00 00  ...... ...0.....
-    00 00 00 00 00 00 00 00 36 01 00 00 00 70 da e2  ........6....p..
-  backtrace:
-    [<c1a60aec>] kmemleak_alloc+0x3c/0xa0
-    [<c131ed56>] kmem_cache_alloc_trace+0xc6/0x190
-    [<c16243c9>] mei_io_cb_init+0x29/0x50
-    [<c1625722>] mei_cl_read_start+0x102/0x360
-    [<c16268f3>] mei_read+0x103/0x4e0
-    [<c1324b09>] vfs_read+0x89/0x160
-    [<c1324d5f>] SyS_read+0x4f/0x80
-    [<c1a7b318>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe2da7000 (size 512):
-  comm "AsyncTask #1", pid 1018, jiffies 4294949621 (age 152.440s)
-  hex dump (first 32 bytes):
-    00 6c da e2 7c 00 00 00 00 00 00 00 c0 eb 0c 59  .l..|..........Y
-    1b 00 00 00 01 00 00 00 02 10 00 00 01 00 00 00  ................
-  backtrace:
-    [<c1a60aec>] kmemleak_alloc+0x3c/0xa0
-    [<c131f127>] __kmalloc+0xe7/0x1d0
-    [<c162447e>] mei_io_cb_alloc_resp_buf+0x2e/0x60
-    [<c162574c>] mei_cl_read_start+0x12c/0x360
-    [<c16268f3>] mei_read+0x103/0x4e0
-    [<c1324b09>] vfs_read+0x89/0x160
-    [<c1324d5f>] SyS_read+0x4f/0x80
-    [<c1a7b318>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
-
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/client.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/hv/connection.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -907,7 +907,6 @@ void mei_cl_all_disconnect(struct mei_de
- 	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
- 		cl->state = MEI_FILE_DISCONNECTED;
- 		cl->mei_flow_ctrl_creds = 0;
--		cl->read_cb = NULL;
- 		cl->timer_count = 0;
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -67,7 +67,6 @@ static int vmbus_negotiate_version(struc
+ 	int ret = 0;
+ 	struct vmbus_channel_initiate_contact *msg;
+ 	unsigned long flags;
+-	int t;
+ 
+ 	init_completion(&msginfo->waitevent);
+ 
+@@ -102,15 +101,7 @@ static int vmbus_negotiate_version(struc
  	}
- }
+ 
+ 	/* Wait for the connection response */
+-	t =  wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
+-	if (t == 0) {
+-		spin_lock_irqsave(&vmbus_connection.channelmsg_lock,
+-				flags);
+-		list_del(&msginfo->msglistentry);
+-		spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock,
+-					flags);
+-		return -ETIMEDOUT;
+-	}
++	wait_for_completion(&msginfo->waitevent);
+ 
+ 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+ 	list_del(&msginfo->msglistentry);
 
 
