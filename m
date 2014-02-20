@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141AbaBTXyU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:54:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46324 "EHLO
+	id S1754280AbaBTXy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:54:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046AbaBTXyR (ORCPT
+	with ESMTP id S1756046AbaBTXyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:17 -0500
+	Thu, 20 Feb 2014 18:54:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.13 51/99] staging:iio:impedance:ad5933: correct error check
-Date: Thu, 20 Feb 2014 15:52:46 -0800
-Message-Id: <20140220235119.687119266@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.13 89/99] md/raid1: restore ability for check and repair to fix read errors.
+Date: Thu, 20 Feb 2014 15:53:24 -0800
+Message-Id: <20140220235120.787480991@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,45 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: NeilBrown <neilb@suse.de>
 
-commit e9ed104de68c345c9a827225e93c74c6894613a9 upstream.
+commit 1877db75589a895bbdc4c4c3f23558e57b521141 upstream.
 
-iio_kfifo_allocate returns NULL in case of error.
+commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
+    md/raid1: fix bio handling problems in process_checks()
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Move the bio_reset() to a point before where BIO_UPTODATE is checked,
+so that check now always report that the bio is uptodate, even if it is not.
 
-// <smpl>
-@@
-expression *x;
-identifier f;
-statement S1,S2;
-@@
+This causes process_check() to sometimes treat read-errors as
+successful matches so the good data isn't written out.
 
-*x = f(...);
- if (x) { <+... when != if (...) S1 else S2
-     -ENOMEM ...+> }
-// </smpl>
+This patch preserves the flag until it is needed.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Bug was introduced in 3.11, but backported to 3.10-stable (as it fixed
+an even worse bug).  So suitable for any -stable since 3.10.
+
+Reported-and-tested-by: Michael Tokarev <mjt@tls.msk.ru>
+Fixed: 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/impedance-analyzer/ad5933.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid1.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/iio/impedance-analyzer/ad5933.c
-+++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
-@@ -629,7 +629,7 @@ static int ad5933_register_ring_funcs_an
- 	struct iio_buffer *buffer;
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1952,11 +1952,15 @@ static int process_checks(struct r1bio *
+ 	for (i = 0; i < conf->raid_disks * 2; i++) {
+ 		int j;
+ 		int size;
++		int uptodate;
+ 		struct bio *b = r1_bio->bios[i];
+ 		if (b->bi_end_io != end_sync_read)
+ 			continue;
+-		/* fixup the bio for reuse */
++		/* fixup the bio for reuse, but preserve BIO_UPTODATE */
++		uptodate = test_bit(BIO_UPTODATE, &b->bi_flags);
+ 		bio_reset(b);
++		if (!uptodate)
++			clear_bit(BIO_UPTODATE, &b->bi_flags);
+ 		b->bi_vcnt = vcnt;
+ 		b->bi_size = r1_bio->sectors << 9;
+ 		b->bi_sector = r1_bio->sector +
+@@ -1989,11 +1993,14 @@ static int process_checks(struct r1bio *
+ 		int j;
+ 		struct bio *pbio = r1_bio->bios[primary];
+ 		struct bio *sbio = r1_bio->bios[i];
++		int uptodate = test_bit(BIO_UPTODATE, &sbio->bi_flags);
  
- 	buffer = iio_kfifo_allocate(indio_dev);
--	if (buffer)
-+	if (!buffer)
- 		return -ENOMEM;
+ 		if (sbio->bi_end_io != end_sync_read)
+ 			continue;
++		/* Now we can 'fixup' the BIO_UPTODATE flag */
++		set_bit(BIO_UPTODATE, &sbio->bi_flags);
  
- 	iio_device_attach_buffer(indio_dev, buffer);
+-		if (test_bit(BIO_UPTODATE, &sbio->bi_flags)) {
++		if (uptodate) {
+ 			for (j = vcnt; j-- ; ) {
+ 				struct page *p, *s;
+ 				p = pbio->bi_io_vec[j].bv_page;
+@@ -2008,7 +2015,7 @@ static int process_checks(struct r1bio *
+ 		if (j >= 0)
+ 			atomic64_add(r1_bio->sectors, &mddev->resync_mismatches);
+ 		if (j < 0 || (test_bit(MD_RECOVERY_CHECK, &mddev->recovery)
+-			      && test_bit(BIO_UPTODATE, &sbio->bi_flags))) {
++			      && uptodate)) {
+ 			/* No need to write to this device. */
+ 			sbio->bi_end_io = NULL;
+ 			rdev_dec_pending(conf->mirrors[i].rdev, mddev);
 
 
