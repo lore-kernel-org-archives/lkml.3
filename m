@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303AbaBUAF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:05:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46208 "EHLO
+	id S932261AbaBTXxt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46170 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932274AbaBTXxw (ORCPT
+	with ESMTP id S932190AbaBTXxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:52 -0500
+	Thu, 20 Feb 2014 18:53:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Strouth <james.strouth@ge.com>, Martyn Welch <martyn.welch@ge.com>
-Subject: [PATCH 3.13 64/99] VME: Correct read/write alignment algorithm
-Date: Thu, 20 Feb 2014 15:52:59 -0800
-Message-Id: <20140220235120.064499714@linuxfoundation.org>
+        Marcus Folkesson <marcus.folkesson@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.13 55/99] iio: adis16400: Set timestamp as the last element in chan_spec
+Date: Thu, 20 Feb 2014 15:52:50 -0800
+Message-Id: <20140220235119.798842041@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,66 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martyn Welch <martyn.welch@ge.com>
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
 
-commit f0342e66b397947ed8c3eef8c37b5ca2d5b1bb50 upstream.
+commit c76782d151dab7ecfdcdf9a01561c2d61d9b490f upstream.
 
-In order to ensure the correct width cycles on the VME bus, the VME bridge
-drivers implement an algorithm to utilise the largest possible width reads and
-writes whilst maintaining natural alignment constraints. The algorithm
-currently looks at the start address rather than the current read/write address
-when determining whether a 16-bit width cycle is required to get to 32-bit
-alignment.  This results in incorrect alignment,
+This is necessary since timestamp is calculated as the last element
+in iio_compute_scan_bytes().
 
-Reported-by: Jim Strouth <james.strouth@ge.com>
-Tested-by: Jim Strouth <james.strouth@ge.com>
-Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+Without this fix any userspace code reading the layout of the buffer via
+sysfs will incorrectly interpret the data leading some nasty corruption.
+
+Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vme/bridges/vme_ca91cx42.c |    4 ++--
- drivers/vme/bridges/vme_tsi148.c   |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/iio/imu/adis16400.h      |    1 +
+ drivers/iio/imu/adis16400_core.c |   10 +++++-----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/vme/bridges/vme_ca91cx42.c
-@@ -884,7 +884,7 @@ static ssize_t ca91cx42_master_read(stru
- 		if (done == count)
- 			goto out;
- 	}
--	if ((uintptr_t)addr & 0x2) {
-+	if ((uintptr_t)(addr + done) & 0x2) {
- 		if ((count - done) < 2) {
- 			*(u8 *)(buf + done) = ioread8(addr + done);
- 			done += 1;
-@@ -938,7 +938,7 @@ static ssize_t ca91cx42_master_write(str
- 		if (done == count)
- 			goto out;
- 	}
--	if ((uintptr_t)addr & 0x2) {
-+	if ((uintptr_t)(addr + done) & 0x2) {
- 		if ((count - done) < 2) {
- 			iowrite8(*(u8 *)(buf + done), addr + done);
- 			done += 1;
---- a/drivers/vme/bridges/vme_tsi148.c
-+++ b/drivers/vme/bridges/vme_tsi148.c
-@@ -1289,7 +1289,7 @@ static ssize_t tsi148_master_read(struct
- 		if (done == count)
- 			goto out;
- 	}
--	if ((uintptr_t)addr & 0x2) {
-+	if ((uintptr_t)(addr + done) & 0x2) {
- 		if ((count - done) < 2) {
- 			*(u8 *)(buf + done) = ioread8(addr + done);
- 			done += 1;
-@@ -1371,7 +1371,7 @@ static ssize_t tsi148_master_write(struc
- 		if (done == count)
- 			goto out;
- 	}
--	if ((uintptr_t)addr & 0x2) {
-+	if ((uintptr_t)(addr + done) & 0x2) {
- 		if ((count - done) < 2) {
- 			iowrite8(*(u8 *)(buf + done), addr + done);
- 			done += 1;
+--- a/drivers/iio/imu/adis16400.h
++++ b/drivers/iio/imu/adis16400.h
+@@ -189,6 +189,7 @@ enum {
+ 	ADIS16300_SCAN_INCLI_X,
+ 	ADIS16300_SCAN_INCLI_Y,
+ 	ADIS16400_SCAN_ADC,
++	ADIS16400_SCAN_TIMESTAMP,
+ };
+ 
+ #ifdef CONFIG_IIO_BUFFER
+--- a/drivers/iio/imu/adis16400_core.c
++++ b/drivers/iio/imu/adis16400_core.c
+@@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16
+ 	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
+ 	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
+ 	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
+-	IIO_CHAN_SOFT_TIMESTAMP(12)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
+ 
+ static const struct iio_chan_spec adis16448_channels[] = {
+@@ -659,7 +659,7 @@ static const struct iio_chan_spec adis16
+ 		},
+ 	},
+ 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
+-	IIO_CHAN_SOFT_TIMESTAMP(11)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
+ 
+ static const struct iio_chan_spec adis16350_channels[] = {
+@@ -677,7 +677,7 @@ static const struct iio_chan_spec adis16
+ 	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
+ 	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
+ 	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
+-	IIO_CHAN_SOFT_TIMESTAMP(11)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
+ 
+ static const struct iio_chan_spec adis16300_channels[] = {
+@@ -690,7 +690,7 @@ static const struct iio_chan_spec adis16
+ 	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
+ 	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
+ 	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
+-	IIO_CHAN_SOFT_TIMESTAMP(14)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
+ 
+ static const struct iio_chan_spec adis16334_channels[] = {
+@@ -701,7 +701,7 @@ static const struct iio_chan_spec adis16
+ 	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
+ 	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
+ 	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
+-	IIO_CHAN_SOFT_TIMESTAMP(8)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
+ 
+ static struct attribute *adis16400_attributes[] = {
 
 
