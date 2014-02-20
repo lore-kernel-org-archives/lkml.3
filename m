@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342AbaBTX57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:57:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46349 "EHLO
+	id S1756389AbaBTX6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:58:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756144AbaBTXyV (ORCPT
+	with ESMTP id S1756130AbaBTXyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:21 -0500
+	Thu, 20 Feb 2014 18:54:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Borislav Petkov <bp@suse.de>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [PATCH 3.13 98/99] EDAC: Poll timeout cannot be zero, p2
-Date: Thu, 20 Feb 2014 15:53:33 -0800
-Message-Id: <20140220235121.043594113@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.13 87/99] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
+Date: Thu, 20 Feb 2014 15:53:22 -0800
+Message-Id: <20140220235120.725033725@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,82 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@suse.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 9da21b1509d8aa7ab4846722817d16c72d656c91 upstream.
+commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
 
-Sanitize code even more to accept unsigned longs only and to not allow
-polling intervals below 1 second as this is unnecessary and doesn't make
-much sense anyway for polling errors.
+If kvm_io_bus_register_dev() fails then it returns success but it should
+return an error code.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
-Cc: Doug Thompson <dougthompson@xmission.com>
+I also did a little cleanup like removing an impossible NULL test.
+
+Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_mc.c       |    4 ++--
- drivers/edac/edac_mc_sysfs.c |   10 ++++++----
- drivers/edac/edac_module.h   |    2 +-
- 3 files changed, 9 insertions(+), 7 deletions(-)
+ virt/kvm/coalesced_mmio.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -601,7 +601,7 @@ static void edac_mc_workq_teardown(struc
-  *	user space has updated our poll period value, need to
-  *	reset our workq delays
-  */
--void edac_mc_reset_delay_period(int value)
-+void edac_mc_reset_delay_period(unsigned long value)
- {
- 	struct mem_ctl_info *mci;
- 	struct list_head *item;
-@@ -611,7 +611,7 @@ void edac_mc_reset_delay_period(int valu
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
+--- a/virt/kvm/coalesced_mmio.c
++++ b/virt/kvm/coalesced_mmio.c
+@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio
+ 	list_add_tail(&dev->list, &kvm->coalesced_zones);
+ 	mutex_unlock(&kvm->slots_lock);
  
--		edac_mc_workq_setup(mci, (unsigned long) value);
-+		edac_mc_workq_setup(mci, value);
- 	}
+-	return ret;
++	return 0;
  
- 	mutex_unlock(&mem_ctls_mutex);
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -52,18 +52,20 @@ int edac_mc_get_poll_msec(void)
+ out_free_dev:
+ 	mutex_unlock(&kvm->slots_lock);
+-
+ 	kfree(dev);
  
- static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
- {
--	long l;
-+	unsigned long l;
- 	int ret;
+-	if (dev == NULL)
+-		return -ENXIO;
+-
+-	return 0;
++	return ret;
+ }
  
- 	if (!val)
- 		return -EINVAL;
- 
--	ret = kstrtol(val, 0, &l);
-+	ret = kstrtoul(val, 0, &l);
- 	if (ret)
- 		return ret;
--	if (!l || ((int)l != l))
-+
-+	if (l < 1000)
- 		return -EINVAL;
--	*((int *)kp->arg) = l;
-+
-+	*((unsigned long *)kp->arg) = l;
- 
- 	/* notify edac_mc engine to reset the poll period */
- 	edac_mc_reset_delay_period(l);
---- a/drivers/edac/edac_module.h
-+++ b/drivers/edac/edac_module.h
-@@ -52,7 +52,7 @@ extern void edac_device_workq_setup(stru
- extern void edac_device_workq_teardown(struct edac_device_ctl_info *edac_dev);
- extern void edac_device_reset_delay_period(struct edac_device_ctl_info
- 					   *edac_dev, unsigned long value);
--extern void edac_mc_reset_delay_period(int value);
-+extern void edac_mc_reset_delay_period(unsigned long value);
- 
- extern void *edac_align_ptr(void **p, unsigned size, int n_elems);
- 
+ int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
 
 
