@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaBTBh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:37:27 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:22967
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751877AbaBTBh0 (ORCPT
+	id S1752723AbaBTBja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:39:30 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:33171 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaBTBj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:37:26 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(z579ehz98dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 20 Feb 2014 09:37:18 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/4] Add audio card DT node support for Vybird-TWR
- board
-Message-ID: <20140220013714.GL3010@S2101-09.ap.freescale.net>
-References: <1392795751-13351-1-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 19 Feb 2014 20:39:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1392795751-13351-1-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31DCC6F8@ORSMSX106.amr.corp.intel.com>
+References: <cover.1387588711.git.luto@amacapital.net> <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
+ <20140219151626.GA13973@katana> <CALCETrVBPzGqaXbZVgUZMw7D5U5YnUMJOEsw1r=TceLYjJ39JA@mail.gmail.com>
+ <20140220035128.14da0f79.m.chehab@samsung.com> <3908561D78D1C84285E8C5FCA982C28F31DCC6F8@ORSMSX106.amr.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 19 Feb 2014 17:39:07 -0800
+Message-ID: <CALCETrVwSj3KGcPqQD2Kd9W5FCHyPWLukCVr0BZLdQc_Fgz4qA@mail.gmail.com>
+Subject: Re: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rui Wang <ruiv.wang@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 03:42:27PM +0800, Xiubo Li wrote:
-> Xiubo Li (4):
->   ARM: dts: vf610: Add edma mux Tx and Rx support for SAI node.
->   ARM: dts: vf610-twr: Enable SAI ALSA SoC DAI device
->   ARM: dts: vf610-twr: Enable SGTL5000 codec.
->   ARM: dts: vf610-twr: Add simple-card support.
+On Wed, Feb 19, 2014 at 11:03 AM, Luck, Tony <tony.luck@intel.com> wrote:
+>> (I'm c/c Tony here, as he also shared the same concern that I had on a
+>> previous feedback about using I2C to talk with the DIMM).
+>
+> Correct - I've heard the same issues that reads on I2C can be misinterpreted
+> as writes ... and oops, you have a brick.
 
-Applied all, thanks.
+Is this true on DDR3 DIMMs, i.e. anything that's compatible with
+LGA2011?  If you plug a DIMM into an LGA2011 board's memory slot,
+then, one way or another, it's very likely that there will be TSOD
+traffic, if for no other purpose than to determine that there is no
+TSOD present.  TSOD traffic consists of reads and writes, both with
+and without register numbers.  (Sorry, I can never remember the smbus
+terminology here -- the relevant transactions are two-byte reads and
+two-byte writes, both with a command specified and without one.  One
+of the bits in the iMC SMBUS registers tells the controller which kind
+of read to use to probe the thermometer.)
 
+>
+> What is the larger context/  What problem are we trying to solve?
+
+NV-DIMM control registers are exposed via i2c, presumably because
+trying to access them through the memory pins would be a giant mess.
+So, one way or another, something needs to be able to initiate
+transactions to access those registers.  BIOS will do some initial
+setup, but the OS will need to poke at these registers, too.  (The
+actual docs are covered by NDA.  I suspect that this will change if
+the manufacturers ever want these things to be widely used, though,
+since these things really want a full-featured kernel driver so that
+things like pmfs will work cleanly.)
+
+As a secondary benefit, having access to the TSOD and SPD is nice,
+albeit far from critical.
+
+AFAICT Intel actively working on NV-DIMM-related things, so maybe
+Intel will contribute an engineer who help :)
+
+--Andy
+
+>
+> -Tony
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
