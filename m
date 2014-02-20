@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387AbaBUASA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:18:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46022 "EHLO
+	id S1756570AbaBUASW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:18:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46018 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083AbaBTXxN (ORCPT
+	with ESMTP id S932145AbaBTXxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:13 -0500
+	Thu, 20 Feb 2014 18:53:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pontus Fuchs <pontus.fuchs@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.13 20/99] nl80211: Reset split_start when netlink skb is exhausted
-Date: Thu, 20 Feb 2014 15:52:15 -0800
-Message-Id: <20140220235118.799453587@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.13 02/99] xen-blkfront: handle backend CLOSED without CLOSING
+Date: Thu, 20 Feb 2014 15:51:57 -0800
+Message-Id: <20140220235118.272127185@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,40 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pontus Fuchs <pontus.fuchs@gmail.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit f12cb2893069495726c21a4b0178705dacfecfe0 upstream.
+commit 3661371701e714f0cea4120f6a365340858fb4e4 upstream.
 
-When the netlink skb is exhausted split_start is left set. In the
-subsequent retry, with a larger buffer, the dump is continued from the
-failing point instead of from the beginning.
+Backend drivers shouldn't transistion to CLOSED unless the frontend is
+CLOSED.  If a backend does transition to CLOSED too soon then the
+frontend may not see the CLOSING state and will not properly shutdown.
 
-This was causing my rt28xx based USB dongle to now show up when
-running "iw list" with an old iw version without split dump support.
+So, treat an unexpected backend CLOSED state the same as CLOSING.
 
-Fixes: 3713b4e364ef ("nl80211: allow splitting wiphy information in dumps")
-Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-[avoid the entire workaround when state->split is set]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/nl80211.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/block/xen-blkfront.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -1677,9 +1677,10 @@ static int nl80211_dump_wiphy(struct sk_
- 				 * We can then retry with the larger buffer.
- 				 */
- 				if ((ret == -ENOBUFS || ret == -EMSGSIZE) &&
--				    !skb->len &&
-+				    !skb->len && !state->split &&
- 				    cb->min_dump_alloc < 4096) {
- 					cb->min_dump_alloc = 4096;
-+					state->split_start = 0;
- 					rtnl_unlock();
- 					return 1;
- 				}
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1904,13 +1904,16 @@ static void blkback_changed(struct xenbu
+ 	case XenbusStateReconfiguring:
+ 	case XenbusStateReconfigured:
+ 	case XenbusStateUnknown:
+-	case XenbusStateClosed:
+ 		break;
+ 
+ 	case XenbusStateConnected:
+ 		blkfront_connect(info);
+ 		break;
+ 
++	case XenbusStateClosed:
++		if (dev->state == XenbusStateClosed)
++			break;
++		/* Missed the backend's Closing state -- fallthrough */
+ 	case XenbusStateClosing:
+ 		blkfront_closing(info);
+ 		break;
 
 
