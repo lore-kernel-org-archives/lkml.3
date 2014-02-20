@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaBTCVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 21:21:00 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:54232 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaBTCU7 (ORCPT
+	id S1753225AbaBTCWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 21:22:31 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35210 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620AbaBTCWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 21:20:59 -0500
+	Wed, 19 Feb 2014 21:22:30 -0500
+Message-ID: <530566DE.3090508@linux.vnet.ibm.com>
+Date: Thu, 20 Feb 2014 10:22:22 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Date: Wed, 19 Feb 2014 21:20:58 -0500
-X-Google-Sender-Auth: JmheynGGx2wVvkxni7EdV-sEqNg
-Message-ID: <CA+5PVA4zC1+TPWWdANnm7RuBDduwNetdTknfzSkVTpFcPSGZww@mail.gmail.com>
-Subject: 3.13 i915 brightness settings broken when going from docked -> undocked
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: fair: NULL ptr deref in check_preempt_wakeup
+References: <52FFF7F8.2070801@oracle.com> <5301C41D.5000009@linux.vnet.ibm.com> <20140217092055.GP27965@twins.programming.kicks-ass.net> <5302C4F1.3020907@linux.vnet.ibm.com> <5304F38E.3090701@oracle.com>
+In-Reply-To: <5304F38E.3090701@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022002-4790-0000-0000-00000CD3F8C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On 02/20/2014 02:10 AM, Sasha Levin wrote:
+> On 02/17/2014 09:26 PM, Michael wang wrote:
+>> On 02/17/2014 05:20 PM, Peter Zijlstra wrote:
+>> [snip]
+>>>> >>  static void switched_to_fair(struct rq *rq, struct task_struct *p)
+>>>> >>  {
+>>>> >>-    if (!p->se.on_rq)
+>>>> >>+    struct sched_entity *se = &p->se;
+>>>> >>+#ifdef CONFIG_FAIR_GROUP_SCHED
+>>>> >>+    se->depth = se->parent ? se->parent->depth + 1 : 0;
+>>>> >>+#endif
+>>>> >>+    if (!se->on_rq)
+>>>> >>          return;
+>>>> >>
+>>>> >>      /*
+>>> >
+>>> >Yes indeed. My first idea yesterday was to put it in set_task_rq()
+>>> to be
+>>> >absolutely sure we catch all; but if this is sufficient its better.
+>> Agree, let's wait for Sasha's testing result then:)
+> 
+> I took my time with testing it seems I'm hitting new issues with both
+> sched and mm, and I've wanted to confirm I don't see this one any more.
+> 
+> It does seem like this patch fixes the problem for me, so:
+> 
+>     Tested-by: Sasha Levin <sasha.levin@oracle.com>
 
-We've had a rather weird report[1] of the brightness adjustments being
-broken in a specific case with Thinkpad x220 hardware (SandyBridge
-based).  If you boot the machine with it in a dock and then undock,
-the brightness adjustments do not work.  That is with either the FN
-keys or the GNOME brightness slider.
+Thanks for the testing :) will post the patch later.
 
-I can see that the value of
-/sys/class/backlight/acpi_video0/brightness increases/decreases but
-/sys/class/backlight/intel_backlight/brightness doesn't reflect any
-changes.  With 3.12 this works, and oddly with 3.14-rc1 it works
-(specifically, it starts working around v3.13-10231-g53d8ab2 which is
-right after the first DRM merge for 3.14).  With 3.13, if I undock and
-echo a higher value in the intel_backlight_brightness sysfs entry, the
-brightness will actually increase so it can be done manually, but it
-does not work as you'd expect.
+Regards,
+Michael Wang
 
-I'm in the middle of trying to do a reverse bisect for which patch
-fixes it in the 3.14-rcX series, but that's taking a while.  I thought
-I'd email and see if anyone already knows about this situation, what
-patch in 3.13 broke this, and which one then fixed it again.  Thus far
-all I've gathered is that backlight handling is confusing.
+> 
+> 
+> Thanks,
+> Sasha
+> 
 
-josh
-
-[1] https://bugzilla.redhat.com/show_bug.cgi?id=1067071
