@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaBTHWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 02:22:24 -0500
-Received: from relay.parallels.com ([195.214.232.42]:45659 "EHLO
+	id S1753333AbaBTHWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 02:22:39 -0500
+Received: from relay.parallels.com ([195.214.232.42]:45679 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500AbaBTHWW (ORCPT
+	with ESMTP id S1752875AbaBTHWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 02:22:22 -0500
+	Thu, 20 Feb 2014 02:22:23 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <mhocko@suse.cz>, <akpm@linux-foundation.org>
 CC: <rientjes@google.com>, <penberg@kernel.org>, <cl@linux.com>,
         <glommer@gmail.com>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH -mm v3 2/7] memcg, slab: cleanup memcg cache creation
-Date: Thu, 20 Feb 2014 11:22:04 +0400
-Message-ID: <210fa2501be4cbb7f7caf6ca893301f124c92a67.1392879001.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v3 7/7] slub: rework sysfs layout for memcg caches
+Date: Thu, 20 Feb 2014 11:22:09 +0400
+Message-ID: <1b08ce85e8e4e85856784732217db9dff4172e25.1392879001.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1392879001.git.vdavydov@parallels.com>
 References: <cover.1392879001.git.vdavydov@parallels.com>
@@ -25,190 +25,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleanups the memcg cache creation path as follows:
- - Move memcg cache name creation to a separate function to be called
-   from kmem_cache_create_memcg(). This allows us to get rid of the
-   mutex protecting the temporary buffer used for the name formatting,
-   because the whole cache creation path is protected by the slab_mutex.
- - Get rid of memcg_create_kmem_cache(). This function serves as a proxy
-   to kmem_cache_create_memcg(). After separating the cache name
-   creation path, it would be reduced to a function call, so let's
-   inline it.
+Currently, we try to arrange sysfs entries for memcg caches in the same
+manner as for global caches. Apart from turning /sys/kernel/slab into a
+mess when there are a lot of kmem-active memcgs created, it actually
+does not work properly - we won't create more than one link to a memcg
+cache in case its parent is merged with another cache. For instance, if
+A is a root cache merged with another root cache B, we will have the
+following sysfs setup:
+
+  X
+  A -> X
+  B -> X
+
+where X is some unique id (see create_unique_id()). Now if memcgs M and
+N start to allocate from cache A (or B, which is the same), we will get:
+
+  X
+  X:M
+  X:N
+  A -> X
+  B -> X
+  A:M -> X:M
+  A:N -> X:N
+
+Since B is an alias for A, we won't get entries B:M and B:N, which is
+confusing.
+
+It is more logical to have entries for memcg caches under the
+corresponding root cache's sysfs directory. This would allow us to keep
+sysfs layout clean, and avoid such inconsistencies like one described
+above.
+
+This patch does the trick. It creates a "cgroup" kset in each root cache
+kobject to keep its children caches there.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/memcontrol.h |    9 +++++
- mm/memcontrol.c            |   89 +++++++++++++++++++-------------------------
- mm/slab_common.c           |    5 ++-
- 3 files changed, 52 insertions(+), 51 deletions(-)
+ include/linux/slub_def.h |    3 +++
+ mm/slub.c                |   26 +++++++++++++++++++++++++-
+ 2 files changed, 28 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index eccfb4a4b379..4d6b481d11db 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -497,6 +497,9 @@ void __memcg_kmem_commit_charge(struct page *page,
- void __memcg_kmem_uncharge_pages(struct page *page, int order);
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index f56bfa9e4526..f2f7398848cf 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -87,6 +87,9 @@ struct kmem_cache {
+ #ifdef CONFIG_MEMCG_KMEM
+ 	struct memcg_cache_params *memcg_params;
+ 	int max_attr_size; /* for propagation, maximum size of a stored attr */
++#ifdef CONFIG_SYSFS
++	struct kset *memcg_kset;
++#endif
+ #endif
  
- int memcg_cache_id(struct mem_cgroup *memcg);
-+
-+char *memcg_create_cache_name(struct mem_cgroup *memcg,
-+			      struct kmem_cache *root_cache);
- int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 			     struct kmem_cache *root_cache);
- void memcg_free_cache_params(struct kmem_cache *s);
-@@ -641,6 +644,12 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
- 	return -1;
- }
+ #ifdef CONFIG_NUMA
+diff --git a/mm/slub.c b/mm/slub.c
+index cac2ff7fd68c..4a10126fec3a 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5138,6 +5138,15 @@ static const struct kset_uevent_ops slab_uevent_ops = {
  
-+static inline char *memcg_create_cache_name(struct mem_cgroup *memcg,
-+					    struct kmem_cache *root_cache)
+ static struct kset *slab_kset;
+ 
++static inline struct kset *cache_kset(struct kmem_cache *s)
 +{
-+	return NULL;
++#ifdef CONFIG_MEMCG_KMEM
++	if (!is_root_cache(s))
++		return s->memcg_params->root_cache->memcg_kset;
++#endif
++	return slab_kset;
 +}
 +
- static inline int memcg_alloc_cache_params(struct mem_cgroup *memcg,
- 		struct kmem_cache *s, struct kmem_cache *root_cache)
- {
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 53885166dc12..62db588a8ca6 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3159,6 +3159,29 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
- 	return 0;
- }
+ #define ID_STR_LENGTH 64
  
-+char *memcg_create_cache_name(struct mem_cgroup *memcg,
-+			      struct kmem_cache *root_cache)
-+{
-+	static char *buf = NULL;
+ /* Create a unique string id for a slab cache:
+@@ -5203,7 +5212,7 @@ static int sysfs_slab_add(struct kmem_cache *s)
+ 		name = create_unique_id(s);
+ 	}
+ 
+-	s->kobj.kset = slab_kset;
++	s->kobj.kset = cache_kset(s);
+ 	err = kobject_init_and_add(&s->kobj, &slab_ktype, NULL, "%s", name);
+ 	if (err) {
+ 		kobject_put(&s->kobj);
+@@ -5216,6 +5225,18 @@ static int sysfs_slab_add(struct kmem_cache *s)
+ 		kobject_put(&s->kobj);
+ 		return err;
+ 	}
 +
-+	/*
-+	 * We need a mutex here to protect the shared buffer. Since this is
-+	 * expected to be called only on cache creation, we can employ the
-+	 * slab_mutex for that purpose.
-+	 */
-+	lockdep_assert_held(&slab_mutex);
-+
-+	if (!buf) {
-+		buf = kmalloc(NAME_MAX + 1, GFP_KERNEL);
-+		if (!buf)
-+			return NULL;
++#ifdef CONFIG_MEMCG_KMEM
++	if (is_root_cache(s)) {
++		s->memcg_kset = kset_create_and_add("cgroup", NULL, &s->kobj);
++		if (!s->memcg_kset) {
++			kobject_del(&s->kobj);
++			kobject_put(&s->kobj);
++			return -ENOMEM;
++		}
 +	}
++#endif
 +
-+	cgroup_name(memcg->css.cgroup, buf, NAME_MAX + 1);
-+	return kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
-+			 memcg_cache_id(memcg), buf);
-+}
-+
- int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 			     struct kmem_cache *root_cache)
- {
-@@ -3363,46 +3386,6 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
- 	schedule_work(&cachep->memcg_params->destroy);
- }
+ 	kobject_uevent(&s->kobj, KOBJ_ADD);
+ 	if (!unmergeable) {
+ 		/* Setup first alias */
+@@ -5234,6 +5255,9 @@ static void sysfs_slab_remove(struct kmem_cache *s)
+ 		 */
+ 		return;
  
--static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
--						  struct kmem_cache *s)
--{
--	struct kmem_cache *new = NULL;
--	static char *tmp_path = NULL, *tmp_name = NULL;
--	static DEFINE_MUTEX(mutex);	/* protects tmp_name */
--
--	BUG_ON(!memcg_can_account_kmem(memcg));
--
--	mutex_lock(&mutex);
--	/*
--	 * kmem_cache_create_memcg duplicates the given name and
--	 * cgroup_name for this name requires RCU context.
--	 * This static temporary buffer is used to prevent from
--	 * pointless shortliving allocation.
--	 */
--	if (!tmp_path || !tmp_name) {
--		if (!tmp_path)
--			tmp_path = kmalloc(PATH_MAX, GFP_KERNEL);
--		if (!tmp_name)
--			tmp_name = kmalloc(NAME_MAX + 1, GFP_KERNEL);
--		if (!tmp_path || !tmp_name)
--			goto out;
--	}
--
--	cgroup_name(memcg->css.cgroup, tmp_name, NAME_MAX + 1);
--	snprintf(tmp_path, PATH_MAX, "%s(%d:%s)", s->name,
--		 memcg_cache_id(memcg), tmp_name);
--
--	new = kmem_cache_create_memcg(memcg, tmp_path, s->object_size, s->align,
--				      (s->flags & ~SLAB_PANIC), s->ctor, s);
--	if (new)
--		new->allocflags |= __GFP_KMEMCG;
--	else
--		new = s;
--out:
--	mutex_unlock(&mutex);
--	return new;
--}
--
- void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- {
- 	struct kmem_cache *c;
-@@ -3449,12 +3432,6 @@ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 	mutex_unlock(&activate_kmem_mutex);
- }
- 
--struct create_work {
--	struct mem_cgroup *memcg;
--	struct kmem_cache *cachep;
--	struct work_struct work;
--};
--
- static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- {
- 	struct kmem_cache *cachep;
-@@ -3472,13 +3449,25 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- 	mutex_unlock(&memcg->slab_caches_mutex);
- }
- 
-+struct create_work {
-+	struct mem_cgroup *memcg;
-+	struct kmem_cache *cachep;
-+	struct work_struct work;
-+};
-+
- static void memcg_create_cache_work_func(struct work_struct *w)
- {
--	struct create_work *cw;
-+	struct create_work *cw = container_of(w, struct create_work, work);
-+	struct mem_cgroup *memcg = cw->memcg;
-+	struct kmem_cache *cachep = cw->cachep;
-+	struct kmem_cache *new;
- 
--	cw = container_of(w, struct create_work, work);
--	memcg_create_kmem_cache(cw->memcg, cw->cachep);
--	css_put(&cw->memcg->css);
-+	new = kmem_cache_create_memcg(memcg, cachep->name,
-+			cachep->object_size, cachep->align,
-+			cachep->flags & ~SLAB_PANIC, cachep->ctor, cachep);
-+	if (new)
-+		new->allocflags |= __GFP_KMEMCG;
-+	css_put(&memcg->css);
- 	kfree(cw);
- }
- 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index e77b51eb7347..11857abf7057 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -215,7 +215,10 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
- 	s->align = calculate_alignment(flags, align, size);
- 	s->ctor = ctor;
- 
--	s->name = kstrdup(name, GFP_KERNEL);
-+	if (memcg)
-+		s->name = memcg_create_cache_name(memcg, parent_cache);
-+	else
-+		s->name = kstrdup(name, GFP_KERNEL);
- 	if (!s->name)
- 		goto out_free_cache;
- 
++#ifdef CONFIG_MEMCG_KMEM
++	kset_unregister(s->memcg_kset);
++#endif
+ 	kobject_uevent(&s->kobj, KOBJ_REMOVE);
+ 	kobject_del(&s->kobj);
+ 	kobject_put(&s->kobj);
 -- 
 1.7.10.4
 
