@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368AbaBUBGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:06:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45329 "EHLO
+	id S932529AbaBUBGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:06:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45320 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557AbaBTXul (ORCPT
+	with ESMTP id S1754647AbaBTXuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:41 -0500
+	Thu, 20 Feb 2014 18:50:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.4 05/25] s390: fix kernel crash due to linkage stack instructions
-Date: Thu, 20 Feb 2014 15:51:21 -0800
-Message-Id: <20140220234842.635275506@linuxfoundation.org>
+        Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.4 03/25] mac80211: fix fragmentation code, particularly for encryption
+Date: Thu, 20 Feb 2014 15:51:19 -0800
+Message-Id: <20140220234842.580678666@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -28,55 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 8d7f6690cedb83456edd41c9bd583783f0703bf0 upstream.
+commit 338f977f4eb441e69bb9a46eaa0ac715c931a67f upstream.
 
-The kernel currently crashes with a low-address-protection exception
-if a user space process executes an instruction that tries to use the
-linkage stack. Set the base-ASTE origin and the subspace-ASTE origin
-of the dispatchable-unit-control-table to point to a dummy ASTE.
-Set up control register 15 to point to an empty linkage stack with no
-room left.
+The "new" fragmentation code (since my rewrite almost 5 years ago)
+erroneously sets skb->len rather than using skb_trim() to adjust
+the length of the first fragment after copying out all the others.
+This leaves the skb tail pointer pointing to after where the data
+originally ended, and thus causes the encryption MIC to be written
+at that point, rather than where it belongs: immediately after the
+data.
 
-A user space process with a linkage stack instruction will still crash
-but with a different exception which is correctly translated to a
-segmentation fault instead of a kernel oops.
+The impact of this is that if software encryption is done, then
+ a) encryption doesn't work for the first fragment, the connection
+    becomes unusable as the first fragment will never be properly
+    verified at the receiver, the MIC is practically guaranteed to
+    be wrong
+ b) we leak up to 8 bytes of plaintext (!) of the packet out into
+    the air
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+This is only mitigated by the fact that many devices are capable
+of doing encryption in hardware, in which case this can't happen
+as the tail pointer is irrelevant in that case. Additionally,
+fragmentation is not used very frequently and would normally have
+to be configured manually.
+
+Fix this by using skb_trim() properly.
+
+Fixes: 2de8e0d999b8 ("mac80211: rewrite fragmentation")
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/head64.S |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/mac80211/tx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/kernel/head64.S
-+++ b/arch/s390/kernel/head64.S
-@@ -61,7 +61,7 @@ ENTRY(startup_continue)
- 	.quad	0			# cr12: tracing off
- 	.quad	0			# cr13: home space segment table
- 	.quad	0xc0000000		# cr14: machine check handling off
--	.quad	0			# cr15: linkage stack operations
-+	.quad	.Llinkage_stack		# cr15: linkage stack operations
- .Lpcmsk:.quad	0x0000000180000000
- .L4malign:.quad 0xffffffffffc00000
- .Lscan2g:.quad	0x80000000 + 0x20000 - 8	# 2GB + 128K - 8
-@@ -69,12 +69,15 @@ ENTRY(startup_continue)
- .Lparmaddr:
- 	.quad	PARMAREA
- 	.align	64
--.Lduct: .long	0,0,0,0,.Lduald,0,0,0
-+.Lduct: .long	0,.Laste,.Laste,0,.Lduald,0,0,0
- 	.long	0,0,0,0,0,0,0,0
-+.Laste:	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
- 	.align	128
- .Lduald:.rept	8
- 	.long	0x80000000,0,0,0	# invalid access-list entries
- 	.endr
-+.Llinkage_stack:
-+	.long	0,0,0x89000000,0,0,0,0x8a000000,0
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -907,7 +907,7 @@ static int ieee80211_fragment(struct iee
+ 	}
  
- ENTRY(_ehead)
+ 	/* adjust first fragment's length */
+-	skb->len = hdrlen + per_fragm;
++	skb_trim(skb, hdrlen + per_fragm);
+ 	return 0;
+ }
  
 
 
