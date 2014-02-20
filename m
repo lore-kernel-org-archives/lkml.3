@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaBTPBJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:01:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:50784 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753124AbaBTPBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:01:06 -0500
-Date: Thu, 20 Feb 2014 16:01:01 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Otto Meier <gf435@gmx.net>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [3.14-rc3] possible regression Haswell runs only at 770Mhz with
- powersave governor
-Message-ID: <20140220150101.GA9557@pd.tnic>
-References: <53061204.7080700@gmx.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53061204.7080700@gmx.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754676AbaBTPBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:01:51 -0500
+Received: from michel.telenet-ops.be ([195.130.137.88]:55161 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432AbaBTPBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 10:01:50 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH] Documentation/spi/spidev_test.c: Document -N/--no-cs and -R/--ready
+Date: Thu, 20 Feb 2014 16:01:43 +0100
+Message-Id: <1392908503-23166-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add lists to CC.
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-On Thu, Feb 20, 2014 at 03:32:36PM +0100, Otto Meier wrote:
-> Hello,
-> 
-> My System which runs with older kernels up to 3.13.3
-> fine on my i3-4330 with 3.5 Ghz and governor powersave.
-> and pstate driver.
-> 
-> With kernel 3.14-rc3 and Governor powersave it runs
-> only at 770Mhz and never switches to higher Freq. on load.
-> Even compiling a kernel with make -j4   does not change freq.
-> 
-> With governor performance  it switches to 3.5 Ghz and stays
-> there.
-> 
-> Any Idea how to fix this?
-> 
-> Best regards
+commit b55f627feeb9d48fdbde3835e18afbc76712e49b ("spi: new spi->mode bits")
+added two new command line options without adding the respective help
+texts.
 
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+ Documentation/spi/spidev_test.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/spi/spidev_test.c b/Documentation/spi/spidev_test.c
+index 16feda901469..efd7385e907f 100644
+--- a/Documentation/spi/spidev_test.c
++++ b/Documentation/spi/spidev_test.c
+@@ -81,7 +81,9 @@ static void print_usage(const char *prog)
+ 	     "  -O --cpol     clock polarity\n"
+ 	     "  -L --lsb      least significant bit first\n"
+ 	     "  -C --cs-high  chip select active high\n"
+-	     "  -3 --3wire    SI/SO signals shared\n");
++	     "  -3 --3wire    SI/SO signals shared\n"
++	     "  -N --no-cs    no chip select\n"
++	     "  -R --ready    slave pulls low to pause\n");
+ 	exit(1);
+ }
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
