@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaBTVac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 16:30:32 -0500
-Received: from smtprelay0228.hostedemail.com ([216.40.44.228]:37212 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750989AbaBTVab (ORCPT
+	id S1752972AbaBTVbD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 16:31:03 -0500
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.105]:12958
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751706AbaBTVbA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 16:30:31 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:4321:5007:7652:10004:10400:10848:11026:11658:11914:12043:12295:12296:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: lunch47_78bd0d4178c60
-X-Filterd-Recvd-Size: 1966
-Message-ID: <1392931828.2594.12.camel@joe-AO722>
-Subject: Re: [PATCH 1/1] afs: afs_alloc_inode: use kmem_cache_zalloc
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, dhowells <dhowells@redhat.com>,
-        akpm <akpm@linux-foundation.org>
-Date: Thu, 20 Feb 2014 13:30:28 -0800
-In-Reply-To: <20140220211612.506074a7fd876e47130a8c5c@skynet.be>
-References: <20140220211612.506074a7fd876e47130a8c5c@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Feb 2014 16:31:00 -0500
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Mein Vorschlag
+To: Recipients <pet6@gwonpet.onmicrosoft.com>
+From: Peter Wong <pet6@gwonpet.onmicrosoft.com>
+Date: Thu, 20 Feb 2014 22:29:27 +0100
+Reply-To: <ppwong12@aol.jp>
+Message-ID: <ef4d4040-944f-4643-9685-1d3f5cf99a15@AMXPR03MB312.eurprd03.prod.outlook.com>
+X-Originating-IP: [202.56.13.170]
+X-ClientProxiedBy: SINPR02CA019.apcprd02.prod.outlook.com (10.141.109.14) To
+ AMXPR03MB312.eurprd03.prod.outlook.com (10.242.68.27)
+X-Forefront-PRVS: 01283822F8
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(6009001)(6049001)(199002)(189002)(85306002)(74876001)(87266001)(74706001)(325944007)(74316001)(76176001)(33646001)(90146001)(74366001)(56816005)(221733001)(81686001)(79102001)(53256004)(81816001)(23756003)(95666003)(43066001)(74662001)(47446002)(74502001)(59766001)(47736001)(69226001)(49866001)(4396001)(50986001)(47976001)(77982001)(89136004)(64872006)(95416001)(81342001)(86902001)(86632001)(80022001)(80976001)(81542001)(93136001)(76482001)(66066001)(42186004)(19580395003)(31696002)(54356001)(94946001)(50466002)(87976001)(47776003)(94316002)(63696002)(92726001)(77096001)(83072002)(76786001)(76796001)(76576001)(85852003)(86362001)(65816001)(56776001)(51856001)(83322001)(93516002)(19580405001)(54316002)(46102001)(86442001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:AMXPR03MB312;H:[172.16.10.231];CLIP:202.56.13.170;FPR:78A64664.2173952B.C1E2EB8B.65FFC8EA.200FD;MLV:spm;PTR:InfoNoRecords;A:0;MX:1;LANG:de;
+X-OriginatorOrg: gwonpet.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-20 at 21:16 +0800, Fabian Frederick wrote:
-> afs_vnode is currently cleared with 2 memsets after allocation and 
-> 1 in constructor (afs_i_init_once).
+ACHTUNG 
 
-Trivial comments:
+Ich habe ein Investment-Portfolio, die Geld in der Bank in China hinterlegt, die ich leicht auf Sie übertragen als Begünstigter bringt. Die Transaktion ist ohne Risiko, da es strategisch geplant abgeschlossen 
+erfolgreich. 
 
-> 	-This patch calls zalloc for explicit zero fill.
+Kontaktieren Sie mich auf meiner E-Mail-Adresse unten für weitere Details. 
 
-OK, but see below.
+Mit freundlichen Grüßen, 
 
-> 	-Fix some typos.
-
-Well...
-
-> diff --git a/fs/afs/super.c b/fs/afs/super.c
-[]
-> @@ -76,7 +76,7 @@ static const match_table_t afs_options_list = {
-[]
-> - * initialise the filesystem
-> + * Initialize the filesystem
-> @@ -448,19 +448,19 @@ error:
-[]
-> - * initialise an inode cache slab element prior to any use
-> + * Initialize an inode cache slab element prior to any use
-
-English spellings don't need to be changed to American.
-
-> @@ -481,15 +481,12 @@ static struct inode *afs_alloc_inode(struct super_block *sb)
-[]
-> -	vnode = kmem_cache_alloc(afs_inode_cachep, GFP_KERNEL);
-> +	vnode = kmem_cache_zalloc(afs_inode_cachep, GFP_KERNEL);
-[]
-> -	memset(&vnode->fid, 0, sizeof(vnode->fid));
-> -	memset(&vnode->status, 0, sizeof(vnode->status));
-> -
->  	vnode->volume		= NULL;
->  	vnode->update_cnt	= 0;
-
-These could be removed too.
-
-
+Peter Wong 
+E-Mail: ppwong12@aol.jp
