@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaBTEMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 23:12:39 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:52781 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114AbaBTEMi (ORCPT
+	id S1753600AbaBTENI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 23:13:08 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:36035 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302AbaBTENG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 23:12:38 -0500
+	Wed, 19 Feb 2014 23:13:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140210123757.GF20143@ulmo.nvidia.com>
-References: <1391938998-4848-1-git-send-email-acourbot@nvidia.com> <20140210123757.GF20143@ulmo.nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 20 Feb 2014 13:12:17 +0900
-Message-ID: <CAAVeFuL-RyRew=dni=Rd_RzPNbhjckryznm2xtp1r4yho_+Z7w@mail.gmail.com>
-Subject: Re: [PATCH] drm/ttm: declare 'struct device' in ttm_page_alloc.h
-To: David Airlie <airlied@linux.ie>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+In-Reply-To: <20140219152450.GA6141@kroah.com>
+References: <1392781773-1941-1-git-send-email-sj38.park@gmail.com> <20140219152450.GA6141@kroah.com>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Thu, 20 Feb 2014 13:12:34 +0900
+Message-ID: <CAEjAsho5dO8VrtUP=jW9QPaSJTiKEdhR5CByk2tJdbxhWM0nwg@mail.gmail.com>
+Subject: Re: [PATCH] staging: android: binder: convert commented messages to pr_debug
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        Brian Swetland <swetland@google.com>, devel@driverdev.osusl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping, David?
+On Thu, Feb 20, 2014 at 12:24 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Feb 19, 2014 at 12:49:33PM +0900, SeongJae Park wrote:
+>> 2 debugging messages were just commented out for normal case. Let them
+>> be activated on debug mode without explicit code modification.
+>
+> Are you sure this doesn't just always send the messages to the debug log
+> all the time now?  Again, I'd just leave it alone...
 
-On Mon, Feb 10, 2014 at 9:37 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Sun, Feb 09, 2014 at 06:43:18PM +0900, Alexandre Courbot wrote:
->> Declare 'struct device' explicitly in ttm_page_alloc.h as this file
->> does not include any file declaring it. This removes the following
->> warning:
->>
->>       warning: 'struct device' declared inside parameter list
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->> This warning was visible when compiling Nouveau on -next today.
->>
->>  include/drm/ttm/ttm_page_alloc.h | 2 ++
->>  1 file changed, 2 insertions(+)
->
-> I don't think I've seen this on x86, but I've certainly encountered the
-> same warning when building nouveau on ARM, so:
->
-> Reviewed-by: Thierry Reding <treding@nvidia.com>
+Yes, I sure it will not unless `DEBUG` defined. I tested it again.
+
+Anyway, I know this patch makes just a little, trivial enhancement and
+for somebody, it would not looks like enhancement at all. In these case,
+I think maintainer's opinion must be respected.
+Also, I agree the code as-is just works and not bad.
+
+Thank you for reviewing and your opinion, Greg.
