@@ -1,225 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693AbaBTRDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:03:40 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42531 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753751AbaBTRDi (ORCPT
+	id S1755523AbaBTRFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:05:43 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:50157 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141AbaBTRFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:03:38 -0500
-Date: Thu, 20 Feb 2014 12:03:37 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PM / sleep: New flag to speed up suspend-resume of
- suspended devices
-In-Reply-To: <1757715.oeT3oQZ2Zz@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1402201113070.888-100000@iolanthe.rowland.org>
+	Thu, 20 Feb 2014 12:05:41 -0500
+Date: Thu, 20 Feb 2014 11:05:32 -0600 (CST)
+From: Kumar Gala <galak@codeaurora.org>
+X-X-Sender: galak@galak-ubuntu.qualcomm.com
+To: arm@kernel.org
+cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Rohit Vaswani <rvaswani@codeaurora.org>,
+        Olof Johansson <olof@lixom.net>, David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Stanimir Varbanov <svarbanov@mm-sol.com>
+Subject: [GIT PULL] qcom DT changes for v3.15
+Message-ID: <alpine.DEB.2.00.1402201104120.12882@galak-ubuntu.qualcomm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014, Rafael J. Wysocki wrote:
+The following changes since commit cf1e8f0cd665e2a9966d2bee4e11ecc0938ff166:
 
-> On Wednesday, February 19, 2014 12:01:20 PM Alan Stern wrote:
-> > On Mon, 17 Feb 2014, Rafael J. Wysocki wrote:
-> > 
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> > > resume all runtime-suspended devices during system suspend, mostly
-> > > because those devices may need to be reprogrammed due to different
-> > > wakeup settings for system sleep and for runtime PM.  However, at
-> > > least in some cases, that isn't really necessary, because the wakeup
-> > > settings may not be really different.
-> > > 
-> > > The idea here is that subsystems should know whether or not it is
-> > > necessary to reprogram a given device during system suspend and they
-> > > should be able to tell the PM core about that.  For this reason,
-> > > modify the PM core so that if the .prepare() callback returns a
-> > > positive value for certain device, the core will set a new
-> > > power.fast_suspend flag for it.  Then, if that flag is set, the core
-> > > will skip all of the subsequent suspend callbacks for that device.
-> > > It also will skip all of the system resume callbacks for the device
-> > > during the subsequent system resume and pm_request_resume() will be
-> > > executed to trigger a runtime PM resume of the device after the
-> > > system device resume sequence has been finished.
-> 
-> I was worried that you wouldn't comment at all. ;-)
+   ARM: qcom: Rename various msm prefixed functions to qcom (2014-02-06 16:20:41 -0600)
 
-Things have been pretty busy here for the last few weeks...
+are available in the git repository at:
 
-> > Does the PM core really need to get involved in this?
-> 
-> Yes, it does, in my opinion, and the reason is because it may be necessary
-> to resume parents in order to reprogram their children and the parents and
-> the children may be on different bus types.
+   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.15
 
-Hmmm.  Reprogramming the children could refer to two different things:
+for you to fetch changes up to 5a229c2a59e5d42a7d670f4639aaedb272146ef1:
 
-   (1)	Altering the child's wakeup settings before suspending it, or
+   ARM: dts: qcom-msm8960-cdp: Add RNG device tree node (2014-02-20 10:02:22 -0600)
 
-   (2)	Doing I/O to the child after resuming it.
+----------------------------------------------------------------
+Qualcomm ARM Based Device Tree Updates for v3.15
 
-(1) is something we already have to deal with.  Generally, the child's
-subsystem or driver would simply call pm_runtime_get_sync, or something
-of the sort.  The parent would then be in the RPM_ACTIVE state when its
-->resume callback was invoked, so the rest of this discussion would not 
-apply.
+* Added device tree nodes to enable SMP on msm8660, msm8960, and msm8974
+* Added Random Number Generator DT nodes for msm8974 and msm8960 SoCs
 
-(2) is more difficult.  It is the reason why, in the original runtime 
-PM documentation, we suggested that system resume should wake up _all_ 
-devices, including those that were in runtime suspend before the system 
-sleep.
+----------------------------------------------------------------
+Rohit Vaswani (1):
+       ARM: dts: qcom: Add nodes necessary for SMP boot
 
-If the child's subsystem or driver knows to call pm_runtime_get_sync
-before starting the I/O, then it should work out okay.  Trouble arises
-when the subsystem/driver _assumes_ that the parent is active.  This
-sounds like the sort of thing that could be fixed on a case-by-case
-basis: Simply remove that assumption from the child's subsystem/driver.  
-But I guess you want to set up a more structured solution.
+Stanimir Varbanov (2):
+       ARM: dts: qcom: Add RNG device tree node
+       ARM: dts: qcom-msm8960-cdp: Add RNG device tree node
 
-Note that this patch set really addresses two distinct issues: Skipping 
-the ->suspend callbacks if the device is already runtime suspended, and 
-skipping the ->resume callbacks.  In principle these are independent 
-decisions.
+  arch/arm/boot/dts/qcom-msm8660.dtsi | 24 ++++++++++++
+  arch/arm/boot/dts/qcom-msm8960.dtsi | 59 ++++++++++++++++++++++++++++
+  arch/arm/boot/dts/qcom-msm8974.dtsi | 76 +++++++++++++++++++++++++++++++++++++
+  3 files changed, 159 insertions(+)
 
-> > Can't the subsystem do the right thing on its own?
-> 
-> No, I don't think so.
-
-Well, certainly the subsystem could avoid doing anything in the
-->suspend callbacks, by returning immediately.  But skipping over the
-->resume callbacks is more problematic, because of case (2) above.
-
-> > In the USB subsystem, the .suspend routine checks the required wakeup
-> > settings.  If they are different for runtime suspend and system
-> > suspend, and if the device is runtime suspended, then we call
-> > pm_runtime_resume.  After that, if the device is still in runtime
-> > suspend then we return immediately.
-> > 
-> > Of course, this addresses only the suspend side of the issue.  Skipping 
-> > the resume callbacks is a separate matter, and the USB subsystem 
-> > doesn't try to do it.  Still, I don't see any reason why we couldn't 
-> > take care of that as well.
-> 
-> What about USB controllers that are PCI devices?
-
-The description above applies to USB devices, not USB controllers.  
-For PCI-based USB controllers, we currently assume that the controller
-is RPM_ACTIVE when the ->suspend callback is called.
-
-Of course, that assumption could be removed easily enough.
-
-> > I have run across a similar issue.  It's a general problem that a
-> > device may try to remain in runtime suspend during a system resume, but
-> > a descendant of the device may need to perform I/O as part of its own
-> > resume routine.  A natural solution would be to use the regular runtime
-> > PM facilities to wake up the device.  But since the PM work queue is
-> > frozen, we can't rely on pm_runtime_get or the equivalent.  I'm not
-> > sure what the best solution will be.
-> 
-> We can rely on pm_runtime_get_sync(), though, which would be the right thing to
-> use here.
-> 
-> However, given that the parent's .prepare() has run already, I'm not sure
-> if we want runtime PM to be involved at all.
-
-This is a decision we have to make.  At the start of a system resume, 
-we expect that the device is in a low-power state.  After the ->resume 
-callback returns, there is a choice.  The device could be back to full 
-power and marked RPM_ACTIVE.  Or it could remain in low power and be 
-marked RPM_SUSPENDED.  In the second alternative, it seems that runtime 
-PM is unavoidably involved.
-
-Are you primarily concerned about performing runtime PM actions before 
-calling the ->complete callback?  I don't think that will cause any 
-difficulties, but we could warn about it in the documentation.
-
-> > > @@ -1310,6 +1317,9 @@ static int __device_suspend(struct devic
-> > >  	dpm_watchdog_set(&wd, dev);
-> > >  	device_lock(dev);
-> > >  
-> > > +	if (dev->power.fast_suspend)
-> > > +		goto End;
-> > > +
-> > 
-> > What happens if dev->power.fast_suspend gets set following the .prepare
-> > callback, but then before __device_suspend runs, the device gets
-> > runtime resumed?
-> > 
-> > It looks like rpm_resume needs to clear the new flag.
-> 
-> I thought about that and came to the conclusion that that wasn't necessary.
-> 
-> There simply is no reason for devices with power.fast_suspend set to be
-> runtime-resumed after (or even during) dpm_prepare() other than while
-> resuming their children, in which case power.fast_suspend is going to be
-> cleared for the children and then for the parents too.
-> 
-> That *is* a little fragile, though.
-
-It's possible for the device to get a wakeup request.  If this happens, 
-it should cause the entire system sleep to be aborted, but depending on 
-that is also a little fragile.
-
-There's also the possibility of doing I/O to the child while the parent 
-is in runtime suspend (with ignore_children set).  These situations 
-tend to be idiosyncratic; it's hard to say anything about them in 
-general.
-
-> > > @@ -1358,9 +1368,14 @@ static int __device_suspend(struct devic
-> > >   End:
-> > >  	if (!error) {
-> > >  		dev->power.is_suspended = true;
-> > > -		if (dev->power.wakeup_path
-> > > -		    && dev->parent && !dev->parent->power.ignore_children)
-> > > -			dev->parent->power.wakeup_path = true;
-> > > +		if (dev->parent) {
-> > > +			if (!dev->parent->power.ignore_children
-> > > +			    && dev->power.wakeup_path)
-> > > +				dev->parent->power.wakeup_path = true;
-> > > +
-> > > +			if (!dev->power.fast_suspend)
-> > > +				dev->parent->power.fast_suspend = false;
-> > > +		}
-> > 
-> > On SMP systems with async suspend, this isn't safe.  Two threads should 
-> > not be allowed to write to bitfields in the same structure at the same 
-> > time.
-> 
-> Do I understand correctly that your concern is about suspending two
-> children of the same parent in parallel and one of them modifying
-> power.wakeup_path and the other modifying power.fast_suspend at the
-> same time?
-
-Yes, that's what I meant.
-
-> If so, that modification can be done under the parent's power.lock.
-
-That would avoid the problem.
-
-Overall, I'm not convinced about the need for the fast_suspend 
-mechanism.  I'm quite certain that the PM core doesn't need to get 
-involved in the decision about skipping ->suspend callbacks.
-
-The question of skipping ->resume callbacks is more complex.  In the
-end, it comes down to a question of leaving the device in runtime
-suspend during system resume -- whether this is happens because the PM
-core skips the ->resume callback or because the callback returns
-immediately is unimportant.
-
-So I think what we really need to do is discuss this last question more
-fully.  Case (2) can be tricky, and we may find that the device's
-subsystem doesn't have enough information to predict what the
-children's subsystems will do.
-
-Alan Stern
-
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
