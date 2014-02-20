@@ -1,83 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbaBTIzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 03:55:08 -0500
-Received: from [115.239.196.105] ([115.239.196.105]:46951 "EHLO mail.ucloud.cn"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302AbaBTIzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 03:55:05 -0500
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Feb 2014 03:55:05 EST
-From: Minfei Huang <huangminfei@ucloud.cn>
-To: linux-kernel@vger.kernel.org
-Cc: Minfei Huang <huangminfei@ucloud.cn>, Joern Engel <joern@logfs.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: [PATCH] btree: Fix the bug to release whole btree nodes
-Date: Thu, 20 Feb 2014 16:45:03 +0800
-Message-Id: <1392885903-2831-1-git-send-email-huangminfei@ucloud.cn>
-X-Mailer: git-send-email 1.8.1.2
+	id S1754470AbaBTIz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 03:55:59 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:51524 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841AbaBTIz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 03:55:57 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Michal Simek <monstr@monstr.eu>, Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Felipe Pena <felipensp@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] clk: zynq: Use clk_readl/clk_writel helper function
+Date: Thu, 20 Feb 2014 09:55:46 +0100
+Message-Id: <fcff6030d4dd07c43482a551cf1bc79545fbb55d.1392886522.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-5066-1392886546-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I use the btree which pickes up the latest version of kernel source
-3.14-rc2 in my own module. When the btree module is removed, a warning arised:
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-kmem_cache_destroy btree_node: Slab cache still has objects
-CPU: 13 PID: 9150 Comm: rmmod Tainted: GF          O 3.14.0-rc2 #1
-Hardware name: Inspur NF5270M3/NF5270M3, BIOS CHEETAH_2.1.3 09/10/2013
-ffff881ff8643b18 ffff881ffdc23ea8 ffffffff815a4ecc 0000000000000000
-ffff881ff8643ac0 ffff881ffdc23ec8 ffffffff811610df 0000000000000880
-ffffffffa057da60 ffff881ffdc23ed8 ffffffffa057d57c ffff881ffdc23f78
-Call Trace:
-[<ffffffff815a4ecc>] dump_stack+0x49/0x5d
-[<ffffffff811610df>] kmem_cache_destroy+0xcf/0xe0
-[<ffffffffa057d57c>] btree_module_exit+0x10/0x12 [btree]
-[<ffffffff810d7948>] SyS_delete_module+0x198/0x1f0
-[<ffffffff815aac89>] ? retint_swapgs+0xe/0x13
-[<ffffffff810a561d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-[<ffffffff812addde>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[<ffffffff815b3652>] system_call_fastpath+0x16/0x1b
+--=_mimegpg-monstr-desktop-5066-1392886546-0001
 
-The cause is that it doesn't release the last btree node,
-when height = 1 and fill = 1.
+Do not use readl/writel directly because the whole
+clk subsystem is using clk_readl/clk_writel functions.
 
-Signed-off-by: Minfei Huang <huangminfei@ucloud.cn>
-CC: Joern Engel <joern@logfs.org>
-CC: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Acked-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- lib/btree.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/lib/btree.c b/lib/btree.c
-index f9a4846..fd17d26 100644
---- a/lib/btree.c
-+++ b/lib/btree.c
-@@ -444,6 +444,16 @@ static void btree_shrink(struct btree_head *head, struct btree_geo *geo)
- 	mempool_free(node, head->mempool);
+ drivers/clk/zynq/clkc.c |  4 ++--
+ drivers/clk/zynq/pll.c  | 18 +++++++++---------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
+index 09dd017..e726c1b 100644
+--- a/drivers/clk/zynq/clkc.c
++++ b/drivers/clk/zynq/clkc.c
+@@ -148,7 +148,7 @@ static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
+ 	clks[fclk] = clk_register_gate(NULL, clk_name,
+ 			div1_name, CLK_SET_RATE_PARENT, fclk_gate_reg,
+ 			0, CLK_GATE_SET_TO_DISABLE, fclk_gate_lock);
+-	enable_reg = readl(fclk_gate_reg) & 1;
++	enable_reg = clk_readl(fclk_gate_reg) & 1;
+ 	if (enable && !enable_reg) {
+ 		if (clk_prepare_enable(clks[fclk]))
+ 			pr_warn("%s: FCLK%u enable failed\n", __func__,
+@@ -277,7 +277,7 @@ static void __init zynq_clk_setup(struct device_node *np)
+ 			SLCR_IOPLL_CTRL, 4, 1, 0, &iopll_lock);
+
+ 	/* CPU clocks */
+-	tmp = readl(SLCR_621_TRUE) & 1;
++	tmp = clk_readl(SLCR_621_TRUE) & 1;
+ 	clk = clk_register_mux(NULL, "cpu_mux", cpu_parents, 4,
+ 			CLK_SET_RATE_NO_REPARENT, SLCR_ARM_CLK_CTRL, 4, 2, 0,
+ 			&armclk_lock);
+diff --git a/drivers/clk/zynq/pll.c b/drivers/clk/zynq/pll.c
+index 3226f54..cec9759 100644
+--- a/drivers/clk/zynq/pll.c
++++ b/drivers/clk/zynq/pll.c
+@@ -90,7 +90,7 @@ static unsigned long zynq_pll_recalc_rate(struct clk_hw *hw,
+ 	 * makes probably sense to redundantly save fbdiv in the struct
+ 	 * zynq_pll to save the IO access.
+ 	 */
+-	fbdiv = (readl(clk->pll_ctrl) & PLLCTRL_FBDIV_MASK) >>
++	fbdiv = (clk_readl(clk->pll_ctrl) & PLLCTRL_FBDIV_MASK) >>
+ 			PLLCTRL_FBDIV_SHIFT;
+
+ 	return parent_rate * fbdiv;
+@@ -112,7 +112,7 @@ static int zynq_pll_is_enabled(struct clk_hw *hw)
+
+ 	spin_lock_irqsave(clk->lock, flags);
+
+-	reg = readl(clk->pll_ctrl);
++	reg = clk_readl(clk->pll_ctrl);
+
+ 	spin_unlock_irqrestore(clk->lock, flags);
+
+@@ -138,10 +138,10 @@ static int zynq_pll_enable(struct clk_hw *hw)
+ 	/* Power up PLL and wait for lock */
+ 	spin_lock_irqsave(clk->lock, flags);
+
+-	reg = readl(clk->pll_ctrl);
++	reg = clk_readl(clk->pll_ctrl);
+ 	reg &= ~(PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK);
+-	writel(reg, clk->pll_ctrl);
+-	while (!(readl(clk->pll_status) & (1 << clk->lockbit)))
++	clk_writel(reg, clk->pll_ctrl);
++	while (!(clk_readl(clk->pll_status) & (1 << clk->lockbit)))
+ 		;
+
+ 	spin_unlock_irqrestore(clk->lock, flags);
+@@ -168,9 +168,9 @@ static void zynq_pll_disable(struct clk_hw *hw)
+ 	/* shut down PLL */
+ 	spin_lock_irqsave(clk->lock, flags);
+
+-	reg = readl(clk->pll_ctrl);
++	reg = clk_readl(clk->pll_ctrl);
+ 	reg |= PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK;
+-	writel(reg, clk->pll_ctrl);
++	clk_writel(reg, clk->pll_ctrl);
+
+ 	spin_unlock_irqrestore(clk->lock, flags);
  }
- 
-+static void btree_shrink_head(struct btree_head *head)
-+{
-+	if (head->height != 1)
-+		return;
-+
-+	mempool_free(head->node, head->mempool);
-+	head->node = NULL;
-+	head->height--;
-+}
-+
- static int btree_insert_level(struct btree_head *head, struct btree_geo *geo,
- 			      unsigned long *key, void *val, int level,
- 			      gfp_t gfp)
-@@ -620,6 +630,8 @@ static void *btree_remove_level(struct btree_head *head, struct btree_geo *geo,
- 			rebalance(head, geo, key, level, node, fill - 1);
- 		else if (fill - 1 == 1)
- 			btree_shrink(head, geo);
-+		else if (fill - 1 == 0)
-+			btree_shrink_head(head);
- 	}
- 
- 	return ret;
--- 
-1.7.1
+@@ -225,9 +225,9 @@ struct clk *clk_register_zynq_pll(const char *name, const char *parent,
 
+ 	spin_lock_irqsave(pll->lock, flags);
+
+-	reg = readl(pll->pll_ctrl);
++	reg = clk_readl(pll->pll_ctrl);
+ 	reg &= ~PLLCTRL_BPQUAL_MASK;
+-	writel(reg, pll->pll_ctrl);
++	clk_writel(reg, pll->pll_ctrl);
+
+ 	spin_unlock_irqrestore(pll->lock, flags);
+
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-5066-1392886546-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlMFwxIACgkQykllyylKDCFZJQCgjfxfPkhwVUfFKCEtI/zrVYab
+Wx8AoIrmm9t8AWdMsjRIqCL248Xxj+tI
+=Gxr6
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-5066-1392886546-0001--
