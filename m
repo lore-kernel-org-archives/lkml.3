@@ -1,103 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542AbaBTQ2F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 11:28:05 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:53045 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691AbaBTQ2D convert rfc822-to-8bit (ORCPT
+	id S1755375AbaBTQbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 11:31:04 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:27916 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754719AbaBTQbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 11:28:03 -0500
-Date: Thu, 20 Feb 2014 16:27:55 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <Will.Deacon@arm.com>, Cyril Chemparathy <cyril@ti.com>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
-Message-ID: <20140220162754.GC15994@e102568-lin.cambridge.arm.com>
-References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org>
- <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
- <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
- <20140219193315.3732.21819@capellas-linux>
-MIME-Version: 1.0
-In-Reply-To: <20140219193315.3732.21819@capellas-linux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 20 Feb 2014 16:27:59.0882 (UTC) FILETIME=[B82A66A0:01CF2E58]
-X-MC-Unique: 114022016275811601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Thu, 20 Feb 2014 11:31:01 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-68-53062dc30a69
+Message-id: <53062DC1.9010504@samsung.com>
+Date: Thu, 20 Feb 2014 20:30:57 +0400
+From: Alexey Perevalov <a.perevalov@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org,
+        Anton Vorontsov <anton@enomsg.org>, anton@nomsg.org,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        akpm@linux-foundation.org,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH v3 4/6] timerfd: Factor out timer-type unspecific
+ timerfd_expire()
+References: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com>
+ <1392885633-7787-5-git-send-email-a.perevalov@samsung.com>
+ <alpine.DEB.2.02.1402201136500.4468@ionos.tec.linutronix.de>
+In-reply-to: <alpine.DEB.2.02.1402201136500.4468@ionos.tec.linutronix.de>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xK7qHddmCDZ6tlLSYs34Nm8XF1tss
+	Fge3alr0/+pktbj+5TmrxZnfuhZnm96wW1zeNYfNYvOmqcwOnB4T+j8xety5tofN4925c+we
+	J2b8ZvH4smcvs0ffllWMHp83yQWwR3HZpKTmZJalFunbJXBl/LtSXPBEoGLvjdesDYzLebsY
+	OTkkBEwkFhztZoGwxSQu3FvP1sXIxSEksJRR4vyTgywQzmdGicPXD4FV8QpoSbRNOcsMYrMI
+	qEq8n/gIyObgYBMwkNh3zxbEFBWIkDi6XBOiWlDix+R7YJ0iAhoSGy/dYgYZySzwjlHi5/wz
+	bCAJYaD6Z1u/M0PsOsQo8WPOLSaQBKeAp8SOCbfZQWxmAWuJlZO2MULY8hKb17xlnsAoMAvJ
+	kllIymYhKVvAyLyKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyQSvuxgXHzM6hCjAAejEg9v
+	gQRbsBBrYllxZS7QNRzMSiK87ipAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYw6V00zt/s88rNr
+	2CfCF2OtfSSiPsn+ygtNNWOlqTZT+LeZeC2OKFG4viaP6WHLWZbsnDM/Ipb+F+WMNbVt/akw
+	6ZJT/aqAw/b/Cj7uV7y97/nGf0eV5AO/uLc5v1NirLLL0Kid1Fi6qjfHjvmNS8qZ83fPlcx8
+	PFV5I98m/wP90jKfBQUupiqxFGckGmoxFxUnAgA1EGdjYgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On 02/20/2014 02:52 PM, Thomas Gleixner wrote:
+> On Thu, 20 Feb 2014, Alexey Perevalov wrote:
+>
+>> From: Anton Vorontsov <anton@enomsg.org>
+>>
+>> There is nothing hrtimer-specific inside the timerfd_tmrproc(), except
+>> the function prototype. We're about to add other timer types, so factor
+>> out generic timerfd_expire() helper from timerfd_tmrproc().
+> This changelog is completely useless. How is timerfd_tmrproc, which is
+> not a function but a function pointer, related to the patch?
+>
+> Moving duplicated code to a common function is nice, but ....
+>   
+>> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+>> Signed-off-by: Alexey Perevalov <a.perevalov@samsung.com>
+>> ---
+>>   fs/timerfd.c |   40 +++++++++++++++++++---------------------
+>>   1 file changed, 19 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/fs/timerfd.c b/fs/timerfd.c
+>> index 9293121..3561ce7 100644
+>> --- a/fs/timerfd.c
+>> +++ b/fs/timerfd.c
+>> @@ -229,6 +229,23 @@ static unsigned int timerfd_poll(struct file *file, poll_table *wait)
+>>   	return events;
+>>   }
+>>   
+>> +static u64 timerfd_rearm(struct timerfd_ctx *ctx)
+>> +{
+>> +	u64 orun;
+>> +
+>> +	if (isalarm(ctx)) {
+>> +		orun += alarm_forward_now(
+>> +			&ctx->t.alarm, ctx->tintv) - 1;
+>> +		alarm_restart(&ctx->t.alarm);
+>> +	} else {
+>> +		orun += hrtimer_forward_now(&ctx->t.tmr,
+>> +		     ctx->tintv) - 1;
+>> +		hrtimer_restart(&ctx->t.tmr);
+> Warnings are there to be ignored and testing of user space
+> interfaces after a change is overrated, right?
+>
+> Aside of that you just blindly copied the original code w/o fixing up
+> the now unnecessary line breaks.
+>
+> The summary of this patch is:
+>
+>      1) Breaks existing functionality including user space ABI
+>      2) Compiler warnings ignored
+>      3) Untested
+>      4) Utter lack of programming style
+>      5) Useless changelog
+>
+> Impressive for a trivial thing like this.
+>
+> Thanks,
+>
+> 	tglx
+>
+Compiler warning - if you mean uninitialized orun, I fixed it
+ill-timed in the next patch,
+yes it should be in original patch.
 
-On Wed, Feb 19, 2014 at 07:33:15PM +0000, Sebastian Capella wrote:
-> Quoting Lorenzo Pieralisi (2014-02-19 08:12:54)
-> > On Wed, Feb 19, 2014 at 01:52:09AM +0000, Sebastian Capella wrote:
-> > [...]
-> > > diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
-> > > new file mode 100644
-> > > index 0000000..16f406f
-> > > --- /dev/null
-> > > +++ b/arch/arm/kernel/hibernate.c
-> > > +void notrace save_processor_state(void)
-> > > +{
-> > > +     WARN_ON(num_online_cpus() != 1);
-> > > +     flush_thread();
-> > 
-> > Can you explain to me please why we need to call flush_thread() here ?
-> > At this point in time syscore_suspend() was already called and CPU
-> > peripheral state saved through CPU PM notifiers.
-> 
-> Copying Russ' response here: 
-> 
-> "I think the idea here is to get the CPU into a state so that later
-> when we resume from the resume kernel, the actual CPU state matches
-> the state we have in kernel. The main thing flush_thread does is clear
-> out any and all FP state." - Russ Dill
-
-See my reply to Russ.
-
-[...]
-
-> > > +static void notrace __swsusp_arch_restore_image(void *unused)
-> > > +{
-> > > +     struct pbe *pbe;
-> > > +
-> > > +     cpu_switch_mm(idmap_pgd, &init_mm);
-> > 
-> > Same here, thanks.
-> 
-> At restore time, we take the save buffer data and restore it to the same
-> physical locations used in the previous execution.  This will require having
-> write access to all of memory, which may not be generally granted by the
-> current mm.  So we switch to 1-1 init_mm to restore memory.
-
-I still do not understand why switching to idmap, which is a clone of
-init_mm + 1:1 kernel mappings is required here. Why idmap ?
-
-And while at it, can't the idmap be overwritten _while_ copying back the
-resume kernel ? Is it safe to use idmap page tables while copying ?
-
-I had a look at x86 and there idmap page tables used to resume are created
-on the fly using safe pages, on ARM idmap is created at boot.
-
-I am grokking the code to understand what is really needed here, will get
-back to you asap but I would like things to be clarified in the interim.
-
-Thanks,
-Lorenzo
-
+-- 
+Best regards,
+Alexey Perevalov
