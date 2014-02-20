@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaBUA3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:29:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45844 "EHLO
+	id S1757012AbaBUA32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:29:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741AbaBTXwg (ORCPT
+	with ESMTP id S1753121AbaBTXwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:36 -0500
+	Thu, 20 Feb 2014 18:52:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.12 61/82] Revert "usb: xhci: Link TRB must not occur within a USB payload burst"
-Date: Thu, 20 Feb 2014 15:52:44 -0800
-Message-Id: <20140220235021.316989508@linuxfoundation.org>
+Subject: [PATCH 3.12 60/82] Revert "xhci: Avoid infinite loop when sg urb requires too many trbs"
+Date: Thu, 20 Feb 2014 15:52:43 -0800
+Message-Id: <20140220235021.288895267@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -30,95 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 3d4b81eda2211f32886e2978daf6f39885042fc4 upstream.
+commit 9cf00d91708221ff2d8a11143315f7ebab8d5da8 upstream.
 
-This reverts commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e.  It's a
+This reverts commit d6c9ea9069af684358efedcaf2f2f687f51c58ee.
+
+We are ripping out commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e "usb:
+xhci: Link TRB must not occur within a USB payload burst" because it's a
 hack that caused regressions in the usb-storage and userspace USB
-drivers that use usbfs and libusb.  Commit 70cabb7d992f "xhci 1.0: Limit
-arbitrarily-aligned scatter gather." should fix the issues seen with the
-ax88179_178a driver on xHCI 1.0 hosts, without causing regressions.
+drivers that use usbfs and libusb.  This commit attempted to fix the
+issues with that patch.
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |   54 +------------------------------------------
- include/linux/usb.h          |    2 -
- 2 files changed, 2 insertions(+), 54 deletions(-)
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/drivers/usb/host/xhci-ring.c
 +++ b/drivers/usb/host/xhci-ring.c
-@@ -2929,58 +2929,8 @@ static int prepare_ring(struct xhci_hcd
- 	}
+@@ -2964,7 +2964,7 @@ static int prepare_ring(struct xhci_hcd
+ 			if (num_trbs >= TRBS_PER_SEGMENT) {
+ 				xhci_err(xhci, "Too many fragments %d, max %d\n",
+ 						num_trbs, TRBS_PER_SEGMENT - 1);
+-				return -EINVAL;
++				return -ENOMEM;
+ 			}
  
- 	while (1) {
--		if (room_on_ring(xhci, ep_ring, num_trbs)) {
--			union xhci_trb *trb = ep_ring->enqueue;
--			unsigned int usable = ep_ring->enq_seg->trbs +
--					TRBS_PER_SEGMENT - 1 - trb;
--			u32 nop_cmd;
--
--			/*
--			 * Section 4.11.7.1 TD Fragments states that a link
--			 * TRB must only occur at the boundary between
--			 * data bursts (eg 512 bytes for 480M).
--			 * While it is possible to split a large fragment
--			 * we don't know the size yet.
--			 * Simplest solution is to fill the trb before the
--			 * LINK with nop commands.
--			 */
--			if (num_trbs == 1 || num_trbs <= usable || usable == 0)
--				break;
--
--			if (ep_ring->type != TYPE_BULK)
--				/*
--				 * While isoc transfers might have a buffer that
--				 * crosses a 64k boundary it is unlikely.
--				 * Since we can't add NOPs without generating
--				 * gaps in the traffic just hope it never
--				 * happens at the end of the ring.
--				 * This could be fixed by writing a LINK TRB
--				 * instead of the first NOP - however the
--				 * TRB_TYPE_LINK_LE32() calls would all need
--				 * changing to check the ring length.
--				 */
--				break;
--
--			if (num_trbs >= TRBS_PER_SEGMENT) {
--				xhci_err(xhci, "Too many fragments %d, max %d\n",
--						num_trbs, TRBS_PER_SEGMENT - 1);
--				return -ENOMEM;
--			}
--
--			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
--					ep_ring->cycle_state);
--			ep_ring->num_trbs_free -= usable;
--			do {
--				trb->generic.field[0] = 0;
--				trb->generic.field[1] = 0;
--				trb->generic.field[2] = 0;
--				trb->generic.field[3] = nop_cmd;
--				trb++;
--			} while (--usable);
--			ep_ring->enqueue = trb;
--			if (room_on_ring(xhci, ep_ring, num_trbs))
--				break;
--		}
-+		if (room_on_ring(xhci, ep_ring, num_trbs))
-+			break;
- 
- 		if (ep_ring == xhci->cmd_ring) {
- 			xhci_err(xhci, "Do not support expand command ring\n");
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -1262,8 +1262,6 @@ typedef void (*usb_complete_t)(struct ur
-  * @sg: scatter gather buffer list, the buffer size of each element in
-  * 	the list (except the last) must be divisible by the endpoint's
-  * 	max packet size if no_sg_constraint isn't set in 'struct usb_bus'
-- * 	(FIXME: scatter-gather under xHCI is broken for periodic transfers.
-- * 	Do not use urb->sg for interrupt endpoints for now, only bulk.)
-  * @num_mapped_sgs: (internal) number of mapped sg entries
-  * @num_sgs: number of entries in the sg list
-  * @transfer_buffer_length: How big is transfer_buffer.  The transfer may
+ 			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
 
 
