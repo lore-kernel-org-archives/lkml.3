@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaBTUox (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:44:53 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:58106 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723AbaBTUou (ORCPT
+	id S1753677AbaBTUov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:44:51 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:56399 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482AbaBTUop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:44:50 -0500
+	Thu, 20 Feb 2014 15:44:45 -0500
 From: Tejun Heo <tj@kernel.org>
 To: laijs@cn.fujitsu.com
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 8/9] staging/fwserial: don't use PREPARE_WORK
-Date: Thu, 20 Feb 2014 15:44:30 -0500
-Message-Id: <1392929071-16555-9-git-send-email-tj@kernel.org>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 5/9] usb: don't use PREPARE_DELAYED_WORK
+Date: Thu, 20 Feb 2014 15:44:27 -0500
+Message-Id: <1392929071-16555-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392929071-16555-1-git-send-email-tj@kernel.org>
 References: <1392929071-16555-1-git-send-email-tj@kernel.org>
@@ -26,81 +27,87 @@ and a nasty surprise in terms of reentrancy guarantee as workqueue
 considers work items to be different if they don't have the same work
 function.
 
-fwtty_peer->work is multiplexed with multiple work functions.
-Introduce fwserial_peer_workfn() which invokes fwtty_peer->workfn and
+usb_hub->init_work is multiplexed with multiple work functions.
+Introduce hub_init_workfn() which invokes usb_hub->init_workfn and
 always use it as the work function and update the users to set the
-->workfn field instead of overriding the work function using
-PREPARE_WORK().
+->init_workfn field instead of overriding the work function using
+PREPARE_DELAYED_WORK().
+
+It looks like that the work items are never queued while in-flight, so
+simply using INIT_DELAYED_WORK() before each queueing could be enough.
+This patch performs equivalent conversion just in case but we probably
+wanna clean it up later if that's the case.
 
 It would probably be best to route this with other related updates
 through the workqueue tree.
 
-Compile tested.
+Lightly tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org
 ---
- drivers/staging/fwserial/fwserial.c | 13 ++++++++++---
- drivers/staging/fwserial/fwserial.h |  1 +
+ drivers/usb/core/hub.c | 13 ++++++++++---
+ drivers/usb/core/hub.h |  1 +
  2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/fwserial/fwserial.c b/drivers/staging/fwserial/fwserial.c
-index 8af136e..b22142e 100644
---- a/drivers/staging/fwserial/fwserial.c
-+++ b/drivers/staging/fwserial/fwserial.c
-@@ -2036,6 +2036,13 @@ static void fwserial_auto_connect(struct work_struct *work)
- 		schedule_delayed_work(&peer->connect, CONNECT_RETRY_DELAY);
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 64ea219..2bc61c0 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1040,7 +1040,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
+ 		 */
+ 		if (type == HUB_INIT) {
+ 			delay = hub_power_on(hub, false);
+-			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func2);
++			hub->init_workfn = hub_init_func2;
+ 			schedule_delayed_work(&hub->init_work,
+ 					msecs_to_jiffies(delay));
+ 
+@@ -1194,7 +1194,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
+ 
+ 		/* Don't do a long sleep inside a workqueue routine */
+ 		if (type == HUB_INIT2) {
+-			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func3);
++			hub->init_workfn = hub_init_func3;
+ 			schedule_delayed_work(&hub->init_work,
+ 					msecs_to_jiffies(delay));
+ 			return;		/* Continues at init3: below */
+@@ -1634,6 +1634,13 @@ static void hub_disconnect(struct usb_interface *intf)
+ 	kref_put(&hub->kref, hub_release);
  }
  
-+static void fwserial_peer_workfn(struct work_struct *work)
++static void hub_init_workfn(struct work_struct *work)
 +{
-+	struct fwtty_peer *peer = to_peer(work, work);
-+
-+	peer->workfn(work);
++	struct usb_hub *hub = container_of(to_delayed_work(work),
++					   struct usb_hub, init_work);
++	hub->init_workfn(work);
 +}
 +
- /**
-  * fwserial_add_peer - add a newly probed 'serial' unit device as a 'peer'
-  * @serial: aggregate representing the specific fw_card to add the peer to
-@@ -2100,7 +2107,7 @@ static int fwserial_add_peer(struct fw_serial *serial, struct fw_unit *unit)
- 	peer->port = NULL;
+ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
+ {
+ 	struct usb_host_interface *desc;
+@@ -1728,7 +1735,7 @@ descriptor_error:
+ 	hub->intfdev = &intf->dev;
+ 	hub->hdev = hdev;
+ 	INIT_DELAYED_WORK(&hub->leds, led_work);
+-	INIT_DELAYED_WORK(&hub->init_work, NULL);
++	INIT_DELAYED_WORK(&hub->init_work, hub_init_workfn);
+ 	usb_get_intf(intf);
  
- 	init_timer(&peer->timer);
--	INIT_WORK(&peer->work, NULL);
-+	INIT_WORK(&peer->work, fwserial_peer_workfn);
- 	INIT_DELAYED_WORK(&peer->connect, fwserial_auto_connect);
- 
- 	/* associate peer with specific fw_card */
-@@ -2702,7 +2709,7 @@ static int fwserial_parse_mgmt_write(struct fwtty_peer *peer,
- 
- 		} else {
- 			peer->work_params.plug_req = pkt->plug_req;
--			PREPARE_WORK(&peer->work, fwserial_handle_plug_req);
-+			peer->workfn = fwserial_handle_plug_req;
- 			queue_work(system_unbound_wq, &peer->work);
- 		}
- 		break;
-@@ -2731,7 +2738,7 @@ static int fwserial_parse_mgmt_write(struct fwtty_peer *peer,
- 			fwtty_err(&peer->unit, "unplug req: busy\n");
- 			rcode = RCODE_CONFLICT_ERROR;
- 		} else {
--			PREPARE_WORK(&peer->work, fwserial_handle_unplug_req);
-+			peer->workfn = fwserial_handle_unplug_req;
- 			queue_work(system_unbound_wq, &peer->work);
- 		}
- 		break;
-diff --git a/drivers/staging/fwserial/fwserial.h b/drivers/staging/fwserial/fwserial.h
-index 54f7f9b..98b853d 100644
---- a/drivers/staging/fwserial/fwserial.h
-+++ b/drivers/staging/fwserial/fwserial.h
-@@ -91,6 +91,7 @@ struct fwtty_peer {
- 	struct rcu_head		rcu;
- 
- 	spinlock_t		lock;
-+	work_func_t		workfn;
- 	struct work_struct	work;
- 	struct peer_work_params work_params;
- 	struct timer_list	timer;
+ 	usb_set_intfdata (intf, hub);
+diff --git a/drivers/usb/core/hub.h b/drivers/usb/core/hub.h
+index df629a3..ef81463 100644
+--- a/drivers/usb/core/hub.h
++++ b/drivers/usb/core/hub.h
+@@ -72,6 +72,7 @@ struct usb_hub {
+ 	unsigned		has_indicators:1;
+ 	u8			indicator[USB_MAXCHILDREN];
+ 	struct delayed_work	leds;
++	work_func_t		init_workfn;
+ 	struct delayed_work	init_work;
+ 	struct usb_port		**ports;
+ };
 -- 
 1.8.5.3
 
