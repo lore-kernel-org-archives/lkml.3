@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaBTXwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45766 "EHLO
+	id S932325AbaBUAaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:30:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45815 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608AbaBTXwT (ORCPT
+	with ESMTP id S1755704AbaBTXwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:19 -0500
+	Thu, 20 Feb 2014 18:52:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.12 43/82] x86, smap: Dont enable SMAP if CONFIG_X86_SMAP is disabled
-Date: Thu, 20 Feb 2014 15:52:26 -0800
-Message-Id: <20140220235020.762281188@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thomas Raschbacher <lordvan@lordvan.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [PATCH 3.12 55/82] usb-storage: enable multi-LUN scanning when needed
+Date: Thu, 20 Feb 2014 15:52:38 -0800
+Message-Id: <20140220235021.135749141@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,41 +31,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 03bbd596ac04fef47ce93a730b8f086d797c3021 upstream.
+commit 823d12c95c666fa7ab7dad208d735f6bc6afabdc upstream.
 
-If SMAP support is not compiled into the kernel, don't enable SMAP in
-CR4 -- in fact, we should clear it, because the kernel doesn't contain
-the proper STAC/CLAC instructions for SMAP support.
+People sometimes create their own custom-configured kernels and forget
+to enable CONFIG_SCSI_MULTI_LUN.  This causes problems when they plug
+in a USB storage device (such as a card reader) with more than one
+LUN.
 
-Found by Fengguang Wu's test system.
+Fortunately, we can tell fairly easily when a storage device claims to
+have more than one LUN.  When that happens, this patch asks the SCSI
+layer to probe all the LUNs automatically, regardless of the config
+setting.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+The patch also updates the Kconfig help text for usb-storage,
+explaining that CONFIG_SCSI_MULTI_LUN may be necessary.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Thomas Raschbacher <lordvan@lordvan.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/common.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/storage/Kconfig    |    4 +++-
+ drivers/usb/storage/scsiglue.c |    6 ++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -284,8 +284,13 @@ static __always_inline void setup_smap(s
- 	raw_local_save_flags(eflags);
- 	BUG_ON(eflags & X86_EFLAGS_AC);
+--- a/drivers/usb/storage/Kconfig
++++ b/drivers/usb/storage/Kconfig
+@@ -18,7 +18,9 @@ config USB_STORAGE
  
--	if (cpu_has(c, X86_FEATURE_SMAP))
-+	if (cpu_has(c, X86_FEATURE_SMAP)) {
-+#ifdef CONFIG_X86_SMAP
- 		set_in_cr4(X86_CR4_SMAP);
-+#else
-+		clear_in_cr4(X86_CR4_SMAP);
-+#endif
-+	}
+ 	  This option depends on 'SCSI' support being enabled, but you
+ 	  probably also need 'SCSI device support: SCSI disk support'
+-	  (BLK_DEV_SD) for most USB storage devices.
++	  (BLK_DEV_SD) for most USB storage devices.  Some devices also
++	  will require 'Probe all LUNs on each SCSI device'
++	  (SCSI_MULTI_LUN).
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called usb-storage.
+--- a/drivers/usb/storage/scsiglue.c
++++ b/drivers/usb/storage/scsiglue.c
+@@ -78,6 +78,8 @@ static const char* host_info(struct Scsi
+ 
+ static int slave_alloc (struct scsi_device *sdev)
+ {
++	struct us_data *us = host_to_us(sdev->host);
++
+ 	/*
+ 	 * Set the INQUIRY transfer length to 36.  We don't use any of
+ 	 * the extra data and many devices choke if asked for more or
+@@ -102,6 +104,10 @@ static int slave_alloc (struct scsi_devi
+ 	 */
+ 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
+ 
++	/* Tell the SCSI layer if we know there is more than one LUN */
++	if (us->protocol == USB_PR_BULK && us->max_lun > 0)
++		sdev->sdev_bflags |= BLIST_FORCELUN;
++
+ 	return 0;
  }
  
- /*
 
 
