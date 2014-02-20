@@ -1,154 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaBTJYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:24:53 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:35792 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaBTJYr (ORCPT
+	id S1752032AbaBTJ2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:28:12 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46992 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaBTJ2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:24:47 -0500
+	Thu, 20 Feb 2014 04:28:10 -0500
+Date: Thu, 20 Feb 2014 17:55:00 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Nenghua Cao <nhcao@marvell.com>
+Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140220085500.GX2669@sirena.org.uk>
+References: <1392806653-29604-1-git-send-email-nhcao@marvell.com>
+ <5305BBA6.3070105@marvell.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJe_ZhfedP7Paf3Zq9chL0WUeLJrsy_DJL05sSbfqnfTtji=HQ@mail.gmail.com>
-References: <1392465619-27614-1-git-send-email-sthokal@xilinx.com>
-	<1392465619-27614-2-git-send-email-sthokal@xilinx.com>
-	<CAJe_Zhc_GNNSDWNFuk+cMHEqxfSCJB_ey=Bf+SwJK-nS=u9ceg@mail.gmail.com>
-	<CA+mB=1KdZZpTmpA0Xp_c4mhgFbjRZ6urYrCwdvoTCmcugQMDUA@mail.gmail.com>
-	<CAJe_ZhdOmu3k9gbPdQzPteyzwsMA8OzWHdhHnXudbF=X7JMhVQ@mail.gmail.com>
-	<CA+mB=1K43MDZj0Rx3q=ETQMaFsG1j7TXsH6v-7a26JdtqTJkbw@mail.gmail.com>
-	<CAJe_ZhfedP7Paf3Zq9chL0WUeLJrsy_DJL05sSbfqnfTtji=HQ@mail.gmail.com>
-Date: Thu, 20 Feb 2014 14:54:45 +0530
-X-Google-Sender-Auth: ezfZ2hj-fpmpfaL7CQEHgVspF9Q
-Message-ID: <CA+mB=1LK+aVbvh741+PMnpj_mwZRvJZzR5Fh=hf72UWQvxUiVQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] dma: Support multiple interleaved frames with
- non-contiguous memory
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
-        Levente Kurusa <levex@linux.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        lkml <linux-kernel@vger.kernel.org>, dmaengine@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="itYndn33lbOi6TI6"
+Content-Disposition: inline
+In-Reply-To: <5305BBA6.3070105@marvell.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.156.234
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] driver: regmap: add regmap_parse_val api
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 12:33 AM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
-> On 18 February 2014 23:16, Srikanth Thokala <sthokal@xilinx.com> wrote:
->> On Tue, Feb 18, 2014 at 10:20 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
->>> On 18 February 2014 16:58, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>>> On Mon, Feb 17, 2014 at 3:27 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
->>>>> On 15 February 2014 17:30, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>>>>> The current implementation of interleaved DMA API support multiple
->>>>>> frames only when the memory is contiguous by incrementing src_start/
->>>>>> dst_start members of interleaved template.
->>>>>>
->>>>>> But, when the memory is non-contiguous it will restrict slave device
->>>>>> to not submit multiple frames in a batch.  This patch handles this
->>>>>> issue by allowing the slave device to send array of interleaved dma
->>>>>> templates each having a different memory location.
->>>>>>
->>>>> How fragmented could be memory in your case? Is it inefficient to
->>>>> submit separate transfers for each segment/frame?
->>>>> It will help if you could give a typical example (chunk size and gap
->>>>> in bytes) of what you worry about.
->>>>
->>>> With scatter-gather engine feature in the hardware, submitting separate
->>>> transfers for each frame look inefficient. As an example, our DMA engine
->>>> supports up to 16 video frames, with each frame (a typical video frame
->>>> size) being contiguous in memory but frames are scattered into different
->>>> locations. We could not definitely submit frame by frame as it would be
->>>> software overhead (HW interrupting for each frame) resulting in video lags.
->>>>
->>> IIUIC, it is 30fps and one dma interrupt per frame ... it doesn't seem
->>> inefficient at all. Even poor-latency audio would generate a higher
->>> interrupt-rate. So the "inefficiency concern" doesn't seem valid to
->>> me.
->>>
->>> Not to mean we shouldn't strive to reduce the interrupt-rate further.
->>> Another option is to emulate the ring-buffer scheme of ALSA.... which
->>> should be possible since for a session of video playback the frame
->>> buffers' locations wouldn't change.
->>>
->>> Yet another option is to use the full potential of the
->>> interleaved-xfer api as such. It seems you confuse a 'video frame'
->>> with the interleaved-xfer api's 'frame'. They are different.
->>>
->>> Assuming your one video frame is F bytes long and Gk is the gap in
->>> bytes between end of frame [k] and start of frame [k+1] and  Gi != Gj
->>> for i!=j
->>> In the context of interleaved-xfer api, you have just 1 Frame of 16
->>> chunks. Each chunk is Fbytes and the inter-chunk-gap(ICG) is Gk  where
->>> 0<=k<15
->>> So for your use-case .....
->>>   dma_interleaved_template.numf = 1   /* just 1 frame */
->>>   dma_interleaved_template.frame_size = 16  /* containing 16 chunks */
->>>    ...... //other parameters
->>>
->>> You have 3 options to choose from and all should work just as fine.
->>> Otherwise please state your problem in real numbers (video-frames'
->>> size, count & gap in bytes).
->>
->> Initially I interpreted interleaved template the same.  But, Lars corrected me
->> in the subsequent discussion and let me put it here briefly,
->>
->> In the interleaved template, each frame represents a line of size denoted by
->> chunk.size and the stride by icg.  'numf' represent number of frames i.e.
->> number of lines.
->>
->> In video frame context,
->> chunk.size -> hsize
->> chunk.icg -> stride
->> numf -> vsize
->> and frame_size is always 1 as it will have only one chunk in a line.
->>
-> But you said in your last post
->   "with each frame (a typical video frame size) being contiguous in memory"
->  ... which is not true from what you write above. Anyways, my first 2
-> suggestions still hold.
 
-Yes, each video frame is contiguous and they can be scattered.
+--itYndn33lbOi6TI6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
->> So, the API would not allow to pass multiple frames and we came up with a
->> resolution to pass an array of interleaved template structs to handle this.
->>
-> Yeah the API doesn't allow such xfers that don't fall into any
-> 'regular expression' of a transfer and also because no controller
-> natively supports such xfers -- your controller will break your
-> request up into 16 transfers and program them individually, right?
+On Thu, Feb 20, 2014 at 04:24:06PM +0800, Nenghua Cao wrote:
 
-No, it will not program individually.  It has a scatter-gather engine where we
-could update the current pointer to the first frame and tail pointer to the last
-frame and hardware does the transfer and raise an interrupt when all the frames
-are completed (ie. when current reaches tail).
+>      Do you still have any other problem which have impact on evaluating
+> these two patches?
 
->    BTW if you insist you could still express the 16 video frames as 1
-> interleaved-xfer frame with frame_size = (vsize + 1) * 16   ;)
->
-> Again, I would suggest you implement ring-buffer type scheme. Say
-> prepare 16 interleaved xfer templates and queue them. Upon each
-> xfer-done callback (i.e frame rendered), update the data and queue it
-> back. It might be much simpler for your actual case. At 30fps, 33ms to
-> queue a dma request should _not_ result in any frame-drop.
+You're chasing me for a reply after a day - that's way too soon, please
+allow a reasonable time for a response.  A week or so is usually a good
+minimum.
 
-The driver has similar implementation, where each desc (handling 16 frames)
-is pushed to pending queue and then to done queue.  Slave device still can
-add desc's to the pending queue and whenever the transfer of 16 frames is
-completed we move each desc to done list.
+--itYndn33lbOi6TI6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Srikanth
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
->
-> -Jassi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+iQIcBAEBAgAGBQJTBcLaAAoJELSic+t+oim9kloP/0YxoNmAIdgd2wDxlK26N1Nh
+TOGNAy5bzwyaXwTQZ3xoTwSBnR7zwjARdueEgLWxNjHliSfBGEtWeY0/Z09k3B9u
+n91geMh13HJSjow2fVTPKq8tJ7YN+NR3csdDX/UGMRQNKJ47G2tCZboI5bGwfYyV
+K1EGyJRuhjmO5H2W24boFFhtpTglKbtjVOiwy8nEx0FWT39XxPej1oxB4Nkw7Tln
+r+XehfPgY1DAxWrCAS2vwPfXhtYfZIb0QehU7F2u2mkm0tMdUGZnkMm9AfjYhLvV
+3C4KXnscLFhc1bDAykH/vsa7IOrzpxKzA9aXvvWWB/IbaFcA33Yh/dJdGzcZS76M
+Onc1ATKsA07FgGbkgFQaYux9DMY5AAJVG/HT7rhpna+jSMO0ZS0pdLni2JCGNYTT
+Mu+EuYb+DGJmv2KS4umnfhVujL1dmf7fmyR6rKRWgYZCFwV1Xc+EHRgVW0wjDdq1
+R4qs1A1ZSV7xpbC2ZRHOXDSsXSHmQL87O5XzjGviaaZq2L8aRvcv3tTGWM2kYoZy
+ljaOXtCL62zoIHOSbR4DQHP2cFT3A24pSkthsgGR99BOzF7fBhSVcb4xweVrgzt9
+ARlnGObjePR2r+zqrwWJos3IgPcbsEpmy1MROmY5cgbLSPHxCV21EYsRTQTW4/t5
+XPpD2syYM3DxML3xr7+9
+=U0f7
+-----END PGP SIGNATURE-----
+
+--itYndn33lbOi6TI6--
