@@ -1,102 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607AbaBTR0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:26:14 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:48697 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751AbaBTR0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:26:13 -0500
-X-IronPort-AV: E=Sophos;i="4.97,513,1389744000"; 
-   d="scan'208";a="102708811"
-Date: Thu, 20 Feb 2014 17:26:04 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Roger_Pau_Monn=C3=A9?= <roger.pau@citrix.com>,
-        Jan Beulich <jbeulich@suse.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH v9] xen/grant-table: Avoid m2p_override during mapping
-In-Reply-To: <5301F74E.3070107@citrix.com>
-Message-ID: <alpine.DEB.2.02.1402201724430.15812@kaball.uk.xensource.com>
-References: <1392238453-26147-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1402161828380.4307@kaball.uk.xensource.com> <5301F74E.3070107@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	id S1752711AbaBTR04 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:26:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7012 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751636AbaBTR0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 12:26:54 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140220040102.GM4250@linux.vnet.ibm.com>
+References: <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	 <1392666947.18779.6838.camel@triegel.csb>
+	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	 <20140218030002.GA15857@linux.vnet.ibm.com>
+	 <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	 <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	 <1392740258.18779.7732.camel@triegel.csb>
+	 <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+	 <1392752867.18779.8120.camel@triegel.csb>
+	 <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+	 <20140220040102.GM4250@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Feb 2014 18:26:08 +0100
+Message-ID: <1392917168.18779.10157.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014, Zoltan Kiss wrote:
-> On 16/02/14 18:36, Stefano Stabellini wrote:
-> > On Wed, 12 Feb 2014, Zoltan Kiss wrote:
-> > > diff --git a/arch/arm/include/asm/xen/page.h
-> > > b/arch/arm/include/asm/xen/page.h
-> > > index e0965ab..4eaeb3f 100644
-> > > --- a/arch/arm/include/asm/xen/page.h
-> > > +++ b/arch/arm/include/asm/xen/page.h
-> > > @@ -97,16 +97,15 @@ static inline pte_t *lookup_address(unsigned long
-> > > address, unsigned int *level)
-> > >   	return NULL;
-> > >   }
-> > > 
-> > > -static inline int m2p_add_override(unsigned long mfn, struct page *page,
-> > > -		struct gnttab_map_grant_ref *kmap_op)
-> > > -{
-> > > -	return 0;
-> > > -}
-> > > -
-> > > -static inline int m2p_remove_override(struct page *page, bool clear_pte)
-> > > -{
-> > > -	return 0;
-> > > -}
-> > > +extern int set_foreign_p2m_mapping(struct gnttab_map_grant_ref *map_ops,
-> > > +				   struct gnttab_map_grant_ref *kmap_ops,
-> > > +				   struct page **pages, unsigned int count,
-> > > +				   bool m2p_override);
-> > > +
-> > > +extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref
-> > > *unmap_ops,
-> > > +				     struct gnttab_map_grant_ref *kmap_ops,
-> > > +				     struct page **pages, unsigned int count,
-> > > +				     bool m2p_override);
+On Wed, 2014-02-19 at 20:01 -0800, Paul E. McKenney wrote:
+> On Wed, Feb 19, 2014 at 04:53:49PM -0800, Linus Torvalds wrote:
+> > On Tue, Feb 18, 2014 at 11:47 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> > > On Tue, 2014-02-18 at 09:44 -0800, Linus Torvalds wrote:
+> > >>
+> > >> Can you point to it? Because I can find a draft standard, and it sure
+> > >> as hell does *not* contain any clarity of the model. It has a *lot* of
+> > >> verbiage, but it's pretty much impossible to actually understand, even
+> > >> for somebody who really understands memory ordering.
+> > >
+> > > http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
+> > > This has an explanation of the model up front, and then the detailed
+> > > formulae in Section 6.  This is from 2010, and there might have been
+> > > smaller changes since then, but I'm not aware of any bigger ones.
 > > 
-> > Much much better.
-> > The only comment I have is about this m2p_override boolean parameter.
-> > m2p_override is now meaningless in this context, what we really want to
-> > let the arch specific implementation know is whether the mapping is a
-> > kernel only mapping or a userspace mapping.
-> > Testing for kmap_ops != NULL might even be enough, but it would not
-> > improve the interface.
-> gntdev is the only user of this, the kmap_ops parameter there is:
-> use_ptemod ? map->kmap_ops + offset : NULL
-> where:
-> use_ptemod = !xen_feature(XENFEAT_auto_translated_physmap);
-> So I think we can't rely on kmap_ops to decide whether we should m2p_override
-> or not.
+> > Ahh, this is different from what others pointed at. Same people,
+> > similar name, but not the same paper.
+> > 
+> > I will read this version too, but from reading the other one and the
+> > standard in parallel and trying to make sense of it, it seems that I
+> > may have originally misunderstood part of the whole control dependency
+> > chain.
+> > 
+> > The fact that the left side of "? :", "&&" and "||" breaks data
+> > dependencies made me originally think that the standard tried very
+> > hard to break any control dependencies. Which I felt was insane, when
+> > then some of the examples literally were about the testing of the
+> > value of an atomic read. The data dependency matters quite a bit. The
+> > fact that the other "Mathematical" paper then very much talked about
+> > consume only in the sense of following a pointer made me think so even
+> > more.
+> > 
+> > But reading it some more, I now think that the whole "data dependency"
+> > logic (which is where the special left-hand side rule of the ternary
+> > and logical operators come in) are basically an exception to the rule
+> > that sequence points end up being also meaningful for ordering (ok, so
+> > C11 seems to have renamed "sequence points" to "sequenced before").
+> > 
+> > So while an expression like
+> > 
+> >     atomic_read(p, consume) ? a : b;
+> > 
+> > doesn't have a data dependency from the atomic read that forces
+> > serialization, writing
+> > 
+> >    if (atomic_read(p, consume))
+> >       a;
+> >    else
+> >       b;
+> > 
+> > the standard *does* imply that the atomic read is "happens-before" wrt
+> > "a", and I'm hoping that there is no question that the control
+> > dependency still acts as an ordering point.
 > 
-> > Is it possible to realize if the mapping is a userspace mapping by
-> > checking for GNTMAP_application_map in map_ops?
-> > Otherwise I would keep the boolean and rename it to user_mapping.
-> Sounds better, but as far as I see gntdev set that flag in find_grant_ptes,
-> which is called only
+> The control dependency should order subsequent stores, at least assuming
+> that "a" and "b" don't start off with identical stores that the compiler
+> could pull out of the "if" and merge.  The same might also be true for ?:
+> for all I know.  (But see below)
+
+I don't think this is quite true.  I agree that a conditional store will
+not be executed speculatively (note that if it would happen in both the
+then and the else branch, it's not conditional); so, the store in
+"a;" (assuming it would be a store) won't happen unless the thread can
+really observe a true value for p.  However, this is *this thread's*
+view of the world, but not guaranteed to constrain how any other thread
+sees the state.  mo_consume does not contribute to
+inter-thread-happens-before in the same way that mo_acquire does (which
+*does* put a constraint on i-t-h-b, and thus enforces a global
+constraint that all threads have to respect).
+
+Is it clear which distinction I'm trying to show here?
+
+> That said, in this case, you could substitute relaxed for consume and get
+> the same effect.  The return value from atomic_read() gets absorbed into
+> the "if" condition, so there is no dependency-ordered-before relationship,
+> so nothing for consume to do.
 > 
-> if (use_ptemod) {
-> 	err = apply_to_page_range(vma->vm_mm, vma->vm_start,
-> 				  vma->vm_end - vma->vm_start,
-> 				  find_grant_ptes, map);
+> One caution...  The happens-before relationship requires you to trace a
+> full path between the two operations of interest.  This is illustrated
+> by the following example, with both x and y initially zero:
 > 
-> So if xen_feature(XENFEAT_auto_translated_physmap), we don't have kmap_ops,
-> and GNTMAP_application_map is not set as well, but I guess we still need
-> m2p_override. Or not? I'm a bit confused, maybe because of Monday ...
- 
-If xen_feature(XENFEAT_auto_translated_physmap) we shouldn't need the
-m2p_override.
+> T1:	atomic_store_explicit(&x, 1, memory_order_relaxed);
+> 	r1 = atomic_load_explicit(&y, memory_order_relaxed);
+> 
+> T2:	atomic_store_explicit(&y, 1, memory_order_relaxed);
+> 	r2 = atomic_load_explicit(&x, memory_order_relaxed);
+> 
+> There is a happens-before relationship between T1's load and store,
+> and another happens-before relationship between T2's load and store,
+> but there is no happens-before relationship from T1 to T2, and none
+> in the other direction, either.  And you don't get to assume any
+> ordering based on reasoning about these two disjoint happens-before
+> relationships.
+> 
+> So it is quite possible for r1==1&&r2==1 after both threads complete.
+> 
+> Which should be no surprise: This misordering can happen even on x86,
+> which would need a full smp_mb() to prevent it.
+> 
+> > THAT was one of my big confusions, the discussion about control
+> > dependencies and the fact that the logical ops broke the data
+> > dependency made me believe that the standard tried to actively avoid
+> > the whole issue with "control dependencies can break ordering
+> > dependencies on some CPU's due to branch prediction and memory
+> > re-ordering by the CPU".
+> > 
+> > But after all the reading, I'm starting to think that that was never
+> > actually the implication at all, and the "logical ops breaks the data
+> > dependency rule" is simply an exception to the sequence point rule.
+> > All other sequence points still do exist, and do imply an ordering
+> > that matters for "consume"
+> > 
+> > Am I now reading it right?
+> 
+> As long as there is an unbroken chain of -data- dependencies from the
+> consume to the later access in question, and as long as that chain
+> doesn't go through the excluded operations, yes.
+> 
+> > So the clarification is basically to the statement that the "if
+> > (consume(p)) a" version *would* have an ordering guarantee between the
+> > read of "p" and "a", but the "consume(p) ? a : b" would *not* have
+> > such an ordering guarantee. Yes?
+> 
+> Neither has a data-dependency guarantee, because there is no data
+> dependency from the load to either "a" or "b".  After all, the value
+> loaded got absorbed into the "if" condition.
+
+Agreed.
+
+> However, according to
+> discussions earlier in this thread, the "if" variant would have a
+> control-dependency ordering guarantee for any stores in "a" and "b"
+> (but not loads!).  The ?: form might also have a control-dependency
+> guarantee for any stores in "a" and "b" (again, not loads).
+
+Don't quite agree; see above for my opinion on this.
+
