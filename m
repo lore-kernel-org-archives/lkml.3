@@ -1,58 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633AbaBTN3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:29:19 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56476 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180AbaBTN3S (ORCPT
+	id S1754245AbaBTNdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:33:32 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:57636 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235AbaBTNd3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:29:18 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: m.chehab@samsung.com, gregkh@linuxfoundation.org,
-        prabhakar.csengg@gmail.com, yongjun_wei@trendmicro.com.cn,
-        sakari.ailus@iki.fi, hans.verkuil@cisco.com,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RESEND] [media] davinci: vpfe: remove deprecated IRQF_DISABLED
-Date: Thu, 20 Feb 2014 14:30:29 +0100
-Message-ID: <1688708.1hcDfqTyU5@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53060055.2010408@free-electrons.com>
-References: <CA+V-a8tn54CcaFEBMM48GMnTuG=OhQtxm7=od_4OZm6Xo_S9qA@mail.gmail.com> <4210530.AR5GZgidVz@avalon> <53060055.2010408@free-electrons.com>
+	Thu, 20 Feb 2014 08:33:29 -0500
+Message-ID: <53060444.9010308@arm.com>
+Date: Thu, 20 Feb 2014 13:33:56 +0000
+From: Sudeep Holla <Sudeep.Holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Sudeep.Holla@arm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>
+Subject: Re: [PATCH RFC/RFT v3 4/9] s390: move cacheinfo sysfs to generic
+ cacheinfo infrastructure
+References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com> <1392825976-17633-5-git-send-email-sudeep.holla@arm.com> <20140220083816.GA4203@osiris>
+In-Reply-To: <20140220083816.GA4203@osiris>
+X-OriginalArrivalTime: 20 Feb 2014 13:33:29.0368 (UTC) FILETIME=[5740C180:01CF2E40]
+X-MC-Unique: 114022013332700201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Hi Heiko,
 
-On Thursday 20 February 2014 14:17:09 Michael Opdenacker wrote:
-> On 02/20/2014 12:36 PM, Laurent Pinchart wrote:
-> > Hi Michael,
-> > 
-> > What's the status of this patch ? Do expect Prabhakar to pick it up, or do
-> > you plan to push all your IRQF_DISABLED removal patches in one go ?
+Thanks for testing this series, much appreciated.
+
+On 20/02/14 08:38, Heiko Carstens wrote:
+> On Wed, Feb 19, 2014 at 04:06:11PM +0000, Sudeep Holla wrote:
+>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>
+>> This patch removes the redundant sysfs cacheinfo code by making use of
+>> the newly introduced generic cacheinfo infrastructure.
+>>
+>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+>> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+>> Cc: linux390@de.ibm.com
+>> Cc: linux-s390@vger.kernel.org
+>> ---
+>>  arch/s390/kernel/cache.c | 388 ++++++++++++-----------------------------------
+>>  1 file changed, 93 insertions(+), 295 deletions(-)
 > 
-> It's true a good number of my patches haven't been picked up yet, even
-> after multiple resends.
-
-Maintainers might have assumed that you would push all the patches yourself. 
-That might be why Prabhakar has acked your patch but hasn't picked it up.
-
-> I was planning to ask the community tomorrow about what to do to finally
-> get rid of IRQF_DISABLED. Effectively, pushing all the remaining changes
-> in one go (or removing the definition of IRQF_DISABLED) may be the final
-> solution.
+> (FWIW, if you send an update of your series, please cc me on all patches, so I
+>  don't have to search LKML for the rest of the patch set)
 > 
-> I hope to be able to answer your question by the end of the week.
-> 
-> Thanks for getting back to me about this!
+Sorry, will make sure you will be cc-ed in the future updates.
 
--- 
+> I gave your patches series a test and I get this nice message on boot:
+> 
+> io scheduler cfq registered
+> DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+> ------------[ cut here ]------------
+> WARNING: at kernel/locking/lockdep.c:2742
+> Modules linked in:
+> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc3-00177-g468cee08c2ea #7
+> task: 0000000000adcc60 ti: 0000000000ac4000 task.ti: 0000000000ac4000
+> Krnl PSW : 0404c00180000000 000000000019af3e (lockdep_trace_alloc+0x116/0x120)
+>            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:3 CC:0 PM:0 EA:3
+> Krnl GPRS: 0000000000000020 0000000000adcc60 000000000000002f 0000000000000000
+>            000000000019af3a 0000000000000000 0000000000000001 0000000000000000
+>            000000003ff26140 000000000055fb92 00000000000001b0 00000000000080d0
+>            0400000000000000 00000000000080d0 000000000019af3a 000000000001bc30
+> Krnl Code: 000000000019af2e: c020003b1e34       larl    %r2,8feb96
+>            000000000019af34: c0e5002e0304       brasl   %r14,75b53c
+>           #000000000019af3a: a7f40001           brc     15,19af3c
+>           >000000000019af3e: e32003100004       lg      %r2,784
+>            000000000019af44: a7f4ff9f           brc     15,19ae82
+>            000000000019af48: e31003100004       lg      %r1,784
+>            000000000019af4e: e32013f00150       sty     %r2,5104(%r1)
+>            000000000019af54: 07fe               bcr     15,%r14
+> Call Trace:
+> ([<000000000019af3a>] lockdep_trace_alloc+0x112/0x120)
+>  [<000000000027a7d2>] __kmalloc+0x5a/0x204
+>  [<000000000055fb92>] detect_cache_attributes+0x66/0xd4
+>  [<000000000055fc2e>] _detect_cache_attributes+0x2e/0x3c
+>  [<00000000001ce7a2>] generic_smp_call_function_single_interrupt+0x9a/0xe8
+>  [<000000000010b462>] do_ext_interrupt+0x12a/0x24c
+>  [<00000000001afab0>] handle_irq_event_percpu+0x70/0x240
+>  [<00000000001b3218>] handle_percpu_irq+0x6c/0x98
+>  [<00000000001af16e>] generic_handle_irq+0x46/0x68
+>  [<000000000010b6c2>] do_IRQ+0x5e/0x84
+>  [<0000000000768b06>] ext_skip+0x44/0x4a
+>  [<000000000076827c>] vtime_stop_cpu+0x50/0xa4
+> ([<0000000000768262>] vtime_stop_cpu+0x36/0xa4)
+>  [<0000000000103848>] arch_cpu_idle+0x6c/0xbc
+>  [<00000000001af032>] cpu_startup_entry+0x146/0x218
+>  [<0000000000b64932>] start_kernel+0x3fa/0x408
+>  [<0000000000100020>] _stext+0x20/0x80
+> INFO: lockdep is turned off.
+> Last Breaking-Event-Address:
+>  [<000000000019af3a>] lockdep_trace_alloc+0x112/0x120
+> ---[ end trace 9c0011ccc7b324d6 ]---
+> brd: module loaded
+> 
+
+Ah, my bad, I had this fixed initially when I implemented only on ARM and
+introduced back while reorganising it to support multiple architectures, it's
+now fixed.
+
+> In addition /proc/cpuinfo is now incorrect.
+> With your patches it looks like this:
+> 
+> [root@p2345007 ~]# cat /proc/cpuinfo 
+> vendor_id       : IBM/S390
+> # processors    : 4
+> bogomips per cpu: 18115.00
+> features        : esan3 zarch stfle msa ldisp eimm dfp etf3eh highgprs 
+> cache0          : level=1 type=Data scope=Shared size=96K line_size=256 associativity=6
+> cache1          : level=1 type=Data scope=Shared size=96K line_size=256 associativity=6
+> cache2          : level=1 type=Data scope=Shared size=96K line_size=256 associativity=6
+> cache3          : level=1 type=Data scope=Shared size=96K line_size=256 associativity=6
+> cache4          : level=1 type=Data scope=Shared size=96K line_size=256 associativity=6
+> cache5          : level=1 type=Data scope=Shared size=96K line_size=256 associativity=6
+> processor 0: version = FF,  identification = 2F6D15,  machine = 2827
+> processor 1: version = FF,  identification = 2F6D15,  machine = 2827
+> processor 2: version = FF,  identification = 2F6D15,  machine = 2827
+> processor 3: version = FF,  identification = 2F6D15,  machine = 2827
+> 
+> However it is supposed to look like this:
+> 
+> [root@p2345007 ~]# cat /proc/cpuinfo 
+> vendor_id       : IBM/S390
+> # processors    : 4
+> bogomips per cpu: 18115.00
+> features        : esan3 zarch stfle msa ldisp eimm dfp etf3eh highgprs 
+> cache0          : level=1 type=Data scope=Private size=96K line_size=256 associativity=6
+> cache1          : level=1 type=Instruction scope=Private size=64K line_size=256 associativity=4
+> cache2          : level=2 type=Data scope=Private size=1024K line_size=256 associativity=8
+> cache3          : level=2 type=Instruction scope=Private size=1024K line_size=256 associativity=8
+> cache4          : level=3 type=Unified scope=Shared size=49152K line_size=256 associativity=12
+> cache5          : level=4 type=Unified scope=Shared size=393216K line_size=256 associativity=24
+> processor 0: version = FF,  identification = 2F6D15,  machine = 2827
+> processor 1: version = FF,  identification = 2F6D15,  machine = 2827
+> processor 2: version = FF,  identification = 2F6D15,  machine = 2827
+> processor 3: version = FF,  identification = 2F6D15,  machine = 2827
+> 
+> The sysfs files and it contents seem to be ok.
+> 
+
+Thanks, this info was helpful and looks like it's stupid mistake I did. I
+deleted a line unknowingly while trying to minimise the diff for show_cacheinfo.
+The below fix-up must work IIUC the issue. I will squash this in my next update
+if it works.
+
 Regards,
+Sudeep
 
-Laurent Pinchart
+--->8
+
+>From 77690bc34b2b4b492377998019371f6e2f8f90b7 Mon Sep 17 00:00:00 2001
+From: Sudeep Holla <sudeep.holla@arm.com>
+Date: Thu, 20 Feb 2014 13:14:09 +0000
+Subject: [PATCH] fixup! s390: move cacheinfo sysfs to generic cacheinfo
+ infrastructure
+
+---
+ arch/s390/kernel/cache.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/s390/kernel/cache.c b/arch/s390/kernel/cache.c
+index e064f95..aeedb7f 100644
+--- a/arch/s390/kernel/cache.c
++++ b/arch/s390/kernel/cache.c
+@@ -68,14 +68,15 @@ void show_cacheinfo(struct seq_file *m)
+ {
+ 	int cpu = smp_processor_id(), idx;
+ 	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
+-	struct cache_info *cache = this_cpu_ci->info_list;
++	struct cache_info *cache;
+
+ 	for (idx = 0; idx < this_cpu_ci->num_leaves; idx++) {
++		cache = this_cpu_ci->info_list + idx;
+ 		seq_printf(m, "cache%-11d: ", idx);
+ 		seq_printf(m, "level=%d ", cache->level);
+ 		seq_printf(m, "type=%s ", cache_type_string[cache->type]);
+ 		seq_printf(m, "scope=%s ",
+-			   cache->disable_sysfs ? "Private" : "Shared");
++			   cache->disable_sysfs ? "Shared" : "Private");
+ 		seq_printf(m, "size=%dK ", cache->size >> 10);
+ 		seq_printf(m, "line_size=%u ", cache->coherency_line_size);
+ 		seq_printf(m, "associativity=%d", cache->ways_of_associativity);
+
+
 
