@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269AbaBTKoj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 05:44:39 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:46804 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445AbaBTKoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 05:44:37 -0500
-Message-ID: <5305DC92.8050706@linaro.org>
-Date: Thu, 20 Feb 2014 11:44:34 +0100
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752840AbaBTKpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 05:45:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752357AbaBTKpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 05:45:24 -0500
+Date: Thu, 20 Feb 2014 11:44:40 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 4/8] perf top: Add --percentage option
+Message-ID: <20140220104440.GB11018@krava.brq.redhat.com>
+References: <1392000446-14744-1-git-send-email-namhyung@kernel.org>
+ <1392000446-14744-5-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v2 1/1] ACPI, PCI, ISA: Call ISA-specific code only for
- architectures which support ISA.
-References: <1392806122-23318-1-git-send-email-tomasz.nowicki@linaro.org> <3640027.L0fXHYxIB5@vostro.rjw.lan>
-In-Reply-To: <3640027.L0fXHYxIB5@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392000446-14744-5-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.02.2014 17:11, Rafael J. Wysocki wrote:
-> On Wednesday, February 19, 2014 11:35:22 AM Tomasz Nowicki wrote:
->> This commit moves ISA-specific code to separate function and makes that
->> function depend on CONFIG_{E}ISA so that we do not have to maintain
->> acpi_isa_irq_to_gsi() function for architectures which do not support ISA.
->>
->> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
->> ---
->>   drivers/acpi/pci_irq.c |   35 +++++++++++++++++++++++++----------
->>   1 file changed, 25 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
->> index 361b40c..0a553a0 100644
->> --- a/drivers/acpi/pci_irq.c
->> +++ b/drivers/acpi/pci_irq.c
->> @@ -370,6 +370,30 @@ static struct acpi_prt_entry *acpi_pci_irq_lookup(struct pci_dev *dev, int pin)
->>   	return NULL;
->>   }
->>
->> +#if IS_ENABLED(CONFIG_ISA) || IS_ENABLED(CONFIG_EISA)
->> +static int acpi_isa_register_gsi(struct pci_dev *dev)
->> +{
->> +	u32 dev_gsi;
->> +
->> +	/* Interrupt Line values above 0xF are forbidden */
->> +	if (dev->irq > 0 && (dev->irq <= 0xF) &&
->> +	    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
->> +		dev_warn(&dev->dev, "PCI INT %c: no GSI - using ISA IRQ %d\n",
->> +			 pin_name(dev->pin), dev->irq);
->> +		acpi_register_gsi(&dev->dev, dev_gsi,
->> +				  ACPI_LEVEL_SENSITIVE,
->> +				  ACPI_ACTIVE_LOW);
->> +		return 0;
->> +	}
->> +	return -EINVAL;
->> +}
->> +#else
->> +static inline int acpi_isa_register_gsi(struct pci_dev *dev)
->> +{
->> +	return -ENODEV;
->> +}
->> +#endif
->> +
->>   int acpi_pci_irq_enable(struct pci_dev *dev)
->>   {
->>   	struct acpi_prt_entry *entry;
->> @@ -416,16 +440,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
->>   	 * driver reported one, then use it. Exit in any case.
->>   	 */
->>   	if (gsi < 0) {
->> -		u32 dev_gsi;
->> -		/* Interrupt Line values above 0xF are forbidden */
->> -		if (dev->irq > 0 && (dev->irq <= 0xF) &&
->> -		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
->> -			dev_warn(&dev->dev, "PCI INT %c: no GSI - using ISA IRQ %d\n",
->> -				 pin_name(pin), dev->irq);
->> -			acpi_register_gsi(&dev->dev, dev_gsi,
->> -					  ACPI_LEVEL_SENSITIVE,
->> -					  ACPI_ACTIVE_LOW);
->> -		} else {
->> +		if (acpi_isa_register_gsi(dev)) {
->
-> The curly brackets are not necessary here and you can even move the below into
-> acpi_isa_register_gsi().
-Right, the curly brackets can be removed.
+On Mon, Feb 10, 2014 at 11:47:21AM +0900, Namhyung Kim wrote:
+> The --percentage option is for controlling overhead percentage
+> displayed.  It can only receive either of "relative" or "absolute".
+> 
+> For more information, please see previous commit same thing done to
+> "perf report".
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
 
-My intention was to print warning when ISA is not supported too, and do 
-not put dev_warn() into both version of acpi_isa_register_gsi(). So I 
-would leave code below as it is.
->
->>   			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
->>   				 pin_name(pin));
->>   		}
->>
->
+SNIP
+
+>  
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index ed99ec4a309f..a516e0389c5e 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -1011,6 +1011,20 @@ parse_percent_limit(const struct option *opt, const char *arg,
+>  	return 0;
+>  }
+>  
+> +static int
+> +parse_percentage(const struct option *opt __maybe_unused, const char *arg,
+> +		 int unset __maybe_unused)
+> +{
+> +	if (!strcmp(arg, "relative"))
+> +		symbol_conf.filter_relative = true;
+> +	else if (!strcmp(arg, "absolute"))
+> +		symbol_conf.filter_relative = false;
+> +	else
+> +		return -1;
+> +
+> +	return 0;
+> +}
+
+please make one of parse_percentage functions public and
+share it among report/top/diff commands
+
+jirka
