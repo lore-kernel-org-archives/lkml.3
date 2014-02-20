@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbaBTXvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:51:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45444 "EHLO
+	id S932458AbaBUA5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:57:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45451 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754904AbaBTXvI (ORCPT
+	with ESMTP id S1754983AbaBTXvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:08 -0500
+	Thu, 20 Feb 2014 18:51:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 33/66] iio: adis16400: Set timestamp as the last element in chan_spec
-Date: Thu, 20 Feb 2014 15:51:32 -0800
-Message-Id: <20140220234910.447060519@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.10 35/66] x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
+Date: Thu, 20 Feb 2014 15:51:34 -0800
+Message-Id: <20140220234910.503604505@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -30,82 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit c76782d151dab7ecfdcdf9a01561c2d61d9b490f upstream.
+commit 4640c7ee9b8953237d05a61ea3ea93981d1bc961 upstream.
 
-This is necessary since timestamp is calculated as the last element
-in iio_compute_scan_bytes().
+If CONFIG_X86_SMAP is disabled, smap_violation() tests for conditions
+which are incorrect (as the AC flag doesn't matter), causing spurious
+faults.
 
-Without this fix any userspace code reading the layout of the buffer via
-sysfs will incorrectly interpret the data leading some nasty corruption.
+The dynamic disabling of SMAP (nosmap on the command line) is fine
+because it disables X86_FEATURE_SMAP, therefore causing the
+static_cpu_has() to return false.
 
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Found by Fengguang Wu's test system.
+
+[ v3: move all predicates into smap_violation() ]
+[ v2: use IS_ENABLED() instead of #ifdef ]
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/imu/adis16400.h      |    1 +
- drivers/iio/imu/adis16400_core.c |   10 +++++-----
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ arch/x86/mm/fault.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/drivers/iio/imu/adis16400.h
-+++ b/drivers/iio/imu/adis16400.h
-@@ -189,6 +189,7 @@ enum {
- 	ADIS16300_SCAN_INCLI_X,
- 	ADIS16300_SCAN_INCLI_Y,
- 	ADIS16400_SCAN_ADC,
-+	ADIS16400_SCAN_TIMESTAMP,
- };
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -989,6 +989,12 @@ static int fault_in_kernel_space(unsigne
  
- #ifdef CONFIG_IIO_BUFFER
---- a/drivers/iio/imu/adis16400_core.c
-+++ b/drivers/iio/imu/adis16400_core.c
-@@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
- 	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
- 	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(12)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
+ static inline bool smap_violation(int error_code, struct pt_regs *regs)
+ {
++	if (!IS_ENABLED(CONFIG_X86_SMAP))
++		return false;
++
++	if (!static_cpu_has(X86_FEATURE_SMAP))
++		return false;
++
+ 	if (error_code & PF_USER)
+ 		return false;
  
- static const struct iio_chan_spec adis16448_channels[] = {
-@@ -659,7 +659,7 @@ static const struct iio_chan_spec adis16
- 		},
- 	},
- 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(11)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
+@@ -1091,11 +1097,9 @@ __do_page_fault(struct pt_regs *regs, un
+ 	if (unlikely(error_code & PF_RSVD))
+ 		pgtable_bad(regs, error_code, address);
  
- static const struct iio_chan_spec adis16350_channels[] = {
-@@ -677,7 +677,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
- 	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
- 	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(11)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
+-	if (static_cpu_has(X86_FEATURE_SMAP)) {
+-		if (unlikely(smap_violation(error_code, regs))) {
+-			bad_area_nosemaphore(regs, error_code, address);
+-			return;
+-		}
++	if (unlikely(smap_violation(error_code, regs))) {
++		bad_area_nosemaphore(regs, error_code, address);
++		return;
+ 	}
  
- static const struct iio_chan_spec adis16300_channels[] = {
-@@ -690,7 +690,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
- 	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
- 	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
--	IIO_CHAN_SOFT_TIMESTAMP(14)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16334_channels[] = {
-@@ -701,7 +701,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
- 	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
- 	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(8)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static struct attribute *adis16400_attributes[] = {
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
 
 
