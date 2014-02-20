@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaBTHXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 02:23:03 -0500
-Received: from relay.parallels.com ([195.214.232.42]:45666 "EHLO
+	id S1753598AbaBTHX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 02:23:27 -0500
+Received: from relay.parallels.com ([195.214.232.42]:45651 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaBTHWS (ORCPT
+	with ESMTP id S1752495AbaBTHWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 02:22:18 -0500
+	Thu, 20 Feb 2014 02:22:17 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <mhocko@suse.cz>, <akpm@linux-foundation.org>
 CC: <rientjes@google.com>, <penberg@kernel.org>, <cl@linux.com>,
         <glommer@gmail.com>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH -mm v3 5/7] memcg, slab: do not destroy children caches if parent has aliases
-Date: Thu, 20 Feb 2014 11:22:07 +0400
-Message-ID: <d783c642d7695675b4eb35fef62f87b7a56bc094.1392879001.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v3 1/7] memcg, slab: never try to merge memcg caches
+Date: Thu, 20 Feb 2014 11:22:03 +0400
+Message-ID: <7d7793c8d542d799af0cb797be19a60567d042e1.1392879001.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1392879001.git.vdavydov@parallels.com>
 References: <cover.1392879001.git.vdavydov@parallels.com>
@@ -25,197 +25,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we destroy children caches at the very beginning of
-kmem_cache_destroy(). This is wrong, because the root cache will not
-necessarily be destroyed in the end - if it has aliases (refcount > 0),
-kmem_cache_destroy() will simply decrement its refcount and return. In
-this case, at best we will get a bunch of warnings in dmesg, like this
-one:
+When a kmem cache is created (kmem_cache_create_memcg()), we first try
+to find a compatible cache that already exists and can handle requests
+from the new cache, i.e. has the same object size, alignment, ctor, etc.
+If there is such a cache, we do not create any new caches, instead we
+simply increment the refcount of the cache found and return it.
 
-  kmem_cache_destroy kmalloc-32:0: Slab cache still has objects
-  CPU: 1 PID: 7139 Comm: modprobe Tainted: G    B   W    3.13.0+ #117
-  Hardware name:
-   ffff88007d7a6368 ffff880039b07e48 ffffffff8168cc2e ffff88007d7a6d68
-   ffff88007d7a6300 ffff880039b07e68 ffffffff81175e9f 0000000000000000
-   ffff88007d7a6300 ffff880039b07e98 ffffffff811b67c7 ffff88003e803c00
-  Call Trace:
-   [<ffffffff8168cc2e>] dump_stack+0x49/0x5b
-   [<ffffffff81175e9f>] kmem_cache_destroy+0xdf/0xf0
-   [<ffffffff811b67c7>] kmem_cache_destroy_memcg_children+0x97/0xc0
-   [<ffffffff81175dcf>] kmem_cache_destroy+0xf/0xf0
-   [<ffffffffa0130b21>] xfs_mru_cache_uninit+0x21/0x30 [xfs]
-   [<ffffffffa01893ea>] exit_xfs_fs+0x2e/0xc44 [xfs]
-   [<ffffffff810eeb58>] SyS_delete_module+0x198/0x1f0
-   [<ffffffff816994f9>] system_call_fastpath+0x16/0x1b
+Currently we do this procedure not only when creating root caches, but
+also for memcg caches. However, there is no point in that, because, as
+every memcg cache has exactly the same parameters as its parent and
+cache merging cannot be turned off in runtime (only on boot by passing
+"slub_nomerge"), the root caches of any two potentially mergeable memcg
+caches should be merged already, i.e. it must be the same root cache,
+and therefore we couldn't even get to the memcg cache creation, because
+it already exists.
 
-At worst - if kmem_cache_destroy() will race with an allocation from a
-memcg cache - the kernel will panic.
+The only exception is boot caches - they are explicitly forbidden to be
+merged by setting their refcount to -1. There are currently only two of
+them - kmem_cache and kmem_cache_node, which are used in slab internals
+(I do not count kmalloc caches as their refcount is set to 1 immediately
+after creation). Since they are prevented from merging preliminary I
+guess we should avoid to merge their children too.
 
-This patch fixes this by moving children caches destruction after the
-check if the cache has aliases. Plus, it forbids destroying a root cache
-if it still has children caches, because each children cache keeps a
-reference to its parent.
+So let's remove the useless code responsible for merging memcg caches.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/memcontrol.h |    6 +---
- mm/memcontrol.c            |   13 ++++----
- mm/slab_common.c           |   75 +++++++++++++++++++++++++++++---------------
- 3 files changed, 57 insertions(+), 37 deletions(-)
+ mm/slab.h        |   21 ++++-----------------
+ mm/slab_common.c |    8 +++++---
+ mm/slub.c        |   19 +++++++++----------
+ 3 files changed, 18 insertions(+), 30 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 01a506a9e57b..af63e6004c62 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -513,7 +513,7 @@ struct kmem_cache *
- __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+diff --git a/mm/slab.h b/mm/slab.h
+index 8184a7cde272..3045316b7c9d 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -55,12 +55,12 @@ extern void create_boot_cache(struct kmem_cache *, const char *name,
+ struct mem_cgroup;
+ #ifdef CONFIG_SLUB
+ struct kmem_cache *
+-__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+-		   size_t align, unsigned long flags, void (*ctor)(void *));
++__kmem_cache_alias(const char *name, size_t size, size_t align,
++		   unsigned long flags, void (*ctor)(void *));
+ #else
+ static inline struct kmem_cache *
+-__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+-		   size_t align, unsigned long flags, void (*ctor)(void *))
++__kmem_cache_alias(const char *name, size_t size, size_t align,
++		   unsigned long flags, void (*ctor)(void *))
+ { return NULL; }
+ #endif
  
- void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
--void kmem_cache_destroy_memcg_children(struct kmem_cache *s);
-+int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
- 
- /**
-  * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
-@@ -667,10 +667,6 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
- {
- 	return cachep;
+@@ -119,13 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return !s->memcg_params || s->memcg_params->is_root_cache;
  }
--
--static inline void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+ 
+-static inline bool cache_match_memcg(struct kmem_cache *cachep,
+-				     struct mem_cgroup *memcg)
 -{
+-	return (is_root_cache(cachep) && !memcg) ||
+-				(cachep->memcg_params->memcg == memcg);
 -}
- #endif /* CONFIG_MEMCG_KMEM */
- #endif /* _LINUX_MEMCONTROL_H */
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b07e08f97460..8a87614b6238 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3386,15 +3386,10 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
- 	schedule_work(&cachep->memcg_params->destroy);
- }
- 
--void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- {
- 	struct kmem_cache *c;
--	int i;
 -
--	if (!s->memcg_params)
--		return;
--	if (!s->memcg_params->is_root_cache)
--		return;
-+	int i, failed = 0;
- 
- 	/*
- 	 * If the cache is being destroyed, we trust that there is no one else
-@@ -3428,8 +3423,12 @@ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 		c->memcg_params->dead = false;
- 		cancel_work_sync(&c->memcg_params->destroy);
- 		kmem_cache_destroy(c);
-+
-+		if (cache_from_memcg_idx(s, i))
-+			failed++;
- 	}
- 	mutex_unlock(&activate_kmem_mutex);
-+	return failed;
+ static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+ {
+ 	if (!is_root_cache(s))
+@@ -204,12 +197,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return true;
  }
  
- static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+-static inline bool cache_match_memcg(struct kmem_cache *cachep,
+-				     struct mem_cgroup *memcg)
+-{
+-	return true;
+-}
+-
+ static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+ {
+ }
 diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 0c2879ff414c..f3cfccf76dda 100644
+index 1ec3c619ba04..e77b51eb7347 100644
 --- a/mm/slab_common.c
 +++ b/mm/slab_common.c
-@@ -301,39 +301,64 @@ out_unlock:
- 	mutex_unlock(&slab_mutex);
- 	put_online_cpus();
- }
-+
-+static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+{
-+	int rc;
-+
-+	if (!s->memcg_params ||
-+	    !s->memcg_params->is_root_cache)
-+		return 0;
-+
-+	mutex_unlock(&slab_mutex);
-+	rc = __kmem_cache_destroy_memcg_children(s);
-+	mutex_lock(&slab_mutex);
-+
-+	return rc;
-+}
-+#else
-+static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_MEMCG_KMEM */
+@@ -200,9 +200,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 	 */
+ 	flags &= CACHE_CREATE_MASK;
  
- void kmem_cache_destroy(struct kmem_cache *s)
- {
--	/* Destroy all the children caches if we aren't a memcg cache */
--	kmem_cache_destroy_memcg_children(s);
--
- 	get_online_cpus();
- 	mutex_lock(&slab_mutex);
+-	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
+-	if (s)
+-		goto out_unlock;
++	if (!memcg) {
++		s = __kmem_cache_alias(name, size, align, flags, ctor);
++		if (s)
++			goto out_unlock;
++	}
+ 
+ 	err = -ENOMEM;
+ 	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+diff --git a/mm/slub.c b/mm/slub.c
+index fe6d7be22ef0..2f40e615368f 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3685,6 +3685,9 @@ static int slab_unmergeable(struct kmem_cache *s)
+ 	if (slub_nomerge || (s->flags & SLUB_NEVER_MERGE))
+ 		return 1;
+ 
++	if (!is_root_cache(s))
++		return 1;
 +
- 	s->refcount--;
--	if (!s->refcount) {
--		list_del(&s->list);
--		memcg_unregister_cache(s);
--
--		if (!__kmem_cache_shutdown(s)) {
--			mutex_unlock(&slab_mutex);
--			if (s->flags & SLAB_DESTROY_BY_RCU)
--				rcu_barrier();
--
--			memcg_free_cache_params(s);
--			kfree(s->name);
--			kmem_cache_free(kmem_cache, s);
--		} else {
--			list_add(&s->list, &slab_caches);
--			memcg_register_cache(s);
--			mutex_unlock(&slab_mutex);
--			printk(KERN_ERR "kmem_cache_destroy %s: Slab cache still has objects\n",
--				s->name);
--			dump_stack();
--		}
--	} else {
--		mutex_unlock(&slab_mutex);
-+	if (s->refcount)
-+		goto out_unlock;
-+
-+	if (kmem_cache_destroy_memcg_children(s) != 0)
-+		goto out_unlock;
-+
-+	list_del(&s->list);
-+	memcg_unregister_cache(s);
-+
-+	if (__kmem_cache_shutdown(s) != 0) {
-+		list_add(&s->list, &slab_caches);
-+		memcg_register_cache(s);
-+		printk(KERN_ERR "kmem_cache_destroy %s: "
-+		       "Slab cache still has objects\n", s->name);
-+		dump_stack();
-+		goto out_unlock;
- 	}
-+
-+	mutex_unlock(&slab_mutex);
-+	if (s->flags & SLAB_DESTROY_BY_RCU)
-+		rcu_barrier();
-+
-+	memcg_free_cache_params(s);
-+	kfree(s->name);
-+	kmem_cache_free(kmem_cache, s);
-+	goto out_put_cpus;
-+
-+out_unlock:
-+	mutex_unlock(&slab_mutex);
-+out_put_cpus:
- 	put_online_cpus();
+ 	if (s->ctor)
+ 		return 1;
+ 
+@@ -3697,9 +3700,8 @@ static int slab_unmergeable(struct kmem_cache *s)
+ 	return 0;
  }
- EXPORT_SYMBOL(kmem_cache_destroy);
+ 
+-static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+-		size_t align, unsigned long flags, const char *name,
+-		void (*ctor)(void *))
++static struct kmem_cache *find_mergeable(size_t size, size_t align,
++		unsigned long flags, const char *name, void (*ctor)(void *))
+ {
+ 	struct kmem_cache *s;
+ 
+@@ -3722,7 +3724,7 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+ 			continue;
+ 
+ 		if ((flags & SLUB_MERGE_SAME) != (s->flags & SLUB_MERGE_SAME))
+-				continue;
++			continue;
+ 		/*
+ 		 * Check if alignment is compatible.
+ 		 * Courtesy of Adrian Drzewiecki
+@@ -3733,21 +3735,18 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+ 		if (s->size - size >= sizeof(void *))
+ 			continue;
+ 
+-		if (!cache_match_memcg(s, memcg))
+-			continue;
+-
+ 		return s;
+ 	}
+ 	return NULL;
+ }
+ 
+ struct kmem_cache *
+-__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+-		   size_t align, unsigned long flags, void (*ctor)(void *))
++__kmem_cache_alias(const char *name, size_t size, size_t align,
++		   unsigned long flags, void (*ctor)(void *))
+ {
+ 	struct kmem_cache *s;
+ 
+-	s = find_mergeable(memcg, size, align, flags, name, ctor);
++	s = find_mergeable(size, align, flags, name, ctor);
+ 	if (s) {
+ 		s->refcount++;
+ 		/*
 -- 
 1.7.10.4
 
