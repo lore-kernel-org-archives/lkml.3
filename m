@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978AbaBTXxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46042 "EHLO
+	id S1756467AbaBUANH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:13:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46071 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940AbaBTXxS (ORCPT
+	with ESMTP id S1755970AbaBTXxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:18 -0500
+	Thu, 20 Feb 2014 18:53:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.13 26/99] iwlwifi: mvm: BT Coex - disable BT when TXing probe request in scan
-Date: Thu, 20 Feb 2014 15:52:21 -0800
-Message-Id: <20140220235118.974945667@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.13 31/99] raw: test against runtime value of max_raw_minors
+Date: Thu, 20 Feb 2014 15:52:26 -0800
+Message-Id: <20140220235119.126318935@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,32 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 8e2a866ef214af4e104ec8d593e3269d8fe66d19 upstream.
+commit 5bbb2ae3d6f896f8d2082d1eceb6131c2420b7cf upstream.
 
-Not doing so will let BT kill our probe requests leading to
-failures in scan.
+bind_get() checks the device number it is called with. It uses
+MAX_RAW_MINORS for the upper bound. But MAX_RAW_MINORS is set at compile
+time while the actual number of raw devices can be set at runtime. This
+means the test can either be too strict or too lenient. And if the test
+ends up being too lenient bind_get() might try to access memory beyond
+what was allocated for "raw_devices".
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+So check against the runtime value (max_raw_minors) in this function.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/scan.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/char/raw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/scan.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/scan.c
-@@ -325,7 +325,8 @@ int iwl_mvm_scan_request(struct iwl_mvm
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *d
+ 	struct raw_device_data *rawdev;
+ 	struct block_device *bdev;
  
- 	iwl_mvm_scan_fill_ssids(cmd, req, basic_ssid ? 1 : 0);
+-	if (number <= 0 || number >= MAX_RAW_MINORS)
++	if (number <= 0 || number >= max_raw_minors)
+ 		return -EINVAL;
  
--	cmd->tx_cmd.tx_flags = cpu_to_le32(TX_CMD_FLG_SEQ_CTL);
-+	cmd->tx_cmd.tx_flags = cpu_to_le32(TX_CMD_FLG_SEQ_CTL |
-+					   TX_CMD_FLG_BT_DIS);
- 	cmd->tx_cmd.sta_id = mvm->aux_sta.sta_id;
- 	cmd->tx_cmd.life_time = cpu_to_le32(TX_CMD_LIFE_TIME_INFINITE);
- 	cmd->tx_cmd.rate_n_flags =
+ 	rawdev = &raw_devices[number];
 
 
