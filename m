@@ -1,123 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaBTLJC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 06:09:02 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35978 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaBTLJA (ORCPT
+	id S1753482AbaBTLJi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 06:09:38 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58365 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885AbaBTLJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 06:09:00 -0500
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@pengutronix.de, Markus Pargmann <mpa@pengutronix.de>,
-        <stable@vger.kernel.org>
-Subject: [PATCH v2 2/2] regulator: core: Replace direct ops->disable usage
-Date: Thu, 20 Feb 2014 12:07:52 +0100
-Message-Id: <1392894472-11956-3-git-send-email-mpa@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392894472-11956-1-git-send-email-mpa@pengutronix.de>
-References: <1392894472-11956-1-git-send-email-mpa@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 20 Feb 2014 06:09:37 -0500
+Date: Thu, 20 Feb 2014 12:09:43 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alexey Perevalov <a.perevalov@samsung.com>
+cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org,
+        Anton Vorontsov <anton@enomsg.org>, anton@nomsg.org,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        akpm@linux-foundation.org,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH v3 5/6] timerfd: Add support for deferrable timers
+In-Reply-To: <1392885633-7787-6-git-send-email-a.perevalov@samsung.com>
+Message-ID: <alpine.DEB.2.02.1402201152440.4468@ionos.tec.linutronix.de>
+References: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com> <1392885633-7787-6-git-send-email-a.perevalov@samsung.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are many places where ops->disable is called directly. Instead we
-should use _regulator_do_disable() which also handles gpio regulators.
+On Thu, 20 Feb 2014, Alexey Perevalov wrote:
 
-Cc: <stable@vger.kernel.org> # 3.10+
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
----
- drivers/regulator/core.c | 32 +++++++++++++-------------------
- 1 file changed, 13 insertions(+), 19 deletions(-)
+> From: Anton Vorontsov <anton@enomsg.org>
+> 
+> This patch implements a userland-side API for generic deferrable timers,
+> per linux/timer.h:
+> 
+>  * A deferrable timer will work normally when the system is busy, but
+>  * will not cause a CPU to come out of idle just to service it; instead,
+>  * the timer will be serviced when the CPU eventually wakes up with a
+>  * subsequent non-deferrable timer.
+> 
+> These timers are crucial for power saving, i.e. periodic tasks that want
+> to work in background when the system is under use, but don't want to
+> cause wakeups themselves.
+> 
+> The deferred timers are somewhat orthogonal to high-res external timers,
+> since the deferred timer is tied to the system load, not just to some
+> external decrementer source.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 017f5cb..a0c916f 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1908,8 +1908,6 @@ static int _regulator_do_disable(struct regulator_dev *rdev)
- 
- 	trace_regulator_disable_complete(rdev_get_name(rdev));
- 
--	_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
--			     NULL);
- 	return 0;
- }
- 
-@@ -1933,6 +1931,8 @@ static int _regulator_disable(struct regulator_dev *rdev)
- 				rdev_err(rdev, "failed to disable\n");
- 				return ret;
- 			}
-+			_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
-+					NULL);
- 		}
- 
- 		rdev->use_count = 0;
-@@ -1985,20 +1985,16 @@ static int _regulator_force_disable(struct regulator_dev *rdev)
- {
- 	int ret = 0;
- 
--	/* force disable */
--	if (rdev->desc->ops->disable) {
--		/* ah well, who wants to live forever... */
--		ret = rdev->desc->ops->disable(rdev);
--		if (ret < 0) {
--			rdev_err(rdev, "failed to force disable\n");
--			return ret;
--		}
--		/* notify other consumers that power has been forced off */
--		_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
--			REGULATOR_EVENT_DISABLE, NULL);
-+	ret = _regulator_do_disable(rdev);
-+	if (ret < 0) {
-+		rdev_err(rdev, "failed to force disable\n");
-+		return ret;
- 	}
- 
--	return ret;
-+	_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
-+			REGULATOR_EVENT_DISABLE, NULL);
-+
-+	return 0;
- }
- 
- /**
-@@ -3641,12 +3637,10 @@ int regulator_suspend_finish(void)
- 		} else {
- 			if (!have_full_constraints())
- 				goto unlock;
--			if (!ops->disable)
--				goto unlock;
- 			if (!_regulator_is_enabled(rdev))
- 				goto unlock;
- 
--			error = ops->disable(rdev);
-+			error = _regulator_do_disable(rdev);
- 			if (error)
- 				ret = error;
- 		}
-@@ -3820,7 +3814,7 @@ static int __init regulator_init_complete(void)
- 		ops = rdev->desc->ops;
- 		c = rdev->constraints;
- 
--		if (!ops->disable || (c && c->always_on))
-+		if (c && c->always_on)
- 			continue;
- 
- 		mutex_lock(&rdev->mutex);
-@@ -3841,7 +3835,7 @@ static int __init regulator_init_complete(void)
- 			/* We log since this may kill the system if it
- 			 * goes wrong. */
- 			rdev_info(rdev, "disabling\n");
--			ret = ops->disable(rdev);
-+			ret = _regulator_do_disable(rdev);
- 			if (ret != 0)
- 				rdev_err(rdev, "couldn't disable: %d\n", ret);
- 		} else {
--- 
-1.8.5.3
+Again this changelog makes no sense. What's orthogonal to high-res
+timers and why are they external?
 
+So 5 out of 6 patches are a trainwreck in various degrees of
+wreckage. A pretty impressive achievement.
+
+Thanks,
+
+	tglx
