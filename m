@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689AbaBUAc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:32:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45794 "EHLO
+	id S1756343AbaBUAdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:33:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755653AbaBTXw0 (ORCPT
+	with ESMTP id S1755609AbaBTXwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:26 -0500
+	Thu, 20 Feb 2014 18:52:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.12 50/82] Drivers: hv: vmbus: Dont timeout during the initial connection with host
-Date: Thu, 20 Feb 2014 15:52:33 -0800
-Message-Id: <20140220235020.982785631@linuxfoundation.org>
+        Jim Strouth <james.strouth@ge.com>, Martyn Welch <martyn.welch@ge.com>
+Subject: [PATCH 3.12 49/82] VME: Correct read/write alignment algorithm
+Date: Thu, 20 Feb 2014 15:52:32 -0800
+Message-Id: <20140220235020.950726783@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,53 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Martyn Welch <martyn.welch@ge.com>
 
-commit 269f979467cf49f2ea8132316c1f00f8c9678f7c upstream.
+commit f0342e66b397947ed8c3eef8c37b5ca2d5b1bb50 upstream.
 
-When the guest attempts to connect with the host when there may already be a
-connection with the host (as would be the case during the kdump/kexec path),
-it is difficult to guarantee timely response from the host. Starting with
-WS2012 R2, the host supports this ability to re-connect with the host
-(explicitly to support kexec). Prior to responding to the guest, the host
-needs to ensure that device states based on the previous connection to
-the host have been properly torn down. This may introduce unbounded delays.
-To deal with this issue, don't do a timed wait during the initial connect
-with the host.
+In order to ensure the correct width cycles on the VME bus, the VME bridge
+drivers implement an algorithm to utilise the largest possible width reads and
+writes whilst maintaining natural alignment constraints. The algorithm
+currently looks at the start address rather than the current read/write address
+when determining whether a 16-bit width cycle is required to get to 32-bit
+alignment.  This results in incorrect alignment,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Jim Strouth <james.strouth@ge.com>
+Tested-by: Jim Strouth <james.strouth@ge.com>
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/connection.c |   11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ drivers/vme/bridges/vme_ca91cx42.c |    4 ++--
+ drivers/vme/bridges/vme_tsi148.c   |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -67,7 +67,6 @@ static int vmbus_negotiate_version(struc
- 	int ret = 0;
- 	struct vmbus_channel_initiate_contact *msg;
- 	unsigned long flags;
--	int t;
- 
- 	init_completion(&msginfo->waitevent);
- 
-@@ -102,15 +101,7 @@ static int vmbus_negotiate_version(struc
+--- a/drivers/vme/bridges/vme_ca91cx42.c
++++ b/drivers/vme/bridges/vme_ca91cx42.c
+@@ -884,7 +884,7 @@ static ssize_t ca91cx42_master_read(stru
+ 		if (done == count)
+ 			goto out;
  	}
- 
- 	/* Wait for the connection response */
--	t =  wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
--	if (t == 0) {
--		spin_lock_irqsave(&vmbus_connection.channelmsg_lock,
--				flags);
--		list_del(&msginfo->msglistentry);
--		spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock,
--					flags);
--		return -ETIMEDOUT;
--	}
-+	wait_for_completion(&msginfo->waitevent);
- 
- 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
- 	list_del(&msginfo->msglistentry);
+-	if ((uintptr_t)addr & 0x2) {
++	if ((uintptr_t)(addr + done) & 0x2) {
+ 		if ((count - done) < 2) {
+ 			*(u8 *)(buf + done) = ioread8(addr + done);
+ 			done += 1;
+@@ -938,7 +938,7 @@ static ssize_t ca91cx42_master_write(str
+ 		if (done == count)
+ 			goto out;
+ 	}
+-	if ((uintptr_t)addr & 0x2) {
++	if ((uintptr_t)(addr + done) & 0x2) {
+ 		if ((count - done) < 2) {
+ 			iowrite8(*(u8 *)(buf + done), addr + done);
+ 			done += 1;
+--- a/drivers/vme/bridges/vme_tsi148.c
++++ b/drivers/vme/bridges/vme_tsi148.c
+@@ -1289,7 +1289,7 @@ static ssize_t tsi148_master_read(struct
+ 		if (done == count)
+ 			goto out;
+ 	}
+-	if ((uintptr_t)addr & 0x2) {
++	if ((uintptr_t)(addr + done) & 0x2) {
+ 		if ((count - done) < 2) {
+ 			*(u8 *)(buf + done) = ioread8(addr + done);
+ 			done += 1;
+@@ -1371,7 +1371,7 @@ static ssize_t tsi148_master_write(struc
+ 		if (done == count)
+ 			goto out;
+ 	}
+-	if ((uintptr_t)addr & 0x2) {
++	if ((uintptr_t)(addr + done) & 0x2) {
+ 		if ((count - done) < 2) {
+ 			iowrite8(*(u8 *)(buf + done), addr + done);
+ 			done += 1;
 
 
