@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaBTAD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:03:59 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:34485 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaBTAD5 (ORCPT
+	id S1752243AbaBTAEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 19:04:24 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:44600 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaBTAEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 19:03:57 -0500
-Message-ID: <5305465C.7060806@gmail.com>
-Date: Wed, 19 Feb 2014 16:03:40 -0800
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Feb 2014 19:04:23 -0500
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: dirk.brandewie@gmail.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Commit fcb6a15c2e7e (intel_pstate: Take core C0 time into account
- for core busy calculation) sucks rocks
-References: <20140219224752.GA370@kroah.com>
-In-Reply-To: <20140219224752.GA370@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
+References: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
+Date: Wed, 19 Feb 2014 17:04:22 -0700
+Message-ID: <CAPoiz9yuLg4exX58bh5=XumgAmYNq-9kPjc+f1wa8kMU3-dBbg@mail.gmail.com>
+Subject: Re: How could we get rid of saved_max_pfn for calgary iommu?
+From: Jon Mason <jdmason@kudzu.us>
+To: WANG Chao <chaowang@redhat.com>
+Cc: Muli Ben-Yehuda <muli@il.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, kexec@lists.infradead.org,
+        discuss@x86-64.org, x86@kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 02:47 PM, Greg KH wrote:
-> Hi Dirk,
+On Tue, Feb 18, 2014 at 11:18 PM, WANG Chao <chaowang@redhat.com> wrote:
+> Hi, All
 >
-> I've been having some huge slowdowns on my box building kernels, and I
-> took the time to bisect it down to commit
-> fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 (intel_pstate: Take core C0
-> time into account for core busy calculation).  With that patch reverted
-> on Linus's current tree, my build speeds are back up to the normal rate.
+> arch/x86/kernel/pci-calgary.c is the only user of saved_max_pfn today:
 >
-> The difference is huge, 2 minutes to do a kernel build with that patch
-> reverted, 8-10 minutes with it applied!  With all of the stable kernel
-> builds and other trees, this is a huge problem for my workload (all I do
-> is kernel builds it seems...)
+> int __init detect_calgary(void)
+> {
+>         [..]
+>         specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
+>                                         saved_max_pfn : max_pfn) * PAGE_SIZE);
+>         [..]
+> }
+
+IIUC, the purpose of this code is to reuse the TCE table from the
+previous kernel.  Thus, it needs to be of the same size as the
+pre-kdump kernel.  It is using the max_pfn to determine the TCE table
+size in the non-kdump case.  If there is another way to determine the
+size it used before, then I am fine making the change to use that way.
+
+Thanks,
+Jon
+
+> saved_max_pfn is the real mem size and is calculated by 1st kernel E820
+> memmap which is passed in by 2nd kernel's boot_params (done by kexec):
 >
-> I see some patches you marked as "fixes" that you sent to Rafael, do you
-> want me to test any of those?  How am I the only one seeing this
-> problem, do you need my cpu information or anything else?
-
-Can you give me a description of you build system?  CPU, number of sockets,
-building from/to local media.  Any special setup I should use here for my test?
-
-If you have time having the output of turbostat for a build with and
-without would be very useful.
-
-On my single socket Sandybridge test system I don't see any difference.
-I tested against v3.10.30, v3.12.11 and v3.13.3
-
+>         saved_max_pfn = e820_end_of_ram_pfn();
 >
-> Oh, and because of the problems, I'll just drop this patch from the
-> -stable trees for now, I don't want to pollute them with the issue until
-> it is resolved properly.
+> After saved_max_pfn has been set, memmap=exactmap will reset the E820
+> provided by boot_params and use the user defined E820 instead.
 >
-
-
-> thanks,
+> Now we want to get rid of memmap=exactmap and directly pass the E820
+> memmap by boot_params for some reason (eg. exactmap may exceed the cmdline
+> size and also isn't compatible with kaslr).
 >
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> However saved_max_pfn becomes the obstacle for obsoleting exactmap.
+> Because it needs two conditions: first kernel's E820 map and
+> memmap=exactmap cmdline.
 >
-
+> So I'm wondering if it's possible to get rid of saved_max_pfn totally in
+> calgary code. Or we can get saved_max_pfn using a different way, for
+> example calculated in 1st kernel and passed in to 2nd kernel by cmdline.
+>
+> Thanks
+> WANG Chao
