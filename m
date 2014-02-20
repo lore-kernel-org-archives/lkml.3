@@ -1,70 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391AbaBUAbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:31:46 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:61169 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932360AbaBUAbm (ORCPT
+	id S1755665AbaBTXw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45775 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610AbaBTXwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:31:42 -0500
+	Thu, 20 Feb 2014 18:52:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.12 45/82] ftrace/x86: Use breakpoints for converting function graph caller
+Date: Thu, 20 Feb 2014 15:52:28 -0800
+Message-Id: <20140220235020.827159739@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
+References: <20140220235019.483734207@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA4zC1+TPWWdANnm7RuBDduwNetdTknfzSkVTpFcPSGZww@mail.gmail.com>
-References: <CA+5PVA4zC1+TPWWdANnm7RuBDduwNetdTknfzSkVTpFcPSGZww@mail.gmail.com>
-Date: Thu, 20 Feb 2014 19:31:41 -0500
-X-Google-Sender-Auth: hEzlJNQ39BsUDmoG0-vM_EtSLuM
-Message-ID: <CA+5PVA6Td43Zzd8L59_mE7E5hFuVSxhAwd+tczs_BSHXNOx5yw@mail.gmail.com>
-Subject: Re: 3.13 i915 brightness settings broken when going from docked -> undocked
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Cc: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 9:20 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> Hi All,
->
-> We've had a rather weird report[1] of the brightness adjustments being
-> broken in a specific case with Thinkpad x220 hardware (SandyBridge
-> based).  If you boot the machine with it in a dock and then undock,
-> the brightness adjustments do not work.  That is with either the FN
-> keys or the GNOME brightness slider.
->
-> I can see that the value of
-> /sys/class/backlight/acpi_video0/brightness increases/decreases but
-> /sys/class/backlight/intel_backlight/brightness doesn't reflect any
-> changes.  With 3.12 this works, and oddly with 3.14-rc1 it works
-> (specifically, it starts working around v3.13-10231-g53d8ab2 which is
-> right after the first DRM merge for 3.14).  With 3.13, if I undock and
-> echo a higher value in the intel_backlight_brightness sysfs entry, the
-> brightness will actually increase so it can be done manually, but it
-> does not work as you'd expect.
->
-> I'm in the middle of trying to do a reverse bisect for which patch
-> fixes it in the 3.14-rcX series, but that's taking a while.  I thought
-> I'd email and see if anyone already knows about this situation, what
-> patch in 3.13 broke this, and which one then fixed it again.  Thus far
-> all I've gathered is that backlight handling is confusing.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-The reverse bisect between 3.13 and 3.14-rc1 didn't prove fruitful,
-either because I messed it up or there's a combination of things that
-fix the issue.  So instead I did a regular git bisect between 3.12 and
-3.13 to see which commit _broke_ things and caused the above behavior.
- That landed me at:
+------------------
 
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Thu Oct 31 18:55:49 2013 +0200
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-    drm/i915: make backlight functions take a connector
+commit 87fbb2ac6073a7039303517546a76074feb14c84 upstream.
 
-I have no idea if that makes sense or not, but it's at least something
-that seems to be in a relevant area of code.  Does anyone involved in
-that know why it would cause the above symptoms on 3.13, and which
-commit(s) fix it in 3.14-rc1?
+When the conversion was made to remove stop machine and use the breakpoint
+logic instead, the modification of the function graph caller is still
+done directly as though it was being done under stop machine.
 
-josh
+As it is not converted via stop machine anymore, there is a possibility
+that the code could be layed across cache lines and if another CPU is
+accessing that function graph call when it is being updated, it could
+cause a General Protection Fault.
+
+Convert the update of the function graph caller to use the breakpoint
+method as well.
+
+Cc: H. Peter Anvin <hpa@zytor.com>
+Fixes: 08d636b6d4fb "ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/kernel/ftrace.c |   83 ++++++++++++++++++++++++++---------------------
+ 1 file changed, 47 insertions(+), 36 deletions(-)
+
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -77,8 +77,7 @@ within(unsigned long addr, unsigned long
+ 	return addr >= start && addr < end;
+ }
+ 
+-static int
+-do_ftrace_mod_code(unsigned long ip, const void *new_code)
++static unsigned long text_ip_addr(unsigned long ip)
+ {
+ 	/*
+ 	 * On x86_64, kernel text mappings are mapped read-only with
+@@ -91,7 +90,7 @@ do_ftrace_mod_code(unsigned long ip, con
+ 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+ 		ip = (unsigned long)__va(__pa_symbol(ip));
+ 
+-	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
++	return ip;
+ }
+ 
+ static const unsigned char *ftrace_nop_replace(void)
+@@ -123,8 +122,10 @@ ftrace_modify_code_direct(unsigned long
+ 	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
+ 		return -EINVAL;
+ 
++	ip = text_ip_addr(ip);
++
+ 	/* replace the text with the new text */
+-	if (do_ftrace_mod_code(ip, new_code))
++	if (probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE))
+ 		return -EPERM;
+ 
+ 	sync_core();
+@@ -221,37 +222,51 @@ int ftrace_modify_call(struct dyn_ftrace
+ 	return -EINVAL;
+ }
+ 
+-int ftrace_update_ftrace_func(ftrace_func_t func)
++static unsigned long ftrace_update_func;
++
++static int update_ftrace_func(unsigned long ip, void *new)
+ {
+-	unsigned long ip = (unsigned long)(&ftrace_call);
+-	unsigned char old[MCOUNT_INSN_SIZE], *new;
++	unsigned char old[MCOUNT_INSN_SIZE];
+ 	int ret;
+ 
+-	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
+-	new = ftrace_call_replace(ip, (unsigned long)func);
++	memcpy(old, (void *)ip, MCOUNT_INSN_SIZE);
++
++	ftrace_update_func = ip;
++	/* Make sure the breakpoints see the ftrace_update_func update */
++	smp_wmb();
+ 
+ 	/* See comment above by declaration of modifying_ftrace_code */
+ 	atomic_inc(&modifying_ftrace_code);
+ 
+ 	ret = ftrace_modify_code(ip, old, new);
+ 
++	atomic_dec(&modifying_ftrace_code);
++
++	return ret;
++}
++
++int ftrace_update_ftrace_func(ftrace_func_t func)
++{
++	unsigned long ip = (unsigned long)(&ftrace_call);
++	unsigned char *new;
++	int ret;
++
++	new = ftrace_call_replace(ip, (unsigned long)func);
++	ret = update_ftrace_func(ip, new);
++
+ 	/* Also update the regs callback function */
+ 	if (!ret) {
+ 		ip = (unsigned long)(&ftrace_regs_call);
+-		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
+ 		new = ftrace_call_replace(ip, (unsigned long)func);
+-		ret = ftrace_modify_code(ip, old, new);
++		ret = update_ftrace_func(ip, new);
+ 	}
+ 
+-	atomic_dec(&modifying_ftrace_code);
+-
+ 	return ret;
+ }
+ 
+ static int is_ftrace_caller(unsigned long ip)
+ {
+-	if (ip == (unsigned long)(&ftrace_call) ||
+-		ip == (unsigned long)(&ftrace_regs_call))
++	if (ip == ftrace_update_func)
+ 		return 1;
+ 
+ 	return 0;
+@@ -677,45 +692,41 @@ int __init ftrace_dyn_arch_init(void *da
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ extern void ftrace_graph_call(void);
+ 
+-static int ftrace_mod_jmp(unsigned long ip,
+-			  int old_offset, int new_offset)
++static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
+ {
+-	unsigned char code[MCOUNT_INSN_SIZE];
++	static union ftrace_code_union calc;
+ 
+-	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
+-		return -EFAULT;
++	/* Jmp not a call (ignore the .e8) */
++	calc.e8		= 0xe9;
++	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
+ 
+-	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
+-		return -EINVAL;
++	/*
++	 * ftrace external locks synchronize the access to the static variable.
++	 */
++	return calc.code;
++}
+ 
+-	*(int *)(&code[1]) = new_offset;
++static int ftrace_mod_jmp(unsigned long ip, void *func)
++{
++	unsigned char *new;
+ 
+-	if (do_ftrace_mod_code(ip, &code))
+-		return -EPERM;
++	new = ftrace_jmp_replace(ip, (unsigned long)func);
+ 
+-	return 0;
++	return update_ftrace_func(ip, new);
+ }
+ 
+ int ftrace_enable_ftrace_graph_caller(void)
+ {
+ 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
+-	int old_offset, new_offset;
+-
+-	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
+-	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
+ 
+-	return ftrace_mod_jmp(ip, old_offset, new_offset);
++	return ftrace_mod_jmp(ip, &ftrace_graph_caller);
+ }
+ 
+ int ftrace_disable_ftrace_graph_caller(void)
+ {
+ 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
+-	int old_offset, new_offset;
+-
+-	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
+-	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
+ 
+-	return ftrace_mod_jmp(ip, old_offset, new_offset);
++	return ftrace_mod_jmp(ip, &ftrace_stub);
+ }
+ 
+ #endif /* !CONFIG_DYNAMIC_FTRACE */
+
+
