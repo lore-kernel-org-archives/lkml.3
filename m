@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440AbaBUAs1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:48:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45578 "EHLO
+	id S1755247AbaBTXvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45546 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755259AbaBTXvj (ORCPT
+	with ESMTP id S1755219AbaBTXvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:39 -0500
+	Thu, 20 Feb 2014 18:51:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars Poeschel <poeschel@lemonage.de>
-Subject: [PATCH 3.10 24/66] tty: n_gsm: Fix for modems with brk in modem status control
-Date: Thu, 20 Feb 2014 15:51:23 -0800
-Message-Id: <20140220234910.186101474@linuxfoundation.org>
+        poma <pomidorabelisima@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olaf Hering <olaf@aepfle.de>,
+        Dave Jones <davej@redhat.com>, "Justin M. Forbes" <jforbes@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [PATCH 3.10 56/66] tick: Clear broadcast pending bit when switching to oneshot
+Date: Thu, 20 Feb 2014 15:51:55 -0800
+Message-Id: <20140220234911.088010400@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -28,59 +31,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars Poeschel <poeschel@lemonage.de>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 3ac06b905655b3ef2fd2196bab36e4587e1e4e4f upstream.
+commit dd5fd9b91a77b4c9c28b7ef9c181b1a875820d0a upstream.
 
-3GPP TS 07.10 states in section 5.4.6.3.7:
-"The length byte contains the value 2 or 3 ... depending on the break
-signal." The break byte is optional and if it is sent, the length is
-3. In fact the driver was not able to work with modems that send this
-break byte in their modem status control message. If the modem just
-sends the break byte if it is really set, then weird things might
-happen.
-The code for deconding the modem status to the internal linux
-presentation in gsm_process_modem has already a big comment about
-this 2 or 3 byte length thing and it is already able to decode the
-brk, but the code calling the gsm_process_modem function in
-gsm_control_modem does not encode it and hand it over the right way.
-This patch fixes this.
-Without this fix if the modem sends the brk byte in it's modem status
-control message the driver will hang when opening a muxed channel.
+AMD systems which use the C1E workaround in the amd_e400_idle routine
+trigger the WARN_ON_ONCE in the broadcast code when onlining a CPU.
 
-Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+The reason is that the idle routine of those AMD systems switches the
+cpu into forced broadcast mode early on before the newly brought up
+CPU can switch over to high resolution / NOHZ mode. The timer related
+CPU1 bringup looks like this:
+
+  clockevent_register_device(local_apic);
+  tick_setup(local_apic);
+  ...
+  idle()
+	tick_broadcast_on_off(FORCE);
+	tick_broadcast_oneshot_control(ENTER)
+	  cpumask_set(cpu, broadcast_oneshot_mask);
+	halt();
+
+Now the broadcast interrupt on CPU0 sets CPU1 in the
+broadcast_pending_mask and wakes CPU1. So CPU1 continues:
+
+	local_apic_timer_interrupt()
+	   tick_handle_periodic();
+	   softirq()
+	     tick_init_highres();
+	       cpumask_clr(cpu, broadcast_oneshot_mask);
+
+	tick_broadcast_oneshot_control(ENTER)
+	   WARN_ON(cpumask_test(cpu, broadcast_pending_mask);
+
+So while we remove CPU1 from the broadcast_oneshot_mask when we switch
+over to highres mode, we do not clear the pending bit, which then
+triggers the warning when we go back to idle.
+
+The reason why this is only visible on C1E affected AMD systems is
+that the other machines enter the deep sleep states via
+acpi_idle/intel_idle and exit the broadcast mode before executing the
+remote triggered local_apic_timer_interrupt. So the pending bit is
+already cleared when the switch over to highres mode is clearing the
+oneshot mask.
+
+The solution is simple: Clear the pending bit together with the mask
+bit when we switch over to highres mode.
+
+Stanislaw came up independently with the same patch by enforcing the
+C1E workaround and debugging the fallout. I picked mine, because mine
+has a changelog :)
+
+Reported-by: poma <pomidorabelisima@gmail.com>
+Debugged-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Olaf Hering <olaf@aepfle.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Justin M. Forbes <jforbes@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1402111434180.21991@ionos.tec.linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ kernel/time/tick-broadcast.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1089,6 +1089,7 @@ static void gsm_control_modem(struct gsm
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -745,6 +745,7 @@ out:
+ static void tick_broadcast_clear_oneshot(int cpu)
  {
- 	unsigned int addr = 0;
- 	unsigned int modem = 0;
-+	unsigned int brk = 0;
- 	struct gsm_dlci *dlci;
- 	int len = clen;
- 	u8 *dp = data;
-@@ -1115,6 +1116,16 @@ static void gsm_control_modem(struct gsm
- 		if (len == 0)
- 			return;
- 	}
-+	len--;
-+	if (len > 0) {
-+		while (gsm_read_ea(&brk, *dp++) == 0) {
-+			len--;
-+			if (len == 0)
-+				return;
-+		}
-+		modem <<= 7;
-+		modem |= (brk & 0x7f);
-+	}
- 	tty = tty_port_tty_get(&dlci->port);
- 	gsm_process_modem(tty, dlci, modem, clen);
- 	if (tty) {
+ 	cpumask_clear_cpu(cpu, tick_broadcast_oneshot_mask);
++	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
+ }
+ 
+ static void tick_broadcast_init_next_event(struct cpumask *mask,
 
 
