@@ -1,124 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310AbaBTOvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 09:51:36 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:50460 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023AbaBTOvd (ORCPT
+	id S932077AbaBTOwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:52:10 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:60559 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301AbaBTOt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 09:51:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140220124400.GA8198@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-6-git-send-email-agordeev@redhat.com>
- <CAErSpo7xWe6n3Nk3Aatik4tfSHQLQehf3WELqD=q1oTmXYVVuw@mail.gmail.com> <20140220124400.GA8198@dhcp-26-207.brq.redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 20 Feb 2014 07:51:12 -0700
-Message-ID: <CAErSpo7gNbRNAPjRqpvz85nS_fhVetf=6J+v7NdoVZ1eAGQBsA@mail.gmail.com>
-Subject: Re: [PATCH] portdrv: Use pci_enable_msix_range() instead of pci_enable_msix()
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 20 Feb 2014 09:49:58 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 00/11] ARM: shmobile: MSIOF integration on r8a7790/lager and r8a7791/koelsch
+Date: Thu, 20 Feb 2014 15:49:28 +0100
+Message-Id: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 5:44 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> On Wed, Feb 19, 2014 at 03:09:41PM -0700, Bjorn Helgaas wrote:
->> On Wed, Feb 19, 2014 at 3:15 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
->> > As result of deprecation of MSI-X/MSI enablement functions
->> > pci_enable_msix() and pci_enable_msi_block() all drivers
->> > using these two interfaces need to be updated to use the
->> > new pci_enable_msi_range() and pci_enable_msix_range()
->> > interfaces.
->> >
->> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
->> > Cc: Bjorn Helgaas <bhelgaas@google.com>
->> > Cc: linux-pci@vger.kernel.org
->> > ---
->> >  drivers/pci/pcie/portdrv_core.c |   17 ++++++++++-------
->> >  1 files changed, 10 insertions(+), 7 deletions(-)
->> >
->> > diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
->> > index 986f8ea..4e46eca 100644
->> > --- a/drivers/pci/pcie/portdrv_core.c
->> > +++ b/drivers/pci/pcie/portdrv_core.c
->> > @@ -99,8 +99,9 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
->> >         for (i = 0; i < nr_entries; i++)
->> >                 msix_entries[i].entry = i;
->> >
->> > -       status = pci_enable_msix(dev, msix_entries, nr_entries);
->> > -       if (status)
->> > +       status = pci_enable_msix_range(dev,
->> > +                                      msix_entries, nr_entries, nr_entries);
->>
->> This is a place we could use pci_enable_msix_exact(), isn't it?  (Also below.)
->
-> Yes, absolutely.
->
-> I posted it (and other updates) as is, since I understood
-> pci_enable_msix_exact() is not going to make it into 3.14. Was I wrong here?
+	Hi Simon, Magnus,
 
-Ooh, sorry, I do plan to merge pci_enable_msix_exact() and some of the
-other infrastructure patches for v3.14.  They've been in my for-linus
-branch for a week or so, and I plan to ask Linus to pull them today.
-Sorry I didn't make that more clear.
+This patch series integrates support for the MSIOF module in the Renesas
+R-Car H2 (r8a7790) and M2 (r8a7791) SoCs on the Lager and Koelsch
+development boards. 
 
-> I think more time in testing with either pci_enable_msix_range() or
-> pci_enable_msix_exact() is good. And a follow-up switch from
-> pci_enable_msix_range() to pci_enable_msix_exact() should be easy eigher.
->
-> What do you think is the best course of action now?
+It was tested on Lager and Koelsch, both legacy and DT, using a dummy
+driver for the Renesas r2a11302ft PMIC that reads out the PMIC's version
+ID.
 
-You should be able to post patches that use pci_enable_msix_exact();
-that's been in -next for a while now.  Maybe include a cover note
-saying what they depend on.
+  [01/11] ARM: shmobile: r8a7791 dtsi: Fix typo in msiof2 clock output name
+  [02/11] ARM: shmobile: r8a7790: Add MSIOF clocks
+  [03/11] ARM: shmobile: r8a7791: Add MSIOF clocks
+  [04/11] ARM: shmobile: lager legacy: Add MSIOF support
+  [05/11] ARM: shmobile: koelsch legacy: Add MSIOF support
+  [06/11] ARM: shmobile: r8a7790/lager dts: Rename label spi to qspi, add
+	  spi0 alias
+  [07/11] ARM: shmobile: r8a7791/koelsch dts: Rename label spi to qspi, add
+	  spi0 alias
+  [08/11] ARM: shmobile: r8a7790 dtsi: Add MSIOF nodes and aliases
+  [09/11] ARM: shmobile: r8a7791 dtsi: Add MSIOF nodes and aliases
+  [10/11] ARM: shmobile: lager dts: Add MSIOF nodes
+  [11/11] ARM: shmobile: koelsch dts: Add MSIOF nodes
 
-Bjorn
+Thanks!
 
->> > +       if (status < 0)
->> >                 goto Exit;
->> >
->> >         for (i = 0; i < PCIE_PORT_DEVICE_MAXSERVICES; i++)
->> > @@ -159,21 +160,23 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
->> >                 idx[PCIE_PORT_SERVICE_AER_SHIFT] = i;
->> >         }
->> >
->> > +       status = 0;
->> > +
->> >         /*
->> >          * If nvec is equal to the allocated number of entries, we can just use
->> >          * what we have.  Otherwise, the port has some extra entries not for the
->> >          * services we know and we need to work around that.
->> >          */
->> > -       if (nvec == nr_entries) {
->> > -               status = 0;
->> > -       } else {
->> > +       if (nvec != nr_entries) {
->> >                 /* Drop the temporary MSI-X setup */
->> >                 pci_disable_msix(dev);
->> >
->> >                 /* Now allocate the MSI-X vectors for real */
->> > -               status = pci_enable_msix(dev, msix_entries, nvec);
->> > -               if (status)
->> > +               nvec = pci_enable_msix_range(dev, msix_entries, nvec, nvec);
->> > +               if (nvec < 0) {
->> > +                       status = nvec;
->> >                         goto Exit;
->> > +               }
->> >         }
->> >
->> >         for (i = 0; i < PCIE_PORT_DEVICE_MAXSERVICES; i++)
->> > --
->> > 1.7.7.6
->> >
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> Regards,
-> Alexander Gordeev
-> agordeev@redhat.com
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
