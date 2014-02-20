@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561AbaBTRKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:10:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40548 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592AbaBTRKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:10:00 -0500
-Date: Thu, 20 Feb 2014 09:12:37 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: dirk.j.brandewie@intel.com, Xishi Qiu <qiuxishi@huawei.com>,
-        linux-kernel@vger.kernel.org, n-horiguchi@ah.jp.nec.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.10 00/26] 3.10.31-stable review
-Message-ID: <20140220171237.GA21550@kroah.com>
-References: <20140218224530.398913499@linuxfoundation.org>
- <53054C83.8000409@samsung.com>
- <5305AF24.4030503@huawei.com>
- <53060590.9090600@samsung.com>
- <530634F2.3010600@samsung.com>
+	id S1755452AbaBTRN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:13:27 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:63333 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751AbaBTRNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 12:13:25 -0500
+X-IronPort-AV: E=Sophos;i="4.97,513,1389744000"; 
+   d="scan'208";a="104396292"
+Message-ID: <1392916401.32657.31.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH 2/2] arm/xen: Don't use xen DMA ops when the device is
+ protected by an IOMMU
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Julien Grall <julien.grall@linaro.org>, <devicetree-spec@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <stefano.stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <xen-devel@lists.xenproject.org>, "Rob Herring" <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "Russell King" <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>
+Date: Thu, 20 Feb 2014 17:13:21 +0000
+In-Reply-To: <1392913301-25524-1-git-send-email-julien.grall@linaro.org>
+References: <1392913301-25524-1-git-send-email-julien.grall@linaro.org>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530634F2.3010600@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 10:01:38AM -0700, Shuah Khan wrote:
-> On 02/20/2014 06:39 AM, Shuah Khan wrote:
-> > On 02/20/2014 12:30 AM, Xishi Qiu wrote:
-> >> On 2014/2/20 8:29, Shuah Khan wrote:
-> >>
-> >>> On 02/18/2014 03:46 PM, Greg Kroah-Hartman wrote:
-> >>>> This is the start of the stable review cycle for the 3.10.31 release.
-> >>>> There are 26 patches in this series, all will be posted as a response
-> >>>> to this one.  If anyone has any issues with these being applied, please
-> >>>> let me know.
-> >>>>
-> >>>> Responses should be made by Thu Feb 20 22:45:20 UTC 2014.
-> >>>> Anything received after that time might be too late.
-> >>>>
-> >>>> The whole patch series can be found in one patch at:
-> >>>>
-> >>>> kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.31-rc1.gz
-> >>>> and the diffstat can be found below.
-> >>>>
-> >>>> thanks,
-> >>>>
-> >>>> greg k-h
-> >>>>
-> >>>
-> >>> Compile and boot tests passed on AMD system. Boot failed on Intel
-> >>> systems. I think the following changes are the suspect, so far by
-> >>> process of elimination - these two aren't in 3.12 and 3.13
-> >>>
-> >>> #    modified:   mm/hugetlb.c
-> >>> #    modified:   mm/memory-failure.c
-> >>>
-> >>> However, my strong suspect is the following:
-> >>>
-> >>> Xishi Qiu <qiuxishi@huawei.com>
-> >>>      mm: fix process accidentally killed by mce because of huge page
-> >>> migration
-> >>>
-> >>> I don't see how this could cause problems, none the less, I will test
-> >>> without these changes and let you know.
-> >>>
-> >>>
-> >>> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> >>>      mm/memory-failure.c: fix memory leak in successful soft offlining
-> >>>
-> >>> I will test without these changes and let you know.
-> >>>
-> >>> -- Shuah
-> >>>
-> >>
-> >> Hi Shuah
-> >>
-> >> I tested on my system, it boot successfully.
-> >>
-> >> hardware: Intel(R) Xeon(R) CPU E5-2420 0 @ 1.90GHz
-> >> OS: v3.10.30 + the two patches
-> >>
-> >> Thanks,
-> >> Xishi Qiu
-> >
-> > Xishi,
-> >
-> > I tested without your patch and still see the issue. My wild guess
-> > wasn't a good one :) I am starting git bisect now.
-> >
-> > -- Shuah
-> >
-> >
-> 
-> ok I have it isolated to the following patch:
-> 
-> Dirk Brandewie <dirk.j.brandewie@intel.com>
->      intel_pstate: Take core C0 time into account for core busy calculation
-> 
-> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> 
-> commit fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 upstream.
-> 
-> Take non-idle time into account when calculating core busy time.
-> This ensures that intel_pstate will notice a decrease in load.
-> 
-> Boots just fine without this change.
+Adding the -spec list for the generic IOMMU binding question.
 
-Thanks for testing, I'll be dropping that patch as it causes major
-regressions on my boxes as well.
+On Thu, 2014-02-20 at 16:21 +0000, Julien Grall wrote:
+> diff --git a/Documentation/devicetree/bindings/arm/xen.txt b/Documentation/devicetree/bindings/arm/xen.txt
+> index 0f7b9c2..ee25a57 100644
+> --- a/Documentation/devicetree/bindings/arm/xen.txt
+> +++ b/Documentation/devicetree/bindings/arm/xen.txt
+> @@ -15,6 +15,8 @@ the following properties:
+>  - interrupts: the interrupt used by Xen to inject event notifications.
+>    A GIC node is also required.
+>  
+> +- protected-devices: (optional) List of phandles to device node where the
+> +IOMMU has been programmed by Xen. 
 
-greg k-h
+Is there some common/generic IOMMU binding which we can reuse here?
+Although this isn't exactly an IOMMU it certainly has some similarities
+-- it is providing IOMMU like functionality (albeit a very inflexible
+IOMMU which you don't need to/can't actually program).
+
+I'd far rather we followed existing patterns rather than invent our own
+things.
+
+I'm wondering if perhaps we didn't ought to integrate this as an actual
+IOMMU driver, although I'm not convinced this would make sense.
+
+I'm also not sure about shovelling everything as properties under a
+single Xen node, should this not be its own node with compatible =
+"xen,(pv)iommu"?
+
+Ian.
+
