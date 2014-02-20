@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705AbaBUAKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:10:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46130 "EHLO
+	id S1756712AbaBUALX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:11:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46110 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167AbaBTXxe (ORCPT
+	with ESMTP id S932088AbaBTXxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:34 -0500
+	Thu, 20 Feb 2014 18:53:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
+        Jan Stancek <jstancek@redhat.com>, Rafael Aquini <aquini@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 05/99] mm/memory-failure.c: move refcount only in !MF_COUNT_INCREASED
-Date: Thu, 20 Feb 2014 15:52:00 -0800
-Message-Id: <20140220235118.366313478@linuxfoundation.org>
+Subject: [PATCH 3.13 04/99] mm: fix page leak at nfs_symlink()
+Date: Thu, 20 Feb 2014 15:51:59 -0800
+Message-Id: <20140220235118.331264781@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -33,51 +33,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Rafael Aquini <aquini@redhat.com>
 
-commit 8d547ff4ac5927245e0833ac18528f939da0ee0e upstream.
+commit a0b54adda3fe4b4cc6d28f2a9217cd35d1aa888c upstream.
 
-mce-test detected a test failure when injecting error to a thp tail
-page.  This is because we take page refcount of the tail page in
-madvise_hwpoison() while the fix in commit a3e0f9e47d5e
-("mm/memory-failure.c: transfer page count from head page to tail page
-after split thp") assumes that we always take refcount on the head page.
+Changes in commit a0b8cab3b9b2 ("mm: remove lru parameter from
+__pagevec_lru_add and remove parts of pagevec API") have introduced a
+call to add_to_page_cache_lru() which causes a leak in nfs_symlink() as
+now the page gets an extra refcount that is not dropped.
 
-When a real memory error happens we take refcount on the head page where
-memory_failure() is called without MF_COUNT_INCREASED set, so it seems
-to me that testing memory error on thp tail page using madvise makes
-little sense.
+Jan Stancek observed and reported the leak effect while running test8
+from Connectathon Testsuite.  After several iterations over the test
+case, which creates several symlinks on a NFS mountpoint, the test
+system was quickly getting into an out-of-memory scenario.
 
-This patch cancels moving refcount in !MF_COUNT_INCREASED for valid
-testing.
+This patch fixes the page leak by dropping that extra refcount
+add_to_page_cache_lru() is grabbing.
 
-[akpm@linux-foundation.org: s/&&/&/]
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Jeff Layton <jlayton@redhat.com>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/nfs/dir.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -945,8 +945,10 @@ static int hwpoison_user_mappings(struct
- 			 * to it. Similarly, page lock is shifted.
- 			 */
- 			if (hpage != p) {
--				put_page(hpage);
--				get_page(p);
-+				if (!(flags & MF_COUNT_INCREASED)) {
-+					put_page(hpage);
-+					get_page(p);
-+				}
- 				lock_page(p);
- 				unlock_page(hpage);
- 				*hpagep = p;
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1837,6 +1837,11 @@ int nfs_symlink(struct inode *dir, struc
+ 							GFP_KERNEL)) {
+ 		SetPageUptodate(page);
+ 		unlock_page(page);
++		/*
++		 * add_to_page_cache_lru() grabs an extra page refcount.
++		 * Drop it here to avoid leaking this page later.
++		 */
++		page_cache_release(page);
+ 	} else
+ 		__free_page(page);
+ 
 
 
