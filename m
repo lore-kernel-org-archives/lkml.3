@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaBTK47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 05:56:59 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:63040 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946AbaBTK4z (ORCPT
+	id S1753515AbaBTK6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 05:58:09 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47205 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353AbaBTK6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 05:56:55 -0500
-Date: Thu, 20 Feb 2014 18:55:40 +0800
-From: Kevin Hao <haokexin@gmail.com>
+	Thu, 20 Feb 2014 05:58:05 -0500
+Date: Thu, 20 Feb 2014 19:57:45 +0900
+From: Mark Brown <broonie@kernel.org>
 To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH v4 0/4] Bugfix for of_match_node ordering
-Message-ID: <20140220105540.GB3745@pek-khao-d1.corp.ad.wrs.com>
-References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
- <CAK9yfHwwmZkFMRvxsxjBAfUbVXU3V+iPFDZO=DwQsFvJ3NQyKA@mail.gmail.com>
- <20140220101240.GA3745@pek-khao-d1.corp.ad.wrs.com>
- <CAK9yfHzM_kyXMrnLC=M0qiLHKWxE41E-MdyGtipKA7AwoLnOqg@mail.gmail.com>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Message-ID: <20140220105745.GT2669@sirena.org.uk>
+References: <1392886403-10640-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="24zk1gE8NUlDmwG9"
+	protocol="application/pgp-signature"; boundary="WVt2Ja9ZTIogLOrS"
 Content-Disposition: inline
-In-Reply-To: <CAK9yfHzM_kyXMrnLC=M0qiLHKWxE41E-MdyGtipKA7AwoLnOqg@mail.gmail.com>
+In-Reply-To: <1392886403-10640-1-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.156.234
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 01/23] regulator: da9063: Remove redundant error message
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---24zk1gE8NUlDmwG9
+--WVt2Ja9ZTIogLOrS
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Feb 20, 2014 at 03:57:07PM +0530, Sachin Kamat wrote:
-> Hi Kevin,
->=20
-> On 20 February 2014 15:42, Kevin Hao <haokexin@gmail.com> wrote:
-> > On Thu, Feb 20, 2014 at 02:09:08PM +0530, Sachin Kamat wrote:
-> >> Hi Grant,
-> >>
-> >> I observe the following boot failure with today's (next-20140220) linu=
-x-next
-> >> tree on Exynos based boards with the default exynos_defconfig.
-> >
-> > Does this help?
->=20
-> The below patch works for me. Thanks for the fix.
+On Thu, Feb 20, 2014 at 02:23:01PM +0530, Sachin Kamat wrote:
+> kzalloc prints its own OOM message upon failure.
 
-Thanks Sachin.
+Applied, thanks.
 
-Hi Grant,
-
-I assume you would fold this change into the original patch. But if you want
-a separate patch, please let me know.
-
-Thanks,
-Kevin
-
---24zk1gE8NUlDmwG9
-Content-Type: application/pgp-signature
+--WVt2Ja9ZTIogLOrS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQEcBAEBAgAGBQJTBd8sAAoJEJNY7TDerrFxtMYIALc7gLsCqgtdAzjMuIHk0T0W
-ILfOk3ZoPiRb6TtopmvbFxaYR+EGJUs4VI5cEhTa9ZidIR/+DlVPN4211PvwwJLm
-73/JUYBnPrGvt3QE5qkge2TynWogH9Isb8p3YFe9/CmDlrxqpvXH4gQq8548Dvt7
-lQL5s3GOk1YLdz6d07SorpQpDWx6+bBCTIG6PMUq2Ysw/i/LSR/dp1+XoQemJ91E
-isqUykgbBKMuPD0rgDk1BxMR8RyJfzG2HweQzE/PGKnxLuxcM5OBpJFpv6Z1naF/
-AprsacDjacyR2HeoZ/BA/3RabQntQLwSQohQhRo7wUYUUbgtjj4P1PxEkn+NBFw=
-=qp1m
+iQIcBAEBAgAGBQJTBd+mAAoJELSic+t+oim9/QAP/ilwrvQqqt1EMjIqjDVL4nZS
+n8MCAriyJAKbwyc7HMNj6EXlo8vr6jobWRQxqm3CrCYYkblM/xX/noSk8zKVE9iM
++4uaKhBVpYlgM2UuJ5PAOSi4Bq3Uytzv/bhb1uEku0R+k/od6kY2edWppTRiNMYL
+oxR+tknZyxqXw/0xPLfqVOIGzgG7OsRVcQ5THKX1z5g48QG682M4h13wTCj03jzN
++UpKy4j2wetvR62qxlV/D6e+67SxXNw0/SNwOWZ28RCIHLK99RDm9rFjsYXDuv57
+kEDFTWtSJu5oBpuniH2ooYImV5SK+99IjjnFYBT+VxXRjjb95XwIUbb1gAx8jzrC
+00TOobBaJMiZpcCdQazTFesk1AGsiohCif+nalI0wX4qlx/yPIMPNKN8E7oh3X3f
+p3u6NNBk09AhxC7ToNC5ajgi1goXLAZeOXMawOFTzJMH2xM4ejLrY/W19DLvwP7I
+L35D2wDrGNlImZlYZrCuRoc7BQ5ybWrpWiqhm7bAQivu17okCY9Z+aMpD126vrtJ
+Sc4a/Ok5UN/4jOZ9qR2qLarQXSsqh27G9o6D0U0aBT1cr11MFrOhH7XlbgJ3sw/l
+gxfrSuLaiqRDq+DZfpmqpwXmD7WEgFRXR0ToDxaNUIIk+PIrl0evQn8C5+3y1nir
+OOvkorAOfftXtgJgFTAH
+=T9Ul
 -----END PGP SIGNATURE-----
 
---24zk1gE8NUlDmwG9--
+--WVt2Ja9ZTIogLOrS--
