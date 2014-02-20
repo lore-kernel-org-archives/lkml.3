@@ -1,73 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaBTNVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:21:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35743 "EHLO mx1.redhat.com"
+	id S1754620AbaBTNXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:23:23 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55882 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754375AbaBTNU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:20:59 -0500
-Date: Thu, 20 Feb 2014 14:22:58 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] ntb: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140220132258.GB8198@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-1-git-send-email-agordeev@redhat.com>
- <20140219180926.GA1333@jonmason-lab>
+	id S1754100AbaBTNXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 08:23:19 -0500
+Message-ID: <53060169.2050207@ti.com>
+Date: Thu, 20 Feb 2014 18:51:45 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140219180926.GA1333@jonmason-lab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nishanth Menon <nm@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Chris Ball <chris@printf.net>,
+        <linux-mmc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH V2 2/2] ARM: dts: omap3-ldp: fix mmc configuration
+References: <1392356749-32091-1-git-send-email-nm@ti.com> <1392356749-32091-3-git-send-email-nm@ti.com>
+In-Reply-To: <1392356749-32091-3-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 11:09:27AM -0700, Jon Mason wrote:
-> On Wed, Feb 19, 2014 at 11:15:21AM +0100, Alexander Gordeev wrote:
-> > @@ -1112,26 +1106,21 @@ static int ntb_setup_msix(struct ntb_device *ndev)
-> >  	for (i = 0; i < msix_entries; i++)
-> >  		ndev->msix_entries[i].entry = i;
-> >  
-> > -	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> > -	if (rc < 0)
-> > -		goto err1;
-> > -	if (rc > 0) {
-> > +	if (ndev->hw_type != BWD_HW)
-> >  		/* On SNB, the link interrupt is always tied to 4th vector.  If
-> >  		 * we can't get all 4, then we can't use MSI-X.
-> >  		 */
-> > -		if (ndev->hw_type != BWD_HW) {
-> > -			rc = -EIO;
-> > -			goto err1;
-> > -		}
-> > -
-> > -		dev_warn(&pdev->dev,
-> > -			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
-> > -			 rc);
-> > +		rc = pci_enable_msix_range(pdev, ndev->msix_entries,
-> > +					   msix_entries, msix_entries);
-> > +	else
-> > +		rc = pci_enable_msix_range(pdev, ndev->msix_entries,
-> > +					   1, msix_entries);
-> 
-> Actually, this must be 2 for the min.  One for the Data and one for
-> the Link.  If you look a few lines after this in the original code,
-> there is a grabbing of the last vector for the link.  I realize there
-> is currently no check for this in the driver and a potential error
-> case occurs.  I can make a separate patch to correct this issue if
-> this patch is not going through my tree.
+On Friday 14 February 2014 11:15 AM, Nishanth Menon wrote:
+> MMC1 is the only MMC interface available on the platform. Further,
+> since the platform is based on older revision of SoC which is not
+> capable of doing multi-block reads, mark it with compatibility for the
+> same and add pinmux to ensure that all relevant pins are configured
+> for non-MMC boot mode.
+>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-I am confused here again. In the original code I see "ntb-callback-msix"
-is requested for all MSI-Xs on BWD_HW and "ntb-event-msix" requested for
-the last vector on SNB_HW. Therefore, the range [1..msix_entries] should
-be fine for BWD_HW, isn't it?
+looks good to me
+Acked-by: Balaji T K <balajitk@ti.com>
 
-> Thanks,
-> Jon
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
