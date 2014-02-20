@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395AbaBUAGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:06:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46195 "EHLO
+	id S1756627AbaBUAGt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:06:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254AbaBTXxs (ORCPT
+	with ESMTP id S932225AbaBTXxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:48 -0500
+	Thu, 20 Feb 2014 18:53:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Po-Hsu Lin <po-hsu.lin@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 61/99] ALSA: hda - Fix mic capture on Sony VAIO Pro 11
-Date: Thu, 20 Feb 2014 15:52:56 -0800
-Message-Id: <20140220235119.979181870@linuxfoundation.org>
+Subject: [PATCH 3.13 60/99] ALSA: hda - Add a headset quirk for Dell XPS 13
+Date: Thu, 20 Feb 2014 15:52:55 -0800
+Message-Id: <20140220235119.951346299@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,14 +30,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit f88abaa0d0dc0d1f1a9ae21f8e822918e5aadfdf upstream.
+commit f47e5dc464251f661da9495fcbf003a0d22c1360 upstream.
 
-The very same fixup is needed to make the mic on Sony VAIO Pro 11
-working as well as VAIO Pro 13 model.
+This quirk is needed for the headset microphone to work.
 
-Reported-and-tested-by: Hendrik-Jan Heins <hjheins@gmail.com>
+Alsa-info at http://www.alsa-project.org/db/?f=8c7dfe857ceff462ca2de133e67023c0f68de9cb
+
+Reported-by: Po-Hsu Lin <po-hsu.lin@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
@@ -45,13 +49,13 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/sound/pci/hda/patch_realtek.c
 +++ b/sound/pci/hda/patch_realtek.c
-@@ -4319,6 +4319,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x1043, 0x8398, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x83ce, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x8516, "ASUS X101CH", ALC269_FIXUP_ASUS_X101),
-+	SND_PCI_QUIRK(0x104d, 0x90b5, "Sony VAIO Pro 11", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x104d, 0x90b6, "Sony VAIO Pro 13", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIXUP_SONY_VAIO_GPIO2),
- 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
+@@ -5093,6 +5093,7 @@ static const struct snd_pci_quirk alc662
+ 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
+ 	SND_PCI_QUIRK(0x1028, 0x05d8, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x060a, "Dell XPS 13", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_AUTO_MUTE),
+ 	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_AUTO_MUTE),
+ 	SND_PCI_QUIRK(0x1028, 0x0625, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
 
 
