@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529AbaBUBGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:06:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45320 "EHLO
+	id S1756830AbaBUBGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:06:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45316 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647AbaBTXuk (ORCPT
+	with ESMTP id S1754639AbaBTXuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:40 -0500
+	Thu, 20 Feb 2014 18:50:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.4 03/25] mac80211: fix fragmentation code, particularly for encryption
-Date: Thu, 20 Feb 2014 15:51:19 -0800
-Message-Id: <20140220234842.580678666@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.4 25/25] genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=n
+Date: Thu, 20 Feb 2014 15:51:41 -0800
+Message-Id: <20140220234843.193266841@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -28,53 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 338f977f4eb441e69bb9a46eaa0ac715c931a67f upstream.
+commit 2c45aada341121438affc4cb8d5b4cfaa2813d3d upstream.
 
-The "new" fragmentation code (since my rewrite almost 5 years ago)
-erroneously sets skb->len rather than using skb_trim() to adjust
-the length of the first fragment after copying out all the others.
-This leaves the skb tail pointer pointing to after where the data
-originally ended, and thus causes the encryption MIC to be written
-at that point, rather than where it belongs: immediately after the
-data.
+In allmodconfig builds for sparc and any other arch which does
+not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
 
-The impact of this is that if software encryption is done, then
- a) encryption doesn't work for the first fragment, the connection
-    becomes unusable as the first fragment will never be properly
-    verified at the receiver, the MIC is practically guaranteed to
-    be wrong
- b) we leak up to 8 bytes of plaintext (!) of the packet out into
-    the air
+  CC [M]  lib/cpu-notifier-error-inject.o
+  CC [M]  lib/pm-notifier-error-inject.o
+ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
+make[2]: *** [__modpost] Error 1
 
-This is only mitigated by the fact that many devices are capable
-of doing encryption in hardware, in which case this can't happen
-as the tail pointer is irrelevant in that case. Additionally,
-fragmentation is not used very frequently and would normally have
-to be configured manually.
+This happens because commit 3911ff30f5 ("genirq: export
+handle_edge_irq() and irq_to_desc()") added one export for it, but
+there were actually two instances of it, in an if/else clause for
+CONFIG_SPARSE_IRQ.  Add the second one.
 
-Fix this by using skb_trim() properly.
-
-Fixes: 2de8e0d999b8 ("mac80211: rewrite fragmentation")
-Reported-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Link: http://lkml.kernel.org/r/1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/tx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/irq/irqdesc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -907,7 +907,7 @@ static int ieee80211_fragment(struct iee
- 	}
- 
- 	/* adjust first fragment's length */
--	skb->len = hdrlen + per_fragm;
-+	skb_trim(skb, hdrlen + per_fragm);
- 	return 0;
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned in
+ {
+ 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
  }
++EXPORT_SYMBOL(irq_to_desc);
  
+ static void free_desc(unsigned int irq)
+ {
 
 
