@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063AbaBTCmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 21:42:53 -0500
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:55743 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaBTCmv (ORCPT
+	id S1753126AbaBTCt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 21:49:29 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57564 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547AbaBTCt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 21:42:51 -0500
+	Wed, 19 Feb 2014 21:49:28 -0500
+Date: Thu, 20 Feb 2014 11:44:32 +0900
+From: Mark Brown <broonie@kernel.org>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140220024432.GU2669@sirena.org.uk>
+References: <1392086825-15737-1-git-send-email-Li.Xiubo@freescale.com>
+ <1392086825-15737-2-git-send-email-Li.Xiubo@freescale.com>
+ <36d9c0a870604fbe87b129e95fea9da1@BY2PR03MB505.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <20140219090415.GK27965@twins.programming.kicks-ass.net>
-References: <1392787230-17986-1-git-send-email-leiwen@marvell.com>
-	<20140219090415.GK27965@twins.programming.kicks-ass.net>
-Date: Thu, 20 Feb 2014 10:42:51 +0800
-Message-ID: <CALZhoSQpbJGSEaoOKO_sQQNFBU9UHYQ4bPCXEFfAz=iUm+D7_g@mail.gmail.com>
-Subject: Re: [PATCH] sched: keep quiescent cpu out of idle balance loop
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lei Wen <leiwen@marvell.com>, mingo@redhat.com, preeti.lkml@gmail.com,
-        daniel.lezcano@linaro.org, viresh.kumar@linaro.org, xjian@marvell.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Lx10O6ETy9X4GV3M"
+Content-Disposition: inline
+In-Reply-To: <36d9c0a870604fbe87b129e95fea9da1@BY2PR03MB505.namprd03.prod.outlook.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.224.205
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] ASoC: fsl: Make Freescale SAI/ESAI/SPDIF to be
+ visible in Kconfig
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 5:04 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Feb 19, 2014 at 01:20:30PM +0800, Lei Wen wrote:
->> Since cpu which is put into quiescent mode, would remove itself
->> from kernel's sched_domain. So we could use search sched_domain
->> method to check whether this cpu don't want to be disturbed as
->> idle load balance would send IPI to it.
->>
->> Signed-off-by: Lei Wen <leiwen@marvell.com>
->> ---
->>  kernel/sched/fair.c | 14 +++++++++++---
->>  1 file changed, 11 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 235cfa7..14230ae 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -6783,6 +6783,8 @@ out_unlock:
->>   * - When one of the busy CPUs notice that there may be an idle rebalancing
->>   *   needed, they will kick the idle load balancer, which then does idle
->>   *   load balancing for all the idle CPUs.
->> + * - exclude those cpus not inside current call_cpu's sched_domain, so that
->> + *   those isolated cpu could be kept in their quisecnt mode.
->>   */
->>  static struct {
->>       cpumask_var_t idle_cpus_mask;
->> @@ -6792,10 +6794,16 @@ static struct {
->>
->>  static inline int find_new_ilb(void)
->>  {
->> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
->> +     int ilb;
->> +     int cpu = smp_processor_id();
->> +     struct sched_domain *tmp;
->>
->> -     if (ilb < nr_cpu_ids && idle_cpu(ilb))
->> -             return ilb;
->> +     for_each_domain(cpu, tmp) {
->> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
->> +                             sched_domain_span(tmp));
->> +             if (ilb < nr_cpu_ids && idle_cpu(ilb))
->> +                     return ilb;
->> +     }
->
-> The ILB code is bad; but you just made it horrible. Don't add pointless
-> for_each_domain() iterations.
->
-> I'm thinking something like:
->
->   ilb = cpumask_first_and(nohz.idle_cpus_mask, this_rq()->rd.span);
->
-> Should work just fine, no?
 
-Yes, it has the same result as my previous patch did.
+--Lx10O6ETy9X4GV3M
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> Better still would be to maybe not participate in the ILB in the first
-> place and leave this selection loop alone.
+On Thu, Feb 20, 2014 at 02:06:20AM +0000, Li.Xiubo@freescale.com wrote:
 
-Not quitely get your point here...
-Do you mean that you want idle cpu selection be put in earlier place
-than current find_new_ilb is?
+> I'm not very sure of this patch, maybe should we add one menu
+> in Kconfig for all visible CPU DAIs firstly like for code drivers?
 
-Thanks,
-Lei
+Allowing them to be individually selected is definitely useful if people
+are trying to minimise their kernel size and/or build time.  However
+none of the other Freescale people have commented on this patch (which
+I'd have expected) so I was giving them time and IIRC it needs a rebase
+against current code.
+
+--Lx10O6ETy9X4GV3M
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBWwMAAoJELSic+t+oim9BkoP/0T7ZZCT4XARSIQ6LQ0fixy6
+vX6kdJF0Jy43oJBLtZNVPQXhAxRUk4cieLG82edCwFRJAp/XowtvhuE+6FCPMhVR
+tIPC75vR4v5TN7tll1fc/PL1T15JP9oThidenjivtXfxg27Q0Kd8hl8LOIDgicyO
+v/3ZyjFr9q2nBUfKl2d+HXmqkFpQPA9MayF17yH72RBpccwxPxEXUegfgX9wKbWn
+adg1iF3Qd6ulHGVx7FQNOnx+5ad+sgbwewpWsO4j0X2RgOd+XB14Lk6bOUfoJe3c
+urmQrfkNZGbWMfKg+CPi4YhSvW3Y/ECqgZn1YE9w/9Y3xWHDgRtfudHHTWDoEvin
+0Xy305c4tiL4CCA1XtLMOXuqErm6g8PgOIYbhqg8ZPjX9q92+seHjI+NlMyHQHF6
+vvigrMzhGVYpD902qRefRbPpibKVemV1GxOHhiStP/TDtU7I+SiZvUgf5fP8Pnmg
+eowtPKtP1GmR5uurvKmoah9yaG/kYFMah+zM1e9VXGT4CqmjRGaIrJ0kBCo7kjBb
+0oDQSq4YsDe3R9RTuU43JMmI+oRZFPa9qKEIF9LwpKgOXkwmpog5RoU0YAwjO849
+96rcj1d4SFatAgKsA5lQlua9g2Q/7GHKpnWkFnRQuVkvHUKIAMpqIcXD0/PNbPKb
+JXyKnbWrPUof1+R9lOxu
+=AKsj
+-----END PGP SIGNATURE-----
+
+--Lx10O6ETy9X4GV3M--
