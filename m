@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaBTJRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:17:42 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:57827 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753832AbaBTJRj (ORCPT
+	id S1751587AbaBTJU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:20:59 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:43399 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaBTJUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:17:39 -0500
-From: Lei Wen <leiwen@marvell.com>
-To: Peter Zijlstra <peterz@infradead.org>, Lei Wen <leiwen@marvell.com>,
-        <mingo@redhat.com>, <preeti.lkml@gmail.com>,
-        <daniel.lezcano@linaro.org>, <viresh.kumar@linaro.org>,
-        <xjian@marvell.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sched: keep quiescent cpu out of idle balance loop
-Date: Thu, 20 Feb 2014 17:17:04 +0800
-Message-ID: <1392887824-20138-1-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20140220085017.GL6835@laptop.programming.kicks-ass.net>
-References: <20140220085017.GL6835@laptop.programming.kicks-ass.net>
+	Thu, 20 Feb 2014 04:20:55 -0500
+Date: Thu, 20 Feb 2014 01:20:49 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140220092049.GA22688@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140218030002.GA15857@linux.vnet.ibm.com>
+ <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+ <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+ <1392740258.18779.7732.camel@triegel.csb>
+ <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+ <1392752867.18779.8120.camel@triegel.csb>
+ <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+ <20140220040102.GM4250@linux.vnet.ibm.com>
+ <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
+ <20140220083032.GN4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-02-20_02:2014-02-18,2014-02-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1402200010
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140220083032.GN4250@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022009-0928-0000-0000-0000069F849B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cpu which is put into quiescent mode, would remove itself
-from kernel's sched_domain, and want others not disturb its
-task running. But current scheduler would not checking whether
-that cpu is setting in such mode, and still insist the quiescent
-cpu to response the nohz load balance.
+On Thu, Feb 20, 2014 at 12:30:32AM -0800, Paul E. McKenney wrote:
+> On Wed, Feb 19, 2014 at 08:43:14PM -0800, Linus Torvalds wrote:
 
-Fix it by preventing such cpu set nohz.idle_cpus_mask in the
-first place.
+[ . . . ]
 
-Signed-off-by: Lei Wen <leiwen@marvell.com>
----
- kernel/sched/fair.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+> So, if you make one of two changes to your example, then I will agree
+> with you.  The first change is to have a real data dependency between
+> the read of "a" and the second read:
+> 
+>  - Initial state:
+> 
+>    a = &c, b = 0; c = 0;
+> 
+>  - Thread 1 ("consumer"):
+> 
+>     if (atomic_read(&a, consume))
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 235cfa7..bc85022 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6883,6 +6883,13 @@ void nohz_balance_enter_idle(int cpu)
- 	if (!cpu_active(cpu))
- 		return;
- 
-+	/*
-+	 * If this cpu is kept outside of root domain, we don't bother
-+	 * to ask it for nohz balance.
-+	 */
-+	if (!cpumask_test_cpu(cpu, this_rq()->rd.span))
-+		return;
-+
- 	if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
- 		return;
- 
--- 
-1.8.3.2
+And the above should be "if (atomic_read(&a, consume) != &c)".  Sigh!!!
+
+							Thanx, Paul
+
+>          return *a;
+>     /* not yet initialized */
+>     return -1;
+> 
+>  - Thread 2 ("initializer"):
+> 
+>      b = some_value_lets_say_42;
+>      /* We are now ready to party */
+>      atomic_write(&a, &b, release);
 
