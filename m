@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568AbaBTRpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:45:13 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:58889 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982AbaBTRpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:45:10 -0500
-Date: Thu, 20 Feb 2014 10:45:03 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] pcie: Add Xilinx PCIe Host Bridge IP driver
-Message-ID: <20140220174503.GB19893@obsidianresearch.com>
-References: <1392564830-5868-1-git-send-email-sthokal@xilinx.com>
- <CAErSpo5FGPhgnp8Gfy-1_Lk7ckCi7U5+z5pLnPU+jScPxD5yUQ@mail.gmail.com>
- <20140219003523.GJ29304@obsidianresearch.com>
- <CA+mB=1KSxkN+mKce5k1n93pmAA_FnWYaqNweWzxd4GD3Mo4PZA@mail.gmail.com>
+	id S1755610AbaBTRpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:45:31 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:38619 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564AbaBTRp2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 12:45:28 -0500
+Date: Thu, 20 Feb 2014 18:45:31 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, gleb@redhat.com
+Subject: [PATCH] kvm/pmu: fix mapping of unhalted_reference_cycles event
+Message-ID: <20140220174531.GA8811@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+mB=1KSxkN+mKce5k1n93pmAA_FnWYaqNweWzxd4GD3Mo4PZA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 12:39:48PM +0530, Srikanth Thokala wrote:
 
-> > These should use the standard ranges mechanism for translations and
-> > apertures.
-> 
-> This AXI PCIe bridge IP do have two kind of BARs AXI-to-PCIe BAR and
-> PCIe-to-AXI BAR.  The former specifies the AXI Base address and are the
-> memory windows, these are listed in the 'ranges' DT property.  The latter
-> BAR specifies the addresses that PCI Express should respond to/is
+The pseudo encoding for unhalted_reference_cycles
+is 0x0300. The KVM table was mapping it to 0x3000
+This patch fixes this.
 
-The PCIe-to-AXI window should be setup by the driver automatically to
-span all system memory, it doesn't need to be in DT.
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
-The AXI-to-PCIe is the host bridge aperture and it should be in the DT
-ranges.
-
-> tallowed to write to and these addresses written to configuration space
-> during the initialization.
-
-Hopefully this was done in a conformant way, please provide a lspci
--vv next round please..
-
-> > Also, IMHO, only root ports should be supported in a host bridge
-> > driver. A PCI end point is something entirely different.
-> 
-> We are not supporting end point in this driver.  This is a soft IP
-> and can be configurable as a Root Port/End point while creating a HW
-> design in the FPGA.  So, the driver use this DT property to first
-> check if it is configured for Root Port and bail out if it is not.
-
-This is something that should be handled via the compatible string, not
-special properties. Root port and End port will have different
-drivers, so they must have different compatible strings.
-
-There is nothing wrong with dumping core generator configuration
-properties into the DT (as a form of documentation), but you must
-still use the standard techniques and properties whenever possible.
-
-Jason
+diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
+index 5c4f631..db79c00 100644
+--- a/arch/x86/kvm/pmu.c
++++ b/arch/x86/kvm/pmu.c
+@@ -33,7 +33,7 @@ static struct kvm_arch_event_perf_mapping {
+ 	[4] = { 0x2e, 0x41, PERF_COUNT_HW_CACHE_MISSES },
+ 	[5] = { 0xc4, 0x00, PERF_COUNT_HW_BRANCH_INSTRUCTIONS },
+ 	[6] = { 0xc5, 0x00, PERF_COUNT_HW_BRANCH_MISSES },
+-	[7] = { 0x00, 0x30, PERF_COUNT_HW_REF_CPU_CYCLES },
++	[7] = { 0x00, 0x03, PERF_COUNT_HW_REF_CPU_CYCLES },
+ };
+ 
+ /* mapping between fixed pmc index and arch_events array */
