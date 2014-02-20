@@ -1,169 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbaBTEiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 23:38:13 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50188 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722AbaBTEiK (ORCPT
+	id S1753551AbaBTEnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 23:43:18 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:42268 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294AbaBTEnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 23:38:10 -0500
-Message-ID: <1392871079.5481.4.camel@marge.simpson.net>
-Subject: Re: [PATCH] softirq: stable v3.1[23] (others?) have screaming
- tasklet disease - ksoftirqd[random] eats 100% CPU
-From: Mike Galbraith <bitbucket@online.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org
-Date: Thu, 20 Feb 2014 05:37:59 +0100
-In-Reply-To: <alpine.DEB.2.02.1402192119480.4468@ionos.tec.linutronix.de>
-References: <1392833773.5423.142.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1402192119480.4468@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:9wirh58Jlhm/sam774kd+q24zGiSn6UvoodQ/Op6Iyf
- DIIDtBXyTG7LwkhAEwC6Pnv11nQn3Ai0GSX6NGhuY1CwbR72Cn
- TI+ILKFG1prpOIe+FasTcL1O694yP83CnoYyLZXU6xwVK/MQ/m
- zuHCZFRRh19TNJAOi1MIvcwJThphlW4DV5qr79Vy3JwCM9dDm7
- QPlJaujXP0o0j4gC1eT20MsaSgFL2UM+QX8JJLh0meR62peU39
- vjfWFS8ZMxGtvbmVzEy9OZ4PGVNutwT/vXH3GOq0y2p6uxfOIE
- s8ndjNpYoJvItie9PR0iB3yFF4+e/e1Hb2zquCOLE7e3QzBIf5
- vUMn/Coo/8KEK+liTsfXlGGdf8RQezzVOZJ+lzalC7ApMo0O8+
- hEPZj+NY/6PKA==
+	Wed, 19 Feb 2014 23:43:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140220040102.GM4250@linux.vnet.ibm.com>
+References: <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	<1392666947.18779.6838.camel@triegel.csb>
+	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	<20140218030002.GA15857@linux.vnet.ibm.com>
+	<CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	<1392740258.18779.7732.camel@triegel.csb>
+	<CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+	<1392752867.18779.8120.camel@triegel.csb>
+	<CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+	<20140220040102.GM4250@linux.vnet.ibm.com>
+Date: Wed, 19 Feb 2014 20:43:14 -0800
+X-Google-Sender-Auth: xLSHglHCUPy9gVGcHngARpKjtqY
+Message-ID: <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-20 at 01:00 +0100, Thomas Gleixner wrote: 
-> On Wed, 19 Feb 2014, Mike Galbraith wrote:
-> > I'm seeing ksoftirqd chewing 100% CPU on one or more CPUs in both 3.12
-> > and 3.13, as below in a 40 core (+smt) box.  It should look very
-> > familiar to CCs, especially Ingo.
-> > 
-> > Below, tasklet is disabled by ioat2_free_chan_resources, and what I
-> > presume was systemd-udevd-1050 starts screaming when it meets same,
-> > until debug patchlet turns tracing off.  Once the box was up such that I
-> > could login, 1050 was long gone, and ksoftirqd had taken over.
-> > 
-> >    systemd-udevd-976   [016] ....    27.467534: ioat_init_channel: tasklet_disable_nosync ffff880465b8bee8
-> >    systemd-udevd-976   [016] ....    27.467649: ioat2_alloc_chan_resources: tasklet_enable ffff880465b8bee8
-> >           <idle>-0     [072] ..s.    27.467659: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
-> >           <idle>-0     [072] .Ns.    27.467667: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
-> >           <idle>-0     [072] .Ns.    27.467673: tasklet_action: LOOP processed ffff880465b8bee8
-> >    systemd-udevd-976   [016] ....    27.467679: ioat2_free_chan_resources: tasklet_disable_nosync ffff880465b8bee8
-> >    systemd-udevd-1034  [000] .Ns.    27.467917: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
-> >    systemd-udevd-1034  [000] .Ns.    27.467918: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
-> >            <...>-1050  [000] ..s.    27.468203: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
-> >            <...>-1050  [000] ..s.    27.468204: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
-> >            <...>-1050  [000] ..s.    27.468204: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
-> >            <...>-1050  [000] ..s.    27.468205: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
-> > ... much no processing, see tasklet disabled, raise softirq - wash rinse repeat
-> >            <...>-1050  [000] ..s.    27.469561: tasklet_action: ENTER struct tasklet_struct *list: ffff880465b8bee8
-> >            <...>-1050  [000] ..s.    27.469562: tasklet_action: LOOP struct tasklet_struct *t = list: ffff880465b8bee8
-> >            <...>-1050  [000] ..s.    27.469563: tasklet_action: LOOP tasklet disabled ffff880465b8bee8 - It's dead Jim
-> > 
-> > Hm, he says, now where have I seen text describing that trace?  Right,
-> > RT, and the below fixes screaming NOPREEMPT kernels.
-> > 
-> > Taken from 3.12-rt, and applied to screaming 3.12.11-virgin
-> 
-> Indeed. That's a very similar issue just for different reasons. The RT
-> case is special as the mainline usage side of tasklets do not expect
-> the preemption scenario.
-> 
-> But this one is clearly a driver issue.
+On Wed, Feb 19, 2014 at 8:01 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> The control dependency should order subsequent stores, at least assuming
+> that "a" and "b" don't start off with identical stores that the compiler
+> could pull out of the "if" and merge.  The same might also be true for ?:
+> for all I know.  (But see below)
 
-rapidio::tsi721_free_chan_resources() appears to do the same.  Joy.
+Stores I don't worry about so much because
 
-> The window where you can bring a machine into that state is infinite
-> large. Lets look at the tasklet_schedule --> softirq sequence:
-> 
-> tasklet_schedule(t)
->   set_bit(TASKLET_STATE_SCHED, &t->state);
->   queue_tasklet_on_cpu_list(t);
->   raise_softirq();
-> 
-> softirq()
->   splice_tasklet_cpu_list(cpu_list, list);
->   while (list) {
->     t = list;
->     list = t->next;
->     /* Sets the TASKLET_STATE_RUN bit ! */
->     if (tasklet_trylock(t) {
->       if (!atomic_read(&t->count)) {               <----- 
-> 	clear_bit(TASKLET_STATE_SCHED, &t->state);
-> 	t->func();
-> 	/* Clear the TASKLET_STATE_RUN bit */
-> 	tasklet_unlock();
-> 	continue;
->       }
->     tasklet_unlock();
->     queue_tasklet_on_cpu_list(t);
->     raise_softirq();
->   }  
-> 
-> So up to the atomic_read in the softirq all calls to tasklet_disable()
-> even if issued eons before that point are going to put the softirq
-> into an infinite loop when the tasklet is scheduled.
-> 
-> Even if we would put a check for the disabled state into
-> tasklet_schedule there would be still the window between the schedule
-> and the actual softirq handling. And we even can't add that check
-> because that would break "sane" use sites of tasklet_disable.
-> 
-> tasklet_disable/enable is only meant for temporary, i.e. over a very
-> short code sequence, preventing the execution of the tasklet.
-> 
-> The usage of tasklet_disable() in teardown scenarios is completely
-> broken. The only way to do that is to have a proper serialization of
-> the teardown versus the interrupt which schedules the tasklet:
-> 
->     	/*
-> 	 * First step.
-> 	 */
->     	disable_interrupt_at_device_or_irq_line_level();
-> 
-> 	/*
-> 	 * This makes sure that even a spurious interrupt which
-> 	 * arrives _AFTER_ the synchronize_irq() cannot schedule
-> 	 * the tasklet anymore.
-> 	 */
-> 	tell_interrupt_to_not_schedule_tasklet();
-> 
-> 	/* Make sure that no interrupt is on the fly */
-> 	synchronize_irq();
-> 
-> 	/* 
-> 	 * Kill the tasklet, which also waits for an already
-> 	 * scheduled one to complete.
-> 	 */
-> 	tasklet_kill();
-> 
-> I tried to find something like that in the ioat code but I failed
-> miserably.
-> 
-> Instead of that it uses tasklet_disable/enable for the setup/teardown
-> which is completely buggered and obviously written by people who have
-> no clue about the tasklet semantics at all.
-> 
-> What's worse is that at the point where this code was written it was
-> already well known that tasklets are a steaming pile of crap and
-> should die.
-> 
-> I know why and how the RT patch works around that issue, but do we
-> really want to make it simpler to (ab)use and introduce new users of
-> tasklets instead of getting rid of them? Definitely NOT!
-> 
-> Seriously, people who still use tasklets without being aware of their
-> subtle issues and without an extremly good reason to use them at all
-> should use a wire cutter or some other appropriate tool to render
-> their keyboard unusable and get a job in a bakery where they can eat
-> the mess they produce themself.
-> 
-> Thanks,
-> 
-> 	tglx
+ (a) you can't sanely move stores up in a compiler anyway
+ (b) no sane CPU or moves stores up, since they aren't on the critical path
 
+so a read->cmp->store is actually really hard to make anything sane
+re-order. I'm sure it can be done, and I'm sure it's stupid as hell.
 
+But that "it's hard to screw up" is *not* true for a load->cmp->load.
+
+So lets make this really simple: if you have a consume->cmp->read, is
+the ordering of the two reads guaranteed?
+
+> As long as there is an unbroken chain of -data- dependencies from the
+> consume to the later access in question, and as long as that chain
+> doesn't go through the excluded operations, yes.
+
+So let's make it *really* specific, and make it real code doing a real
+operation, that is actually realistic and reasonable in a threaded
+environment, and may even be in some critical code.
+
+The issue is the read-side ordering guarantee for 'a' and 'b', for this case:
+
+ - Initial state:
+
+   a = b = 0;
+
+ - Thread 1 ("consumer"):
+
+    if (atomic_read(&a, consume))
+         return b;
+    /* not yet initialized */
+    return -1;
+
+ - Thread 2 ("initializer"):
+
+     b = some_value_lets_say_42;
+     /* We are now ready to party */
+     atomic_write(&a, 1, release);
+
+and quite frankly, if there is no ordering guarantee between the read
+of "a" and the read of "b" in the consumer thread, then the C atomics
+standard is broken.
+
+Put another way: I claim that if "thread 1" ever sees a return value
+other than -1 or 42, then the whole definition of atomics is broken.
+
+Question 2: and what changes if the atomic_read() is turned into an
+acquire, and why? Does it start working?
+
+> Neither has a data-dependency guarantee, because there is no data
+> dependency from the load to either "a" or "b".  After all, the value
+> loaded got absorbed into the "if" condition.  However, according to
+> discussions earlier in this thread, the "if" variant would have a
+> control-dependency ordering guarantee for any stores in "a" and "b"
+> (but not loads!).
+
+So exactly what part of the standard allows the loads to be
+re-ordered, and why? Quite frankly, I'd think that any sane person
+will agree that the above code snippet is realistic, and that my
+requirement that thread 1 sees either -1 or 42 is valid.
+
+And if the C standards body has said that control dependencies break
+the read ordering, then I really think that the C standards committee
+has screwed up.
+
+If the consumer of an atomic load isn't a pointer chasing operation,
+then the consume should be defined to be the same as acquire. None of
+this "conditionals break consumers". No, conditionals on the
+dependency path should turn consumers into acquire, because otherwise
+the "consume" load is dangerous as hell.
+
+And if the definition of acquire doesn't include the control
+dependency either, then the C atomic memory model is just completely
+and utterly broken, since the above *trivial* and clearly useful
+example is broken.
+
+I really think the above example is pretty damn black-and-white.
+Either it works, or the standard isn't worth wiping your ass with.
+
+          Linus
