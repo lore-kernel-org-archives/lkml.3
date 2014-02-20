@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647AbaBTXwZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45770 "EHLO
+	id S1756525AbaBUAdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:33:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45788 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609AbaBTXwU (ORCPT
+	with ESMTP id S1755641AbaBTXwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:20 -0500
+	Thu, 20 Feb 2014 18:52:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.12 44/82] x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
-Date: Thu, 20 Feb 2014 15:52:27 -0800
-Message-Id: <20140220235020.791681232@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.12 48/82] mei: dont unset read cb ptr on reset
+Date: Thu, 20 Feb 2014 15:52:31 -0800
+Message-Id: <20140220235020.921604412@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,61 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit 4640c7ee9b8953237d05a61ea3ea93981d1bc961 upstream.
+commit 5cb906c7035f03a3a44fecece9d3ff8fcc75d6e0 upstream.
 
-If CONFIG_X86_SMAP is disabled, smap_violation() tests for conditions
-which are incorrect (as the AC flag doesn't matter), causing spurious
-faults.
+Don't set read callback to NULL during reset as
+this leads to memory leak of both cb and its buffer.
+The memory is correctly freed during mei_release.
 
-The dynamic disabling of SMAP (nosmap on the command line) is fine
-because it disables X86_FEATURE_SMAP, therefore causing the
-static_cpu_has() to return false.
+The memory leak is detectable by kmemleak if
+application has open read call while system is going through
+suspend/resume.
 
-Found by Fengguang Wu's test system.
+unreferenced object 0xecead780 (size 64):
+  comm "AsyncTask #1", pid 1018, jiffies 4294949621 (age 152.440s)
+  hex dump (first 32 bytes):
+    00 01 10 00 00 02 20 00 00 bf 30 f1 00 00 00 00  ...... ...0.....
+    00 00 00 00 00 00 00 00 36 01 00 00 00 70 da e2  ........6....p..
+  backtrace:
+    [<c1a60aec>] kmemleak_alloc+0x3c/0xa0
+    [<c131ed56>] kmem_cache_alloc_trace+0xc6/0x190
+    [<c16243c9>] mei_io_cb_init+0x29/0x50
+    [<c1625722>] mei_cl_read_start+0x102/0x360
+    [<c16268f3>] mei_read+0x103/0x4e0
+    [<c1324b09>] vfs_read+0x89/0x160
+    [<c1324d5f>] SyS_read+0x4f/0x80
+    [<c1a7b318>] syscall_call+0x7/0xb
+    [<ffffffff>] 0xffffffff
+unreferenced object 0xe2da7000 (size 512):
+  comm "AsyncTask #1", pid 1018, jiffies 4294949621 (age 152.440s)
+  hex dump (first 32 bytes):
+    00 6c da e2 7c 00 00 00 00 00 00 00 c0 eb 0c 59  .l..|..........Y
+    1b 00 00 00 01 00 00 00 02 10 00 00 01 00 00 00  ................
+  backtrace:
+    [<c1a60aec>] kmemleak_alloc+0x3c/0xa0
+    [<c131f127>] __kmalloc+0xe7/0x1d0
+    [<c162447e>] mei_io_cb_alloc_resp_buf+0x2e/0x60
+    [<c162574c>] mei_cl_read_start+0x12c/0x360
+    [<c16268f3>] mei_read+0x103/0x4e0
+    [<c1324b09>] vfs_read+0x89/0x160
+    [<c1324d5f>] SyS_read+0x4f/0x80
+    [<c1a7b318>] syscall_call+0x7/0xb
+    [<ffffffff>] 0xffffffff
 
-[ v3: move all predicates into smap_violation() ]
-[ v2: use IS_ENABLED() instead of #ifdef ]
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/fault.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/misc/mei/client.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -980,6 +980,12 @@ static int fault_in_kernel_space(unsigne
- 
- static inline bool smap_violation(int error_code, struct pt_regs *regs)
- {
-+	if (!IS_ENABLED(CONFIG_X86_SMAP))
-+		return false;
-+
-+	if (!static_cpu_has(X86_FEATURE_SMAP))
-+		return false;
-+
- 	if (error_code & PF_USER)
- 		return false;
- 
-@@ -1081,11 +1087,9 @@ __do_page_fault(struct pt_regs *regs, un
- 	if (unlikely(error_code & PF_RSVD))
- 		pgtable_bad(regs, error_code, address);
- 
--	if (static_cpu_has(X86_FEATURE_SMAP)) {
--		if (unlikely(smap_violation(error_code, regs))) {
--			bad_area_nosemaphore(regs, error_code, address);
--			return;
--		}
-+	if (unlikely(smap_violation(error_code, regs))) {
-+		bad_area_nosemaphore(regs, error_code, address);
-+		return;
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -882,7 +882,6 @@ void mei_cl_all_disconnect(struct mei_de
+ 	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
+ 		cl->state = MEI_FILE_DISCONNECTED;
+ 		cl->mei_flow_ctrl_creds = 0;
+-		cl->read_cb = NULL;
+ 		cl->timer_count = 0;
  	}
- 
- 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+ }
 
 
