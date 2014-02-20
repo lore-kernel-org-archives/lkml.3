@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaBTK2j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 05:28:39 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47148 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242AbaBTK2g (ORCPT
+	id S1753242AbaBTKau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 05:30:50 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58113 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550AbaBTKas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 05:28:36 -0500
-Date: Thu, 20 Feb 2014 19:28:20 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
-        lgirdwood@gmail.com, lars@metafoo.de, peter.ujfalusi@ti.com,
-        jarkko.nikula@bitmer.com, eric.y.miao@gmail.com,
-        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux@arm.linux.org.uk
-Message-ID: <20140220102820.GO2669@sirena.org.uk>
-References: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1392736948-26623-14-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Thu, 20 Feb 2014 05:30:48 -0500
+Date: Thu, 20 Feb 2014 11:30:46 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dan Williams <dan.j.williams@intel.com>
+cc: dmaengine@vger.kernel.org, Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Mike Galbraith <bitbucket@online.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, stable@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] ioat: fix tasklet tear down
+In-Reply-To: <20140220071145.21609.89019.stgit@viggo.jf.intel.com>
+Message-ID: <alpine.DEB.2.02.1402201102290.4468@ionos.tec.linutronix.de>
+References: <20140220071145.21609.89019.stgit@viggo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OT7cAIs3hzHuHOVt"
-Content-Disposition: inline
-In-Reply-To: <1392736948-26623-14-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.156.234
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 13/17 v2] ASoC: omap: rx51: Update locking around use of
- DAPM pin API
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+B1;3202;0cOn Wed, 19 Feb 2014, Dan Williams wrote:
 
---OT7cAIs3hzHuHOVt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Since commit 77873803363c "net_dma: mark broken" we no longer pin dma
+> engines active for the network-receive-offload use case.  As a result
+> the ->free_chan_resources() that occurs after the driver self-test no
+> longer has a NET_DMA induced ->alloc_chan_resources() to back it up.  A
+> late firing irq can lead to ksoftirqd spinning indefinitely due to the
+> tasklet_disable() performed by ->free_chan_resources().  Only
+> ->alloc_chan_resources() can clear this condition in affected kernels.
+> 
+> This problem has been present since commit 3e037454bcfa "I/OAT: Add
+> support for MSI and MSI-X" in 2.6.24, but is now exposed. Given the
+> NET_DMA use case is deprecated we can revisit moving the driver to use
+> threaded irqs.  For now, just tear down the irq and tasklet properly by:
 
-On Tue, Feb 18, 2014 at 03:22:24PM +0000, Charles Keepax wrote:
-> The pin updates in this driver look like they are intended to be done
-> atomically, update to do so.
+Right, moving to threaded irqs would get rid of the whole tasklet
+mess.
+ 
+> 1/ Disable the irq from triggering the tasklet
+> 
+> 2/ Disable the irq from re-arming
+> 
+> 3/ Flush inflight interrupts
+> 
+> 4/ Flush the timer
+> 
+> 5/ Flush inflight tasklets
+> 
+> References:
+> https://lkml.org/lkml/2014/1/27/282
+> https://lkml.org/lkml/2014/2/19/672
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: <stable@vger.kernel.org>
+> Reported-by: Mike Galbraith <bitbucket@online.de>
+> Reported-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 
-Applied, thanks.
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 
---OT7cAIs3hzHuHOVt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+As Mike pointed out tsi721_free_chan_resources() has the same issue.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+I did a quick scan of all tasklet_disable() sites. The teardown or
+similar wreckage is available in:
 
-iQIcBAEBAgAGBQJTBdjAAAoJELSic+t+oim9oekP/jKolAtuK0sXBlDdmImpNfFX
-6iKrDOxrGz5q8QPJclelAauQJx5y2MNm4zMYKo9VaLbY+zZUdvaHW10WDZqRGzrc
-BO9I4BwTjr/f2YV3oN9mEfmY5fBpDT/ntP1Yf5hNoT0OsuKewvtHHNGQkiYvtNUX
-6RftYpNQiStuAqFGllsUaymgouEtAsNnqMDUNyaCbieVPNj0ah2aSNL208bdwrlC
-XWmgq6eJbwnkiol46+KfItuqUJ8GaCm6QHlBlyJMty62bfa2DMY8HdkOuESvk7ZE
-LL+COBXXtlNwKJCYI85qqCOqVFoeDszKP6nZvQz/iF2GhMD17hZJQwkBYrYLater
-qghg9pzb9cCqHX5Mg1ERH5jjDOuRu9VNXvlEcCk8GM/JEGPttT8hjSOIT9J9Wbki
-97B8OnX40HiBTr8yWRt+39ZKstJik8VYiCkxwJQyybnmhigA60pu90DzuGyXPGpV
-o1vPyZaPlJxXE/FC0Hg+F+ABi0NxCKOIJIFmtN2oJgIVCPdCwel5SIh89UOo2ghA
-cj/FxMpINZV4MW977Vsbe8FIOyhR3OR9NKqnuTAEAh2w4xLj0ljpc79Uz67guyFj
-IlqGgUs6feDnQS6+sVD5MXnZzd0DArrpaPV+Q/yRoV6/XBGFIZaFBuKHL74RJWip
-ckE9MIJ2EV8/tQcMrCpv
-=en9I
------END PGP SIGNATURE-----
+drivers/atm/he.c
+drivers/dma/at_hdmac.c
+drivers/dma/pch_dma.c
+drivers/input/keyboard/omap-keypad.c
+drivers/isdn/gigaset/interface.c
+drivers/media/pci/mantis/mantis_dvb.c
+drivers/mmc/host/s3cmci.c
+drivers/net/ethernet/jme.c
+drivers/net/ethernet/silan/sc92031.c
+drivers/net/usb/r8152.c
+drivers/net/wireless/mwl8k.c
+drivers/ntb/ntb_hw.c
+drivers/rapidio/devices/tsi721_dma.c
+drivers/s390/crypto/ap_bus.c
+drivers/spi/spi-pl022.c
+drivers/staging/cxt1e1/linux.c
+drivers/staging/ozwpan/ozhcd.c
+drivers/usb/gadget/fsl_qe_udc.c
 
---OT7cAIs3hzHuHOVt--
+That's 18 of 30 usage sites. Impressive....
+
+We need to poke the relevant maintainers to get this solved.
+
+Thanks,
+
+	tglx
