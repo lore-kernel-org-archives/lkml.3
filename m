@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaBTRny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:43:54 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:62896 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752111AbaBTRnx (ORCPT
+	id S1755280AbaBTRoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:44:15 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:64597 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938AbaBTRoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:43:53 -0500
-Date: Thu, 20 Feb 2014 12:43:51 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: x86_pmu_start WARN_ON.
-Message-ID: <20140220124351.7f920c08@gandalf.local.home>
-In-Reply-To: <20140220170018.GJ9987@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
-	<20140217152859.GF15586@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
-	<20140219101949.GG15586@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
-	<20140220100830.GN6835@laptop.programming.kicks-ass.net>
-	<20140220112600.2f44874d@gandalf.local.home>
-	<20140220170018.GJ9987@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 20 Feb 2014 12:44:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <53063D4A.9010601@hp.com>
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
+	<53029167.4060109@zytor.com>
+	<20140218073111.GW27965@twins.programming.kicks-ass.net>
+	<5303B4C4.2040907@hp.com>
+	<20140218212827.GR14089@laptop.programming.kicks-ass.net>
+	<5303FDEC.9060001@hp.com>
+	<20140219085107.GG27965@twins.programming.kicks-ass.net>
+	<53050501.3070101@hp.com>
+	<20140219194832.GY14089@laptop.programming.kicks-ass.net>
+	<53063D4A.9010601@hp.com>
+Date: Thu, 20 Feb 2014 09:44:11 -0800
+X-Google-Sender-Auth: tU93yse3zblB89kqfKO_YeOt-Z0
+Message-ID: <CA+55aFwZ_-m46qZT586Rae3yESLCVZm6yM8WxMs2kZyCvpM5YA@mail.gmail.com>
+Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014 18:00:18 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Thu, Feb 20, 2014 at 9:37 AM, Waiman Long <waiman.long@hp.com> wrote:
+>
+> Yes, that is true for paravirt, but I was talking about virtualization in
+> general.
 
-> On Thu, Feb 20, 2014 at 11:26:00AM -0500, Steven Rostedt wrote:
-> > On Thu, 20 Feb 2014 11:08:30 +0100
-> > Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > @rostedt: WTF is disable_trace_on_warning a boot option only?
-> > 
-> > Laziness.
-> > 
-> > 
-> > I'll add a sysctl for it in 3.15.
-> 
-> /debug/tracing/options/ was where I was looking first.
-> 
-> Its a bit weird to have half the options in options/ and the other half
-> as sysctl in /proc/sys/kernel/
+For non-paravirtualized environments, we should basically optimize for
+the actual hardware, and assume that the full virtualization is good
+enough that we don't care.
 
-Yeah, that is somewhat strange.  The /proc/sys/kernel/ ftrace options
-is somewhat historical. Things that were more about how ftrace works
-outside of the tracing word exists there. For example,
-ftrace_dump_on_oops is there, because it is about modifying the way the
-kernel works on crash and not how ftrace works.
+Obviously, sometimes we might take "this is particularly expensive to
+virtualize" into account, and if it doesn't hurt hardware, try to help
+the virtual environment along. So you might have cases where certain
+hardware (typically interrupt controllers etc) should be accessed
+certain particular ways, because those not only work on real hardware,
+but behave well in virtualized environments too.
 
-This is something similar, it's about how the kernel works, not how
-ftrace works. I try to have the debugfs options be ways to modify how
-ftrace works, like formatting, what it prints, etc. But things that
-modify the way the kernel work, I like to keep in /proc/sys/kernel.
-That is, ftrace_dump_on_oops is what happens on kernel crash,
-stack_tracer_enabled is something on the boarder. That is, it should
-probably have been in the tracing facility, as it is similar to
-something like the irqsoff tracer. But as it wasn't to be a tracer in
-itself, it was added to proc.
+But for spinlocks, just make the raw hardware work well when not
+*actively* paravirtualized. If some hypervisor deals badly with it,
+it's a hypervisor or management problem.
 
-The ftrace_enabled, is a big on off switch to enable or disable ALL
-function tracing. Even for perf and friends. I added a trace option
-"function-trace" that will just disable function tracing for ftrace and
-not affect other users of function tracing.
-
-As a disable_trace_on_warning is more of a modification to the kernel,
-I'm leaning to adding a /proc/sys/kernel/ftrace_disable_on_warning
-file. This keeps it in line with ftrace_dump_on_oops, which is the most
-similar feature.
-
--- Steve
-
-
+            Linus
