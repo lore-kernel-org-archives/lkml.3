@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798AbaBUAPH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:15:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46050 "EHLO
+	id S1756802AbaBUAPh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:15:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46045 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755948AbaBTXxU (ORCPT
+	with ESMTP id S1755941AbaBTXxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:20 -0500
+	Thu, 20 Feb 2014 18:53:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
-        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>
-Subject: [PATCH 3.13 28/99] of: fix PCI bus match for PCIe slots
-Date: Thu, 20 Feb 2014 15:52:23 -0800
-Message-Id: <20140220235119.036762417@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 27/99] powerpc: Fix endian issues in kexec and crash dump code
+Date: Thu, 20 Feb 2014 15:52:22 -0800
+Message-Id: <20140220235119.009019059@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,45 +29,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 14e2abb732e485ee57d9d5b2cb8884652238e5c1 upstream.
+commit ea961a828fe7250e954f086d74d9323c3d44c3e4 upstream.
 
-On IBM pseries systems the device_type device-tree property of a PCIe
-bridge contains the string "pciex". The of_bus_pci_match() function was
-looking only for "pci" on this property, so in such cases the bus
-matching code was falling back to the default bus, causing problems on
-functions that should be using "assigned-addresses" for region address
-translation. This patch fixes the problem by also looking for "pciex" on
-the PCI bus match function.
+We expose a number of OF properties in the kexec and crash dump code
+and these need to be big endian.
 
-v2: added comment
-
-Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Rob Herring <robh@kernel.org>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/address.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/machine_kexec.c    |   14 ++++++++++----
+ arch/powerpc/kernel/machine_kexec_64.c |    6 ++++--
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -99,11 +99,12 @@ static unsigned int of_bus_default_get_f
- static int of_bus_pci_match(struct device_node *np)
+--- a/arch/powerpc/kernel/machine_kexec.c
++++ b/arch/powerpc/kernel/machine_kexec.c
+@@ -196,7 +196,9 @@ int overlaps_crashkernel(unsigned long s
+ 
+ /* Values we need to export to the second kernel via the device tree. */
+ static phys_addr_t kernel_end;
++static phys_addr_t crashk_base;
+ static phys_addr_t crashk_size;
++static unsigned long long mem_limit;
+ 
+ static struct property kernel_end_prop = {
+ 	.name = "linux,kernel-end",
+@@ -207,7 +209,7 @@ static struct property kernel_end_prop =
+ static struct property crashk_base_prop = {
+ 	.name = "linux,crashkernel-base",
+ 	.length = sizeof(phys_addr_t),
+-	.value = &crashk_res.start,
++	.value = &crashk_base
+ };
+ 
+ static struct property crashk_size_prop = {
+@@ -219,9 +221,11 @@ static struct property crashk_size_prop
+ static struct property memory_limit_prop = {
+ 	.name = "linux,memory-limit",
+ 	.length = sizeof(unsigned long long),
+-	.value = &memory_limit,
++	.value = &mem_limit,
+ };
+ 
++#define cpu_to_be_ulong	__PASTE(cpu_to_be, BITS_PER_LONG)
++
+ static void __init export_crashk_values(struct device_node *node)
  {
- 	/*
-+ 	 * "pciex" is PCI Express
- 	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
- 	 * "ht" is hypertransport
+ 	struct property *prop;
+@@ -237,8 +241,9 @@ static void __init export_crashk_values(
+ 		of_remove_property(node, prop);
+ 
+ 	if (crashk_res.start != 0) {
++		crashk_base = cpu_to_be_ulong(crashk_res.start),
+ 		of_add_property(node, &crashk_base_prop);
+-		crashk_size = resource_size(&crashk_res);
++		crashk_size = cpu_to_be_ulong(resource_size(&crashk_res));
+ 		of_add_property(node, &crashk_size_prop);
+ 	}
+ 
+@@ -246,6 +251,7 @@ static void __init export_crashk_values(
+ 	 * memory_limit is required by the kexec-tools to limit the
+ 	 * crash regions to the actual memory used.
  	 */
--	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
--		!strcmp(np->type, "ht");
-+	return !strcmp(np->type, "pci") || !strcmp(np->type, "pciex") ||
-+		!strcmp(np->type, "vci") || !strcmp(np->type, "ht");
++	mem_limit = cpu_to_be_ulong(memory_limit);
+ 	of_update_property(node, &memory_limit_prop);
  }
  
- static void of_bus_pci_count_cells(struct device_node *np,
+@@ -264,7 +270,7 @@ static int __init kexec_setup(void)
+ 		of_remove_property(node, prop);
+ 
+ 	/* information needed by userspace when using default_machine_kexec */
+-	kernel_end = __pa(_end);
++	kernel_end = cpu_to_be_ulong(__pa(_end));
+ 	of_add_property(node, &kernel_end_prop);
+ 
+ 	export_crashk_values(node);
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -369,6 +369,7 @@ void default_machine_kexec(struct kimage
+ 
+ /* Values we need to export to the second kernel via the device tree. */
+ static unsigned long htab_base;
++static unsigned long htab_size;
+ 
+ static struct property htab_base_prop = {
+ 	.name = "linux,htab-base",
+@@ -379,7 +380,7 @@ static struct property htab_base_prop =
+ static struct property htab_size_prop = {
+ 	.name = "linux,htab-size",
+ 	.length = sizeof(unsigned long),
+-	.value = &htab_size_bytes,
++	.value = &htab_size,
+ };
+ 
+ static int __init export_htab_values(void)
+@@ -403,8 +404,9 @@ static int __init export_htab_values(voi
+ 	if (prop)
+ 		of_remove_property(node, prop);
+ 
+-	htab_base = __pa(htab_address);
++	htab_base = cpu_to_be64(__pa(htab_address));
+ 	of_add_property(node, &htab_base_prop);
++	htab_size = cpu_to_be64(htab_size_bytes);
+ 	of_add_property(node, &htab_size_prop);
+ 
+ 	of_node_put(node);
 
 
