@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592AbaBTLws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 06:52:48 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47292 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487AbaBTLwr (ORCPT
+	id S1753981AbaBTLx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 06:53:59 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:42342 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585AbaBTLx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 06:52:47 -0500
-Date: Thu, 20 Feb 2014 20:52:33 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20140220115233.GH2669@sirena.org.uk>
-References: <1392886403-10640-1-git-send-email-sachin.kamat@linaro.org>
- <1392886403-10640-14-git-send-email-sachin.kamat@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A8E9YQbHeV6BjaSn"
-Content-Disposition: inline
-In-Reply-To: <1392886403-10640-14-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.156.234
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 14/23] regulator: tps6507x: Remove redundant error message
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 20 Feb 2014 06:53:56 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 0/4] Bugfix for of_match_node ordering
+To: Kevin Hao <haokexin@gmail.com>, Sachin Kamat <sachin.kamat@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+In-Reply-To: <20140220101240.GA3745@pek-khao-d1.corp.ad.wrs.com>
+References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org> < CAK9yfHwwmZkFMRvxsxjBAfUbVXU3V+iPFDZO=DwQsFvJ3NQyKA@mail.gmail.com> < 20140220101240.GA3745@pek-khao-d1.corp.ad.wrs.com>
+Date: Thu, 20 Feb 2014 11:53:51 +0000
+Message-Id: <20140220115351.0DF7BC4050F@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Feb 2014 18:12:40 +0800, Kevin Hao <haokexin@gmail.com> wrote:
+> On Thu, Feb 20, 2014 at 02:09:08PM +0530, Sachin Kamat wrote:
+> > Hi Grant,
+> > 
+> > I observe the following boot failure with today's (next-20140220) linux-next
+> > tree on Exynos based boards with the default exynos_defconfig.
+> 
+> Does this help?
 
---A8E9YQbHeV6BjaSn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I've merged this in. I could get my unicore test platform to fail to
+boot by turning on lock debugging. I'll leave that option on from now
+one.
 
-On Thu, Feb 20, 2014 at 02:23:14PM +0530, Sachin Kamat wrote:
-> kzalloc prints its own OOM message upon failure.
+I've pushed this out to the following branch. Please test and report. It
+will also be picked up by linux-next tomorrow.
 
-Applied, thanks.
+git://git.secretlab.ca/git/linux devicetree/merge
 
---A8E9YQbHeV6BjaSn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 8a27fc907ab6..9cc893530b9a 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -381,12 +381,16 @@ static int __of_device_is_compatible(const struct device_node *device,
+>  
+>  	/* Compatible match has highest priority */
+>  	if (compat && compat[0]) {
+> -		of_property_for_each_string(device, "compatible", prop, cp) {
+> +		prop = __of_find_property(device, "compatible", NULL);
+> +		if (!prop)
+> +			return 0;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+The above 2 lines are unnecessary. of_prop_next_string() will return
+NULL if prop is NULL.
 
-iQIcBAEBAgAGBQJTBex+AAoJELSic+t+oim9u4IP/iU1ei5Ot38fa2PmT4b9Br0M
-BTN1IDgMx8IqaZLZOtbwhDJixbqWKbNASDfZyR278V2hhFDpUlwemkbJwSsLWqqs
-ET8guWqHOvudqXqK2Ht6JsUQZhICQqSNi4432Mqe4l132wm2d9Z1N2bhXnorKdAY
-ewO3Si675qszlyLYlprVeMb+dPOqkU0u7TAwYUBI2mjnNHqP9TMNAOpLnzdHjmKL
-J5QmKSLWnOhbJ1tywWMN7OnxnhZMiS0tKMdqNl10LiJ7u60kD+HR8tk5F9wtfIUt
-/aWFTUC42P45+TbKNFQP913WJBI3y45EoWr74LzrQvnFiOySUbaOzLqkKFHoyLMP
-qDewnQQSgoK36eJA5D0JWaFYTXStOyWJ6d41ZbU9etvD4XsC3RRgmefL8AxV9olc
-iQY5AuRceUAo6rspLhEplbP8hTeLPXSp6133KEk7SHNEw5g6zUTelg6LDKtboSR5
-oCbD3AhVLGMSkCHR1Ps4BLtUNyrydfm8eaDGRXA+/A9qbu/lkAD9IsGWlOTNfGIC
-L7oCN1X5tcNKKHXugi/ZaPmSyDOkYfXWnbuiegDHyBRi4hkmd17ros0yjbwsV4My
-wr7Sp2Vsa17u+d1Oe9+TxlmqHBGF6L2HoEGMswUtItetwDL7lnlaqG8NR8Iqdlfh
-tZNIn0bIftRYVN+8RQRh
-=5+zp
------END PGP SIGNATURE-----
+g.
 
---A8E9YQbHeV6BjaSn--
+> +
+> +		for (cp = of_prop_next_string(prop, NULL); cp;
+> +				cp = of_prop_next_string(prop, cp), index++) {
+>  			if (of_compat_cmp(cp, compat, strlen(compat)) == 0) {
+>  				score = INT_MAX/2 - (index << 2);
+>  				break;
+>  			}
+> -			index++;
+>  		}
+>  		if (!score)
+>  			return 0;
+> 
+> 
+> Thanks,
+> Kevin
+
