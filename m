@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279AbaBUAnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:43:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45642 "EHLO
+	id S1757288AbaBUAoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:44:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45639 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393AbaBTXvx (ORCPT
+	with ESMTP id S1755336AbaBTXvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:53 -0500
+	Thu, 20 Feb 2014 18:51:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Oleksij Rempel <linux@rempel-privat.de>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 14/82] ath9k: Do not support PowerSave by default
-Date: Thu, 20 Feb 2014 15:51:57 -0800
-Message-Id: <20140220235019.915532561@linuxfoundation.org>
+Subject: [PATCH 3.12 13/82] ath9k_htc: Do not support PowerSave by default
+Date: Thu, 20 Feb 2014 15:51:56 -0800
+Message-Id: <20140220235019.879866551@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,54 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 8298383c2cd5a6d0639f1bb1781fba181bd20154 upstream.
+commit 6bca610d97b6139a1d7598b8009da9d339daa50f upstream.
 
-Even though we make sure PowerSave is not enabled by default
+It is a copy/paste of patch provided by Sujith for ath9k.
+
+"Even though we make sure PowerSave is not enabled by default
 by disabling the flag, WIPHY_FLAG_PS_ON_BY_DEFAULT on init,
 PS could be enabled by userspace based on various factors
 like battery usage etc. Since PS in ath9k is just broken
 and has been untested for years, remove support for it, but
-allow a user to explicitly enable it using a module parameter.
+allow a user to explicitly enable it using a module parameter."
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/init.c |    8 +++++++-
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |    8 +++++++-
  1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -57,6 +57,10 @@ static int ath9k_bt_ant_diversity;
- module_param_named(bt_ant_diversity, ath9k_bt_ant_diversity, int, 0444);
- MODULE_PARM_DESC(bt_ant_diversity, "Enable WLAN/BT RX antenna diversity");
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -34,6 +34,10 @@ static int ath9k_htc_btcoex_enable;
+ module_param_named(btcoex_enable, ath9k_htc_btcoex_enable, int, 0444);
+ MODULE_PARM_DESC(btcoex_enable, "Enable wifi-BT coexistence");
  
 +static int ath9k_ps_enable;
 +module_param_named(ps_enable, ath9k_ps_enable, int, 0444);
 +MODULE_PARM_DESC(ps_enable, "Enable WLAN PowerSave");
 +
- bool is_ath9k_unloaded;
- /* We use the hw_value as an index into our private channel structure */
- 
-@@ -830,13 +834,15 @@ void ath9k_set_hw_capab(struct ath_softc
- 	hw->flags = IEEE80211_HW_RX_INCLUDES_FCS |
- 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING |
- 		IEEE80211_HW_SIGNAL_DBM |
+ #define CHAN2G(_freq, _idx)  { \
+ 	.center_freq = (_freq), \
+ 	.hw_value = (_idx), \
+@@ -725,12 +729,14 @@ static void ath9k_set_hw_capab(struct at
+ 		IEEE80211_HW_SPECTRUM_MGMT |
+ 		IEEE80211_HW_HAS_RATE_CONTROL |
+ 		IEEE80211_HW_RX_INCLUDES_FCS |
 -		IEEE80211_HW_SUPPORTS_PS |
  		IEEE80211_HW_PS_NULLFUNC_STACK |
- 		IEEE80211_HW_SPECTRUM_MGMT |
  		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
- 		IEEE80211_HW_SUPPORTS_RC_TABLE |
- 		IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+ 		IEEE80211_HW_MFP_CAPABLE |
+ 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING;
  
 +	if (ath9k_ps_enable)
 +		hw->flags |= IEEE80211_HW_SUPPORTS_PS;
 +
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
- 		hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
- 
+ 	hw->wiphy->interface_modes =
+ 		BIT(NL80211_IFTYPE_STATION) |
+ 		BIT(NL80211_IFTYPE_ADHOC) |
 
 
