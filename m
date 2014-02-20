@@ -1,194 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819AbaBTBc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:32:29 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60887 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752181AbaBTBc1 (ORCPT
+	id S1753019AbaBTBdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:33:04 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58001 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930AbaBTBdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:32:27 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: [Update][PATCH 6/9] ACPI / ATA: Add hotplug contexts to ACPI companions of SATA devices
-Date: Thu, 20 Feb 2014 02:47:19 +0100
-Message-ID: <5317534.79aoyQFAO7@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1707532.0BItEHDuFB@vostro.rjw.lan>
-References: <3011875.q18rCmXyYX@vostro.rjw.lan> <1707532.0BItEHDuFB@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 19 Feb 2014 20:33:01 -0500
+X-AuditID: 9c93016f-b7c65ae000004a2a-36-53055b4af63d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>
+Subject: [PATCH 1/4] perf tools: Check availability of annotate when processing samples
+Date: Thu, 20 Feb 2014 10:32:53 +0900
+Message-Id: <1392859976-32760-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The TUI of perf report and top support annotation, but stdio and GTK
+don't.  So it should be checked before calling hist_entry__inc_addr_
+samples() since perf annotate need it regardless of UI and sort keys.
 
-Modify the SATA subsystem to add hotplug contexts to ACPI companions
-of SATA devices and ports instead of registering special ACPI dock
-operations using register_hotplug_dock_device().
+It caused perf annotate on ppc64 to produce zero output.
 
-That change will allow the entire code handling those special ACPI
-dock operations to be dropped in the next commit.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: Anton Blanchard <anton@samba.org>
+Cc: Anton Blanchard <anton@samba.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
+ tools/perf/builtin-report.c | 45 +++++++++++++++++++++++++++++----------------
+ tools/perf/builtin-top.c    | 11 +++++++++--
+ tools/perf/util/annotate.c  |  2 +-
+ 3 files changed, 39 insertions(+), 19 deletions(-)
 
-As noted by Aaron, the hotplug contexts are not freed during ATA device
-unregistration, but that is not necessary, because the struct acpi_device
-things they are attached to never go away.  However, they obviously should
-not be created more than once per struct acpi_device, so I've modified the
-patch to skip the creation of hotplug contexts for devices that already
-have them.
-
-Thanks,
-Rafael
-
----
- drivers/ata/libata-acpi.c |   76 +++++++++++++++++++++++++++++-----------------
- 1 file changed, 49 insertions(+), 27 deletions(-)
-
-Index: linux-pm/drivers/ata/libata-acpi.c
-===================================================================
---- linux-pm.orig/drivers/ata/libata-acpi.c
-+++ linux-pm/drivers/ata/libata-acpi.c
-@@ -38,6 +38,16 @@ static void ata_acpi_clear_gtf(struct at
- 	dev->gtf_cache = NULL;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d882b6f96411..bab762bdeb0d 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -75,6 +75,11 @@ static int report__config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
  }
  
-+struct ata_acpi_hotplug_context {
-+	struct acpi_hotplug_context hp;
-+	union {
-+		struct ata_port *ap;
-+		struct ata_device *dev;
-+	} data;
-+};
++static bool report_needs_annotate(void)
++{
++	return use_browser == 1 && sort__has_sym;
++}
 +
-+#define ata_hotplug_data(context) (container_of((context), struct ata_acpi_hotplug_context, hp)->data)
+ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
+ 				      struct perf_sample *sample, struct perf_evsel *evsel)
+ {
+@@ -110,14 +115,16 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+ 	if (!he)
+ 		return -ENOMEM;
+ 
+-	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+-	if (err)
+-		goto out;
++	if (report_needs_annotate()) {
++		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++		if (err)
++			goto out;
+ 
+-	mx = he->mem_info;
+-	err = addr_map_symbol__inc_samples(&mx->daddr, evsel->idx);
+-	if (err)
+-		goto out;
++		mx = he->mem_info;
++		err = addr_map_symbol__inc_samples(&mx->daddr, evsel->idx);
++		if (err)
++			goto out;
++	}
+ 
+ 	evsel->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+@@ -159,14 +166,18 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+ 		he = __hists__add_entry(&evsel->hists, al, parent, &bi[i], NULL,
+ 					1, 1, 0);
+ 		if (he) {
+-			bx = he->branch_info;
+-			err = addr_map_symbol__inc_samples(&bx->from, evsel->idx);
+-			if (err)
+-				goto out;
+-
+-			err = addr_map_symbol__inc_samples(&bx->to, evsel->idx);
+-			if (err)
+-				goto out;
++			if (report_needs_annotate()) {
++				bx = he->branch_info;
++				err = addr_map_symbol__inc_samples(&bx->from,
++								   evsel->idx);
++				if (err)
++					goto out;
 +
- /**
-  * ata_dev_acpi_handle - provide the acpi_handle for an ata_device
-  * @dev: the acpi_handle returned will correspond to this device
-@@ -121,18 +131,17 @@ static void ata_acpi_handle_hotplug(stru
- 		ata_port_wait_eh(ap);
++				err = addr_map_symbol__inc_samples(&bx->to,
++								   evsel->idx);
++				if (err)
++					goto out;
++			}
+ 
+ 			evsel->hists.stats.total_period += 1;
+ 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+@@ -199,7 +210,9 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
+ 	if (err)
+ 		goto out;
+ 
+-	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++	if (report_needs_annotate())
++		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++
+ 	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ out:
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ed99ec4a309f..a19c3afcfa0e 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -87,6 +87,11 @@ static void perf_top__sig_winch(int sig __maybe_unused,
+ 	perf_top__update_print_entries(top);
  }
  
--static void ata_acpi_dev_notify_dock(acpi_handle handle, u32 event, void *data)
-+static int ata_acpi_dev_notify_dock(struct acpi_device *adev, u32 event)
++static bool top_needs_annotate(void)
++{
++	return use_browser == 1 && sort__has_sym;
++}
++
+ static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
  {
--	struct ata_device *dev = data;
--
-+	struct ata_device *dev = ata_hotplug_data(adev->hp).dev;
- 	ata_acpi_handle_hotplug(dev->link->ap, dev, event);
-+	return 0;
- }
- 
--static void ata_acpi_ap_notify_dock(acpi_handle handle, u32 event, void *data)
-+static int ata_acpi_ap_notify_dock(struct acpi_device *adev, u32 event)
+ 	struct symbol *sym;
+@@ -176,7 +181,7 @@ static void perf_top__record_precise_ip(struct perf_top *top,
  {
--	struct ata_port *ap = data;
--
--	ata_acpi_handle_hotplug(ap, NULL, event);
-+	ata_acpi_handle_hotplug(ata_hotplug_data(adev->hp).ap, NULL, event);
-+	return 0;
- }
+ 	struct annotation *notes;
+ 	struct symbol *sym;
+-	int err;
++	int err = 0;
  
- static void ata_acpi_uevent(struct ata_port *ap, struct ata_device *dev,
-@@ -154,31 +163,23 @@ static void ata_acpi_uevent(struct ata_p
- 	}
- }
- 
--static void ata_acpi_ap_uevent(acpi_handle handle, u32 event, void *data)
-+static void ata_acpi_ap_uevent(struct acpi_device *adev, u32 event)
- {
--	ata_acpi_uevent(data, NULL, event);
-+	ata_acpi_uevent(ata_hotplug_data(adev->hp).ap, NULL, event);
- }
- 
--static void ata_acpi_dev_uevent(acpi_handle handle, u32 event, void *data)
-+static void ata_acpi_dev_uevent(struct acpi_device *adev, u32 event)
- {
--	struct ata_device *dev = data;
-+	struct ata_device *dev = ata_hotplug_data(adev->hp).dev;
- 	ata_acpi_uevent(dev->link->ap, dev, event);
- }
- 
--static const struct acpi_dock_ops ata_acpi_dev_dock_ops = {
--	.handler = ata_acpi_dev_notify_dock,
--	.uevent = ata_acpi_dev_uevent,
--};
--
--static const struct acpi_dock_ops ata_acpi_ap_dock_ops = {
--	.handler = ata_acpi_ap_notify_dock,
--	.uevent = ata_acpi_ap_uevent,
--};
--
- /* bind acpi handle to pata port */
- void ata_acpi_bind_port(struct ata_port *ap)
- {
- 	struct acpi_device *host_companion = ACPI_COMPANION(ap->host->dev);
-+	struct acpi_device *adev;
-+	struct ata_acpi_hotplug_context *context;
- 
- 	if (libata_noacpi || ap->flags & ATA_FLAG_ACPI_SATA || !host_companion)
+ 	if (he == NULL || he->ms.sym == NULL ||
+ 	    ((top->sym_filter_entry == NULL ||
+@@ -190,7 +195,9 @@ static void perf_top__record_precise_ip(struct perf_top *top,
  		return;
-@@ -188,9 +189,19 @@ void ata_acpi_bind_port(struct ata_port
- 	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
- 		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
  
--	/* we might be on a docking station */
--	register_hotplug_dock_device(ACPI_HANDLE(&ap->tdev),
--				     &ata_acpi_ap_dock_ops, ap, NULL, NULL);
-+	adev = ACPI_COMPANION(&ap->tdev);
-+	if (!adev || adev->hp)
-+		return;
+ 	ip = he->ms.map->map_ip(he->ms.map, ip);
+-	err = hist_entry__inc_addr_samples(he, counter, ip);
 +
-+	context = kzalloc(sizeof(*context), GFP_KERNEL);
-+	if (!context)
-+		return;
-+
-+	context->data.ap = ap;
-+	acpi_lock_hp_context();
-+	acpi_set_hp_context(adev, &context->hp, ata_acpi_ap_notify_dock,
-+			    ata_acpi_ap_uevent, NULL);
-+	acpi_unlock_hp_context();
- }
++	if (top_needs_annotate())
++		err = hist_entry__inc_addr_samples(he, counter, ip);
  
- void ata_acpi_bind_dev(struct ata_device *dev)
-@@ -198,7 +209,8 @@ void ata_acpi_bind_dev(struct ata_device
- 	struct ata_port *ap = dev->link->ap;
- 	struct acpi_device *port_companion = ACPI_COMPANION(&ap->tdev);
- 	struct acpi_device *host_companion = ACPI_COMPANION(ap->host->dev);
--	struct acpi_device *parent;
-+	struct acpi_device *parent, *adev;
-+	struct ata_acpi_hotplug_context *context;
- 	u64 adr;
+ 	pthread_mutex_unlock(&notes->lock);
  
- 	/*
-@@ -221,9 +233,19 @@ void ata_acpi_bind_dev(struct ata_device
- 	}
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 469eb679fb9d..6fcada625c86 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -489,7 +489,7 @@ static int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+ {
+ 	struct annotation *notes;
  
- 	acpi_preset_companion(&dev->tdev, parent, adr);
-+	adev = ACPI_COMPANION(&dev->tdev);
-+	if (!adev || adev->hp)
-+		return;
-+
-+	context = kzalloc(sizeof(*context), GFP_KERNEL);
-+	if (!context)
-+		return;
+-	if (sym == NULL || use_browser != 1 || !sort__has_sym)
++	if (sym == NULL)
+ 		return 0;
  
--	register_hotplug_dock_device(ata_dev_acpi_handle(dev),
--				     &ata_acpi_dev_dock_ops, dev, NULL, NULL);
-+	context->data.dev = dev;
-+	acpi_lock_hp_context();
-+	acpi_set_hp_context(adev, &context->hp, ata_acpi_dev_notify_dock,
-+			    ata_acpi_dev_uevent, NULL);
-+	acpi_unlock_hp_context();
- }
- 
- /**
+ 	notes = symbol__annotation(sym);
+-- 
+1.7.11.7
 
