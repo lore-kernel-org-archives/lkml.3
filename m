@@ -1,281 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585AbaBTROc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:14:32 -0500
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:36086 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751AbaBTROa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:14:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <53022DB1.4070805@gmail.com>
-References: <53022DB1.4070805@gmail.com>
-Date: Thu, 20 Feb 2014 09:14:29 -0800
-X-Google-Sender-Auth: qIOB0Fr0_HsurY_mv_YQujS6Vjw
-Message-ID: <CA+55aFxjAp23=ySEe8e8bTPbVw8Uh8d03zirg4TdHXGYiyjmwA@mail.gmail.com>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Miklos Szeredi <miklos@szeredi.hu>,
-        "Theodore T'so" <tytso@mit.edu>, Christoph Hellwig <hch@lst.de>,
-        Chris Mason <clm@fb.com>, Dave Chinner <david@fromorbit.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@citi.umich.edu>,
-        Yongzhi Pan <panyongzhi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755614AbaBTRQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:16:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14484 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753518AbaBTRQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 12:16:31 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>, Mark Batty <mbatty@cl.cam.ac.uk>,
+        Peter Sewell <Peter.Sewell@cl.cam.ac.uk>
+In-Reply-To: <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+References: <1392321837.18779.3249.camel@triegel.csb>
+	 <20140214020144.GO4250@linux.vnet.ibm.com>
+	 <1392352981.18779.3800.camel@triegel.csb>
+	 <20140214172920.GQ4250@linux.vnet.ibm.com>
+	 <CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
+	 <CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
+	 <1392486310.18779.6447.camel@triegel.csb>
+	 <CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
+	 <1392666947.18779.6838.camel@triegel.csb>
+	 <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	 <20140218030002.GA15857@linux.vnet.ibm.com>
+	 <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	 <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	 <1392740258.18779.7732.camel@triegel.csb>
+	 <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+	 <1392752867.18779.8120.camel@triegel.csb>
+	 <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Feb 2014 18:14:52 +0100
+Message-ID: <1392916492.18779.10136.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, I do think we violate POSIX here because of how we handle f_pos
-(the earlier thread from 2006 you point to talks about the "thread
-safe" part, the point here about the actual wording of "atomic" is a
-separate issue).
+On Wed, 2014-02-19 at 16:53 -0800, Linus Torvalds wrote:
+> On Tue, Feb 18, 2014 at 11:47 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> > On Tue, 2014-02-18 at 09:44 -0800, Linus Torvalds wrote:
+> >>
+> >> Can you point to it? Because I can find a draft standard, and it sure
+> >> as hell does *not* contain any clarity of the model. It has a *lot* of
+> >> verbiage, but it's pretty much impossible to actually understand, even
+> >> for somebody who really understands memory ordering.
+> >
+> > http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
+> > This has an explanation of the model up front, and then the detailed
+> > formulae in Section 6.  This is from 2010, and there might have been
+> > smaller changes since then, but I'm not aware of any bigger ones.
+> 
+> Ahh, this is different from what others pointed at. Same people,
+> similar name, but not the same paper.
+> 
+> I will read this version too, but from reading the other one and the
+> standard in parallel and trying to make sense of it, it seems that I
+> may have originally misunderstood part of the whole control dependency
+> chain.
+> 
+> The fact that the left side of "? :", "&&" and "||" breaks data
+> dependencies made me originally think that the standard tried very
+> hard to break any control dependencies.
 
-Long long ago we used to just pass in the pointer to f_pos directly,
-and then the low-level write would update it all under the inode
-semaphore, and all was good.
+Hmm... (I'm not quite sure how to express this properly, so bear with
+me.)
 
-And then we ended up having tons of problems with non-regular files
-and drivers accessing f_pos and having nasty races with it because
-they did *not* have any locking (and very fundamentally didn't want
-any), and we broke the serialization of f_pos. We still do the *IO*
-atomically, but yes, the f_pos access itself is outside the lock.
+The control dependencies as you seem to consider aren't there *as is*,
+and removing "? :", "&&", and "||" from what's called
+Carries-a-dependency-to in n3132 is basically removing control
+dependences in expressions from that relation (ie, so it's just data
+dependences).
 
-Ho humm.. Al, any ideas of how to fix this?
+However, control dependences in the program are not ignored, because
+they control what steps the abstract machine would do.  If we have
+candidate executions with a particular choice for the reads-from
+relation, they must make sense in terms of program logic (which does
+include conditionals and such), or a candidate execution will not be
+consistent.  The difference is in how reads-from is constrainted by
+different memory orders.
 
-                     Linus
+I hope what I mean gets clearer below when looking at the example...
 
+Mark Batty / Peter Sewell:  Do you have a better explanation?  (And
+please correct anything wrong in what I wrote ;)
 
+> Which I felt was insane, when
+> then some of the examples literally were about the testing of the
+> value of an atomic read. The data dependency matters quite a bit. The
+> fact that the other "Mathematical" paper then very much talked about
+> consume only in the sense of following a pointer made me think so even
+> more.
+> 
+> But reading it some more, I now think that the whole "data dependency"
+> logic (which is where the special left-hand side rule of the ternary
+> and logical operators come in) are basically an exception to the rule
+> that sequence points end up being also meaningful for ordering (ok, so
+> C11 seems to have renamed "sequence points" to "sequenced before").
 
-On Mon, Feb 17, 2014 at 7:41 AM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> Hello all,
->
-> A note from Yongzhi Pan about some of my own code led me to dig deeper
-> and discover behavior that is surprising and also seems to be a
-> fairly clear violation of POSIX requirements.
->
-> It appears that write() (and, presumably read() and other similar
-> system calls) are not atomic with respect to performing I/O and
-> updating the file offset behavior.
->
-> The problem can be demonstrated using the program below.
-> That program takes three arguments:
->
-> $ ./multi_writer num-children num-blocks block-size > somefile
->
-> It creates 'num-children' children, each of which writes 'num-blocks'
-> blocks of 'block-size' bytes to standard output; for my experiments,
-> stdout is redirected to a file. After all children have finished,
-> the parent inspects the size of the file written on stdout, calculates
-> the expected size of the file, and displays these two values, and
-> their difference on stderr.
->
-> Some observations:
->
-> * All children inherit the stdout file descriptor from the parent;
->   thus the FDs refer to the same open file description, and therefore
->   share the file offset.
->
-> * When I run this on a multi-CPU BSD systems, I get the expected result:
->
-> $ ./multi_writer 10 10000 1000 > g 2> run.log
-> $ ls -l g
-> -rw-------  1 mkerrisk  users  100000000 Jan 17 07:34 g
->
-> * Someone else tested this code for me on a Solaris system, and also got
->   the expected result.
->
-> * On Linux, by contrast, we see behavior such as the following:
->
-> $ ./multi_writer 10 10000 1000 > g
-> Expected file size:  100000000
-> Actual file size:     16323000
-> Difference:           83677000
-> $ ls -l g
-> -rw-r--r--. 1 mtk mtk 16323000 Feb 17 16:05 g
->
-> Summary of the above output: some children are overwriting the output
-> of other children because output is not atomic with respect to updates
-> to the file offset.
->
-> For reference, POSIX.1-2008/SUSv4 Section XSI 2.9.7 says:
->
-> [[
-> 2.9.7 Thread Interactions with Regular File Operations
->
-> All of the following functions shall be atomic with respect to each other
-> in the effects specified in POSIX.1-2008 when they operate on regular
-> files or symbolic links:
->
->
-> chmod()
-> ...
-> pread()
-> read()
-> ...
-> readv()
-> pwrite()
-> ...
-> write()
-> writev()
->
->
-> If two threads each call one of these functions, each call shall either
-> see all of the specified effects of the other call, or none of them.
-> ]]
->
-> (POSIX.1-2001 has similar text.)
->
-> This text is in one of the Threads sections, but it applies equally
-> to threads in different processes as to threads in the same process.
->
-> I've tested the code below on ext4, XFS, and BtrFS, on kernel 3.12 and a
-> number of other recent kernels, all with similar results, which suggests
-> the result is in the VFS layer. (Can it really be so simple as no locking
-> around pieces such as
->
->                 loff_t pos = file_pos_read(f.file);
->                 ret = vfs_write(f.file, buf, count, &pos);
->                 if (ret >= 0)
->                         file_pos_write(f.file, pos);
->
-> in fs/read_write.c?)
->
-> I discovered this behavior after Yongzhi Pan reported some unexpected
-> behavior in some of my code that forked to create a parent and
-> child that wrote to the same file. In some cases, expected output
-> was not appearing. In other words, after a fork(), and in the absence
-> of any other synchronization technique, a parent and a child cannot
-> safely write to the same file descriptor without risking overwriting
-> each other's output. But POSIX requires this, and other systems seem
-> to guarantee it.
->
-> Am I correct to think there's a kernel problem here?
->
-> Thanks,
->
-> Michael
->
-> ===
->
-> /* multi_writer.c
-> */
->
-> #include <sys/wait.h>
-> #include <sys/types.h>
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <unistd.h>
-> #include <sys/fcntl.h>
-> #include <sys/stat.h>
-> #include <string.h>
-> #include <errno.h>
->
-> typedef enum { FALSE, TRUE } Boolean;
->
-> #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
->                         } while (0)
->
-> #define fatal(msg)      do { fprintf(stderr, "%s\n", msg); \
->                              exit(EXIT_FAILURE); } while (0)
->
-> #define usageErr(msg, progName)        \
->                         do { fprintf(stderr, "Usage: "); \
->                              fprintf(stderr, msg, progName); \
->                              exit(EXIT_FAILURE); } while (0)
->
-> int
-> main(int argc, char *argv[])
-> {
->     char *buf;
->     int j, k, nblocks, nchildren;
->     size_t blocksize;
->     struct stat sb;
-> //  int nchanges;
-> //  off_t pos;
->     long long expected;
->
->     if (argc < 4 || strcmp(argv[1], "--help") == 0)
->         usageErr("%s num-children num-blocks block-size [O_APPEND-flag]\n",
->                 argv[0]);
->
->     nblocks = atoi(argv[2]);
->     blocksize = atoi(argv[3]);
->
->     buf = malloc(blocksize + 1);
->     if (buf == NULL)
->         errExit("malloc");
->
->     /* If a fourth command-line argument is specified, set the O_APPEND
->        flag on stdout */
->
->     if (argc > 4)
->         if (fcntl(STDOUT_FILENO, F_SETFL, O_APPEND) == -1)
->             errExit("fcntl-F_SETFL");
->
->     nchildren = atoi(argv[1]);
->
->     /* Create child processes that write blocks to stdout */
->
->     for (j = 0; j < nchildren; j++) {
->         switch(fork()) {
->         case -1:
->             errExit("fork");
->
->         case 0: /* Each child writes nblocks * blocksize bytes to stdout */
-> //          nchanges = 0;
->
->             /* Put something distinctive in each child's buffer (in case
->                we want to analyze byte sequences in the output) */
->
->             for (k = 0; k < blocksize; k++)
->                 buf[k] = 'a' + getpid() % 26;
->
->             for (k = 0; k < nblocks; k++) {
-> //              if (k > 0 && pos != lseek(STDOUT_FILENO, 0, SEEK_END))
-> //                  nchanges++;
->                 if (write(STDOUT_FILENO, buf, blocksize) != blocksize)
->                     fatal("write");
-> //              pos = lseek(STDOUT_FILENO, 0, SEEK_END);
->             }
->
-> //          fprintf(stderr, "%ld: nchanges = %d\n",
-> //                  (long) getpid(), nchanges);
->             exit(EXIT_SUCCESS);
->
->         default:
->             break;      /* Parent falls through to create next child */
->         }
->     }
->
->     /* Wait for all children to terminate */
->
->     while (wait(NULL) > 0)
->         continue;
->
->     /* Compare final length of file against expected size */
->
->     if (fstat(STDOUT_FILENO, &sb) == -1)
->         errExit("fstat");
->
->     expected =  blocksize * nblocks * nchildren;
->     fprintf(stderr, "Expected file size: %10lld\n", expected);
->     fprintf(stderr, "Actual file size:   %10lld\n", (long long) sb.st_size);
->     fprintf(stderr, "Difference:         %10lld\n", expected - sb.st_size);
->
->     exit(EXIT_SUCCESS);
-> }
->
->
-> --
-> Michael Kerrisk
-> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-> Linux/UNIX System Programming Training: http://man7.org/training/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I'm not quite sure what you mean, but I think that this isn't quite the
+case.  mo_consume and mo_acquire combine with sequenced-before
+differently.  Have a look at the definition of
+inter-thread-happens-before (6.15 in n3132): for synchronizes-with, the
+composition with sequenced-before is used (ie, what you'd get with
+mo_acquire), whereas for mo_consume, we just have
+dependency_ordered_before (so, data dependencies only).
+
+> So while an expression like
+> 
+>     atomic_read(p, consume) ? a : b;
+> 
+> doesn't have a data dependency from the atomic read that forces
+> serialization, writing
+> 
+>    if (atomic_read(p, consume))
+>       a;
+>    else
+>       b;
+> 
+> the standard *does* imply that the atomic read is "happens-before" wrt
+> "a", and I'm hoping that there is no question that the control
+> dependency still acts as an ordering point.
+
+I don't think it does for mo_consume (but does for mo_acquire).  Both
+examples do basically the same in the abstract machine, and I think it
+would be surprising if rewriting could the code with something seemingly
+equivalent would make a semantic difference.  AFAICT, "? :" etc. is
+removed to allow the standard defining data dependencies as being based
+on expressions that take the mo_consume value as input, without also
+pulling in control dependencies.
+
+To look at this example in the cppmem tool, we can transform your
+example above into:
+
+int main() {
+  atomic_int x = 0; 
+  int y = 0;
+  {{{ { y = 1; x.store(1, memory_order_release); }
+  ||| { if (x.load(memory_order_consume)) r2 = y; }
+  }}};
+  return 0; }
+
+This has 2 threads, one is doing the store to y (the data) and the
+release operation, the other is using consume to try to read the data.
+
+This yields 2 consistent executions (we can read 2 values of x), but the
+execution in which we read y has a data race.
+
+I'm not quite sure how the tool parses/models data dependencies in
+expressions, but the program (ie, your example) doesn't carry a
+dependency from the mo_consume load to the load from y (as defined in C
+++ 1.10p9 and n3132 6.13).  Thus, the mo_release store is
+dependency-ordered-before the mo_consume load ("dob" in the tool's
+output graph), but that doesn't extend to the load from y.  Therefore,
+the load is unordered wrt. to the first thread's "y = 1", and because
+they are nonatomic, we get a data race (labeled "dr").  (The labels on
+the edges are easier to see in the "dot" Display Layout, even though one
+has to then figure out which vertex belongs to which thread.)
+
+If you enable it with the display options, the tool will show a control
+dependency, but that is currently unused it seems (see 6.20 in n3132).
+
+If we change mo_consume to mo_acquire in the example, the race goes
+away.  (This is visible in the inter-thread-happens-before relation,
+which can be shown by "removing suppress_edge ithb." under "edit display
+options" (but this makes the graph kind of messy)).
+
+BTW, a pretty similar way to expressing this cppmem code above is using
+readsvalue() to constrain executions:
+
+int main() {
+  atomic_int x = 0; 
+  int y = 0;
+  {{{ { y = 1; x.store(1, memory_order_release); }
+  ||| { r1 = x.load(memory_order_consume).readsvalue(1); r2 = y; }
+  }}};
+  return 0; }
+
+> THAT was one of my big confusions, the discussion about control
+> dependencies and the fact that the logical ops broke the data
+> dependency made me believe that the standard tried to actively avoid
+> the whole issue with "control dependencies can break ordering
+> dependencies on some CPU's due to branch prediction and memory
+> re-ordering by the CPU".
+> 
+> But after all the reading, I'm starting to think that that was never
+> actually the implication at all, and the "logical ops breaks the data
+> dependency rule" is simply an exception to the sequence point rule.
+> All other sequence points still do exist, and do imply an ordering
+> that matters for "consume"
+> 
+> Am I now reading it right?
+> 
+> So the clarification is basically to the statement that the "if
+> (consume(p)) a" version *would* have an ordering guarantee between the
+> read of "p" and "a", but the "consume(p) ? a : b" would *not* have
+> such an ordering guarantee. Yes?
+
+Not as I understand it.  If my reply above wasn't clear, let me know and
+I'll try to rephrase it into something that is.
+
