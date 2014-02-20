@@ -1,114 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598AbaBTMmE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 07:42:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46289 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613AbaBTMmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 07:42:01 -0500
-Date: Thu, 20 Feb 2014 13:44:01 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] portdrv: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140220124400.GA8198@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-6-git-send-email-agordeev@redhat.com>
- <CAErSpo7xWe6n3Nk3Aatik4tfSHQLQehf3WELqD=q1oTmXYVVuw@mail.gmail.com>
+	id S1753900AbaBTMmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 07:42:13 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:48236 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733AbaBTMmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 07:42:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7xWe6n3Nk3Aatik4tfSHQLQehf3WELqD=q1oTmXYVVuw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140211184749.254574462@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
+	<20140211184749.254574462@linuxfoundation.org>
+Date: Thu, 20 Feb 2014 13:42:08 +0100
+X-Google-Sender-Auth: NldrFmPp9zorRP0e1rdTsxJvxqs
+Message-ID: <CAMuHMdWVRTPSeVEAPTM7KLME4db0vfBYuH6N7pNoUwNPb0aZ7w@mail.gmail.com>
+Subject: Re: [PATCH 3.12 037/107] spidev: fix hang when transfer_one_message fails
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        Mark Brown <broonie@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 03:09:41PM -0700, Bjorn Helgaas wrote:
-> On Wed, Feb 19, 2014 at 3:15 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> > As result of deprecation of MSI-X/MSI enablement functions
-> > pci_enable_msix() and pci_enable_msi_block() all drivers
-> > using these two interfaces need to be updated to use the
-> > new pci_enable_msi_range() and pci_enable_msix_range()
-> > interfaces.
-> >
-> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: linux-pci@vger.kernel.org
-> > ---
-> >  drivers/pci/pcie/portdrv_core.c |   17 ++++++++++-------
-> >  1 files changed, 10 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
-> > index 986f8ea..4e46eca 100644
-> > --- a/drivers/pci/pcie/portdrv_core.c
-> > +++ b/drivers/pci/pcie/portdrv_core.c
-> > @@ -99,8 +99,9 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
-> >         for (i = 0; i < nr_entries; i++)
-> >                 msix_entries[i].entry = i;
-> >
-> > -       status = pci_enable_msix(dev, msix_entries, nr_entries);
-> > -       if (status)
-> > +       status = pci_enable_msix_range(dev,
-> > +                                      msix_entries, nr_entries, nr_entries);
-> 
-> This is a place we could use pci_enable_msix_exact(), isn't it?  (Also below.)
+On Tue, Feb 11, 2014 at 8:05 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> 3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, absolutely.
+Sorry for not noticing this was queued up for stable before, but this
+patch was reverted in mainline:
 
-I posted it (and other updates) as is, since I understood
-pci_enable_msix_exact() is not going to make it into 3.14. Was I wrong here?
+commit 1f802f8249a0da536877842c43c7204064c4de8b
+Author: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Date:   Tue Jan 28 10:33:03 2014 +0100
 
-I think more time in testing with either pci_enable_msix_range() or
-pci_enable_msix_exact() is good. And a follow-up switch from
-pci_enable_msix_range() to pci_enable_msix_exact() should be easy eigher.
+    spi: Fix crash with double message finalisation on error handling
 
-What do you think is the best course of action now? 
+    This reverts commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d.
 
-> > +       if (status < 0)
-> >                 goto Exit;
-> >
-> >         for (i = 0; i < PCIE_PORT_DEVICE_MAXSERVICES; i++)
-> > @@ -159,21 +160,23 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
-> >                 idx[PCIE_PORT_SERVICE_AER_SHIFT] = i;
-> >         }
-> >
-> > +       status = 0;
-> > +
-> >         /*
-> >          * If nvec is equal to the allocated number of entries, we can just use
-> >          * what we have.  Otherwise, the port has some extra entries not for the
-> >          * services we know and we need to work around that.
-> >          */
-> > -       if (nvec == nr_entries) {
-> > -               status = 0;
-> > -       } else {
-> > +       if (nvec != nr_entries) {
-> >                 /* Drop the temporary MSI-X setup */
-> >                 pci_disable_msix(dev);
-> >
-> >                 /* Now allocate the MSI-X vectors for real */
-> > -               status = pci_enable_msix(dev, msix_entries, nvec);
-> > -               if (status)
-> > +               nvec = pci_enable_msix_range(dev, msix_entries, nvec, nvec);
-> > +               if (nvec < 0) {
-> > +                       status = nvec;
-> >                         goto Exit;
-> > +               }
-> >         }
-> >
-> >         for (i = 0; i < PCIE_PORT_DEVICE_MAXSERVICES; i++)
-> > --
-> > 1.7.7.6
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+    It causes a NULL pointer dereference with drivers using the generic
+    spi_transfer_one_message(), which always calls
+    spi_finalize_current_message(), which zeroes master->cur_msg.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+    Drivers implementing transfer_one_message() theirselves must always call
+    spi_finalize_current_message(), even if the transfer failed:
+
+     * @transfer_one_message: the subsystem calls the driver to transfer a singl
+     *      message while queuing transfers that arrive in the meantime. When th
+     *      driver is finished with this message, it must call
+     *      spi_finalize_current_message() so the subsystem can issue the next
+     *      transfer
+
+    Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+    Signed-off-by: Mark Brown <broonie@linaro.org>
+
+> ------------------
+>
+> From: Daniel Santos <daniel.santos@pobox.com>
+>
+> commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d upstream.
+>
+> This corrects a problem in spi_pump_messages() that leads to an spi
+> message hanging forever when a call to transfer_one_message() fails.
+> This failure occurs in my MCP2210 driver when the cs_change bit is set
+> on the last transfer in a message, an operation which the hardware does
+> not support.
+>
+> Rationale
+> Since the transfer_one_message() returns an int, we must presume that it
+> may fail.  If transfer_one_message() should never fail, it should return
+> void.  Thus, calls to transfer_one_message() should properly manage a
+> failure.
+>
+> Fixes: ffbbdd21329f3 (spi: create a message queueing infrastructure)
+> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
+>  drivers/spi/spi.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> --- a/drivers/spi/spi.c
+> +++ b/drivers/spi/spi.c
+> @@ -600,7 +600,9 @@ static void spi_pump_messages(struct kth
+>         ret = master->transfer_one_message(master, master->cur_msg);
+>         if (ret) {
+>                 dev_err(&master->dev,
+> -                       "failed to transfer one message from queue\n");
+> +                       "failed to transfer one message from queue: %d\n", ret);
+> +               master->cur_msg->status = ret;
+> +               spi_finalize_current_message(master);
+>                 return;
+>         }
+>  }
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
