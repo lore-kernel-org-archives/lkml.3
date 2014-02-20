@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598AbaBTHX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 02:23:27 -0500
-Received: from relay.parallels.com ([195.214.232.42]:45651 "EHLO
+	id S1753749AbaBTHXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 02:23:45 -0500
+Received: from relay.parallels.com ([195.214.232.42]:45660 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495AbaBTHWR (ORCPT
+	with ESMTP id S1752510AbaBTHWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 02:22:17 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
@@ -12,9 +12,9 @@ To: <mhocko@suse.cz>, <akpm@linux-foundation.org>
 CC: <rientjes@google.com>, <penberg@kernel.org>, <cl@linux.com>,
         <glommer@gmail.com>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH -mm v3 1/7] memcg, slab: never try to merge memcg caches
-Date: Thu, 20 Feb 2014 11:22:03 +0400
-Message-ID: <7d7793c8d542d799af0cb797be19a60567d042e1.1392879001.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v3 4/7] memcg, slab: unregister cache from memcg before starting to destroy it
+Date: Thu, 20 Feb 2014 11:22:06 +0400
+Message-ID: <afa760bb49b2f7fbbefd46e26a739387120a645c.1392879001.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1392879001.git.vdavydov@parallels.com>
 References: <cover.1392879001.git.vdavydov@parallels.com>
@@ -25,164 +25,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a kmem cache is created (kmem_cache_create_memcg()), we first try
-to find a compatible cache that already exists and can handle requests
-from the new cache, i.e. has the same object size, alignment, ctor, etc.
-If there is such a cache, we do not create any new caches, instead we
-simply increment the refcount of the cache found and return it.
+Currently, memcg_unregister_cache(), which deletes the cache being
+destroyed from the memcg_slab_caches list, is called after
+__kmem_cache_shutdown() (see kmem_cache_destroy()), which starts to
+destroy the cache. As a result, one can access a partially destroyed
+cache while traversing a memcg_slab_caches list, which can have deadly
+consequences (for instance, cache_show() called for each cache on a
+memcg_slab_caches list from mem_cgroup_slabinfo_read() will dereference
+pointers to already freed data).
 
-Currently we do this procedure not only when creating root caches, but
-also for memcg caches. However, there is no point in that, because, as
-every memcg cache has exactly the same parameters as its parent and
-cache merging cannot be turned off in runtime (only on boot by passing
-"slub_nomerge"), the root caches of any two potentially mergeable memcg
-caches should be merged already, i.e. it must be the same root cache,
-and therefore we couldn't even get to the memcg cache creation, because
-it already exists.
-
-The only exception is boot caches - they are explicitly forbidden to be
-merged by setting their refcount to -1. There are currently only two of
-them - kmem_cache and kmem_cache_node, which are used in slab internals
-(I do not count kmalloc caches as their refcount is set to 1 immediately
-after creation). Since they are prevented from merging preliminary I
-guess we should avoid to merge their children too.
-
-So let's remove the useless code responsible for merging memcg caches.
+To fix this, let's move memcg_unregister_cache() before the cache
+destruction process beginning, issuing memcg_register_cache() on
+failure.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- mm/slab.h        |   21 ++++-----------------
- mm/slab_common.c |    8 +++++---
- mm/slub.c        |   19 +++++++++----------
- 3 files changed, 18 insertions(+), 30 deletions(-)
+ mm/memcontrol.c  |   12 ++++++------
+ mm/slab_common.c |    3 ++-
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/mm/slab.h b/mm/slab.h
-index 8184a7cde272..3045316b7c9d 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -55,12 +55,12 @@ extern void create_boot_cache(struct kmem_cache *, const char *name,
- struct mem_cgroup;
- #ifdef CONFIG_SLUB
- struct kmem_cache *
--__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
--		   size_t align, unsigned long flags, void (*ctor)(void *));
-+__kmem_cache_alias(const char *name, size_t size, size_t align,
-+		   unsigned long flags, void (*ctor)(void *));
- #else
- static inline struct kmem_cache *
--__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
--		   size_t align, unsigned long flags, void (*ctor)(void *))
-+__kmem_cache_alias(const char *name, size_t size, size_t align,
-+		   unsigned long flags, void (*ctor)(void *))
- { return NULL; }
- #endif
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 0e11c72047d0..b07e08f97460 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3205,6 +3205,7 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 		s->memcg_params->root_cache = root_cache;
+ 		INIT_WORK(&s->memcg_params->destroy,
+ 				kmem_cache_destroy_work_func);
++		css_get(&memcg->css);
+ 	} else
+ 		s->memcg_params->is_root_cache = true;
  
-@@ -119,13 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
- 	return !s->memcg_params || s->memcg_params->is_root_cache;
- }
+@@ -3213,6 +3214,10 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
  
--static inline bool cache_match_memcg(struct kmem_cache *cachep,
--				     struct mem_cgroup *memcg)
--{
--	return (is_root_cache(cachep) && !memcg) ||
--				(cachep->memcg_params->memcg == memcg);
--}
--
- static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+ void memcg_free_cache_params(struct kmem_cache *s)
  {
- 	if (!is_root_cache(s))
-@@ -204,12 +197,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
- 	return true;
++	if (!s->memcg_params)
++		return;
++	if (!s->memcg_params->is_root_cache)
++		css_put(&s->memcg_params->memcg->css);
+ 	kfree(s->memcg_params);
  }
  
--static inline bool cache_match_memcg(struct kmem_cache *cachep,
--				     struct mem_cgroup *memcg)
--{
--	return true;
--}
+@@ -3235,9 +3240,6 @@ void memcg_register_cache(struct kmem_cache *s)
+ 	memcg = s->memcg_params->memcg;
+ 	id = memcg_cache_id(memcg);
+ 
+-	css_get(&memcg->css);
 -
- static inline void memcg_bind_pages(struct kmem_cache *s, int order)
- {
+-
+ 	/*
+ 	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
+ 	 * barrier here to ensure nobody will see the kmem_cache partially
+@@ -3286,10 +3288,8 @@ void memcg_unregister_cache(struct kmem_cache *s)
+ 	 * after removing it from the memcg_slab_caches list, otherwise we can
+ 	 * fail to convert memcg_params_to_cache() while traversing the list.
+ 	 */
+-	VM_BUG_ON(!root->memcg_params->memcg_caches[id]);
++	VM_BUG_ON(root->memcg_params->memcg_caches[id] != s);
+ 	root->memcg_params->memcg_caches[id] = NULL;
+-
+-	css_put(&memcg->css);
  }
+ 
+ /*
 diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 1ec3c619ba04..e77b51eb7347 100644
+index ccc012f00126..0c2879ff414c 100644
 --- a/mm/slab_common.c
 +++ b/mm/slab_common.c
-@@ -200,9 +200,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
- 	 */
- 	flags &= CACHE_CREATE_MASK;
+@@ -313,9 +313,9 @@ void kmem_cache_destroy(struct kmem_cache *s)
+ 	s->refcount--;
+ 	if (!s->refcount) {
+ 		list_del(&s->list);
++		memcg_unregister_cache(s);
  
--	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
--	if (s)
--		goto out_unlock;
-+	if (!memcg) {
-+		s = __kmem_cache_alias(name, size, align, flags, ctor);
-+		if (s)
-+			goto out_unlock;
-+	}
- 
- 	err = -ENOMEM;
- 	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
-diff --git a/mm/slub.c b/mm/slub.c
-index fe6d7be22ef0..2f40e615368f 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3685,6 +3685,9 @@ static int slab_unmergeable(struct kmem_cache *s)
- 	if (slub_nomerge || (s->flags & SLUB_NEVER_MERGE))
- 		return 1;
- 
-+	if (!is_root_cache(s))
-+		return 1;
-+
- 	if (s->ctor)
- 		return 1;
- 
-@@ -3697,9 +3700,8 @@ static int slab_unmergeable(struct kmem_cache *s)
- 	return 0;
- }
- 
--static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
--		size_t align, unsigned long flags, const char *name,
--		void (*ctor)(void *))
-+static struct kmem_cache *find_mergeable(size_t size, size_t align,
-+		unsigned long flags, const char *name, void (*ctor)(void *))
- {
- 	struct kmem_cache *s;
- 
-@@ -3722,7 +3724,7 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
- 			continue;
- 
- 		if ((flags & SLUB_MERGE_SAME) != (s->flags & SLUB_MERGE_SAME))
--				continue;
-+			continue;
- 		/*
- 		 * Check if alignment is compatible.
- 		 * Courtesy of Adrian Drzewiecki
-@@ -3733,21 +3735,18 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
- 		if (s->size - size >= sizeof(void *))
- 			continue;
- 
--		if (!cache_match_memcg(s, memcg))
--			continue;
--
- 		return s;
- 	}
- 	return NULL;
- }
- 
- struct kmem_cache *
--__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
--		   size_t align, unsigned long flags, void (*ctor)(void *))
-+__kmem_cache_alias(const char *name, size_t size, size_t align,
-+		   unsigned long flags, void (*ctor)(void *))
- {
- 	struct kmem_cache *s;
- 
--	s = find_mergeable(memcg, size, align, flags, name, ctor);
-+	s = find_mergeable(size, align, flags, name, ctor);
- 	if (s) {
- 		s->refcount++;
- 		/*
+ 		if (!__kmem_cache_shutdown(s)) {
+-			memcg_unregister_cache(s);
+ 			mutex_unlock(&slab_mutex);
+ 			if (s->flags & SLAB_DESTROY_BY_RCU)
+ 				rcu_barrier();
+@@ -325,6 +325,7 @@ void kmem_cache_destroy(struct kmem_cache *s)
+ 			kmem_cache_free(kmem_cache, s);
+ 		} else {
+ 			list_add(&s->list, &slab_caches);
++			memcg_register_cache(s);
+ 			mutex_unlock(&slab_mutex);
+ 			printk(KERN_ERR "kmem_cache_destroy %s: Slab cache still has objects\n",
+ 				s->name);
 -- 
 1.7.10.4
 
