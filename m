@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554AbaBUAO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:14:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46060 "EHLO
+	id S1755959AbaBTXxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46039 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755960AbaBTXxW (ORCPT
+	with ESMTP id S1755939AbaBTXxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:22 -0500
+	Thu, 20 Feb 2014 18:53:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 03/99] fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
-Date: Thu, 20 Feb 2014 15:51:58 -0800
-Message-Id: <20140220235118.301888765@linuxfoundation.org>
+        Oren Givon <oren.givon@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.13 25/99] iwlwifi: add more 7265 HW IDs
+Date: Thu, 20 Feb 2014 15:52:20 -0800
+Message-Id: <20140220235118.947575131@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -33,64 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Oren Givon <oren.givon@intel.com>
 
-commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
+commit f7690915ccce98553c5425b51e6b5a6c51e27f4e upstream.
 
-Recently due to a spike in connections per second memcached on 3
-separate boxes triggered the OOM killer from accept.  At the time the
-OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
-problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
-hold a bitmap, and there was sufficient fragmentation that the largest
-page available was 8KiB.
+Add 6 new HW IDs for the 7265 series.
 
-I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
-but I do agree that order 3 allocations are very likely to succeed.
-
-There are always pathologies where order > 0 allocations can fail when
-there are copious amounts of free memory available.  Using the pigeon
-hole principle it is easy to show that it requires 1 page more than 50%
-of the pages being free to guarantee an order 1 (8KiB) allocation will
-succeed, 1 page more than 75% of the pages being free to guarantee an
-order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
-the pages being free to guarantee an order 3 allocate will succeed.
-
-A server churning memory with a lot of small requests and replies like
-memcached is a common case that if anything can will skew the odds
-against large pages being available.
-
-Therefore let's not give external applications a practical way to kill
-linux server applications, and specify __GFP_NORETRY to the kmalloc in
-alloc_fdmem.  Unless I am misreading the code and by the time the code
-reaches should_alloc_retry in __alloc_pages_slowpath (where
-__GFP_NORETRY becomes signification).  We have already tried everything
-reasonable to allocate a page and the only thing left to do is wait.  So
-not waiting and falling back to vmalloc immediately seems like the
-reasonable thing to do even if there wasn't a chance of triggering the
-OOM killer.
-
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Oren Givon <oren.givon@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/pcie/drv.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -34,7 +34,7 @@ static void *alloc_fdmem(size_t size)
- 	 * vmalloc() if the allocation size will be considered "large" by the VM.
- 	 */
- 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
--		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
- 		if (data != NULL)
- 			return data;
- 	}
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -354,20 +354,25 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ /* 7265 Series */
+ 	{IWL_PCI_DEVICE(0x095A, 0x5010, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5110, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x5112, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x5100, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x510A, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095B, 0x5310, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095B, 0x5302, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095B, 0x5210, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5012, iwl7265_2ac_cfg)},
+-	{IWL_PCI_DEVICE(0x095A, 0x500A, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5410, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5400, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x1010, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5000, iwl7265_2n_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x500A, iwl7265_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x095B, 0x5200, iwl7265_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5002, iwl7265_n_cfg)},
+ 	{IWL_PCI_DEVICE(0x095B, 0x5202, iwl7265_n_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9010, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x9012, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9110, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x9112, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9210, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9510, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9310, iwl7265_2ac_cfg)},
 
 
