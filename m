@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215AbaBTXyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:54:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46385 "EHLO
+	id S1756199AbaBTXye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:54:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46389 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046AbaBTXya (ORCPT
+	with ESMTP id S1754167AbaBTXya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 18:54:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.13 95/99] target: Fix free-after-use regression in PR unregister
-Date: Thu, 20 Feb 2014 15:53:30 -0800
-Message-Id: <20140220235120.957943005@linuxfoundation.org>
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.13 86/99] IB/qib: Add missing serdes init sequence
+Date: Thu, 20 Feb 2014 15:53:21 -0800
+Message-Id: <20140220235120.697349726@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -30,79 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit fc09149df6e20cfbb0bb86f10899607c321a31eb upstream.
+commit 2f75e12c4457a9b3d042c0a0d748fa198dc2ffaf upstream.
 
-This patch addresses a >= v3.11 free-after-use regression
-in core_scsi3_emulate_pro_register() that was introduced
-in the following commit:
+Research has shown that commit a77fcf895046 ("IB/qib: Use a single
+txselect module parameter for serdes tuning") missed a key serdes init
+sequence.
 
-commit bc118fe4c4a8cfa453491ba77c0a146a6d0e73e0
-Author: Andy Grover <agrover@redhat.com>
-Date:   Thu May 16 10:41:04 2013 -0700
+This patch add that sequence.
 
-    target: Further refactoring of core_scsi3_emulate_pro_register()
-
-To avoid the free-after-use, save an type value before hand, and
-only call core_scsi3_put_pr_reg() with a valid *pr_reg.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_pr.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/qib/qib_iba7322.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -2009,7 +2009,7 @@ core_scsi3_emulate_pro_register(struct s
- 	struct t10_reservation *pr_tmpl = &dev->t10_pr;
- 	unsigned char isid_buf[PR_REG_ISID_LEN], *isid_ptr = NULL;
- 	sense_reason_t ret = TCM_NO_SENSE;
--	int pr_holder = 0;
-+	int pr_holder = 0, type;
+--- a/drivers/infiniband/hw/qib/qib_iba7322.c
++++ b/drivers/infiniband/hw/qib/qib_iba7322.c
+@@ -2395,6 +2395,11 @@ static int qib_7322_bringup_serdes(struc
+ 	qib_write_kreg_port(ppd, krp_ibcctrl_a, ppd->cpspec->ibcctrl_a);
+ 	qib_write_kreg(dd, kr_scratch, 0ULL);
  
- 	if (!se_sess || !se_lun) {
- 		pr_err("SPC-3 PR: se_sess || struct se_lun is NULL!\n");
-@@ -2131,6 +2131,7 @@ core_scsi3_emulate_pro_register(struct s
- 			ret = TCM_RESERVATION_CONFLICT;
- 			goto out;
- 		}
-+		type = pr_reg->pr_res_type;
- 
- 		spin_lock(&pr_tmpl->registration_lock);
- 		/*
-@@ -2161,6 +2162,7 @@ core_scsi3_emulate_pro_register(struct s
- 		 * Release the calling I_T Nexus registration now..
- 		 */
- 		__core_scsi3_free_registration(cmd->se_dev, pr_reg, NULL, 1);
-+		pr_reg = NULL;
- 
- 		/*
- 		 * From spc4r17, section 5.7.11.3 Unregistering
-@@ -2174,8 +2176,8 @@ core_scsi3_emulate_pro_register(struct s
- 		 * RESERVATIONS RELEASED.
- 		 */
- 		if (pr_holder &&
--		    (pr_reg->pr_res_type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
--		     pr_reg->pr_res_type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
-+		    (type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
-+		     type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
- 			list_for_each_entry(pr_reg_p,
- 					&pr_tmpl->registration_list,
- 					pr_reg_list) {
-@@ -2194,7 +2196,8 @@ core_scsi3_emulate_pro_register(struct s
- 	ret = core_scsi3_update_and_write_aptpl(dev, aptpl);
- 
- out:
--	core_scsi3_put_pr_reg(pr_reg);
-+	if (pr_reg)
-+		core_scsi3_put_pr_reg(pr_reg);
- 	return ret;
- }
- 
++	/* ensure previous Tx parameters are not still forced */
++	qib_write_kreg_port(ppd, krp_tx_deemph_override,
++		SYM_MASK(IBSD_TX_DEEMPHASIS_OVERRIDE_0,
++		reset_tx_deemphasis_override));
++
+ 	if (qib_compat_ddr_negotiate) {
+ 		ppd->cpspec->ibdeltainprog = 1;
+ 		ppd->cpspec->ibsymsnap = read_7322_creg32_port(ppd,
 
 
