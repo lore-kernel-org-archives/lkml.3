@@ -1,81 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780AbaBTN7I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:59:08 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:57941 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328AbaBTN7G (ORCPT
+	id S1754845AbaBTOCp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:02:45 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:48279 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084AbaBTOCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:59:06 -0500
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND AGAIN] clk: support hardware-specific debugfs entries
-Date: Thu, 20 Feb 2014 07:58:55 -0600
-Message-Id: <1392904735-23026-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 20 Feb 2014 09:02:42 -0500
+Date: Thu, 20 Feb 2014 09:02:38 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup fixes for v3.14-rc3
+Message-ID: <20140220140238.GB6897@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new clk_ops->debug_init method to allow a clock hardware
-driver to populate the clock's debugfs directory with entries
-beyond those common for every clock.
+Hello, Linus.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- drivers/clk/clk.c            |    4 ++++
- include/linux/clk-provider.h |    8 ++++++++
- 2 files changed, 12 insertions(+)
+Quite a few fixes this time.  Three locking fixes, all marked for
+-stable.  A couple error path fixes and some misc fixes.  Hugh found a
+bug in memcg offlining sequence and we thought we could fix that from
+cgroup core side but that turned out to be insufficient and got
+reverted.  A different fix has been applied to -mm.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 5517944..64b579a 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -277,6 +277,10 @@ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
- 	if (!d)
- 		goto err_out;
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.14-fixes
+
+for you to fetch changes up to 532de3fc72adc2a6525c4d53c07bf81e1732083d:
+
+  cgroup: update cgroup_enable_task_cg_lists() to grab siglock (2014-02-18 18:23:18 -0500)
+
+Thanks.
+
+----------------------------------------------------------------
+Hugh Dickins (1):
+      cgroup: use an ordered workqueue for cgroup destruction
+
+Li Zefan (2):
+      cpuset: update MAINTAINERS entry
+      cgroup: protect modifications to cgroup_idr with cgroup_mutex
+
+Tejun Heo (7):
+      arm, pm, vmpressure: add missing slab.h includes
+      nfs: include xattr.h from fs/nfs/nfs3proc.c
+      cgroup: fix error return value in cgroup_mount()
+      cgroup: fix error return from cgroup_create()
+      cgroup: fix locking in cgroup_cfts_commit()
+      Revert "cgroup: use an ordered workqueue for cgroup destruction"
+      cgroup: update cgroup_enable_task_cg_lists() to grab siglock
+
+ MAINTAINERS              |  2 ++
+ arch/arm/mach-tegra/pm.c |  1 +
+ fs/nfs/nfs3proc.c        |  1 +
+ include/linux/cgroup.h   |  2 ++
+ kernel/cgroup.c          | 60 ++++++++++++++++++++++++++----------------------
+ kernel/power/console.c   |  1 +
+ mm/vmpressure.c          |  1 +
+ 7 files changed, 40 insertions(+), 28 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b2cf5cf..41e52c5 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2408,8 +2408,10 @@ F:	tools/power/cpupower/
  
-+	if (clk->ops->debug_init)
-+		if (clk->ops->debug_init(clk->hw, clk->dentry))
-+			goto err_out;
+ CPUSETS
+ M:	Li Zefan <lizefan@huawei.com>
++L:	cgroups@vger.kernel.org
+ W:	http://www.bullopensource.org/cpuset/
+ W:	http://oss.sgi.com/projects/cpusets/
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
+ S:	Maintained
+ F:	Documentation/cgroups/cpusets.txt
+ F:	include/linux/cpuset.h
+diff --git a/arch/arm/mach-tegra/pm.c b/arch/arm/mach-tegra/pm.c
+index 4ae0286..f55b05a 100644
+--- a/arch/arm/mach-tegra/pm.c
++++ b/arch/arm/mach-tegra/pm.c
+@@ -24,6 +24,7 @@
+ #include <linux/cpu_pm.h>
+ #include <linux/suspend.h>
+ #include <linux/err.h>
++#include <linux/slab.h>
+ #include <linux/clk/tegra.h>
+ 
+ #include <asm/smp_plat.h>
+diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
+index aa9bc97..a462ef0 100644
+--- a/fs/nfs/nfs3proc.c
++++ b/fs/nfs/nfs3proc.c
+@@ -18,6 +18,7 @@
+ #include <linux/lockd/bind.h>
+ #include <linux/nfs_mount.h>
+ #include <linux/freezer.h>
++#include <linux/xattr.h>
+ 
+ #include "iostat.h"
+ #include "internal.h"
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 5c09759..9450f02 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -166,6 +166,8 @@ struct cgroup {
+ 	 *
+ 	 * The ID of the root cgroup is always 0, and a new cgroup
+ 	 * will be assigned with a smallest available ID.
++	 *
++	 * Allocating/Removing ID must be protected by cgroup_mutex.
+ 	 */
+ 	int id;
+ 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e2f46ba..105f273 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -886,7 +886,9 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ 		 * per-subsystem and moved to css->id so that lookups are
+ 		 * successful until the target css is released.
+ 		 */
++		mutex_lock(&cgroup_mutex);
+ 		idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
++		mutex_unlock(&cgroup_mutex);
+ 		cgrp->id = -1;
+ 
+ 		call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
+@@ -1566,10 +1568,10 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		mutex_lock(&cgroup_mutex);
+ 		mutex_lock(&cgroup_root_mutex);
+ 
+-		root_cgrp->id = idr_alloc(&root->cgroup_idr, root_cgrp,
+-					   0, 1, GFP_KERNEL);
+-		if (root_cgrp->id < 0)
++		ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
++		if (ret < 0)
+ 			goto unlock_drop;
++		root_cgrp->id = ret;
+ 
+ 		/* Check for name clashes with existing mounts */
+ 		ret = -EBUSY;
+@@ -2763,10 +2765,7 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ 	 */
+ 	update_before = cgroup_serial_nr_next;
+ 
+-	mutex_unlock(&cgroup_mutex);
+-
+ 	/* add/rm files for all cgroups created before */
+-	rcu_read_lock();
+ 	css_for_each_descendant_pre(css, cgroup_css(root, ss)) {
+ 		struct cgroup *cgrp = css->cgroup;
+ 
+@@ -2775,23 +2774,19 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ 
+ 		inode = cgrp->dentry->d_inode;
+ 		dget(cgrp->dentry);
+-		rcu_read_unlock();
+-
+ 		dput(prev);
+ 		prev = cgrp->dentry;
+ 
++		mutex_unlock(&cgroup_mutex);
+ 		mutex_lock(&inode->i_mutex);
+ 		mutex_lock(&cgroup_mutex);
+ 		if (cgrp->serial_nr < update_before && !cgroup_is_dead(cgrp))
+ 			ret = cgroup_addrm_files(cgrp, cfts, is_add);
+-		mutex_unlock(&cgroup_mutex);
+ 		mutex_unlock(&inode->i_mutex);
+-
+-		rcu_read_lock();
+ 		if (ret)
+ 			break;
+ 	}
+-	rcu_read_unlock();
++	mutex_unlock(&cgroup_mutex);
+ 	dput(prev);
+ 	deactivate_super(sb);
+ 	return ret;
+@@ -2910,9 +2905,14 @@ static void cgroup_enable_task_cg_lists(void)
+ 		 * We should check if the process is exiting, otherwise
+ 		 * it will race with cgroup_exit() in that the list
+ 		 * entry won't be deleted though the process has exited.
++		 * Do it while holding siglock so that we don't end up
++		 * racing against cgroup_exit().
+ 		 */
++		spin_lock_irq(&p->sighand->siglock);
+ 		if (!(p->flags & PF_EXITING) && list_empty(&p->cg_list))
+ 			list_add(&p->cg_list, &task_css_set(p)->tasks);
++		spin_unlock_irq(&p->sighand->siglock);
 +
- 	ret = 0;
- 	goto out;
+ 		task_unlock(p);
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
+@@ -4158,7 +4158,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	struct cgroup *cgrp;
+ 	struct cgroup_name *name;
+ 	struct cgroupfs_root *root = parent->root;
+-	int ssid, err = 0;
++	int ssid, err;
+ 	struct cgroup_subsys *ss;
+ 	struct super_block *sb = root->sb;
  
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 939533d..5119174 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -32,6 +32,7 @@
- #define CLK_GET_ACCURACY_NOCACHE BIT(8) /* do not use the cached clk accuracy */
+@@ -4168,19 +4168,13 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 		return -ENOMEM;
  
- struct clk_hw;
-+struct dentry;
+ 	name = cgroup_alloc_name(dentry);
+-	if (!name)
++	if (!name) {
++		err = -ENOMEM;
+ 		goto err_free_cgrp;
++	}
+ 	rcu_assign_pointer(cgrp->name, name);
  
- /**
-  * struct clk_ops -  Callback operations for hardware clocks; these are to
-@@ -127,6 +128,12 @@ struct clk_hw;
-  *		separately via calls to .set_parent and .set_rate.
-  *		Returns 0 on success, -EERROR otherwise.
-  *
-+ * @debug_init:	Set up type-specific debugfs entries for this clock.  This
-+ *		is called once, after the debugfs directory entry for this
-+ *		clock has been created.  The dentry pointer representing that
-+ *		directory is provided as an argument.  Called with
-+ *		prepare_lock held.  Returns 0 on success, -EERROR otherwise.
-+ *
-  *
-  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
-  * implementations to split any work between atomic (enable) and sleepable
-@@ -165,6 +172,7 @@ struct clk_ops {
- 	unsigned long	(*recalc_accuracy)(struct clk_hw *hw,
- 					   unsigned long parent_accuracy);
- 	void		(*init)(struct clk_hw *hw);
-+	int		(*debug_init)(struct clk_hw *hw, struct dentry *dentry);
- };
+ 	/*
+-	 * Temporarily set the pointer to NULL, so idr_find() won't return
+-	 * a half-baked cgroup.
+-	 */
+-	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
+-	if (cgrp->id < 0)
+-		goto err_free_name;
+-
+-	/*
+ 	 * Only live parents can have children.  Note that the liveliness
+ 	 * check isn't strictly necessary because cgroup_mkdir() and
+ 	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
+@@ -4189,7 +4183,17 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	 */
+ 	if (!cgroup_lock_live_group(parent)) {
+ 		err = -ENODEV;
+-		goto err_free_id;
++		goto err_free_name;
++	}
++
++	/*
++	 * Temporarily set the pointer to NULL, so idr_find() won't return
++	 * a half-baked cgroup.
++	 */
++	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
++	if (cgrp->id < 0) {
++		err = -ENOMEM;
++		goto err_unlock;
+ 	}
  
- /**
--- 
-1.7.9.5
-
+ 	/* Grab a reference on the superblock so the hierarchy doesn't
+@@ -4221,7 +4225,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	 */
+ 	err = cgroup_create_file(dentry, S_IFDIR | mode, sb);
+ 	if (err < 0)
+-		goto err_unlock;
++		goto err_free_id;
+ 	lockdep_assert_held(&dentry->d_inode->i_mutex);
+ 
+ 	cgrp->serial_nr = cgroup_serial_nr_next++;
+@@ -4257,12 +4261,12 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 
+ 	return 0;
+ 
+-err_unlock:
+-	mutex_unlock(&cgroup_mutex);
+-	/* Release the reference count that we took on the superblock */
+-	deactivate_super(sb);
+ err_free_id:
+ 	idr_remove(&root->cgroup_idr, cgrp->id);
++	/* Release the reference count that we took on the superblock */
++	deactivate_super(sb);
++err_unlock:
++	mutex_unlock(&cgroup_mutex);
+ err_free_name:
+ 	kfree(rcu_dereference_raw(cgrp->name));
+ err_free_cgrp:
+diff --git a/kernel/power/console.c b/kernel/power/console.c
+index eacb8bd..aba9c54 100644
+--- a/kernel/power/console.c
++++ b/kernel/power/console.c
+@@ -9,6 +9,7 @@
+ #include <linux/kbd_kern.h>
+ #include <linux/vt.h>
+ #include <linux/module.h>
++#include <linux/slab.h>
+ #include "power.h"
+ 
+ #define SUSPEND_CONSOLE	(MAX_NR_CONSOLES-1)
+diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+index 196970a..d4042e7 100644
+--- a/mm/vmpressure.c
++++ b/mm/vmpressure.c
+@@ -19,6 +19,7 @@
+ #include <linux/mm.h>
+ #include <linux/vmstat.h>
+ #include <linux/eventfd.h>
++#include <linux/slab.h>
+ #include <linux/swap.h>
+ #include <linux/printk.h>
+ #include <linux/vmpressure.h>
