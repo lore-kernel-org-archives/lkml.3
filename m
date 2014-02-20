@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaBTX4P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:56:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46375 "EHLO
+	id S1756236AbaBTX4i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:56:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46371 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172AbaBTXy1 (ORCPT
+	with ESMTP id S1756165AbaBTXy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:27 -0500
+	Thu, 20 Feb 2014 18:54:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.13 92/99] time: Fix overflow when HZ is smaller than 60
-Date: Thu, 20 Feb 2014 15:53:27 -0800
-Message-Id: <20140220235120.871783445@linuxfoundation.org>
+        Wolfram Sang <wsa@the-dreams.de>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: [PATCH 3.13 91/99] i2c: mv64xxx: refactor message start to ensure proper initialization
+Date: Thu, 20 Feb 2014 15:53:26 -0800
+Message-Id: <20140220235120.844012172@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,46 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Wolfram Sang <wsa@the-dreams.de>
 
-commit 80d767d770fd9c697e434fd080c2db7b5c60c6dd upstream.
+commit 79970db213344b4a4034645db5ebfc31571f3fa3 upstream.
 
-When compiling for the IA-64 ski emulator, HZ is set to 32 because the
-emulation is slow and we don't want to waste too many cycles processing
-timers. Alpha also has an option to set HZ to 32.
+Because the offload mechanism can fall back to a standard transfer,
+having two seperate initialization states is unfortunate. Let's just
+have one state which does things consistently. This fixes a bug where
+some preparation was missing when the fallback happened. And it makes
+the code much easier to follow. To implement this, we put the check
+if offload is possible at the top of the offload setup function.
 
-This causes integer underflow in
-kernel/time/jiffies.c:
-kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
-  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
-  ^
-
-This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Link: http://lkml.kernel.org/r/alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/jiffies.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/i2c/busses/i2c-mv64xxx.c |   33 ++++++++++++++-------------------
+ 1 file changed, 14 insertions(+), 19 deletions(-)
 
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -51,7 +51,13 @@
-  * HZ shrinks, so values greater than 8 overflow 32bits when
-  * HZ=100.
-  */
-+#if HZ < 34
-+#define JIFFIES_SHIFT	6
-+#elif HZ < 67
-+#define JIFFIES_SHIFT	7
-+#else
- #define JIFFIES_SHIFT	8
-+#endif
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -97,7 +97,6 @@ enum {
+ enum {
+ 	MV64XXX_I2C_ACTION_INVALID,
+ 	MV64XXX_I2C_ACTION_CONTINUE,
+-	MV64XXX_I2C_ACTION_OFFLOAD_SEND_START,
+ 	MV64XXX_I2C_ACTION_SEND_START,
+ 	MV64XXX_I2C_ACTION_SEND_RESTART,
+ 	MV64XXX_I2C_ACTION_OFFLOAD_RESTART,
+@@ -204,6 +203,9 @@ static int mv64xxx_i2c_offload_msg(struc
+ 	unsigned long ctrl_reg;
+ 	struct i2c_msg *msg = drv_data->msgs;
  
- static cycle_t jiffies_read(struct clocksource *cs)
- {
++	if (!drv_data->offload_enabled)
++		return -EOPNOTSUPP;
++
+ 	drv_data->msg = msg;
+ 	drv_data->byte_posn = 0;
+ 	drv_data->bytes_left = msg->len;
+@@ -433,8 +435,7 @@ mv64xxx_i2c_do_action(struct mv64xxx_i2c
+ 
+ 		drv_data->msgs++;
+ 		drv_data->num_msgs--;
+-		if (!(drv_data->offload_enabled &&
+-				mv64xxx_i2c_offload_msg(drv_data))) {
++		if (mv64xxx_i2c_offload_msg(drv_data) < 0) {
+ 			drv_data->cntl_bits |= MV64XXX_I2C_REG_CONTROL_START;
+ 			writel(drv_data->cntl_bits,
+ 			drv_data->reg_base + drv_data->reg_offsets.control);
+@@ -458,15 +459,14 @@ mv64xxx_i2c_do_action(struct mv64xxx_i2c
+ 			drv_data->reg_base + drv_data->reg_offsets.control);
+ 		break;
+ 
+-	case MV64XXX_I2C_ACTION_OFFLOAD_SEND_START:
+-		if (!mv64xxx_i2c_offload_msg(drv_data))
+-			break;
+-		else
+-			drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
+-		/* FALLTHRU */
+ 	case MV64XXX_I2C_ACTION_SEND_START:
+-		writel(drv_data->cntl_bits | MV64XXX_I2C_REG_CONTROL_START,
+-			drv_data->reg_base + drv_data->reg_offsets.control);
++		/* Can we offload this msg ? */
++		if (mv64xxx_i2c_offload_msg(drv_data) < 0) {
++			/* No, switch to standard path */
++			mv64xxx_i2c_prepare_for_io(drv_data, drv_data->msgs);
++			writel(drv_data->cntl_bits | MV64XXX_I2C_REG_CONTROL_START,
++				drv_data->reg_base + drv_data->reg_offsets.control);
++		}
+ 		break;
+ 
+ 	case MV64XXX_I2C_ACTION_SEND_ADDR_1:
+@@ -625,15 +625,10 @@ mv64xxx_i2c_execute_msg(struct mv64xxx_i
+ 	unsigned long	flags;
+ 
+ 	spin_lock_irqsave(&drv_data->lock, flags);
+-	if (drv_data->offload_enabled) {
+-		drv_data->action = MV64XXX_I2C_ACTION_OFFLOAD_SEND_START;
+-		drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
+-	} else {
+-		mv64xxx_i2c_prepare_for_io(drv_data, msg);
+ 
+-		drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
+-		drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
+-	}
++	drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
++	drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
++
+ 	drv_data->send_stop = is_last;
+ 	drv_data->block = 1;
+ 	mv64xxx_i2c_do_action(drv_data);
 
 
