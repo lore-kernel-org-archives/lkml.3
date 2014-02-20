@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620AbaBTTIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 14:08:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754693AbaBTTIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 14:08:45 -0500
-Date: Thu, 20 Feb 2014 20:08:16 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: akpm@linux-foundation.org, eparis@redhat.com, sgrubb@redhat.com,
-        peterz@infradead.org, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7][RFC] pid: changes to support audit
-Message-ID: <20140220190816.GD23993@redhat.com>
-References: <20131220140417.GE14884@madcap2.tricolour.ca> <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com> <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com> <20131217095801.GF21999@twins.programming.kicks-ass.net> <20131220044826.GF14944@madcap2.tricolour.ca> <20131220085846.GA21999@twins.programming.kicks-ass.net> <cover.1390495874.git.rgb@redhat.com> <20140219161858.GN16640@madcap2.tricolour.ca> <20140219174745.GA9784@redhat.com> <20140219181501.GO16640@madcap2.tricolour.ca>
+	id S932082AbaBTTJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 14:09:27 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:38116 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754933AbaBTTJZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 14:09:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140219181501.GO16640@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1392922421.28840.36.camel@triegel.csb>
+References: <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	<1392740258.18779.7732.camel@triegel.csb>
+	<CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+	<1392752867.18779.8120.camel@triegel.csb>
+	<CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+	<20140220040102.GM4250@linux.vnet.ibm.com>
+	<CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
+	<20140220083032.GN4250@linux.vnet.ibm.com>
+	<CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
+	<20140220181116.GT4250@linux.vnet.ibm.com>
+	<CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
+	<1392922421.28840.36.camel@triegel.csb>
+Date: Thu, 20 Feb 2014 11:09:24 -0800
+X-Google-Sender-Auth: FNt0BszzdWa3n8O7WLLnulEOVM4
+Message-ID: <CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19, Richard Guy Briggs wrote:
+On Thu, Feb 20, 2014 at 10:53 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> On Thu, 2014-02-20 at 10:32 -0800, Linus Torvalds wrote:
+>> On Thu, Feb 20, 2014 at 10:11 AM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> >
+>> > You really need that "consume" to be "acquire".
+>>
+>> So I think we now all agree that that is what the standard is saying.
 >
-> On 14/02/19, Oleg Nesterov wrote:
-> >
-> > But at first glance, can't you send 2/7 first and join 1/7 and 3/7?
+> Huh?
 >
-> Yes, Peter made the same observation.  I thought it was more useful to
-> have them seperated out, but I'll join them.
-
-Yes, thanks, I think it doesn't make sense to uglify the code in 1/7
-and then fix it in 2/7.
-
-> > And since you change is_global_init() perhaps you can also fix it?
-> > It actually needs tgid.
+> The standard says that there are two separate things (among many more):
+> mo_acquire and mo_consume.  They both influence happens-before in
+> different (and independent!) ways.
 >
-> Sure.  Can you explain why?  We only want init killing off its own
-> threads?
+> What Paul is saying is that *you* should have used *acquire* in that
+> example.
 
-Please see my reply to 5/7.
+I understand.
 
-Oleg.
+And I disagree. I think the standard is wrong, and what I *should* be
+doing is point out the fact very loudly, and just tell people to NEVER
+EVER use "consume" as long as it's not reliable and has insane
+semantics.
 
+So what I "should do" is to not accept any C11 atomics use in the
+kernel. Because with the "acquire", it generates worse code than what
+we already have, and with the "consume" it's shit.
+
+See?
+
+                  Linus
