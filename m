@@ -1,143 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600AbaBTRBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:01:10 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:45042 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616AbaBTRBI (ORCPT
+	id S1755635AbaBTRBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:01:44 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:56497 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755359AbaBTRBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:01:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140220083032.GN4250@linux.vnet.ibm.com>
-References: <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	<20140218030002.GA15857@linux.vnet.ibm.com>
-	<CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
-	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
-	<1392740258.18779.7732.camel@triegel.csb>
-	<CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
-	<1392752867.18779.8120.camel@triegel.csb>
-	<CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
-	<20140220040102.GM4250@linux.vnet.ibm.com>
-	<CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
-	<20140220083032.GN4250@linux.vnet.ibm.com>
-Date: Thu, 20 Feb 2014 09:01:06 -0800
-X-Google-Sender-Auth: d5QXW5VT1xrDES6JHhzFYY__GqU
-Message-ID: <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 20 Feb 2014 12:01:41 -0500
+X-AuditID: cbfec37a-b7fc06d00000555a-6b-530634f41320
+Message-id: <530634F2.3010600@samsung.com>
+Date: Thu, 20 Feb 2014 10:01:38 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dirk.j.brandewie@intel.com
+Cc: Xishi Qiu <qiuxishi@huawei.com>, linux-kernel@vger.kernel.org,
+        n-horiguchi@ah.jp.nec.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.10 00/26] 3.10.31-stable review
+References: <20140218224530.398913499@linuxfoundation.org>
+ <53054C83.8000409@samsung.com> <5305AF24.4030503@huawei.com>
+ <53060590.9090600@samsung.com>
+In-reply-to: <53060590.9090600@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.4]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e+wn+4XE7Zgg/4zOhZz1q9hszj+XNOi
+	efF6NovLu+awWXxYe4rF4tu03YwWX386WCzY+IjR4lHfW3YHTo8XC7cwe+ycdZfdo+XIW1aP
+	xXteMnmcmPGbxWP/3DXsHp83yQWwR3HZpKTmZJalFunbJXBlLNizga1glUjFqukP2BoYJwh0
+	MXJySAiYSNx/vI8NwhaTuHBvPZDNxSEksIxR4vzvbiinl0liycevrBDOBkaJzobdzF2MHBy8
+	AloST7c7gXSzCKhKvJp7hBXEZhNQl/j8egc7iC0kICfRtGQ1M4gtKhAh8ersRBYQm1dAUOLH
+	5HtgtoiAv8TZ3asYQeYzC7QwSew5e54JJCEsYCox+2gT1BWzGCUW9awC28ApoC2xf3k72AZm
+	AWuJlZO2MULY8hKb17xlhtisLPHn8ikmiN8UJFbceMMygVFkFpLls5C0z0LSvoCReRWjWGlx
+	ckFxUnpqhaFecWJucWleul5yfu4mRkjEVe1gvPPV5hCjAAejEg/vCSm2YCHWxLLiytxDjBIc
+	zEoivO4qQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MM00v6VapcZ32/fLp8fzoDf9eNuz6vvPT
+	iW/JU4u0P904tEQ+5ufD6L3fu/7OUlRbZDmna/PU3LcCnHfeh3o99H0quGXP950FC32es87R
+	z3t8acP3QyobZy5/bVZQe0+R6W8KQ0D6nGOLF2h+3VRWLsidbLnavbaMs+tJXozMoceZ01a8
+	ai+q01JiKc5INNRiLipOBADpPPyBlgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 12:30 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
+On 02/20/2014 06:39 AM, Shuah Khan wrote:
+> On 02/20/2014 12:30 AM, Xishi Qiu wrote:
+>> On 2014/2/20 8:29, Shuah Khan wrote:
 >>
->> So lets make this really simple: if you have a consume->cmp->read, is
->> the ordering of the two reads guaranteed?
+>>> On 02/18/2014 03:46 PM, Greg Kroah-Hartman wrote:
+>>>> This is the start of the stable review cycle for the 3.10.31 release.
+>>>> There are 26 patches in this series, all will be posted as a response
+>>>> to this one.  If anyone has any issues with these being applied, please
+>>>> let me know.
+>>>>
+>>>> Responses should be made by Thu Feb 20 22:45:20 UTC 2014.
+>>>> Anything received after that time might be too late.
+>>>>
+>>>> The whole patch series can be found in one patch at:
+>>>>
+>>>> kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.31-rc1.gz
+>>>> and the diffstat can be found below.
+>>>>
+>>>> thanks,
+>>>>
+>>>> greg k-h
+>>>>
+>>>
+>>> Compile and boot tests passed on AMD system. Boot failed on Intel
+>>> systems. I think the following changes are the suspect, so far by
+>>> process of elimination - these two aren't in 3.12 and 3.13
+>>>
+>>> #    modified:   mm/hugetlb.c
+>>> #    modified:   mm/memory-failure.c
+>>>
+>>> However, my strong suspect is the following:
+>>>
+>>> Xishi Qiu <qiuxishi@huawei.com>
+>>>      mm: fix process accidentally killed by mce because of huge page
+>>> migration
+>>>
+>>> I don't see how this could cause problems, none the less, I will test
+>>> without these changes and let you know.
+>>>
+>>>
+>>> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>>>      mm/memory-failure.c: fix memory leak in successful soft offlining
+>>>
+>>> I will test without these changes and let you know.
+>>>
+>>> -- Shuah
+>>>
+>>
+>> Hi Shuah
+>>
+>> I tested on my system, it boot successfully.
+>>
+>> hardware: Intel(R) Xeon(R) CPU E5-2420 0 @ 1.90GHz
+>> OS: v3.10.30 + the two patches
+>>
+>> Thanks,
+>> Xishi Qiu
 >
-> Not as far as I know.  Also, as far as I know, there is no difference
-> between consume and relaxed in the consume->cmp->read case.
+> Xishi,
+>
+> I tested without your patch and still see the issue. My wild guess
+> wasn't a good one :) I am starting git bisect now.
+>
+> -- Shuah
+>
+>
 
-Ok, quite frankly, I think that means that "consume" is misdesigned.
+ok I have it isolated to the following patch:
 
-> The above example can have a return value of 0 if translated
-> straightforwardly into either ARM or Power, right?
+Dirk Brandewie <dirk.j.brandewie@intel.com>
+     intel_pstate: Take core C0 time into account for core busy calculation
 
-Correct. And I think that is too subtle. It's dangerous, it makes code
-that *looks* correct work incorrectly, and it actually happens to work
-on x86 since x86 doesn't have crap-for-brains memory ordering
-semantics.
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-> So, if you make one of two changes to your example, then I will agree
-> with you.
+commit fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 upstream.
 
-No. We're not playing games here. I'm fed up with complex examples
-that make no sense.
+Take non-idle time into account when calculating core busy time.
+This ensures that intel_pstate will notice a decrease in load.
 
-Nobody sane writes code that does that pointer comparison, and it is
-entirely immaterial what the compiler can do behind our backs. The C
-standard semantics need to make sense to the *user* (ie programmer),
-not to a CPU and not to a compiler. The CPU and compiler are "tools".
-They don't matter. Their only job is to make the code *work*, dammit.
+Boots just fine without this change.
 
-So no idiotic made-up examples that involve code that nobody will ever
-write and that have subtle issues.
+-- Shuah
 
-So the starting point is that (same example as before, but with even
-clearer naming):
-
-Initialization state:
-  initialized = 0;
-  value = 0;
-
-Consumer:
-
-    return atomic_read(&initialized, consume) ? value : -1;
-
-Writer:
-    value = 42;
-    atomic_write(&initialized, 1, release);
-
-and because the C memory ordering standard is written in such a way
-that this is subtly buggy (and can return 0, which is *not* logically
-a valid value), then I think the C memory ordering standard is broken.
-
-That "consumer" memory ordering is dangerous as hell, and it is
-dangerous FOR NO GOOD REASON.
-
-The trivial "fix" to the standard would be to get rid of all the
-"carries a dependency" crap, and just say that *anything* that depends
-on it is ordered wrt it.
-
-That just means that on alpha, "consume" implies an unconditional read
-barrier (well, unless the value is never used and is loaded just
-because it is also volatile), on x86, "consume" is the same as
-"acquire" which is just a plain load with ordering guarantees, and on
-ARM or power you can still avoid the extra synchronization *if* the
-value is used just for computation and for following pointers, but if
-the value is used for a comparison, there needs to be a
-synchronization barrier.
-
-Notice? Getting rid of the stupid "carries-dependency" crap from the
-standard actually
- (a) simplifies the standard
- (b) means that the above obvious example *works*
- (c) does not in *any* way make for any less efficient code generation
-for the cases that "consume" works correctly for in the current
-mis-designed standard.
- (d) is actually a hell of a lot easier to explain to a compiler
-writer, and I can guarantee that it is simpler to implement too.
-
-Why do I claim (d) "it is simpler to implement" - because on ARM/power
-you can implement it *exactly* as a special "acquire", with just a
-trivial peep-hole special case that follows the use chain of the
-acquire op to the consume, and then just drop the acquire bit if the
-only use is that compute-to-load chain.
-
-In fact, realistically, the *only* thing you need to actually care
-about for the intended use case of "consume" is the question "is the
-consuming load immediately consumed as an address (with offset) of a
-memory operation. So you don't even need to follow any complicated
-computation chain in a compiler - the only case that matters for the
-barrier removal optimization is the "oh, I can see that it is only
-used as an address to a dereference".
-
-Seriously. The current standard is broken. It's broken because it
-mis-compiles code that on the face of it looks logical and works, it's
-broken because it's overly complex, and it's broken because the
-complexity doesn't even *buy* you anything. All this complexity for no
-reason. When much simpler wording and implementation actually WORKS
-BETTER.
-
-                  Linus
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
