@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230AbaBUAkc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:40:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45685 "EHLO
+	id S1755474AbaBTXwA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45658 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755488AbaBTXwC (ORCPT
+	with ESMTP id S1755426AbaBTXv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:02 -0500
+	Thu, 20 Feb 2014 18:51:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 24/82] spi: nuc900: Set SPI_LSB_FIRST for master->mode_bits if hw->pdata->lsb is true
-Date: Thu, 20 Feb 2014 15:52:07 -0800
-Message-Id: <20140220235020.202882178@linuxfoundation.org>
+        Pontus Fuchs <pontus.fuchs@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.12 18/82] nl80211: Reset split_start when netlink skb is exhausted
+Date: Thu, 20 Feb 2014 15:52:01 -0800
+Message-Id: <20140220235020.029125699@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,30 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Pontus Fuchs <pontus.fuchs@gmail.com>
 
-commit f7db1588d6028c97c098bb6445eaabc56a25fed8 upstream.
+commit f12cb2893069495726c21a4b0178705dacfecfe0 upstream.
 
-Otherwise, spi_setup() fails with unsupported mode bits message.
+When the netlink skb is exhausted split_start is left set. In the
+subsequent retry, with a larger buffer, the dump is continued from the
+failing point instead of from the beginning.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This was causing my rt28xx based USB dongle to now show up when
+running "iw list" with an old iw version without split dump support.
+
+Fixes: 3713b4e364ef ("nl80211: allow splitting wiphy information in dumps")
+Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+[avoid the entire workaround when state->split is set]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-nuc900.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/wireless/nl80211.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/spi/spi-nuc900.c
-+++ b/drivers/spi/spi-nuc900.c
-@@ -363,6 +363,8 @@ static int nuc900_spi_probe(struct platf
- 	init_completion(&hw->done);
- 
- 	master->mode_bits          = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
-+	if (hw->pdata->lsb)
-+		master->mode_bits |= SPI_LSB_FIRST;
- 	master->num_chipselect     = hw->pdata->num_cs;
- 	master->bus_num            = hw->pdata->bus_num;
- 	hw->bitbang.master         = hw->master;
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -1655,9 +1655,10 @@ static int nl80211_dump_wiphy(struct sk_
+ 				 * We can then retry with the larger buffer.
+ 				 */
+ 				if ((ret == -ENOBUFS || ret == -EMSGSIZE) &&
+-				    !skb->len &&
++				    !skb->len && !state->split &&
+ 				    cb->min_dump_alloc < 4096) {
+ 					cb->min_dump_alloc = 4096;
++					state->split_start = 0;
+ 					rtnl_unlock();
+ 					return 1;
+ 				}
 
 
