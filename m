@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339AbaBUAls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:41:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45670 "EHLO
+	id S1757248AbaBUAmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:42:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45666 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447AbaBTXv7 (ORCPT
+	with ESMTP id S1755431AbaBTXv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:59 -0500
+	Thu, 20 Feb 2014 18:51:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.12 20/82] iwlwifi: mvm: dont allow A band if SKU forbids it
-Date: Thu, 20 Feb 2014 15:52:03 -0800
-Message-Id: <20140220235020.085729537@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.12 02/82] xen-blkfront: handle backend CLOSED without CLOSING
+Date: Thu, 20 Feb 2014 15:51:45 -0800
+Message-Id: <20140220235019.560554538@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,41 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit c512865446e6dd5b6e91e81187e75b734ad7cfc7 upstream.
+commit 3661371701e714f0cea4120f6a365340858fb4e4 upstream.
 
-The driver wasn't reading the NVM properly. While this
-didn't lead to any issue until now, it seems that there
-is an old version of the NVM in the wild.
-In this version, the A band channels appear to be valid
-but the SKU capabilities (another field of the NVM) says
-that A band isn't supported at all.
-With this specific version of the NVM, the driver would
-think that A band is supported while the HW / firmware
-don't. This leads to asserts.
+Backend drivers shouldn't transistion to CLOSED unless the frontend is
+CLOSED.  If a backend does transition to CLOSED too soon then the
+frontend may not see the CLOSING state and will not properly shutdown.
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+So, treat an unexpected backend CLOSED state the same as CLOSING.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/block/xen-blkfront.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-@@ -182,6 +182,11 @@ static int iwl_init_channel_map(struct d
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1852,13 +1852,16 @@ static void blkback_changed(struct xenbu
+ 	case XenbusStateReconfiguring:
+ 	case XenbusStateReconfigured:
+ 	case XenbusStateUnknown:
+-	case XenbusStateClosed:
+ 		break;
  
- 	for (ch_idx = 0; ch_idx < IWL_NUM_CHANNELS; ch_idx++) {
- 		ch_flags = __le16_to_cpup(nvm_ch_flags + ch_idx);
-+
-+		if (ch_idx >= NUM_2GHZ_CHANNELS &&
-+		    !data->sku_cap_band_52GHz_enable)
-+			ch_flags &= ~NVM_CHANNEL_VALID;
-+
- 		if (!(ch_flags & NVM_CHANNEL_VALID)) {
- 			IWL_DEBUG_EEPROM(dev,
- 					 "Ch. %d Flags %x [%sGHz] - No traffic\n",
+ 	case XenbusStateConnected:
+ 		blkfront_connect(info);
+ 		break;
+ 
++	case XenbusStateClosed:
++		if (dev->state == XenbusStateClosed)
++			break;
++		/* Missed the backend's Closing state -- fallthrough */
+ 	case XenbusStateClosing:
+ 		blkfront_closing(info);
+ 		break;
 
 
