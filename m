@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861AbaBTXww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45909 "EHLO
+	id S1756910AbaBUAYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:24:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45926 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820AbaBTXwu (ORCPT
+	with ESMTP id S1755858AbaBTXww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:50 -0500
+	Thu, 20 Feb 2014 18:52:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.12 26/82] raw: test against runtime value of max_raw_minors
-Date: Thu, 20 Feb 2014 15:52:09 -0800
-Message-Id: <20140220235020.259953212@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>,
+        Doug Thompson <dougthompson@xmission.com>
+Subject: [PATCH 3.12 81/82] EDAC: Poll timeout cannot be zero, p2
+Date: Thu, 20 Feb 2014 15:53:04 -0800
+Message-Id: <20140220235021.908835501@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,37 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Borislav Petkov <bp@suse.de>
 
-commit 5bbb2ae3d6f896f8d2082d1eceb6131c2420b7cf upstream.
+commit 9da21b1509d8aa7ab4846722817d16c72d656c91 upstream.
 
-bind_get() checks the device number it is called with. It uses
-MAX_RAW_MINORS for the upper bound. But MAX_RAW_MINORS is set at compile
-time while the actual number of raw devices can be set at runtime. This
-means the test can either be too strict or too lenient. And if the test
-ends up being too lenient bind_get() might try to access memory beyond
-what was allocated for "raw_devices".
+Sanitize code even more to accept unsigned longs only and to not allow
+polling intervals below 1 second as this is unnecessary and doesn't make
+much sense anyway for polling errors.
 
-So check against the runtime value (max_raw_minors) in this function.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
+Cc: Doug Thompson <dougthompson@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/raw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/edac/edac_mc.c       |    4 ++--
+ drivers/edac/edac_mc_sysfs.c |   10 ++++++----
+ drivers/edac/edac_module.h   |    2 +-
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/char/raw.c
-+++ b/drivers/char/raw.c
-@@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *d
- 	struct raw_device_data *rawdev;
- 	struct block_device *bdev;
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -601,7 +601,7 @@ static void edac_mc_workq_teardown(struc
+  *	user space has updated our poll period value, need to
+  *	reset our workq delays
+  */
+-void edac_mc_reset_delay_period(int value)
++void edac_mc_reset_delay_period(unsigned long value)
+ {
+ 	struct mem_ctl_info *mci;
+ 	struct list_head *item;
+@@ -611,7 +611,7 @@ void edac_mc_reset_delay_period(int valu
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
  
--	if (number <= 0 || number >= MAX_RAW_MINORS)
-+	if (number <= 0 || number >= max_raw_minors)
+-		edac_mc_workq_setup(mci, (unsigned long) value);
++		edac_mc_workq_setup(mci, value);
+ 	}
+ 
+ 	mutex_unlock(&mem_ctls_mutex);
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -52,18 +52,20 @@ int edac_mc_get_poll_msec(void)
+ 
+ static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
+ {
+-	long l;
++	unsigned long l;
+ 	int ret;
+ 
+ 	if (!val)
  		return -EINVAL;
  
- 	rawdev = &raw_devices[number];
+-	ret = kstrtol(val, 0, &l);
++	ret = kstrtoul(val, 0, &l);
+ 	if (ret)
+ 		return ret;
+-	if (!l || ((int)l != l))
++
++	if (l < 1000)
+ 		return -EINVAL;
+-	*((int *)kp->arg) = l;
++
++	*((unsigned long *)kp->arg) = l;
+ 
+ 	/* notify edac_mc engine to reset the poll period */
+ 	edac_mc_reset_delay_period(l);
+--- a/drivers/edac/edac_module.h
++++ b/drivers/edac/edac_module.h
+@@ -52,7 +52,7 @@ extern void edac_device_workq_setup(stru
+ extern void edac_device_workq_teardown(struct edac_device_ctl_info *edac_dev);
+ extern void edac_device_reset_delay_period(struct edac_device_ctl_info
+ 					   *edac_dev, unsigned long value);
+-extern void edac_mc_reset_delay_period(int value);
++extern void edac_mc_reset_delay_period(unsigned long value);
+ 
+ extern void *edac_align_ptr(void **p, unsigned size, int n_elems);
+ 
 
 
