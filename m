@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201AbaBTX45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:56:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46366 "EHLO
+	id S1756309AbaBTX5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:57:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164AbaBTXyZ (ORCPT
+	with ESMTP id S1756146AbaBTXyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:25 -0500
+	Thu, 20 Feb 2014 18:54:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        linux-raid@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.13 90/99] md/raid5: Fix CPU hotplug callback registration
-Date: Thu, 20 Feb 2014 15:53:25 -0800
-Message-Id: <20140220235120.815456819@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.13 99/99] EDAC: Correct workqueue setup path
+Date: Thu, 20 Feb 2014 15:53:34 -0800
+Message-Id: <20140220235121.072459537@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -30,196 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Borislav Petkov <bp@suse.de>
 
-commit 789b5e0315284463617e106baad360cb9e8db3ac upstream.
+commit cb6ef42e516cb8948f15e4b70dc03af8020050a2 upstream.
 
-Subsystems that want to register CPU hotplug callbacks, as well as perform
-initialization for the CPUs that are already online, often do it as shown
-below:
+We're using edac_mc_workq_setup() both on the init path, when
+we load an edac driver and when we change the polling period
+(edac_mc_reset_delay_period) through /sys/.../edac_mc_poll_msec.
 
-	get_online_cpus();
+On that second path we don't need to init the workqueue which has been
+initialized already.
 
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
+Thanks to Tejun for workqueue insights.
 
-	register_cpu_notifier(&foobar_cpu_notifier);
-
-	put_online_cpus();
-
-This is wrong, since it is prone to ABBA deadlocks involving the
-cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
-with CPU hotplug operations).
-
-Interestingly, the raid5 code can actually prevent double initialization and
-hence can use the following simplified form of callback registration:
-
-	register_cpu_notifier(&foobar_cpu_notifier);
-
-	get_online_cpus();
-
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	put_online_cpus();
-
-A hotplug operation that occurs between registering the notifier and calling
-get_online_cpus(), won't disrupt anything, because the code takes care to
-perform the memory allocations only once.
-
-So reorganize the code in raid5 this way to fix the deadlock with callback
-registration.
-
-Cc: linux-raid@vger.kernel.org
-Fixes: 36d1c6476be51101778882897b315bd928c8c7b5
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-[Srivatsa: Fixed the unregister_cpu_notifier() deadlock, added the
-free_scratch_buffer() helper to condense code further and wrote the changelog.]
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |   90 +++++++++++++++++++++++++----------------------------
- 1 file changed, 44 insertions(+), 46 deletions(-)
+ drivers/edac/edac_mc.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -5512,23 +5512,43 @@ raid5_size(struct mddev *mddev, sector_t
- 	return sectors * (raid_disks - conf->max_degraded);
- }
- 
-+static void free_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
-+{
-+	safe_put_page(percpu->spare_page);
-+	kfree(percpu->scribble);
-+	percpu->spare_page = NULL;
-+	percpu->scribble = NULL;
-+}
-+
-+static int alloc_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
-+{
-+	if (conf->level == 6 && !percpu->spare_page)
-+		percpu->spare_page = alloc_page(GFP_KERNEL);
-+	if (!percpu->scribble)
-+		percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
-+
-+	if (!percpu->scribble || (conf->level == 6 && !percpu->spare_page)) {
-+		free_scratch_buffer(conf, percpu);
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
- static void raid5_free_percpu(struct r5conf *conf)
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -559,7 +559,8 @@ static void edac_mc_workq_function(struc
+  *
+  *		called with the mem_ctls_mutex held
+  */
+-static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
++static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
++				bool init)
  {
--	struct raid5_percpu *percpu;
- 	unsigned long cpu;
+ 	edac_dbg(0, "\n");
  
- 	if (!conf->percpu)
+@@ -567,7 +568,9 @@ static void edac_mc_workq_setup(struct m
+ 	if (mci->op_state != OP_RUNNING_POLL)
  		return;
  
--	get_online_cpus();
--	for_each_possible_cpu(cpu) {
--		percpu = per_cpu_ptr(conf->percpu, cpu);
--		safe_put_page(percpu->spare_page);
--		kfree(percpu->scribble);
--	}
- #ifdef CONFIG_HOTPLUG_CPU
- 	unregister_cpu_notifier(&conf->cpu_notify);
- #endif
+-	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++	if (init)
++		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
 +
-+	get_online_cpus();
-+	for_each_possible_cpu(cpu)
-+		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
- 	put_online_cpus();
+ 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
+ }
  
- 	free_percpu(conf->percpu);
-@@ -5555,15 +5575,7 @@ static int raid456_cpu_notify(struct not
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		if (conf->level == 6 && !percpu->spare_page)
--			percpu->spare_page = alloc_page(GFP_KERNEL);
--		if (!percpu->scribble)
--			percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
--
--		if (!percpu->scribble ||
--		    (conf->level == 6 && !percpu->spare_page)) {
--			safe_put_page(percpu->spare_page);
--			kfree(percpu->scribble);
-+		if (alloc_scratch_buffer(conf, percpu)) {
- 			pr_err("%s: failed memory allocation for cpu%ld\n",
- 			       __func__, cpu);
- 			return notifier_from_errno(-ENOMEM);
-@@ -5571,10 +5583,7 @@ static int raid456_cpu_notify(struct not
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
--		safe_put_page(percpu->spare_page);
--		kfree(percpu->scribble);
--		percpu->spare_page = NULL;
--		percpu->scribble = NULL;
-+		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
- 		break;
- 	default:
- 		break;
-@@ -5586,40 +5595,29 @@ static int raid456_cpu_notify(struct not
- static int raid5_alloc_percpu(struct r5conf *conf)
- {
- 	unsigned long cpu;
--	struct page *spare_page;
--	struct raid5_percpu __percpu *allcpus;
--	void *scribble;
--	int err;
-+	int err = 0;
+@@ -611,7 +614,7 @@ void edac_mc_reset_delay_period(unsigned
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
  
--	allcpus = alloc_percpu(struct raid5_percpu);
--	if (!allcpus)
-+	conf->percpu = alloc_percpu(struct raid5_percpu);
-+	if (!conf->percpu)
- 		return -ENOMEM;
--	conf->percpu = allcpus;
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+	conf->cpu_notify.notifier_call = raid456_cpu_notify;
-+	conf->cpu_notify.priority = 0;
-+	err = register_cpu_notifier(&conf->cpu_notify);
-+	if (err)
-+		return err;
-+#endif
- 
- 	get_online_cpus();
--	err = 0;
- 	for_each_present_cpu(cpu) {
--		if (conf->level == 6) {
--			spare_page = alloc_page(GFP_KERNEL);
--			if (!spare_page) {
--				err = -ENOMEM;
--				break;
--			}
--			per_cpu_ptr(conf->percpu, cpu)->spare_page = spare_page;
--		}
--		scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
--		if (!scribble) {
--			err = -ENOMEM;
-+		err = alloc_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
-+		if (err) {
-+			pr_err("%s: failed memory allocation for cpu%ld\n",
-+			       __func__, cpu);
- 			break;
- 		}
--		per_cpu_ptr(conf->percpu, cpu)->scribble = scribble;
+-		edac_mc_workq_setup(mci, value);
++		edac_mc_workq_setup(mci, value, false);
  	}
--#ifdef CONFIG_HOTPLUG_CPU
--	conf->cpu_notify.notifier_call = raid456_cpu_notify;
--	conf->cpu_notify.priority = 0;
--	if (err == 0)
--		err = register_cpu_notifier(&conf->cpu_notify);
--#endif
- 	put_online_cpus();
  
- 	return err;
+ 	mutex_unlock(&mem_ctls_mutex);
+@@ -782,7 +785,7 @@ int edac_mc_add_mc(struct mem_ctl_info *
+ 		/* This instance is NOW RUNNING */
+ 		mci->op_state = OP_RUNNING_POLL;
+ 
+-		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
++		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
+ 	} else {
+ 		mci->op_state = OP_RUNNING_INTERRUPT;
+ 	}
 
 
