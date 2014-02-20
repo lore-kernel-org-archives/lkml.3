@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924AbaBUAeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:34:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45783 "EHLO
+	id S1756753AbaBUAd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:33:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624AbaBTXwX (ORCPT
+	with ESMTP id S1755632AbaBTXwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 18:52:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 46/82] ALSA: hda - Fix mic capture on Sony VAIO Pro 11
-Date: Thu, 20 Feb 2014 15:52:29 -0800
-Message-Id: <20140220235020.856084626@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.12 47/82] mei: clear write cb from waiting list on reset
+Date: Thu, 20 Feb 2014 15:52:30 -0800
+Message-Id: <20140220235020.892584649@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,30 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit f88abaa0d0dc0d1f1a9ae21f8e822918e5aadfdf upstream.
+commit 30c54df7cb9b15b222529a028390b9c9582dd65e upstream.
 
-The very same fixup is needed to make the mic on Sony VAIO Pro 11
-working as well as VAIO Pro 13 model.
+Clear write callbacks sitting in write_waiting list on reset.
+Otherwise these callbacks are left dangling and cause memory leak.
 
-Reported-and-tested-by: Hendrik-Jan Heins <hjheins@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/misc/mei/client.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4057,6 +4057,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x1043, 0x8398, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x83ce, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x8516, "ASUS X101CH", ALC269_FIXUP_ASUS_X101),
-+	SND_PCI_QUIRK(0x104d, 0x90b5, "Sony VAIO Pro 11", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x104d, 0x90b6, "Sony VAIO Pro 13", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIXUP_SONY_VAIO_GPIO2),
- 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -916,8 +916,16 @@ void mei_cl_all_wakeup(struct mei_device
+ void mei_cl_all_write_clear(struct mei_device *dev)
+ {
+ 	struct mei_cl_cb *cb, *next;
++	struct list_head *list;
+ 
+-	list_for_each_entry_safe(cb, next, &dev->write_list.list, list) {
++	list = &dev->write_list.list;
++	list_for_each_entry_safe(cb, next, list, list) {
++		list_del(&cb->list);
++		mei_io_cb_free(cb);
++	}
++
++	list = &dev->write_waiting_list.list;
++	list_for_each_entry_safe(cb, next, list, list) {
+ 		list_del(&cb->list);
+ 		mei_io_cb_free(cb);
+ 	}
 
 
