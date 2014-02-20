@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaBTOje (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 09:39:34 -0500
-Received: from dd8000.kasserver.com ([85.13.132.92]:57377 "EHLO
-	dd8000.kasserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaBTOjd (ORCPT
+	id S1753995AbaBTOn3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:43:29 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:46141 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482AbaBTOnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 09:39:33 -0500
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Feb 2014 09:39:32 EST
-Message-ID: <53061204.7080700@gmx.net>
-Date: Thu, 20 Feb 2014 15:32:36 +0100
-From: Otto Meier <gf435@gmx.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [3.14-rc3] possible regression Haswell runs only at 770Mhz with powersave
- governor
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Feb 2014 09:43:24 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        devicetree@vger.kernel.org
+Subject: [PATCH 01/10] spi: sh-msiof: Fix SPI bus population from DT
+Date: Thu, 20 Feb 2014 15:43:00 +0100
+Message-Id: <1392907389-21798-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
+References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-My System which runs with older kernels up to 3.13.3
-fine on my i3-4330 with 3.5 Ghz and governor powersave.
-and pstate driver.
+DT doesn't instantiate SPI children if spi_master.dev.of_node is not set up
+properly.
 
-With kernel 3.14-rc3 and Governor powersave it runs
-only at 770Mhz and never switches to higher Freq. on load.
-Even compiling a kernel with make -j4   does not change freq.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Cc: devicetree@vger.kernel.org
+---
+ drivers/spi/spi-sh-msiof.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-With governor performance  it switches to 3.5 Ghz and stays
-there.
+diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
+index 33474061b742..e6f79b2f2616 100644
+--- a/drivers/spi/spi-sh-msiof.c
++++ b/drivers/spi/spi-sh-msiof.c
+@@ -710,6 +710,7 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
+ 	master->mode_bits |= SPI_LSB_FIRST | SPI_3WIRE;
+ 	master->flags = 0;
+ 	master->bus_num = pdev->id;
++	master->dev.of_node = pdev->dev.of_node;
+ 	master->num_chipselect = p->info->num_chipselect;
+ 	master->setup = spi_bitbang_setup;
+ 	master->cleanup = spi_bitbang_cleanup;
+-- 
+1.7.9.5
 
-Any Idea how to fix this?
-
-Best regards
