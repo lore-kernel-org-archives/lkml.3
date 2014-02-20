@@ -1,35 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaBTWqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 17:46:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22950 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753024AbaBTWqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 17:46:05 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1392929071-16555-8-git-send-email-tj@kernel.org>
-References: <1392929071-16555-8-git-send-email-tj@kernel.org> <1392929071-16555-1-git-send-email-tj@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: dhowells@redhat.com, laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+	id S1753575AbaBTWqm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 17:46:42 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:54992 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310AbaBTWql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 17:46:41 -0500
+Date: Thu, 20 Feb 2014 17:46:36 -0500
+From: Tejun Heo <tj@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
         linux-afs@lists.infradead.org
 Subject: Re: [PATCH 7/9] afs: don't use PREPARE_WORK
-Date: Thu, 20 Feb 2014 22:00:05 +0000
-Message-ID: <32161.1392933605@warthog.procyon.org.uk>
+Message-ID: <20140220224636.GB6573@mtj.dyndns.org>
+References: <1392929071-16555-8-git-send-email-tj@kernel.org>
+ <1392929071-16555-1-git-send-email-tj@kernel.org>
+ <32161.1392933605@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <32161.1392933605@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> wrote:
+On Thu, Feb 20, 2014 at 10:00:05PM +0000, David Howells wrote:
+> Tejun Heo <tj@kernel.org> wrote:
+> 
+> > PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+> > and a nasty surprise in terms of reentrancy guarantee as workqueue
+> > considers work items to be different if they don't have the same work
+> > function.
+> 
+> Why so?  Isn't the work item address sufficient to distinguish them?
 
-> PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
-> and a nasty surprise in terms of reentrancy guarantee as workqueue
-> considers work items to be different if they don't have the same work
-> function.
+Because we ended up introducing deadlocks through work items which are
+freed and then recycled.
 
-Why so?  Isn't the work item address sufficient to distinguish them?
+Thanks.
 
-David
+-- 
+tejun
