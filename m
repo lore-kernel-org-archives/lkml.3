@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaBTK7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 05:59:44 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51887 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214AbaBTK7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 05:59:42 -0500
-Message-ID: <5305E01A.3020905@ti.com>
-Date: Thu, 20 Feb 2014 12:59:38 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752993AbaBTLBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 06:01:01 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58323 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122AbaBTLA7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 06:00:59 -0500
+Date: Thu, 20 Feb 2014 12:01:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alexey Perevalov <a.perevalov@samsung.com>
+cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, anton@nomsg.org,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v3 1/6] tracing/trivial: Add CLOCK_BOOTIME and CLOCK_TAI
+ for human readable clockid trace
+In-Reply-To: <1392885633-7787-2-git-send-email-a.perevalov@samsung.com>
+Message-ID: <alpine.DEB.2.02.1402201158170.4468@ionos.tec.linutronix.de>
+References: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com> <1392885633-7787-2-git-send-email-a.perevalov@samsung.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH 0/2] usb: musb: host: fixes for 3.14-rc
-References: <1391520349-26192-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1391520349-26192-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
 
-Hope you had a good vacation :).
 
-Could you please take a look at these two fixes? Thanks.
+On Thu, 20 Feb 2014, Alexey Perevalov wrote:
 
-cheers,
--roger
+> These clockids is also used in current hrtimer implementation.
+> 
+> Signed-off-by: Alexey Perevalov <a.perevalov@samsung.com>
+> ---
+>  include/trace/events/timer.h |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/trace/events/timer.h b/include/trace/events/timer.h
+> index 185b2c6..547b79f 100644
+> --- a/include/trace/events/timer.h
+> +++ b/include/trace/events/timer.h
+> @@ -11,7 +11,10 @@
+>  #define clockid_to_string(clockid)						\
+>  	__print_symbolic(clockid,						\
+>  			 { CLOCK_MONOTONIC,		"CLOCK_MONOTONIC" },	\
+> -			 { CLOCK_REALTIME,		"CLOCK_REALTIME" })
+> +			 { CLOCK_REALTIME,		"CLOCK_REALTIME" },	\
+> +			 { CLOCK_BOOTTIME,		"CLOCK_BOOTTIME" },	\
+> +			 { CLOCK_TAI,			"CLOCK_TAI" }		\
+> +	)
 
-On 02/04/2014 03:25 PM, Roger Quadros wrote:
-> Hi Greg,
-> 
-> Patch 1 fixes SuperSpeed hub enumeration on beaglebone.
-> Patch 2 fixes remote-wakeup resume on beaglebone.
-> 
-> Felipe has Acked the 1st patch but still needs to Ack the 2nd one.
-> 
-> Patches are based on 3.14-rc1
-> 
-> cheers,
-> -roger
-> 
-> Ajay Kumar Gupta (1):
->   usb: musb: host: Fix SuperSpeed hub enumeration
-> 
-> Roger Quadros (1):
->   usb: musb: core: Fix remote-wakeup resume
-> 
->  drivers/usb/musb/musb_core.c | 10 +++++++++-
->  drivers/usb/musb/musb_host.c |  3 +++
->  2 files changed, 12 insertions(+), 1 deletion(-)
-> 
+patching file include/trace/events/timer.h
+Hunk #1 FAILED at 11.
+1 out of 1 hunk FAILED -- rejects in file include/trace/events/timer.h
 
+Brilliant stuff this.
+
+
+
+  
