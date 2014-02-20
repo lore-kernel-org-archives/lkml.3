@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360AbaBTXvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:51:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45605 "EHLO
+	id S1755602AbaBTXwR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252AbaBTXvp (ORCPT
+	with ESMTP id S1755551AbaBTXwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:45 -0500
+	Thu, 20 Feb 2014 18:52:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Prarit Bhargava <prarit@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 64/66] drivers/edac/edac_mc_sysfs.c: poll timeout cannot be zero
-Date: Thu, 20 Feb 2014 15:52:03 -0800
-Message-Id: <20140220234911.321810122@linuxfoundation.org>
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.12 39/82] staging:iio:ad799x fix error_free_irq which was freeing an irq that may not have been requested
+Date: Thu, 20 Feb 2014 15:52:22 -0800
+Message-Id: <20140220235020.646061257@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
-References: <20140220234909.482516304@linuxfoundation.org>
+In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
+References: <20140220235019.483734207@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,104 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Hartmut Knaack <knaack.h@gmx.de>
 
-commit 79040cad3f8235937e229f1b9401ba36dd5ad69b upstream.
+commit 38408d056188be29a6c4e17f3703c796551bb330 upstream.
 
-If you do
+Only free an IRQ in error_free_irq, if it has been requested previously.
 
-  echo 0 > /sys/module/edac_core/parameters/edac_mc_poll_msec
-
-the following stack trace is output because the edac module is not
-designed to poll with a timeout of zero.
-
-  WARNING: CPU: 12 PID: 0 at lib/list_debug.c:33 __list_add+0xac/0xc0()
-  list_add corruption. prev->next should be next (ffff8808291dd1b8), but was           (null). (prev=ffff8808286fe3f8).
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 12 PID: 0 Comm: swapper/12 Not tainted 3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Call Trace:
-   <IRQ>
-    __list_add+0xac/0xc0
-    __internal_add_timer+0xab/0x130
-    internal_add_timer+0x17/0x40
-    mod_timer_pinned+0xca/0x170
-    intel_pstate_timer_func+0x28a/0x380
-    call_timer_fn+0x36/0x100
-    run_timer_softirq+0x1ff/0x2f0
-    __do_softirq+0xf5/0x2e0
-    irq_exit+0x10d/0x120
-    smp_apic_timer_interrupt+0x45/0x60
-    apic_timer_interrupt+0x6d/0x80
-   <EOI>
-    cpuidle_idle_call+0xb9/0x1f0
-    arch_cpu_idle+0xe/0x30
-    cpu_startup_entry+0x9e/0x240
-    start_secondary+0x1e4/0x290
-
-  kernel BUG at kernel/timer.c:1084!
-  invalid opcode: 0000 [#1] SMP
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 12 PID: 0 Comm: swapper/12 Tainted: G        W    3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Call Trace:
-   <IRQ>
-    run_timer_softirq+0x245/0x2f0
-    __do_softirq+0xf5/0x2e0
-    irq_exit+0x10d/0x120
-    smp_apic_timer_interrupt+0x45/0x60
-    apic_timer_interrupt+0x6d/0x80
-   <EOI>
-    cpuidle_idle_call+0xb9/0x1f0
-    arch_cpu_idle+0xe/0x30
-    cpu_startup_entry+0x9e/0x240
-    start_secondary+0x1e4/0x290
-  RIP   cascade+0x93/0xa0
-
-  WARNING: CPU: 36 PID: 1154 at kernel/workqueue.c:1461 __queue_delayed_work+0xed/0x1a0()
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 36 PID: 1154 Comm: kworker/u481:3 Tainted: G        W    3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Workqueue: edac-poller edac_mc_workq_function [edac_core]
-  Call Trace:
-    dump_stack+0x45/0x56
-    warn_slowpath_common+0x7d/0xa0
-    warn_slowpath_null+0x1a/0x20
-    __queue_delayed_work+0xed/0x1a0
-    queue_delayed_work_on+0x27/0x50
-    edac_mc_workq_function+0x72/0xa0 [edac_core]
-    process_one_work+0x17b/0x460
-    worker_thread+0x11b/0x400
-    kthread+0xd2/0xf0
-    ret_from_fork+0x7c/0xb0
-
-This patch adds a range check in the edac_mc_poll_msec code to check for 0.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_mc_sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/iio/adc/ad799x_core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -61,7 +61,7 @@ static int edac_set_poll_msec(const char
- 	ret = kstrtol(val, 0, &l);
- 	if (ret)
- 		return ret;
--	if ((int)l != l)
-+	if (!l || ((int)l != l))
- 		return -EINVAL;
- 	*((int *)kp->arg) = l;
+--- a/drivers/staging/iio/adc/ad799x_core.c
++++ b/drivers/staging/iio/adc/ad799x_core.c
+@@ -644,7 +644,8 @@ static int ad799x_probe(struct i2c_clien
+ 	return 0;
  
+ error_free_irq:
+-	free_irq(client->irq, indio_dev);
++	if (client->irq > 0)
++		free_irq(client->irq, indio_dev);
+ error_cleanup_ring:
+ 	ad799x_ring_cleanup(indio_dev);
+ error_disable_reg:
 
 
