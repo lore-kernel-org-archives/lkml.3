@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaBTSaW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 13:30:22 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:54280 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907AbaBTSaT (ORCPT
+	id S1755625AbaBTSay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 13:30:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41274 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481AbaBTSax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 13:30:19 -0500
-Message-ID: <1392921199.29525.0.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH v2] target_core_alua: silence GCC warning
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 20 Feb 2014 10:33:19 -0800
-In-Reply-To: <1392883672.5070.21.camel@x220>
-References: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
-	 <1392803546.27558.16.camel@x220>
-	 <CAMuHMdXZrw7oU=n60+PNNQftU6Su=mBf2V75TCO8Ws1pS5z+6Q@mail.gmail.com>
-	 <1392804347.27558.20.camel@x220>
-	 <1392850749.22195.1.camel@haakon3.risingtidesystems.com>
-	 <1392883672.5070.21.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Thu, 20 Feb 2014 13:30:53 -0500
+Date: Thu, 20 Feb 2014 10:32:20 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 00/40] 3.13.4-stable review
+Message-ID: <20140220183220.GD15290@kroah.com>
+References: <20140218224433.337299968@linuxfoundation.org>
+ <20140219043026.GA15371@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140219043026.GA15371@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-20 at 09:07 +0100, Paul Bolle wrote:
-> Building target_core_alua.o triggers a GCC warning:
->     drivers/target/target_core_alua.c: In function ‘target_alua_state_check’:
->     drivers/target/target_core_alua.c:773:18: warning: ‘alua_ascq’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->        cmd->scsi_ascq = alua_ascq;
->                       ^
+On Tue, Feb 18, 2014 at 08:30:26PM -0800, Guenter Roeck wrote:
+> On Tue, Feb 18, 2014 at 02:47:01PM -0800, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.13.4 release.
+> > There are 40 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Thu Feb 20 22:44:22 UTC 2014.
+> > Anything received after that time might be too late.
+> > 
 > 
-> This is a false positive. A little trial and error shows it is
-> apparently caused by core_alua_state_lba_dependent(). It must be hard
-> for GCC to track the branches of a switch statement, inside a
-> list_for_each_entry loop, inside a while loop.
+> Build results:
+>     total: 126 pass: 122 skipped: 4 fail: 0
 > 
-> But if we add a small (inline) helper function we can reorganize the
-> code a bit. That also allows to drop alua_ascq which, obviously, gets
-> rid of this warning.
+> qemu tests all passed.
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> v2: Make core_alua_state_nonoptimized() return void, as Geert
-> suggested. 
+> Details are available at http://server.roeck-us.net:8010/builders.
 > 
-> Also keep core_alua_state_lba_dependent() inline. Setting that function
-> noinline was just a leftover from the trial and error fase, and isn't
-> needed to make the warning go away. Ie, I was sloppy in v1!
-> 
-> Still compile tested only.
-> 
->  drivers/target/target_core_alua.c | 95 ++++++++++++++++++---------------------
->  1 file changed, 44 insertions(+), 51 deletions(-)
-> 
+> Results are as expected.
 
-Applied to target-pending/for-next.
+Thanks for testing and letting me know.  Interesting that the pstate
+buggy patch didn't hit your build system testing...
 
-Thanks Paul!
+thanks,
 
---nab
-
+greg k-h
