@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719AbaBTQfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 11:35:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38573 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752687AbaBTQfF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 11:35:05 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, broonie@kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: wm5102: Remove cache_bypass from manual register patching
-Date: Thu, 20 Feb 2014 16:26:48 +0000
-Message-Id: <1392913608-23479-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1755355AbaBTQgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 11:36:06 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:1936 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753691AbaBTQgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 11:36:04 -0500
+X-IronPort-AV: E=Sophos;i="4.97,513,1389744000"; 
+   d="scan'208";a="104379535"
+Message-ID: <1392914159.32657.18.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH 2/2] arm/xen: Don't use xen DMA ops when the device is
+ protected by an IOMMU
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Julien Grall <julien.grall@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <stefano.stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <xen-devel@lists.xenproject.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "Russell King" <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>
+Date: Thu, 20 Feb 2014 16:35:59 +0000
+In-Reply-To: <1392913301-25524-1-git-send-email-julien.grall@linaro.org>
+References: <1392913301-25524-1-git-send-email-julien.grall@linaro.org>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the wm5102 the register patches are applied manually, rather than by
-the regmap core. This application is wrapped in calls to
-regcache_cache_bypass. However, this is dangerous as other threads may
-be accessing the hardware at the same time as the pm_runtime operations
-and if they do so during the period whilst cache_bypass is enabled those
-writes will miss the cache when they shouldn't.
+On Thu, 2014-02-20 at 16:21 +0000, Julien Grall wrote:
+> Only Xen is able to know if a device can safely avoid to use xen-swiotlb.
+> This patch introduce a new property "protected-devices" for the hypervisor
+> node which list device which the IOMMU are been correctly programmed by Xen.
+> 
+> During Linux boot, Xen specific code will create an hash table which
+> contains all these devices. The hash table will be used in need_xen_dma_ops
+> to check if the Xen DMA ops needs to be used for the current device.
 
-As the cache_bypass is not strictly necessary for applying the patches
-(the device is always powered on whilst it is applied) remove the calls
-to regcache_cache_bypass to avoid this situation.
+Is it out of the question to find a field within struct device itself to
+store this e.g. in struct device_dma_parameters perhaps and avoid the
+need for a hashtable lookup.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c  |    4 ----
- drivers/mfd/wm5102-tables.c |   10 +++-------
- 2 files changed, 3 insertions(+), 11 deletions(-)
+device->iommu_group might be another option, if we can create our own
+group?
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index a45aab9..1c3ae57 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -251,8 +251,6 @@ static int arizona_apply_hardware_patch(struct arizona* arizona)
- 	unsigned int fll, sysclk;
- 	int ret, err;
- 
--	regcache_cache_bypass(arizona->regmap, true);
--
- 	/* Cache existing FLL and SYSCLK settings */
- 	ret = regmap_read(arizona->regmap, ARIZONA_FLL1_CONTROL_1, &fll);
- 	if (ret != 0) {
-@@ -322,8 +320,6 @@ err_fll:
- 			err);
- 	}
- 
--	regcache_cache_bypass(arizona->regmap, false);
--
- 	if (ret != 0)
- 		return ret;
- 	else
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index 187ee86..b9556bc 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -81,7 +81,7 @@ static const struct reg_default wm5102_revb_patch[] = {
- int wm5102_patch(struct arizona *arizona)
- {
- 	const struct reg_default *wm5102_patch;
--	int ret = 0;
-+	int ret;
- 	int i, patch_size;
- 
- 	switch (arizona->rev) {
-@@ -93,21 +93,17 @@ int wm5102_patch(struct arizona *arizona)
- 		patch_size = ARRAY_SIZE(wm5102_revb_patch);
- 	}
- 
--	regcache_cache_bypass(arizona->regmap, true);
--
- 	for (i = 0; i < patch_size; i++) {
- 		ret = regmap_write(arizona->regmap, wm5102_patch[i].reg,
- 				   wm5102_patch[i].def);
- 		if (ret != 0) {
- 			dev_err(arizona->dev, "Failed to write %x = %x: %d\n",
- 				wm5102_patch[i].reg, wm5102_patch[i].def, ret);
--			goto out;
-+			return ret;
- 		}
- 	}
- 
--out:
--	regcache_cache_bypass(arizona->regmap, false);
--	return ret;
-+	return 0;
- }
- 
- static const struct regmap_irq wm5102_aod_irqs[ARIZONA_NUM_IRQ] = {
--- 
-1.7.2.5
+Ian.
 
