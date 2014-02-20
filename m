@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830AbaBUBGz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:06:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45316 "EHLO
+	id S1754631AbaBTXuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:50:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45295 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754639AbaBTXuj (ORCPT
+	with ESMTP id S1754557AbaBTXue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:39 -0500
+	Thu, 20 Feb 2014 18:50:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.4 25/25] genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=n
-Date: Thu, 20 Feb 2014 15:51:41 -0800
-Message-Id: <20140220234843.193266841@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.4 20/25] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
+Date: Thu, 20 Feb 2014 15:51:36 -0800
+Message-Id: <20140220234843.049947586@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -29,42 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 2c45aada341121438affc4cb8d5b4cfaa2813d3d upstream.
+commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
 
-In allmodconfig builds for sparc and any other arch which does
-not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
+If kvm_io_bus_register_dev() fails then it returns success but it should
+return an error code.
 
-  CC [M]  lib/cpu-notifier-error-inject.o
-  CC [M]  lib/pm-notifier-error-inject.o
-ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
-make[2]: *** [__modpost] Error 1
+I also did a little cleanup like removing an impossible NULL test.
 
-This happens because commit 3911ff30f5 ("genirq: export
-handle_edge_irq() and irq_to_desc()") added one export for it, but
-there were actually two instances of it, in an if/else clause for
-CONFIG_SPARSE_IRQ.  Add the second one.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Link: http://lkml.kernel.org/r/1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/irqdesc.c |    1 +
- 1 file changed, 1 insertion(+)
+ virt/kvm/coalesced_mmio.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned in
- {
- 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
- }
-+EXPORT_SYMBOL(irq_to_desc);
+--- a/virt/kvm/coalesced_mmio.c
++++ b/virt/kvm/coalesced_mmio.c
+@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio
+ 	list_add_tail(&dev->list, &kvm->coalesced_zones);
+ 	mutex_unlock(&kvm->slots_lock);
  
- static void free_desc(unsigned int irq)
- {
+-	return ret;
++	return 0;
+ 
+ out_free_dev:
+ 	mutex_unlock(&kvm->slots_lock);
+-
+ 	kfree(dev);
+ 
+-	if (dev == NULL)
+-		return -ENXIO;
+-
+-	return 0;
++	return ret;
+ }
+ 
+ int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
 
 
