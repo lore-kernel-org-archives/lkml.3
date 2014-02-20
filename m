@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaBUBFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:05:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45333 "EHLO
+	id S1754667AbaBTXuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:50:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45312 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678AbaBTXum (ORCPT
+	with ESMTP id S1754557AbaBTXui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:42 -0500
+	Thu, 20 Feb 2014 18:50:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 06/25] spi: Fix crash with double message finalisation on error handling
-Date: Thu, 20 Feb 2014 15:51:22 -0800
-Message-Id: <20140220234842.662336976@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.4 24/25] ring-buffer: Fix first commit on sub-buffer having non-zero delta
+Date: Thu, 20 Feb 2014 15:51:40 -0800
+Message-Id: <20140220234843.166325958@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -29,45 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 1f802f8249a0da536877842c43c7204064c4de8b upstream.
+commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
 
-This reverts commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d.
+Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
+that page use a 27 bit delta against that timestamp in order to save on
+bits written to the ring buffer. If the time between events is larger than
+what the 27 bits can hold, a "time extend" event is added to hold the
+entire 64 bit timestamp again and the events after that hold a delta from
+that timestamp.
 
-It causes a NULL pointer dereference with drivers using the generic
-spi_transfer_one_message(), which always calls
-spi_finalize_current_message(), which zeroes master->cur_msg.
+As a "time extend" is always paired with an event, it is logical to just
+allocate the event with the time extend, to make things a bit more efficient.
 
-Drivers implementing transfer_one_message() theirselves must always call
-spi_finalize_current_message(), even if the transfer failed:
+Unfortunately, when the pairing code was written, it removed the "delta = 0"
+from the first commit on a page, causing the events on the page to be
+slightly skewed.
 
- * @transfer_one_message: the subsystem calls the driver to transfer a single
- *      message while queuing transfers that arrive in the meantime. When the
- *      driver is finished with this message, it must call
- *      spi_finalize_current_message() so the subsystem can issue the next
- *      transfer
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ kernel/trace/ring_buffer.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -572,9 +572,7 @@ static void spi_pump_messages(struct kth
- 	ret = master->transfer_one_message(master, master->cur_msg);
- 	if (ret) {
- 		dev_err(&master->dev,
--			"failed to transfer one message from queue: %d\n", ret);
--		master->cur_msg->status = ret;
--		spi_finalize_current_message(master);
-+			"failed to transfer one message from queue\n");
- 		return;
- 	}
- }
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2008,6 +2008,13 @@ __rb_reserve_next(struct ring_buffer_per
+ 	write &= RB_WRITE_MASK;
+ 	tail = write - length;
+ 
++	/*
++	 * If this is the first commit on the page, then it has the same
++	 * timestamp as the page itself.
++	 */
++	if (!tail)
++		delta = 0;
++
+ 	/* See if we shot pass the end of this buffer page */
+ 	if (unlikely(write > BUF_PAGE_SIZE))
+ 		return rb_move_tail(cpu_buffer, length, tail,
 
 
