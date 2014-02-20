@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896AbaBTXu7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:50:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45386 "EHLO
+	id S1755147AbaBTXvX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45473 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754837AbaBTXuy (ORCPT
+	with ESMTP id S1754955AbaBTXvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:54 -0500
+	Thu, 20 Feb 2014 18:51:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 04/66] fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
-Date: Thu, 20 Feb 2014 15:51:03 -0800
-Message-Id: <20140220234909.614979766@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.10 41/66] Drivers: hv: vmbus: Dont timeout during the initial connection with host
+Date: Thu, 20 Feb 2014 15:51:40 -0800
+Message-Id: <20140220234910.670811682@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -33,64 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
+commit 269f979467cf49f2ea8132316c1f00f8c9678f7c upstream.
 
-Recently due to a spike in connections per second memcached on 3
-separate boxes triggered the OOM killer from accept.  At the time the
-OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
-problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
-hold a bitmap, and there was sufficient fragmentation that the largest
-page available was 8KiB.
+When the guest attempts to connect with the host when there may already be a
+connection with the host (as would be the case during the kdump/kexec path),
+it is difficult to guarantee timely response from the host. Starting with
+WS2012 R2, the host supports this ability to re-connect with the host
+(explicitly to support kexec). Prior to responding to the guest, the host
+needs to ensure that device states based on the previous connection to
+the host have been properly torn down. This may introduce unbounded delays.
+To deal with this issue, don't do a timed wait during the initial connect
+with the host.
 
-I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
-but I do agree that order 3 allocations are very likely to succeed.
-
-There are always pathologies where order > 0 allocations can fail when
-there are copious amounts of free memory available.  Using the pigeon
-hole principle it is easy to show that it requires 1 page more than 50%
-of the pages being free to guarantee an order 1 (8KiB) allocation will
-succeed, 1 page more than 75% of the pages being free to guarantee an
-order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
-the pages being free to guarantee an order 3 allocate will succeed.
-
-A server churning memory with a lot of small requests and replies like
-memcached is a common case that if anything can will skew the odds
-against large pages being available.
-
-Therefore let's not give external applications a practical way to kill
-linux server applications, and specify __GFP_NORETRY to the kmalloc in
-alloc_fdmem.  Unless I am misreading the code and by the time the code
-reaches should_alloc_retry in __alloc_pages_slowpath (where
-__GFP_NORETRY becomes signification).  We have already tried everything
-reasonable to allocate a page and the only thing left to do is wait.  So
-not waiting and falling back to vmalloc immediately seems like the
-reasonable thing to do even if there wasn't a chance of triggering the
-OOM killer.
-
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hv/connection.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -34,7 +34,7 @@ static void *alloc_fdmem(size_t size)
- 	 * vmalloc() if the allocation size will be considered "large" by the VM.
- 	 */
- 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
--		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
- 		if (data != NULL)
- 			return data;
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -67,7 +67,6 @@ static int vmbus_negotiate_version(struc
+ 	int ret = 0;
+ 	struct vmbus_channel_initiate_contact *msg;
+ 	unsigned long flags;
+-	int t;
+ 
+ 	init_completion(&msginfo->waitevent);
+ 
+@@ -102,15 +101,7 @@ static int vmbus_negotiate_version(struc
  	}
+ 
+ 	/* Wait for the connection response */
+-	t =  wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
+-	if (t == 0) {
+-		spin_lock_irqsave(&vmbus_connection.channelmsg_lock,
+-				flags);
+-		list_del(&msginfo->msglistentry);
+-		spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock,
+-					flags);
+-		return -ETIMEDOUT;
+-	}
++	wait_for_completion(&msginfo->waitevent);
+ 
+ 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+ 	list_del(&msginfo->msglistentry);
 
 
