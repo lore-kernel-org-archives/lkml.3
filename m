@@ -1,178 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaBTLzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 06:55:51 -0500
-Received: from sauhun.de ([89.238.76.85]:45970 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753297AbaBTLzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 06:55:05 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <damm@opensource.se>, "Cc: Wolfram Sang" <wsa@the-dreams.de>,
-        khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
-        daniel.lezcano@linaro.org, horms@verge.net.au, john.stultz@linaro.org,
-        olof@lixom.net, Magnus Damm <magnus.damm@gmail.com>
-Subject: [PATCH V7 2/3] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
-Date: Thu, 20 Feb 2014 12:54:46 +0100
-Message-Id: <1392897287-11614-3-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1392897287-11614-1-git-send-email-wsa@the-dreams.de>
-References: <1392897287-11614-1-git-send-email-wsa@the-dreams.de>
+	id S1754217AbaBTLz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 06:55:58 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47303 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171AbaBTLzx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 06:55:53 -0500
+Date: Thu, 20 Feb 2014 20:55:39 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140220115539.GJ2669@sirena.org.uk>
+References: <1392886403-10640-1-git-send-email-sachin.kamat@linaro.org>
+ <1392886403-10640-16-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vVSe26ROzFt0lsLc"
+Content-Disposition: inline
+In-Reply-To: <1392886403-10640-16-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.156.234
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 16/23] regulator: tps6524x: Remove redundant error message
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
 
-Now when drivers/clocksource/Kconfig has been
-updated with entires for CMT, TMU, MTU2, and STI
-it is safe to remove these from mach-shmobile.
+--vVSe26ROzFt0lsLc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Also select timers per SoC via SYS_SUPPORTS_xxx.
+On Thu, Feb 20, 2014 at 02:23:16PM +0530, Sachin Kamat wrote:
+> kzalloc prints its own OOM message upon failure.
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Acked-by: John Stultz <john.stultz@linaro.org>
-[wsa: rebased to timers/core]
-Signed-off-by: Wolfram Sang <wsa@sang-engineering.com>
----
- arch/arm/mach-shmobile/Kconfig | 36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+Applied, thanks.
 
-diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
-index 3386406..c1a9538 100644
---- a/arch/arm/mach-shmobile/Kconfig
-+++ b/arch/arm/mach-shmobile/Kconfig
-@@ -24,17 +24,21 @@ comment "Renesas ARM SoCs System Type"
- 
- config ARCH_EMEV2
- 	bool "Emma Mobile EV2"
-+	select SYS_SUPPORTS_EM_STI
- 
- config ARCH_R7S72100
- 	bool "RZ/A1H (R7S72100)"
-+	select SYS_SUPPORTS_SH_MTU2
- 
- config ARCH_R8A7790
- 	bool "R-Car H2 (R8A77900)"
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
- 
- config ARCH_R8A7791
- 	bool "R-Car M2 (R8A77910)"
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
- 
- comment "Renesas ARM SoCs Board Type"
- 
-@@ -68,6 +72,8 @@ config ARCH_SH7372
- 	select ARM_CPU_SUSPEND if PM || CPU_IDLE
- 	select CPU_V7
- 	select SH_CLK_CPG
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_SH73A0
- 	bool "SH-Mobile AG5 (R8A73A00)"
-@@ -77,6 +83,8 @@ config ARCH_SH73A0
- 	select I2C
- 	select SH_CLK_CPG
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A73A4
- 	bool "R-Mobile APE6 (R8A73A40)"
-@@ -87,6 +95,8 @@ config ARCH_R8A73A4
- 	select RENESAS_IRQC
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_HAS_OPP
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7740
- 	bool "R-Mobile A1 (R8A77400)"
-@@ -95,6 +105,8 @@ config ARCH_R8A7740
- 	select CPU_V7
- 	select SH_CLK_CPG
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7778
- 	bool "R-Car M1A (R8A77781)"
-@@ -104,6 +116,7 @@ config ARCH_R8A7778
- 	select ARM_GIC
- 	select USB_ARCH_HAS_EHCI
- 	select USB_ARCH_HAS_OHCI
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7779
- 	bool "R-Car H1 (R8A77790)"
-@@ -114,6 +127,7 @@ config ARCH_R8A7779
- 	select USB_ARCH_HAS_EHCI
- 	select USB_ARCH_HAS_OHCI
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7790
- 	bool "R-Car H2 (R8A77900)"
-@@ -123,6 +137,7 @@ config ARCH_R8A7790
- 	select MIGHT_HAVE_PCI
- 	select SH_CLK_CPG
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
- 
- config ARCH_R8A7791
- 	bool "R-Car M2 (R8A77910)"
-@@ -132,6 +147,7 @@ config ARCH_R8A7791
- 	select MIGHT_HAVE_PCI
- 	select SH_CLK_CPG
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
- 
- config ARCH_EMEV2
- 	bool "Emma Mobile EV2"
-@@ -141,6 +157,7 @@ config ARCH_EMEV2
- 	select MIGHT_HAVE_PCI
- 	select USE_OF
- 	select AUTO_ZRELADDR
-+	select SYS_SUPPORTS_EM_STI
- 
- config ARCH_R7S72100
- 	bool "RZ/A1H (R7S72100)"
-@@ -148,6 +165,7 @@ config ARCH_R7S72100
- 	select ARM_GIC
- 	select CPU_V7
- 	select SH_CLK_CPG
-+	select SYS_SUPPORTS_SH_MTU2
- 
- comment "Renesas ARM SoCs Board Type"
- 
-@@ -321,24 +339,6 @@ config SHMOBILE_TIMER_HZ
- 	  want to select a HZ value such as 128 that can evenly divide RCLK.
- 	  A HZ value that does not divide evenly may cause timer drift.
- 
--config SH_TIMER_CMT
--	bool "CMT timer driver"
--	default y
--	help
--	  This enables build of the CMT timer driver.
--
--config SH_TIMER_TMU
--	bool "TMU timer driver"
--	default y
--	help
--	  This enables build of the TMU timer driver.
--
--config EM_TIMER_STI
--	bool "STI timer driver"
--	default y
--	help
--	  This enables build of the STI timer driver.
--
- endmenu
- 
- endif
--- 
-1.8.5.1
+--vVSe26ROzFt0lsLc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBe04AAoJELSic+t+oim938cP/jgOUxNoCDmLnMAWeENcvsBD
+9ZoT0i9cCRvmXhFG6p+yClhwNF5w2pujKM9xB99x+bIU3XhLWrBzEW3zn1uptVSA
+WkdJZndSbkj+kXsCktFfiXQgflpX21xTylAYId+6JRhfOTStsz6dTLL8LNy9NqKS
+xjZN0EMk5H12J+qwcRMgknERNcFyiGXDZJtGJ+FredvEbMfXSQuEmk47BFffBMRv
+v/JyHm4hLOJeVe3FVJPFmDAenneulbCZEQeXYKzS+BmyJOWTPD3u9gZ71BFbk563
+iXeQMQNZPHbsJjo2PKxDK1k6xdE0pNRwzqlXZYQLPZJpzRwootn8GXbN2yoPb8Pz
+6tExHrPvgMp5WU5nkCsn3SI+aAfE4nqK7TP55vcr/ULP9q9ZJ95ckKmWDD30Tj3R
+05KcZzo0l6ORSHB23dArvIcW2unMGkFYbU26WXGLfNuVdRmEuh0taWH6dLf8usQq
+ez37qYsE/0PzjLwnaDntAQrNPsZPllB2NPlU4TKO4BRgGncID3u32NR4gVK5ZBbE
+0XaZ3rEIFPqSY8TMGJZvVFv1Cr+T1z6Ga/YzLApldAxYxIegFxYKBJZUa/Q9c2Lc
+w5wtxT8zULnJraHsnovKxT5gAXRKgdL8LK8ByHaNl+bl3JdNKnvCYJLZjV8u+Nr5
+Efzp5blaqv+Sp8ZLZ0Qh
+=fZcB
+-----END PGP SIGNATURE-----
+
+--vVSe26ROzFt0lsLc--
