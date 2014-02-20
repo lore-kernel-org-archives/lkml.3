@@ -1,66 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaBTU4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:56:24 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:63265 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaBTU4W (ORCPT
+	id S1752734AbaBTU5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:57:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43030 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424AbaBTU5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:56:22 -0500
-Date: Thu, 20 Feb 2014 15:56:15 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Alex Elder <elder@linaro.org>
-Cc: mturquette@linaro.org, bcm@fixthebug.org,
-        Tim Kryger <tim.kryger@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] clk: bcm281xx: don't disable unused peripheral
- clocks
-Message-ID: <20140220205615.GF5038@beef>
-References: <1392402560-12929-1-git-send-email-elder@linaro.org>
- <1392402560-12929-3-git-send-email-elder@linaro.org>
+	Thu, 20 Feb 2014 15:57:54 -0500
+Date: Thu, 20 Feb 2014 12:59:21 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 5/9] usb: don't use PREPARE_DELAYED_WORK
+Message-ID: <20140220205921.GA22830@kroah.com>
+References: <1392929071-16555-1-git-send-email-tj@kernel.org>
+ <1392929071-16555-6-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392402560-12929-3-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392929071-16555-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 12:29:19PM -0600, Alex Elder wrote:
-> Add the CLK_IGNORE_UNUSED flag when setting up a peripheral clock.
-> This prevents unused clocks from getting disabled, and by doing
-> this we can use the common clock code even before we've resolved
-> all the spots that need to get a reference to their clock.
+On Thu, Feb 20, 2014 at 03:44:27PM -0500, Tejun Heo wrote:
+> PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+> and a nasty surprise in terms of reentrancy guarantee as workqueue
+> considers work items to be different if they don't have the same work
+> function.
 > 
-> Signed-off-by: Alex Elder <elder@linaro.org>
-> Reviewed-by: Matt Porter <mporter@linaro.org>
+> usb_hub->init_work is multiplexed with multiple work functions.
+> Introduce hub_init_workfn() which invokes usb_hub->init_workfn and
+> always use it as the work function and update the users to set the
+> ->init_workfn field instead of overriding the work function using
+> PREPARE_DELAYED_WORK().
+> 
+> It looks like that the work items are never queued while in-flight, so
+> simply using INIT_DELAYED_WORK() before each queueing could be enough.
+> This patch performs equivalent conversion just in case but we probably
+> wanna clean it up later if that's the case.
 
-Mike: if you'll provide your ack on this patch, we would like to take
-the entire series through arm-soc for 3.15 as we originally agreed
-for 3.14. Patches 1 and 3 are the original two you acked for 3.14
-but had to be dropped late in the merge window.
+I think it should be fine to use INIT_DELAYED_WORK(), but Alan would
+know best.  Alan?
 
-Thanks,
-Matt
+> 
+> It would probably be best to route this with other related updates
+> through the workqueue tree.
+> 
+> Lightly tested.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-usb@vger.kernel.org
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 > ---
->  drivers/clk/bcm/clk-kona-setup.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/usb/core/hub.c | 13 ++++++++++---
+>  drivers/usb/core/hub.h |  1 +
+>  2 files changed, 11 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/clk/bcm/clk-kona-setup.c b/drivers/clk/bcm/clk-kona-setup.c
-> index f1e88fe..c7607fe 100644
-> --- a/drivers/clk/bcm/clk-kona-setup.c
-> +++ b/drivers/clk/bcm/clk-kona-setup.c
-> @@ -579,7 +579,7 @@ static int peri_clk_setup(struct ccu_data *ccu, struct peri_clk_data *data,
->  			struct clk_init_data *init_data)
->  {
->  	init_data->ops = &kona_peri_clk_ops;
-> -	init_data->flags = 0;
-> +	init_data->flags = CLK_IGNORE_UNUSED;
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 64ea219..2bc61c0 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -1040,7 +1040,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
+>  		 */
+>  		if (type == HUB_INIT) {
+>  			delay = hub_power_on(hub, false);
+> -			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func2);
+> +			hub->init_workfn = hub_init_func2;
+>  			schedule_delayed_work(&hub->init_work,
+>  					msecs_to_jiffies(delay));
 >  
->  	return clk_sel_setup(data->clocks, &data->sel, init_data);
+> @@ -1194,7 +1194,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
+>  
+>  		/* Don't do a long sleep inside a workqueue routine */
+>  		if (type == HUB_INIT2) {
+> -			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func3);
+> +			hub->init_workfn = hub_init_func3;
+>  			schedule_delayed_work(&hub->init_work,
+>  					msecs_to_jiffies(delay));
+>  			return;		/* Continues at init3: below */
+> @@ -1634,6 +1634,13 @@ static void hub_disconnect(struct usb_interface *intf)
+>  	kref_put(&hub->kref, hub_release);
 >  }
+>  
+> +static void hub_init_workfn(struct work_struct *work)
+> +{
+> +	struct usb_hub *hub = container_of(to_delayed_work(work),
+> +					   struct usb_hub, init_work);
+> +	hub->init_workfn(work);
+> +}
+> +
+>  static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
+>  {
+>  	struct usb_host_interface *desc;
+> @@ -1728,7 +1735,7 @@ descriptor_error:
+>  	hub->intfdev = &intf->dev;
+>  	hub->hdev = hdev;
+>  	INIT_DELAYED_WORK(&hub->leds, led_work);
+> -	INIT_DELAYED_WORK(&hub->init_work, NULL);
+> +	INIT_DELAYED_WORK(&hub->init_work, hub_init_workfn);
+>  	usb_get_intf(intf);
+>  
+>  	usb_set_intfdata (intf, hub);
+> diff --git a/drivers/usb/core/hub.h b/drivers/usb/core/hub.h
+> index df629a3..ef81463 100644
+> --- a/drivers/usb/core/hub.h
+> +++ b/drivers/usb/core/hub.h
+> @@ -72,6 +72,7 @@ struct usb_hub {
+>  	unsigned		has_indicators:1;
+>  	u8			indicator[USB_MAXCHILDREN];
+>  	struct delayed_work	leds;
+> +	work_func_t		init_workfn;
+>  	struct delayed_work	init_work;
+>  	struct usb_port		**ports;
+>  };
 > -- 
-> 1.7.9.5
-> 
+> 1.8.5.3
