@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117AbaBUAgb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:36:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45741 "EHLO
+	id S1757138AbaBUAgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:36:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566AbaBTXwN (ORCPT
+	with ESMTP id S1755426AbaBTXwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:13 -0500
+	Thu, 20 Feb 2014 18:52:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.12 37/82] staging: r8188eu: Fix typo in USB_DEVICE list
-Date: Thu, 20 Feb 2014 15:52:20 -0800
-Message-Id: <20140220235020.586036024@linuxfoundation.org>
+        Doug Anderson <dianders@chromium.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.12 27/82] hwmon: (ntc_thermistor) Avoid math overflow
+Date: Thu, 20 Feb 2014 15:52:10 -0800
+Message-Id: <20140220235020.288398493@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,32 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Doug Anderson <dianders@chromium.org>
 
-commit 08951f10ae146d0c4114ac508310ad316b6f8798 upstream.
+commit d3d89c468ceebbcf9423d1a3d66c5bf91f569570 upstream.
 
-There is a typo in the device list that interchanges the vendor and
-product codes for one of the entries. This exchange was determined
-by noticing that the vendor code is 0x07b8 for Abocom at
-http://www.linux-usb.org/usb.ids.
+The ntc thermistor code was doing math whose temporary result might
+have overflowed 32-bits.  We need some casts in there to make it safe.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+In one example I found:
+- pullup_uV: 1800000
+- result of iio_read_channel_raw: 3226
+- 1800000 * 3226 => 0x15a1cbc80
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8188eu/os_dep/usb_intf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/ntc_thermistor.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -53,7 +53,7 @@ static struct usb_device_id rtw_usb_id_t
- 	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0x0179)}, /* 8188ETV */
- 	/*=== Customer ID ===*/
- 	/****** 8188EUS ********/
--	{USB_DEVICE(0x8179, 0x07B8)}, /* Abocom - Abocom */
-+	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
- 	{}	/* Terminating entry */
- };
+--- a/drivers/hwmon/ntc_thermistor.c
++++ b/drivers/hwmon/ntc_thermistor.c
+@@ -145,7 +145,7 @@ struct ntc_data {
+ static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
+ {
+ 	struct iio_channel *channel = pdata->chan;
+-	unsigned int result;
++	s64 result;
+ 	int val, ret;
+ 
+ 	ret = iio_read_channel_raw(channel, &val);
+@@ -155,10 +155,10 @@ static int ntc_adc_iio_read(struct ntc_t
+ 	}
+ 
+ 	/* unit: mV */
+-	result = pdata->pullup_uv * val;
++	result = pdata->pullup_uv * (s64) val;
+ 	result >>= 12;
+ 
+-	return result;
++	return (int)result;
+ }
+ 
+ static const struct of_device_id ntc_match[] = {
 
 
