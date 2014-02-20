@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818AbaBTNxS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:53:18 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:47610 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754333AbaBTNxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:53:17 -0500
-Message-ID: <530608E0.90805@imgtec.com>
-Date: Thu, 20 Feb 2014 13:53:36 +0000
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754741AbaBTNyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:54:18 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13722 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578AbaBTNyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 08:54:16 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 20 Feb 2014 05:51:57 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: tegra124: remove gr2d and gr3d clocks
+Date: Thu, 20 Feb 2014 15:54:07 +0200
+Message-ID: <1392904448-11939-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH] Makefile: Unset stack-protector gcc flag if it is not
- supported
-References: <1391793327-9578-1-git-send-email-markos.chandras@imgtec.com>	<5305F928.5070600@imgtec.com> <CAFLxGvyA+2QTkUwOthLiaH5iVT-6HvzwWEBoUaPoqrBxbLzxLw@mail.gmail.com>
-In-Reply-To: <CAFLxGvyA+2QTkUwOthLiaH5iVT-6HvzwWEBoUaPoqrBxbLzxLw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.47]
-X-SEF-Processed: 7_3_0_01192__2014_02_20_13_53_04
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 12:53 PM, Richard Weinberger wrote:
-> On Thu, Feb 20, 2014 at 1:46 PM, Markos Chandras
-> <Markos.Chandras@imgtec.com> wrote:
->> On 02/07/2014 05:15 PM, Markos Chandras wrote:
->>>
->>> In case the compiler does not support the stack-protector option,
->>> unset the flag to avoid build failures. Printing a warning is enough
->>> to let the user know that this flag will not be used.
->>> Fixes the following build problem when using a toolchain which does
->>> not support the -fstack-protector-strong flag:
->>>
->>> Makefile:614: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG:
->>> -fstack-protector-strong not supported by compiler
->>> mips-linux-gnu-gcc: error: unrecognized command line option
->>> '-fstack-protector-strong'
->>> scripts/Makefile.build:308: recipe for target 'scripts/mod/empty.o' failed
->>> make[2]: *** [scripts/mod/empty.o] Error 1
->>> make[2]: *** Waiting for unfinished jobs....
->>> scripts/Makefile.build:455: recipe for target 'scripts/mod' failed
->>>
->>> Cc: Michal Marek <mmarek@suse.cz>
->>> Cc: linux-kbuild@vger.kernel.org
->>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
->>> ---
->>>    Makefile | 2 ++
->>>    1 file changed, 2 insertions(+)
->>>
->>> diff --git a/Makefile b/Makefile
->>> index 606ef7c..63a5333 100644
->>> --- a/Makefile
->>> +++ b/Makefile
->>> @@ -607,12 +607,14 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
->>>      ifeq ($(call cc-option, $(stackp-flag)),)
->>>        $(warning Cannot use CONFIG_CC_STACKPROTECTOR: \
->>>                -fstack-protector not supported by compiler))
->>> +    stackp-flag :=
->>>      endif
->>>    else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
->>>      stackp-flag := -fstack-protector-strong
->>>      ifeq ($(call cc-option, $(stackp-flag)),)
->>>        $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
->>>                -fstack-protector-strong not supported by compiler)
->>> +    stackp-flag :=
->>>      endif
->>>    else
->>>      # Force off for distro compilers that enable stack protector by
->>> default.
->>>
->>
->> Ping again?
->
-> This is by design. We want the build fail if
-> CONFIG_CC_STACKPROTECTOR_STRONG is set
-> but the toolchain does not support it.
-> Otherwise we could end up with a kernel without stackprotector even if
-> the config symbol is set.
->
+Tegra124 does not have gr2d and gr3d clocks. They have been replaced by the
+vic03 and gpu clocks respectively.
 
-Hi Richard,
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-tegra124.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Then maybe the $(warning...) should be converted to $(error...)?
-Because it's not really a warning if the build failure is expected to 
-happen.
-
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index b4cf650..166e02f 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -769,10 +769,8 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
+ 	[tegra_clk_sdmmc4_8] = { .dt_id = TEGRA124_CLK_SDMMC4, .present = true },
+ 	[tegra_clk_pwm] = { .dt_id = TEGRA124_CLK_PWM, .present = true },
+ 	[tegra_clk_i2s2] = { .dt_id = TEGRA124_CLK_I2S2, .present = true },
+-	[tegra_clk_gr2d] = { .dt_id = TEGRA124_CLK_GR_2D, .present = true },
+ 	[tegra_clk_usbd] = { .dt_id = TEGRA124_CLK_USBD, .present = true },
+ 	[tegra_clk_isp_8] = { .dt_id = TEGRA124_CLK_ISP, .present = true },
+-	[tegra_clk_gr3d] = { .dt_id = TEGRA124_CLK_GR_3D, .present = true },
+ 	[tegra_clk_disp2] = { .dt_id = TEGRA124_CLK_DISP2, .present = true },
+ 	[tegra_clk_disp1] = { .dt_id = TEGRA124_CLK_DISP1, .present = true },
+ 	[tegra_clk_host1x_8] = { .dt_id = TEGRA124_CLK_HOST1X, .present = true },
 -- 
-markos
+1.7.7.rc0.72.g4b5ea.dirty
 
