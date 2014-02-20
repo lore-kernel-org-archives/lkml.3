@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaBTEwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 23:52:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34380 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758AbaBTEwC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 23:52:02 -0500
-Date: Wed, 19 Feb 2014 20:51:41 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-3af7111e2066a641510c16a4e9e82dd81550115b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, fengguang.wu@intel.com, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, fengguang.wu@intel.com
-In-Reply-To: <1392587568-7325-3-git-send-email-stefani@seibold.net>
-References: <1392587568-7325-3-git-send-email-stefani@seibold.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] mm: Clean up style in install_special_mapping()
-Git-Commit-ID: 3af7111e2066a641510c16a4e9e82dd81550115b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751007AbaBTFDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 00:03:20 -0500
+Received: from mga01.intel.com ([192.55.52.88]:18549 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703AbaBTFDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 00:03:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,510,1389772800"; 
+   d="scan'208";a="484593502"
+Date: Thu, 20 Feb 2014 10:33:10 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        freemangordon@abv.bg, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 4/4] power_supply: bq24261 charger driver
+Message-ID: <20140220050310.GA2498@jenny-desktop>
+References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
+ <1391490780-6141-5-git-send-email-jenny.tc@intel.com>
+ <20140204113621.GB2450@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140204113621.GB2450@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3af7111e2066a641510c16a4e9e82dd81550115b
-Gitweb:     http://git.kernel.org/tip/3af7111e2066a641510c16a4e9e82dd81550115b
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 19 Feb 2014 20:46:57 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 19 Feb 2014 20:46:57 -0800
+On Tue, Feb 04, 2014 at 12:36:21PM +0100, Pavel Machek wrote:
+> > +#define BQ24261_MIN_CV 3500
+> > +#define BQ24261_MAX_CV 4440
+> 
+> Other defines use uV as an unit :-(.
 
-mm: Clean up style in install_special_mapping()
+uV is used if the value is read from psy class. For register configurations
+uses mV. Will change the name to reflect mV
 
-We can clean up the style in install_special_mapping(), and make it
-use PTR_ERR_OR_ZERO().
+> > +	/* If status is fault, wait for READY before enabling the charging */
+> > +
+> > +	if (!is_ready) {
+> > +		ret = wait_event_timeout(chip->wait_ready,
+> > +			(chip->chrgr_stat != BQ24261_CHRGR_STAT_READY),
+> > +				HZ);
+> > +		dev_info(&chip->client->dev,
+> > +			"chrgr_stat=%x\n", chip->chrgr_stat);
+> > +		if (ret == 0) {
+> > +			dev_err(&chip->client->dev,
+> > +				"Waiting for Charger Ready Failed.Enabling charging anyway\n");
+> > +		}
+> > +	}
+> 
+> So charger has a problem, and we force it on, anyway? Also put space
+> after ".".
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/1392587568-7325-3-git-send-email-stefani@seibold.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- mm/mmap.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+Yes, sometimes charger does not give ready, so we force.
+> 
+> > +static inline int bq24261_set_cv(struct bq24261_charger *chip, int cv)
+> > +{
+> > +	int bat_volt;
+> > +	int ret;
+> > +	u8 reg_val;
+> > +	u8 vindpm_val = 0x0;
+> > +
+> > +	/*
+> > +	* Setting VINDPM value as per the battery voltage
+> > +	*  VBatt           Vindpm     Register Setting
+> > +	*  < 3.7v           4.2v       0x0 (default)
+> > +	*  3.71v - 3.96v    4.36v      0x2
+> > +	*  > 3.96v          4.6v       0x5
+> > +	*/
+> > +	ret = get_battery_voltage(&bat_volt);
+> > +	if (ret) {
+> > +		dev_err(&chip->client->dev,
+> > +			"Error getting battery voltage!!\n");
+> > +	} else {
+> 
+> You forget the error value and continue anyway.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 81ba54f..6b78a77 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2959,12 +2959,10 @@ int install_special_mapping(struct mm_struct *mm,
- 			    unsigned long addr, unsigned long len,
- 			    unsigned long vm_flags, struct page **pages)
- {
--	struct vm_area_struct *vma = _install_special_mapping(mm,
--			    addr, len, vm_flags, pages);
-+	struct vm_area_struct *vma;
- 
--	if (IS_ERR(vma))
--		return PTR_ERR(vma);
--	return 0;
-+	vma = _install_special_mapping(mm, addr, len, vm_flags, pages);
-+	return PTR_ERR_OR_ZERO(vma);
- }
- 
- static DEFINE_MUTEX(mm_all_locks_mutex);
+On error, throw the error and program default VINDPM value.
+
+-Jenny
