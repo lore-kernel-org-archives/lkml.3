@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753AbaBUAd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:33:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45785 "EHLO
+	id S1756997AbaBUAel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:34:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632AbaBTXwX (ORCPT
+	with ESMTP id S1755617AbaBTXwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:23 -0500
+	Thu, 20 Feb 2014 18:52:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.12 47/82] mei: clear write cb from waiting list on reset
-Date: Thu, 20 Feb 2014 15:52:30 -0800
-Message-Id: <20140220235020.892584649@linuxfoundation.org>
+        Olaf Kirch <okir@suse.com>, NeilBrown <neilb@suse.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.12 28/82] lockd: send correct lock when granting a delayed lock.
+Date: Thu, 20 Feb 2014 15:52:11 -0800
+Message-Id: <20140220235020.324096844@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,40 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 30c54df7cb9b15b222529a028390b9c9582dd65e upstream.
+commit 2ec197db1a56c9269d75e965f14c344b58b2a4f6 upstream.
 
-Clear write callbacks sitting in write_waiting list on reset.
-Otherwise these callbacks are left dangling and cause memory leak.
+If an NFS client attempts to get a lock (using NLM) and the lock is
+not available, the server will remember the request and when the lock
+becomes available it will send a GRANT request to the client to
+provide the lock.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+If the client already held an adjacent lock, the GRANT callback will
+report the union of the existing and new locks, which can confuse the
+client.
+
+This happens because __posix_lock_file (called by vfs_lock_file)
+updates the passed-in file_lock structure when adjacent or
+over-lapping locks are found.
+
+To avoid this problem we take a copy of the two fields that can
+be changed (fl_start and fl_end) before the call and restore them
+afterwards.
+An alternate would be to allocate a 'struct file_lock', initialise it,
+use locks_copy_lock() to take a copy, then locks_release_private()
+after the vfs_lock_file() call.  But that is a lot more work.
+
+Reported-by: Olaf Kirch <okir@suse.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/misc/mei/client.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+--
+v1 had a couple of issues (large on-stack struct and didn't really work properly).
+This version is much better tested.
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -916,8 +916,16 @@ void mei_cl_all_wakeup(struct mei_device
- void mei_cl_all_write_clear(struct mei_device *dev)
- {
- 	struct mei_cl_cb *cb, *next;
-+	struct list_head *list;
+---
+ fs/lockd/svclock.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/fs/lockd/svclock.c
++++ b/fs/lockd/svclock.c
+@@ -779,6 +779,7 @@ nlmsvc_grant_blocked(struct nlm_block *b
+ 	struct nlm_file		*file = block->b_file;
+ 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
+ 	int			error;
++	loff_t			fl_start, fl_end;
  
--	list_for_each_entry_safe(cb, next, &dev->write_list.list, list) {
-+	list = &dev->write_list.list;
-+	list_for_each_entry_safe(cb, next, list, list) {
-+		list_del(&cb->list);
-+		mei_io_cb_free(cb);
-+	}
-+
-+	list = &dev->write_waiting_list.list;
-+	list_for_each_entry_safe(cb, next, list, list) {
- 		list_del(&cb->list);
- 		mei_io_cb_free(cb);
+ 	dprintk("lockd: grant blocked lock %p\n", block);
+ 
+@@ -796,9 +797,16 @@ nlmsvc_grant_blocked(struct nlm_block *b
  	}
+ 
+ 	/* Try the lock operation again */
++	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
++	 * them unchanged for the GRANT_MSG
++	 */
+ 	lock->fl.fl_flags |= FL_SLEEP;
++	fl_start = lock->fl.fl_start;
++	fl_end = lock->fl.fl_end;
+ 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
+ 	lock->fl.fl_flags &= ~FL_SLEEP;
++	lock->fl.fl_start = fl_start;
++	lock->fl.fl_end = fl_end;
+ 
+ 	switch (error) {
+ 	case 0:
 
 
