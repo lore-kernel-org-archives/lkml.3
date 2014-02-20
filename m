@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271AbaBTJOl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:14:41 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46974 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028AbaBTJOf (ORCPT
+	id S1754877AbaBTJPf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:15:35 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:40246 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162AbaBTJP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:14:35 -0500
-Date: Thu, 20 Feb 2014 18:12:57 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
-        lgirdwood@gmail.com, lars@metafoo.de, peter.ujfalusi@ti.com,
-        jarkko.nikula@bitmer.com, eric.y.miao@gmail.com,
-        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux@arm.linux.org.uk
-Message-ID: <20140220091257.GB2669@sirena.org.uk>
-References: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1392736948-26623-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Thu, 20 Feb 2014 04:15:27 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M3d18yTenwKOqJX4"
-Content-Disposition: inline
-In-Reply-To: <1392736948-26623-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.156.234
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 01/17 v2] Input - arizona-haptics: Fix double lock of
- dapm_mutex
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140220085017.GL6835@laptop.programming.kicks-ass.net>
+References: <1392787230-17986-1-git-send-email-leiwen@marvell.com>
+	<20140219090415.GK27965@twins.programming.kicks-ass.net>
+	<CALZhoSQpbJGSEaoOKO_sQQNFBU9UHYQ4bPCXEFfAz=iUm+D7_g@mail.gmail.com>
+	<20140220085017.GL6835@laptop.programming.kicks-ass.net>
+Date: Thu, 20 Feb 2014 17:15:26 +0800
+Message-ID: <CALZhoSSOWE54X8rAz-2VMhYN-N_3rzthTfRvTQcA5_dQqgoA3w@mail.gmail.com>
+Subject: Re: [PATCH] sched: keep quiescent cpu out of idle balance loop
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lei Wen <leiwen@marvell.com>, mingo@redhat.com, preeti.lkml@gmail.com,
+        daniel.lezcano@linaro.org, viresh.kumar@linaro.org, xjian@marvell.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 20, 2014 at 4:50 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Feb 20, 2014 at 10:42:51AM +0800, Lei Wen wrote:
+>> >> -     int ilb = cpumask_first(nohz.idle_cpus_mask);
+>> >> +     int ilb;
+>> >> +     int cpu = smp_processor_id();
+>> >> +     struct sched_domain *tmp;
+>> >>
+>> >> -     if (ilb < nr_cpu_ids && idle_cpu(ilb))
+>> >> -             return ilb;
+>> >> +     for_each_domain(cpu, tmp) {
+>> >> +             ilb = cpumask_first_and(nohz.idle_cpus_mask,
+>> >> +                             sched_domain_span(tmp));
+>> >> +             if (ilb < nr_cpu_ids && idle_cpu(ilb))
+>> >> +                     return ilb;
+>> >> +     }
+>> >
+>> > The ILB code is bad; but you just made it horrible. Don't add pointless
+>> > for_each_domain() iterations.
+>> >
+>> > I'm thinking something like:
+>> >
+>> >   ilb = cpumask_first_and(nohz.idle_cpus_mask, this_rq()->rd.span);
+>> >
+>> > Should work just fine, no?
+>>
+>> Yes, it has the same result as my previous patch did.
+>>
+>> >
+>> > Better still would be to maybe not participate in the ILB in the first
+>> > place and leave this selection loop alone.
+>>
+>> Not quitely get your point here...
+>> Do you mean that you want idle cpu selection be put in earlier place
+>> than current find_new_ilb is?
+>
+> I meant that if you stop an idle CPU setting its bit in
+> nohz.idle_cpus_mask, you don't have to mask it out either.
 
---M3d18yTenwKOqJX4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Understand it.
+I would reformat my previous patch according to your suggestion.
 
-On Tue, Feb 18, 2014 at 03:22:12PM +0000, Charles Keepax wrote:
-> snd_soc_dapm_sync takes the dapm_mutex internally, but we currently take
-> it externally as well. This patch fixes this.
-
-Applied, thanks.
-
---M3d18yTenwKOqJX4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTBccVAAoJELSic+t+oim96ukQAJz0JktANPHTKHZuTakeIbiP
-bpHQ43gTHHA0LSSF/uxbTd12EVHOJVdPITeXLiCg+O99A0fKC2cBW5DgKHRQ7KB/
-cNK5AG4xAqORuRzj5tUVkmffdvTLd8qDznXq5EjhT97MQe0u1SB8WcRgGReos/w1
-LKpGgYRgHBE/ZmVaZIEZjHCfvrFKJeS+kPB7tKElrdah351ptcSJWYoeCLKAF+gi
-TiUd+nO7ZOS3W1uv45qjfwvUM/V+swQqntsGTel9/mJcTLDQSjqyRKALoaC+sxNF
-cbbRTrKd/2YnZyetwzTpztBOOUicZbN6USuRnA8Ti9YV0dcfBVgmSu8I3QLuqJEN
-EIDeFfUk7Hdvc8v2uvlDDa8t/R0QwHY977Kwos/7u3W8SaDJ1SHLMzl4QNdt3Qua
-x0BhxMHOk1gUKPEymlf06NeNdKZ9zAUHH5fydOCTXzHWNwhqkG7nsGax4RDcTRHB
-dvB5GddWYWwkwsRuKdW2HZeA04udO2JIE/4QFDG0LOpitLkpWhtz86GRhhzi8RE4
-sy6TV322/teX0yjqaR2i53YUKZMufsayNzxG8ykWdSwdHy+bJQaxVlWyyqb5iGOD
-8kQF5DP3JG4hjs/D1WXNomr9b0uEZqO6d/ZeL4fqoh6w8ncpCWmwzEI1gbEkmyYk
-+OaVo6XDClrBDvpPp9Jq
-=R1zC
------END PGP SIGNATURE-----
-
---M3d18yTenwKOqJX4--
+Thanks,
+Lei
