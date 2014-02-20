@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233AbaBUAZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:25:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45920 "EHLO
+	id S1756347AbaBUA0Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:26:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45896 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755844AbaBTXwv (ORCPT
+	with ESMTP id S1755767AbaBTXwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:51 -0500
+	Thu, 20 Feb 2014 18:52:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Prarit Bhargava <prarit@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 80/82] drivers/edac/edac_mc_sysfs.c: poll timeout cannot be zero
-Date: Thu, 20 Feb 2014 15:53:03 -0800
-Message-Id: <20140220235021.872607156@linuxfoundation.org>
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.12 33/82] drm/i915: Pair va_copy with va_end in i915_error_vprintf
+Date: Thu, 20 Feb 2014 15:52:16 -0800
+Message-Id: <20140220235020.464667467@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -32,100 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
 
-commit 79040cad3f8235937e229f1b9401ba36dd5ad69b upstream.
+commit 1d2cb9a54abc6e1d239f28f07661366d5662a94a upstream.
 
-If you do
+Each invocation of va_copy() must be matched by a corresponding
+invocation of va_end() in the same function.
 
-  echo 0 > /sys/module/edac_core/parameters/edac_mc_poll_msec
+This regression has been introduced in
 
-the following stack trace is output because the edac module is not
-designed to poll with a timeout of zero.
+commit e29bb4ebbf000ff9ac081d29784a3331618f012e
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri Sep 20 10:20:59 2013 +0100
 
-  WARNING: CPU: 12 PID: 0 at lib/list_debug.c:33 __list_add+0xac/0xc0()
-  list_add corruption. prev->next should be next (ffff8808291dd1b8), but was           (null). (prev=ffff8808286fe3f8).
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 12 PID: 0 Comm: swapper/12 Not tainted 3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Call Trace:
-   <IRQ>
-    __list_add+0xac/0xc0
-    __internal_add_timer+0xab/0x130
-    internal_add_timer+0x17/0x40
-    mod_timer_pinned+0xca/0x170
-    intel_pstate_timer_func+0x28a/0x380
-    call_timer_fn+0x36/0x100
-    run_timer_softirq+0x1ff/0x2f0
-    __do_softirq+0xf5/0x2e0
-    irq_exit+0x10d/0x120
-    smp_apic_timer_interrupt+0x45/0x60
-    apic_timer_interrupt+0x6d/0x80
-   <EOI>
-    cpuidle_idle_call+0xb9/0x1f0
-    arch_cpu_idle+0xe/0x30
-    cpu_startup_entry+0x9e/0x240
-    start_secondary+0x1e4/0x290
+    drm/i915: Use a temporary va_list for two-pass string handling
 
-  kernel BUG at kernel/timer.c:1084!
-  invalid opcode: 0000 [#1] SMP
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 12 PID: 0 Comm: swapper/12 Tainted: G        W    3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Call Trace:
-   <IRQ>
-    run_timer_softirq+0x245/0x2f0
-    __do_softirq+0xf5/0x2e0
-    irq_exit+0x10d/0x120
-    smp_apic_timer_interrupt+0x45/0x60
-    apic_timer_interrupt+0x6d/0x80
-   <EOI>
-    cpuidle_idle_call+0xb9/0x1f0
-    arch_cpu_idle+0xe/0x30
-    cpu_startup_entry+0x9e/0x240
-    start_secondary+0x1e4/0x290
-  RIP   cascade+0x93/0xa0
-
-  WARNING: CPU: 36 PID: 1154 at kernel/workqueue.c:1461 __queue_delayed_work+0xed/0x1a0()
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 36 PID: 1154 Comm: kworker/u481:3 Tainted: G        W    3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Workqueue: edac-poller edac_mc_workq_function [edac_core]
-  Call Trace:
-    dump_stack+0x45/0x56
-    warn_slowpath_common+0x7d/0xa0
-    warn_slowpath_null+0x1a/0x20
-    __queue_delayed_work+0xed/0x1a0
-    queue_delayed_work_on+0x27/0x50
-    edac_mc_workq_function+0x72/0xa0 [edac_core]
-    process_one_work+0x17b/0x460
-    worker_thread+0x11b/0x400
-    kthread+0xd2/0xf0
-    ret_from_fork+0x7c/0xb0
-
-This patch adds a range check in the edac_mc_poll_msec code to check for 0.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_mc_sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gpu_error.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -61,7 +61,7 @@ static int edac_set_poll_msec(const char
- 	ret = kstrtol(val, 0, &l);
- 	if (ret)
- 		return ret;
--	if ((int)l != l)
-+	if (!l || ((int)l != l))
- 		return -EINVAL;
- 	*((int *)kp->arg) = l;
+--- a/drivers/gpu/drm/i915/i915_gpu_error.c
++++ b/drivers/gpu/drm/i915/i915_gpu_error.c
+@@ -146,7 +146,10 @@ static void i915_error_vprintf(struct dr
+ 		va_list tmp;
+ 
+ 		va_copy(tmp, args);
+-		if (!__i915_error_seek(e, vsnprintf(NULL, 0, f, tmp)))
++		len = vsnprintf(NULL, 0, f, tmp);
++		va_end(tmp);
++
++		if (!__i915_error_seek(e, len))
+ 			return;
+ 	}
  
 
 
