@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaBTDjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 22:39:43 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37715 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbaBTDjc (ORCPT
+	id S1753145AbaBTDqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 22:46:45 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52414 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080AbaBTDqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 22:39:32 -0500
-Subject: [PATCH -tip 2/2] kprobes/x86: Allow to handle reentered kprobe on
- singlestepping
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org, fche@redhat.com,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 20 Feb 2014 12:39:29 +0900
-Message-ID: <20140220033929.12285.24492.stgit@ltc230.yrl.intra.hitachi.co.jp>
-In-Reply-To: <20140220033924.12285.97230.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140220033924.12285.97230.stgit@ltc230.yrl.intra.hitachi.co.jp>
-User-Agent: StGit/0.17-dirty
+	Wed, 19 Feb 2014 22:46:43 -0500
+Date: Wed, 19 Feb 2014 19:46:41 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Marcelo Tosatti <mtosatti@redhat.com>
+cc: Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+In-Reply-To: <20140220022254.GA25898@amt.cnet>
+Message-ID: <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
+References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com> <1392339728-13487-5-git-send-email-lcapitulino@redhat.com> <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com> <20140214225810.57e854cb@redhat.com>
+ <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com> <20140217085622.39b39cac@redhat.com> <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com> <20140218123013.GA20609@amt.cnet> <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com>
+ <20140220022254.GA25898@amt.cnet>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the NMI handlers(e.g. perf) can interrupt in the
-single stepping (or preparing the single stepping, do_debug
-etc.), we should consider a kprobe is hit in the NMI
-handler. Even in that case, the kprobe is allowed to be
-reentered as same as the kprobes hit in kprobe handlers
-(KPROBE_HIT_ACTIVE or KPROBE_HIT_SSDONE).
-The real issue will happen when a kprobe hit while another
-reentered kprobe is processing (KPROBE_REENTER), because
-we already consumed a saved-area for the previous kprobe.
+On Wed, 19 Feb 2014, Marcelo Tosatti wrote:
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
----
- arch/x86/kernel/kprobes/core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> We agree that, in the future, we'd like to provide the ability to
+> dynamically allocate and free 1GB pages at runtime.
+> 
+> Extending the kernel command line interface is a first step.
+> 
+> Do you have a concrete objection to that first step ?
+> 
 
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index b482e96..a9a42fa 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -531,10 +531,11 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
- 	switch (kcb->kprobe_status) {
- 	case KPROBE_HIT_SSDONE:
- 	case KPROBE_HIT_ACTIVE:
-+	case KPROBE_HIT_SS:
- 		kprobes_inc_nmissed_count(p);
- 		setup_singlestep(p, regs, kcb, 1);
- 		break;
--	case KPROBE_HIT_SS:
-+	case KPROBE_REENTER:
- 		/* A probe has been hit in the codepath leading up to, or just
- 		 * after, single-stepping of a probed instruction. This entire
- 		 * codepath should strictly reside in .kprobes.text section.
+Yes, my concrete objection is that the command line interface is 
+unnecessary if you can dynamically allocate and free 1GB pages at runtime 
+unless memory will be so fragmented that it cannot be done when userspace 
+is brought up.  That is not your use case, thus this support is not 
+needed.  I think Mel also brought up this point.
 
+There's no "first step" about it, this is unnecessary for your use case if 
+you can do it at runtime.  I'm not sure what's so surprising about this.
 
+> > You can't specify an interleave behavior with Luiz's command line 
+> > interface so now we'd have two different interfaces for allocating 
+> > hugepage sizes depending on whether you're specifying a node or not.  
+> > It's "hugepagesz=1G hugepages=16" vs "hugepage_node=1:16:1G" (and I'd have 
+> > to look at previous messages in this thread to see if that means 16 1GB 
+> > pages on node 1 or 1 1GB pages on node 16.)
+> 
+> What syntax do you prefer and why ?
+> 
+
+I'm not sure it's interesting to talk about since this patchset is 
+unnecessary if you can do it at runtime, but since "hugepagesz=" and 
+"hugepages=" have existed for many kernel releases, we must maintain 
+backwards compatibility.  Thus, it seems, the easiest addition would have 
+been "hugepagesnode=" which I've mentioned several times, there's no 
+reason to implement yet another command line option purely as a shorthand 
+which hugepage_node=1:2:1G is and in a very cryptic way.
