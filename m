@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357AbaBTX6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:58:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46337 "EHLO
+	id S1756342AbaBTX57 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:57:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46349 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138AbaBTXyU (ORCPT
+	with ESMTP id S1756144AbaBTXyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:20 -0500
+	Thu, 20 Feb 2014 18:54:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.13 96/99] genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=n
-Date: Thu, 20 Feb 2014 15:53:31 -0800
-Message-Id: <20140220235120.987607792@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>,
+        Doug Thompson <dougthompson@xmission.com>
+Subject: [PATCH 3.13 98/99] EDAC: Poll timeout cannot be zero, p2
+Date: Thu, 20 Feb 2014 15:53:33 -0800
+Message-Id: <20140220235121.043594113@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,42 +29,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Borislav Petkov <bp@suse.de>
 
-commit 2c45aada341121438affc4cb8d5b4cfaa2813d3d upstream.
+commit 9da21b1509d8aa7ab4846722817d16c72d656c91 upstream.
 
-In allmodconfig builds for sparc and any other arch which does
-not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
+Sanitize code even more to accept unsigned longs only and to not allow
+polling intervals below 1 second as this is unnecessary and doesn't make
+much sense anyway for polling errors.
 
-  CC [M]  lib/cpu-notifier-error-inject.o
-  CC [M]  lib/pm-notifier-error-inject.o
-ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
-make[2]: *** [__modpost] Error 1
-
-This happens because commit 3911ff30f5 ("genirq: export
-handle_edge_irq() and irq_to_desc()") added one export for it, but
-there were actually two instances of it, in an if/else clause for
-CONFIG_SPARSE_IRQ.  Add the second one.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Link: http://lkml.kernel.org/r/1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
+Cc: Doug Thompson <dougthompson@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/irqdesc.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/edac/edac_mc.c       |    4 ++--
+ drivers/edac/edac_mc_sysfs.c |   10 ++++++----
+ drivers/edac/edac_module.h   |    2 +-
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned in
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -601,7 +601,7 @@ static void edac_mc_workq_teardown(struc
+  *	user space has updated our poll period value, need to
+  *	reset our workq delays
+  */
+-void edac_mc_reset_delay_period(int value)
++void edac_mc_reset_delay_period(unsigned long value)
  {
- 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
- }
-+EXPORT_SYMBOL(irq_to_desc);
+ 	struct mem_ctl_info *mci;
+ 	struct list_head *item;
+@@ -611,7 +611,7 @@ void edac_mc_reset_delay_period(int valu
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
  
- static void free_desc(unsigned int irq)
+-		edac_mc_workq_setup(mci, (unsigned long) value);
++		edac_mc_workq_setup(mci, value);
+ 	}
+ 
+ 	mutex_unlock(&mem_ctls_mutex);
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -52,18 +52,20 @@ int edac_mc_get_poll_msec(void)
+ 
+ static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
  {
+-	long l;
++	unsigned long l;
+ 	int ret;
+ 
+ 	if (!val)
+ 		return -EINVAL;
+ 
+-	ret = kstrtol(val, 0, &l);
++	ret = kstrtoul(val, 0, &l);
+ 	if (ret)
+ 		return ret;
+-	if (!l || ((int)l != l))
++
++	if (l < 1000)
+ 		return -EINVAL;
+-	*((int *)kp->arg) = l;
++
++	*((unsigned long *)kp->arg) = l;
+ 
+ 	/* notify edac_mc engine to reset the poll period */
+ 	edac_mc_reset_delay_period(l);
+--- a/drivers/edac/edac_module.h
++++ b/drivers/edac/edac_module.h
+@@ -52,7 +52,7 @@ extern void edac_device_workq_setup(stru
+ extern void edac_device_workq_teardown(struct edac_device_ctl_info *edac_dev);
+ extern void edac_device_reset_delay_period(struct edac_device_ctl_info
+ 					   *edac_dev, unsigned long value);
+-extern void edac_mc_reset_delay_period(int value);
++extern void edac_mc_reset_delay_period(unsigned long value);
+ 
+ extern void *edac_align_ptr(void **p, unsigned size, int n_elems);
+ 
 
 
