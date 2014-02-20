@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817AbaBTXwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45853 "EHLO
+	id S1755760AbaBTXwi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45819 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765AbaBTXwj (ORCPT
+	with ESMTP id S1755608AbaBTXwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:39 -0500
+	Thu, 20 Feb 2014 18:52:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frank Mayhar <fmayhar@google.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.12 64/82] block: __elv_next_request() shouldnt call into the elevator if bypassing
-Date: Thu, 20 Feb 2014 15:52:47 -0800
-Message-Id: <20140220235021.401631722@linuxfoundation.org>
+        Lars Poeschel <poeschel@lemonage.de>
+Subject: [PATCH 3.12 29/82] tty: n_gsm: Fix for modems with brk in modem status control
+Date: Thu, 20 Feb 2014 15:52:12 -0800
+Message-Id: <20140220235020.352092425@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,66 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Lars Poeschel <poeschel@lemonage.de>
 
-commit 556ee818c06f37b2e583af0363e6b16d0e0270de upstream.
+commit 3ac06b905655b3ef2fd2196bab36e4587e1e4e4f upstream.
 
-request_queue bypassing is used to suppress higher-level function of a
-request_queue so that they can be switched, reconfigured and shut
-down.  A request_queue does the followings while bypassing.
+3GPP TS 07.10 states in section 5.4.6.3.7:
+"The length byte contains the value 2 or 3 ... depending on the break
+signal." The break byte is optional and if it is sent, the length is
+3. In fact the driver was not able to work with modems that send this
+break byte in their modem status control message. If the modem just
+sends the break byte if it is really set, then weird things might
+happen.
+The code for deconding the modem status to the internal linux
+presentation in gsm_process_modem has already a big comment about
+this 2 or 3 byte length thing and it is already able to decode the
+brk, but the code calling the gsm_process_modem function in
+gsm_control_modem does not encode it and hand it over the right way.
+This patch fixes this.
+Without this fix if the modem sends the brk byte in it's modem status
+control message the driver will hang when opening a muxed channel.
 
-* bypasses elevator and io_cq association and queues requests directly
-  to the FIFO dispatch queue.
-
-* bypasses block cgroup request_list lookup and always uses the root
-  request_list.
-
-Once confirmed to be bypassing, specific elevator and block cgroup
-policy implementations can assume that nothing is in flight for them
-and perform various operations which would be dangerous otherwise.
-
-Such confirmation is acheived by short-circuiting all new requests
-directly to the dispatch queue and waiting for all the requests which
-were issued before to finish.  Unfortunately, while the request
-allocating and draining sides were properly handled, we forgot to
-actually plug the request dispatch path.  Even after bypassing mode is
-confirmed, if the attached driver tries to fetch a request and the
-dispatch queue is empty, __elv_next_request() would invoke the current
-elevator's elevator_dispatch_fn() callback.  As all in-flight requests
-were drained, the elevator wouldn't contain any request but once
-bypass is confirmed we don't even know whether the elevator is even
-there.  It might be in the process of being switched and half torn
-down.
-
-Frank Mayhar reports that this actually happened while switching
-elevators, leading to an oops.
-
-Let's fix it by making __elv_next_request() avoid invoking the
-elevator_dispatch_fn() callback if the queue is bypassing.  It already
-avoids invoking the callback if the queue is dying.  As a dying queue
-is guaranteed to be bypassing, we can simply replace blk_queue_dying()
-check with blk_queue_bypass().
-
-Reported-by: Frank Mayhar <fmayhar@google.com>
-References: http://lkml.kernel.org/g/1390319905.20232.38.camel@bobble.lax.corp.google.com
-Tested-by: Frank Mayhar <fmayhar@google.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/n_gsm.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -96,7 +96,7 @@ static inline struct request *__elv_next
- 			q->flush_queue_delayed = 1;
- 			return NULL;
- 		}
--		if (unlikely(blk_queue_dying(q)) ||
-+		if (unlikely(blk_queue_bypass(q)) ||
- 		    !q->elevator->type->ops.elevator_dispatch_fn(q, 0))
- 			return NULL;
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1089,6 +1089,7 @@ static void gsm_control_modem(struct gsm
+ {
+ 	unsigned int addr = 0;
+ 	unsigned int modem = 0;
++	unsigned int brk = 0;
+ 	struct gsm_dlci *dlci;
+ 	int len = clen;
+ 	u8 *dp = data;
+@@ -1115,6 +1116,16 @@ static void gsm_control_modem(struct gsm
+ 		if (len == 0)
+ 			return;
  	}
++	len--;
++	if (len > 0) {
++		while (gsm_read_ea(&brk, *dp++) == 0) {
++			len--;
++			if (len == 0)
++				return;
++		}
++		modem <<= 7;
++		modem |= (brk & 0x7f);
++	}
+ 	tty = tty_port_tty_get(&dlci->port);
+ 	gsm_process_modem(tty, dlci, modem, clen);
+ 	if (tty) {
 
 
