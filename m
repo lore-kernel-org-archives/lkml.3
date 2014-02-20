@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaBTKNQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 05:13:16 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:37504 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086AbaBTKNN (ORCPT
+	id S1752723AbaBTKN3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 05:13:29 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:58687 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbaBTKNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 05:13:13 -0500
-X-IronPort-AV: E=Sophos;i="4.97,511,1389744000"; 
-   d="scan'208";a="102564414"
-Date: Thu, 20 Feb 2014 10:13:11 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map
- definitions
-Message-ID: <20140220101311.GA24574@zion.uk.xensource.com>
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
- <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>
- <1392743214.23084.38.camel@kazak.uk.xensource.com>
- <5303C44D.4070500@citrix.com>
- <1392804319.23084.109.camel@kazak.uk.xensource.com>
- <53050BF5.1060009@citrix.com>
+	Thu, 20 Feb 2014 05:13:25 -0500
+Date: Thu, 20 Feb 2014 18:12:40 +0800
+From: Kevin Hao <haokexin@gmail.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v4 0/4] Bugfix for of_match_node ordering
+Message-ID: <20140220101240.GA3745@pek-khao-d1.corp.ad.wrs.com>
+References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
+ <CAK9yfHwwmZkFMRvxsxjBAfUbVXU3V+iPFDZO=DwQsFvJ3NQyKA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
 Content-Disposition: inline
-In-Reply-To: <53050BF5.1060009@citrix.com>
+In-Reply-To: <CAK9yfHwwmZkFMRvxsxjBAfUbVXU3V+iPFDZO=DwQsFvJ3NQyKA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 07:54:29PM +0000, Zoltan Kiss wrote:
-> On 19/02/14 10:05, Ian Campbell wrote:
-> >On Tue, 2014-02-18 at 20:36 +0000, Zoltan Kiss wrote:
-> >>On 18/02/14 17:06, Ian Campbell wrote:
-> >>>On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
-> >>>>This patch contains the new definitions necessary for grant mapping.
-> >>>
-> >>>Is this just adding a bunch of (currently) unused functions? That's a
-> >>>slightly odd way to structure a series. They don't seem to be "generic
-> >>>helpers" or anything so it would be more normal to introduce these as
-> >>>they get used -- it's a bit hard to review them out of context.
-> >>I've created two patches because they are quite huge even now,
-> >>separately. Together they would be a ~500 line change. That was the best
-> >>I could figure out keeping in mind that bisect should work. But as I
-> >>wrote in the first email, I welcome other suggestions. If you and Wei
-> >>prefer this two patch in one big one, I merge them in the next version.
-> >
-> >I suppose it is hard to split a change like this up in a sensible way,
-> >but it is rather hard to review something which is split in two parts
-> >sensibly.
-> >
-> >If the combined patch too large to fit on the lists?
-> Well, it's ca. 30 kb, ~500 lines changed. I guess it's possible.
-> It's up to you and Wei, if you would like them to be merged, I can
-> do that.
-> 
 
-As I said before, my bottom line is "don't break bisection". Do whatever
-you want to. :-)
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Wei.
+On Thu, Feb 20, 2014 at 02:09:08PM +0530, Sachin Kamat wrote:
+> Hi Grant,
+>=20
+> I observe the following boot failure with today's (next-20140220) linux-n=
+ext
+> tree on Exynos based boards with the default exynos_defconfig.
+
+Does this help?
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 8a27fc907ab6..9cc893530b9a 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -381,12 +381,16 @@ static int __of_device_is_compatible(const struct dev=
+ice_node *device,
+=20
+ 	/* Compatible match has highest priority */
+ 	if (compat && compat[0]) {
+-		of_property_for_each_string(device, "compatible", prop, cp) {
++		prop =3D __of_find_property(device, "compatible", NULL);
++		if (!prop)
++			return 0;
++
++		for (cp =3D of_prop_next_string(prop, NULL); cp;
++				cp =3D of_prop_next_string(prop, cp), index++) {
+ 			if (of_compat_cmp(cp, compat, strlen(compat)) =3D=3D 0) {
+ 				score =3D INT_MAX/2 - (index << 2);
+ 				break;
+ 			}
+-			index++;
+ 		}
+ 		if (!score)
+ 			return 0;
+
+
+Thanks,
+Kevin
+
+--h31gzZEtNLTqOjlF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQEcBAEBAgAGBQJTBdUYAAoJEJNY7TDerrFxGIIH/j6nTq5k3QJJdqpPeokBFEhQ
+G0nt02MLeaYQkL1rvf0geRlq8UJUefbu+BR6BQsbUn9hnZ7XQVJkzKqtzMi380w6
+HhEWLc2fhkcf/CG7ZhEzN8A0D+88PVe09DRa9aoYzuscEA3/LZIiHa0X+Yrd9ouy
+JvToiN8lLmCR6rplNHR1ZvLdTGDEupafpx/T8OzZ7sKpAuu+n2XchEY62jeWLjFs
+MGJogds8AjtR5Sram61EiFd5MkVXEDsMm9FPsGk9e5hgkTF/wqDqlK+KDXbqpn1c
+r3RJkmbL/N4FAjf6gtJrCD/IPUQEyeS+dR9mfDu8CHQ5pMGgCxUslILq20cf168=
+=YSCa
+-----END PGP SIGNATURE-----
+
+--h31gzZEtNLTqOjlF--
