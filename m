@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665AbaBUAJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:09:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46158 "EHLO
+	id S932185AbaBTXxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46121 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944AbaBTXxk (ORCPT
+	with ESMTP id S932166AbaBTXxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:40 -0500
+	Thu, 20 Feb 2014 18:53:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.13 52/99] staging:iio:ad799x fix error_free_irq which was freeing an irq that may not have been requested
-Date: Thu, 20 Feb 2014 15:52:47 -0800
-Message-Id: <20140220235119.714296985@linuxfoundation.org>
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.13 41/99] drm/i915: Pair va_copy with va_end in i915_error_vprintf
+Date: Thu, 20 Feb 2014 15:52:36 -0800
+Message-Id: <20140220235119.409520566@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,32 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hartmut Knaack <knaack.h@gmx.de>
+From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
 
-commit 38408d056188be29a6c4e17f3703c796551bb330 upstream.
+commit 1d2cb9a54abc6e1d239f28f07661366d5662a94a upstream.
 
-Only free an IRQ in error_free_irq, if it has been requested previously.
+Each invocation of va_copy() must be matched by a corresponding
+invocation of va_end() in the same function.
 
-Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This regression has been introduced in
+
+commit e29bb4ebbf000ff9ac081d29784a3331618f012e
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri Sep 20 10:20:59 2013 +0100
+
+    drm/i915: Use a temporary va_list for two-pass string handling
+
+Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/adc/ad799x_core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gpu_error.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/iio/adc/ad799x_core.c
-+++ b/drivers/staging/iio/adc/ad799x_core.c
-@@ -588,7 +588,8 @@ static int ad799x_probe(struct i2c_clien
- 	return 0;
+--- a/drivers/gpu/drm/i915/i915_gpu_error.c
++++ b/drivers/gpu/drm/i915/i915_gpu_error.c
+@@ -146,7 +146,10 @@ static void i915_error_vprintf(struct dr
+ 		va_list tmp;
  
- error_free_irq:
--	free_irq(client->irq, indio_dev);
-+	if (client->irq > 0)
-+		free_irq(client->irq, indio_dev);
- error_cleanup_ring:
- 	ad799x_ring_cleanup(indio_dev);
- error_disable_reg:
+ 		va_copy(tmp, args);
+-		if (!__i915_error_seek(e, vsnprintf(NULL, 0, f, tmp)))
++		len = vsnprintf(NULL, 0, f, tmp);
++		va_end(tmp);
++
++		if (!__i915_error_seek(e, len))
+ 			return;
+ 	}
+ 
 
 
