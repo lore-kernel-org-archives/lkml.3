@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbaBTJvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:51:22 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63017 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaBTJvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:51:19 -0500
-From: Vikas Sajjan <vikas.sajjan@linaro.org>
-To: robherring2@gmail.com, grant.likely@linaro.org
-Cc: jg1.han@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, t.figa@samsung.com,
-        dianders@chromium.org, joshi@samsung.com, kgene.kim@samsung.com
-Subject: [PATCH] rtc: rtc-s3c: Fix incorrect way of save/restore of S3C2410_TICNT for TYPE_S3C64XX
-Date: Thu, 20 Feb 2014 15:36:01 +0545
-Message-Id: <1392889861-5044-1-git-send-email-vikas.sajjan@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752520AbaBTJwC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:52:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47809 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752444AbaBTJv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 04:51:59 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: exclude memory less nodes from zone_reclaim
+Date: Thu, 20 Feb 2014 10:51:44 +0100
+Message-Id: <1392889904-18019-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.9.0.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On exynos5250, exynos5420 and exynos5260 it was observed that, after 1 cycle
-of S2R, the rtc-tick occurs at a very fast rate as compared to the rtc-tick
-occuring before S2R.
+We had a report about strange OOM killer strikes on a PPC machine
+although there was a lot of swap free and a tons of anonymous memory
+which could be swapped out. In the end it turned out that the OOM was
+a side effect of zone reclaim which wasn't doesn't unmap and swapp out
+and so the system was pushed to the OOM. Although this sounds like a bug
+somewhere in the kswapd vs. zone reclaim vs. direct reclaim interaction
+numactl on the said hardware suggests that the zone reclaim should
+have been set in the first place:
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+node 0 size: 0 MB
+node 0 free: 0 MB
+node 2 cpus:
+node 2 size: 7168 MB
+node 2 free: 6019 MB
+node distances:
+node   0   2
+0:  10  40
+2:  40  10
 
-This patch fixes the above issue by correcting the wrong way of save/restore
-of S3C2410_TICNT for TYPE_S3C64XX.
+So all the CPUs are associated with Node0 which doesn't have any memory
+while Node2 contains all the available memory. Node distances cause an
+automatic zone_reclaim_mode enabling.
 
-Signed-off-by: Vikas Sajjan <vikas.sajjan@samsung.com>
+Zone reclaim is intended to keep the allocations local but this doesn't
+make any sense on the memory less nodes. So let's exclude such nodes
+for init_zone_allows_reclaim which evaluates zone reclaim behavior and
+suitable reclaim_nodes.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Tested-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 ---
- drivers/rtc/rtc-s3c.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ mm/page_alloc.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-index 7afd373..c4cde9c 100644
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -580,10 +580,12 @@ static int s3c_rtc_suspend(struct device *dev)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 3e953f07edb0..fafb9e24e87f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1855,7 +1855,7 @@ static void __paginginit init_zone_allows_reclaim(int nid)
+ {
+ 	int i;
  
- 	clk_enable(rtc_clk);
- 	/* save TICNT for anyone using periodic interrupts */
--	ticnt_save = readb(s3c_rtc_base + S3C2410_TICNT);
- 	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
- 		ticnt_en_save = readw(s3c_rtc_base + S3C2410_RTCCON);
- 		ticnt_en_save &= S3C64XX_RTCCON_TICEN;
-+		ticnt_save = readl(s3c_rtc_base + S3C2410_TICNT);
-+	} else {
-+		ticnt_save = readb(s3c_rtc_base + S3C2410_TICNT);
- 	}
- 	s3c_rtc_enable(pdev, 0);
+-	for_each_online_node(i)
++	for_each_node_state(i, N_MEMORY)
+ 		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+ 			node_set(i, NODE_DATA(nid)->reclaim_nodes);
+ 		else
+@@ -4901,7 +4901,8 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
  
-@@ -605,10 +607,15 @@ static int s3c_rtc_resume(struct device *dev)
- 
- 	clk_enable(rtc_clk);
- 	s3c_rtc_enable(pdev, 1);
--	writeb(ticnt_save, s3c_rtc_base + S3C2410_TICNT);
--	if (s3c_rtc_cpu_type == TYPE_S3C64XX && ticnt_en_save) {
--		tmp = readw(s3c_rtc_base + S3C2410_RTCCON);
--		writew(tmp | ticnt_en_save, s3c_rtc_base + S3C2410_RTCCON);
-+	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
-+		writel(ticnt_save, s3c_rtc_base + S3C2410_TICNT);
-+		if (ticnt_en_save) {
-+			tmp = readw(s3c_rtc_base + S3C2410_RTCCON);
-+			writew(tmp | ticnt_en_save,
-+					s3c_rtc_base + S3C2410_RTCCON);
-+		}
-+	} else {
-+		writeb(ticnt_save, s3c_rtc_base + S3C2410_TICNT);
- 	}
- 
- 	if (device_may_wakeup(dev) && wake_en) {
+ 	pgdat->node_id = nid;
+ 	pgdat->node_start_pfn = node_start_pfn;
+-	init_zone_allows_reclaim(nid);
++	if (node_state(nid, N_MEMORY))
++		init_zone_allows_reclaim(nid);
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
+ #endif
 -- 
-1.7.9.5
+1.9.0.rc3
 
