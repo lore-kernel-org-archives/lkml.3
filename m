@@ -1,143 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaBTIjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 03:39:12 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:50728 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbaBTIjJ (ORCPT
+	id S1753997AbaBTImP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 03:42:15 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:54941 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031AbaBTImO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 03:39:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
-References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
-Date: Thu, 20 Feb 2014 14:09:08 +0530
-Message-ID: <CAK9yfHwwmZkFMRvxsxjBAfUbVXU3V+iPFDZO=DwQsFvJ3NQyKA@mail.gmail.com>
-Subject: Re: [PATCH v4 0/4] Bugfix for of_match_node ordering
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Kevin Hao <haokexin@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 20 Feb 2014 03:42:14 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-1b-5305bfe3dcad
+From: Alexey Perevalov <a.perevalov@samsung.com>
+To: linux-kernel@vger.kernel.org, tglx@linutronix.de, john.stultz@linaro.org
+Cc: Alexey Perevalov <a.perevalov@samsung.com>, anton@nomsg.org,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        akpm@linux-foundation.org
+Subject: [PATCH v3 0/6] Deferrable timers support for hrtimers/timerfd API
+Date: Thu, 20 Feb 2014 12:40:27 +0400
+Message-id: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t/xa7qP97MGG5w5J2wx9+55Fos569ew
+	WfT/6mS1uP7lOavFmd+6Fmeb3rBbXN41h81i86apzA4cHneu7WHzeHfuHLvHiRm/WTy+7NnL
+	7NG3ZRWjx+dNcgFsUVw2Kak5mWWpRfp2CVwZ9+ZdZC5YxFWxfc8OtgbGD+xdjJwcEgImEh/3
+	nYeyxSQu3FvP1sXIxSEksJRR4u8JGKeHSaLp1TGgKg4ONgEDiX33bEEaRAR8JHZN/MgEUsMs
+	0Mco0df+ihkkISzgJTF30iqwqSwCqhLn389nBbF5Bdwk/vzsYgSZIyGgIDFnks0ERu4FjAyr
+	GEVTS5MLipPSc430ihNzi0vz0vWS83M3MULC5usOxqXHrA4xCnAwKvHwRlxnCRZiTSwrrsw9
+	xCjBwawkwsuTyRosxJuSWFmVWpQfX1Sak1p8iJGJg1OqgfHcZ26W6y5/91seNRGeqLw0hTPH
+	KHzFymYOU7ezW+++FuP8Mfn35P/buT9rsZ8yFPmycMaLBXrL/Kec3jVhZsGS/Gczd0X31O6a
+	FthT8jtKpcX6p6Z5TcKTX9tVLny+dkhLR7o/u9Ip6KrjukVthT+sXZuPbWrq0L4x5d16wQNf
+	3PRvFN+MnPhciaU4I9FQi7moOBEAhof72fkBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Hello.
 
-I observe the following boot failure with today's (next-20140220) linux-next
-tree on Exynos based boards with the default exynos_defconfig.
+This is a combo patch set for support defferability in timerfd.
+Due implementation of timerfd is based on hrtimers and only on hrtimers,
+it was necessary to add such deferrability into hrtimers too.
 
-Uncompressing Linux... done, booting the kernel.
-[    0.000000] Booting Linux on physical CPU 0x900
-[    0.000000] Linux version 3.14.0-rc3-next-20140220 (sachin@linaro)
-(gcc version 4.8.2 20130805 (prerelease) (crosstool-NG linaro-1.
-13.1-4.8-2013.08 - Linaro GCC 2013.08) ) #1132 SMP PREEMPT Thu Feb 20
-13:49:27 IST 2014
-[    0.000000] CPU: ARMv7 Processor [412fc091] revision 1 (ARMv7), cr=10c5387d
-[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing
-instruction cache
-[    0.000000] Machine model: Insignal Origen evaluation board based
-on Exynos4210
-[    0.000000] bootconsole [earlycon0] enabled
-[    0.000000] Memory policy: Data cache writealloc
-[    0.000000] CPU EXYNOS4210 (id 0x43210011)
-[    0.000000] On node 0 totalpages: 258048
-[    0.000000]   Normal zone: 1520 pages used for memmap
-[    0.000000]   Normal zone: 0 pages reserved
-[    0.000000]   Normal zone: 190464 pages, LIFO batch:31
-[    0.000000]   HighMem zone: 528 pages used for memmap
-[    0.000000]   HighMem zone: 67584 pages, LIFO batch:15
-[    0.000000] BUG: spinlock recursion on CPU#0, swapper/0
-[    0.000000]  lock: devtree_lock+0x0/0x10, .magic: dead4ead, .owner:
-swapper/0, .owner_cpu: 0
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted
-3.14.0-rc3-next-20140220 #1132
-[    0.000000] [<c0013e9c>] (unwind_backtrace) from [<c0011250>]
-(show_stack+0x10/0x14)
-[    0.000000] [<c0011250>] (show_stack) from [<c0386740>]
-(dump_stack+0x7c/0xbc)
-[    0.000000] [<c0386740>] (dump_stack) from [<c005501c>]
-(do_raw_spin_lock+0x188/0x18c)
-[    0.000000] [<c005501c>] (do_raw_spin_lock) from [<c038b614>]
-(_raw_spin_lock_irqsave+0x20/0x28)
-[    0.000000] [<c038b614>] (_raw_spin_lock_irqsave) from [<c02de37c>]
-(of_find_property+0x20/0x4c)
-[    0.000000] [<c02de37c>] (of_find_property) from [<c02df110>]
-(__of_device_is_compatible+0xb4/0x110)
-[    0.000000] [<c02df110>] (__of_device_is_compatible) from
-[<c02df22c>] (of_find_compatible_node+0x4c/0x7c)
-[    0.000000] [<c02df22c>] (of_find_compatible_node) from
-[<c04cedf4>] (exynos_firmware_init+0x18/0x7c)
-[    0.000000] [<c04cedf4>] (exynos_firmware_init) from [<c04caef0>]
-(setup_arch+0x860/0x898)
-[    0.000000] [<c04caef0>] (setup_arch) from [<c04c7820>]
-(start_kernel+0x80/0x3dc)
-[    0.000000] [<c04c7820>] (start_kernel) from [<40008074>] (0x40008074)
-[    0.000000] BUG: spinlock lockup suspected on CPU#0, swapper/0
-[    0.000000]  lock: devtree_lock+0x0/0x10, .magic: dead4ead, .owner:
-swapper/0, .owner_cpu: 0
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted
-3.14.0-rc3-next-20140220 #1132
-[    0.000000] [<c0013e9c>] (unwind_backtrace) from [<c0011250>]
-(show_stack+0x10/0x14)
-[    0.000000] [<c0011250>] (show_stack) from [<c0386740>]
-(dump_stack+0x7c/0xbc)
-[    0.000000] [<c0386740>] (dump_stack) from [<c0054fac>]
-(do_raw_spin_lock+0x118/0x18c)
-[    0.000000] [<c0054fac>] (do_raw_spin_lock) from [<c038b614>]
-(_raw_spin_lock_irqsave+0x20/0x28)
-[    0.000000] [<c038b614>] (_raw_spin_lock_irqsave) from [<c02de37c>]
-(of_find_property+0x20/0x4c)
-[    0.000000] [<c02de37c>] (of_find_property) from [<c02df110>]
-(__of_device_is_compatible+0xb4/0x110)
-[    0.000000] [<c02df110>] (__of_device_is_compatible) from
-[<c02df22c>] (of_find_compatible_node+0x4c/0x7c)
-[    0.000000] [<c02df22c>] (of_find_compatible_node) from
-[<c04cedf4>] (exynos_firmware_init+0x18/0x7c)
-[    0.000000] [<c04cedf4>] (exynos_firmware_init) from [<c04caef0>]
-(setup_arch+0x860/0x898)
-[    0.000000] [<c04caef0>] (setup_arch) from [<c04c7820>]
-(start_kernel+0x80/0x3dc)
-[    0.000000] [<c04c7820>] (start_kernel) from [<40008074>] (0x40008074)
+It brings benefits for user-land application which don't want to break idle state and for
+in-kernel users who want to use hrtimer advantages. 
 
-Regards,
-Sachin
+Alexey Perevalov (2):
+  tracing/trivial: Add CLOCK_BOOTIME and CLOCK_TAI for human readable
+    clockid trace
+  tracing/trivial: Add CLOCK_*_DEFERRABLE for tracing clockids
 
+Anton Vorontsov (3):
+  kernel/time: Add new helpers to convert ktime to/from jiffies
+  timerfd: Factor out timer-type unspecific timerfd_expire()
+  timerfd: Add support for deferrable timers
 
+Thomas Gleixner (1):
+  hrtimer: Add support for deferrable timer into the hrtimer
 
-On 19 February 2014 19:44, Grant Likely <grant.likely@linaro.org> wrote:
-> Hi all,
->
-> I've taken Kevin's latest rework and done even more rework on it. :-) I
-> didn't quite like how it was looking so I rolled his scoring code
-> directly into __of_device_is_compatible() so that the function always
-> returns a score in a way that is still compatible with the existing
-> users (ie. non-zero == successful match). This eliminates the need for a
-> separate pscore argument and it also let me roll the type and name
-> checks into the same function. I'm a lot happier with it overall and it
-> makes for a slightly smaller number of lines of code changed. Please
-> take a look and give it a spin. This is basically a bug fix so I'll need
-> to push it out to Linus in the near future.
->
-> Acks and Tested-bys would be particularly appreciated.
->
-> Thanks,
-> g.
->
-> Kevin Hao (2):
->         Revert "of: search the best compatible match first in __of_match_node()"
->         of: reimplement the matching method for __of_match_node()
->
-> Grant Likely (2):
->         of: Move testcase FDT data into drivers/of
->         of: Add self test for of_match_node()
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ fs/timerfd.c                 |   47 ++++++++++++++++----------------
+ include/linux/hrtimer.h      |    3 ++
+ include/linux/jiffies.h      |    4 ++-
+ include/linux/ktime.h        |    3 +-
+ include/trace/events/timer.h |   11 +++++++-
+ include/uapi/linux/time.h    |    3 ++
+ kernel/hrtimer.c             |   62 +++++++++++++++++++++++++++++++++---------
+ kernel/time.c                |   23 ++++++++++++++++
+ 8 files changed, 117 insertions(+), 39 deletions(-)
+
+-- 
+1.7.9.5
+
