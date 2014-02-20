@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbaBTXua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:50:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45248 "EHLO
+	id S1756813AbaBUBKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:10:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45277 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991AbaBTXuY (ORCPT
+	with ESMTP id S1753991AbaBTXua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:24 -0500
+	Thu, 20 Feb 2014 18:50:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.4 10/25] staging:iio:ad799x fix error_free_irq which was freeing an irq that may not have been requested
-Date: Thu, 20 Feb 2014 15:51:26 -0800
-Message-Id: <20140220234842.771607770@linuxfoundation.org>
+        Jan Moskyto Matejka <mq@suse.cz>
+Subject: [PATCH 3.4 17/25] Modpost: fixed USB alias generation for ranges including 0x9 and 0xA
+Date: Thu, 20 Feb 2014 15:51:33 -0800
+Message-Id: <20140220234842.964474113@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -29,32 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hartmut Knaack <knaack.h@gmx.de>
+From: Jan Moskyto Matejka <mq@suse.cz>
 
-commit 38408d056188be29a6c4e17f3703c796551bb330 upstream.
+commit 03b56329f9bb5a1cb73d7dc659d529a9a9bf3acc upstream.
 
-Only free an IRQ in error_free_irq, if it has been requested previously.
+Commit afe2dab4f6 ("USB: add hex/bcd detection to usb modalias generation")
+changed the routine that generates alias ranges. Before that change, only
+digits 0-9 were supported; the commit tried to fix the case when the range
+includes higher values than 0x9.
 
-Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Unfortunately, the commit didn't fix the case when the range includes both
+0x9 and 0xA, meaning that the final range must look like [x-9A-y] where
+x <= 0x9 and y >= 0xA -- instead the [x-9A-x] range was produced.
+
+Modprobe doesn't complain as it sees no difference between no-match and
+bad-pattern results of fnmatch().
+
+Fixing this simple bug to fix the aliases.
+Also changing the hardcoded beginning of the range to uppercase as all the
+other letters are also uppercase in the device version numbers.
+
+Fortunately, this affects only the dvb-usb-dib0700 module, AFAIK.
+
+Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/adc/ad799x_core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ scripts/mod/file2alias.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/iio/adc/ad799x_core.c
-+++ b/drivers/staging/iio/adc/ad799x_core.c
-@@ -873,7 +873,8 @@ static int __devinit ad799x_probe(struct
- 	return 0;
- 
- error_free_irq:
--	free_irq(client->irq, indio_dev);
-+	if (client->irq > 0)
-+		free_irq(client->irq, indio_dev);
- error_cleanup_ring:
- 	ad799x_ring_cleanup(indio_dev);
- error_disable_reg:
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -186,8 +186,8 @@ static void do_usb_entry(struct usb_devi
+ 				range_lo < 0x9 ? "[%X-9" : "[%X",
+ 				range_lo);
+ 			sprintf(alias + strlen(alias),
+-				range_hi > 0xA ? "a-%X]" : "%X]",
+-				range_lo);
++				range_hi > 0xA ? "A-%X]" : "%X]",
++				range_hi);
+ 		}
+ 	}
+ 	if (bcdDevice_initial_digits < (sizeof(id->bcdDevice_lo) * 2 - 1))
 
 
