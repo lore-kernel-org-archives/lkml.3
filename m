@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118AbaBTXvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:51:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45459 "EHLO
+	id S932080AbaBUAyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:54:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967AbaBTXvL (ORCPT
+	with ESMTP id S1755104AbaBTXvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:11 -0500
+	Thu, 20 Feb 2014 18:51:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 36/66] ftrace/x86: Use breakpoints for converting function graph caller
-Date: Thu, 20 Feb 2014 15:51:35 -0800
-Message-Id: <20140220234910.532167318@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.10 45/66] usb-storage: restrict bcdDevice range for Super Top in Cypress ATACB
+Date: Thu, 20 Feb 2014 15:51:44 -0800
+Message-Id: <20140220234910.780882880@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -28,189 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 87fbb2ac6073a7039303517546a76074feb14c84 upstream.
+commit a9c143c82608bee2a36410caa56d82cd86bdc7fa upstream.
 
-When the conversion was made to remove stop machine and use the breakpoint
-logic instead, the modification of the function graph caller is still
-done directly as though it was being done under stop machine.
+The Cypress ATACB unusual-devs entry for the Super Top SATA bridge
+causes problems.  Although it was originally reported only for
+bcdDevice = 0x160, its range was much larger.  This resulted in a bug
+report for bcdDevice 0x220, so the range was capped at 0x219.  Now
+Milan reports errors with bcdDevice 0x150.
 
-As it is not converted via stop machine anymore, there is a possibility
-that the code could be layed across cache lines and if another CPU is
-accessing that function graph call when it is being updated, it could
-cause a General Protection Fault.
+Therefore this patch restricts the range to just 0x160.
 
-Convert the update of the function graph caller to use the breakpoint
-method as well.
-
-Cc: H. Peter Anvin <hpa@zytor.com>
-Fixes: 08d636b6d4fb "ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Milan Svoboda <milan.svoboda@centrum.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ftrace.c |   83 ++++++++++++++++++++++++++---------------------
- 1 file changed, 47 insertions(+), 36 deletions(-)
+ drivers/usb/storage/unusual_cypress.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -77,8 +77,7 @@ within(unsigned long addr, unsigned long
- 	return addr >= start && addr < end;
- }
+--- a/drivers/usb/storage/unusual_cypress.h
++++ b/drivers/usb/storage/unusual_cypress.h
+@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
+ 		"Cypress ISD-300LP",
+ 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
  
--static int
--do_ftrace_mod_code(unsigned long ip, const void *new_code)
-+static unsigned long text_ip_addr(unsigned long ip)
- {
- 	/*
- 	 * On x86_64, kernel text mappings are mapped read-only with
-@@ -91,7 +90,7 @@ do_ftrace_mod_code(unsigned long ip, con
- 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
- 		ip = (unsigned long)__va(__pa_symbol(ip));
- 
--	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
-+	return ip;
- }
- 
- static const unsigned char *ftrace_nop_replace(void)
-@@ -123,8 +122,10 @@ ftrace_modify_code_direct(unsigned long
- 	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
- 		return -EINVAL;
- 
-+	ip = text_ip_addr(ip);
-+
- 	/* replace the text with the new text */
--	if (do_ftrace_mod_code(ip, new_code))
-+	if (probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE))
- 		return -EPERM;
- 
- 	sync_core();
-@@ -221,37 +222,51 @@ int ftrace_modify_call(struct dyn_ftrace
- 	return -EINVAL;
- }
- 
--int ftrace_update_ftrace_func(ftrace_func_t func)
-+static unsigned long ftrace_update_func;
-+
-+static int update_ftrace_func(unsigned long ip, void *new)
- {
--	unsigned long ip = (unsigned long)(&ftrace_call);
--	unsigned char old[MCOUNT_INSN_SIZE], *new;
-+	unsigned char old[MCOUNT_INSN_SIZE];
- 	int ret;
- 
--	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
--	new = ftrace_call_replace(ip, (unsigned long)func);
-+	memcpy(old, (void *)ip, MCOUNT_INSN_SIZE);
-+
-+	ftrace_update_func = ip;
-+	/* Make sure the breakpoints see the ftrace_update_func update */
-+	smp_wmb();
- 
- 	/* See comment above by declaration of modifying_ftrace_code */
- 	atomic_inc(&modifying_ftrace_code);
- 
- 	ret = ftrace_modify_code(ip, old, new);
- 
-+	atomic_dec(&modifying_ftrace_code);
-+
-+	return ret;
-+}
-+
-+int ftrace_update_ftrace_func(ftrace_func_t func)
-+{
-+	unsigned long ip = (unsigned long)(&ftrace_call);
-+	unsigned char *new;
-+	int ret;
-+
-+	new = ftrace_call_replace(ip, (unsigned long)func);
-+	ret = update_ftrace_func(ip, new);
-+
- 	/* Also update the regs callback function */
- 	if (!ret) {
- 		ip = (unsigned long)(&ftrace_regs_call);
--		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
- 		new = ftrace_call_replace(ip, (unsigned long)func);
--		ret = ftrace_modify_code(ip, old, new);
-+		ret = update_ftrace_func(ip, new);
- 	}
- 
--	atomic_dec(&modifying_ftrace_code);
--
- 	return ret;
- }
- 
- static int is_ftrace_caller(unsigned long ip)
- {
--	if (ip == (unsigned long)(&ftrace_call) ||
--		ip == (unsigned long)(&ftrace_regs_call))
-+	if (ip == ftrace_update_func)
- 		return 1;
- 
- 	return 0;
-@@ -677,45 +692,41 @@ int __init ftrace_dyn_arch_init(void *da
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern void ftrace_graph_call(void);
- 
--static int ftrace_mod_jmp(unsigned long ip,
--			  int old_offset, int new_offset)
-+static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
- {
--	unsigned char code[MCOUNT_INSN_SIZE];
-+	static union ftrace_code_union calc;
- 
--	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
-+	/* Jmp not a call (ignore the .e8) */
-+	calc.e8		= 0xe9;
-+	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- 
--	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
--		return -EINVAL;
-+	/*
-+	 * ftrace external locks synchronize the access to the static variable.
-+	 */
-+	return calc.code;
-+}
- 
--	*(int *)(&code[1]) = new_offset;
-+static int ftrace_mod_jmp(unsigned long ip, void *func)
-+{
-+	unsigned char *new;
- 
--	if (do_ftrace_mod_code(ip, &code))
--		return -EPERM;
-+	new = ftrace_jmp_replace(ip, (unsigned long)func);
- 
--	return 0;
-+	return update_ftrace_func(ip, new);
- }
- 
- int ftrace_enable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
--
--	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_mod_jmp(ip, &ftrace_graph_caller);
- }
- 
- int ftrace_disable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
--
--	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_mod_jmp(ip, &ftrace_stub);
- }
- 
- #endif /* !CONFIG_DYNAMIC_FTRACE */
+-UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
++UNUSUAL_DEV( 0x14cd, 0x6116, 0x0160, 0x0160,
+ 		"Super Top",
+ 		"USB 2.0  SATA BRIDGE",
+ 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
 
 
