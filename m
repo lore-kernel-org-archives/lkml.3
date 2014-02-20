@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497AbaBTXub (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:50:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45263 "EHLO
+	id S1756781AbaBUBJe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:09:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050AbaBTXu1 (ORCPT
+	with ESMTP id S1754487AbaBTXub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:27 -0500
+	Thu, 20 Feb 2014 18:50:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
-Subject: [PATCH 3.4 13/25] usb-storage: add unusual-devs entry for BlackBerry 9000
-Date: Thu, 20 Feb 2014 15:51:29 -0800
-Message-Id: <20140220234842.854363278@linuxfoundation.org>
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.4 18/25] block: add cond_resched() to potentially long running ioctl discard loop
+Date: Thu, 20 Feb 2014 15:51:34 -0800
+Message-Id: <20140220234842.993896954@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -29,37 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Jens Axboe <axboe@fb.com>
 
-commit c5637e5119c43452a00e27c274356b072263ecbb upstream.
+commit c8123f8c9cb517403b51aa41c3c46ff5e10b2c17 upstream.
 
-This patch adds an unusual-devs entry for the BlackBerry 9000.  This
-fixes Bugzilla #22442.
+When mkfs issues a full device discard and the device only
+supports discards of a smallish size, we can loop in
+blkdev_issue_discard() for a long time. If preempt isn't enabled,
+this can turn into a softlock situation and the kernel will
+start complaining.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
-Tested-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
+Add an explicit cond_resched() at the end of the loop to avoid
+that.
+
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ block/blk-lib.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1441,6 +1441,13 @@ UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_FIX_CAPACITY ),
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -101,6 +101,14 @@ int blkdev_issue_discard(struct block_de
  
-+/* Reported by Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de> */
-+UNUSUAL_DEV(  0x0fca, 0x8004, 0x0201, 0x0201,
-+		"Research In Motion",
-+		"BlackBerry Bold 9000",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 ),
+ 		atomic_inc(&bb.done);
+ 		submit_bio(type, bio);
 +
- /* Reported by Michael Stattmann <michael@stattmann.com> */
- UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
- 		"Sony Ericsson",
++		/*
++		 * We can loop for a long time in here, if someone does
++		 * full device discards (like mkfs). Be nice and allow
++		 * us to schedule out to avoid softlocking if preempt
++		 * is disabled.
++		 */
++		cond_resched();
+ 	}
+ 
+ 	/* Wait for bios in-flight */
 
 
