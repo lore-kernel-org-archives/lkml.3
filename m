@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaBTLqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 06:46:33 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42435 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344AbaBTLlR (ORCPT
+	id S1754026AbaBTLrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 06:47:22 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:8858 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562AbaBTLrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 06:41:17 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <bcousson@baylibre.com>, <lee.jones@linaro.org>
-CC: <balbi@ti.com>, <nm@ti.com>, <khilman@linaro.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v8 11/14] ARM: dts: omap5-uevm: Provide USB PHY clock
-Date: Thu, 20 Feb 2014 13:40:06 +0200
-Message-ID: <1392896409-5101-12-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392896409-5101-1-git-send-email-rogerq@ti.com>
-References: <1392896409-5101-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 20 Feb 2014 06:47:20 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-8f-5305eb45a907
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] DMA-mapping fixes for v3.14
+Date: Thu, 20 Feb 2014 12:47:05 +0100
+Message-id: <1392896825-32299-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLJMWRmVeSWpSXmKPExsVy+t/xq7qur1mDDd4/N7W4vGsOm8XaI3fZ
+	LR71vWV3YPY4MeM3i0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBlLF60maXgDkfFpSN72RoY
+	57F3MXJySAiYSGy9s5ARwhaTuHBvPRuILSSwlFHiyWfVLkYuILubSWL75R9gDWwChhJdb7vA
+	ikQEjCQ+v7jCCmIzC/hK3Hm1iqWLkYNDWEBf4v+3apAwi4CqxO0zz5hBbF4BD4kLL86ClUgI
+	KEjMmWQzgZF7ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYwQL3/Zwbj4mNUhRgEORiUe
+	3ojrLMFCrIllxZW5hxglOJiVRHi33WQNFuJNSaysSi3Kjy8qzUktPsTIxMEp1cA4WcZFzU1t
+	Z2iXsUj20fIpadNPXdzkoyxWfvvA7LW+Aq8Krl3fecjdr/yNSdOS7wYBG36rX9KpmBJ530Tl
+	g5WdXKT/z1fJHxqesz492f35oOsu20MnKw0bphUvqGR8HPqqamburxla72UmzRe5/ula4Zvy
+	I75iqvk35H+rOHxjnPh85VaHPO5aJZbijERDLeai4kQAYDxg19ABAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HS USB 2 PHY gets its clock from AUXCLK1. Provide this
-information.
+Hi Linus,
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/omap5-uevm.dts | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+I would like to ask You for pulling fixes for dma-mapping subsystem for
+ARM and x86 architecture for v3.14.
 
-diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-index 002fa70..3b99ec2 100644
---- a/arch/arm/boot/dts/omap5-uevm.dts
-+++ b/arch/arm/boot/dts/omap5-uevm.dts
-@@ -31,12 +31,8 @@
- 	hsusb2_phy: hsusb2_phy {
- 		compatible = "usb-nop-xceiv";
- 		reset-gpios = <&gpio3 16 GPIO_ACTIVE_LOW>; /* gpio3_80 HUB_NRESET */
--	/**
--	  * FIXME
--	  * Put the right clock phandle here when available
--	  *	clocks = <&auxclk1>;
--	  *	clock-names = "main_clk";
--	  */
-+		clocks = <&auxclk1_ck>;
-+		clock-names = "main_clk";
- 		clock-frequency = <19200000>;
- 	};
- 
--- 
-1.8.3.2
+The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
 
+  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-v3.14
+
+for you to fetch changes up to c091c71ad2218fc50a07b3d1dab85783f3b77efd:
+
+  x86: dma-mapping: fix GFP_ATOMIC macro usage (2014-02-11 09:40:15 +0100)
+
+----------------------------------------------------------------
+Marek Szyprowski (2):
+      ARM: dma-mapping: fix GFP_ATOMIC macro usage
+      x86: dma-mapping: fix GFP_ATOMIC macro usage
+
+ arch/arm/mm/dma-mapping.c |    2 +-
+ arch/x86/kernel/pci-dma.c |    4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+----------------------------------------------------------------
+
+This pull request contains fixes for incorrect atomic test in
+dma-mapping subsystem for ARM and x86 architecture.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung R&D Institute Poland
