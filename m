@@ -1,114 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaBTPie (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:38:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40513 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737AbaBTPic (ORCPT
+	id S1754355AbaBTPjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:39:13 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:34786 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752575AbaBTPjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:38:32 -0500
-Message-ID: <53062165.3040202@canonical.com>
-Date: Thu, 20 Feb 2014 16:38:13 +0100
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Feb 2014 10:39:11 -0500
+Date: Thu, 20 Feb 2014 10:39:08 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/6] ftrace: cleanup of global variables
+Message-ID: <20140220103908.0deda0d1@gandalf.local.home>
+In-Reply-To: <1392892387-26826-1-git-send-email-jslaby@suse.cz>
+References: <1392892387-26826-1-git-send-email-jslaby@suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Borislav Petkov <bp@alien8.de>, Paolo Bonzini <pbonzini@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: Re: Another preempt folding issue?
-References: <52FB5669.7090506@canonical.com> <20140212115412.GW27965@twins.programming.kicks-ass.net> <52FCFA23.4060701@canonical.com> <20140213173852.GH6835@laptop.programming.kicks-ass.net> <52FD090C.7010408@canonical.com> <20140213182605.GC14089@laptop.programming.kicks-ass.net> <20140214133428.GB26356@pd.tnic> <52FE2709.3050505@canonical.com> <20140214144700.GC26356@pd.tnic> <52FE4C28.1080500@canonical.com> <20140214172157.GJ6835@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140214172157.GJ6835@laptop.programming.kicks-ass.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="3Esg2appbcMMFDjGwiJl6KirgsfctFc4h"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---3Esg2appbcMMFDjGwiJl6KirgsfctFc4h
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 20 Feb 2014 11:33:02 +0100
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-On 14.02.2014 18:21, Peter Zijlstra wrote:
-> On Fri, Feb 14, 2014 at 06:02:32PM +0100, Stefan Bader wrote:
->> One thing I likely should do is to reinstall the exact same laptop wit=
-h 64bit
->> kernel and userspace... maybe only 64bit kernel first... and make sure=
- on my
->> side that this does not show up on 64bit, too. I took the word of repo=
-rters for
->> that (and the impression that otherwise many more people would have co=
-mplained).
->=20
-> Yeha, I'm going to try and install some 32bit userspace on a usb
-> harddisk I've got and see if I can boot my Core2 laptop from that to tr=
-y
-> and reproduce.
->=20
-> But all that is probably going to be Monday :/
->=20
-*sigh* Already Thursday...
+>  kernel/trace/ftrace.c | 31 ++++++++-----------------------
+>  1 file changed, 8 insertions(+), 23 deletions(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index cd7f76d1eb86..c321fed01e91 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -1172,8 +1172,6 @@ struct ftrace_page {
+>  	int			size;
+>  };
+>  
+> -static struct ftrace_page *ftrace_new_pgs;
+> -
+>  #define ENTRY_SIZE sizeof(struct dyn_ftrace)
+>  #define ENTRIES_PER_PAGE (PAGE_SIZE / ENTRY_SIZE)
+>  
+> @@ -2243,8 +2241,6 @@ static void ftrace_shutdown_sysctl(void)
+>  		ftrace_run_update_code(FTRACE_DISABLE_CALLS);
+>  }
+>  
+> -static cycle_t		ftrace_update_time;
+> -static unsigned long	ftrace_update_cnt;
+>  unsigned long		ftrace_update_tot_cnt;
+>  
+>  static inline int ops_traces_mod(struct ftrace_ops *ops)
+> @@ -2300,11 +2296,11 @@ static int referenced_filters(struct dyn_ftrace *rec)
+>  	return cnt;
+>  }
+>  
+> -static int ftrace_update_code(struct module *mod)
+> +static int ftrace_update_code(struct module *mod, struct ftrace_page *new_pgs)
+>  {
+>  	struct ftrace_page *pg;
+>  	struct dyn_ftrace *p;
+> -	cycle_t start, stop;
+> +	unsigned long update_cnt = 0;
+>  	unsigned long ref = 0;
+>  	bool test = false;
+>  	int i;
+> @@ -2329,10 +2325,7 @@ static int ftrace_update_code(struct module *mod)
+>  		}
+>  	}
+>  
+> -	start = ftrace_now(raw_smp_processor_id());
+> -	ftrace_update_cnt = 0;
+> -
 
-Peter, did you get to reproduce this locally? Unfortunately I had some
-interruption and have not more Information than on last Friday (which is =
-that
-the same hw but 64bit kernel does not show it).
+I've been waiting for someone to notice this. Actually, I do use it
+once in a while to see how long the updates take. Instead of nuking it,
+perhaps the info should be exported in a debugfs file for info only.
 
-Meanwhile I wonder whether it would make sense to push the following (or =
-more?)
-to stable for 3.13.y:
+[ separate patch please ]
 
-1) 16824255394f55adf31b9a96a9965d8c15bdac4c
-   x86, acpi, idle: Restructure the mwait idle routines
-2) 7e98b71920464b8d15fa95c74366416cd3c88861
-   x86, idle: Use static_cpu_has() for CLFLUSH workaround, add barriers
-3) 8cb75e0c4ec9786b81439761eac1d18d4a931af3
-   sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
-4) 215393bc1fab3d61a5a296838bdffce22f27ffda
-   sched/preempt/x86: Fix voluntary preempt for x86
+> -	for (pg = ftrace_new_pgs; pg; pg = pg->next) {
+> +	for (pg = new_pgs; pg; pg = pg->next) {
+>  
+>  		for (i = 0; i < pg->index; i++) {
+>  			int cnt = ref;
+> @@ -2353,7 +2346,7 @@ static int ftrace_update_code(struct module *mod)
+>  			if (!ftrace_code_disable(mod, p))
+>  				break;
+>  
+> -			ftrace_update_cnt++;
+> +			update_cnt++;
+>  
+>  			/*
+>  			 * If the tracing is enabled, go ahead and enable the record.
+> @@ -2372,11 +2365,7 @@ static int ftrace_update_code(struct module *mod)
+>  		}
+>  	}
+>  
+> -	ftrace_new_pgs = NULL;
+> -
+> -	stop = ftrace_now(raw_smp_processor_id());
+> -	ftrace_update_time = stop - start;
+> -	ftrace_update_tot_cnt += ftrace_update_cnt;
+> +	ftrace_update_tot_cnt += update_cnt;
+>  
+>  	return 0;
+>  }
+> @@ -4238,9 +4227,6 @@ static int ftrace_process_locs(struct module *mod,
+>  	/* Assign the last page to ftrace_pages */
+>  	ftrace_pages = pg;
+>  
+> -	/* These new locations need to be initialized */
+> -	ftrace_new_pgs = start_pg;
+> -
+>  	/*
+>  	 * We only need to disable interrupts on start up
+>  	 * because we are modifying code that an interrupt
+> @@ -4251,7 +4237,7 @@ static int ftrace_process_locs(struct module *mod,
+>  	 */
+>  	if (!mod)
+>  		local_irq_save(flags);
+> -	ftrace_update_code(mod);
+> +	ftrace_update_code(mod, start_pg);
 
-1+2 would be to avoid touching 3 too much and looked to be improvements o=
-n their
-own. 3+4 would be cherry-picks if not for some fuzz 2.
-I saw a few more things labelled preempt between 3.13 and current HEAD bu=
-t am
-not sure whether or which of those are strictly required. Namely some fix=
-ing to
-preempt_enable_no_resched() mis-usage and maybe one fixing an issue of ft=
-race
-locking up.
+Ah, there was a time when this was done via stop_machine(). I still had
+that in my mind, that it did. OK, thanks for cleaning this up.
 
--Stefan
-3
+Note, Soon I'll be posting a set of patches to my for-next repo. You
+might need to rebase it on that.
 
+Thanks,
 
---3Esg2appbcMMFDjGwiJl6KirgsfctFc4h
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+-- Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+>  	if (!mod)
+>  		local_irq_restore(flags);
+>  	ret = 0;
+> @@ -4360,11 +4346,10 @@ struct notifier_block ftrace_module_exit_nb = {
+>  	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
+>  };
+>  
+> -extern unsigned long __start_mcount_loc[];
+> -extern unsigned long __stop_mcount_loc[];
+> -
+>  void __init ftrace_init(void)
+>  {
+> +	extern unsigned long __start_mcount_loc[];
+> +	extern unsigned long __stop_mcount_loc[];
+>  	unsigned long count, addr, flags;
+>  	int ret;
+>  
 
-iQIcBAEBCgAGBQJTBiFlAAoJEOhnXe7L7s6jzc4P/Rj9Faj4joRTARL52o0FBCGi
-B+2xgl3zdaSOWkk8IQYDFXJcH5l8s3f6TOvyp0Puj456xnH9buKI2FTQP77iil35
-A3KdBzzWpPRtZnan/O5ZtR6ztwXIfvRvBiY2LUhSNikJAZqd//8AdK5vUnfLUHEm
-H2kINajI2wxbkAGllEhp32zOSF+YTfyWo21wrP8JyIKSx+5xZKrW8gVIWLDTjOrI
-XB/ebdD9ANkdQd3+vSBawnVeaSMjn1LmUMCWfZ0V+9xGLn3XTgS7oB8fEz4e2Ha7
-IM+mcho1le/yIXPaEVaXcRjXyRso/iEmOtQ70yu/puzs3t/MmWOT6i1wBF6X06rF
-JYgCALLLHTolu3/BsHPx0rgAy3cuCV9kKPDo4/MkForoxmrTQk5sIRtxOEJKIaz6
-7YXfwEeuHycgAPT7dQ4/koXeHIP8ztY62zyaod778Dk+QiTfTYPJQ0nMD8c55VmH
-ZuEMnTy3XjFu15ebDRBnVk9aElNqC97o5kSqzesbJr0ijj3Ps9jouHq5fnZ6RqV+
-o/Ra9nxw8jEvYe4NFk6XqqscBMIhnsusq+wcS+BwIGZ+fTHdrMy721Ed2TAryknI
-iQx2BMJfeDF/2op40cWfy9VNdKKb/xtSS7g7ncW/YnVK/c3IuAbOlkM7N+8ScuxU
-UagmsFyly3NxGaHsdWUf
-=Rf1s
------END PGP SIGNATURE-----
-
---3Esg2appbcMMFDjGwiJl6KirgsfctFc4h--
