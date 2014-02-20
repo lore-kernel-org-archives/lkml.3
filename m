@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638AbaBUAQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:16:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46033 "EHLO
+	id S1756204AbaBUARL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:17:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924AbaBTXxP (ORCPT
+	with ESMTP id S1755920AbaBTXxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:15 -0500
+	Thu, 20 Feb 2014 18:53:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johannes Berg <johannes.berg@intel.com>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.13 23/99] iwlwifi: mvm: disable scheduled scan
-Date: Thu, 20 Feb 2014 15:52:18 -0800
-Message-Id: <20140220235118.889367463@linuxfoundation.org>
+Subject: [PATCH 3.13 22/99] iwlwifi: mvm: dont allow A band if SKU forbids it
+Date: Thu, 20 Feb 2014 15:52:17 -0800
+Message-Id: <20140220235118.854928158@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,36 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 0822afe8ebb9389997ef677447c7b08e08797de9 upstream.
+commit c512865446e6dd5b6e91e81187e75b734ad7cfc7 upstream.
 
-The iwlwifi scheduled scan implementation doesn't adhere to the
-userspace API correctly - the API assumes that any new incoming
-'incompatible' request (like scan or remain-on-channel for this
-driver) will just cancel the scheduled scan. Instead our driver
-relies on userspace cancelling it, thus breaking existing wpa_s
-versions.
+The driver wasn't reading the NVM properly. While this
+didn't lead to any issue until now, it seems that there
+is an old version of the NVM in the wild.
+In this version, the A band channels appear to be valid
+but the SKU capabilities (another field of the NVM) says
+that A band isn't supported at all.
+With this specific version of the NVM, the driver would
+think that A band is supported while the HW / firmware
+don't. This leads to asserts.
 
-Fixes: 35a000b7c1bb ("iwlwifi: mvm: support sched scan if supported by the fw")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/mac80211.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -246,7 +246,7 @@ int iwl_mvm_mac_setup_register(struct iw
- 	else
- 		hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
+--- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
++++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
+@@ -182,6 +182,11 @@ static int iwl_init_channel_map(struct d
  
--	if (mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_SCHED_SCAN) {
-+	if (0 && mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_SCHED_SCAN) {
- 		hw->wiphy->flags |= WIPHY_FLAG_SUPPORTS_SCHED_SCAN;
- 		hw->wiphy->max_sched_scan_ssids = PROBE_OPTION_MAX;
- 		hw->wiphy->max_match_sets = IWL_SCAN_MAX_PROFILES;
+ 	for (ch_idx = 0; ch_idx < IWL_NUM_CHANNELS; ch_idx++) {
+ 		ch_flags = __le16_to_cpup(nvm_ch_flags + ch_idx);
++
++		if (ch_idx >= NUM_2GHZ_CHANNELS &&
++		    !data->sku_cap_band_52GHz_enable)
++			ch_flags &= ~NVM_CHANNEL_VALID;
++
+ 		if (!(ch_flags & NVM_CHANNEL_VALID)) {
+ 			IWL_DEBUG_EEPROM(dev,
+ 					 "Ch. %d Flags %x [%sGHz] - No traffic\n",
 
 
