@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaBTMvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 07:51:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1716 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753346AbaBTMvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 07:51:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,512,1389772800"; 
-   d="scan'208";a="486547608"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] net: rfkill: gpio: remove unused and obsolete platform parameters
-Date: Thu, 20 Feb 2014 14:51:34 +0200
-Message-Id: <1392900697-27577-2-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.9.0.rc3
-In-Reply-To: <1392900697-27577-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1392900697-27577-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1754494AbaBTMv5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 07:51:57 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47419 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754448AbaBTMvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 07:51:55 -0500
+Date: Thu, 20 Feb 2014 21:51:30 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        stable@vger.kernel.org
+Message-ID: <20140220125130.GQ2669@sirena.org.uk>
+References: <1392894472-11956-1-git-send-email-mpa@pengutronix.de>
+ <1392894472-11956-3-git-send-email-mpa@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="F85KFVxTQmf/0nzl"
+Content-Disposition: inline
+In-Reply-To: <1392894472-11956-3-git-send-email-mpa@pengutronix.de>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.156.234
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/2] regulator: core: Replace direct ops->disable usage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After upgrading to descriptor based gpios, the gpio numbers
-are not used anymore. The power_clk_name and the platform
-specific setup and close hooks are not used by anybody, and
-we should not encourage use of such things, so removing them.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- include/linux/rfkill-gpio.h | 10 ----------
- net/rfkill/rfkill-gpio.c    | 15 +--------------
- 2 files changed, 1 insertion(+), 24 deletions(-)
+--F85KFVxTQmf/0nzl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/include/linux/rfkill-gpio.h b/include/linux/rfkill-gpio.h
-index 4d09f6e..20bcb55 100644
---- a/include/linux/rfkill-gpio.h
-+++ b/include/linux/rfkill-gpio.h
-@@ -27,21 +27,11 @@
-  * struct rfkill_gpio_platform_data - platform data for rfkill gpio device.
-  * for unused gpio's, the expected value is -1.
-  * @name:		name for the gpio rf kill instance
-- * @reset_gpio:		GPIO which is used for reseting rfkill switch
-- * @shutdown_gpio:	GPIO which is used for shutdown of rfkill switch
-- * @power_clk_name:	[optional] name of clk to turn off while blocked
-- * @gpio_runtime_close:	clean up platform specific gpio configuration
-- * @gpio_runtime_setup:	set up platform specific gpio configuration
-  */
- 
- struct rfkill_gpio_platform_data {
- 	char			*name;
--	int			reset_gpio;
--	int			shutdown_gpio;
--	const char		*power_clk_name;
- 	enum rfkill_type	type;
--	void	(*gpio_runtime_close)(struct platform_device *);
--	int	(*gpio_runtime_setup)(struct platform_device *);
- };
- 
- #endif /* __RFKILL_GPIO_H */
-diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-index bd2a5b9..0adda44 100644
---- a/net/rfkill/rfkill-gpio.c
-+++ b/net/rfkill/rfkill-gpio.c
-@@ -87,7 +87,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- {
- 	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
- 	struct rfkill_gpio_data *rfkill;
--	const char *clk_name = NULL;
- 	struct gpio_desc *gpio;
- 	int ret;
- 	int len;
-@@ -101,7 +100,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 		if (ret)
- 			return ret;
- 	} else if (pdata) {
--		clk_name = pdata->power_clk_name;
- 		rfkill->name = pdata->name;
- 		rfkill->type = pdata->type;
- 	} else {
-@@ -120,7 +118,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 	snprintf(rfkill->reset_name, len + 6 , "%s_reset", rfkill->name);
- 	snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", rfkill->name);
- 
--	rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
-+	rfkill->clk = devm_clk_get(&pdev->dev, NULL);
- 
- 	gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
- 	if (!IS_ERR(gpio)) {
-@@ -146,14 +144,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	if (pdata && pdata->gpio_runtime_setup) {
--		ret = pdata->gpio_runtime_setup(pdev);
--		if (ret) {
--			dev_err(&pdev->dev, "can't set up gpio\n");
--			return ret;
--		}
--	}
--
- 	rfkill->rfkill_dev = rfkill_alloc(rfkill->name, &pdev->dev,
- 					  rfkill->type, &rfkill_gpio_ops,
- 					  rfkill);
-@@ -174,10 +164,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- static int rfkill_gpio_remove(struct platform_device *pdev)
- {
- 	struct rfkill_gpio_data *rfkill = platform_get_drvdata(pdev);
--	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
- 
--	if (pdata && pdata->gpio_runtime_close)
--		pdata->gpio_runtime_close(pdev);
- 	rfkill_unregister(rfkill->rfkill_dev);
- 	rfkill_destroy(rfkill->rfkill_dev);
- 
--- 
-1.9.0.rc3
+On Thu, Feb 20, 2014 at 12:07:52PM +0100, Markus Pargmann wrote:
 
+> --- a/drivers/regulator/core.c
+> +++ b/drivers/regulator/core.c
+> @@ -1908,8 +1908,6 @@ static int _regulator_do_disable(struct regulator_d=
+ev *rdev)
+> =20
+>  	trace_regulator_disable_complete(rdev_get_name(rdev));
+> =20
+> -	_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
+> -			     NULL);
+>  	return 0;
+>  }
+> =20
+> @@ -1933,6 +1931,8 @@ static int _regulator_disable(struct regulator_dev =
+*rdev)
+>  				rdev_err(rdev, "failed to disable\n");
+>  				return ret;
+>  			}
+> +			_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
+> +					NULL);
+>  		}
+> =20
+>  		rdev->use_count =3D 0;
+
+This change doesn't seem obviously related?
+
+--F85KFVxTQmf/0nzl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBfpPAAoJELSic+t+oim9xX0P/1HwkmNibydYh7yExcXO5VL6
+iC+hJ4Oc8cYQMMAJl0oVmSFftU+zfPF8XMQf3CHwmbdRoEy3l6213sNUcvhfnBvz
+osRaCCNRCBWmKxF5jYLhAe3FTn9GMCzrPob3GOTxnY5eUSAFcr5Dx946aBw+Odya
+LLcAVDS8MChvOlsXwihCX5ZAgTuH+UIThhmhhF1QSn25BuIKfuYkI+IyFUIUGiJO
+LO0lCcMlYXmeIDPuOcYF9Kb7kYCYv7nBC0OpjUzWWSAXzaO9rEy14j80PUEWqZis
+1+3eS+C5dVPxmch/eAQRSQ7pvCDp2uozAxiSz/XdSXSIogNjAmVnoTePbX6rBiMi
+UrHq28GolclDoWgvOtlhpBGr5JOCs6JB922kU9vqNvqRDeTnuPKtOFGhB55fKp+8
+U7uKCrEDrKvlec/RiGBOsAufOG5ibkeEa5NJTof0/9iiW0dNKWTwCQdtldQVrRbs
+3qaE6LL8Y2bCkcZEfMhmjOZhjNn30rXBIr6NQ4cBRgzkltHMDb+gv6UwHbZx6wuV
+OrTWz/XJdBcNtK5DWW3zbCfox5x/sK+jh0f5t0EaY9eqoENWHIEHW8/PFLUQNpc6
+RR/5eQG0GQOLCWpsLVvew9liCkkXMnxTS2uZ+PGpUScAKU+pJslI2A2TajwNG77n
+lmOxl4W5RCQ6sbzq5RJO
+=af1V
+-----END PGP SIGNATURE-----
+
+--F85KFVxTQmf/0nzl--
